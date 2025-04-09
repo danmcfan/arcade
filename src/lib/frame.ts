@@ -102,7 +102,7 @@ export function createFrame(state: State, text: string): Frame {
     );
     const entity = createEntity(sprite, {
       x: i * letterSizeScaled + (width / 2 - textWidth / 2),
-      y: LETTER_HEIGHT * 3.5 * scale,
+      y: (frameTileSizeScaled * 2.5) / 2 + verticalOffset,
     });
     letters.push(entity);
   }
