@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import type { Entity } from "@/lib/entity";
 import type { Room } from "@/lib/room";
+import type { Frame } from "@/lib/frame";
 import {
   FRAME_RATE,
   MILLISECONDS_PER_FRAME,
@@ -11,7 +12,7 @@ import { createImage, createSprite } from "@/lib/sprite";
 import { createEntity, drawEntity } from "@/lib/entity";
 import { createRoom, drawBackground, drawForeground } from "@/lib/room";
 import { checkCollision, createHitbox } from "@/lib/hitbox";
-
+import { createFrame, drawFrame } from "@/lib/frame";
 export type State = {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
@@ -28,6 +29,7 @@ export type State = {
   frameDelta: number;
   player: Entity | null;
   room: Room | null;
+  frame: Frame | null;
   keysDown: Set<string>;
   debug: boolean;
 };
@@ -53,6 +55,7 @@ export function createState(
     scale: 4,
     player: null,
     room: null,
+    frame: null,
     keysDown: new Set(),
     debug: false,
   };
@@ -130,31 +133,58 @@ export function getKeyUpHandler(state: RefObject<State | null>) {
 function update(state: RefObject<State | null>) {
   if (!state.current) return;
 
-  const { player } = state.current;
+  const { player, room } = state.current;
   if (!player) return;
 
   player.isWalking = false;
 
   const { keysDown } = state.current;
+  let x = 0;
+  let y = 0;
   if (keysDown.has("KeyW") || keysDown.has("ArrowUp")) {
-    move(state, { x: 0, y: -PLAYER_SPEED });
+    y = -PLAYER_SPEED * state.current.frameDelta;
     player.direction = "up";
     player.isWalking = true;
   }
   if (keysDown.has("KeyS") || keysDown.has("ArrowDown")) {
-    move(state, { x: 0, y: PLAYER_SPEED });
+    y = PLAYER_SPEED * state.current.frameDelta;
     player.direction = "down";
     player.isWalking = true;
   }
   if (keysDown.has("KeyA") || keysDown.has("ArrowLeft")) {
-    move(state, { x: -PLAYER_SPEED, y: 0 });
+    x = -PLAYER_SPEED * state.current.frameDelta;
     player.direction = "left";
     player.isWalking = true;
   }
   if (keysDown.has("KeyD") || keysDown.has("ArrowRight")) {
-    move(state, { x: PLAYER_SPEED, y: 0 });
+    x = PLAYER_SPEED * state.current.frameDelta;
     player.direction = "right";
     player.isWalking = true;
+  }
+
+  if (x !== 0 && y !== 0) {
+    x = x * 0.75;
+    y = y * 0.75;
+  }
+
+  move(state, { x, y });
+
+  if (!room || !player.hitbox) return;
+  const { machines } = room;
+  let collides = false;
+  for (const machine of machines) {
+    if (!machine.interactionHitbox) continue;
+    if (checkCollision(player.hitbox, machine.interactionHitbox)) {
+      const { frame } = state.current;
+      if (!frame) {
+        state.current.frame = createFrame(state.current, machine.name);
+      }
+      collides = true;
+    }
+  }
+
+  if (!collides) {
+    state.current.frame = null;
   }
 
   updateSprite(state);
@@ -173,7 +203,29 @@ function draw(state: State) {
     drawEntity(state, state.player);
   }
 
+  if (state.frame) {
+    drawFrame(state, state.frame);
+  }
+
   drawForeground(state);
+
+  if (state.debug) {
+    const { room } = state;
+    if (!room) return;
+    const { machines } = room;
+    for (const machine of machines) {
+      if (!machine.interactionHitbox) continue;
+      state.ctx.save();
+      state.ctx.fillStyle = "rgba(0, 255, 0, 0.5)";
+      state.ctx.fillRect(
+        machine.interactionHitbox.x,
+        machine.interactionHitbox.y,
+        machine.interactionHitbox.width,
+        machine.interactionHitbox.height
+      );
+      state.ctx.restore();
+    }
+  }
 
   ctx.restore();
 }
@@ -231,8 +283,8 @@ function move(
 
   const machines = room.machines;
   for (const machine of machines) {
-    if (machine.hitbox) {
-      if (checkCollision(hitbox, machine.hitbox)) {
+    if (machine.entity.hitbox) {
+      if (checkCollision(hitbox, machine.entity.hitbox)) {
         return;
       }
     }
@@ -294,12 +346,12 @@ function updateSprite(state: RefObject<State | null>) {
   if (!state.current.room) return;
   const { machines } = state.current.room;
   for (const machine of machines) {
-    machine.frame += state.current.frameDelta / (FRAME_RATE / (2 * 6));
-    machine.frame %= 6;
+    machine.entity.frame += state.current.frameDelta / (FRAME_RATE / (2 * 6));
+    machine.entity.frame %= 6;
 
-    machine.sprite = createSprite(
+    machine.entity.sprite = createSprite(
       createImage("/images/Arcade_Machine.png"),
-      Math.floor(machine.frame) * 16,
+      Math.floor(machine.entity.frame) * 16,
       0,
       16,
       32

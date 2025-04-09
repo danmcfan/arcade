@@ -1,5 +1,6 @@
 import type { State } from "@/lib/game";
 import type { Entity } from "@/lib/entity";
+import type { Hitbox } from "@/lib/hitbox";
 import { TILE_SIZE } from "@/lib/utils";
 import { createEntity, drawEntity } from "@/lib/entity";
 import { createImage, createSprite } from "@/lib/sprite";
@@ -8,11 +9,17 @@ import { createHitbox } from "@/lib/hitbox";
 const FLOOR_WIDTH = 8;
 const FLOOR_HEIGHT = 6;
 
+type Machine = {
+  name: string;
+  entity: Entity;
+  interactionHitbox: Hitbox | null;
+};
+
 export type Room = {
   floors: Entity[];
   wallFaces: Entity[];
   wallBorders: Entity[];
-  machines: Entity[];
+  machines: Machine[];
 };
 
 export function createRoom(state: State): Room {
@@ -165,7 +172,16 @@ export function createRoom(state: State): Room {
     Math.floor(spriteMachine.width * scale),
     Math.floor((spriteMachine.height / 2) * scale)
   );
-  machines.push(entityMachine);
+  machines.push({
+    name: "Sweet Sam",
+    entity: entityMachine,
+    interactionHitbox: createHitbox(
+      Math.floor(entityMachine.position.x),
+      Math.floor(entityMachine.position.y + (spriteMachine.height / 2) * scale),
+      Math.floor(spriteMachine.width * scale),
+      Math.floor((spriteMachine.height / 2) * scale)
+    ),
+  });
 
   return { floors, wallFaces, wallBorders, machines };
 }
@@ -182,7 +198,7 @@ export function drawBackground(state: State) {
     drawEntity(state, wallFace);
   }
   for (const machine of machines) {
-    drawEntity(state, machine);
+    drawEntity(state, machine.entity);
   }
 }
 
