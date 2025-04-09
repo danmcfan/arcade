@@ -1,18 +1,18 @@
 import type { RefObject } from "react";
 import { useRef, useEffect } from "react";
-import type { GameState } from "@/lib/game";
+import type { State } from "@/lib/game";
 import {
+  createState,
+  getAnimationHandler,
   getKeyDownHandler,
   getKeyUpHandler,
-  getMouseMoveHandler,
-  getAnimationHandler,
-  initializeGame,
+  initialize,
 } from "@/lib/game";
 
-export function Game({ initialState }: { initialState: GameState }) {
+export function Game() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const state = useRef<GameState>(initialState);
+  const state = useRef<State | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -24,58 +24,47 @@ export function Game({ initialState }: { initialState: GameState }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    window.addEventListener("resize", () => {
-      handleResize(container, canvas, ctx, state);
-    });
-    window.addEventListener("keydown", getKeyDownHandler(state));
-    window.addEventListener("keyup", getKeyUpHandler(state));
-    window.addEventListener("mousemove", getMouseMoveHandler(state));
+    state.current = createState(container, canvas, ctx);
 
-    handleResize(container, canvas, ctx, state);
-    initializeGame(state);
-    const animationHandler = getAnimationHandler(ctx, state);
-    requestAnimationFrame(animationHandler);
+    const keyDownHandler = getKeyDownHandler(state);
+    const keyUpHandler = getKeyUpHandler(state);
+
+    window.addEventListener("keydown", keyDownHandler);
+    window.addEventListener("keyup", keyUpHandler);
+    window.addEventListener("resize", () => {
+      handleResize(state);
+    });
+
+    handleResize(state);
+    initialize(state);
+    requestAnimationFrame(getAnimationHandler(state));
 
     return () => {
-      window.removeEventListener("resize", () =>
-        handleResize(container, canvas, ctx, state)
-      );
-      window.removeEventListener("keydown", getKeyDownHandler(state));
-      window.removeEventListener("keyup", getKeyUpHandler(state));
-      window.removeEventListener("mousemove", getMouseMoveHandler(state));
+      window.removeEventListener("keydown", keyDownHandler);
+      window.removeEventListener("keyup", keyUpHandler);
+      window.removeEventListener("resize", () => handleResize(state));
     };
   }, []);
 
   return (
-    <div ref={containerRef} className="w-screen h-screen cursor-none">
+    <div ref={containerRef} className="w-screen h-screen">
       <canvas className="w-full h-full" ref={canvasRef} />
     </div>
   );
 }
 
-function handleResize(
-  container: HTMLDivElement,
-  canvas: HTMLCanvasElement,
-  ctx: CanvasRenderingContext2D,
-  state: RefObject<GameState>
-) {
-  const pixelRatio = window.devicePixelRatio || 1;
-  const rect = container.getBoundingClientRect();
+function handleResize(state: RefObject<State | null>) {
+  if (!state.current) return;
 
-  canvas.width = rect.width * pixelRatio;
-  canvas.height = rect.height * pixelRatio;
+  const pixelRatio = window.devicePixelRatio || 1;
+  const rect = state.current.container.getBoundingClientRect();
+
+  state.current.canvas.width = rect.width * pixelRatio;
+  state.current.canvas.height = rect.height * pixelRatio;
 
   state.current.width = rect.width;
   state.current.height = rect.height;
 
-  state.current.scale = 8;
-  if (state.current.width < 1800 || state.current.height < 1200) {
-    state.current.scale = 4;
-  }
-  if (state.current.width < 600 || state.current.height < 400) {
-    state.current.scale = 2;
-  }
-
-  ctx.imageSmoothingEnabled = false;
-  ctx.scale(pixelRatio, pixelRatio);
+  state.current.ctx.imageSmoothingEnabled = false;
+  state.current.ctx.scale(pixelRatio, pixelRatio);
 }

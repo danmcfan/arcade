@@ -1,316 +1,308 @@
 import type { RefObject } from "react";
-import type { Background } from "@/lib/tile";
-import type { Player } from "@/lib/player";
-import type { Demon } from "@/lib/demon";
-import type { Sprite } from "@/lib/sprite";
-import type { Chicken } from "@/lib/chicken";
-import type { Skeleton } from "@/lib/skeleton";
-import { getInitialBackground, drawBackground } from "@/lib/tile";
-import { getInitialPlayer, drawPlayer, updatePlayer } from "@/lib/player";
-import { SpriteID, getSprites, getSprite, drawSprite } from "@/lib/sprite";
-import { drawGrid } from "@/lib/debug";
+import type { Entity } from "@/lib/entity";
+import type { Room } from "@/lib/room";
 import {
-  // getInitialChickens,
-  updateChickens,
-  drawChickens,
-} from "@/lib/chicken";
-import { FRAMES_PER_SECOND, MILLISECONDS_PER_FRAME } from "@/lib/util";
-import {
-  getInitialSkeletons,
-  updateSkeletons,
-  drawSkeletons,
-} from "@/lib/skeleton";
-import { overlap, createHitbox } from "@/lib/hitbox";
-import { getInitialDemons, updateDemons, drawDemons } from "@/lib/demon";
-export type HorizontalDirection = "left" | "right";
-export type VerticalDirection = "up" | "down";
+  FRAME_RATE,
+  MILLISECONDS_PER_FRAME,
+  TILE_SIZE,
+  PLAYER_SPEED,
+} from "@/lib/utils";
+import { createImage, createSprite } from "@/lib/sprite";
+import { createEntity, drawEntity } from "@/lib/entity";
+import { createRoom, drawBackground, drawForeground } from "@/lib/room";
+import { checkCollision, createHitbox } from "@/lib/hitbox";
 
-export type Cursor = {
-  x: number;
-  y: number;
-};
-
-export type GameState = {
+export type State = {
+  container: HTMLDivElement;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
   scale: number;
-  currentTime: number;
-  lastTime: number;
-  deltaTime: number;
-  frameTime: number;
-  currentFrame: number;
-  lastFrame: number;
-  deltaFrame: number;
-  cursor: Cursor | null;
-  horizontalDirection: HorizontalDirection | null;
-  verticalDirection: VerticalDirection | null;
-  horizontalDirectionsPressed: Set<HorizontalDirection>;
-  verticalDirectionsPressed: Set<VerticalDirection>;
-  spacePressed: boolean;
-  shiftPressed: boolean;
-  player: Player;
-  chickens: Chicken[];
-  skeletons: Skeleton[];
-  demons: Demon[];
-  background: Background;
-  sprites: Map<SpriteID, Sprite>;
+  timeCurrent: number;
+  timePrevious: number;
+  timeDelta: number;
+  timeFrame: number;
+  frameCurrent: number;
+  framePrevious: number;
+  frameDelta: number;
+  player: Entity | null;
+  room: Room | null;
+  keysDown: Set<string>;
   debug: boolean;
 };
 
-export function initializeGame(state: RefObject<GameState>) {
-  state.current.player = getInitialPlayer(
-    getSprite(state.current.sprites, SpriteID.PLAYER_IDLE_DOWN),
-    state.current.scale
-  );
-
-  // state.current.chickens = getInitialChickens(
-  //   getSprite(state.current.sprites, SpriteID.CHICKEN_WALK),
-  //   state.current.scale
-  // );
-
-  state.current.skeletons = getInitialSkeletons(
-    getSprite(state.current.sprites, SpriteID.SKELETON_IDLE_DOWN),
-    state.current.scale
-  );
-
-  state.current.demons = getInitialDemons(
-    getSprite(state.current.sprites, SpriteID.DEMON_IDLE_DOWN),
-    state.current.scale
-  );
-
-  state.current.background = getInitialBackground();
-}
-
-export function getKeyDownHandler(state: RefObject<GameState>) {
-  return (e: KeyboardEvent) => {
-    if (e.key.toLowerCase() === " ") {
-      state.current.spacePressed = true;
-    }
-
-    if (e.key.toLowerCase() === "shift") {
-      state.current.shiftPressed = true;
-    }
-
-    switch (e.key.toLowerCase()) {
-      case "w":
-      case "ArrowUp":
-        state.current.verticalDirection = "up";
-        state.current.verticalDirectionsPressed.add("up");
-        break;
-      case "s":
-      case "ArrowDown":
-        state.current.verticalDirection = "down";
-        state.current.verticalDirectionsPressed.add("down");
-        break;
-      case "a":
-      case "ArrowLeft":
-        state.current.horizontalDirection = "left";
-        state.current.horizontalDirectionsPressed.add("left");
-        break;
-      case "d":
-      case "ArrowRight":
-        state.current.horizontalDirection = "right";
-        state.current.horizontalDirectionsPressed.add("right");
-        break;
-    }
+export function createState(
+  container: HTMLDivElement,
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D
+): State {
+  return {
+    container,
+    canvas,
+    ctx,
+    timeCurrent: 0,
+    timePrevious: 0,
+    timeDelta: 0,
+    timeFrame: 0,
+    frameCurrent: 0,
+    framePrevious: 0,
+    frameDelta: 0,
+    width: 0,
+    height: 0,
+    scale: 4,
+    player: null,
+    room: null,
+    keysDown: new Set(),
+    debug: false,
   };
 }
 
-export function getKeyUpHandler(state: RefObject<GameState>) {
-  return (e: KeyboardEvent) => {
-    if (e.key.toLowerCase() === " ") {
-      state.current.spacePressed = false;
-    }
+export function initialize(state: RefObject<State | null>) {
+  if (!state.current) return;
 
-    if (e.key.toLowerCase() === "shift") {
-      state.current.shiftPressed = false;
-    }
+  const imagePlayer = createImage("/images/Player.png");
+  const spritePlayer = createSprite(imagePlayer, 0, 0, 32, 32);
 
-    switch (e.key.toLowerCase()) {
-      case "w":
-      case "ArrowUp":
-        state.current.verticalDirectionsPressed.delete("up");
-        break;
-      case "s":
-      case "ArrowDown":
-        state.current.verticalDirectionsPressed.delete("down");
-        break;
-      case "a":
-      case "ArrowLeft":
-        state.current.horizontalDirectionsPressed.delete("left");
-        break;
-      case "d":
-      case "ArrowRight":
-        state.current.horizontalDirectionsPressed.delete("right");
-        break;
-    }
-  };
+  const tileSizeScaled = TILE_SIZE * state.current.scale;
+  state.current.player = createEntity(spritePlayer, {
+    x: state.current.width / 2 - (spritePlayer.width / 2) * state.current.scale,
+    y:
+      state.current.height / 2 -
+      (spritePlayer.height / 2) * state.current.scale +
+      tileSizeScaled * 1,
+  });
+  state.current.player.hitbox = createHitbox(
+    Math.floor(state.current.player.position.x + 8 * state.current.scale),
+    Math.floor(state.current.player.position.y + 4 * state.current.scale),
+    Math.floor(16 * state.current.scale),
+    Math.floor(20 * state.current.scale)
+  );
+
+  state.current.room = createRoom(state.current);
 }
 
-export function getMouseMoveHandler(state: RefObject<GameState>) {
-  return (e: MouseEvent) => {
-    state.current.cursor = {
-      x: e.clientX,
-      y: e.clientY,
-    };
-  };
-}
+export function getAnimationHandler(state: RefObject<State | null>) {
+  function animate(timeCurrent: number) {
+    if (!state.current) return;
 
-export function getAnimationHandler(
-  ctx: CanvasRenderingContext2D,
-  state: RefObject<GameState>
-) {
-  function animate(currentTime: number) {
-    updateFrame(currentTime, state);
+    state.current.timeCurrent = timeCurrent;
+    state.current.timeDelta = timeCurrent - state.current.timePrevious;
+    state.current.timeFrame += state.current.timeDelta;
 
-    updateState(state);
-    drawState(ctx, state.current);
+    state.current.framePrevious = state.current.frameCurrent;
+    state.current.frameDelta = 0;
+    if (state.current.timeFrame > MILLISECONDS_PER_FRAME) {
+      state.current.frameCurrent += Math.floor(
+        state.current.timeFrame / MILLISECONDS_PER_FRAME
+      );
+      state.current.frameDelta =
+        state.current.frameCurrent - state.current.framePrevious;
+      state.current.timeFrame = 0;
+    }
+
+    update(state);
+    draw(state.current);
+
+    state.current.timePrevious = timeCurrent;
 
     requestAnimationFrame(animate);
   }
   return animate;
 }
 
-function updateFrame(currentTime: number, state: RefObject<GameState>) {
-  state.current.currentTime = currentTime;
-
-  state.current.deltaTime = state.current.currentTime - state.current.lastTime;
-  state.current.lastTime = state.current.currentTime;
-
-  state.current.frameTime += state.current.deltaTime;
-
-  const deltaFrame = Math.floor(
-    state.current.frameTime / MILLISECONDS_PER_FRAME
-  );
-  state.current.lastFrame = state.current.currentFrame;
-  state.current.deltaFrame = deltaFrame;
-
-  if (deltaFrame > 0) {
-    state.current.currentFrame += deltaFrame;
-    state.current.frameTime = 0;
+export function getKeyDownHandler(state: RefObject<State | null>) {
+  function handleKeyDown(event: KeyboardEvent) {
+    if (!state.current) return;
+    state.current.keysDown.add(event.code);
   }
+  return handleKeyDown;
 }
 
-function updateState(state: RefObject<GameState>) {
-  if (state.current.horizontalDirectionsPressed.size === 0) {
-    state.current.horizontalDirection = null;
-  } else {
-    state.current.horizontalDirection = Array.from(
-      state.current.horizontalDirectionsPressed
-    )[state.current.horizontalDirectionsPressed.size - 1];
+export function getKeyUpHandler(state: RefObject<State | null>) {
+  function handleKeyUp(event: KeyboardEvent) {
+    if (!state.current) return;
+    state.current.keysDown.delete(event.code);
   }
-
-  if (state.current.verticalDirectionsPressed.size === 0) {
-    state.current.verticalDirection = null;
-  } else {
-    state.current.verticalDirection = Array.from(
-      state.current.verticalDirectionsPressed
-    )[state.current.verticalDirectionsPressed.size - 1];
-  }
-
-  updateSkeletons(state);
-  updateDemons(state);
-  updateChickens(state);
-  updatePlayer(state);
-  handleSwordCollision(state);
+  return handleKeyUp;
 }
 
-function drawState(ctx: CanvasRenderingContext2D, state: GameState) {
-  ctx.clearRect(0, 0, state.width, state.height);
+function update(state: RefObject<State | null>) {
+  if (!state.current) return;
 
-  drawBackground(ctx, state);
-  if (state.debug) {
-    drawGrid(ctx, state);
+  const { player } = state.current;
+  if (!player) return;
+
+  player.isWalking = false;
+
+  const { keysDown } = state.current;
+  if (keysDown.has("KeyW") || keysDown.has("ArrowUp")) {
+    move(state, { x: 0, y: -PLAYER_SPEED });
+    player.direction = "up";
+    player.isWalking = true;
   }
-  drawSkeletons(ctx, state);
-  drawDemons(ctx, state);
-  drawChickens(ctx, state);
-  drawPlayer(ctx, state);
-  drawCursor(ctx, state);
-}
-
-export function getInitialState(debug: boolean = false): GameState {
-  const sprites = getSprites();
-
-  return {
-    width: 0,
-    height: 0,
-    scale: 0,
-    currentTime: 0,
-    lastTime: 0,
-    deltaTime: 0,
-    frameTime: 0,
-    currentFrame: 0,
-    lastFrame: 0,
-    deltaFrame: 0,
-    cursor: null,
-    horizontalDirection: null,
-    verticalDirection: null,
-    horizontalDirectionsPressed: new Set(),
-    verticalDirectionsPressed: new Set(),
-    spacePressed: false,
-    shiftPressed: false,
-    player: {
-      x: 0,
-      y: 0,
-      hitbox: createHitbox(0, 0, 0, 0),
-      swordHitbox: null,
-      image: new Image(),
-      frame: 0,
-      direction: "down",
-      isWalking: false,
-      isRolling: false,
-      attackDelay: 0,
-      sprite: getSprite(sprites, SpriteID.PLAYER_IDLE_DOWN),
-      overlaySprite: null,
-    },
-    chickens: [],
-    skeletons: [],
-    demons: [],
-    background: {
-      grid: [],
-    },
-    sprites,
-    debug,
-  };
-}
-
-function drawCursor(ctx: CanvasRenderingContext2D, state: GameState) {
-  if (state.cursor) {
-    const cursor = getSprite(state.sprites, SpriteID.CURSOR);
-    drawSprite(
-      ctx,
-      cursor,
-      state.cursor.x - cursor.width / 2,
-      state.cursor.y - cursor.height / 2,
-      0,
-      state.scale / 2
-    );
+  if (keysDown.has("KeyS") || keysDown.has("ArrowDown")) {
+    move(state, { x: 0, y: PLAYER_SPEED });
+    player.direction = "down";
+    player.isWalking = true;
   }
+  if (keysDown.has("KeyA") || keysDown.has("ArrowLeft")) {
+    move(state, { x: -PLAYER_SPEED, y: 0 });
+    player.direction = "left";
+    player.isWalking = true;
+  }
+  if (keysDown.has("KeyD") || keysDown.has("ArrowRight")) {
+    move(state, { x: PLAYER_SPEED, y: 0 });
+    player.direction = "right";
+    player.isWalking = true;
+  }
+
+  updateSprite(state);
 }
 
-function handleSwordCollision(state: RefObject<GameState>) {
-  if (state.current.player.swordHitbox) {
-    for (const skeleton of state.current.skeletons) {
-      if (skeleton.isDead) {
-        continue;
-      }
-      if (overlap(state.current.player.swordHitbox, skeleton.hitbox)) {
-        if (
-          skeleton.hitbox.collisionIds.has(state.current.player.swordHitbox.id)
-        ) {
-          continue;
-        }
-        skeleton.hitbox.collisionIds.add(state.current.player.swordHitbox.id);
-        skeleton.hitPoints -= 1;
-        skeleton.frame = 0;
-        if (skeleton.hitPoints <= 0) {
-          skeleton.deadDelay = FRAMES_PER_SECOND;
-          skeleton.isDead = true;
-        } else {
-          skeleton.damageDelay = FRAMES_PER_SECOND;
-        }
+function draw(state: State) {
+  const { ctx, width, height } = state;
+
+  ctx.save();
+
+  ctx.clearRect(0, 0, width, height);
+
+  drawBackground(state);
+
+  if (state.player) {
+    drawEntity(state, state.player);
+  }
+
+  drawForeground(state);
+
+  ctx.restore();
+}
+
+function move(
+  state: RefObject<State | null>,
+  direction: { x: number; y: number }
+) {
+  if (!state.current) return;
+
+  const { player } = state.current;
+
+  if (!player) return;
+
+  let newX = player.position.x + direction.x * state.current.scale;
+  let newY = player.position.y + direction.y * state.current.scale;
+
+  if (!player.hitbox) return;
+  let hitbox = { ...player.hitbox };
+
+  if (newX < 0) {
+    newX = 0;
+  } else if (newX > state.current.width - hitbox.width) {
+    newX = state.current.width - hitbox.width;
+  }
+
+  if (newY < 0) {
+    newY = 0;
+  } else if (newY > state.current.height - hitbox.height) {
+    newY = state.current.height - hitbox.height;
+  }
+
+  hitbox.x = Math.floor(newX + 8 * state.current.scale);
+  hitbox.y = Math.floor(newY + 4 * state.current.scale);
+
+  const room = state.current.room;
+  if (!room) return;
+
+  const wallFaces = room.wallFaces;
+  for (const wallFace of wallFaces) {
+    if (wallFace.hitbox) {
+      if (checkCollision(hitbox, wallFace.hitbox)) {
+        return;
       }
     }
+  }
+  const wallBorders = room.wallBorders;
+  for (const wallBorder of wallBorders) {
+    if (wallBorder.hitbox) {
+      if (checkCollision(hitbox, wallBorder.hitbox)) {
+        return;
+      }
+    }
+  }
+
+  const machines = room.machines;
+  for (const machine of machines) {
+    if (machine.hitbox) {
+      if (checkCollision(hitbox, machine.hitbox)) {
+        return;
+      }
+    }
+  }
+
+  player.position.x = newX;
+  player.position.y = newY;
+  player.hitbox = hitbox;
+}
+
+function updateSprite(state: RefObject<State | null>) {
+  if (!state.current) return;
+
+  const { player } = state.current;
+  if (!player) return;
+
+  const { direction, isWalking } = player;
+
+  let rowIndex = 0;
+  if (isWalking) {
+    switch (direction) {
+      case "down":
+        rowIndex = 3;
+        break;
+      case "left":
+      case "right":
+        rowIndex = 4;
+        break;
+      case "up":
+        rowIndex = 5;
+        break;
+    }
+  } else {
+    switch (direction) {
+      case "down":
+        rowIndex = 0;
+        break;
+      case "left":
+      case "right":
+        rowIndex = 1;
+        break;
+      case "up":
+        rowIndex = 2;
+        break;
+    }
+  }
+
+  player.frame += state.current.frameDelta / (FRAME_RATE / (2 * 6));
+  player.frame %= 6;
+
+  player.sprite = createSprite(
+    createImage("/images/Player.png"),
+    Math.floor(player.frame) * 32,
+    rowIndex * 32,
+    32,
+    32
+  );
+
+  if (!state.current.room) return;
+  const { machines } = state.current.room;
+  for (const machine of machines) {
+    machine.frame += state.current.frameDelta / (FRAME_RATE / (2 * 6));
+    machine.frame %= 6;
+
+    machine.sprite = createSprite(
+      createImage("/images/Arcade_Machine.png"),
+      Math.floor(machine.frame) * 16,
+      0,
+      16,
+      32
+    );
   }
 }
