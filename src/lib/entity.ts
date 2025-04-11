@@ -9,6 +9,7 @@ export type Entity = {
   frame: number;
   direction: "up" | "down" | "left" | "right" | null;
   isWalking: boolean;
+  isInteracting: boolean;
 };
 
 export function createEntity(
@@ -22,6 +23,7 @@ export function createEntity(
     frame: 0,
     direction: null,
     isWalking: false,
+    isInteracting: false,
   };
 }
 

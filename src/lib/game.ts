@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import type { Entity } from "@/lib/entity";
 import type { Room } from "@/lib/room";
 import type { Frame } from "@/lib/frame";
+import type { Sound } from "@/lib/sound";
 import {
   FRAME_RATE,
   MILLISECONDS_PER_FRAME,
@@ -13,6 +14,8 @@ import { createEntity, drawEntity } from "@/lib/entity";
 import { createRoom, drawBackground, drawForeground } from "@/lib/room";
 import { checkCollision, createHitbox } from "@/lib/hitbox";
 import { createFrame, drawFrame } from "@/lib/frame";
+import { createSound, playSound, pauseSound } from "@/lib/sound";
+
 export type State = {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
@@ -31,6 +34,8 @@ export type State = {
   room: Room | null;
   frame: Frame | null;
   keysDown: Set<string>;
+  soundFootstep: Sound;
+  soundArcade: Sound;
   debug: boolean;
 };
 
@@ -57,6 +62,8 @@ export function createState(
     room: null,
     frame: null,
     keysDown: new Set(),
+    soundFootstep: createSound(new Audio("/audio/footstep.mp3"), 0.2),
+    soundArcade: createSound(new Audio("/audio/arcade.mp3"), 0.05),
     debug: false,
   };
 }
@@ -137,7 +144,7 @@ function update(state: RefObject<State | null>) {
   if (!player) return;
 
   player.isWalking = false;
-
+  player.isInteracting = false;
   const { keysDown } = state.current;
   let x = 0;
   let y = 0;
@@ -161,6 +168,9 @@ function update(state: RefObject<State | null>) {
     player.direction = "right";
     player.isWalking = true;
   }
+  if (keysDown.has("Space")) {
+    player.isInteracting = true;
+  }
 
   if (x !== 0 && y !== 0) {
     x = x * 0.75;
@@ -183,8 +193,28 @@ function update(state: RefObject<State | null>) {
     }
   }
 
+  if (state.current.frame && player.isInteracting) {
+    // launchGame(state, Game.SWEET_SAM)
+  }
+
+  if (state.current.frame) {
+    if (!state.current.soundArcade.playing) {
+      playSound(state.current.soundArcade);
+    }
+  } else {
+    pauseSound(state.current.soundArcade, 200);
+  }
+
   if (!collides) {
     state.current.frame = null;
+  }
+
+  if (player.isWalking) {
+    if (!state.current.soundFootstep.playing) {
+      playSound(state.current.soundFootstep);
+    }
+  } else {
+    pauseSound(state.current.soundFootstep, 200);
   }
 
   updateSprite(state);

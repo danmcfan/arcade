@@ -1,13 +1,15 @@
 import type { RefObject } from "react";
 import { useRef, useEffect } from "react";
-import type { State } from "@/lib/game";
+import type { State } from "@/lib/engine/game";
 import {
   createState,
   getAnimationHandler,
   getKeyDownHandler,
   getKeyUpHandler,
-  initialize,
-} from "@/lib/game";
+} from "@/lib/engine/game";
+import { initialize } from "@/lib/arcade/game";
+
+const debug = false;
 
 export function Game() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,7 +26,7 @@ export function Game() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    state.current = createState(container, canvas, ctx);
+    state.current = createState(container, canvas, ctx, 10, 10, 1, 16, debug);
 
     const keyDownHandler = getKeyDownHandler(state);
     const keyUpHandler = getKeyUpHandler(state);
@@ -48,7 +50,7 @@ export function Game() {
 
   return (
     <div ref={containerRef} className="w-screen h-screen">
-      <canvas className="w-full h-full" ref={canvasRef} />
+      <canvas className="w-full h-[80%] md:h-full" ref={canvasRef} />
     </div>
   );
 }
@@ -64,6 +66,11 @@ function handleResize(state: RefObject<State | null>) {
 
   state.current.width = rect.width;
   state.current.height = rect.height;
+
+  state.current.scale = 4;
+  if (state.current.width < 400 || state.current.height < 800) {
+    state.current.scale = 2;
+  }
 
   state.current.ctx.imageSmoothingEnabled = false;
   state.current.ctx.scale(pixelRatio, pixelRatio);

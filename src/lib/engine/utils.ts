@@ -1,0 +1,2 @@
+export const FRAME_RATE = 60;
+export const MILLISECONDS_PER_FRAME = 1000 / FRAME_RATE;
