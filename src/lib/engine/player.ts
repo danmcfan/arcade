@@ -3,6 +3,7 @@ import type { State } from "@/lib/engine/game";
 import type { Sprite } from "@/lib/engine/sprite";
 import type { Hitbox } from "@/lib/engine/hitbox";
 import { createHitbox, intersects } from "@/lib/engine/hitbox";
+import { playSound, pauseSound } from "@/lib/engine/sound";
 
 const HITBOX_X_OFFSET = -8;
 const HITBOX_Y_OFFSET = -2;
@@ -42,6 +43,12 @@ export function drawPlayer(state: State) {
   const { ctx, player } = state;
 
   if (!player) return;
+
+  if (player.isRunning) {
+    playSound(state.sounds.footstep);
+  } else {
+    pauseSound(state.sounds.footstep, 100);
+  }
 
   ctx.save();
 

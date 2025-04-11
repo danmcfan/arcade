@@ -4,16 +4,18 @@ export type Sound = {
   volume: number;
 };
 
-export function createSound(
-  audio: HTMLAudioElement,
-  volume: number = 1
-): Sound {
+export function createSound(src: string, volume: number = 1): Sound {
+  const audio = createAudio(src);
   audio.volume = volume;
   return {
     audio,
     playing: false,
     volume,
   };
+}
+
+function createAudio(src: string): HTMLAudioElement {
+  return new Audio(src);
 }
 
 export function playSound(sound: Sound) {

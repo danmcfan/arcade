@@ -1,9 +1,11 @@
 import type { RefObject } from "react";
 import type { State } from "@/lib/engine/game";
-import { createSpriteSheets } from "@/lib/arcade/sprite";
+import type { SpriteSheet } from "@/lib/engine/sprite";
+import type { Sound } from "@/lib/engine/sound";
 import { drawLayers } from "@/lib/engine/grid";
 import { createPlayer, updatePlayer, drawPlayer } from "@/lib/engine/player";
-import { getSprite } from "@/lib/engine/sprite";
+import { getSprite, createSpriteSheet } from "@/lib/engine/sprite";
+import { createSound } from "@/lib/engine/sound";
 import { createHitbox } from "@/lib/engine/hitbox";
 import {
   createMachine,
@@ -49,6 +51,7 @@ export function initialize(state: RefObject<State | null>) {
   }
 
   state.current.spriteSheets = createSpriteSheets();
+  state.current.sounds = createSounds();
 
   state.current.player = createPlayer(
     5 * gridCellSize - 8,
@@ -162,4 +165,20 @@ function draw(state: State) {
 
   // Restore the original state of the canvas
   ctx.restore();
+}
+
+function createSpriteSheets(): Record<string, SpriteSheet> {
+  return {
+    player: createSpriteSheet("/images/Player.png", 32, 32),
+    woodFloorTiles: createSpriteSheet("/images/Wood_Floor_Tiles.png", 16, 16),
+    interiorWalls: createSpriteSheet("/images/Interior_Walls.png", 16, 16),
+    machine: createSpriteSheet("/images/ArcadeMachine.png", 16, 32),
+  };
+}
+
+function createSounds(): Record<string, Sound> {
+  return {
+    arcade: createSound("/audio/arcade.mp3", 0.2),
+    footstep: createSound("/audio/footstep.mp3", 0.4),
+  };
 }

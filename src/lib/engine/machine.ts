@@ -3,6 +3,7 @@ import type { State } from "@/lib/engine/game";
 import type { Sprite } from "@/lib/engine/sprite";
 import type { Hitbox } from "@/lib/engine/hitbox";
 import { intersects } from "@/lib/engine/hitbox";
+import { playSound, pauseSound } from "@/lib/engine/sound";
 
 export type Machine = {
   frame: number;
@@ -83,6 +84,19 @@ export function updateMachines(state: RefObject<State | null>) {
 export function drawMachines(state: State) {
   const { ctx, machines, scale } = state;
   if (!ctx) return;
+
+  let anyActive = false;
+  for (const machine of machines) {
+    if (machine.isActive) {
+      anyActive = true;
+    }
+  }
+
+  if (anyActive) {
+    playSound(state.sounds.arcade);
+  } else {
+    pauseSound(state.sounds.arcade, 100);
+  }
 
   ctx.save();
 
