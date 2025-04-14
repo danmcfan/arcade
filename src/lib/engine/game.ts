@@ -21,6 +21,8 @@ export type State = {
   width: number;
   height: number;
   scale: number;
+  offsetRatioX: number;
+  offsetRatioY: number;
   gridCellSize: number;
   gridWidth: number;
   gridHeight: number;
@@ -61,6 +63,8 @@ export function createState(
     width: 0,
     height: 0,
     scale,
+    offsetRatioX: 0,
+    offsetRatioY: 0,
     gridCellSize,
     gridWidth,
     gridHeight,

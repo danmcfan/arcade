@@ -125,7 +125,15 @@ function update(state: RefObject<State | null>) {
 }
 
 function draw(state: State) {
-  const { ctx, gridWidth, gridHeight, gridCellSize, scale } = state;
+  const {
+    ctx,
+    gridWidth,
+    gridHeight,
+    gridCellSize,
+    scale,
+    offsetRatioX,
+    offsetRatioY,
+  } = state;
 
   // Save the current state of the canvas
   ctx.save();
@@ -136,8 +144,8 @@ function draw(state: State) {
   // Translate the canvas to the center of the screen
   const widthPixels = gridCellSize * gridWidth * scale;
   const heightPixels = gridCellSize * gridHeight * scale;
-  const translateX = Math.floor((state.width - widthPixels) / 2);
-  const translateY = Math.floor((state.height - heightPixels) / 2);
+  const translateX = Math.floor((state.width - widthPixels) * offsetRatioX);
+  const translateY = Math.floor((state.height - heightPixels) * offsetRatioY);
   ctx.translate(translateX, translateY);
 
   const activeGame = state.transitions.length === 0 ? state.activeGame : null;
