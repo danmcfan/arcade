@@ -12,6 +12,7 @@ import {
   updateMachines,
   drawMachines,
 } from "@/lib/engine/machine";
+import * as Sweet from "@/lib/sweet";
 
 export function initialize(state: RefObject<State | null>) {
   if (!state.current) return;
@@ -83,6 +84,16 @@ function update(state: RefObject<State | null>) {
 
   const { transitions, timeDelta } = state.current;
 
+  if (state.current.enteringGame && transitions.length === 1) {
+    state.current.enteringGame = false;
+  }
+
+  if (state.current.exitingGame && transitions.length === 1) {
+    state.current.activeGame = null;
+    state.current.activeGameState = null;
+    state.current.exitingGame = false;
+  }
+
   if (transitions.length >= 1) {
     const transition = transitions[0];
 
@@ -105,22 +116,16 @@ function update(state: RefObject<State | null>) {
     if (transition.time >= transition.duration) {
       state.current.transitions.shift();
     }
-  } else {
-    if (!state.current.activeGame) {
+    return;
+  }
+
+  switch (state.current.activeGame) {
+    case "Sweet Sam":
+      Sweet.update(state);
+      break;
+    default:
       updatePlayer(state);
       updateMachines(state);
-    } else {
-      if (state.current.keysDown.has("Escape")) {
-        state.current.activeGame = null;
-        if (state.current.transitions.length === 0) {
-          state.current.transitions.push({
-            type: "fadeIn",
-            time: 0,
-            duration: 1000,
-          });
-        }
-      }
-    }
   }
 }
 
@@ -133,6 +138,7 @@ function draw(state: State) {
     scale,
     offsetRatioX,
     offsetRatioY,
+    activeGameState,
   } = state;
 
   // Save the current state of the canvas
@@ -141,34 +147,53 @@ function draw(state: State) {
   // Clear the canvas
   ctx.clearRect(0, 0, state.width, state.height);
 
-  // Translate the canvas to the center of the screen
-  const widthPixels = gridCellSize * gridWidth * scale;
-  const heightPixels = gridCellSize * gridHeight * scale;
-  const translateX = Math.floor((state.width - widthPixels) * offsetRatioX);
-  const translateY = Math.floor((state.height - heightPixels) * offsetRatioY);
-  ctx.translate(translateX, translateY);
+  ctx.save();
 
-  const activeGame = state.transitions.length === 0 ? state.activeGame : null;
+  let activeGame = state.activeGame;
+  if (state.enteringGame && state.transitions.length === 2) {
+    activeGame = null;
+  }
+
+  let widthPixels = 0;
+  let heightPixels = 0;
+  let translateX = 0;
+  let translateY = 0;
 
   switch (activeGame) {
     case "Sweet Sam":
-      // Draw the Sweet Sam game
+      if (!activeGameState) return;
+
+      widthPixels =
+        activeGameState.gridWidth *
+        activeGameState.gridCellSize *
+        scale *
+        activeGameState.scaleModifier;
+      heightPixels =
+        activeGameState.gridHeight *
+        activeGameState.gridCellSize *
+        scale *
+        activeGameState.scaleModifier;
+      translateX = Math.floor((state.width - widthPixels) * offsetRatioX);
+      translateY = Math.floor((state.height - heightPixels) * offsetRatioY);
+      ctx.translate(translateX, translateY);
+      Sweet.draw(state);
       break;
     default:
-      // Draw the layers
+      // Translate the canvas to the center of the screen
+      widthPixels = gridCellSize * gridWidth * scale;
+      heightPixels = gridCellSize * gridHeight * scale;
+      translateX = Math.floor((state.width - widthPixels) * offsetRatioX);
+      translateY = Math.floor((state.height - heightPixels) * offsetRatioY);
+      ctx.translate(translateX, translateY);
       drawLayers(state);
-
-      // Draw the machines
       drawMachines(state);
-
-      // Draw the player
       drawPlayer(state);
       break;
   }
 
-  // Draw the transition
-  ctx.globalAlpha = state.opacity;
-  ctx.fillStyle = "black";
+  ctx.restore();
+
+  ctx.fillStyle = `rgba(0, 0, 0, ${state.opacity})`;
   ctx.fillRect(0, 0, state.width, state.height);
 
   // Restore the original state of the canvas

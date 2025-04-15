@@ -5,6 +5,9 @@ import type { Sound } from "@/lib/engine/sound";
 import type { Player } from "@/lib/engine/player";
 import type { Machine } from "@/lib/engine/machine";
 import type { Hitbox } from "@/lib/engine/hitbox";
+import type { Input } from "@/lib/engine/input";
+import type { SweetState } from "@/lib/sweet";
+import { createInput, addKey, deleteKey } from "@/lib/engine/input";
 
 const LOG_DEBUG_RATE = 1000;
 
@@ -26,12 +29,16 @@ export type State = {
   gridCellSize: number;
   gridWidth: number;
   gridHeight: number;
+  input: Input;
   layers: Record<number, Grid>;
   collisions: number[];
   collisionHitboxes: Hitbox[];
   spriteSheets: Record<string, SpriteSheet>;
   sounds: Record<string, Sound>;
+  activeGameState: SweetState | null;
   activeGame: string | null;
+  enteringGame: boolean;
+  exitingGame: boolean;
   transitions: Transition[];
   opacity: number;
   player: Player | null;
@@ -40,7 +47,6 @@ export type State = {
   timeCurrent: number;
   timePrevious: number;
   timeDelta: number;
-  keysDown: Set<string>;
   updateHandler: ((state: RefObject<State | null>) => void) | null;
   drawHandler: ((state: State) => void) | null;
   debug: boolean;
@@ -68,17 +74,21 @@ export function createState(
     gridCellSize,
     gridWidth,
     gridHeight,
+    input: createInput(),
     layers: {},
     collisions: [],
     collisionHitboxes: [],
     spriteSheets: {},
     sounds: {},
+    activeGameState: null,
     activeGame: null,
+    enteringGame: false,
+    exitingGame: false,
     transitions: [
       {
         type: "fadeIn",
         time: 0,
-        duration: 1000,
+        duration: 500,
       },
     ],
     opacity: 1,
@@ -88,7 +98,6 @@ export function createState(
     timeCurrent: 0,
     timePrevious: 0,
     timeDelta: 0,
-    keysDown: new Set(),
     updateHandler: null,
     drawHandler: null,
     debug,
@@ -132,7 +141,7 @@ export function getAnimationHandler(state: RefObject<State | null>) {
 export function getKeyDownHandler(state: RefObject<State | null>) {
   function handleKeyDown(event: KeyboardEvent) {
     if (!state.current) return;
-    state.current.keysDown.add(event.code);
+    state.current.input = addKey(state.current.input, event.code);
   }
   return handleKeyDown;
 }
@@ -140,7 +149,7 @@ export function getKeyDownHandler(state: RefObject<State | null>) {
 export function getKeyUpHandler(state: RefObject<State | null>) {
   function handleKeyUp(event: KeyboardEvent) {
     if (!state.current) return;
-    state.current.keysDown.delete(event.code);
+    state.current.input = deleteKey(state.current.input, event.code);
   }
   return handleKeyUp;
 }

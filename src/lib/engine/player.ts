@@ -4,6 +4,7 @@ import type { Sprite } from "@/lib/engine/sprite";
 import type { Hitbox } from "@/lib/engine/hitbox";
 import { createHitbox, intersects } from "@/lib/engine/hitbox";
 import { playSound, pauseSound } from "@/lib/engine/sound";
+import { hasControl } from "@/lib/engine/input";
 
 const HITBOX_X_OFFSET = -8;
 const HITBOX_Y_OFFSET = -2;
@@ -100,7 +101,7 @@ export function drawPlayer(state: State) {
 export function updatePlayer(state: RefObject<State | null>) {
   if (!state.current) return;
 
-  const { player, keysDown, timeDelta } = state.current;
+  const { player, input, timeDelta } = state.current;
 
   if (!player) return;
 
@@ -118,16 +119,16 @@ export function updatePlayer(state: RefObject<State | null>) {
   let vertical = 0;
   let horizontal = 0;
 
-  if (keysDown.has("KeyW") || keysDown.has("ArrowUp")) {
+  if (hasControl(input, "up")) {
     vertical = -1;
   }
-  if (keysDown.has("KeyS") || keysDown.has("ArrowDown")) {
+  if (hasControl(input, "down")) {
     vertical = 1;
   }
-  if (keysDown.has("KeyA") || keysDown.has("ArrowLeft")) {
+  if (hasControl(input, "left")) {
     horizontal = -1;
   }
-  if (keysDown.has("KeyD") || keysDown.has("ArrowRight")) {
+  if (hasControl(input, "right")) {
     horizontal = 1;
   }
 

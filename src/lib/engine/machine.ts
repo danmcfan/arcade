@@ -4,7 +4,8 @@ import type { Sprite } from "@/lib/engine/sprite";
 import type { Hitbox } from "@/lib/engine/hitbox";
 import { intersects } from "@/lib/engine/hitbox";
 import { playSound, pauseSound } from "@/lib/engine/sound";
-
+import { hasControl } from "@/lib/engine/input";
+import { createSweetState } from "@/lib/sweet";
 export type Machine = {
   frame: number;
   timeDelta: number;
@@ -49,35 +50,42 @@ export function updateMachines(state: RefObject<State | null>) {
       machine.isActive = false;
     }
 
-    if (machine.isActive) {
-      machine.timeDelta += timeDelta;
-      if (machine.timeDelta > 100) {
-        machine.frame += 1;
-        machine.frame = machine.frame >= 9 ? 1 : machine.frame;
-        machine.sprite.x = machine.frame * machine.sprite.width;
-        machine.timeDelta = 0;
-      }
-    } else {
+    if (!machine.isActive) {
       machine.frame = 0;
       machine.sprite.x = 0;
       machine.timeDelta = 0;
+      return;
     }
 
-    if (
-      (state.current.keysDown.has("Space") ||
-        state.current.keysDown.has("Enter") ||
-        state.current.keysDown.has("KeyE")) &&
-      machine.isActive
-    ) {
+    if (hasControl(state.current.input, "interact") && machine.isActive) {
       state.current.activeGame = machine.name;
+      state.current.activeGameState = createSweetState();
+      state.current.enteringGame = true;
       if (state.current.transitions.length === 0) {
         state.current.transitions.push({
           type: "fadeOut",
           time: 0,
-          duration: 1000,
+          duration: 500,
+        });
+        state.current.transitions.push({
+          type: "fadeIn",
+          time: 0,
+          duration: 500,
         });
       }
     }
+
+    machine.timeDelta += timeDelta;
+    if (machine.timeDelta < 1000 / 120) {
+      return;
+    }
+
+    const elapsedFrames = Math.floor(machine.timeDelta / (1000 / 120));
+
+    machine.frame += elapsedFrames / 10;
+    machine.frame = machine.frame >= 9 ? 1 : machine.frame;
+    machine.sprite.x = Math.floor(machine.frame) * machine.sprite.width;
+    machine.timeDelta = 0;
   }
 }
 
