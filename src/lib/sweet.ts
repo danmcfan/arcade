@@ -10,12 +10,25 @@ export type Player = {
   x: number;
   y: number;
   sprite: Sprite;
+  timeDelta: number;
+  frame: number;
 };
 
-export type Corner = {
+export type Bee = {
   x: number;
   y: number;
-  color: string;
+  sprite: Sprite;
+  timeDelta: number;
+  frame: number;
+};
+
+export type Consumable = {
+  x: number;
+  y: number;
+  sprite: Sprite;
+  timeDelta: number;
+  raising: boolean;
+  raised: number;
 };
 
 export type SweetState = {
@@ -25,22 +38,28 @@ export type SweetState = {
   gridCellSize: number;
   spriteSheets: Record<string, SpriteSheet>;
   layers: Record<number, Grid>;
-  corners: Corner[];
   player: Player;
+  bees: Bee[];
+  berries: Consumable[];
+  powerUps: Consumable[];
 };
 
 export function createSweetState(): SweetState {
   const playerSpriteSheet = createSpriteSheet("images/Player.png", 32, 32);
+  const beeSpriteSheet = createSpriteSheet("images/Bee.png", 16, 16);
+  const foodSpriteSheet = createSpriteSheet("images/Food.png", 16, 16);
   return {
     scaleModifier: 0.5,
     gridWidth: 18,
     gridHeight: 21,
     gridCellSize: 16,
     spriteSheets: {
-      grassTiles: createSpriteSheet("images/Grass_Tiles_1.png", 16, 16),
-      grassMiddle: createSpriteSheet("images/Grass_1_Middle.png", 16, 16),
-      pathMiddle: createSpriteSheet("images/Path_Middle.png", 16, 16),
+      grassTiles: createSpriteSheet("images/GrassTiles.png", 16, 16),
+      grassMiddle: createSpriteSheet("images/GrassMiddle.png", 16, 16),
+      pathMiddle: createSpriteSheet("images/PathMiddle.png", 16, 16),
       player: playerSpriteSheet,
+      bee: beeSpriteSheet,
+      food: foodSpriteSheet,
     },
     layers: {
       0: {
@@ -54,9 +73,9 @@ export function createSweetState(): SweetState {
           51, 49, 73, 42, 74, 51, 57, 58, 58, 66, 51, 57, 58, 66, 51, 49, 65,
           58, 59, 49, 65, 58, 58, 59, 81, 81, 81, 49, 51, 41, 42, 74, 73, 74,
           73, 42, 43, 49, 51, 81, 81, 81, 81, 81, 81, 49, 51, 49, 82, 82, 82,
-          82, 82, 82, 51, 49, 51, 81, 81, 81, 42, 42, 42, 74, 73, 74, 82, 82,
-          82, 82, 82, 82, 73, 74, 73, 42, 42, 42, 58, 58, 58, 66, 65, 66, 82,
-          82, 82, 82, 82, 82, 65, 66, 65, 58, 58, 58, 81, 81, 81, 49, 51, 49,
+          82, 82, 82, 51, 49, 51, 81, 81, 81, 41, 42, 42, 74, 73, 74, 82, 82,
+          82, 82, 82, 82, 73, 74, 73, 42, 42, 43, 57, 58, 58, 66, 65, 66, 82,
+          82, 82, 82, 82, 82, 65, 66, 65, 58, 58, 59, 81, 81, 81, 49, 51, 49,
           82, 82, 82, 82, 82, 82, 51, 49, 51, 81, 81, 81, 81, 81, 81, 49, 51,
           49, 65, 58, 58, 58, 58, 66, 51, 49, 51, 81, 81, 81, 41, 42, 42, 74,
           73, 74, 73, 42, 43, 41, 42, 74, 73, 74, 73, 42, 42, 43, 49, 65, 58,
@@ -76,33 +95,49 @@ export function createSweetState(): SweetState {
         },
       },
     },
-    corners: [
-      {
-        x: 17,
-        y: 17,
-        color: "red",
-      },
-      {
-        x: 17 + 16 * 3,
-        y: 17,
-        color: "blue",
-      },
-      {
-        x: 17 + 16 * 7,
-        y: 17,
-        color: "red",
-      },
-    ],
     player: {
       x: 2,
       y: -4,
       sprite: getSprite(playerSpriteSheet, 0, 0),
+      timeDelta: 0,
+      frame: 0,
     },
+    bees: [
+      {
+        x: 135,
+        y: 150,
+        sprite: getSprite(beeSpriteSheet, 0, 0),
+        timeDelta: 0,
+        frame: 0,
+      },
+    ],
+    berries: [
+      {
+        x: 124,
+        y: 12,
+        sprite: getSprite(foodSpriteSheet, 11, 0),
+        timeDelta: 0,
+        raised: 0,
+        raising: true,
+      },
+    ],
+    powerUps: [
+      {
+        x: 264,
+        y: 8,
+        sprite: getSprite(foodSpriteSheet, 7, 7),
+        timeDelta: 0,
+        raised: 0,
+        raising: true,
+      },
+    ],
   };
 }
 
 export function update(state: RefObject<State | null>) {
   if (!state.current) return;
+  const { activeGameState } = state.current;
+  if (!activeGameState) return;
 
   if (hasControl(state.current.input, "exit")) {
     state.current.exitingGame = true;
@@ -120,6 +155,21 @@ export function update(state: RefObject<State | null>) {
     }
   }
 
+  updatePlayer(activeGameState.player, state.current.timeDelta);
+  for (const bee of activeGameState.bees) {
+    updateBee(bee, state.current.timeDelta);
+  }
+
+  for (const berry of activeGameState.berries) {
+    updateConsumable(berry, state.current.timeDelta);
+  }
+
+  for (const powerUp of activeGameState.powerUps) {
+    updateConsumable(powerUp, state.current.timeDelta);
+  }
+
+  state.current.activeGameState = activeGameState;
+
   return;
 }
 
@@ -134,8 +184,10 @@ export function draw(state: State) {
     scaleModifier,
     gridWidth,
     gridCellSize,
-    corners,
     player,
+    bees,
+    berries,
+    powerUps,
   } = activeGameState;
 
   ctx.save();
@@ -149,30 +201,73 @@ export function draw(state: State) {
     gridCellSize
   );
 
-  drawCorners(ctx, corners, scale * scaleModifier);
+  const modifiedScale = scale * scaleModifier;
 
-  drawPlayer(ctx, player, scale * scaleModifier);
+  drawPlayer(ctx, player, modifiedScale);
+  drawBees(ctx, bees, modifiedScale);
+  drawBerries(ctx, berries, modifiedScale);
+  drawPowerUps(ctx, powerUps, modifiedScale);
 
   ctx.restore();
 
   return;
 }
 
-function drawCorners(
-  ctx: CanvasRenderingContext2D,
-  corners: Corner[],
-  scale: number
-) {
-  ctx.save();
-
-  for (const corner of corners) {
-    ctx.beginPath();
-    ctx.fillStyle = corner.color;
-    ctx.arc(corner.x * scale, corner.y * scale, 4, 0, Math.PI * 2);
-    ctx.fill();
+function updatePlayer(player: Player, timeDelta: number) {
+  player.timeDelta += timeDelta;
+  if (player.timeDelta < 1000 / 120) {
+    return;
   }
 
-  ctx.restore();
+  const elapsedFrames = Math.floor(player.timeDelta / (1000 / 120));
+
+  player.frame += elapsedFrames / 10;
+  player.frame %= 6;
+  player.sprite.x = Math.floor(player.frame) * player.sprite.width;
+
+  player.timeDelta = 0;
+}
+
+function updateBee(bee: Bee, timeDelta: number) {
+  bee.timeDelta += timeDelta;
+  if (bee.timeDelta < 1000 / 120) {
+    return;
+  }
+
+  const elapsedFrames = Math.floor(bee.timeDelta / (1000 / 120));
+
+  bee.frame += elapsedFrames / 10;
+  bee.frame %= 4;
+  bee.sprite.x = Math.floor(bee.frame) * bee.sprite.width;
+
+  bee.timeDelta = 0;
+}
+
+function updateConsumable(consumable: Consumable, timeDelta: number) {
+  consumable.timeDelta += timeDelta;
+  if (consumable.timeDelta < 1000 / 120) {
+    return;
+  }
+
+  const elapsedFrames = Math.floor(consumable.timeDelta / (1000 / 120));
+
+  if (consumable.raising) {
+    consumable.raised += elapsedFrames / 20;
+  } else {
+    consumable.raised -= elapsedFrames / 20;
+  }
+
+  if (consumable.raised <= 0) {
+    consumable.raised = 0;
+    consumable.raising = true;
+  }
+
+  if (consumable.raised >= 2) {
+    consumable.raised = 2;
+    consumable.raising = false;
+  }
+
+  consumable.timeDelta = 0;
 }
 
 function drawPlayer(
@@ -180,18 +275,61 @@ function drawPlayer(
   player: Player,
   scale: number
 ) {
+  drawSprite(ctx, player.sprite, player.x, player.y, scale);
+}
+
+function drawBees(ctx: CanvasRenderingContext2D, bees: Bee[], scale: number) {
+  for (const bee of bees) {
+    drawSprite(ctx, bee.sprite, bee.x, bee.y, scale, 1.5);
+  }
+}
+
+function drawBerries(
+  ctx: CanvasRenderingContext2D,
+  berries: Consumable[],
+  scale: number
+) {
+  for (const berry of berries) {
+    drawSprite(ctx, berry.sprite, berry.x, berry.y + berry.raised, scale, 0.5);
+  }
+}
+
+function drawPowerUps(
+  ctx: CanvasRenderingContext2D,
+  powerUps: Consumable[],
+  scale: number
+) {
+  for (const powerUp of powerUps) {
+    drawSprite(
+      ctx,
+      powerUp.sprite,
+      powerUp.x,
+      powerUp.y + powerUp.raised,
+      scale
+    );
+  }
+}
+
+function drawSprite(
+  ctx: CanvasRenderingContext2D,
+  sprite: Sprite,
+  x: number,
+  y: number,
+  scale: number,
+  sizeModifier: number = 1
+) {
   ctx.save();
 
   ctx.drawImage(
-    player.sprite.image,
-    player.sprite.x,
-    player.sprite.y,
-    player.sprite.width,
-    player.sprite.height,
-    player.x * scale,
-    player.y * scale,
-    player.sprite.width * scale,
-    player.sprite.height * scale
+    sprite.image,
+    Math.floor(sprite.x),
+    Math.floor(sprite.y),
+    Math.floor(sprite.width),
+    Math.floor(sprite.height),
+    Math.floor(x * scale),
+    Math.floor(y * scale),
+    Math.floor(sprite.width * scale * sizeModifier),
+    Math.floor(sprite.height * scale * sizeModifier)
   );
 
   ctx.restore();
