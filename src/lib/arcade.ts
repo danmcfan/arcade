@@ -163,6 +163,9 @@ function draw(state: State) {
     case "Sweet Sam":
       if (!activeGameState) return;
 
+      ctx.fillStyle = "rgb(62, 137, 72)";
+      ctx.fillRect(0, 0, state.width, state.height);
+
       widthPixels =
         activeGameState.gridWidth *
         activeGameState.gridCellSize *
