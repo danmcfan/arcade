@@ -105,12 +105,15 @@ export function updatePlayer(state: RefObject<State | null>) {
   if (!player) return;
 
   player.timeDelta += timeDelta;
-  if (player.timeDelta > 100) {
-    player.frame += 1;
-    player.frame %= 6;
-    player.sprite.x = player.frame * player.sprite.width;
-    player.timeDelta = 0;
+  if (player.timeDelta < 1000 / 120) {
+    return;
   }
+
+  const elapsedFrames = Math.floor(player.timeDelta / (1000 / 120));
+
+  player.frame += elapsedFrames / 10;
+  player.frame %= 6;
+  player.sprite.x = Math.floor(player.frame) * player.sprite.width;
 
   let vertical = 0;
   let horizontal = 0;
@@ -155,7 +158,7 @@ export function updatePlayer(state: RefObject<State | null>) {
     player.sprite.y += 3 * player.sprite.height;
   }
 
-  let speed = 0.5;
+  let speed = 0.9 * elapsedFrames;
   if (horizontal !== 0 && vertical !== 0) {
     speed *= 0.7;
   }
@@ -170,6 +173,8 @@ export function updatePlayer(state: RefObject<State | null>) {
 
   player.hitbox.x = player.x;
   player.hitbox.y = player.y;
+
+  player.timeDelta = 0;
 }
 
 function move(
