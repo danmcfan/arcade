@@ -4,24 +4,28 @@ import type { SpriteSheet, Sprite } from "@/lib/engine/sprite";
 import type { Grid } from "@/lib/engine/grid";
 import type { Corner } from "@/lib/sweet/corner";
 import type { Player } from "@/lib/sweet/player";
-import { PLAYER, CORNERS } from "@/lib/sweet/constants";
+import type { Point } from "@/lib/sweet/point";
+import type { Power } from "@/lib/sweet/power";
+import {
+  createPlayer,
+  createCorners,
+  createPoints,
+  createPowers,
+} from "@/lib/sweet/constants";
 import { hasControl } from "@/lib/engine/input";
 import { createSpriteSheet, getSprite } from "@/lib/engine/sprite";
 import { _drawLayers } from "@/lib/engine/grid";
 import { drawCorner } from "@/lib/sweet/corner";
 import { updatePlayer, drawPlayer } from "@/lib/sweet/player";
-
+import { updatePoints, drawPoint } from "@/lib/sweet/point";
+import { updatePowers, drawPower } from "@/lib/sweet/power";
+import { drawScore } from "@/lib/sweet/score";
 export type Bee = {
   x: number;
   y: number;
   sprite: Sprite;
   timeDelta: number;
   frame: number;
-};
-
-export type Consumable = {
-  x: number;
-  y: number;
 };
 
 export type SweetState = {
@@ -31,13 +35,12 @@ export type SweetState = {
   gridCellSize: number;
   spriteSheets: Record<string, SpriteSheet>;
   layers: Record<number, Grid>;
+  score: number;
   player: Player;
   corners: Corner[];
   bees: Bee[];
-  berries: Consumable[];
-  berrySprite: Sprite;
-  powerUps: Consumable[];
-  powerUpSprite: Sprite;
+  points: Point[];
+  powers: Power[];
   timeDeltaFloat: number;
   floating: boolean;
   floatOffset: number;
@@ -95,8 +98,9 @@ export function createSweetState(): SweetState {
         },
       },
     },
-    player: PLAYER,
-    corners: CORNERS,
+    score: 0,
+    player: createPlayer(),
+    corners: createCorners(),
     bees: [
       {
         x: 135,
@@ -106,53 +110,8 @@ export function createSweetState(): SweetState {
         frame: 0,
       },
     ],
-    berries: [
-      {
-        x: 14,
-        y: 12,
-      },
-      {
-        x: 14 + ((61 - 14) / 3) * 1,
-        y: 12,
-      },
-      {
-        x: 14 + ((61 - 14) / 3) * 2,
-        y: 12,
-      },
-      {
-        x: 61,
-        y: 12,
-      },
-      {
-        x: 61 + ((124 - 61) / 4) * 1,
-        y: 12,
-      },
-      {
-        x: 61 + ((124 - 61) / 4) * 2,
-        y: 12,
-      },
-      {
-        x: 61 + ((124 - 61) / 4) * 3,
-        y: 12,
-      },
-      {
-        x: 124,
-        y: 12,
-      },
-      // column
-      {
-        x: 14,
-        y: 58,
-      },
-    ],
-    berrySprite: getSprite(foodSpriteSheet, 11, 0),
-    powerUps: [
-      {
-        x: 8,
-        y: 36,
-      },
-    ],
-    powerUpSprite: getSprite(foodSpriteSheet, 7, 7),
+    points: createPoints(),
+    powers: createPowers(),
     timeDeltaFloat: 0,
     floating: false,
     floatOffset: 0,
@@ -164,7 +123,7 @@ export function update(state: RefObject<State | null>) {
   const { timeDelta, input, activeGameState } = state.current;
   if (!activeGameState) return;
 
-  const { player, corners } = activeGameState;
+  const { player, corners, points, powers, bees } = activeGameState;
 
   if (hasControl(state.current.input, "exit")) {
     state.current.exitingGame = true;
@@ -183,12 +142,13 @@ export function update(state: RefObject<State | null>) {
   }
 
   updatePlayer(player, timeDelta, input, corners);
-  for (const bee of activeGameState.bees) {
-    updateBee(bee, state.current.timeDelta);
+  const pointsScore = updatePoints(points, player);
+  const powersScore = updatePowers(powers, player);
+  activeGameState.score += pointsScore + powersScore;
+  for (const bee of bees) {
+    updateBee(bee, timeDelta);
   }
-  updateFloat(activeGameState, state.current.timeDelta);
-
-  state.current.activeGameState = activeGameState;
+  updateFloat(activeGameState, timeDelta);
 
   return;
 }
@@ -199,6 +159,7 @@ export function draw(state: State) {
   if (!activeGameState) return;
 
   const {
+    score,
     layers,
     spriteSheets,
     scaleModifier,
@@ -206,12 +167,9 @@ export function draw(state: State) {
     gridCellSize,
     player,
     corners,
-    // bees,
-    // berries,
-    // berrySprite,
-    // powerUps,
-    // powerUpSprite,
-    // floatOffset,
+    points,
+    powers,
+    floatOffset,
   } = activeGameState;
 
   ctx.save();
@@ -227,7 +185,13 @@ export function draw(state: State) {
 
   const modifiedScale = scale * scaleModifier;
 
-  drawPlayer(player, ctx, modifiedScale, debug);
+  for (const point of points) {
+    drawPoint(point, floatOffset, ctx, modifiedScale, debug);
+  }
+
+  for (const power of powers) {
+    drawPower(power, floatOffset, ctx, modifiedScale, debug);
+  }
 
   if (debug) {
     for (const corner of corners) {
@@ -235,6 +199,8 @@ export function draw(state: State) {
     }
   }
 
+  drawPlayer(player, ctx, modifiedScale, debug);
+  drawScore(score, ctx, modifiedScale);
   // drawBees(ctx, bees, modifiedScale);
   // drawBerries(ctx, berrySprite, berries, floatOffset, modifiedScale);
   // drawPowerUps(ctx, powerUpSprite, powerUps, floatOffset, modifiedScale);
@@ -265,12 +231,12 @@ function updateFloat(state: SweetState, timeDelta: number) {
     return;
   }
 
-  const elapsedFrames = Math.floor(state.timeDeltaFloat / (1000 / 120));
+  const timeFactor = state.timeDeltaFloat / (1000 / 120);
 
   if (state.floating) {
-    state.floatOffset += elapsedFrames / 40;
+    state.floatOffset += timeFactor / 40;
   } else {
-    state.floatOffset -= elapsedFrames / 40;
+    state.floatOffset -= timeFactor / 40;
   }
 
   if (state.floatOffset <= 0) {

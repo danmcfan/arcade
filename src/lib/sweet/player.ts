@@ -22,7 +22,7 @@ export function updatePlayer(
   corners: Corner[]
 ) {
   const timeFactor = timeDelta / (1000 / 120);
-  const speed = 0.5 * timeFactor;
+  const speed = 0.75 * timeFactor;
 
   player.frame += timeFactor / 10;
   player.frame %= 6;
@@ -134,31 +134,31 @@ export function drawPlayer(
 ) {
   if (debug) {
     drawPlayerDebug(player, ctx, scale);
+  } else {
+    ctx.save();
+
+    let dx = player.x - 16;
+    let dy = player.y - 20;
+
+    if (player.direction == "left") {
+      dx = -player.x - 16;
+      ctx.scale(-1, 1);
+    }
+
+    ctx.drawImage(
+      player.sprite.image,
+      player.sprite.x,
+      player.sprite.y,
+      player.sprite.width,
+      player.sprite.height,
+      Math.floor(dx * scale),
+      Math.floor(dy * scale),
+      Math.floor(player.sprite.width * scale),
+      Math.floor(player.sprite.height * scale)
+    );
+
+    ctx.restore();
   }
-
-  ctx.save();
-
-  let dx = player.x - 16;
-  let dy = player.y - 20;
-
-  if (player.direction == "left") {
-    dx = -player.x - 16;
-    ctx.scale(-1, 1);
-  }
-
-  ctx.drawImage(
-    player.sprite.image,
-    player.sprite.x,
-    player.sprite.y,
-    player.sprite.width,
-    player.sprite.height,
-    Math.floor(dx * scale),
-    Math.floor(dy * scale),
-    Math.floor(player.sprite.width * scale),
-    Math.floor(player.sprite.height * scale)
-  );
-
-  ctx.restore();
 }
 
 function drawPlayerDebug(
@@ -166,6 +166,8 @@ function drawPlayerDebug(
   ctx: CanvasRenderingContext2D,
   scale: number
 ) {
+  ctx.save();
+
   ctx.beginPath();
   ctx.arc(
     Math.floor(player.x * scale),
@@ -194,6 +196,8 @@ function drawPlayerDebug(
   ctx.strokeStyle = "red";
   ctx.lineWidth = 1;
   ctx.stroke();
+
+  ctx.restore();
 }
 
 function getNearestCorner(player: Player, corners: Corner[]): Corner | null {
