@@ -1,13 +1,18 @@
 import type { Direction } from "@/lib/sweet/direction";
+import type { Sprite } from "@/lib/engine/sprite";
 import type { Corner } from "@/lib/sweet/corner";
 import type { Input } from "@/lib/engine/input";
+import { PLAYER_SPRITE_SHEET } from "@/lib/sweet/constants";
 import { hasControl } from "@/lib/engine/input";
+import { getSprite } from "@/lib/engine/sprite";
 
 export type Player = {
   x: number;
   y: number;
   radius: number;
   direction: Direction;
+  sprite: Sprite;
+  frame: number;
 };
 
 export function updatePlayer(
@@ -18,6 +23,25 @@ export function updatePlayer(
 ) {
   const timeFactor = timeDelta / (1000 / 120);
   const speed = 0.5 * timeFactor;
+
+  player.frame += timeFactor / 10;
+  player.frame %= 6;
+
+  let row = 0;
+  switch (player.direction) {
+    case "up":
+      row = 5;
+      break;
+    case "right":
+    case "left":
+      row = 4;
+      break;
+    case "down":
+      row = 3;
+      break;
+  }
+
+  player.sprite = getSprite(PLAYER_SPRITE_SHEET, row, Math.floor(player.frame));
 
   const verticalDirections = ["up", "down"];
   if (verticalDirections.includes(player.direction)) {
@@ -103,6 +127,41 @@ export function updatePlayer(
 }
 
 export function drawPlayer(
+  player: Player,
+  ctx: CanvasRenderingContext2D,
+  scale: number,
+  debug: boolean
+) {
+  if (debug) {
+    drawPlayerDebug(player, ctx, scale);
+  }
+
+  ctx.save();
+
+  let dx = player.x - 16;
+  let dy = player.y - 20;
+
+  if (player.direction == "left") {
+    dx = -player.x - 16;
+    ctx.scale(-1, 1);
+  }
+
+  ctx.drawImage(
+    player.sprite.image,
+    player.sprite.x,
+    player.sprite.y,
+    player.sprite.width,
+    player.sprite.height,
+    Math.floor(dx * scale),
+    Math.floor(dy * scale),
+    Math.floor(player.sprite.width * scale),
+    Math.floor(player.sprite.height * scale)
+  );
+
+  ctx.restore();
+}
+
+function drawPlayerDebug(
   player: Player,
   ctx: CanvasRenderingContext2D,
   scale: number

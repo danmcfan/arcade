@@ -194,7 +194,7 @@ export function update(state: RefObject<State | null>) {
 }
 
 export function draw(state: State) {
-  const { ctx, scale, activeGameState } = state;
+  const { ctx, scale, activeGameState, debug } = state;
 
   if (!activeGameState) return;
 
@@ -227,9 +227,12 @@ export function draw(state: State) {
 
   const modifiedScale = scale * scaleModifier;
 
-  drawPlayer(player, ctx, modifiedScale);
-  for (const corner of corners) {
-    drawCorner(corner, ctx, modifiedScale);
+  drawPlayer(player, ctx, modifiedScale, debug);
+
+  if (debug) {
+    for (const corner of corners) {
+      drawCorner(corner, ctx, modifiedScale);
+    }
   }
 
   // drawBees(ctx, bees, modifiedScale);
