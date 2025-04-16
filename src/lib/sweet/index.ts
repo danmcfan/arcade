@@ -310,76 +310,76 @@ function updateFloat(state: SweetState, timeDelta: number) {
 //   ctx.restore();
 // }
 
-function drawBees(ctx: CanvasRenderingContext2D, bees: Bee[], scale: number) {
-  for (const bee of bees) {
-    drawSprite(ctx, bee.sprite, bee.x, bee.y, scale, 1.5);
-  }
-}
+// function drawBees(ctx: CanvasRenderingContext2D, bees: Bee[], scale: number) {
+//   for (const bee of bees) {
+//     drawSprite(ctx, bee.sprite, bee.x, bee.y, scale, 1.5);
+//   }
+// }
 
-function drawBerries(
-  ctx: CanvasRenderingContext2D,
-  sprite: Sprite,
-  berries: Consumable[],
-  floatOffset: number,
-  scale: number
-) {
-  for (const berry of berries) {
-    drawSprite(ctx, sprite, berry.x, berry.y + floatOffset, scale, 0.5);
-  }
-}
+// function drawBerries(
+//   ctx: CanvasRenderingContext2D,
+//   sprite: Sprite,
+//   berries: Consumable[],
+//   floatOffset: number,
+//   scale: number
+// ) {
+//   for (const berry of berries) {
+//     drawSprite(ctx, sprite, berry.x, berry.y + floatOffset, scale, 0.5);
+//   }
+// }
 
-function drawPowerUps(
-  ctx: CanvasRenderingContext2D,
-  sprite: Sprite,
-  powerUps: Consumable[],
-  floatOffset: number,
-  scale: number
-) {
-  for (const powerUp of powerUps) {
-    drawSprite(ctx, sprite, powerUp.x, powerUp.y + floatOffset, scale);
-  }
-}
+// function drawPowerUps(
+//   ctx: CanvasRenderingContext2D,
+//   sprite: Sprite,
+//   powerUps: Consumable[],
+//   floatOffset: number,
+//   scale: number
+// ) {
+//   for (const powerUp of powerUps) {
+//     drawSprite(ctx, sprite, powerUp.x, powerUp.y + floatOffset, scale);
+//   }
+// }
 
-function drawSprite(
-  ctx: CanvasRenderingContext2D,
-  sprite: Sprite,
-  x: number,
-  y: number,
-  scale: number,
-  sizeModifier: number = 1
-) {
-  ctx.save();
+// function drawSprite(
+//   ctx: CanvasRenderingContext2D,
+//   sprite: Sprite,
+//   x: number,
+//   y: number,
+//   scale: number,
+//   sizeModifier: number = 1
+// ) {
+//   ctx.save();
 
-  ctx.drawImage(
-    sprite.image,
-    Math.floor(sprite.x),
-    Math.floor(sprite.y),
-    Math.floor(sprite.width),
-    Math.floor(sprite.height),
-    Math.floor(x * scale),
-    Math.floor(y * scale),
-    Math.floor(sprite.width * scale * sizeModifier),
-    Math.floor(sprite.height * scale * sizeModifier)
-  );
+//   ctx.drawImage(
+//     sprite.image,
+//     Math.floor(sprite.x),
+//     Math.floor(sprite.y),
+//     Math.floor(sprite.width),
+//     Math.floor(sprite.height),
+//     Math.floor(x * scale),
+//     Math.floor(y * scale),
+//     Math.floor(sprite.width * scale * sizeModifier),
+//     Math.floor(sprite.height * scale * sizeModifier)
+//   );
 
-  ctx.restore();
-}
+//   ctx.restore();
+// }
 
-function drawHitbox(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  scale: number
-) {
-  ctx.save();
-  ctx.strokeStyle = "red";
-  ctx.strokeRect(
-    Math.floor(x * scale),
-    Math.floor(y * scale),
-    Math.floor(width * scale),
-    Math.floor(height * scale)
-  );
-  ctx.restore();
-}
+// function drawHitbox(
+//   ctx: CanvasRenderingContext2D,
+//   x: number,
+//   y: number,
+//   width: number,
+//   height: number,
+//   scale: number
+// ) {
+//   ctx.save();
+//   ctx.strokeStyle = "red";
+//   ctx.strokeRect(
+//     Math.floor(x * scale),
+//     Math.floor(y * scale),
+//     Math.floor(width * scale),
+//     Math.floor(height * scale)
+//   );
+//   ctx.restore();
+// }
