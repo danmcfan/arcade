@@ -45,6 +45,9 @@ export function Game() {
       window.removeEventListener("keydown", keyDownHandler);
       window.removeEventListener("keyup", keyUpHandler);
       window.removeEventListener("resize", () => handleResize(state));
+      state.current = null;
+      canvasRef.current = null;
+      containerRef.current = null;
     };
   }, []);
 
