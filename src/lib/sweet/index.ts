@@ -128,7 +128,7 @@ export function createSweetState(): SweetState {
   };
 
   const player = createEntity(state.entities);
-  state.positions.set(player, createPosition(144, 256, 3, "left", 0.75));
+  state.positions.set(player, createPosition(144, 256, 3, "left", 0.5));
   state.sprites.set(
     player,
     createSprite("images/Bear.png", 0, 18 * 32, 32, 32, -16, -26, 0.75)
@@ -145,7 +145,7 @@ export function createSweetState(): SweetState {
     const enemy = createEntity(state.entities);
     state.positions.set(
       enemy,
-      createPosition(x as number, y as number, 3, direction as Direction, 0.4)
+      createPosition(x as number, y as number, 1, direction as Direction, 0.5)
     );
     state.enemyComponents.set(enemy, createEnemy(null));
     state.sprites.set(
@@ -192,6 +192,10 @@ export function update(state: RefObject<State | null>) {
   if (!state.current) return;
   const { timeDelta, input, activeGameState } = state.current;
   if (!activeGameState) return;
+
+  if (timeDelta > 100) {
+    return;
+  }
 
   const timeFactor = timeDelta / (1000 / 120);
 

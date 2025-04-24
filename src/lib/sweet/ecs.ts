@@ -151,9 +151,33 @@ export function enemySystem(state: SweetState, timeFactor: number) {
               continue;
             }
 
+            let randomDirections = [...cornerDirections];
+            switch (position.direction) {
+              case "up":
+                randomDirections = randomDirections.filter(
+                  (direction) => direction !== "down"
+                );
+                break;
+              case "down":
+                randomDirections = randomDirections.filter(
+                  (direction) => direction !== "up"
+                );
+                break;
+              case "left":
+                randomDirections = randomDirections.filter(
+                  (direction) => direction !== "right"
+                );
+                break;
+              case "right":
+                randomDirections = randomDirections.filter(
+                  (direction) => direction !== "left"
+                );
+                break;
+            }
+
             const randomDirection =
-              cornerDirections[
-                Math.floor(Math.random() * cornerDirections.length)
+              randomDirections[
+                Math.floor(Math.random() * randomDirections.length)
               ];
 
             if (position.direction == randomDirection) {
@@ -216,7 +240,7 @@ export function animationSystem(state: SweetState, timeFactor: number) {
         if (enemyComponent) {
           if (enemyComponent.scaredTime > 0) {
             row = 1;
-            if (enemyComponent.scaredTime < 150) {
+            if (enemyComponent.scaredTime < 300) {
               row = 2;
             }
           }
@@ -327,7 +351,7 @@ export function collisionSystem(state: SweetState) {
               for (const enemy of enemies) {
                 const enemyComponent = enemyComponents.get(enemy);
                 if (enemyComponent) {
-                  enemyComponent.scaredTime = 600;
+                  enemyComponent.scaredTime = 1200;
                 }
               }
             }
@@ -397,8 +421,8 @@ export function drawSystem(
     state;
   const orderedEntities = new Set([
     ...points,
-    ...enemies,
     ...powers,
+    ...enemies,
     ...corners,
     ...players,
   ]);

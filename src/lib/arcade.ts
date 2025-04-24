@@ -77,6 +77,9 @@ export function initialize(state: RefObject<State | null>) {
 
   state.current.updateHandler = update;
   state.current.drawHandler = draw;
+
+  state.current.activeGame = "Sweet Sam";
+  state.current.activeGameState = Sweet.createSweetState();
 }
 
 function update(state: RefObject<State | null>) {
