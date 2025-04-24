@@ -70,7 +70,7 @@ export function updateMachines(state: RefObject<State | null>) {
         state.current.transitions.push({
           type: "fadeIn",
           time: 0,
-          duration: 500,
+          duration: 1000,
         });
       }
     }

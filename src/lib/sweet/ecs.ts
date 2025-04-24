@@ -328,7 +328,7 @@ export function collisionSystem(state: SweetState) {
               for (const enemy of enemies) {
                 const enemyComponent = enemyComponents.get(enemy);
                 if (enemyComponent) {
-                  enemyComponent.scaredTime += 600;
+                  enemyComponent.scaredTime = 600;
                 }
               }
             }

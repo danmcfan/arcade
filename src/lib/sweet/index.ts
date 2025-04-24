@@ -58,6 +58,7 @@ export type SweetState = {
   floating: boolean;
   floatOffset: number;
   gameOver: boolean;
+  reset: boolean;
 };
 
 export function createSweetState(): SweetState {
@@ -121,6 +122,7 @@ export function createSweetState(): SweetState {
     floating: false,
     floatOffset: 0,
     gameOver: false,
+    reset: false,
   };
 
   const player = createEntity(state.entities);
@@ -141,7 +143,7 @@ export function createSweetState(): SweetState {
     const enemy = createEntity(state.entities);
     state.positions.set(
       enemy,
-      createPosition(x as number, y as number, 3, direction as Direction, 0.5)
+      createPosition(x as number, y as number, 3, direction as Direction, 0.4)
     );
     state.enemyComponents.set(enemy, createEnemy(null));
     state.sprites.set(
@@ -208,7 +210,22 @@ export function update(state: RefObject<State | null>) {
   }
 
   if (activeGameState.gameOver) {
-    state.current.activeGameState = createSweetState();
+    if (activeGameState.reset) {
+      state.current.activeGameState = createSweetState();
+      state.current.transitions.push({
+        type: "fadeIn",
+        time: 0,
+        duration: 1000,
+      });
+    } else {
+      state.current.transitions.push({
+        type: "fadeOut",
+        time: 0,
+        duration: 500,
+      });
+      activeGameState.reset = true;
+    }
+    return;
   }
 
   inputSystem(activeGameState, input);
