@@ -129,7 +129,7 @@ export function createSweetState(): SweetState {
   state.positions.set(player, createPosition(144, 256, 3, "left", 0.75));
   state.sprites.set(
     player,
-    createSprite("images/Player.png", 0, 0, 32, 32, -16, -20)
+    createSprite("images/Bear.png", 0, 18 * 32, 32, 32, -16, -26, 0.75)
   );
   state.animations.set(player, createAnimation(0));
   state.players.add(player);

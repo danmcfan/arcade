@@ -188,19 +188,19 @@ export function animationSystem(state: SweetState, timeFactor: number) {
       let row = 0;
 
       if (state.players.has(entity)) {
-        animation.frame += timeFactor / 10;
-        animation.frame %= 6;
+        animation.frame += timeFactor / 15;
+        animation.frame %= 4;
 
         switch (position.direction) {
           case "up":
-            row = 5;
+            row = 17;
             break;
           case "right":
           case "left":
-            row = 4;
+            row = 1;
             break;
           case "down":
-            row = 3;
+            row = 18;
             break;
         }
       }
