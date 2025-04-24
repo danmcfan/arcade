@@ -1,5 +1,4 @@
 import type { SweetState } from "@/lib/sweet";
-import type { Corner } from "@/lib/sweet/corner";
 import type { Input } from "@/lib/engine/input";
 import { hasControl } from "@/lib/engine/input";
 import { overlaps } from "@/lib/sweet/util";
@@ -14,6 +13,11 @@ export type Position = {
   radius: number;
   direction: Direction;
   velocity: number;
+};
+
+export type Enemy = {
+  lastCorner: Entity | null;
+  scaredTime: number;
 };
 
 export type Sprite = {
@@ -45,6 +49,10 @@ export function createPosition(
   velocity: number = 0
 ): Position {
   return { x, y, radius, direction, velocity };
+}
+
+export function createEnemy(lastCorner: Entity | null): Enemy {
+  return { lastCorner, scaredTime: 0 };
 }
 
 export function createSprite(
@@ -92,88 +100,120 @@ export function inputSystem(state: SweetState, input: Input) {
       }
     }
 
-    const corner = getNearestCorner(position, state.corners);
-    if (corner) {
-      for (const direction of corner.directions) {
-        if (hasControl(input, direction)) {
-          if (position.direction == direction) {
-            return;
-          }
+    for (const cornerEntity of state.corners) {
+      const cornerPosition = state.positions.get(cornerEntity);
+      const cornerDirections = state.directions.get(cornerEntity);
 
-          if (direction == "left" || direction == "right") {
-            position.y = corner.y;
-          }
+      if (cornerPosition && cornerDirections) {
+        if (overlaps(position, cornerPosition)) {
+          for (const direction of cornerDirections) {
+            if (hasControl(input, direction)) {
+              if (position.direction == direction) {
+                return;
+              }
 
-          if (direction == "up" || direction == "down") {
-            position.x = corner.x;
-          }
+              if (direction == "left" || direction == "right") {
+                position.y = cornerPosition.y;
+              }
 
-          position.direction = direction as Direction;
+              if (direction == "up" || direction == "down") {
+                position.x = cornerPosition.x;
+              }
+
+              position.direction = direction;
+              return;
+            }
+          }
         }
-      }
-
-      if (corner.directions.includes(position.direction)) {
-        return;
-      }
-
-      if (position.direction == "left" && position.x < corner.x) {
-        position.x = corner.x;
-      }
-
-      if (position.direction == "right" && position.x > corner.x) {
-        position.x = corner.x;
-      }
-
-      if (position.direction == "up" && position.y < corner.y) {
-        position.y = corner.y;
-      }
-
-      if (position.direction == "down" && position.y > corner.y) {
-        position.y = corner.y;
       }
     }
   }
 }
 
-function getNearestCorner(
-  position: Position,
-  corners: Corner[]
-): Corner | null {
-  const corner = corners.find((corner) => {
-    const dx = corner.x - position.x;
-    const dy = corner.y - position.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < position.radius;
-  });
+export function enemySystem(state: SweetState, timeFactor: number) {
+  for (const entity of state.enemies) {
+    const position = state.positions.get(entity);
+    const enemyComponent = state.enemyComponents.get(entity);
+    if (position && enemyComponent) {
+      if (enemyComponent.scaredTime > 0) {
+        enemyComponent.scaredTime -= timeFactor;
+        if (enemyComponent.scaredTime <= 0) {
+          enemyComponent.scaredTime = 0;
+        }
+      }
 
-  if (!corner) {
-    return null;
+      for (const corner of state.corners) {
+        const cornerPosition = state.positions.get(corner);
+        const cornerDirections = state.directions.get(corner);
+        if (cornerPosition && cornerDirections) {
+          if (overlaps(position, cornerPosition)) {
+            if (enemyComponent.lastCorner == corner) {
+              continue;
+            }
+
+            const randomDirection =
+              cornerDirections[
+                Math.floor(Math.random() * cornerDirections.length)
+              ];
+
+            if (position.direction == randomDirection) {
+              continue;
+            }
+
+            if (randomDirection == "left" || randomDirection == "right") {
+              position.y = cornerPosition.y;
+            }
+
+            if (randomDirection == "up" || randomDirection == "down") {
+              position.x = cornerPosition.x;
+            }
+
+            position.direction = randomDirection;
+            enemyComponent.lastCorner = corner;
+          }
+        }
+      }
+    }
   }
-
-  return corner;
 }
 
 export function animationSystem(state: SweetState, timeFactor: number) {
-  for (const entity of state.players) {
+  for (const entity of [...state.players, ...state.enemies]) {
     const position = state.positions.get(entity);
     const sprite = state.sprites.get(entity);
     const animation = state.animations.get(entity);
-    if (position && sprite && animation) {
-      animation.frame += timeFactor / 10;
-      animation.frame %= 6;
+    const enemyComponent = state.enemyComponents.get(entity);
 
+    if (position && sprite && animation) {
       let row = 0;
-      switch (position.direction) {
-        case "up":
-          row = 5;
-          break;
-        case "right":
-        case "left":
-          row = 4;
-          break;
-        case "down":
-          row = 3;
-          break;
+
+      if (state.players.has(entity)) {
+        animation.frame += timeFactor / 10;
+        animation.frame %= 6;
+
+        switch (position.direction) {
+          case "up":
+            row = 5;
+            break;
+          case "right":
+          case "left":
+            row = 4;
+            break;
+          case "down":
+            row = 3;
+            break;
+        }
+      }
+
+      if (state.enemies.has(entity)) {
+        animation.frame += timeFactor / 15;
+        animation.frame %= 4;
+
+        if (enemyComponent) {
+          if (enemyComponent.scaredTime > 0) {
+            row = 1;
+          }
+        }
       }
 
       sprite.x = Math.floor(animation.frame) * sprite.width;
@@ -214,8 +254,60 @@ export function positionSystem(state: SweetState, timeFactor: number) {
   }
 }
 
+export function cornerSystem(state: SweetState) {
+  const { players, enemies, corners, positions } = state;
+  for (const entity of [...players, ...enemies]) {
+    const position = positions.get(entity);
+    if (position) {
+      for (const corner of corners) {
+        const cornerPosition = positions.get(corner);
+        const cornerDirections = state.directions.get(corner);
+
+        if (cornerPosition && cornerDirections) {
+          if (overlaps(position, cornerPosition)) {
+            if (!cornerDirections.includes(position.direction)) {
+              if (
+                position.direction == "left" &&
+                position.x < cornerPosition.x
+              ) {
+                position.x = cornerPosition.x;
+              }
+
+              if (
+                position.direction == "right" &&
+                position.x > cornerPosition.x
+              ) {
+                position.x = cornerPosition.x;
+              }
+
+              if (position.direction == "up" && position.y < cornerPosition.y) {
+                position.y = cornerPosition.y;
+              }
+
+              if (
+                position.direction == "down" &&
+                position.y > cornerPosition.y
+              ) {
+                position.y = cornerPosition.y;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 export function collisionSystem(state: SweetState) {
-  const { players, points, powers, positions, sprites } = state;
+  const {
+    players,
+    points,
+    powers,
+    enemies,
+    positions,
+    sprites,
+    enemyComponents,
+  } = state;
   for (const entity of players) {
     const position = positions.get(entity);
     if (position) {
@@ -233,6 +325,30 @@ export function collisionSystem(state: SweetState) {
 
             if (powers.has(target)) {
               state.score += 50;
+              for (const enemy of enemies) {
+                const enemyComponent = enemyComponents.get(enemy);
+                if (enemyComponent) {
+                  enemyComponent.scaredTime += 600;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      for (const enemy of enemies) {
+        const enemyPosition = positions.get(enemy);
+        const enemyComponent = enemyComponents.get(enemy);
+        if (enemyPosition && enemyComponent) {
+          if (overlaps(position, enemyPosition)) {
+            if (enemyComponent.scaredTime > 0) {
+              state.score += 200;
+              enemyPosition.x = 96;
+              enemyPosition.y = 128;
+              enemyPosition.direction = "right";
+              enemyComponent.scaredTime = 0;
+            } else {
+              state.gameOver = true;
             }
           }
         }
@@ -274,50 +390,85 @@ export function drawSystem(
   scale: number,
   debug: boolean = false
 ) {
-  const { players, points, powers, positions, sprites } = state;
-  const orderedEntities = new Set([...points, ...powers, ...players]);
+  const { players, enemies, corners, points, powers, positions, sprites } =
+    state;
+  const orderedEntities = new Set([
+    ...points,
+    ...enemies,
+    ...powers,
+    ...corners,
+    ...players,
+  ]);
   for (const entity of orderedEntities) {
     const position = positions.get(entity);
     const sprite = sprites.get(entity);
-    if (position && sprite) {
+
+    if (!debug) {
+      if (!position || !sprite) {
+        continue;
+      }
+
       ctx.save();
 
-      if (!debug) {
-        let dx = position.x + sprite.offsetX * sprite.size;
-        let dy = position.y + sprite.offsetY * sprite.size;
-        if (position.direction == "left") {
-          dx = -position.x + sprite.offsetX * sprite.size;
-          ctx.scale(-1, 1);
-        }
+      let dx = position.x + sprite.offsetX * sprite.size;
+      let dy = position.y + sprite.offsetY * sprite.size;
+      if (position.direction == "left") {
+        dx = -position.x + sprite.offsetX * sprite.size;
+        ctx.scale(-1, 1);
+      }
 
-        if (points.has(entity) || powers.has(entity)) {
-          dy += state.floatOffset;
-        }
+      if (points.has(entity) || powers.has(entity)) {
+        dy += state.floatOffset;
+      }
 
-        ctx.drawImage(
-          sprite.image,
-          sprite.x,
-          sprite.y,
-          sprite.width,
-          sprite.height,
-          Math.floor(dx * scale),
-          Math.floor(dy * scale),
-          Math.floor(sprite.width * scale * sprite.size),
-          Math.floor(sprite.height * scale * sprite.size)
-        );
-      } else {
-        ctx.beginPath();
-        ctx.arc(
-          Math.floor(position.x * scale),
-          Math.floor(position.y * scale),
-          Math.floor(position.radius * scale),
-          0,
-          Math.PI * 2
-        );
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+      ctx.drawImage(
+        sprite.image,
+        sprite.x,
+        sprite.y,
+        sprite.width,
+        sprite.height,
+        Math.floor(dx * scale),
+        Math.floor(dy * scale),
+        Math.floor(sprite.width * scale * sprite.size),
+        Math.floor(sprite.height * scale * sprite.size)
+      );
 
+      ctx.restore();
+    } else {
+      if (!position) {
+        continue;
+      }
+
+      ctx.save();
+
+      let radius = 0;
+      let color = "red";
+      if (players.has(entity)) {
+        radius = position.radius;
+      } else if (corners.has(entity)) {
+        radius = 4;
+        color = "blue";
+      } else if (points.has(entity)) {
+        radius = 2;
+        color = "green";
+      } else if (powers.has(entity)) {
+        radius = 2;
+        color = "yellow";
+      }
+
+      ctx.beginPath();
+      ctx.arc(
+        Math.floor(position.x * scale),
+        Math.floor(position.y * scale),
+        Math.floor(radius * scale),
+        0,
+        Math.PI * 2
+      );
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (players.has(entity)) {
         const centerX = Math.floor(position.x * scale);
         const centerY = Math.floor(position.y * scale);
         const hashSize = Math.floor(position.radius * scale * 0.5);
@@ -334,6 +485,41 @@ export function drawSystem(
         ctx.lineWidth = 1;
         ctx.stroke();
       }
+
+      if (corners.has(entity)) {
+        const centerX = Math.floor(position.x * scale);
+        const centerY = Math.floor(position.y * scale);
+        const hashSize = Math.floor(position.radius * scale * 1.5);
+
+        const directions = state.directions.get(entity);
+        if (directions) {
+          for (const direction of directions) {
+            let endX = centerX;
+            let endY = centerY;
+            switch (direction) {
+              case "up":
+                endY -= hashSize;
+                break;
+              case "down":
+                endY += hashSize;
+                break;
+              case "left":
+                endX -= hashSize;
+                break;
+              case "right":
+                endX += hashSize;
+                break;
+            }
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        }
+      }
+
       ctx.restore();
     }
   }

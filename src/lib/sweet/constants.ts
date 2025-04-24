@@ -1,8 +1,13 @@
-import type { Position } from "@/lib/sweet/ecs";
-import type { Corner } from "@/lib/sweet/corner";
+import type { Direction, Position } from "@/lib/sweet/ecs";
 import { createPosition } from "@/lib/sweet/ecs";
 
-export function createCorners(): Corner[] {
+export type CornerConfig = {
+  x: number;
+  y: number;
+  directions: Direction[];
+};
+
+export function createCorners(): CornerConfig[] {
   return [
     // row 1, section 1
     {

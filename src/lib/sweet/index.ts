@@ -2,7 +2,6 @@ import type { RefObject } from "react";
 import type { State } from "@/lib/engine/game";
 import type { SpriteSheet } from "@/lib/engine/sprite";
 import type { Grid } from "@/lib/engine/grid";
-import type { Corner } from "@/lib/sweet/corner";
 import {
   createCorners,
   createPoints,
@@ -11,17 +10,26 @@ import {
 import { hasControl } from "@/lib/engine/input";
 import { createSpriteSheet } from "@/lib/engine/sprite";
 import { _drawLayers } from "@/lib/engine/grid";
-import { drawCorner } from "@/lib/sweet/corner";
 import { drawScore } from "@/lib/sweet/score";
-import type { Entity, Position, Sprite, Animation } from "@/lib/sweet/ecs";
+import type {
+  Entity,
+  Direction,
+  Position,
+  Enemy,
+  Sprite,
+  Animation,
+} from "@/lib/sweet/ecs";
 import {
   createEntity,
   createPosition,
+  createEnemy,
   createSprite,
   createAnimation,
   inputSystem,
+  enemySystem,
   animationSystem,
   positionSystem,
+  cornerSystem,
   collisionSystem,
   floatSystem,
   drawSystem,
@@ -37,15 +45,19 @@ export type SweetState = {
   score: number;
   entities: Set<Entity>;
   positions: Map<Entity, Position>;
+  directions: Map<Entity, Direction[]>;
+  enemyComponents: Map<Entity, Enemy>;
   sprites: Map<Entity, Sprite>;
   animations: Map<Entity, Animation>;
   players: Set<Entity>;
-  corners: Corner[];
+  enemies: Set<Entity>;
+  corners: Set<Entity>;
   points: Set<Entity>;
   powers: Set<Entity>;
   timeDeltaFloat: number;
   floating: boolean;
   floatOffset: number;
+  gameOver: boolean;
 };
 
 export function createSweetState(): SweetState {
@@ -96,15 +108,19 @@ export function createSweetState(): SweetState {
     score: 0,
     entities: new Set<Entity>(),
     positions: new Map<Entity, Position>(),
+    directions: new Map<Entity, Direction[]>(),
+    enemyComponents: new Map<Entity, Enemy>(),
     sprites: new Map<Entity, Sprite>(),
     animations: new Map<Entity, Animation>(),
     players: new Set<Entity>(),
-    corners: createCorners(),
+    enemies: new Set<Entity>(),
+    corners: new Set<Entity>(),
     points: new Set<Entity>(),
     powers: new Set<Entity>(),
     timeDeltaFloat: 0,
     floating: false,
     floatOffset: 0,
+    gameOver: false,
   };
 
   const player = createEntity(state.entities);
@@ -115,6 +131,33 @@ export function createSweetState(): SweetState {
   );
   state.animations.set(player, createAnimation(0));
   state.players.add(player);
+
+  for (const [x, y, direction] of [
+    [96, 128, "right"],
+    [194, 128, "left"],
+    [96, 194, "up"],
+    [194, 194, "up"],
+  ]) {
+    const enemy = createEntity(state.entities);
+    state.positions.set(
+      enemy,
+      createPosition(x as number, y as number, 3, direction as Direction, 0.5)
+    );
+    state.enemyComponents.set(enemy, createEnemy(null));
+    state.sprites.set(
+      enemy,
+      createSprite("images/Bee.png", 0, 0, 16, 16, -8, -10)
+    );
+    state.animations.set(enemy, createAnimation(0));
+    state.enemies.add(enemy);
+  }
+
+  for (const corner of createCorners()) {
+    const cornerEntity = createEntity(state.entities);
+    state.positions.set(cornerEntity, createPosition(corner.x, corner.y));
+    state.directions.set(cornerEntity, corner.directions);
+    state.corners.add(cornerEntity);
+  }
 
   for (const position of createPoints()) {
     const point = createEntity(state.entities);
@@ -164,9 +207,15 @@ export function update(state: RefObject<State | null>) {
     }
   }
 
+  if (activeGameState.gameOver) {
+    state.current.activeGameState = createSweetState();
+  }
+
   inputSystem(activeGameState, input);
+  enemySystem(activeGameState, timeFactor);
   animationSystem(activeGameState, timeFactor);
   positionSystem(activeGameState, timeFactor);
+  cornerSystem(activeGameState);
   collisionSystem(activeGameState);
   floatSystem(activeGameState, timeDelta);
 
@@ -185,7 +234,6 @@ export function draw(state: State) {
     scaleModifier,
     gridWidth,
     gridCellSize,
-    corners,
   } = activeGameState;
 
   ctx.save();
@@ -201,14 +249,7 @@ export function draw(state: State) {
 
   const modifiedScale = scale * scaleModifier;
 
-  if (debug) {
-    for (const corner of corners) {
-      drawCorner(corner, ctx, modifiedScale);
-    }
-  }
-
   drawSystem(activeGameState, ctx, modifiedScale, debug);
-
   drawScore(score, ctx, modifiedScale);
 
   ctx.restore();
