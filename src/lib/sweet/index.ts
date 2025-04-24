@@ -10,7 +10,7 @@ import {
 import { hasControl } from "@/lib/engine/input";
 import { createSpriteSheet } from "@/lib/engine/sprite";
 import { _drawLayers } from "@/lib/engine/grid";
-import { drawScore } from "@/lib/sweet/score";
+import { drawScore, drawWinner } from "@/lib/sweet/score";
 import type {
   Entity,
   Direction,
@@ -57,6 +57,7 @@ export type SweetState = {
   timeDeltaFloat: number;
   floating: boolean;
   floatOffset: number;
+  winner: boolean;
   gameOver: boolean;
   reset: boolean;
 };
@@ -121,6 +122,7 @@ export function createSweetState(): SweetState {
     timeDeltaFloat: 0,
     floating: false,
     floatOffset: 0,
+    winner: false,
     gameOver: false,
     reset: false,
   };
@@ -228,14 +230,18 @@ export function update(state: RefObject<State | null>) {
     return;
   }
 
+  if (activeGameState.winner) {
+    animationSystem(activeGameState, timeFactor);
+    return;
+  }
+
+  animationSystem(activeGameState, timeFactor);
   inputSystem(activeGameState, input);
   enemySystem(activeGameState, timeFactor);
-  animationSystem(activeGameState, timeFactor);
   positionSystem(activeGameState, timeFactor);
   cornerSystem(activeGameState);
   collisionSystem(activeGameState);
   floatSystem(activeGameState, timeDelta);
-
   return;
 }
 
@@ -268,6 +274,10 @@ export function draw(state: State) {
 
   drawSystem(activeGameState, ctx, modifiedScale, debug);
   drawScore(score, ctx, modifiedScale);
+
+  if (activeGameState.winner) {
+    drawWinner(ctx, modifiedScale);
+  }
 
   ctx.restore();
 

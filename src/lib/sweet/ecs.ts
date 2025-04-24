@@ -203,6 +203,10 @@ export function animationSystem(state: SweetState, timeFactor: number) {
             row = 18;
             break;
         }
+
+        if (state.winner) {
+          row = 19;
+        }
       }
 
       if (state.enemies.has(entity)) {
@@ -212,6 +216,9 @@ export function animationSystem(state: SweetState, timeFactor: number) {
         if (enemyComponent) {
           if (enemyComponent.scaredTime > 0) {
             row = 1;
+            if (enemyComponent.scaredTime < 150) {
+              row = 2;
+            }
           }
         }
       }
@@ -299,15 +306,8 @@ export function cornerSystem(state: SweetState) {
 }
 
 export function collisionSystem(state: SweetState) {
-  const {
-    players,
-    points,
-    powers,
-    enemies,
-    positions,
-    sprites,
-    enemyComponents,
-  } = state;
+  const { players, points, powers, enemies, positions, enemyComponents } =
+    state;
   for (const entity of players) {
     const position = positions.get(entity);
     if (position) {
@@ -316,14 +316,13 @@ export function collisionSystem(state: SweetState) {
         const targetPosition = positions.get(target);
         if (targetPosition) {
           if (overlaps(position, targetPosition)) {
-            positions.delete(target);
-            sprites.delete(target);
-
             if (points.has(target)) {
+              points.delete(target);
               state.score += 10;
             }
 
             if (powers.has(target)) {
+              powers.delete(target);
               state.score += 50;
               for (const enemy of enemies) {
                 const enemyComponent = enemyComponents.get(enemy);
@@ -334,6 +333,10 @@ export function collisionSystem(state: SweetState) {
             }
           }
         }
+      }
+
+      if (points.size === 0 && powers.size === 0) {
+        state.winner = true;
       }
 
       for (const enemy of enemies) {
