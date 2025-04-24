@@ -10,7 +10,12 @@ import {
 import { hasControl } from "@/lib/engine/input";
 import { createSpriteSheet } from "@/lib/engine/sprite";
 import { _drawLayers } from "@/lib/engine/grid";
-import { drawScore, drawWinner } from "@/lib/sweet/score";
+import {
+  drawScore,
+  drawLives,
+  drawWinner,
+  drawGameOver,
+} from "@/lib/sweet/score";
 import type {
   Entity,
   Direction,
@@ -57,10 +62,23 @@ export type SweetState = {
   timeDeltaFloat: number;
   floating: boolean;
   floatOffset: number;
+  lives: number;
+  dead: boolean;
   winner: boolean;
-  gameOver: boolean;
   reset: boolean;
 };
+
+const playerStartPosition: { x: number; y: number; direction: Direction } = {
+  x: 144,
+  y: 256,
+  direction: "left",
+};
+const enemyStartPositions: { x: number; y: number; direction: Direction }[] = [
+  { x: 96, y: 128, direction: "right" },
+  { x: 194, y: 128, direction: "left" },
+  { x: 96, y: 194, direction: "up" },
+  { x: 194, y: 194, direction: "up" },
+];
 
 export function createSweetState(): SweetState {
   const state: SweetState = {
@@ -122,13 +140,23 @@ export function createSweetState(): SweetState {
     timeDeltaFloat: 0,
     floating: false,
     floatOffset: 0,
+    lives: 3,
+    dead: false,
     winner: false,
-    gameOver: false,
     reset: false,
   };
 
   const player = createEntity(state.entities);
-  state.positions.set(player, createPosition(144, 256, 3, "left", 0.5));
+  state.positions.set(
+    player,
+    createPosition(
+      playerStartPosition.x,
+      playerStartPosition.y,
+      3,
+      playerStartPosition.direction,
+      0.5
+    )
+  );
   state.sprites.set(
     player,
     createSprite("images/Bear.png", 0, 18 * 32, 32, 32, -16, -26, 0.75)
@@ -136,17 +164,9 @@ export function createSweetState(): SweetState {
   state.animations.set(player, createAnimation(0));
   state.players.add(player);
 
-  for (const [x, y, direction] of [
-    [96, 128, "right"],
-    [194, 128, "left"],
-    [96, 194, "up"],
-    [194, 194, "up"],
-  ]) {
+  for (const { x, y, direction } of enemyStartPositions) {
     const enemy = createEntity(state.entities);
-    state.positions.set(
-      enemy,
-      createPosition(x as number, y as number, 1, direction as Direction, 0.5)
-    );
+    state.positions.set(enemy, createPosition(x, y, 1, direction, 0.5));
     state.enemyComponents.set(enemy, createEnemy(null));
     state.sprites.set(
       enemy,
@@ -215,9 +235,32 @@ export function update(state: RefObject<State | null>) {
     }
   }
 
-  if (activeGameState.gameOver) {
+  if (activeGameState.dead) {
     if (activeGameState.reset) {
-      state.current.activeGameState = createSweetState();
+      for (const player of activeGameState.players) {
+        const playerPosition = activeGameState.positions.get(player);
+        if (playerPosition) {
+          playerPosition.x = playerStartPosition.x;
+          playerPosition.y = playerStartPosition.y;
+          playerPosition.direction = playerStartPosition.direction;
+        }
+      }
+
+      for (const [index, enemy] of Array.from(
+        activeGameState.enemies
+      ).entries()) {
+        console.log("index", index, "enemy", enemy);
+        const enemyPosition = activeGameState.positions.get(enemy);
+        if (enemyPosition) {
+          enemyPosition.x = enemyStartPositions[index].x;
+          enemyPosition.y = enemyStartPositions[index].y;
+          enemyPosition.direction = enemyStartPositions[index].direction;
+        }
+      }
+
+      activeGameState.dead = false;
+      activeGameState.lives -= 1;
+
       state.current.transitions.push({
         type: "fadeIn",
         time: 0,
@@ -231,6 +274,10 @@ export function update(state: RefObject<State | null>) {
       });
       activeGameState.reset = true;
     }
+    return;
+  }
+
+  if (activeGameState.lives <= 0) {
     return;
   }
 
@@ -276,11 +323,19 @@ export function draw(state: State) {
 
   const modifiedScale = scale * scaleModifier;
 
-  drawSystem(activeGameState, ctx, modifiedScale, debug);
+  if (activeGameState.lives > 0) {
+    drawSystem(activeGameState, ctx, modifiedScale, debug);
+  }
+
   drawScore(score, ctx, modifiedScale);
+  drawLives(activeGameState.lives, ctx, modifiedScale);
 
   if (activeGameState.winner) {
     drawWinner(ctx, modifiedScale);
+  }
+
+  if (activeGameState.lives <= 0) {
+    drawGameOver(ctx, modifiedScale);
   }
 
   ctx.restore();

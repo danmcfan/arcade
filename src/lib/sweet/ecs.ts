@@ -375,7 +375,7 @@ export function collisionSystem(state: SweetState) {
               enemyPosition.direction = "right";
               enemyComponent.scaredTime = 0;
             } else {
-              state.gameOver = true;
+              state.dead = true;
             }
           }
         }
