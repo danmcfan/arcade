@@ -1,29 +1,6 @@
-import type { Player } from "@/lib/sweet/player";
+import type { Position } from "@/lib/sweet/ecs";
 import type { Corner } from "@/lib/sweet/corner";
-import type { Point } from "@/lib/sweet/point";
-import { createSpriteSheet, getSprite } from "@/lib/engine/sprite";
-import { Power } from "./power";
-
-export const PLAYER_SPRITE_SHEET = createSpriteSheet(
-  "/images/Player.png",
-  32,
-  32
-);
-
-export const FOOD_SPRITE_SHEET = createSpriteSheet("/images/Food.png", 16, 16);
-export const STRAWBERRY_SPRITE = getSprite(FOOD_SPRITE_SHEET, 11, 0);
-export const FISH_SPRITE = getSprite(FOOD_SPRITE_SHEET, 2, 6);
-
-export function createPlayer(): Player {
-  return {
-    x: 144,
-    y: 256,
-    radius: 3,
-    direction: "left",
-    sprite: getSprite(PLAYER_SPRITE_SHEET, 4, 0),
-    frame: 0,
-  };
-}
+import { createPosition } from "@/lib/sweet/ecs";
 
 export function createCorners(): Corner[] {
   return [
@@ -367,166 +344,159 @@ export function createCorners(): Corner[] {
   ];
 }
 
-export function createPoints(): Point[] {
+export function createPoints(): Position[] {
   return [
     // row 1
-    createCoordinate(17, 17),
-    ...createCoordinateRow(17, 65, 2, 17),
-    createCoordinate(65, 17),
-    ...createCoordinateRow(65, 129, 3, 17),
-    createCoordinate(129, 17),
-    createCoordinate(161, 17),
-    ...createCoordinateRow(161, 225, 3, 17),
-    createCoordinate(225, 17),
-    ...createCoordinateRow(225, 273, 2, 17),
-    createCoordinate(273, 17),
+    createPosition(17, 17),
+    ...createPositionRow(17, 65, 2, 17),
+    createPosition(65, 17),
+    ...createPositionRow(65, 129, 3, 17),
+    createPosition(129, 17),
+    createPosition(161, 17),
+    ...createPositionRow(161, 225, 3, 17),
+    createPosition(225, 17),
+    ...createPositionRow(225, 273, 2, 17),
+    createPosition(273, 17),
     // cols 1
-    createCoordinate(17, 33),
-    createCoordinate(65, 33),
-    createCoordinate(65, 49),
-    createCoordinate(129, 33),
-    createCoordinate(129, 49),
-    createCoordinate(161, 33),
-    createCoordinate(161, 49),
-    createCoordinate(225, 33),
-    createCoordinate(225, 49),
-    createCoordinate(273, 33),
+    createPosition(17, 33),
+    createPosition(65, 33),
+    createPosition(65, 49),
+    createPosition(129, 33),
+    createPosition(129, 49),
+    createPosition(161, 33),
+    createPosition(161, 49),
+    createPosition(225, 33),
+    createPosition(225, 49),
+    createPosition(273, 33),
     // row 2
-    createCoordinate(17, 65),
-    ...createCoordinateRow(17, 65, 2, 65),
-    createCoordinate(65, 65),
-    ...createCoordinateRow(65, 129, 3, 65),
-    createCoordinate(129, 65),
-    createCoordinate(144, 65),
-    createCoordinate(161, 65),
-    ...createCoordinateRow(161, 225, 3, 65),
-    createCoordinate(225, 65),
-    ...createCoordinateRow(225, 273, 2, 65),
-    createCoordinate(273, 65),
+    createPosition(17, 65),
+    ...createPositionRow(17, 65, 2, 65),
+    createPosition(65, 65),
+    ...createPositionRow(65, 129, 3, 65),
+    createPosition(129, 65),
+    createPosition(144, 65),
+    createPosition(161, 65),
+    ...createPositionRow(161, 225, 3, 65),
+    createPosition(225, 65),
+    ...createPositionRow(225, 273, 2, 65),
+    createPosition(273, 65),
     // cols 2
-    createCoordinate(17, 81),
-    createCoordinate(65, 81),
-    createCoordinate(97, 81),
-    createCoordinate(193, 81),
-    createCoordinate(225, 81),
-    createCoordinate(273, 81),
+    createPosition(17, 81),
+    createPosition(65, 81),
+    createPosition(97, 81),
+    createPosition(193, 81),
+    createPosition(225, 81),
+    createPosition(273, 81),
     // row 3
-    createCoordinate(17, 97),
-    ...createCoordinateRow(17, 65, 2, 97),
-    createCoordinate(65, 97),
-    createCoordinate(97, 97),
-    createCoordinate(113, 97),
-    createCoordinate(128, 97),
-    createCoordinate(161, 97),
-    createCoordinate(177, 97),
-    createCoordinate(193, 97),
-    createCoordinate(225, 97),
-    ...createCoordinateRow(225, 273, 2, 97),
-    createCoordinate(273, 97),
+    createPosition(17, 97),
+    ...createPositionRow(17, 65, 2, 97),
+    createPosition(65, 97),
+    createPosition(97, 97),
+    createPosition(113, 97),
+    createPosition(128, 97),
+    createPosition(161, 97),
+    createPosition(177, 97),
+    createPosition(193, 97),
+    createPosition(225, 97),
+    ...createPositionRow(225, 273, 2, 97),
+    createPosition(273, 97),
     // cols 3
-    ...createCoordinateCol(97, 225, 7, 65),
-    createCoordinate(128, 113),
-    ...createCoordinateCol(97, 225, 7, 225),
-    createCoordinate(161, 113),
+    ...createPositionCol(97, 225, 7, 65),
+    createPosition(128, 113),
+    ...createPositionCol(97, 225, 7, 225),
+    createPosition(161, 113),
     // row 4
-    createCoordinate(17, 225),
-    ...createCoordinateRow(17, 128, 6, 225),
-    createCoordinate(128, 225),
-    createCoordinate(161, 225),
-    ...createCoordinateRow(161, 273, 6, 225),
-    createCoordinate(273, 225),
+    createPosition(17, 225),
+    ...createPositionRow(17, 128, 6, 225),
+    createPosition(128, 225),
+    createPosition(161, 225),
+    ...createPositionRow(161, 273, 6, 225),
+    createPosition(273, 225),
     //cols 4
-    createCoordinate(17, 241),
-    createCoordinate(65, 241),
-    createCoordinate(128, 241),
-    createCoordinate(161, 241),
-    createCoordinate(225, 241),
-    createCoordinate(273, 241),
+    createPosition(17, 241),
+    createPosition(65, 241),
+    createPosition(128, 241),
+    createPosition(161, 241),
+    createPosition(225, 241),
+    createPosition(273, 241),
     // row 5
-    createCoordinate(33, 257),
-    createCoordinate(65, 257),
-    ...createCoordinateRow(65, 128, 3, 257),
-    createCoordinate(128, 257),
-    createCoordinate(161, 257),
-    ...createCoordinateRow(161, 225, 3, 257),
-    createCoordinate(225, 257),
-    createCoordinate(257, 257),
+    createPosition(33, 257),
+    createPosition(65, 257),
+    ...createPositionRow(65, 128, 3, 257),
+    createPosition(128, 257),
+    createPosition(161, 257),
+    ...createPositionRow(161, 225, 3, 257),
+    createPosition(225, 257),
+    createPosition(257, 257),
     // cols 5
-    createCoordinate(33, 273),
-    createCoordinate(65, 273),
-    createCoordinate(97, 273),
-    createCoordinate(193, 273),
-    createCoordinate(225, 273),
-    createCoordinate(257, 273),
+    createPosition(33, 273),
+    createPosition(65, 273),
+    createPosition(97, 273),
+    createPosition(193, 273),
+    createPosition(225, 273),
+    createPosition(257, 273),
     // row 6
-    createCoordinate(17, 288),
-    ...createCoordinateRow(17, 65, 2, 288),
-    createCoordinate(65, 288),
-    createCoordinate(97, 288),
-    createCoordinate(113, 288),
-    createCoordinate(128, 288),
-    createCoordinate(161, 288),
-    createCoordinate(177, 288),
-    createCoordinate(193, 288),
-    createCoordinate(225, 288),
-    ...createCoordinateRow(225, 273, 2, 288),
-    createCoordinate(273, 288),
+    createPosition(17, 288),
+    ...createPositionRow(17, 65, 2, 288),
+    createPosition(65, 288),
+    createPosition(97, 288),
+    createPosition(113, 288),
+    createPosition(128, 288),
+    createPosition(161, 288),
+    createPosition(177, 288),
+    createPosition(193, 288),
+    createPosition(225, 288),
+    ...createPositionRow(225, 273, 2, 288),
+    createPosition(273, 288),
     // cols 6
-    createCoordinate(17, 305),
-    createCoordinate(128, 305),
-    createCoordinate(161, 305),
-    createCoordinate(273, 305),
+    createPosition(17, 305),
+    createPosition(128, 305),
+    createPosition(161, 305),
+    createPosition(273, 305),
     // row 7
-    createCoordinate(17, 320),
-    ...createCoordinateRow(17, 128, 6, 320),
-    createCoordinate(128, 320),
-    createCoordinate(144, 320),
-    createCoordinate(161, 320),
-    ...createCoordinateRow(161, 273, 6, 320),
-    createCoordinate(273, 320),
+    createPosition(17, 320),
+    ...createPositionRow(17, 128, 6, 320),
+    createPosition(128, 320),
+    createPosition(144, 320),
+    createPosition(161, 320),
+    ...createPositionRow(161, 273, 6, 320),
+    createPosition(273, 320),
   ];
 }
 
-export function createPowers(): Power[] {
+export function createPowers(): Position[] {
   return [
-    createCoordinate(17, 49),
-    createCoordinate(273, 49),
-    createCoordinate(17, 256),
-    createCoordinate(273, 256),
+    createPosition(17, 49),
+    createPosition(273, 49),
+    createPosition(17, 256),
+    createPosition(273, 256),
   ];
 }
 
-function createCoordinateRow(
+function createPositionRow(
   startX: number,
   endX: number,
   count: number,
   y: number
-): { x: number; y: number }[] {
+): Position[] {
   const step = (endX - startX) / (count + 1);
   const coordinates = [];
   for (let i = 1; i < count + 1; i++) {
-    coordinates.push(createCoordinate(startX + i * step, y));
+    coordinates.push(createPosition(startX + i * step, y));
   }
   return coordinates;
 }
 
-function createCoordinateCol(
+function createPositionCol(
   startY: number,
   endY: number,
   count: number,
   x: number
-): { x: number; y: number }[] {
+): Position[] {
   const step = (endY - startY) / (count + 1);
   const coordinates = [];
   for (let i = 1; i < count + 1; i++) {
-    coordinates.push(createCoordinate(x, startY + i * step));
+    coordinates.push(createPosition(x, startY + i * step));
   }
   return coordinates;
-}
-
-function createCoordinate(x: number, y: number): { x: number; y: number } {
-  return {
-    x,
-    y,
-  };
 }

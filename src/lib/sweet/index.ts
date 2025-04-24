@@ -1,32 +1,31 @@
 import type { RefObject } from "react";
 import type { State } from "@/lib/engine/game";
-import type { SpriteSheet, Sprite } from "@/lib/engine/sprite";
+import type { SpriteSheet } from "@/lib/engine/sprite";
 import type { Grid } from "@/lib/engine/grid";
 import type { Corner } from "@/lib/sweet/corner";
-import type { Player } from "@/lib/sweet/player";
-import type { Point } from "@/lib/sweet/point";
-import type { Power } from "@/lib/sweet/power";
 import {
-  createPlayer,
   createCorners,
   createPoints,
   createPowers,
 } from "@/lib/sweet/constants";
 import { hasControl } from "@/lib/engine/input";
-import { createSpriteSheet, getSprite } from "@/lib/engine/sprite";
+import { createSpriteSheet } from "@/lib/engine/sprite";
 import { _drawLayers } from "@/lib/engine/grid";
 import { drawCorner } from "@/lib/sweet/corner";
-import { updatePlayer, drawPlayer } from "@/lib/sweet/player";
-import { updatePoints, drawPoint } from "@/lib/sweet/point";
-import { updatePowers, drawPower } from "@/lib/sweet/power";
 import { drawScore } from "@/lib/sweet/score";
-export type Bee = {
-  x: number;
-  y: number;
-  sprite: Sprite;
-  timeDelta: number;
-  frame: number;
-};
+import type { Entity, Position, Sprite, Animation } from "@/lib/sweet/ecs";
+import {
+  createEntity,
+  createPosition,
+  createSprite,
+  createAnimation,
+  inputSystem,
+  animationSystem,
+  positionSystem,
+  collisionSystem,
+  floatSystem,
+  drawSystem,
+} from "@/lib/sweet/ecs";
 
 export type SweetState = {
   scaleModifier: number;
@@ -36,22 +35,21 @@ export type SweetState = {
   spriteSheets: Record<string, SpriteSheet>;
   layers: Record<number, Grid>;
   score: number;
-  player: Player;
+  entities: Set<Entity>;
+  positions: Map<Entity, Position>;
+  sprites: Map<Entity, Sprite>;
+  animations: Map<Entity, Animation>;
+  players: Set<Entity>;
   corners: Corner[];
-  bees: Bee[];
-  points: Point[];
-  powers: Power[];
+  points: Set<Entity>;
+  powers: Set<Entity>;
   timeDeltaFloat: number;
   floating: boolean;
   floatOffset: number;
 };
 
 export function createSweetState(): SweetState {
-  const playerSpriteSheet = createSpriteSheet("images/Player.png", 32, 32);
-  const beeSpriteSheet = createSpriteSheet("images/Bee.png", 16, 16);
-  const foodSpriteSheet = createSpriteSheet("images/Food.png", 16, 16);
-
-  return {
+  const state: SweetState = {
     scaleModifier: 0.5,
     gridWidth: 18,
     gridHeight: 21,
@@ -60,9 +58,6 @@ export function createSweetState(): SweetState {
       grassTiles: createSpriteSheet("images/GrassTiles.png", 16, 16),
       grassMiddle: createSpriteSheet("images/GrassMiddle.png", 16, 16),
       pathMiddle: createSpriteSheet("images/PathMiddle.png", 16, 16),
-      player: playerSpriteSheet,
-      bee: beeSpriteSheet,
-      food: foodSpriteSheet,
     },
     layers: {
       0: {
@@ -99,23 +94,51 @@ export function createSweetState(): SweetState {
       },
     },
     score: 0,
-    player: createPlayer(),
+    entities: new Set<Entity>(),
+    positions: new Map<Entity, Position>(),
+    sprites: new Map<Entity, Sprite>(),
+    animations: new Map<Entity, Animation>(),
+    players: new Set<Entity>(),
     corners: createCorners(),
-    bees: [
-      {
-        x: 135,
-        y: 150,
-        sprite: getSprite(beeSpriteSheet, 0, 0),
-        timeDelta: 0,
-        frame: 0,
-      },
-    ],
-    points: createPoints(),
-    powers: createPowers(),
+    points: new Set<Entity>(),
+    powers: new Set<Entity>(),
     timeDeltaFloat: 0,
     floating: false,
     floatOffset: 0,
   };
+
+  const player = createEntity(state.entities);
+  state.positions.set(player, createPosition(144, 256, 3, "left", 0.75));
+  state.sprites.set(
+    player,
+    createSprite("images/Player.png", 0, 0, 32, 32, -16, -20)
+  );
+  state.animations.set(player, createAnimation(0));
+  state.players.add(player);
+
+  for (const position of createPoints()) {
+    const point = createEntity(state.entities);
+    state.positions.set(point, position);
+    state.sprites.set(
+      point,
+      createSprite("images/Food.png", 0, 11 * 16, 16, 16, -8, -8, 0.5)
+    );
+    state.animations.set(point, createAnimation(0));
+    state.points.add(point);
+  }
+
+  for (const position of createPowers()) {
+    const power = createEntity(state.entities);
+    state.positions.set(power, position);
+    state.sprites.set(
+      power,
+      createSprite("images/Food.png", 6 * 16, 2 * 16, 16, 16, -8, -8, 0.75)
+    );
+    state.animations.set(power, createAnimation(0));
+    state.powers.add(power);
+  }
+
+  return state;
 }
 
 export function update(state: RefObject<State | null>) {
@@ -123,7 +146,7 @@ export function update(state: RefObject<State | null>) {
   const { timeDelta, input, activeGameState } = state.current;
   if (!activeGameState) return;
 
-  const { player, corners, points, powers, bees } = activeGameState;
+  const timeFactor = timeDelta / (1000 / 120);
 
   if (hasControl(state.current.input, "exit")) {
     state.current.exitingGame = true;
@@ -141,14 +164,11 @@ export function update(state: RefObject<State | null>) {
     }
   }
 
-  updatePlayer(player, timeDelta, input, corners);
-  const pointsScore = updatePoints(points, player);
-  const powersScore = updatePowers(powers, player);
-  activeGameState.score += pointsScore + powersScore;
-  for (const bee of bees) {
-    updateBee(bee, timeDelta);
-  }
-  updateFloat(activeGameState, timeDelta);
+  inputSystem(activeGameState, input);
+  animationSystem(activeGameState, timeFactor);
+  positionSystem(activeGameState, timeFactor);
+  collisionSystem(activeGameState);
+  floatSystem(activeGameState, timeDelta);
 
   return;
 }
@@ -165,11 +185,7 @@ export function draw(state: State) {
     scaleModifier,
     gridWidth,
     gridCellSize,
-    player,
     corners,
-    points,
-    powers,
-    floatOffset,
   } = activeGameState;
 
   ctx.save();
@@ -185,170 +201,17 @@ export function draw(state: State) {
 
   const modifiedScale = scale * scaleModifier;
 
-  for (const point of points) {
-    drawPoint(point, floatOffset, ctx, modifiedScale, debug);
-  }
-
-  for (const power of powers) {
-    drawPower(power, floatOffset, ctx, modifiedScale, debug);
-  }
-
   if (debug) {
     for (const corner of corners) {
       drawCorner(corner, ctx, modifiedScale);
     }
   }
 
-  drawPlayer(player, ctx, modifiedScale, debug);
+  drawSystem(activeGameState, ctx, modifiedScale, debug);
+
   drawScore(score, ctx, modifiedScale);
-  // drawBees(ctx, bees, modifiedScale);
-  // drawBerries(ctx, berrySprite, berries, floatOffset, modifiedScale);
-  // drawPowerUps(ctx, powerUpSprite, powerUps, floatOffset, modifiedScale);
 
   ctx.restore();
 
   return;
 }
-
-function updateBee(bee: Bee, timeDelta: number) {
-  bee.timeDelta += timeDelta;
-  if (bee.timeDelta < 1000 / 120) {
-    return;
-  }
-
-  const elapsedFrames = Math.floor(bee.timeDelta / (1000 / 120));
-
-  bee.frame += elapsedFrames / 10;
-  bee.frame %= 4;
-  bee.sprite.x = Math.floor(bee.frame) * bee.sprite.width;
-
-  bee.timeDelta = 0;
-}
-
-function updateFloat(state: SweetState, timeDelta: number) {
-  state.timeDeltaFloat += timeDelta;
-  if (state.timeDeltaFloat < 1000 / 120) {
-    return;
-  }
-
-  const timeFactor = state.timeDeltaFloat / (1000 / 120);
-
-  if (state.floating) {
-    state.floatOffset += timeFactor / 40;
-  } else {
-    state.floatOffset -= timeFactor / 40;
-  }
-
-  if (state.floatOffset <= 0) {
-    state.floatOffset = 0;
-    state.floating = true;
-  }
-
-  if (state.floatOffset >= 1) {
-    state.floatOffset = 1;
-    state.floating = false;
-  }
-
-  state.timeDeltaFloat = 0;
-}
-
-// function drawPlayer(
-//   ctx: CanvasRenderingContext2D,
-//   player: Player,
-//   scale: number
-// ) {
-//   ctx.save();
-
-//   let dxPlayer = player.x;
-//   let dxHitbox = player.hitbox.x;
-//   if (player.direction === "left") {
-//     ctx.scale(-1, 1);
-//     dxPlayer = -player.x - player.sprite.width;
-//     dxHitbox = -player.hitbox.x - player.hitbox.width;
-//   }
-
-//   drawSprite(ctx, player.sprite, dxPlayer, player.y, scale);
-//   drawHitbox(
-//     ctx,
-//     dxHitbox,
-//     player.hitbox.y,
-//     player.hitbox.width,
-//     player.hitbox.height,
-//     scale
-//   );
-//   ctx.restore();
-// }
-
-// function drawBees(ctx: CanvasRenderingContext2D, bees: Bee[], scale: number) {
-//   for (const bee of bees) {
-//     drawSprite(ctx, bee.sprite, bee.x, bee.y, scale, 1.5);
-//   }
-// }
-
-// function drawBerries(
-//   ctx: CanvasRenderingContext2D,
-//   sprite: Sprite,
-//   berries: Consumable[],
-//   floatOffset: number,
-//   scale: number
-// ) {
-//   for (const berry of berries) {
-//     drawSprite(ctx, sprite, berry.x, berry.y + floatOffset, scale, 0.5);
-//   }
-// }
-
-// function drawPowerUps(
-//   ctx: CanvasRenderingContext2D,
-//   sprite: Sprite,
-//   powerUps: Consumable[],
-//   floatOffset: number,
-//   scale: number
-// ) {
-//   for (const powerUp of powerUps) {
-//     drawSprite(ctx, sprite, powerUp.x, powerUp.y + floatOffset, scale);
-//   }
-// }
-
-// function drawSprite(
-//   ctx: CanvasRenderingContext2D,
-//   sprite: Sprite,
-//   x: number,
-//   y: number,
-//   scale: number,
-//   sizeModifier: number = 1
-// ) {
-//   ctx.save();
-
-//   ctx.drawImage(
-//     sprite.image,
-//     Math.floor(sprite.x),
-//     Math.floor(sprite.y),
-//     Math.floor(sprite.width),
-//     Math.floor(sprite.height),
-//     Math.floor(x * scale),
-//     Math.floor(y * scale),
-//     Math.floor(sprite.width * scale * sizeModifier),
-//     Math.floor(sprite.height * scale * sizeModifier)
-//   );
-
-//   ctx.restore();
-// }
-
-// function drawHitbox(
-//   ctx: CanvasRenderingContext2D,
-//   x: number,
-//   y: number,
-//   width: number,
-//   height: number,
-//   scale: number
-// ) {
-//   ctx.save();
-//   ctx.strokeStyle = "red";
-//   ctx.strokeRect(
-//     Math.floor(x * scale),
-//     Math.floor(y * scale),
-//     Math.floor(width * scale),
-//     Math.floor(height * scale)
-//   );
-//   ctx.restore();
-// }

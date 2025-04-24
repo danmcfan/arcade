@@ -16,6 +16,8 @@ export type Sprite = {
   y: number;
   width: number;
   height: number;
+  offsetX: number;
+  offsetY: number;
 };
 
 export function createSpriteSheet(
@@ -50,7 +52,9 @@ export function createSpriteSheet(
 export function getSprite(
   spriteSheet: SpriteSheet,
   row: number,
-  col: number
+  col: number,
+  offsetX: number = 0,
+  offsetY: number = 0
 ): Sprite {
   if (spriteSheet.loaded) {
     if (
@@ -69,5 +73,7 @@ export function getSprite(
     y: row * spriteSheet.spriteHeight,
     width: spriteSheet.spriteWidth,
     height: spriteSheet.spriteHeight,
+    offsetX: offsetX,
+    offsetY: offsetY,
   };
 }

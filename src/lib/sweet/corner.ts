@@ -1,4 +1,4 @@
-import type { Direction } from "@/lib/sweet/direction";
+import type { Direction } from "@/lib/sweet/ecs";
 
 export type Corner = {
   x: number;
