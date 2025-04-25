@@ -52,7 +52,7 @@ export function Game() {
   }, []);
 
   return (
-    <div ref={containerRef} className="w-screen h-screen">
+    <div ref={containerRef} className="w-screen h-[80vh] md:h-screen">
       <canvas className="w-full h-full md:h-full" ref={canvasRef} />
     </div>
   );
