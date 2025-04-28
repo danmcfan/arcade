@@ -48,6 +48,46 @@ export function drawBear(
   ctx.restore();
 }
 
+export function drawEnemies(
+  ctx: CanvasRenderingContext2D,
+  state: SweetState,
+  sprites: Map<SpriteID, Sprite>
+) {
+  const { enemies } = state;
+  const sprite = getSprite(sprites, SpriteID.BEE);
+
+  for (const enemy of enemies) {
+    ctx.save();
+
+    let dx = enemy.x - sprite.width / 2;
+    const dy = enemy.y - sprite.height / 2;
+
+    if (enemy.direction === Direction.LEFT) {
+      ctx.scale(-1, 1);
+      dx = -enemy.x - sprite.width / 2;
+    }
+
+    let row = 0;
+    if (enemy.scaredTime > 0) {
+      row = 1;
+    }
+
+    ctx.drawImage(
+      sprite.image,
+      sprite.width * Math.floor(enemy.frame),
+      sprite.height * row,
+      sprite.width,
+      sprite.height,
+      Math.floor(dx),
+      Math.floor(dy),
+      sprite.width,
+      sprite.height
+    );
+
+    ctx.restore();
+  }
+}
+
 export function drawPoints(
   ctx: CanvasRenderingContext2D,
   state: SweetState,

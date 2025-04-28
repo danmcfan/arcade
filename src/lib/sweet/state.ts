@@ -16,10 +16,12 @@ export type SweetState = {
   enemies: {
     x: number;
     y: number;
+    radius: number;
     velocity: number;
     direction: Direction;
-    lastCorner: number;
+    lastCorner: { x: number; y: number; directions: Direction[] } | null;
     scaredTime: number;
+    frame: number;
   }[];
   corners: { x: number; y: number; directions: Direction[] }[];
   points: { x: number; y: number }[];
@@ -69,7 +71,48 @@ export function createSweetState(): SweetState {
       frame: 0,
       size: 0.75,
     },
-    enemies: [],
+    enemies: [
+      {
+        x: 96,
+        y: 128,
+        radius: 1,
+        direction: Direction.RIGHT,
+        velocity: 0.5,
+        lastCorner: null,
+        scaredTime: 0,
+        frame: 0,
+      },
+      {
+        x: 194,
+        y: 128,
+        radius: 1,
+        direction: Direction.LEFT,
+        velocity: 0.5,
+        lastCorner: null,
+        scaredTime: 0,
+        frame: 0,
+      },
+      {
+        x: 96,
+        y: 194,
+        radius: 1,
+        direction: Direction.UP,
+        velocity: 0.5,
+        lastCorner: null,
+        scaredTime: 0,
+        frame: 0,
+      },
+      {
+        x: 194,
+        y: 194,
+        radius: 1,
+        direction: Direction.UP,
+        velocity: 0.5,
+        lastCorner: null,
+        scaredTime: 0,
+        frame: 0,
+      },
+    ],
     corners: createCorners(),
     points: createPoints(),
     powers: createPowers(),
