@@ -27,7 +27,7 @@ export function drawBear(
   ctx.save();
 
   let dx = player.x - (sprite.width * player.size) / 2;
-  let dy = player.y - (sprite.height * player.size) / 2 - 8;
+  const dy = player.y - (sprite.height * player.size) / 2 - 8;
   if (player.direction === Direction.LEFT) {
     ctx.scale(-1, 1);
     dx = -player.x - (sprite.width * player.size) / 2;
@@ -57,8 +57,8 @@ export function drawPoints(
   const sprite = getSprite(sprites, SpriteID.FOOD);
 
   for (const point of points) {
-    let dx = point.x - (sprite.width * 0.5) / 2;
-    let dy = point.y - (sprite.height * 0.5) / 2;
+    const dx = point.x - (sprite.width * 0.5) / 2;
+    const dy = point.y - (sprite.height * 0.5) / 2;
 
     ctx.drawImage(
       sprite.image,
@@ -83,8 +83,8 @@ export function drawPowers(
   const sprite = getSprite(sprites, SpriteID.FOOD);
 
   for (const power of powers) {
-    let dx = power.x - (sprite.width * 0.75) / 2;
-    let dy = power.y - (sprite.height * 0.75) / 2;
+    const dx = power.x - (sprite.width * 0.75) / 2;
+    const dy = power.y - (sprite.height * 0.75) / 2;
 
     ctx.drawImage(
       sprite.image,

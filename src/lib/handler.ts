@@ -5,7 +5,7 @@ import { sweetLoop } from "./sweet/loop";
 
 export function getResizeHandler(state: State) {
   return () => {
-    const pixelRatio = window.devicePixelRatio || 1;
+    const pixelRatio = globalThis.devicePixelRatio || 1;
     const rect = state.container.getBoundingClientRect();
     state.canvas.width = rect.width * pixelRatio;
     state.canvas.height = rect.height * pixelRatio;

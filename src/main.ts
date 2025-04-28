@@ -16,16 +16,16 @@ function main() {
   const keyDownHandler = getKeyDownHandler(state);
   const keyUpHandler = getKeyUpHandler(state);
 
-  window.addEventListener("resize", resizeHandler);
-  window.addEventListener("keydown", keyDownHandler);
-  window.addEventListener("keyup", keyUpHandler);
+  globalThis.addEventListener("resize", resizeHandler);
+  globalThis.addEventListener("keydown", keyDownHandler);
+  globalThis.addEventListener("keyup", keyUpHandler);
   resizeHandler();
 
   const animationHandler = getAnimationHandler(state);
   requestAnimationFrame(animationHandler);
 
   return () => {
-    window.removeEventListener("resize", resizeHandler);
+    globalThis.removeEventListener("resize", resizeHandler);
   };
 }
 
