@@ -7,6 +7,7 @@ import {
 } from "./lib/handler";
 import { createState } from "./lib/state";
 import { initSprites } from "./lib/sprite";
+import { getErrorHandler } from "./lib/error";
 
 function main() {
   const state = createState();
@@ -21,12 +22,18 @@ function main() {
   globalThis.addEventListener("keyup", keyUpHandler);
   resizeHandler();
 
-  const animationHandler = getAnimationHandler(state);
-  requestAnimationFrame(animationHandler);
+  try {
+    const animationHandler = getAnimationHandler(state);
+    requestAnimationFrame(animationHandler);
+  } catch (error) {
+    state.gameWidth = 0;
+    state.gameHeight = 0;
+    resizeHandler();
 
-  return () => {
-    globalThis.removeEventListener("resize", resizeHandler);
-  };
+    console.error(error);
+    const errorHandler = getErrorHandler(state, error as Error);
+    requestAnimationFrame(errorHandler);
+  }
 }
 
 main();

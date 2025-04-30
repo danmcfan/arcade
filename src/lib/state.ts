@@ -16,6 +16,7 @@ export type State = {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  pixelRatio: number;
   width: number;
   height: number;
   scale: number;
@@ -57,14 +58,24 @@ export function createState() {
   const container = document.getElementById("app") as HTMLDivElement;
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-  ctx.imageSmoothingEnabled = true;
+
+  const pixelRatio = globalThis.devicePixelRatio || 1;
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width * pixelRatio;
+  canvas.height = rect.height * pixelRatio;
+  const width = rect.width;
+  const height = rect.height;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.scale(pixelRatio, pixelRatio);
 
   const state: State = {
     container,
     canvas,
     ctx,
-    width: 0,
-    height: 0,
+    pixelRatio,
+    width,
+    height,
     scale: 0,
     initialScale: 1,
     gameWidth: 160,
