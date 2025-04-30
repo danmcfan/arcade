@@ -1,16 +1,7 @@
 import type { Sprite } from "./sprite";
 import { SpriteID } from "./sprite";
 import { SweetState } from "./sweet/state";
-export enum Direction {
-  UP = "UP",
-  DOWN = "DOWN",
-  LEFT = "LEFT",
-  RIGHT = "RIGHT",
-}
-
-export enum GameID {
-  SWEET_SAM,
-}
+import { Direction, GameID } from "./types";
 
 export type State = {
   container: HTMLDivElement;

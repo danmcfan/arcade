@@ -1,4 +1,5 @@
-import { State, GameID } from "./state";
+import { GameID } from "./types";
+import { State } from "./state";
 import { areSpritesLoaded } from "./sprite";
 import { arcadeLoop } from "./arcade/loop";
 import { sweetLoop } from "./sweet/loop";

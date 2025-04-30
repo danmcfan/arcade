@@ -1,4 +1,5 @@
-import { Direction, State } from "../state";
+import { Direction } from "../types";
+import { State } from "../state";
 import { SweetState } from "./state";
 import { SpriteID, Sprite, getSprite } from "../sprite";
 

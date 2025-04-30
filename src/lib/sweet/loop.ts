@@ -25,7 +25,7 @@ export function sweetLoop(state: State, deltaTime: number) {
   const { player, enemies, corners } = activeGameState;
   const entities = [player, ...enemies];
 
-  handleEnemy(activeGameState, deltaTime);
+  handleEnemy(enemies, corners, deltaTime);
   handleMovement(entities, corners, deltaTime);
   handleCollision(activeGameState);
   handleAnimation(activeGameState, deltaTime);

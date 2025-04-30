@@ -1,4 +1,4 @@
-import { Direction } from "../state";
+import { Direction, Enemy, Corner } from "../types";
 import { Background } from "../background";
 import { SpriteID } from "../sprite";
 import {
@@ -18,17 +18,8 @@ export type SweetState = {
     frame: number;
     size: number;
   };
-  enemies: {
-    x: number;
-    y: number;
-    radius: number;
-    velocity: number;
-    direction: Direction;
-    lastCorner: { x: number; y: number; directions: Direction[] } | null;
-    scaredTime: number;
-    frame: number;
-  }[];
-  corners: { x: number; y: number; directions: Direction[] }[];
+  enemies: Enemy[];
+  corners: Corner[];
   points: { x: number; y: number }[];
   powers: { x: number; y: number }[];
   score: number;

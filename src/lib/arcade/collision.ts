@@ -1,4 +1,5 @@
-import { State, Direction } from "../state";
+import { Direction } from "../types";
+import { State } from "../state";
 
 export function handleCollision(state: State) {
   if (state.player.x < 22) {

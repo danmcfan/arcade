@@ -1,10 +1,11 @@
-import { Direction } from "../state";
-import { SweetState } from "./state";
+import { Direction, Enemy, Corner } from "../types";
 import { overlaps } from "./util";
 
-export function handleEnemy(state: SweetState, deltaTime: number) {
-  const { enemies, corners } = state;
-
+export function handleEnemy(
+  enemies: Enemy[],
+  corners: Corner[],
+  deltaTime: number
+) {
   for (const enemy of enemies) {
     if (enemy.scaredTime > 0) {
       enemy.scaredTime -= deltaTime;

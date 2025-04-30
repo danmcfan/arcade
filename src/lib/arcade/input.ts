@@ -1,4 +1,5 @@
-import { State, Direction } from "../state";
+import { Direction } from "../types";
+import { State } from "../state";
 import { getResizeHandler } from "../handler";
 import { createSweetState } from "../sweet/state";
 

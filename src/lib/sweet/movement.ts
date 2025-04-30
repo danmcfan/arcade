@@ -1,15 +1,9 @@
-import { Direction } from "../state";
+import { Direction, Entity, Corner } from "../types";
 import { overlaps } from "./util";
 
 export function handleMovement(
-  entities: {
-    x: number;
-    y: number;
-    radius: number;
-    direction: Direction;
-    velocity: number;
-  }[],
-  corners: { x: number; y: number; directions: Direction[] }[],
+  entities: Entity[],
+  corners: Corner[],
   deltaTime: number
 ) {
   for (const entity of entities) {

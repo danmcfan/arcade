@@ -1,4 +1,4 @@
-import { Direction } from "../state";
+import { Direction } from "../types";
 
 export function createEnemies(): {
   x: number;
