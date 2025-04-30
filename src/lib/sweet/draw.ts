@@ -145,18 +145,53 @@ export function drawScore(
   state: State,
   score: number
 ) {
-  ctx.clearRect(
-    0,
-    -80 * state.scale,
-    state.gameWidth * state.scale,
-    80 * state.scale
-  );
-  ctx.font = `bold ${6 * state.scale}px Monospace`;
+  ctx.font = `bold ${4 * state.scale}px Monospace`;
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
   ctx.fillText(
     `Score: ${score.toString().padStart(4, " ")}`,
     state.gameWidth / 2,
-    -2 * state.scale
+    0
   );
+}
+
+export function drawCorners(
+  ctx: CanvasRenderingContext2D,
+  corners: { x: number; y: number; directions: Direction[] }[]
+) {
+  const radius = 1;
+  const lineLength = 4; // Length of direction lines beyond the circle
+
+  for (const corner of corners) {
+    // Draw circle with transparent center and blue border
+    ctx.beginPath();
+    ctx.arc(corner.x, corner.y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "blue";
+    ctx.stroke();
+
+    // Draw direction lines
+    ctx.beginPath();
+    for (const direction of corner.directions) {
+      switch (direction) {
+        case Direction.UP:
+          ctx.moveTo(corner.x, corner.y);
+          ctx.lineTo(corner.x, corner.y - lineLength);
+          break;
+        case Direction.DOWN:
+          ctx.moveTo(corner.x, corner.y);
+          ctx.lineTo(corner.x, corner.y + lineLength);
+          break;
+        case Direction.LEFT:
+          ctx.moveTo(corner.x, corner.y);
+          ctx.lineTo(corner.x - lineLength, corner.y);
+          break;
+        case Direction.RIGHT:
+          ctx.moveTo(corner.x, corner.y);
+          ctx.lineTo(corner.x + lineLength, corner.y);
+          break;
+      }
+    }
+    ctx.strokeStyle = "blue";
+    ctx.stroke();
+  }
 }

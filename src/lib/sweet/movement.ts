@@ -1,10 +1,18 @@
 import { Direction } from "../state";
-import { SweetState } from "./state";
 import { overlaps } from "./util";
-export function handleMovement(state: SweetState, deltaTime: number) {
-  const { player, enemies, corners } = state;
 
-  for (const entity of [player, ...enemies]) {
+export function handleMovement(
+  entities: {
+    x: number;
+    y: number;
+    radius: number;
+    direction: Direction;
+    velocity: number;
+  }[],
+  corners: { x: number; y: number; directions: Direction[] }[],
+  deltaTime: number
+) {
+  for (const entity of entities) {
     const delta = entity.velocity * (deltaTime / 10);
 
     switch (entity.direction) {
@@ -22,13 +30,16 @@ export function handleMovement(state: SweetState, deltaTime: number) {
         break;
     }
 
-    if (entity.x < 8) {
-      entity.x = 280;
+    if (entity.y == 176) {
+      if (entity.x < 30) {
+        entity.x = 290;
+      }
+
+      if (entity.x > 290) {
+        entity.x = 30;
+      }
     }
 
-    if (entity.x > 280) {
-      entity.x = 8;
-    }
     for (const corner of corners) {
       if (overlaps(entity, corner)) {
         if (!corner.directions.includes(entity.direction)) {
@@ -52,6 +63,12 @@ export function handleMovement(state: SweetState, deltaTime: number) {
           }
         }
       }
+    }
+
+    if (entity.x < 0 || entity.x > 320 || entity.y < 0 || entity.y > 368) {
+      throw new Error(
+        `Entity out of bounds: (${entity.x}, ${entity.y}, ${entity.direction})`
+      );
     }
   }
 }

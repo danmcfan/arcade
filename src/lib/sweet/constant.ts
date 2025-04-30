@@ -1,52 +1,105 @@
 import { Direction } from "../state";
 
+export function createEnemies(): {
+  x: number;
+  y: number;
+  radius: number;
+  direction: Direction;
+  velocity: number;
+  lastCorner: { x: number; y: number; directions: Direction[] } | null;
+  scaredTime: number;
+  frame: number;
+}[] {
+  return [
+    {
+      x: 113,
+      y: 144,
+      radius: 1,
+      direction: Direction.RIGHT,
+      velocity: 0.5,
+      lastCorner: null,
+      scaredTime: 0,
+      frame: 0,
+    },
+    {
+      x: 209,
+      y: 144,
+      radius: 1,
+      direction: Direction.LEFT,
+      velocity: 0.5,
+      lastCorner: null,
+      scaredTime: 0,
+      frame: 0,
+    },
+    {
+      x: 113,
+      y: 208,
+      radius: 1,
+      direction: Direction.UP,
+      velocity: 0.5,
+      lastCorner: null,
+      scaredTime: 0,
+      frame: 0,
+    },
+    {
+      x: 209,
+      y: 208,
+      radius: 1,
+      direction: Direction.UP,
+      velocity: 0.5,
+      lastCorner: null,
+      scaredTime: 0,
+      frame: 0,
+    },
+  ];
+}
+
 export function createCorners(): {
   x: number;
   y: number;
   directions: Direction[];
 }[] {
   return [
-    // row 1, section 1
+    // ROW 1
     {
-      x: 17,
-      y: 17,
+      x: 33,
+      y: 32,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 65,
-      y: 17,
+      x: 81,
+      y: 32,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 128,
-      y: 17,
+      x: 145,
+      y: 32,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 1, section 2
     {
-      x: 161,
-      y: 17,
+      x: 177,
+      y: 32,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 224,
-      y: 17,
+      x: 241,
+      y: 32,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 272,
-      y: 17,
+      x: 289,
+      y: 32,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 2, section 1
+    // ROW 2
     {
-      x: 17,
-      y: 65,
+      x: 33,
+      y: 80,
       directions: [Direction.UP, Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 65,
-      y: 65,
+      x: 81,
+      y: 80,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -55,29 +108,28 @@ export function createCorners(): {
       ],
     },
     {
-      x: 96,
-      y: 65,
+      x: 113,
+      y: 80,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 128,
-      y: 65,
-      directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
-    },
-    // row 2, section 2
-    {
-      x: 161,
-      y: 65,
+      x: 145,
+      y: 80,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 194,
-      y: 65,
+      x: 177,
+      y: 80,
+      directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
+    },
+    {
+      x: 209,
+      y: 80,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 224,
-      y: 65,
+      x: 241,
+      y: 80,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -86,77 +138,76 @@ export function createCorners(): {
       ],
     },
     {
-      x: 272,
-      y: 65,
+      x: 289,
+      y: 80,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
     },
-    // row 3, section 1
+    // ROW 3
     {
-      x: 17,
-      y: 96,
+      x: 33,
+      y: 112,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 65,
-      y: 96,
+      x: 81,
+      y: 112,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 96,
-      y: 96,
+      x: 113,
+      y: 112,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 128,
-      y: 96,
+      x: 145,
+      y: 112,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 3, section 2
     {
-      x: 161,
-      y: 96,
+      x: 177,
+      y: 112,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 194,
-      y: 96,
+      x: 209,
+      y: 112,
       directions: [Direction.UP, Direction.LEFT],
     },
     {
-      x: 224,
-      y: 96,
+      x: 241,
+      y: 112,
       directions: [Direction.UP, Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 272,
-      y: 96,
+      x: 289,
+      y: 112,
       directions: [Direction.UP, Direction.LEFT],
     },
-    // row 4a
+    // ROW A
     {
-      x: 96,
-      y: 128,
+      x: 113,
+      y: 144,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 128,
-      y: 128,
+      x: 145,
+      y: 144,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 161,
-      y: 128,
+      x: 177,
+      y: 144,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 194,
-      y: 128,
+      x: 209,
+      y: 144,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 4b
+    // ROW B
     {
-      x: 65,
-      y: 161,
+      x: 81,
+      y: 176,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -165,18 +216,18 @@ export function createCorners(): {
       ],
     },
     {
-      x: 96,
-      y: 161,
+      x: 113,
+      y: 176,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 194,
-      y: 161,
+      x: 209,
+      y: 176,
       directions: [Direction.UP, Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 224,
-      y: 161,
+      x: 241,
+      y: 176,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -184,26 +235,26 @@ export function createCorners(): {
         Direction.LEFT,
       ],
     },
-    // row 4c
+    // row C
     {
-      x: 96,
-      y: 194,
+      x: 113,
+      y: 208,
       directions: [Direction.UP, Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 194,
-      y: 194,
+      x: 209,
+      y: 208,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
     },
-    // row 5, section 1
+    // ROW 4
     {
-      x: 17,
-      y: 224,
+      x: 33,
+      y: 240,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 65,
-      y: 224,
+      x: 81,
+      y: 240,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -212,29 +263,28 @@ export function createCorners(): {
       ],
     },
     {
-      x: 96,
-      y: 224,
+      x: 113,
+      y: 240,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 128,
-      y: 224,
+      x: 145,
+      y: 240,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 5, section 2
     {
-      x: 161,
-      y: 224,
+      x: 177,
+      y: 240,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 194,
-      y: 224,
+      x: 209,
+      y: 240,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 224,
-      y: 224,
+      x: 241,
+      y: 240,
       directions: [
         Direction.UP,
         Direction.RIGHT,
@@ -243,134 +293,132 @@ export function createCorners(): {
       ],
     },
     {
-      x: 272,
-      y: 224,
+      x: 289,
+      y: 240,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 6, section 1
+    // ROW 5
     {
-      x: 17,
-      y: 256,
+      x: 33,
+      y: 272,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 32,
-      y: 256,
+      x: 49,
+      y: 272,
       directions: [Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 65,
-      y: 256,
+      x: 81,
+      y: 272,
       directions: [Direction.UP, Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 96,
-      y: 256,
+      x: 113,
+      y: 272,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 128,
-      y: 256,
-      directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
-    },
-    // row 6, section 2
-    {
-      x: 161,
-      y: 256,
+      x: 145,
+      y: 272,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 194,
-      y: 256,
+      x: 177,
+      y: 272,
+      directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
+    },
+    {
+      x: 209,
+      y: 272,
       directions: [Direction.RIGHT, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 224,
-      y: 256,
+      x: 241,
+      y: 272,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
     },
     {
-      x: 256,
-      y: 256,
+      x: 273,
+      y: 272,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 272,
-      y: 256,
+      x: 289,
+      y: 272,
       directions: [Direction.UP, Direction.LEFT],
     },
-    // row 7, section 1
+    // ROW 6
     {
-      x: 17,
-      y: 288,
+      x: 33,
+      y: 304,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 32,
-      y: 288,
+      x: 49,
+      y: 304,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 65,
-      y: 288,
+      x: 81,
+      y: 304,
       directions: [Direction.UP, Direction.LEFT],
     },
     {
-      x: 96,
-      y: 288,
+      x: 113,
+      y: 304,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 128,
-      y: 288,
+      x: 145,
+      y: 304,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 7, section 2
     {
-      x: 161,
-      y: 288,
+      x: 177,
+      y: 304,
       directions: [Direction.RIGHT, Direction.DOWN],
     },
     {
-      x: 194,
-      y: 288,
+      x: 209,
+      y: 304,
       directions: [Direction.UP, Direction.LEFT],
     },
     {
-      x: 224,
-      y: 288,
+      x: 241,
+      y: 304,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 256,
-      y: 288,
+      x: 273,
+      y: 304,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 272,
-      y: 288,
+      x: 289,
+      y: 304,
       directions: [Direction.DOWN, Direction.LEFT],
     },
-    // row 8, section 1
+    // ROW 7
     {
-      x: 17,
-      y: 320,
+      x: 33,
+      y: 336,
       directions: [Direction.UP, Direction.RIGHT],
     },
     {
-      x: 128,
-      y: 320,
+      x: 145,
+      y: 336,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
-    // row 8, section 2
+    // ROW 8
     {
-      x: 161,
-      y: 320,
+      x: 177,
+      y: 336,
       directions: [Direction.UP, Direction.RIGHT, Direction.LEFT],
     },
     {
-      x: 272,
-      y: 320,
+      x: 289,
+      y: 336,
       directions: [Direction.UP, Direction.LEFT],
     },
   ];
@@ -378,130 +426,136 @@ export function createCorners(): {
 
 export function createPoints(): { x: number; y: number }[] {
   return [
-    // row 1
-    createPosition(17, 17),
-    ...createPositionRow(17, 65, 2, 17),
-    createPosition(65, 17),
-    ...createPositionRow(65, 129, 3, 17),
-    createPosition(129, 17),
-    createPosition(161, 17),
-    ...createPositionRow(161, 225, 3, 17),
-    createPosition(225, 17),
-    ...createPositionRow(225, 273, 2, 17),
-    createPosition(273, 17),
-    // cols 1
-    createPosition(17, 33),
-    createPosition(65, 33),
-    createPosition(65, 49),
-    createPosition(129, 33),
-    createPosition(129, 49),
-    createPosition(161, 33),
-    createPosition(161, 49),
-    createPosition(225, 33),
-    createPosition(225, 49),
-    createPosition(273, 33),
-    // row 2
-    createPosition(17, 65),
-    ...createPositionRow(17, 65, 2, 65),
-    createPosition(65, 65),
-    ...createPositionRow(65, 129, 3, 65),
-    createPosition(129, 65),
-    createPosition(144, 65),
-    createPosition(161, 65),
-    ...createPositionRow(161, 225, 3, 65),
-    createPosition(225, 65),
-    ...createPositionRow(225, 273, 2, 65),
-    createPosition(273, 65),
-    // cols 2
-    createPosition(17, 81),
-    createPosition(65, 81),
-    createPosition(97, 81),
-    createPosition(193, 81),
-    createPosition(225, 81),
-    createPosition(273, 81),
-    // row 3
-    createPosition(17, 97),
-    ...createPositionRow(17, 65, 2, 97),
-    createPosition(65, 97),
-    createPosition(97, 97),
-    createPosition(113, 97),
-    createPosition(128, 97),
-    createPosition(161, 97),
-    createPosition(177, 97),
-    createPosition(193, 97),
-    createPosition(225, 97),
-    ...createPositionRow(225, 273, 2, 97),
-    createPosition(273, 97),
-    // cols 3
-    ...createPositionCol(97, 225, 7, 65),
-    createPosition(128, 113),
-    ...createPositionCol(97, 225, 7, 225),
-    createPosition(161, 113),
-    // row 4
-    createPosition(17, 225),
-    ...createPositionRow(17, 128, 6, 225),
-    createPosition(128, 225),
-    createPosition(161, 225),
-    ...createPositionRow(161, 273, 6, 225),
-    createPosition(273, 225),
-    //cols 4
-    createPosition(17, 241),
-    createPosition(65, 241),
-    createPosition(128, 241),
-    createPosition(161, 241),
-    createPosition(225, 241),
-    createPosition(273, 241),
-    // row 5
-    createPosition(33, 257),
-    createPosition(65, 257),
-    ...createPositionRow(65, 128, 3, 257),
-    createPosition(128, 257),
-    createPosition(161, 257),
-    ...createPositionRow(161, 225, 3, 257),
-    createPosition(225, 257),
-    createPosition(257, 257),
-    // cols 5
-    createPosition(33, 273),
-    createPosition(65, 273),
-    createPosition(97, 273),
-    createPosition(193, 273),
-    createPosition(225, 273),
-    createPosition(257, 273),
-    // row 6
-    createPosition(17, 288),
-    ...createPositionRow(17, 65, 2, 288),
-    createPosition(65, 288),
-    createPosition(97, 288),
+    // ROW 1
+    createPosition(33, 32),
+    ...createPositionRow(33, 81, 2, 32),
+    createPosition(81, 32),
+    ...createPositionRow(81, 145, 3, 32),
+    createPosition(145, 32),
+    createPosition(177, 32),
+    ...createPositionRow(177, 241, 3, 32),
+    createPosition(241, 32),
+    ...createPositionRow(241, 289, 2, 32),
+    createPosition(289, 32),
+    // ROW 2
+    createPosition(33, 80),
+    ...createPositionRow(33, 81, 2, 80),
+    createPosition(81, 80),
+    ...createPositionRow(81, 145, 3, 80),
+    createPosition(145, 80),
+    ...createPositionRow(145, 177, 1, 80),
+    createPosition(177, 80),
+    ...createPositionRow(177, 241, 3, 80),
+    createPosition(241, 80),
+    ...createPositionRow(241, 289, 2, 80),
+    createPosition(289, 80),
+    // ROW 3
+    createPosition(33, 112),
+    ...createPositionRow(33, 81, 2, 112),
+    createPosition(81, 112),
+    createPosition(113, 112),
+    ...createPositionRow(113, 145, 1, 112),
+    createPosition(145, 112),
+    createPosition(177, 112),
+    ...createPositionRow(177, 209, 1, 112),
+    createPosition(209, 112),
+    createPosition(241, 112),
+    ...createPositionRow(241, 289, 2, 112),
+    createPosition(289, 112),
+    // ROW 4
+    createPosition(33, 240),
+    ...createPositionRow(33, 81, 2, 240),
+    createPosition(81, 240),
+    ...createPositionRow(81, 145, 3, 240),
+    createPosition(145, 240),
+    createPosition(177, 240),
+    ...createPositionRow(177, 241, 3, 240),
+    createPosition(241, 240),
+    ...createPositionRow(241, 289, 2, 240),
+    createPosition(289, 240),
+    // ROW 5
+    createPosition(49, 272),
+    createPosition(81, 272),
+    ...createPositionRow(81, 145, 3, 272),
+    createPosition(145, 272),
+    createPosition(177, 272),
+    ...createPositionRow(177, 241, 3, 272),
+    createPosition(241, 272),
+    createPosition(272, 272),
+    // ROW 6
+    createPosition(33, 304),
+    ...createPositionRow(33, 81, 2, 304),
+    createPosition(81, 304),
+    createPosition(113, 304),
+    ...createPositionRow(113, 145, 1, 304),
+    createPosition(145, 304),
+    createPosition(177, 304),
+    ...createPositionRow(177, 209, 1, 304),
+    createPosition(209, 304),
+    createPosition(241, 304),
+    ...createPositionRow(241, 289, 2, 304),
+    createPosition(289, 304),
+    // ROW 7
+    createPosition(33, 336),
+    ...createPositionRow(33, 81, 2, 336),
+    createPosition(81, 336),
+    ...createPositionRow(81, 145, 3, 336),
+    createPosition(145, 336),
+    ...createPositionRow(145, 177, 1, 336),
+    createPosition(177, 336),
+    ...createPositionRow(177, 241, 3, 336),
+    createPosition(241, 336),
+    ...createPositionRow(241, 289, 2, 336),
+    createPosition(289, 336),
+    // COL 1
+    createPosition(33, 64),
+    createPosition(33, 96),
+    createPosition(33, 256),
+    createPosition(33, 320),
+    // COL 2
+    createPosition(49, 288),
+    // COL 3
+    ...createPositionCol(32, 80, 2, 81),
+    ...createPositionCol(80, 112, 1, 81),
+    ...createPositionCol(112, 240, 7, 81),
+    ...createPositionCol(240, 272, 1, 81),
+    ...createPositionCol(272, 304, 1, 81),
+    // COL 4
+    createPosition(113, 96),
     createPosition(113, 288),
-    createPosition(128, 288),
-    createPosition(161, 288),
-    createPosition(177, 288),
-    createPosition(193, 288),
-    createPosition(225, 288),
-    ...createPositionRow(225, 273, 2, 288),
+    // COL 5
+    ...createPositionCol(32, 80, 2, 145),
+    ...createPositionCol(240, 272, 1, 145),
+    ...createPositionCol(304, 336, 1, 145),
+    // COL 6
+    ...createPositionCol(32, 80, 2, 177),
+    ...createPositionCol(240, 272, 1, 177),
+    ...createPositionCol(304, 336, 1, 177),
+    // COL 7
+    createPosition(209, 96),
+    createPosition(209, 288),
+    // COL 8
+    ...createPositionCol(32, 80, 2, 241),
+    ...createPositionCol(80, 112, 1, 241),
+    ...createPositionCol(112, 240, 7, 241),
+    ...createPositionCol(240, 272, 1, 241),
+    ...createPositionCol(272, 304, 1, 241),
+    // COL 9
     createPosition(273, 288),
-    // cols 6
-    createPosition(17, 305),
-    createPosition(128, 305),
-    createPosition(161, 305),
-    createPosition(273, 305),
-    // row 7
-    createPosition(17, 320),
-    ...createPositionRow(17, 128, 6, 320),
-    createPosition(128, 320),
-    createPosition(144, 320),
-    createPosition(161, 320),
-    ...createPositionRow(161, 273, 6, 320),
-    createPosition(273, 320),
+    // COL 10
+    createPosition(289, 64),
+    createPosition(289, 96),
+    createPosition(289, 256),
+    createPosition(289, 320),
   ];
 }
 
 export function createPowers(): { x: number; y: number }[] {
   return [
-    createPosition(17, 49),
-    createPosition(273, 49),
-    createPosition(17, 256),
-    createPosition(273, 256),
+    createPosition(33, 48),
+    createPosition(289, 48),
+    createPosition(33, 272),
+    createPosition(289, 272),
   ];
 }
 

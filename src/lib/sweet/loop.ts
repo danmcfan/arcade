@@ -22,12 +22,20 @@ export function sweetLoop(state: State, deltaTime: number) {
     return;
   }
 
+  const { player, enemies, corners } = activeGameState;
+  const entities = [player, ...enemies];
+
   handleEnemy(activeGameState, deltaTime);
-  handleMovement(activeGameState, deltaTime);
+  handleMovement(entities, corners, deltaTime);
   handleCollision(activeGameState);
   handleAnimation(activeGameState, deltaTime);
 
-  state.ctx.clearRect(0, 0, state.width, state.height);
+  state.ctx.clearRect(
+    -state.width / 2,
+    -state.height / 2,
+    state.width,
+    state.height
+  );
   drawBackground(state.ctx, activeGameState.background, state.sprites);
   drawPoints(state.ctx, activeGameState, state.sprites);
   drawPowers(state.ctx, activeGameState, state.sprites);

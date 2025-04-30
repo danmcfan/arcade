@@ -12,7 +12,12 @@ export function arcadeLoop(state: State, deltaTime: number) {
   handleCollision(state);
   handleAnimation(state, deltaTime);
 
-  state.ctx.clearRect(0, 0, state.width, state.height);
+  state.ctx.clearRect(
+    -state.width / 2,
+    -state.height / 2,
+    state.width,
+    state.height
+  );
   drawBackground(state.ctx, state.background, state.sprites);
   drawMachines(state);
   drawPlayer(state);

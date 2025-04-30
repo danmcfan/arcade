@@ -2,10 +2,10 @@ import type { Sprite } from "./sprite";
 import { SpriteID } from "./sprite";
 import { SweetState } from "./sweet/state";
 export enum Direction {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT,
+  UP = "UP",
+  DOWN = "DOWN",
+  LEFT = "LEFT",
+  RIGHT = "RIGHT",
 }
 
 export enum GameID {

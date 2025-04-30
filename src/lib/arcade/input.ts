@@ -55,8 +55,8 @@ export function handleInput(state: State) {
         state.activeGame = machine.gameID;
         state.activeGameState = createSweetState();
         state.initialScale = 0.5;
-        state.gameWidth = 18 * 16;
-        state.gameHeight = 21 * 16;
+        state.gameWidth = state.activeGameState.background.width * 16;
+        state.gameHeight = state.activeGameState.background.height * 16;
         resizeHandler();
       }
     }

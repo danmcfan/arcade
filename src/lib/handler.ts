@@ -55,11 +55,11 @@ export function getAnimationHandler(state: State) {
       return;
     }
 
-    const deltaTime = timestamp - state.lastTimestamp;
+    let deltaTime = timestamp - state.lastTimestamp;
     state.lastTimestamp = timestamp;
 
-    if (deltaTime > 100) {
-      return;
+    if (deltaTime > 15) {
+      deltaTime = 15;
     }
 
     switch (state.activeGame) {

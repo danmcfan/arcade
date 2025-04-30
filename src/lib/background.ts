@@ -4,6 +4,7 @@ export type Background = {
   cells: number[];
   spriteIDs: SpriteID[];
   width: number;
+  height: number;
 };
 
 export function drawBackground(

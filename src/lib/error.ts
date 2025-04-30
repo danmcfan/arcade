@@ -24,7 +24,7 @@ export function getErrorHandler(state: State, error: Error) {
     const errorText = `${error.name}: ${error.message}`;
     const words = errorText.split(" ");
     let line = "";
-    let lines = [];
+    const lines = [];
 
     for (const word of words) {
       const testLine = line ? line + " " + word : word;

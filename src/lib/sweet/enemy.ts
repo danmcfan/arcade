@@ -53,13 +53,13 @@ export function handleEnemy(state: SweetState, deltaTime: number) {
           randomDirection === Direction.UP ||
           randomDirection === Direction.DOWN
         ) {
-          enemy.y = corner.y;
+          enemy.x = corner.x;
         }
         if (
           randomDirection === Direction.LEFT ||
           randomDirection === Direction.RIGHT
         ) {
-          enemy.x = corner.x;
+          enemy.y = corner.y;
         }
 
         enemy.direction = randomDirection;
