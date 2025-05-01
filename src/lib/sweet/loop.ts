@@ -1,5 +1,5 @@
 import { State } from "../state";
-import { clear, scale, center } from "../draw";
+import { clearScreen, scaleScreen, centerScreen } from "../draw";
 import { drawBackground } from "../background";
 import { handleInput } from "./input";
 import { handleEnemy } from "./enemy";
@@ -33,9 +33,9 @@ export function sweetLoop(state: State, deltaTime: number) {
 
   state.ctx.save();
 
-  clear(state);
-  scale(state);
-  center(state);
+  clearScreen(state);
+  scaleScreen(state);
+  centerScreen(state);
 
   drawBackground(state.ctx, activeGameState.background, state.sprites);
   drawPoints(state.ctx, activeGameState, state.sprites);

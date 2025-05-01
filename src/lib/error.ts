@@ -1,25 +1,25 @@
 import { State } from "./state";
+import { clearScreen, scaleScreen, centerScreen } from "./draw";
 
 export function getErrorHandler(state: State, error: Error) {
   const { ctx } = state;
 
+  state.gameWidth = 0;
+  state.gameHeight = 0;
+
   function drawError(_: number) {
-    ctx.clearRect(
-      -state.width / 2,
-      -state.height / 2,
-      state.width,
-      state.height
-    );
-    ctx.fillStyle = "white";
+    ctx.save();
+
+    clearScreen(state);
+    scaleScreen(state);
+    centerScreen(state);
+
+    ctx.font = "bold 12px Monospace";
+    ctx.fillStyle = "red";
     ctx.textAlign = "center";
 
-    // Set font size based on scale
     const scale = state.scaleBase * state.scaleModifier;
-    const fontSize = 2 * scale;
-    ctx.font = `${fontSize}px Arial`;
-
-    // Limit text width to prevent overrun
-    const maxWidth = state.width / scale - 20; // Leave some margin
+    const maxWidth = state.width / scale - 60;
 
     // Split message into multiple lines if needed
     const errorText = `${error.name}: ${error.message}`;
@@ -43,12 +43,10 @@ export function getErrorHandler(state: State, error: Error) {
 
     // Draw each line of text
     lines.forEach((line, i) => {
-      ctx.fillText(
-        line,
-        0,
-        (-fontSize * (lines.length - 1)) / 2 + i * fontSize * 1.2
-      );
+      ctx.fillText(line, 0, (-12 * (lines.length - 1)) / 2 + i * 12 * 1.5);
     });
+
+    ctx.restore();
   }
 
   function errorLoop(timestamp: number) {
