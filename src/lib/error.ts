@@ -14,11 +14,12 @@ export function getErrorHandler(state: State, error: Error) {
     ctx.textAlign = "center";
 
     // Set font size based on scale
-    const fontSize = 2 * state.scale;
+    const scale = state.scaleBase * state.scaleModifier;
+    const fontSize = 2 * scale;
     ctx.font = `${fontSize}px Arial`;
 
     // Limit text width to prevent overrun
-    const maxWidth = state.width / state.scale - 20; // Leave some margin
+    const maxWidth = state.width / scale - 20; // Leave some margin
 
     // Split message into multiple lines if needed
     const errorText = `${error.name}: ${error.message}`;
