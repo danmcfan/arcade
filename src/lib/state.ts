@@ -14,6 +14,7 @@ export type State = {
   scaleModifier: number;
   gameWidth: number;
   gameHeight: number;
+  controlsHeight: number;
   lastTimestamp: number;
   sprites: Map<SpriteID, Sprite>;
   background: {
@@ -43,6 +44,10 @@ export type State = {
   activeGame: GameID | null;
   activeGameState: SweetState | null;
   keys: Set<string>;
+  mouseDown: {
+    x: number;
+    y: number;
+  } | null;
 };
 
 export function createState() {
@@ -61,6 +66,7 @@ export function createState() {
     scaleModifier: 0,
     gameWidth: 0,
     gameHeight: 0,
+    controlsHeight: 0,
     lastTimestamp: 0,
     sprites: new Map(),
     background: {
@@ -104,6 +110,7 @@ export function createState() {
     activeGame: null,
     activeGameState: null,
     keys: new Set(),
+    mouseDown: null,
   };
 
   state.scaleBase = 2;

@@ -14,6 +14,7 @@ type SpriteConfig = {
 };
 
 export enum SpriteID {
+  BUTTONS = "Buttons.png",
   PLAYER = "Player.png",
   WOOD_FLOOR_TILES = "WoodFloorTiles.png",
   INTERIOR_WALLS = "InteriorWalls.png",
@@ -27,6 +28,7 @@ export enum SpriteID {
 }
 
 const spriteConfigs: Map<SpriteID, SpriteConfig> = new Map([
+  [SpriteID.BUTTONS, { width: 16, height: 16 }],
   [SpriteID.PLAYER, { width: 32, height: 32 }],
   [SpriteID.WOOD_FLOOR_TILES, { width: 16, height: 16 }],
   [SpriteID.INTERIOR_WALLS, { width: 16, height: 16 }],

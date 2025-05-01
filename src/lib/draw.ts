@@ -14,6 +14,8 @@ export function scaleScreen(state: State) {
 export function centerScreen(state: State) {
   const scale = state.scaleBase * state.scaleModifier;
   const translateX = Math.floor((state.width / scale - state.gameWidth) / 2);
-  const translateY = Math.floor((state.height / scale - state.gameHeight) / 2);
+  const translateY = Math.floor(
+    (state.height / scale - state.gameHeight - state.controlsHeight) / 2
+  );
   state.ctx.translate(translateX, translateY);
 }
