@@ -69,6 +69,7 @@ export function getPointerDownHandler(state: State) {
 export function getPointerUpHandler(state: State) {
   return () => {
     state.mouseDown = null;
+    state.keys.clear();
   };
 }
 

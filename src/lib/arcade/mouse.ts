@@ -17,7 +17,7 @@ const BUTTONS = [
   },
   {
     code: "ArrowLeft",
-    x: 32,
+    x: 44,
     y: 188,
     width: 24,
     height: 24,
@@ -43,7 +43,5 @@ export function handleMouse(state: State) {
         state.keys.add(button.code);
       }
     }
-  } else {
-    state.keys.clear();
   }
 }

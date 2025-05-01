@@ -2,7 +2,7 @@ import { State } from "./state";
 import { getSprite, SpriteID } from "./sprite";
 
 export function drawButtons(state: State) {
-  const { ctx, sprites, gameWidth, gameHeight } = state;
+  const { ctx, sprites, gameWidth, gameHeight, keys } = state;
 
   const centerX = gameWidth * 0.5;
   const offsetY = 16;
@@ -12,9 +12,24 @@ export function drawButtons(state: State) {
 
   ctx.save();
 
+  let isUp = 0;
+  let isDown = 0;
+  let isLeft = 0;
+  let isRight = 0;
+
+  if (keys.has("KeyD") || keys.has("ArrowRight")) {
+    isRight = 2;
+  } else if (keys.has("KeyA") || keys.has("ArrowLeft")) {
+    isLeft = 2;
+  } else if (keys.has("KeyS") || keys.has("ArrowDown")) {
+    isDown = 2;
+  } else if (keys.has("KeyW") || keys.has("ArrowUp")) {
+    isUp = 2;
+  }
+
   ctx.drawImage(
     sprite.image,
-    0,
+    isUp * sprite.width,
     0,
     sprite.width,
     sprite.height,
@@ -26,7 +41,7 @@ export function drawButtons(state: State) {
 
   ctx.drawImage(
     sprite.image,
-    0,
+    isDown * sprite.width,
     sprite.height * 1,
     sprite.width,
     sprite.height,
@@ -40,7 +55,7 @@ export function drawButtons(state: State) {
   ctx.scale(-1, 1);
   ctx.drawImage(
     sprite.image,
-    0,
+    isLeft * sprite.width,
     sprite.height * 2,
     sprite.width,
     sprite.height,
@@ -53,7 +68,7 @@ export function drawButtons(state: State) {
 
   ctx.drawImage(
     sprite.image,
-    0,
+    isRight * sprite.width,
     sprite.height * 2,
     sprite.width,
     sprite.height,
