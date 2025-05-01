@@ -6,36 +6,30 @@ import { sweetLoop } from "./sweet/loop";
 
 export function getResizeHandler(state: State) {
   return () => {
-    const pixelRatio = globalThis.devicePixelRatio || 1;
+    state.pixelRatio = globalThis.devicePixelRatio || 1;
     const rect = state.container.getBoundingClientRect();
-    state.canvas.width = rect.width * pixelRatio;
-    state.canvas.height = rect.height * pixelRatio;
+    state.canvas.width = rect.width * state.pixelRatio;
+    state.canvas.height = rect.height * state.pixelRatio;
     state.width = rect.width;
     state.height = rect.height;
 
-    if (state.width < 600 || state.height < 600) {
-      state.scale = state.initialScale * 2;
-    } else if (state.width < 768 || state.height < 768) {
-      state.scale = state.initialScale * 3;
-    } else if (state.width < 1024 || state.height < 1024) {
-      state.scale = state.initialScale * 4;
-    } else {
-      state.scale = state.initialScale * 6;
-    }
-
     state.ctx.imageSmoothingEnabled = false;
-    state.ctx.scale(pixelRatio, pixelRatio);
-    state.ctx.scale(state.scale, state.scale);
+    state.ctx.scale(state.pixelRatio, state.pixelRatio);
 
-    // Center everything on the screen
-    const translateX = Math.floor(
-      (state.width / state.scale - state.gameWidth) / 2
-    );
-    const translateY = Math.floor(
-      (state.height / state.scale - state.gameHeight) / 2
-    );
-    state.ctx.translate(translateX, translateY);
+    setScaleModifier(state);
   };
+}
+
+function setScaleModifier(state: State) {
+  if (state.width <= 800 || state.height <= 800) {
+    state.scaleModifier = 1;
+  } else if (state.width < 1200 || state.height < 1200) {
+    state.scaleModifier = 2;
+  } else if (state.width < 1600 || state.height < 1600) {
+    state.scaleModifier = 3;
+  } else {
+    state.scaleModifier = 4;
+  }
 }
 
 export function getKeyDownHandler(state: State) {

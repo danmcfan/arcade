@@ -1,17 +1,15 @@
 import { Direction } from "../types";
 import { State } from "../state";
-import { getResizeHandler } from "../handler";
 import { overlaps } from "./util";
 
 export function handleInput(state: State) {
-  const resizeHandler = getResizeHandler(state);
   if (state.keys.has("Escape")) {
     state.activeGame = null;
     state.activeGameState = null;
-    state.initialScale = 1;
-    state.gameWidth = 160;
-    state.gameHeight = 160;
-    resizeHandler();
+
+    state.scaleBase = 2;
+    state.gameWidth = state.background.width * 16;
+    state.gameHeight = state.background.height * 16;
   }
 
   const { activeGameState } = state;

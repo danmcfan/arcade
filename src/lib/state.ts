@@ -10,8 +10,8 @@ export type State = {
   pixelRatio: number;
   width: number;
   height: number;
-  scale: number;
-  initialScale: number;
+  scaleBase: number;
+  scaleModifier: number;
   gameWidth: number;
   gameHeight: number;
   lastTimestamp: number;
@@ -50,27 +50,17 @@ export function createState() {
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-  const pixelRatio = globalThis.devicePixelRatio || 1;
-  const rect = container.getBoundingClientRect();
-  canvas.width = rect.width * pixelRatio;
-  canvas.height = rect.height * pixelRatio;
-  const width = rect.width;
-  const height = rect.height;
-
-  ctx.imageSmoothingEnabled = false;
-  ctx.scale(pixelRatio, pixelRatio);
-
   const state: State = {
     container,
     canvas,
     ctx,
-    pixelRatio,
-    width,
-    height,
-    scale: 0,
-    initialScale: 1,
-    gameWidth: 160,
-    gameHeight: 160,
+    pixelRatio: 0,
+    width: 0,
+    height: 0,
+    scaleBase: 1,
+    scaleModifier: 0,
+    gameWidth: 0,
+    gameHeight: 0,
     lastTimestamp: 0,
     sprites: new Map(),
     background: {
@@ -115,6 +105,10 @@ export function createState() {
     activeGameState: null,
     keys: new Set(),
   };
+
+  state.scaleBase = 2;
+  state.gameWidth = state.background.width * 16;
+  state.gameHeight = state.background.height * 16;
 
   return state;
 }

@@ -1,4 +1,5 @@
 import { State } from "../state";
+import { clear, scale, center } from "../draw";
 import { drawBackground } from "../background";
 import { handleInput } from "./input";
 import { handleEnemy } from "./enemy";
@@ -30,16 +31,18 @@ export function sweetLoop(state: State, deltaTime: number) {
   handleCollision(activeGameState);
   handleAnimation(activeGameState, deltaTime);
 
-  state.ctx.clearRect(
-    -state.width / 2,
-    -state.height / 2,
-    state.width,
-    state.height
-  );
+  state.ctx.save();
+
+  clear(state);
+  scale(state);
+  center(state);
+
   drawBackground(state.ctx, activeGameState.background, state.sprites);
   drawPoints(state.ctx, activeGameState, state.sprites);
   drawPowers(state.ctx, activeGameState, state.sprites);
   drawBear(state.ctx, activeGameState, state.sprites);
   drawEnemies(state.ctx, activeGameState, state.sprites);
   drawScore(state.ctx, state, activeGameState.score);
+
+  state.ctx.restore();
 }

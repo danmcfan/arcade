@@ -1,4 +1,5 @@
 import { State } from "../state";
+import { clear, scale, center } from "../draw";
 import { drawBackground } from "../background";
 import { handleInput } from "./input";
 import { drawMachines, drawPlayer } from "./draw";
@@ -12,13 +13,15 @@ export function arcadeLoop(state: State, deltaTime: number) {
   handleCollision(state);
   handleAnimation(state, deltaTime);
 
-  state.ctx.clearRect(
-    -state.width / 2,
-    -state.height / 2,
-    state.width,
-    state.height
-  );
+  state.ctx.save();
+
+  clear(state);
+  scale(state);
+  center(state);
+
   drawBackground(state.ctx, state.background, state.sprites);
   drawMachines(state);
   drawPlayer(state);
+
+  state.ctx.restore();
 }

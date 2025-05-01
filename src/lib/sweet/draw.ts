@@ -146,7 +146,8 @@ export function drawScore(
   state: State,
   score: number
 ) {
-  ctx.font = `bold ${4 * state.scale}px Monospace`;
+  const scale = state.scaleBase * state.scaleModifier;
+  ctx.font = `bold ${4 * scale}px Monospace`;
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
   ctx.fillText(

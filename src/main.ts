@@ -20,16 +20,13 @@ function main() {
   globalThis.addEventListener("resize", resizeHandler);
   globalThis.addEventListener("keydown", keyDownHandler);
   globalThis.addEventListener("keyup", keyUpHandler);
+
   resizeHandler();
 
   try {
     const animationHandler = getAnimationHandler(state);
     requestAnimationFrame(animationHandler);
   } catch (error) {
-    state.gameWidth = 0;
-    state.gameHeight = 0;
-    resizeHandler();
-
     console.error(error);
     const errorHandler = getErrorHandler(state, error as Error);
     requestAnimationFrame(errorHandler);
