@@ -1,7 +1,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    background-color: #000;
+    background-color: #27272a;
 }
 
 #root {
@@ -13,6 +13,7 @@ html, body {
 
 #canvas {
     border-radius: 16px;
+    background-color: #e4e4e7;
 }
 
 .hidden {

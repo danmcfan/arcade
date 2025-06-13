@@ -9,7 +9,7 @@ import (
 
 type Sprite struct {
 	Filename string
-	Image    *js.Value
+	Image    js.Value
 	IsLoaded bool
 	Width    int
 	Height   int
@@ -25,7 +25,7 @@ func CreateSprite(filename string, width int, height int) *Sprite {
 	imageAsset := &Sprite{
 		Filename: filename,
 		IsLoaded: false,
-		Image:    &image,
+		Image:    image,
 		Width:    width,
 		Height:   height,
 	}

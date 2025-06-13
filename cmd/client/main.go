@@ -8,32 +8,13 @@ import (
 
 	"syscall/js"
 
-	"github.com/danmcfan/arcade/internal"
+	. "github.com/danmcfan/arcade/internal"
 )
 
 const MARGIN = 32
 
-type Screen struct {
-	Width  int
-	Height int
-}
-
 func main() {
 	log.Println("Starting client...")
-
-	imageAssets := []*internal.Sprite{
-		internal.CreateSprite("Bear.png", 32, 32),
-		internal.CreateSprite("Bee.png", 16, 16),
-		internal.CreateSprite("Buttons.png", 16, 16),
-		internal.CreateSprite("Food.png", 16, 16),
-		internal.CreateSprite("GrassMiddle.png", 16, 16),
-		internal.CreateSprite("GrassTiles.png", 16, 16),
-		internal.CreateSprite("GreenMachine.png", 16, 32),
-		internal.CreateSprite("InteriorWalls.png", 16, 16),
-		internal.CreateSprite("PathMiddle.png", 16, 16),
-		internal.CreateSprite("Player.png", 32, 32),
-		internal.CreateSprite("WoodFloorTiles.png", 16, 16),
-	}
 
 	document := js.Global().Get("document")
 	window := js.Global().Get("window")
@@ -42,26 +23,57 @@ func main() {
 	canvas := document.Call("getElementById", "canvas")
 	ctx := canvas.Call("getContext", "2d")
 
-	handleResize(window, canvas, ctx)
+	sprites := []*Sprite{
+		CreateSprite("Bear.png", 32, 32),
+		CreateSprite("Bee.png", 16, 16),
+		CreateSprite("Buttons.png", 16, 16),
+		CreateSprite("Food.png", 16, 16),
+		CreateSprite("GrassMiddle.png", 16, 16),
+		CreateSprite("GrassTiles.png", 16, 16),
+		CreateSprite("GreenMachine.png", 16, 32),
+		CreateSprite("InteriorWalls.png", 16, 16),
+		CreateSprite("PathMiddle.png", 16, 16),
+		CreateSprite("Player.png", 32, 32),
+		CreateSprite("WoodFloorTiles.png", 16, 16),
+	}
+	game := NewGame(ctx, sprites)
 
+	handleResize(window, canvas, game)
 	window.Call("addEventListener", "resize", js.FuncOf(func(this js.Value, args []js.Value) any {
-		handleResize(window, canvas, ctx)
+		handleResize(window, canvas, game)
 		return nil
 	}))
 
-	allLoaded := isAllLoaded(imageAssets)
+	allLoaded := isAllLoaded(sprites)
 	for !allLoaded {
 		time.Sleep(100 * time.Millisecond)
-		allLoaded = isAllLoaded(imageAssets)
+		allLoaded = isAllLoaded(sprites)
 	}
 
 	rootClassList := root.Get("classList")
 	rootClassList.Call("remove", "hidden")
 
+	window.Call("addEventListener", "keydown", js.FuncOf(func(this js.Value, args []js.Value) any {
+		event := args[0]
+		code := event.Get("code").String()
+		game.Keys.Add(code)
+		return nil
+	}))
+
+	window.Call("addEventListener", "keyup", js.FuncOf(func(this js.Value, args []js.Value) any {
+		event := args[0]
+		code := event.Get("code").String()
+		game.Keys.Delete(code)
+		return nil
+	}))
+
+	animationHandler := CreateAnimationHandler(game, UpdateGame, DrawGame)
+	window.Call("requestAnimationFrame", animationHandler)
+
 	select {}
 }
 
-func handleResize(window js.Value, canvas js.Value, ctx js.Value) {
+func handleResize(window js.Value, canvas js.Value, game *Game) {
 	windowWidth := window.Get("innerWidth").Int()
 	windowHeight := window.Get("innerHeight").Int()
 
@@ -83,11 +95,16 @@ func handleResize(window js.Value, canvas js.Value, ctx js.Value) {
 
 	canvas.Set("width", width)
 	canvas.Set("height", height)
-	ctx.Set("fillStyle", "red")
-	ctx.Call("fillRect", 0, 0, width, height)
+
+	game.Width = width
+	game.Height = height
+
+	devicePixelRatio := max(window.Get("devicePixelRatio").Float(), 1.0)
+	game.Ctx.Set("imageSmoothingEnabled", false)
+	game.Ctx.Call("scale", devicePixelRatio, devicePixelRatio)
 }
 
-func isAllLoaded(imageAssets []*internal.Sprite) bool {
+func isAllLoaded(imageAssets []*Sprite) bool {
 	for _, imageAsset := range imageAssets {
 		if !imageAsset.IsLoaded {
 			return false
