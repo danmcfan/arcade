@@ -6,6 +6,8 @@ import (
 	"syscall/js"
 )
 
+const MS_PER_FRAME = 1000.0 / 60.0
+
 type Box struct {
 	X int
 	Y int
@@ -13,16 +15,21 @@ type Box struct {
 	H int
 }
 
-func CreateAnimationHandler(g *Game, update GameFunc, draw GameFunc) js.Func {
+func CreateAnimationHandler(g *Game) js.Func {
 	var handleAnimation js.Func
 	handleAnimation = js.FuncOf(func(this js.Value, args []js.Value) any {
-		timestampCurrent := args[0].Float()
+		current := args[0].Float()
+		elapsed := min(current-g.Previous, MS_PER_FRAME*5)
 
-		g.TimestampDelta = min(timestampCurrent-g.TimestampPrevious, 15.0)
-		g.TimestampPrevious = timestampCurrent
+		g.Previous = current
+		g.Lag += elapsed
 
-		update(g)
-		draw(g)
+		for g.Lag > MS_PER_FRAME {
+			g.Update()
+			g.Lag -= MS_PER_FRAME
+		}
+
+		g.Draw()
 
 		js.Global().Call("requestAnimationFrame", handleAnimation)
 		return nil

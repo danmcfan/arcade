@@ -20,15 +20,14 @@ const (
 )
 
 type Game struct {
-	Ctx               js.Value
-	Sprites           []*Sprite
-	Keys              Set
-	TimestampDelta    float64
-	TimestampPrevious float64
-	Direction         Direction
-	Moving            bool
-	X, Y, Frame       float64
-	Width, Height     int
+	Ctx                  js.Value
+	Sprites              []*Sprite
+	Keys                 Set
+	Lag, Previous, Speed float64
+	Direction            Direction
+	Moving               bool
+	X, Y, Frame          float64
+	Width, Height, Scale int
 }
 
 type GameFunc func(g *Game)
@@ -51,17 +50,18 @@ func NewGame(ctx js.Value, sprites []*Sprite) *Game {
 		Ctx:       ctx,
 		Sprites:   sprites,
 		Keys:      make(Set),
+		Speed:     1.0,
 		Direction: DirectionDown,
 	}
 }
 
-func UpdateGame(g *Game) {
-	MovePlayer(g)
-	g.Frame += g.TimestampDelta / 100.0
+func (g *Game) Update() {
+	g.Frame += 0.15 * g.Speed
+	g.MovePlayer()
 }
 
-func MovePlayer(g *Game) {
-	delta := g.TimestampDelta / 10.0
+func (g *Game) MovePlayer() {
+	delta := 1.5 * g.Speed
 
 	isUpPressed := g.Keys.Contains("KeyW") || g.Keys.Contains("ArrowUp")
 	isDownPressed := g.Keys.Contains("KeyS") || g.Keys.Contains("ArrowDown")
@@ -75,7 +75,8 @@ func MovePlayer(g *Game) {
 		return
 	}
 	if isDownPressed {
-		g.Y = min(g.Y+delta, float64(g.Height/4-32))
+		limit := float64((g.Height - (32 * g.Scale)) / g.Scale)
+		g.Y = min(g.Y+delta, limit)
 		g.Direction = DirectionDown
 		g.Moving = true
 		return
@@ -87,7 +88,8 @@ func MovePlayer(g *Game) {
 		return
 	}
 	if isRightPressed {
-		g.X = min(g.X+delta, float64(g.Width/4-32))
+		limit := float64((g.Width - (32 * g.Scale)) / g.Scale)
+		g.X = min(g.X+delta, limit)
 		g.Direction = DirectionRight
 		g.Moving = true
 		return
@@ -96,10 +98,9 @@ func MovePlayer(g *Game) {
 	g.Moving = false
 }
 
-func DrawGame(g *Game) {
+func (g *Game) Draw() {
 	ClearScreen(g.Ctx, g.Width, g.Height)
 	sprite := g.Sprites[9]
-	scale := 4
 
 	row := 0
 	switch g.Direction {
@@ -129,10 +130,10 @@ func DrawGame(g *Game) {
 		H: sprite.Height,
 	}
 	db := Box{
-		X: int(g.X) * scale,
-		Y: int(g.Y) * scale,
-		W: sprite.Width * scale,
-		H: sprite.Height * scale,
+		X: int(g.X) * g.Scale,
+		Y: int(g.Y) * g.Scale,
+		W: sprite.Width * g.Scale,
+		H: sprite.Height * g.Scale,
 	}
 	DrawImage(g.Ctx, sprite.Image, sb, db, flip)
 }

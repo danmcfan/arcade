@@ -67,7 +67,7 @@ func main() {
 		return nil
 	}))
 
-	animationHandler := CreateAnimationHandler(game, UpdateGame, DrawGame)
+	animationHandler := CreateAnimationHandler(game)
 	window.Call("requestAnimationFrame", animationHandler)
 
 	select {}
@@ -88,6 +88,7 @@ func handleResize(window js.Value, canvas js.Value, game *Game) {
 		scaleHeight := float64(availableHeight) / float64(height)
 
 		scale := min(scaleWidth, scaleHeight)
+		game.Scale = max(min(int((scale/0.1)*2), 8), 2)
 
 		width = int(float64(width) * scale)
 		height = int(float64(height) * scale)
@@ -99,9 +100,7 @@ func handleResize(window js.Value, canvas js.Value, game *Game) {
 	game.Width = width
 	game.Height = height
 
-	devicePixelRatio := max(window.Get("devicePixelRatio").Float(), 1.0)
 	game.Ctx.Set("imageSmoothingEnabled", false)
-	game.Ctx.Call("scale", devicePixelRatio, devicePixelRatio)
 }
 
 func isAllLoaded(imageAssets []*Sprite) bool {
