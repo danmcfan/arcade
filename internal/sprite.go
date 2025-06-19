@@ -7,7 +7,60 @@ import (
 	"syscall/js"
 )
 
-type Sprite struct {
+type Sprite string
+
+const (
+	SpriteBear           Sprite = "Bear"
+	SpriteBee            Sprite = "Bee"
+	SpriteButtons        Sprite = "Buttons"
+	SpriteFood           Sprite = "Food"
+	SpriteGrassMiddle    Sprite = "GrassMiddle"
+	SpriteGrassTiles     Sprite = "GrassTiles"
+	SpriteGreenMachine   Sprite = "GreenMachine"
+	SpriteInteriorWalls  Sprite = "InteriorWalls"
+	SpritePathMiddle     Sprite = "PathMiddle"
+	SpritePlayer         Sprite = "Player"
+	SpriteWoodFloorTiles Sprite = "WoodFloorTiles"
+)
+
+type SpriteManager struct {
+	sprites map[Sprite]*SpriteSheet
+}
+
+func NewSpriteManager() *SpriteManager {
+	sm := &SpriteManager{
+		sprites: make(map[Sprite]*SpriteSheet),
+	}
+
+	sm.sprites[SpriteBear] = NewSpriteSheet(SpriteBear, 32, 32)
+	sm.sprites[SpriteBee] = NewSpriteSheet(SpriteBee, 16, 16)
+	sm.sprites[SpriteButtons] = NewSpriteSheet(SpriteButtons, 16, 16)
+	sm.sprites[SpriteFood] = NewSpriteSheet(SpriteFood, 16, 16)
+	sm.sprites[SpriteGrassMiddle] = NewSpriteSheet(SpriteGrassMiddle, 16, 16)
+	sm.sprites[SpriteGrassTiles] = NewSpriteSheet(SpriteGrassTiles, 16, 16)
+	sm.sprites[SpriteGreenMachine] = NewSpriteSheet(SpriteGreenMachine, 16, 32)
+	sm.sprites[SpriteInteriorWalls] = NewSpriteSheet(SpriteInteriorWalls, 16, 16)
+	sm.sprites[SpritePathMiddle] = NewSpriteSheet(SpritePathMiddle, 16, 16)
+	sm.sprites[SpritePlayer] = NewSpriteSheet(SpritePlayer, 32, 32)
+	sm.sprites[SpriteWoodFloorTiles] = NewSpriteSheet(SpriteWoodFloorTiles, 16, 16)
+
+	return sm
+}
+
+func (sm *SpriteManager) AllLoaded() bool {
+	for _, ss := range sm.sprites {
+		if !ss.IsLoaded {
+			return false
+		}
+	}
+	return true
+}
+
+func (sm *SpriteManager) GetSpriteSheet(sprite Sprite) *SpriteSheet {
+	return sm.sprites[sprite]
+}
+
+type SpriteSheet struct {
 	Filename string
 	Image    js.Value
 	IsLoaded bool
@@ -18,32 +71,27 @@ type Sprite struct {
 	Total    int
 }
 
-func NewSprite(filename string, width int, height int) *Sprite {
-	image := js.Global().Get("Image").New()
-	image.Set("src", fmt.Sprintf("/image/%s", filename))
+func NewSpriteSheet(sprite Sprite, width int, height int) *SpriteSheet {
+	filename := fmt.Sprintf("/image/%s.png", sprite)
 
-	sprite := &Sprite{
+	image := js.Global().Get("Image").New()
+	image.Set("src", filename)
+
+	ss := &SpriteSheet{
 		Filename: filename,
 		IsLoaded: false,
 		Image:    image,
 		Width:    width,
 		Height:   height,
 	}
+
 	image.Call("addEventListener", "load", js.FuncOf(func(this js.Value, args []js.Value) any {
-		sprite.IsLoaded = true
-		sprite.Rows = sprite.Image.Get("height").Int() / sprite.Height
-		sprite.Cols = sprite.Image.Get("width").Int() / sprite.Width
-		sprite.Total = sprite.Rows * sprite.Cols
+		ss.IsLoaded = true
+		ss.Rows = ss.Image.Get("height").Int() / ss.Height
+		ss.Cols = ss.Image.Get("width").Int() / ss.Width
+		ss.Total = ss.Rows * ss.Cols
 		return nil
 	}))
-	return sprite
-}
 
-func AllSpritesLoaded(sprites []*Sprite) bool {
-	for _, sprite := range sprites {
-		if !sprite.IsLoaded {
-			return false
-		}
-	}
-	return true
+	return ss
 }

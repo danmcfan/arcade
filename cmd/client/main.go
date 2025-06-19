@@ -28,22 +28,7 @@ func main() {
 	canvas := document.Call("getElementById", "canvas")
 	ctx := canvas.Call("getContext", "2d")
 
-	sprites := []*Sprite{
-		NewSprite("Bear.png", 32, 32),
-		NewSprite("Bee.png", 16, 16),
-		NewSprite("Buttons.png", 16, 16),
-		NewSprite("Food.png", 16, 16),
-		NewSprite("GrassMiddle.png", 16, 16),
-		NewSprite("GrassTiles.png", 16, 16),
-		NewSprite("GreenMachine.png", 16, 32),
-		NewSprite("InteriorWalls.png", 16, 16),
-		NewSprite("PathMiddle.png", 16, 16),
-		NewSprite("Player.png", 32, 32),
-		NewSprite("WoodFloorTiles.png", 16, 16),
-	}
-
-	audioPlayer := NewAudioPlayer()
-	game := NewGame(ctx, sprites, audioPlayer)
+	game := NewGame(ctx)
 
 	HandleResize(window, canvas, game)
 	window.Call("addEventListener", "resize", js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -51,10 +36,8 @@ func main() {
 		return nil
 	}))
 
-	allLoaded := AllSpritesLoaded(sprites)
-	for !allLoaded {
+	for !game.SpriteManager.AllLoaded() {
 		time.Sleep(100 * time.Millisecond)
-		allLoaded = AllSpritesLoaded(sprites)
 	}
 
 	rootClassList := root.Get("classList")

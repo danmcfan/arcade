@@ -23,7 +23,7 @@ func HandleResize(window js.Value, canvas js.Value, game *Game) {
 		scaleHeight := float64(availableHeight) / float64(height)
 
 		scale := min(scaleWidth, scaleHeight)
-		game.Scale = max(min(int((scale/0.1)*2), 8), 2)
+		game.Scale = max(min(int(scale/0.1), 8), 2)
 
 		width = int(float64(width) * scale)
 		height = int(float64(height) * scale)

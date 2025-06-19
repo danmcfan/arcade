@@ -15,6 +15,15 @@ type Box struct {
 	H int
 }
 
+func NewBox(x int, y int, w int, h int) Box {
+	return Box{
+		X: x,
+		Y: y,
+		W: w,
+		H: h,
+	}
+}
+
 func CreateAnimationHandler(g *Game) js.Func {
 	var handleAnimation js.Func
 	handleAnimation = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -29,10 +38,11 @@ func CreateAnimationHandler(g *Game) js.Func {
 			g.Lag -= MS_PER_FRAME
 		}
 
-		if g.Moving {
-			g.AudioPlayer.Play(Footstep)
+		graphic := g.Graphics[g.Player]
+		if graphic.Moving {
+			g.AudioPlayer.Play(SoundFootstep)
 		} else {
-			g.AudioPlayer.Pause(Footstep)
+			g.AudioPlayer.Pause(SoundFootstep)
 		}
 
 		g.Draw()
