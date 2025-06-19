@@ -1,7 +1,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    background-color: #27272a;
+    background-color: black;
 }
 
 #root {
@@ -9,11 +9,6 @@ html, body {
     flex-direction: column;
     align-items: center;
     padding: 32px;
-}
-
-#canvas {
-    border-radius: 8px;
-    background-color: #e4e4e7;
 }
 
 .hidden {

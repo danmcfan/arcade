@@ -8,22 +8,6 @@ import (
 
 const MS_PER_FRAME = 1000.0 / 60.0
 
-type Box struct {
-	X int
-	Y int
-	W int
-	H int
-}
-
-func NewBox(x int, y int, w int, h int) Box {
-	return Box{
-		X: x,
-		Y: y,
-		W: w,
-		H: h,
-	}
-}
-
 func CreateAnimationHandler(g *Game) js.Func {
 	var handleAnimation js.Func
 	handleAnimation = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -45,6 +29,21 @@ func CreateAnimationHandler(g *Game) js.Func {
 			g.AudioPlayer.Pause(SoundFootstep)
 		}
 
+		machinePlaying := false
+		for _, machine := range g.Machines {
+			graphic := g.Graphics[machine]
+			if graphic.Moving {
+				machinePlaying = true
+				break
+			}
+		}
+
+		if machinePlaying {
+			g.AudioPlayer.Play(SoundArcade)
+		} else {
+			g.AudioPlayer.Pause(SoundArcade)
+		}
+
 		g.Draw()
 
 		js.Global().Call("requestAnimationFrame", handleAnimation)
@@ -55,6 +54,19 @@ func CreateAnimationHandler(g *Game) js.Func {
 
 func ClearScreen(ctx js.Value, width int, height int) {
 	ctx.Call("clearRect", 0, 0, width, height)
+}
+
+func ResetTransform(ctx js.Value) {
+	ctx.Call("setTransform", 1, 0, 0, 1, 0, 0)
+}
+
+func ScaleScreen(ctx js.Value, scale int) {
+	ctx.Call("scale", scale, scale)
+}
+
+func CenterScreen(ctx js.Value, scale, width, gameWidth int) {
+	x := (width/scale - gameWidth) / 2
+	ctx.Call("translate", x, 0)
 }
 
 func DrawImage(ctx js.Value, image js.Value, sb Box, db Box, flip bool) {

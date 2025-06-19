@@ -5,6 +5,7 @@ export function clearScreen(state: State) {
 }
 
 export function scaleScreen(state: State) {
+  state.ctx.setTransform(1, 0, 0, 1, 0, 0);
   state.ctx.scale(
     state.scaleBase * state.scaleModifier,
     state.scaleBase * state.scaleModifier

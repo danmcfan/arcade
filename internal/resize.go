@@ -8,7 +8,7 @@ import (
 
 const MARGIN = 32
 
-func HandleResize(window js.Value, canvas js.Value, game *Game) {
+func HandleResize(window js.Value, canvas js.Value, g *Game) {
 	windowWidth := window.Get("innerWidth").Int()
 	windowHeight := window.Get("innerHeight").Int()
 
@@ -23,7 +23,7 @@ func HandleResize(window js.Value, canvas js.Value, game *Game) {
 		scaleHeight := float64(availableHeight) / float64(height)
 
 		scale := min(scaleWidth, scaleHeight)
-		game.Scale = max(min(int(scale/0.1), 8), 2)
+		g.Scale = max(min(int(scale/0.1), 8), 1)
 
 		width = int(float64(width) * scale)
 		height = int(float64(height) * scale)
@@ -32,8 +32,14 @@ func HandleResize(window js.Value, canvas js.Value, game *Game) {
 	canvas.Set("width", width)
 	canvas.Set("height", height)
 
-	game.Width = width
-	game.Height = height
+	g.Width = width
+	g.Height = height
 
-	game.Ctx.Set("imageSmoothingEnabled", false)
+	g.Ctx.Set("imageSmoothingEnabled", false)
+
+	ResetTransform(g.Ctx)
+	ScaleScreen(g.Ctx, g.Scale)
+
+	gameWidth := g.GridWidth * g.CellSize
+	CenterScreen(g.Ctx, g.Scale, g.Width, gameWidth)
 }
