@@ -101,6 +101,7 @@ func (g *Game) Update() {
 func (g *Game) MovePlayer() {
 	delta := 1.5 * g.Speed
 	position := g.Positions[g.Player]
+	graphic := g.Graphics[g.Player]
 	box := g.Boxes[g.Player]
 	rectangle := NewRectangle(position.X+box.X, position.Y+box.Y, box.W, box.H)
 
@@ -162,7 +163,7 @@ func (g *Game) MovePlayer() {
 		machineArea := g.Areas[machine]
 		machineRectangle = NewRectangle(machinePosition.X+machineArea.X, machinePosition.Y+machineArea.Y, machineArea.W, machineArea.H)
 
-		if Collides(rectangle, machineRectangle) {
+		if Collides(rectangle, machineRectangle) && graphic.Direction == DirectionUp {
 			machineGraphic.Moving = true
 		} else {
 			machineGraphic.Moving = false
@@ -261,13 +262,12 @@ func isForeground(cell int, sprite Sprite) bool {
 }
 
 func (g *Game) DrawMachine(machine Entity) {
-	playerGraphic := g.Graphics[g.Player]
 	position := g.Positions[machine]
 	graphic := g.Graphics[machine]
 	spriteSheet := g.SpriteManager.GetSpriteSheet(graphic.Sprite)
 
 	sx := 0.0
-	if graphic.Moving && playerGraphic.Direction == DirectionUp {
+	if graphic.Moving {
 		sx = float64(max(int(graphic.Frame)%6, 1.0) * spriteSheet.Width)
 	}
 
