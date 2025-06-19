@@ -29,6 +29,12 @@ func CreateAnimationHandler(g *Game) js.Func {
 			g.Lag -= MS_PER_FRAME
 		}
 
+		if g.Moving {
+			g.AudioPlayer.Play(Footstep)
+		} else {
+			g.AudioPlayer.Pause(Footstep)
+		}
+
 		g.Draw()
 
 		js.Global().Call("requestAnimationFrame", handleAnimation)

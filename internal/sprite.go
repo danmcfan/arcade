@@ -18,11 +18,11 @@ type Sprite struct {
 	Total    int
 }
 
-func CreateSprite(filename string, width int, height int) *Sprite {
+func NewSprite(filename string, width int, height int) *Sprite {
 	image := js.Global().Get("Image").New()
-	image.Set("src", fmt.Sprintf("/images/%s", filename))
+	image.Set("src", fmt.Sprintf("/image/%s", filename))
 
-	imageAsset := &Sprite{
+	sprite := &Sprite{
 		Filename: filename,
 		IsLoaded: false,
 		Image:    image,
@@ -30,11 +30,20 @@ func CreateSprite(filename string, width int, height int) *Sprite {
 		Height:   height,
 	}
 	image.Call("addEventListener", "load", js.FuncOf(func(this js.Value, args []js.Value) any {
-		imageAsset.IsLoaded = true
-		imageAsset.Rows = imageAsset.Image.Get("height").Int() / imageAsset.Height
-		imageAsset.Cols = imageAsset.Image.Get("width").Int() / imageAsset.Width
-		imageAsset.Total = imageAsset.Rows * imageAsset.Cols
+		sprite.IsLoaded = true
+		sprite.Rows = sprite.Image.Get("height").Int() / sprite.Height
+		sprite.Cols = sprite.Image.Get("width").Int() / sprite.Width
+		sprite.Total = sprite.Rows * sprite.Cols
 		return nil
 	}))
-	return imageAsset
+	return sprite
+}
+
+func AllSpritesLoaded(sprites []*Sprite) bool {
+	for _, sprite := range sprites {
+		if !sprite.IsLoaded {
+			return false
+		}
+	}
+	return true
 }

@@ -22,6 +22,7 @@ const (
 type Game struct {
 	Ctx                  js.Value
 	Sprites              []*Sprite
+	AudioPlayer          *AudioPlayer
 	Keys                 Set
 	Lag, Previous, Speed float64
 	Direction            Direction
@@ -45,13 +46,14 @@ func (s Set) Contains(key string) bool {
 	return ok
 }
 
-func NewGame(ctx js.Value, sprites []*Sprite) *Game {
+func NewGame(ctx js.Value, sprites []*Sprite, audioPlayer *AudioPlayer) *Game {
 	return &Game{
-		Ctx:       ctx,
-		Sprites:   sprites,
-		Keys:      make(Set),
-		Speed:     1.0,
-		Direction: DirectionDown,
+		Ctx:         ctx,
+		Sprites:     sprites,
+		AudioPlayer: audioPlayer,
+		Keys:        make(Set),
+		Speed:       1.0,
+		Direction:   DirectionDown,
 	}
 }
 

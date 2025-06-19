@@ -11,10 +11,15 @@ import (
 	. "github.com/danmcfan/arcade/internal"
 )
 
-const MARGIN = 32
-
 func main() {
 	log.Println("Starting client...")
+
+	location := js.Global().Get("location")
+	hostname := location.Get("hostname").String()
+
+	if hostname == "localhost" {
+		go RefreshOnDisconnect()
+	}
 
 	document := js.Global().Get("document")
 	window := js.Global().Get("window")
@@ -24,30 +29,32 @@ func main() {
 	ctx := canvas.Call("getContext", "2d")
 
 	sprites := []*Sprite{
-		CreateSprite("Bear.png", 32, 32),
-		CreateSprite("Bee.png", 16, 16),
-		CreateSprite("Buttons.png", 16, 16),
-		CreateSprite("Food.png", 16, 16),
-		CreateSprite("GrassMiddle.png", 16, 16),
-		CreateSprite("GrassTiles.png", 16, 16),
-		CreateSprite("GreenMachine.png", 16, 32),
-		CreateSprite("InteriorWalls.png", 16, 16),
-		CreateSprite("PathMiddle.png", 16, 16),
-		CreateSprite("Player.png", 32, 32),
-		CreateSprite("WoodFloorTiles.png", 16, 16),
+		NewSprite("Bear.png", 32, 32),
+		NewSprite("Bee.png", 16, 16),
+		NewSprite("Buttons.png", 16, 16),
+		NewSprite("Food.png", 16, 16),
+		NewSprite("GrassMiddle.png", 16, 16),
+		NewSprite("GrassTiles.png", 16, 16),
+		NewSprite("GreenMachine.png", 16, 32),
+		NewSprite("InteriorWalls.png", 16, 16),
+		NewSprite("PathMiddle.png", 16, 16),
+		NewSprite("Player.png", 32, 32),
+		NewSprite("WoodFloorTiles.png", 16, 16),
 	}
-	game := NewGame(ctx, sprites)
 
-	handleResize(window, canvas, game)
+	audioPlayer := NewAudioPlayer()
+	game := NewGame(ctx, sprites, audioPlayer)
+
+	HandleResize(window, canvas, game)
 	window.Call("addEventListener", "resize", js.FuncOf(func(this js.Value, args []js.Value) any {
-		handleResize(window, canvas, game)
+		HandleResize(window, canvas, game)
 		return nil
 	}))
 
-	allLoaded := isAllLoaded(sprites)
+	allLoaded := AllSpritesLoaded(sprites)
 	for !allLoaded {
 		time.Sleep(100 * time.Millisecond)
-		allLoaded = isAllLoaded(sprites)
+		allLoaded = AllSpritesLoaded(sprites)
 	}
 
 	rootClassList := root.Get("classList")
@@ -71,43 +78,4 @@ func main() {
 	window.Call("requestAnimationFrame", animationHandler)
 
 	select {}
-}
-
-func handleResize(window js.Value, canvas js.Value, game *Game) {
-	windowWidth := window.Get("innerWidth").Int()
-	windowHeight := window.Get("innerHeight").Int()
-
-	availableWidth := windowWidth - MARGIN*2
-	availableHeight := windowHeight - MARGIN*2
-
-	width := 3200
-	height := 1800
-
-	if width > availableWidth || height > availableHeight {
-		scaleWidth := float64(availableWidth) / float64(width)
-		scaleHeight := float64(availableHeight) / float64(height)
-
-		scale := min(scaleWidth, scaleHeight)
-		game.Scale = max(min(int((scale/0.1)*2), 8), 2)
-
-		width = int(float64(width) * scale)
-		height = int(float64(height) * scale)
-	}
-
-	canvas.Set("width", width)
-	canvas.Set("height", height)
-
-	game.Width = width
-	game.Height = height
-
-	game.Ctx.Set("imageSmoothingEnabled", false)
-}
-
-func isAllLoaded(imageAssets []*Sprite) bool {
-	for _, imageAsset := range imageAssets {
-		if !imageAsset.IsLoaded {
-			return false
-		}
-	}
-	return true
 }
