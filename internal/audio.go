@@ -4,9 +4,7 @@ package internal
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"syscall/js"
 	"time"
 )
@@ -19,19 +17,14 @@ const (
 )
 
 type AudioPlayer struct {
-	ctx        js.Value
-	buffers    map[Sound]js.Value
-	sources    map[Sound]js.Value
+	elements   map[Sound]js.Value
 	timestamps map[Sound]time.Time
 	durations  map[Sound]time.Duration
 }
 
 func NewAudioPlayer() *AudioPlayer {
-	ctx := js.Global().Get("AudioContext").New()
 	ap := &AudioPlayer{
-		ctx:        ctx,
-		buffers:    make(map[Sound]js.Value),
-		sources:    make(map[Sound]js.Value),
+		elements:   make(map[Sound]js.Value),
 		timestamps: make(map[Sound]time.Time),
 		durations:  make(map[Sound]time.Duration),
 	}
@@ -43,46 +36,23 @@ func NewAudioPlayer() *AudioPlayer {
 }
 
 func (ap *AudioPlayer) loadFile(s Sound, duration time.Duration) {
-	go func() { // Run in goroutine to avoid blocking
-		resp, err := http.Get(fmt.Sprintf("/audio/%s.mp3", s))
-		if err != nil {
-			log.Println("HTTP error:", err.Error())
-			return
-		}
-		defer resp.Body.Close()
+	audio := js.Global().Get("Audio").New()
+	audio.Set("src", fmt.Sprintf("/audio/%s.mp3", s))
+	audio.Set("preload", "auto")
 
-		// Read response body
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("Read error:", err.Error())
-			return
-		}
-
-		// Convert Go []byte to JS ArrayBuffer
-		uint8Array := js.Global().Get("Uint8Array").New(len(data))
-		js.CopyBytesToJS(uint8Array, data)
-		arrayBuffer := uint8Array.Get("buffer")
-
-		// Decode audio data (must be called on main thread)
-		ap.ctx.Call("decodeAudioData", arrayBuffer).Call("then",
-			js.FuncOf(func(this js.Value, args []js.Value) any {
-				ap.buffers[s] = args[0]
-				return nil
-			}))
-
-		ap.timestamps[s] = time.Now().Add(-duration)
-		ap.durations[s] = duration
-	}()
+	ap.elements[s] = audio
+	ap.timestamps[s] = time.Now().Add(-duration)
+	ap.durations[s] = duration
 }
+
 func (ap *AudioPlayer) Play(s Sound) {
-	buffer, ok := ap.buffers[s]
+	element, ok := ap.elements[s]
 	if !ok {
-		log.Println("Buffer not found:", s)
+		log.Println("Audio element not found:", s)
 		return
 	}
-
-	if buffer.IsUndefined() {
-		log.Println("Buffer is undefined:", s)
+	if element.IsUndefined() {
+		log.Println("Audio element is undefined:", s)
 		return
 	}
 
@@ -95,25 +65,17 @@ func (ap *AudioPlayer) Play(s Sound) {
 	}
 	ap.timestamps[s] = now
 
-	// Stop existing source if it exists
-	source, ok := ap.sources[s]
-	if ok {
-		source.Call("stop")
-	}
-
-	// Always create a new source since you can't call start() more than once
-	source = ap.ctx.Call("createBufferSource")
-	source.Set("buffer", buffer)
-	ap.sources[s] = source
-
-	source.Call("connect", ap.ctx.Get("destination"))
-	source.Call("start")
+	element.Call("currentTime", 0)
+	element.Call("play")
 }
 
 func (ap *AudioPlayer) Pause(s Sound) {
 	ap.timestamps[s] = time.Now().Add(-ap.durations[s])
-	source, ok := ap.sources[s]
-	if ok {
-		source.Call("stop")
+	element, ok := ap.elements[s]
+	if !ok {
+		log.Println("Audio element not found:", s)
+		return
 	}
+	element.Call("pause")
+	element.Call("currentTime", 0)
 }
