@@ -65,7 +65,7 @@ func (ap *AudioPlayer) Play(s Sound) {
 	}
 	ap.timestamps[s] = now
 
-	element.Call("currentTime", 0)
+	element.Set("currentTime", 0)
 	element.Call("play")
 }
 
@@ -77,5 +77,5 @@ func (ap *AudioPlayer) Pause(s Sound) {
 		return
 	}
 	element.Call("pause")
-	element.Call("currentTime", 0)
+	element.Set("currentTime", 0)
 }
