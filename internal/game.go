@@ -11,6 +11,21 @@ const (
 	MAX_ENTITIES = 32
 )
 
+type Machine int
+
+const (
+	MachineNone Machine = iota
+	MachineGreen
+)
+
+type Effect int
+
+const (
+	EffectNone Effect = iota
+	EffectFadeIn
+	EffectFadeOut
+)
+
 type Direction int
 
 const (
@@ -22,6 +37,7 @@ const (
 
 type Game struct {
 	Ctx                             js.Value
+	Machine                         Machine
 	EntityManager                   *EntityManager
 	SpriteManager                   *SpriteManager
 	AudioPlayer                     *AudioPlayer
@@ -33,7 +49,9 @@ type Game struct {
 	Graphics                        []Graphic
 	Boxes                           []Box
 	Areas                           []Box
+	Effect                          Effect
 	Lag, Previous, Speed            float64
+	Fade, FadeRate                  float64
 	CellSize, GridWidth, GridHeight int
 	Width, Height, Scale            int
 }
@@ -46,6 +64,7 @@ func NewGame(ctx js.Value) *Game {
 
 	g := &Game{
 		Ctx:           ctx,
+		Machine:       MachineNone,
 		EntityManager: NewEntityManager(),
 		SpriteManager: NewSpriteManager(),
 		AudioPlayer:   NewAudioPlayer(),
@@ -60,6 +79,9 @@ func NewGame(ctx js.Value) *Game {
 		CellSize:      16,
 		GridWidth:     10,
 		GridHeight:    10,
+		Effect:        EffectFadeIn,
+		Fade:          1.0,
+		FadeRate:      0.01,
 	}
 
 	centerX := float64(g.GridWidth * g.CellSize / 2)
@@ -95,7 +117,37 @@ func (g *Game) Update() {
 		g.Graphics[machine].Frame += 0.15 * g.Speed
 	}
 
-	g.MovePlayer()
+	switch g.Effect {
+	case EffectFadeIn:
+		g.Fade -= g.FadeRate
+		g.Fade = max(g.Fade, 0.0)
+		if g.Fade <= 0.0 {
+			g.Effect = EffectNone
+		}
+	case EffectFadeOut:
+		g.Fade += g.FadeRate
+		g.Fade = min(g.Fade, 1.0)
+		if g.Fade >= 1.0 {
+			g.Effect = EffectNone
+		}
+	case EffectNone:
+		g.MovePlayer()
+		isUsePressed := g.Keys.Contains("KeyE") || g.Keys.Contains("Space") || g.Keys.Contains("Enter")
+		isExitPressed := g.Keys.Contains("KeyQ") || g.Keys.Contains("Escape")
+		isMachineActive := false
+		for _, machine := range g.Machines {
+			if g.Graphics[machine].Moving {
+				isMachineActive = true
+				break
+			}
+		}
+		if isUsePressed && isMachineActive && g.Fade == 0.0 {
+			g.Effect = EffectFadeOut
+		}
+		if isExitPressed && g.Fade == 1.0 {
+			g.Effect = EffectFadeIn
+		}
+	}
 }
 
 func (g *Game) MovePlayer() {
@@ -217,6 +269,8 @@ func (g *Game) Draw() {
 	DrawImage(g.Ctx, spriteSheet.Image, sb, db, flip)
 
 	g.DrawBackground(1)
+
+	FadeScreen(g.Ctx, g.Width, g.Height, g.Fade)
 }
 
 func (g *Game) DrawBackground(layer int) {

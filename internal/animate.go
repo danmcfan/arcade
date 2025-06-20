@@ -3,6 +3,7 @@
 package internal
 
 import (
+	"fmt"
 	"syscall/js"
 )
 
@@ -52,7 +53,7 @@ func CreateAnimationHandler(g *Game) js.Func {
 	return handleAnimation
 }
 
-func ClearScreen(ctx js.Value, width int, height int) {
+func ClearScreen(ctx js.Value, width, height int) {
 	ctx.Call("clearRect", 0, 0, width, height)
 }
 
@@ -67,6 +68,11 @@ func ScaleScreen(ctx js.Value, scale int) {
 func CenterScreen(ctx js.Value, scale, width, gameWidth int) {
 	x := (width/scale - gameWidth) / 2
 	ctx.Call("translate", x, 0)
+}
+
+func FadeScreen(ctx js.Value, width, height int, alpha float64) {
+	ctx.Set("fillStyle", fmt.Sprintf("rgba(0, 0, 0, %f)", alpha))
+	ctx.Call("fillRect", 0, 0, width, height)
 }
 
 func DrawImage(ctx js.Value, image js.Value, sb Box, db Box, flip bool) {

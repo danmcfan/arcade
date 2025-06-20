@@ -29,16 +29,17 @@ func NewAudioPlayer() *AudioPlayer {
 		durations:  make(map[Sound]time.Duration),
 	}
 
-	ap.loadFile(SoundArcade, time.Duration(1250)*time.Millisecond)
-	ap.loadFile(SoundFootstep, time.Duration(1250)*time.Millisecond)
+	ap.loadFile(SoundArcade, 0.40, time.Duration(1250)*time.Millisecond)
+	ap.loadFile(SoundFootstep, 0.25, time.Duration(1250)*time.Millisecond)
 
 	return ap
 }
 
-func (ap *AudioPlayer) loadFile(s Sound, duration time.Duration) {
+func (ap *AudioPlayer) loadFile(s Sound, volume float64, duration time.Duration) {
 	audio := js.Global().Get("Audio").New()
 	audio.Set("src", fmt.Sprintf("/audio/%s.mp3", s))
 	audio.Set("preload", "auto")
+	audio.Set("volume", volume)
 
 	ap.elements[s] = audio
 	ap.timestamps[s] = time.Now().Add(-duration)
