@@ -23,29 +23,7 @@ func CreateAnimationHandler(g *Game) js.Func {
 			g.Lag -= MS_PER_FRAME
 		}
 
-		graphic := g.Graphics[g.Player]
-		if graphic.Moving {
-			g.AudioPlayer.Play(SoundFootstep)
-		} else {
-			g.AudioPlayer.Pause(SoundFootstep)
-		}
-
-		machinePlaying := false
-		for _, machine := range g.Machines {
-			graphic := g.Graphics[machine]
-			if graphic.Moving {
-				machinePlaying = true
-				break
-			}
-		}
-
-		if machinePlaying {
-			g.AudioPlayer.Play(SoundArcade)
-		} else {
-			g.AudioPlayer.Pause(SoundArcade)
-		}
-
-		g.Draw()
+		g.Render()
 
 		js.Global().Call("requestAnimationFrame", handleAnimation)
 		return nil

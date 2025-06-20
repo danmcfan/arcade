@@ -80,3 +80,10 @@ func (ap *AudioPlayer) Pause(s Sound) {
 	element.Call("pause")
 	element.Set("currentTime", 0)
 }
+
+func (ap *AudioPlayer) PauseAll() {
+	for _, element := range ap.elements {
+		element.Call("pause")
+		element.Set("currentTime", 0)
+	}
+}

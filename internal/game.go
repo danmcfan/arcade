@@ -38,6 +38,7 @@ const (
 type Game struct {
 	Ctx                             js.Value
 	Machine                         Machine
+	NextMachine                     Machine
 	EntityManager                   *EntityManager
 	SpriteManager                   *SpriteManager
 	AudioPlayer                     *AudioPlayer
@@ -65,6 +66,7 @@ func NewGame(ctx js.Value) *Game {
 	g := &Game{
 		Ctx:           ctx,
 		Machine:       MachineNone,
+		NextMachine:   MachineNone,
 		EntityManager: NewEntityManager(),
 		SpriteManager: NewSpriteManager(),
 		AudioPlayer:   NewAudioPlayer(),
@@ -81,7 +83,7 @@ func NewGame(ctx js.Value) *Game {
 		GridHeight:    10,
 		Effect:        EffectFadeIn,
 		Fade:          1.0,
-		FadeRate:      0.01,
+		FadeRate:      0.02,
 	}
 
 	centerX := float64(g.GridWidth * g.CellSize / 2)
@@ -112,11 +114,6 @@ func NewGame(ctx js.Value) *Game {
 }
 
 func (g *Game) Update() {
-	g.Graphics[g.Player].Frame += 0.15 * g.Speed
-	for _, machine := range g.Machines {
-		g.Graphics[machine].Frame += 0.15 * g.Speed
-	}
-
 	switch g.Effect {
 	case EffectFadeIn:
 		g.Fade -= g.FadeRate
@@ -128,12 +125,50 @@ func (g *Game) Update() {
 		g.Fade += g.FadeRate
 		g.Fade = min(g.Fade, 1.0)
 		if g.Fade >= 1.0 {
-			g.Effect = EffectNone
+			g.Effect = EffectFadeIn
+			g.Machine = g.NextMachine
 		}
-	case EffectNone:
+	}
+
+	switch g.Machine {
+	case MachineNone:
+		g.UpdateArcade()
+	case MachineGreen:
+		g.UpdateGreen()
+	}
+}
+
+func (g *Game) UpdateArcade() {
+	if g.Effect == EffectNone {
+		g.Graphics[g.Player].Frame += 0.15 * g.Speed
+		for _, machine := range g.Machines {
+			g.Graphics[machine].Frame += 0.15 * g.Speed
+		}
+
+		graphic := g.Graphics[g.Player]
+		if graphic.Moving {
+			g.AudioPlayer.Play(SoundFootstep)
+		} else {
+			g.AudioPlayer.Pause(SoundFootstep)
+		}
+
+		machinePlaying := false
+		for _, machine := range g.Machines {
+			graphic := g.Graphics[machine]
+			if graphic.Moving {
+				machinePlaying = true
+				break
+			}
+		}
+
+		if machinePlaying {
+			g.AudioPlayer.Play(SoundArcade)
+		} else {
+			g.AudioPlayer.Pause(SoundArcade)
+		}
+
 		g.MovePlayer()
 		isUsePressed := g.Keys.Contains("KeyE") || g.Keys.Contains("Space") || g.Keys.Contains("Enter")
-		isExitPressed := g.Keys.Contains("KeyQ") || g.Keys.Contains("Escape")
 		isMachineActive := false
 		for _, machine := range g.Machines {
 			if g.Graphics[machine].Moving {
@@ -143,9 +178,21 @@ func (g *Game) Update() {
 		}
 		if isUsePressed && isMachineActive && g.Fade == 0.0 {
 			g.Effect = EffectFadeOut
+			g.NextMachine = MachineGreen
+
+			g.AudioPlayer.PauseAll()
 		}
-		if isExitPressed && g.Fade == 1.0 {
-			g.Effect = EffectFadeIn
+	}
+}
+
+func (g *Game) UpdateGreen() {
+	if g.Effect == EffectNone {
+		isExitPressed := g.Keys.Contains("KeyQ") || g.Keys.Contains("Escape")
+		if isExitPressed {
+			g.Effect = EffectFadeOut
+			g.NextMachine = MachineNone
+
+			g.AudioPlayer.PauseAll()
 		}
 	}
 }
@@ -231,8 +278,20 @@ func (g *Game) MovePlayer() {
 	g.Graphics[g.Player].Moving = isMoving
 }
 
-func (g *Game) Draw() {
+func (g *Game) Render() {
 	ClearScreen(g.Ctx, g.Width, g.Height)
+
+	switch g.Machine {
+	case MachineNone:
+		g.DrawArcade()
+	case MachineGreen:
+		g.DrawGreen()
+	}
+
+	FadeScreen(g.Ctx, g.Width, g.Height, g.Fade)
+}
+
+func (g *Game) DrawArcade() {
 	g.DrawBackground(0)
 
 	for _, machine := range g.Machines {
@@ -269,8 +328,11 @@ func (g *Game) Draw() {
 	DrawImage(g.Ctx, spriteSheet.Image, sb, db, flip)
 
 	g.DrawBackground(1)
+}
 
-	FadeScreen(g.Ctx, g.Width, g.Height, g.Fade)
+func (g *Game) DrawGreen() {
+	g.Ctx.Set("fillStyle", "green")
+	g.Ctx.Call("fillRect", 0, 0, 160, 160)
 }
 
 func (g *Game) DrawBackground(layer int) {
