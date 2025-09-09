@@ -1,39 +1,30 @@
-import { GameID } from "./types";
 import { State } from "./state";
-import { areSpritesLoaded } from "./sprite";
-import { arcadeLoop } from "./arcade/loop";
-import { sweetLoop } from "./sweet/loop";
+import { areSpritesLoaded, getSprite, SpriteID } from "./sprite";
+import { Direction } from "./types";
+
+const LEVEL_WIDTH = 304;
+const LEVEL_HEIGHT = 368;
+const PLAYER_SPEED = 1.0;
 
 export function getResizeHandler(state: State) {
   return () => {
     state.pixelRatio = globalThis.devicePixelRatio || 1;
     const rect = state.container.getBoundingClientRect();
-    state.canvas.width = rect.width * state.pixelRatio;
-    state.canvas.height = rect.height * state.pixelRatio;
-    state.width = rect.width;
-    state.height = rect.height;
+
+    const scale = Math.min(
+      Math.floor(rect.width / LEVEL_WIDTH),
+      Math.floor(rect.height / LEVEL_HEIGHT)
+    );
+
+    state.canvas.width = LEVEL_WIDTH * scale;
+    state.canvas.height = LEVEL_HEIGHT * scale;
+
+    state.width = state.canvas.width;
+    state.height = state.canvas.height;
+    state.scaleBase = scale;
 
     state.ctx.imageSmoothingEnabled = false;
-    state.ctx.scale(state.pixelRatio, state.pixelRatio);
-
-    setScaleModifier(state);
   };
-}
-
-function setScaleModifier(state: State) {
-  if (state.width <= 800 || state.height <= 800) {
-    state.scaleModifier = 1;
-    state.controlsHeight = 64;
-  } else if (state.width < 1200 || state.height < 1200) {
-    state.scaleModifier = 2;
-    state.controlsHeight = 0;
-  } else if (state.width < 1600 || state.height < 1600) {
-    state.scaleModifier = 3;
-    state.controlsHeight = 0;
-  } else {
-    state.scaleModifier = 4;
-    state.controlsHeight = 0;
-  }
 }
 
 export function getKeyDownHandler(state: State) {
@@ -75,6 +66,8 @@ export function getPointerUpHandler(state: State) {
 
 export function getAnimationHandler(state: State) {
   function animate(timestamp: number) {
+    let lag = 0;
+
     if (!areSpritesLoaded(state.sprites)) {
       return;
     }
@@ -85,15 +78,74 @@ export function getAnimationHandler(state: State) {
     if (deltaTime > 15) {
       deltaTime = 15;
     }
+    lag += deltaTime;
 
-    switch (state.activeGame) {
-      case GameID.SWEET_SAM:
-        sweetLoop(state, deltaTime);
-        return;
-      default:
-        arcadeLoop(state, deltaTime);
-        return;
+    if (state.keys.has("KeyD") || state.keys.has("ArrowRight")) {
+      state.player.direction = Direction.RIGHT;
+    } else if (state.keys.has("KeyA") || state.keys.has("ArrowLeft")) {
+      state.player.direction = Direction.LEFT;
     }
+
+    while (lag >= 15) {
+      state.player.frame += 0.1;
+      state.player.frame %= 4;
+
+      if (state.player.direction === Direction.RIGHT) {
+        state.player.x += PLAYER_SPEED;
+      } else if (state.player.direction === Direction.LEFT) {
+        state.player.x -= PLAYER_SPEED;
+      }
+      state.player.x = Math.max(56, Math.min(215, state.player.x));
+      lag -= 15;
+    }
+
+    state.ctx.save();
+    state.ctx.scale(state.scaleBase, state.scaleBase);
+
+    state.ctx.clearRect(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+
+    const spriteLevel = getSprite(state.sprites, SpriteID.HIVE);
+    if (!spriteLevel) {
+      return;
+    }
+
+    state.ctx.drawImage(
+      spriteLevel.image,
+      0,
+      0,
+      spriteLevel.width,
+      spriteLevel.height,
+      0,
+      0,
+      LEVEL_WIDTH,
+      LEVEL_HEIGHT
+    );
+
+    const spriteBear = getSprite(state.sprites, SpriteID.BEAR);
+    if (!spriteBear) {
+      return;
+    }
+
+    let spriteRow = 0;
+    if (state.player.direction === Direction.RIGHT) {
+      spriteRow = 0;
+    } else if (state.player.direction === Direction.LEFT) {
+      spriteRow = 1;
+    }
+
+    state.ctx.drawImage(
+      spriteBear.image,
+      spriteBear.width * Math.floor(state.player.frame),
+      spriteBear.height * spriteRow,
+      spriteBear.width,
+      spriteBear.height,
+      Math.floor(state.player.x),
+      Math.floor(state.player.y),
+      spriteBear.width,
+      spriteBear.height
+    );
+
+    state.ctx.restore();
   }
 
   function animationLoop(timestamp: number) {

@@ -1,23 +1,15 @@
 html,
 body {
-  background-color: black;
+  background-color: hsl(352, 24%, 36%);
   padding: 0;
   margin: 0;
 }
 
-#app {
+div {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  justify-content: start;
   width: 100vw;
   height: 100vh;
-  @media (max-width: 800px) {
-    height: 85vh;
-  }
-}
-
-#canvas {
-  width: 100%;
-  height: 100%;
 }

@@ -14,31 +14,13 @@ type SpriteConfig = {
 };
 
 export enum SpriteID {
-  BUTTONS = "Buttons.png",
-  PLAYER = "Player.png",
-  WOOD_FLOOR_TILES = "WoodFloorTiles.png",
-  INTERIOR_WALLS = "InteriorWalls.png",
-  GREEN_MACHINE = "GreenMachine.png",
-  BEAR = "Bear.png",
-  BEE = "Bee.png",
-  FOOD = "Food.png",
-  GRASS_MIDDLE = "GrassMiddle.png",
-  GRASS_TILES = "GrassTiles.png",
-  PATH_MIDDLE = "PathMiddle.png",
+  BEAR = "bear.png",
+  HIVE = "hive.png",
 }
 
 const spriteConfigs: Map<SpriteID, SpriteConfig> = new Map([
-  [SpriteID.BUTTONS, { width: 16, height: 16 }],
-  [SpriteID.PLAYER, { width: 32, height: 32 }],
-  [SpriteID.WOOD_FLOOR_TILES, { width: 16, height: 16 }],
-  [SpriteID.INTERIOR_WALLS, { width: 16, height: 16 }],
-  [SpriteID.GREEN_MACHINE, { width: 16, height: 32 }],
+  [SpriteID.HIVE, { width: 304, height: 368 }],
   [SpriteID.BEAR, { width: 32, height: 32 }],
-  [SpriteID.BEE, { width: 16, height: 16 }],
-  [SpriteID.FOOD, { width: 16, height: 16 }],
-  [SpriteID.GRASS_MIDDLE, { width: 16, height: 16 }],
-  [SpriteID.GRASS_TILES, { width: 16, height: 16 }],
-  [SpriteID.PATH_MIDDLE, { width: 16, height: 16 }],
 ]);
 
 export function initSprites(sprites: Map<SpriteID, Sprite>) {
@@ -52,7 +34,7 @@ export function initSprites(sprites: Map<SpriteID, Sprite>) {
       cols: 0,
       total: 0,
     };
-    sprite.image.src = `/images/${spriteID}`;
+    sprite.image.src = `/${spriteID}`;
     sprite.image.onload = () => {
       sprite.loaded = true;
       sprite.rows = sprite.image.height / sprite.height;

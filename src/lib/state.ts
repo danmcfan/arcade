@@ -17,13 +17,6 @@ export type State = {
   controlsHeight: number;
   lastTimestamp: number;
   sprites: Map<SpriteID, Sprite>;
-  background: {
-    cells: number[];
-    collisions: number[];
-    spriteIDs: SpriteID[];
-    width: number;
-    height: number;
-  };
   player: {
     x: number;
     y: number;
@@ -33,14 +26,6 @@ export type State = {
     running: boolean;
     frame: number;
   };
-  machines: {
-    gameID: GameID;
-    x: number;
-    y: number;
-    spriteID: SpriteID;
-    active: boolean;
-    frame: number;
-  }[];
   activeGame: GameID | null;
   activeGameState: SweetState | null;
   keys: Set<string>;
@@ -69,53 +54,20 @@ export function createState() {
     controlsHeight: 0,
     lastTimestamp: 0,
     sprites: new Map(),
-    background: {
-      cells: [
-        25, 26, 26, 26, 26, 26, 26, 26, 26, 27, 39, 67, 68, 68, 68, 68, 68, 68,
-        69, 41, 39, 81, 82, 82, 82, 82, 82, 82, 83, 41, 39, 95, 96, 96, 96, 96,
-        96, 96, 97, 41, 39, 3, 3, 3, 3, 3, 3, 3, 3, 41, 39, 3, 3, 3, 3, 3, 3, 3,
-        3, 41, 39, 3, 3, 3, 3, 3, 3, 3, 3, 41, 39, 3, 3, 3, 3, 3, 3, 3, 3, 41,
-        39, 3, 3, 3, 3, 3, 3, 3, 3, 41, 53, 54, 54, 54, 54, 54, 54, 54, 54, 55,
-      ],
-      collisions: [
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0,
-        0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1,
-      ],
-      spriteIDs: [SpriteID.WOOD_FLOOR_TILES, SpriteID.INTERIOR_WALLS],
-      width: 10,
-      height: 10,
-    },
     player: {
-      x: 80,
-      y: 112,
+      x: 136,
+      y: 240,
       dx: 0,
       dy: 0,
-      direction: Direction.DOWN,
+      direction: Direction.RIGHT,
       running: false,
       frame: 0,
     },
-    machines: [
-      {
-        gameID: GameID.SWEET_SAM,
-        x: 72,
-        y: 48,
-        spriteID: SpriteID.GREEN_MACHINE,
-        active: false,
-        frame: 0,
-      },
-    ],
     activeGame: null,
     activeGameState: null,
     keys: new Set(),
     mouseDown: null,
   };
-
-  state.scaleBase = 2;
-  state.gameWidth = state.background.width * 16;
-  state.gameHeight = state.background.height * 16;
 
   return state;
 }

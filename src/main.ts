@@ -1,4 +1,3 @@
-import "./style.css";
 import {
   getResizeHandler,
   getKeyDownHandler,
@@ -9,7 +8,6 @@ import {
 } from "./lib/handler";
 import { createState } from "./lib/state";
 import { initSprites } from "./lib/sprite";
-import { getErrorHandler } from "./lib/error";
 
 function main() {
   const state = createState();
@@ -29,14 +27,8 @@ function main() {
 
   resizeHandler();
 
-  try {
-    const animationHandler = getAnimationHandler(state);
-    requestAnimationFrame(animationHandler);
-  } catch (error) {
-    console.error(error);
-    const errorHandler = getErrorHandler(state, error as Error);
-    requestAnimationFrame(errorHandler);
-  }
+  const animationHandler = getAnimationHandler(state);
+  requestAnimationFrame(animationHandler);
 }
 
 main();
