@@ -1,19 +1,7 @@
-html,
-body {
+@import "tailwindcss";
+
+* {
   background-color: black;
   padding: 0;
   margin: 0;
-}
-
-div {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100vw;
-  height: 100vh;
-}
-
-canvas {
-  border: 4px solid white;
 }

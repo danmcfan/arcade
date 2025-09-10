@@ -1,34 +1,84 @@
+import { defaultCorners } from "@/lib/corner";
+import { Direction } from "@/lib/direction";
+import { newEntity } from "@/lib/entity";
 import {
   getResizeHandler,
   getKeyDownHandler,
   getKeyUpHandler,
-  getPointerDownHandler,
-  getPointerUpHandler,
-  getAnimationHandler,
-} from "./lib/handler";
-import { createState } from "./lib/state";
-import { initSprites } from "./lib/sprite";
+} from "@/lib/handler";
+import { getGameLoop } from "@/lib/loop";
+import {
+  SpriteSheetID,
+  createSpriteSheets,
+  SpriteSheetConfig,
+} from "@/lib/sprite";
+import { createState } from "@/lib/state";
 
 function main() {
+  const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
+    [SpriteSheetID.BEAR, { width: 32, height: 32 }],
+    [SpriteSheetID.BEE, { width: 16, height: 16 }],
+    [SpriteSheetID.HIVE, { width: 304, height: 368 }],
+  ]);
+
   const state = createState();
-  initSprites(state.sprites);
+  state.spriteSheets = createSpriteSheets(spriteSheetConfigs);
+
+  state.player = newEntity({
+    spriteSheetID: SpriteSheetID.BEAR,
+    frameIncrement: 0.1,
+    frameCount: 4,
+    x: 152,
+    y: 264,
+    offsetX: 16,
+    offsetY: 24,
+    direction: Direction.RIGHT,
+    radius: 6,
+    velocity: 1.0,
+  });
+
+  state.bees = [
+    newEntity({
+      spriteSheetID: SpriteSheetID.BEE,
+      frameIncrement: 0.1,
+      frameCount: 4,
+      x: 152,
+      y: 264,
+      offsetX: 8,
+      offsetY: 8,
+      direction: Direction.LEFT,
+      radius: 6,
+      velocity: 0.75,
+    }),
+    newEntity({
+      spriteSheetID: SpriteSheetID.BEE,
+      frameRowOffset: 2,
+      frameIncrement: 0.1,
+      frameCount: 4,
+      x: 24,
+      y: 40,
+      offsetX: 8,
+      offsetY: 8,
+      direction: Direction.RIGHT,
+      radius: 6,
+      velocity: 0.0,
+    }),
+  ];
+
+  state.corners = defaultCorners();
 
   const resizeHandler = getResizeHandler(state);
   const keyDownHandler = getKeyDownHandler(state);
   const keyUpHandler = getKeyUpHandler(state);
-  const pointerDownHandler = getPointerDownHandler(state);
-  const pointerUpHandler = getPointerUpHandler(state);
 
   globalThis.addEventListener("resize", resizeHandler);
   globalThis.addEventListener("keydown", keyDownHandler);
   globalThis.addEventListener("keyup", keyUpHandler);
-  globalThis.addEventListener("pointerdown", pointerDownHandler);
-  globalThis.addEventListener("pointerup", pointerUpHandler);
 
   resizeHandler();
 
-  const animationHandler = getAnimationHandler(state);
-  requestAnimationFrame(animationHandler);
+  const gameLoop = getGameLoop(state);
+  requestAnimationFrame(gameLoop);
 }
 
 main();

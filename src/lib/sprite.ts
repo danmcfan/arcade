@@ -1,4 +1,10 @@
-export type Sprite = {
+export enum SpriteSheetID {
+  BEAR = "bear.png",
+  BEE = "bee.png",
+  HIVE = "hive.png",
+}
+
+export type SpriteSheet = {
   image: HTMLImageElement;
   loaded: boolean;
   width: number;
@@ -8,51 +14,51 @@ export type Sprite = {
   total: number;
 };
 
-type SpriteConfig = {
+export type SpriteSheetConfig = {
   width: number;
   height: number;
 };
 
-export enum SpriteID {
-  BEAR = "bear.png",
-  HIVE = "hive.png",
-}
-
-const spriteConfigs: Map<SpriteID, SpriteConfig> = new Map([
-  [SpriteID.HIVE, { width: 304, height: 368 }],
-  [SpriteID.BEAR, { width: 32, height: 32 }],
-]);
-
-export function initSprites(sprites: Map<SpriteID, Sprite>) {
-  for (const [spriteID, spriteConfig] of spriteConfigs.entries()) {
+export function createSpriteSheets(
+  spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig>
+): Map<SpriteSheetID, SpriteSheet> {
+  const spriteSheets = new Map<SpriteSheetID, SpriteSheet>();
+  for (const [
+    spriteSheetID,
+    spriteSheetConfig,
+  ] of spriteSheetConfigs.entries()) {
     const sprite = {
       image: new Image(),
       loaded: false,
-      width: spriteConfig.width,
-      height: spriteConfig.height,
+      width: spriteSheetConfig.width,
+      height: spriteSheetConfig.height,
       rows: 0,
       cols: 0,
       total: 0,
     };
-    sprite.image.src = `/${spriteID}`;
+    sprite.image.src = `/${spriteSheetID}`;
     sprite.image.onload = () => {
       sprite.loaded = true;
       sprite.rows = sprite.image.height / sprite.height;
       sprite.cols = sprite.image.width / sprite.width;
       sprite.total = sprite.rows * sprite.cols;
     };
-    sprites.set(spriteID, sprite);
+    spriteSheets.set(spriteSheetID, sprite);
   }
+  return spriteSheets;
 }
 
-export function areSpritesLoaded(sprites: Map<SpriteID, Sprite>) {
+export function areSpritesLoaded(sprites: Map<string, SpriteSheet>) {
   return Array.from(sprites.values()).every((sprite) => sprite.loaded);
 }
 
-export function getSprite(sprites: Map<SpriteID, Sprite>, spriteID: SpriteID) {
-  const sprite = sprites.get(spriteID);
-  if (!sprite || !sprite.loaded) {
-    throw new Error(`Sprite ${spriteID} not loaded`);
+export function getSpriteSheet(
+  spriteSheets: Map<SpriteSheetID, SpriteSheet>,
+  spriteSheetID: SpriteSheetID
+) {
+  const spriteSheet = spriteSheets.get(spriteSheetID);
+  if (!spriteSheet || !spriteSheet.loaded) {
+    throw new Error(`Sprite sheet ${spriteSheetID} not loaded`);
   }
-  return sprite;
+  return spriteSheet;
 }
