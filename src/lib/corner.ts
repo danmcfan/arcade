@@ -159,9 +159,209 @@ export function defaultCorners(): Entity[] {
       ],
     }),
     newCorner({
-      tileX: 4,
-      tileY: 7,
+      tileX: 6,
+      tileY: 9,
       directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 12,
+      tileY: 9,
+      directions: [Direction.UP, Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 14,
+      tileY: 9,
+      directions: [
+        Direction.UP,
+        Direction.DOWN,
+        Direction.LEFT,
+        Direction.RIGHT,
+      ],
+    }),
+    // ROW 6
+    newCorner({
+      tileX: 6,
+      tileY: 11,
+      directions: [Direction.UP, Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 12,
+      tileY: 11,
+      directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
+    }),
+    // ROW 7
+    newCorner({
+      tileX: 1,
+      tileY: 13,
+      directions: [Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 4,
+      tileY: 13,
+      directions: [
+        Direction.UP,
+        Direction.DOWN,
+        Direction.LEFT,
+        Direction.RIGHT,
+      ],
+    }),
+    newCorner({
+      tileX: 6,
+      tileY: 13,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 8,
+      tileY: 13,
+      directions: [Direction.DOWN, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 10,
+      tileY: 13,
+      directions: [Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 12,
+      tileY: 13,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 14,
+      tileY: 13,
+      directions: [
+        Direction.UP,
+        Direction.DOWN,
+        Direction.LEFT,
+        Direction.RIGHT,
+      ],
+    }),
+    newCorner({
+      tileX: 17,
+      tileY: 13,
+      directions: [Direction.DOWN, Direction.LEFT],
+    }),
+    // ROW 8
+    newCorner({
+      tileX: 1,
+      tileY: 15,
+      directions: [Direction.UP, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 2,
+      tileY: 15,
+      directions: [Direction.DOWN, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 4,
+      tileY: 15,
+      directions: [Direction.UP, Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 6,
+      tileY: 15,
+      directions: [Direction.DOWN, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 8,
+      tileY: 15,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 10,
+      tileY: 15,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 12,
+      tileY: 15,
+      directions: [Direction.DOWN, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 14,
+      tileY: 15,
+      directions: [Direction.UP, Direction.DOWN, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 16,
+      tileY: 15,
+      directions: [Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 17,
+      tileY: 15,
+      directions: [Direction.UP, Direction.LEFT],
+    }),
+    // ROW 9
+    newCorner({
+      tileX: 1,
+      tileY: 17,
+      directions: [Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 2,
+      tileY: 17,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 4,
+      tileY: 17,
+      directions: [Direction.UP, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 6,
+      tileY: 17,
+      directions: [Direction.UP, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 8,
+      tileY: 17,
+      directions: [Direction.DOWN, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 10,
+      tileY: 17,
+      directions: [Direction.DOWN, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 12,
+      tileY: 17,
+      directions: [Direction.UP, Direction.LEFT],
+    }),
+    newCorner({
+      tileX: 14,
+      tileY: 17,
+      directions: [Direction.UP, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 16,
+      tileY: 17,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 17,
+      tileY: 17,
+      directions: [Direction.DOWN, Direction.LEFT],
+    }),
+    // ROW 10
+    newCorner({
+      tileX: 1,
+      tileY: 19,
+      directions: [Direction.UP, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 8,
+      tileY: 19,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 10,
+      tileY: 19,
+      directions: [Direction.UP, Direction.LEFT, Direction.RIGHT],
+    }),
+    newCorner({
+      tileX: 17,
+      tileY: 19,
+      directions: [Direction.UP, Direction.LEFT],
     }),
   ];
 }

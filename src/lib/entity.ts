@@ -7,6 +7,7 @@ export type Entity = {
   frameRowOffset: number;
   frameIncrement: number;
   frameCount: number;
+  frameDirection: Map<Direction, number>;
   x: number;
   y: number;
   offsetX: number;
@@ -25,6 +26,7 @@ export function newEntity({
   frameRowOffset = 0,
   frameIncrement = 0,
   frameCount = 0,
+  frameDirection = new Map(),
   x = 0,
   y = 0,
   offsetX = 0,
@@ -42,6 +44,7 @@ export function newEntity({
     frameRowOffset,
     frameIncrement,
     frameCount,
+    frameDirection,
     x,
     y,
     offsetX,

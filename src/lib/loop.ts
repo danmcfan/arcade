@@ -1,4 +1,5 @@
 import { Direction } from "@/lib/direction";
+import { Entity } from "@/lib/entity";
 import { SpriteSheetID, areSpritesLoaded, getSpriteSheet } from "@/lib/sprite";
 import { State } from "@/lib/state";
 
@@ -6,6 +7,8 @@ const MS_PER_FRAME = 1000 / 60;
 
 const LEVEL_WIDTH = 304;
 const LEVEL_HEIGHT = 368;
+
+const DISTANCE_THRESHOLD = 0.25;
 
 const DEBUG = false;
 
@@ -22,10 +25,53 @@ export function getGameLoop(state: State) {
     state.lag += elapsed;
 
     // process input
-    if (state.keys.has("KeyD") || state.keys.has("ArrowRight")) {
-      state.player.direction = Direction.RIGHT;
+    const corner = withinDistanceCorner(state.player, state.corners);
+    let newDirection = null;
+    if (state.keys.has("KeyW") || state.keys.has("ArrowUp")) {
+      newDirection = Direction.UP;
+    } else if (state.keys.has("KeyS") || state.keys.has("ArrowDown")) {
+      newDirection = Direction.DOWN;
     } else if (state.keys.has("KeyA") || state.keys.has("ArrowLeft")) {
-      state.player.direction = Direction.LEFT;
+      newDirection = Direction.LEFT;
+    } else if (state.keys.has("KeyD") || state.keys.has("ArrowRight")) {
+      newDirection = Direction.RIGHT;
+    }
+
+    if (corner) {
+      if (!state.player.direction) {
+        throw new Error("Player has no direction");
+      }
+
+      if (newDirection && corner.directions.includes(newDirection)) {
+        if (
+          ([Direction.UP, Direction.DOWN].includes(newDirection) &&
+            [Direction.LEFT, Direction.RIGHT].includes(
+              state.player.direction
+            )) ||
+          ([Direction.LEFT, Direction.RIGHT].includes(newDirection) &&
+            [Direction.UP, Direction.DOWN].includes(state.player.direction))
+        ) {
+          state.player.x = corner.x;
+          state.player.y = corner.y;
+        }
+
+        state.player.direction = newDirection;
+      }
+    } else {
+      let validDirections = [state.player.direction];
+      if (state.player.direction === Direction.UP) {
+        validDirections.push(Direction.DOWN);
+      } else if (state.player.direction === Direction.DOWN) {
+        validDirections.push(Direction.UP);
+      } else if (state.player.direction === Direction.LEFT) {
+        validDirections.push(Direction.RIGHT);
+      } else if (state.player.direction === Direction.RIGHT) {
+        validDirections.push(Direction.LEFT);
+      }
+
+      if (newDirection && validDirections.includes(newDirection)) {
+        state.player.direction = newDirection;
+      }
     }
 
     // update
@@ -38,13 +84,68 @@ export function getGameLoop(state: State) {
       ]) {
         entity.frame += entity.frameIncrement;
         entity.frame %= entity.frameCount;
+      }
 
-        if (entity.direction === Direction.RIGHT) {
-          entity.x += entity.velocity;
-        } else if (entity.direction === Direction.LEFT) {
-          entity.x -= entity.velocity;
+      for (const entity of state.bees) {
+        const corner = withinDistanceCorner(entity, state.corners);
+        if (corner) {
+          if (entity.lastCorner !== corner) {
+            entity.lastCorner = corner;
+
+            if (!entity.direction) {
+              throw new Error("Entity has no direction");
+            }
+
+            let newDirection = entity.direction;
+            while (newDirection === entity.direction) {
+              newDirection =
+                corner.directions[
+                  Math.floor(Math.random() * corner.directions.length)
+                ];
+            }
+
+            entity.x = corner.x;
+            entity.y = corner.y;
+            entity.direction = newDirection;
+          }
         }
-        entity.x = Math.max(72, Math.min(231, entity.x));
+      }
+
+      for (const entity of [state.player, ...state.bees]) {
+        if (!entity.direction) {
+          throw new Error("Entity has no direction");
+        }
+
+        const corner = withinDistanceCorner(entity, state.corners);
+        let validDirections = [
+          Direction.UP,
+          Direction.DOWN,
+          Direction.LEFT,
+          Direction.RIGHT,
+        ];
+        if (corner) {
+          validDirections = corner.directions;
+        }
+
+        if (validDirections.includes(entity.direction)) {
+          if (entity.direction === Direction.UP) {
+            entity.y -= entity.velocity;
+          } else if (entity.direction === Direction.DOWN) {
+            entity.y += entity.velocity;
+          } else if (entity.direction === Direction.LEFT) {
+            entity.x -= entity.velocity;
+          } else if (entity.direction === Direction.RIGHT) {
+            entity.x += entity.velocity;
+          }
+        }
+
+        if (entity.y === 16 * 10 + 8) {
+          if (entity.x <= 16) {
+            entity.x = 16 * 18;
+          } else if (entity.x >= 16 * 18) {
+            entity.x = 16;
+          }
+        }
       }
 
       state.lag -= MS_PER_FRAME;
@@ -87,10 +188,8 @@ export function getGameLoop(state: State) {
 
       if (spriteSheet) {
         let spriteRow = 0;
-        if (entity.direction === Direction.RIGHT) {
-          spriteRow = 0;
-        } else if (entity.direction === Direction.LEFT) {
-          spriteRow = 1;
+        if (entity.direction) {
+          spriteRow = entity.frameDirection.get(entity.direction) || 0;
         }
 
         state.ctx.drawImage(
@@ -120,6 +219,24 @@ export function getGameLoop(state: State) {
         );
         state.ctx.fill();
         state.ctx.stroke();
+
+        for (const direction of entity.directions) {
+          state.ctx.beginPath();
+          state.ctx.moveTo(entity.x, entity.y);
+
+          if (direction === Direction.UP) {
+            state.ctx.lineTo(entity.x, entity.y - 4);
+          } else if (direction === Direction.DOWN) {
+            state.ctx.lineTo(entity.x, entity.y + 4);
+          } else if (direction === Direction.LEFT) {
+            state.ctx.lineTo(entity.x - 4, entity.y);
+          } else if (direction === Direction.RIGHT) {
+            state.ctx.lineTo(entity.x + 4, entity.y);
+          }
+
+          state.ctx.fill();
+          state.ctx.stroke();
+        }
       }
     }
 
@@ -132,4 +249,23 @@ export function getGameLoop(state: State) {
   }
 
   return gameLoop;
+}
+
+function withinDistanceCorner(
+  entity: Entity,
+  corners: Entity[]
+): Entity | null {
+  for (const corner of corners) {
+    if (withinDistance(entity, corner)) {
+      return corner;
+    }
+  }
+  return null;
+}
+
+function withinDistance(entity1: Entity, entity2: Entity) {
+  return (
+    Math.abs(entity1.x - entity2.x) <= DISTANCE_THRESHOLD &&
+    Math.abs(entity1.y - entity2.y) <= DISTANCE_THRESHOLD
+  );
 }
