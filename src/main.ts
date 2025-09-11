@@ -16,7 +16,7 @@ import { createState } from "@/lib/state";
 
 function main() {
   const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
-    [SpriteSheetID.BEAR, { width: 16, height: 16 }],
+    [SpriteSheetID.BEAR, { width: 32, height: 32 }],
     [SpriteSheetID.BEE, { width: 16, height: 16 }],
     [SpriteSheetID.HIVE, { width: 304, height: 368 }],
   ]);
@@ -36,8 +36,8 @@ function main() {
     ]),
     x: 152,
     y: 264,
-    offsetX: 8,
-    offsetY: 12,
+    offsetX: 16,
+    offsetY: 28,
     direction: Direction.LEFT,
     radius: 4,
     velocity: 1.0,
