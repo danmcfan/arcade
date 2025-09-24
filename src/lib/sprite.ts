@@ -1,7 +1,10 @@
 export enum SpriteSheetID {
+  ARCADE = "arcade.png",
   BEAR = "bear.png",
   BEE = "bee.png",
+  GAMER = "gamer.png",
   HIVE = "hive.png",
+  SWEET_SAM_TITLE = "sweet-sam-title.png",
 }
 
 export type SpriteSheet = {

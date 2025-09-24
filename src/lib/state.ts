@@ -11,7 +11,9 @@ export type State = {
   height: number;
   scale: number;
   spriteSheets: Map<SpriteSheetID, SpriteSheet>;
-  player: Entity;
+  gamer: Entity;
+  title: boolean;
+  bear: Entity;
   bees: Entity[];
   corners: Entity[];
   points: Entity[];
@@ -35,7 +37,9 @@ export function createState() {
     height: 0,
     scale: 0,
     spriteSheets: new Map(),
-    player: newEntity({}),
+    gamer: newEntity({}),
+    title: false,
+    bear: newEntity({}),
     bees: [],
     corners: [],
     points: [],

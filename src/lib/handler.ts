@@ -1,7 +1,5 @@
 import { State } from "@/lib/state";
-
-const LEVEL_WIDTH = 304;
-const LEVEL_HEIGHT = 368;
+import { LEVEL_WIDTH, LEVEL_HEIGHT } from "@/lib/constant";
 
 export function getResizeHandler(state: State) {
   return () => {

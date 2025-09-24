@@ -16,15 +16,36 @@ import { createState } from "@/lib/state";
 
 function main() {
   const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
+    [SpriteSheetID.ARCADE, { width: 160, height: 144 }],
     [SpriteSheetID.BEAR, { width: 32, height: 32 }],
     [SpriteSheetID.BEE, { width: 16, height: 16 }],
     [SpriteSheetID.HIVE, { width: 304, height: 368 }],
+    [SpriteSheetID.GAMER, { width: 16, height: 24 }],
+    [SpriteSheetID.SWEET_SAM_TITLE, { width: 160, height: 144 }],
   ]);
 
   const state = createState();
   state.spriteSheets = createSpriteSheets(spriteSheetConfigs);
 
-  state.player = newEntity({
+  state.gamer = newEntity({
+    spriteSheetID: SpriteSheetID.GAMER,
+    frameIncrement: 0,
+    frameCount: 1,
+    frameDirection: new Map([
+      [Direction.UP, 0],
+      [Direction.DOWN, 1],
+      [Direction.LEFT, 2],
+      [Direction.RIGHT, 3],
+    ]),
+    x: 80,
+    y: 92,
+    offsetX: 8,
+    offsetY: 16,
+    direction: Direction.DOWN,
+    velocity: 1.0,
+  });
+
+  state.bear = newEntity({
     spriteSheetID: SpriteSheetID.BEAR,
     frameIncrement: 0.1,
     frameCount: 4,
