@@ -1,21 +1,19 @@
 import { State } from "@/lib/state";
 import { getSpriteSheet, SpriteSheetID } from "@/lib/sprite";
+import { GameType } from "@/lib/game";
 import { Direction } from "@/lib/direction";
-import {
-  DEBUG,
-  LEVEL_WIDTH,
-  LEVEL_HEIGHT,
-  LEVEL_SPRITE_SHEET_ID,
-  SWEET_SAM,
-} from "@/lib/constant";
+import { DEBUG } from "@/lib/constant";
 
 export function render(state: State) {
   state.ctx.save();
   state.ctx.scale(state.scale, state.scale);
 
-  state.ctx.clearRect(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+  state.ctx.clearRect(0, 0, state.levelWidth, state.levelHeight);
 
-  const spriteLevel = getSpriteSheet(state.spriteSheets, LEVEL_SPRITE_SHEET_ID);
+  const spriteLevel = getSpriteSheet(
+    state.spriteSheets,
+    state.levelSpriteSheetID
+  );
   if (!spriteLevel) {
     return;
   }
@@ -28,14 +26,17 @@ export function render(state: State) {
     spriteLevel.height,
     0,
     0,
-    LEVEL_WIDTH,
-    LEVEL_HEIGHT
+    state.levelWidth,
+    state.levelHeight
   );
 
-  if (SWEET_SAM) {
-    renderSweetSam(state);
-  } else {
-    renderArcade(state);
+  switch (state.activeGame) {
+    case GameType.SWEET_SAM:
+      renderSweetSam(state);
+      break;
+    default:
+      renderArcade(state);
+      break;
   }
 
   state.ctx.restore();
@@ -59,8 +60,8 @@ function renderArcade(state: State) {
       spriteTitle.height,
       0,
       0,
-      LEVEL_WIDTH,
-      LEVEL_HEIGHT
+      state.levelWidth,
+      state.levelHeight
     );
   }
 

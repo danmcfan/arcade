@@ -1,13 +1,16 @@
 import { State } from "@/lib/state";
 import { Direction } from "@/lib/direction";
+import { GameType } from "@/lib/game";
 import { withinDistanceCorner } from "@/lib/distance";
-import { SWEET_SAM } from "@/lib/constant";
 
 export function update(state: State) {
-  if (SWEET_SAM) {
-    updateSweetSam(state);
-  } else {
-    updateArcade(state);
+  switch (state.activeGame) {
+    case GameType.SWEET_SAM:
+      updateSweetSam(state);
+      break;
+    default:
+      updateArcade(state);
+      break;
   }
 }
 

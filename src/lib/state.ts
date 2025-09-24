@@ -1,5 +1,6 @@
 import { SpriteSheetID, SpriteSheet } from "@/lib/sprite";
 import { Entity, newEntity } from "@/lib/entity";
+import { GameType } from "@/lib/game";
 
 export type State = {
   container: HTMLDivElement;
@@ -10,7 +11,12 @@ export type State = {
   width: number;
   height: number;
   scale: number;
+  resizeHandler: () => void;
   spriteSheets: Map<SpriteSheetID, SpriteSheet>;
+  activeGame: GameType;
+  levelWidth: number;
+  levelHeight: number;
+  levelSpriteSheetID: SpriteSheetID;
   gamer: Entity;
   title: boolean;
   bear: Entity;
@@ -36,7 +42,12 @@ export function createState() {
     width: 0,
     height: 0,
     scale: 0,
+    resizeHandler: () => {},
     spriteSheets: new Map(),
+    activeGame: GameType.ARCADE,
+    levelWidth: 160,
+    levelHeight: 144,
+    levelSpriteSheetID: SpriteSheetID.ARCADE,
     gamer: newEntity({}),
     title: false,
     bear: newEntity({}),

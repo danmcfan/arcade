@@ -151,6 +151,8 @@ function main() {
 
   resizeHandler();
 
+  state.resizeHandler = resizeHandler;
+
   const gameLoop = getGameLoop(state);
   requestAnimationFrame(gameLoop);
 }

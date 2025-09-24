@@ -1,17 +1,16 @@
 import { State } from "@/lib/state";
-import { LEVEL_WIDTH, LEVEL_HEIGHT } from "@/lib/constant";
 
 export function getResizeHandler(state: State) {
   return () => {
     const rect = state.container.getBoundingClientRect();
 
     const scale = Math.min(
-      Math.floor(rect.width / LEVEL_WIDTH),
-      Math.floor(rect.height / LEVEL_HEIGHT)
+      Math.floor(rect.width / state.levelWidth),
+      Math.floor(rect.height / state.levelHeight)
     );
 
-    state.canvas.width = LEVEL_WIDTH * scale;
-    state.canvas.height = LEVEL_HEIGHT * scale;
+    state.canvas.width = state.levelWidth * scale;
+    state.canvas.height = state.levelHeight * scale;
 
     state.width = state.canvas.width;
     state.height = state.canvas.height;
