@@ -375,8 +375,13 @@ export function newCorner({
   tileY: number;
   directions: Direction[];
 }): Entity {
+  let rightSide = false;
+  if (tileX >= 10) {
+    rightSide = true;
+  }
+
   return newEntity({
-    x: tileX * 16 + 8,
+    x: tileX * 16 + 8 + (rightSide ? -1 : 0),
     y: (tileY + 1) * 16 + 8,
     radius: 1,
     directions,
