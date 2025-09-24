@@ -29,8 +29,8 @@ function main() {
 
   state.gamer = newEntity({
     spriteSheetID: SpriteSheetID.GAMER,
-    frameIncrement: 0,
-    frameCount: 1,
+    frameIncrement: 0.1,
+    frameCount: 4,
     frameDirection: new Map([
       [Direction.UP, 0],
       [Direction.DOWN, 1],

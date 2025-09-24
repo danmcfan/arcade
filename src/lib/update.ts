@@ -13,8 +13,12 @@ export function update(state: State) {
 
 function updateArcade(state: State) {
   const entity = state.gamer;
-  entity.frame += entity.frameIncrement;
-  entity.frame %= entity.frameCount;
+  if (entity.velocity > 0) {
+    entity.frame += entity.frameIncrement;
+    entity.frame %= entity.frameCount;
+  } else {
+    entity.frame = 0;
+  }
 
   switch (entity.direction) {
     case Direction.UP:
