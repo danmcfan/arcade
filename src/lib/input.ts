@@ -19,8 +19,8 @@ function handleArcadeInput(state: State) {
   if (state.keys.has("Space") && state.title) {
     state.activeGame = GameType.SWEET_SAM;
     state.title = false;
-    state.levelWidth = 304;
-    state.levelHeight = 368;
+    state.levelWidth = 224;
+    state.levelHeight = 288;
     state.levelSpriteSheetID = SpriteSheetID.HIVE;
     state.resizeHandler();
   }

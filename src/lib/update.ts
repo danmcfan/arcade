@@ -125,11 +125,11 @@ function updateSweetSam(state: State) {
       }
     }
 
-    if (entity.y === 16 * 10 + 8) {
-      if (entity.x <= 16) {
-        entity.x = 16 * 18;
-      } else if (entity.x >= 16 * 18) {
-        entity.x = 16;
+    if (entity.y === 8 * 17 + 4) {
+      if (entity.x <= 0) {
+        entity.x = 8 * 28;
+      } else if (entity.x >= 8 * 28) {
+        entity.x = 0;
       }
     }
   }

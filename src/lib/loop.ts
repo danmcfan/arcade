@@ -25,12 +25,9 @@ export function getGameLoop(state: State) {
     }
 
     render(state);
+
+    requestAnimationFrame(animate);
   }
 
-  function gameLoop(timestamp: number) {
-    animate(timestamp);
-    requestAnimationFrame(gameLoop);
-  }
-
-  return gameLoop;
+  return animate;
 }

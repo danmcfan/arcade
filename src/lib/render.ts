@@ -141,8 +141,8 @@ function renderSweetSam(state: State) {
     }
 
     if (DEBUG) {
-      state.ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
-      state.ctx.strokeStyle = "rgba(255, 0, 0, 0.75)";
+      state.ctx.fillStyle = "white";
+      state.ctx.strokeStyle = "white";
       state.ctx.lineWidth = 1;
       state.ctx.beginPath();
       state.ctx.arc(

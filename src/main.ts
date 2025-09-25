@@ -14,12 +14,12 @@ import {
 } from "@/lib/sprite";
 import { createState } from "@/lib/state";
 
-function main() {
+async function main() {
   const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
     [SpriteSheetID.ARCADE, { width: 160, height: 144 }],
     [SpriteSheetID.BEAR, { width: 16, height: 16 }],
     [SpriteSheetID.BEE, { width: 16, height: 16 }],
-    [SpriteSheetID.HIVE, { width: 304, height: 368 }],
+    [SpriteSheetID.HIVE, { width: 224, height: 288 }],
     [SpriteSheetID.GAMER, { width: 16, height: 24 }],
     [SpriteSheetID.SWEET_SAM_TITLE, { width: 160, height: 144 }],
   ]);
@@ -55,8 +55,8 @@ function main() {
       [Direction.LEFT, 2],
       [Direction.RIGHT, 3],
     ]),
-    x: 152,
-    y: 264,
+    x: 112,
+    y: 212,
     offsetX: 8,
     offsetY: 8,
     direction: Direction.LEFT,
@@ -75,8 +75,26 @@ function main() {
         [Direction.LEFT, 1],
         [Direction.RIGHT, 0],
       ]),
-      x: 16 * 17 + 8,
-      y: 16 * 2 + 8,
+      x: 8 * 1 + 4,
+      y: 8 * 4 + 4,
+      offsetX: 8,
+      offsetY: 8,
+      direction: Direction.RIGHT,
+      radius: 4,
+      velocity: 0.75,
+    }),
+    newEntity({
+      spriteSheetID: SpriteSheetID.BEE,
+      frameIncrement: 0.1,
+      frameCount: 4,
+      frameDirection: new Map([
+        [Direction.DOWN, 0],
+        [Direction.UP, 1],
+        [Direction.LEFT, 1],
+        [Direction.RIGHT, 0],
+      ]),
+      x: 8 * 26 + 4,
+      y: 8 * 4 + 4,
       offsetX: 8,
       offsetY: 8,
       direction: Direction.LEFT,
@@ -93,8 +111,8 @@ function main() {
         [Direction.LEFT, 1],
         [Direction.RIGHT, 0],
       ]),
-      x: 16 * 1 + 8,
-      y: 16 * 2 + 8,
+      x: 8 * 1 + 4,
+      y: 8 * 29 + 4,
       offsetX: 8,
       offsetY: 8,
       direction: Direction.RIGHT,
@@ -111,26 +129,8 @@ function main() {
         [Direction.LEFT, 1],
         [Direction.RIGHT, 0],
       ]),
-      x: 16 * 1 + 8,
-      y: 16 * 20 + 8,
-      offsetX: 8,
-      offsetY: 8,
-      direction: Direction.RIGHT,
-      radius: 4,
-      velocity: 0.75,
-    }),
-    newEntity({
-      spriteSheetID: SpriteSheetID.BEE,
-      frameIncrement: 0.1,
-      frameCount: 4,
-      frameDirection: new Map([
-        [Direction.DOWN, 0],
-        [Direction.UP, 1],
-        [Direction.LEFT, 1],
-        [Direction.RIGHT, 0],
-      ]),
-      x: 16 * 17 + 8 - 1,
-      y: 16 * 20 + 8,
+      x: 8 * 26 + 4,
+      y: 8 * 29 + 4,
       offsetX: 8,
       offsetY: 8,
       direction: Direction.LEFT,
@@ -139,7 +139,8 @@ function main() {
     }),
   ];
 
-  state.corners = defaultCorners();
+  state.corners = await defaultCorners();
+  console.log(state.corners);
 
   const resizeHandler = getResizeHandler(state);
   const keyDownHandler = getKeyDownHandler(state);
@@ -157,4 +158,4 @@ function main() {
   requestAnimationFrame(gameLoop);
 }
 
-main();
+await main();
