@@ -33,6 +33,10 @@ export function createState() {
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
+  if (!container) throw new Error("Failed to get container");
+  if (!canvas) throw new Error("Failed to get canvas");
+  if (!ctx) throw new Error("Failed to get context");
+
   const state: State = {
     container,
     canvas,

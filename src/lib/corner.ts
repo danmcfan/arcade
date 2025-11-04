@@ -1,35 +1,6 @@
 import { Direction } from "@/lib/direction";
 import { Entity, newEntity } from "@/lib/entity";
 
-export async function defaultCorners(): Promise<Entity[]> {
-  const data = await readCsv("/corners.csv");
-
-  console.log(data);
-
-  return data.map((corner: Record<string, string>) => {
-    const directions = [];
-
-    if (corner.up === "1") {
-      directions.push(Direction.UP);
-    }
-    if (corner.down === "1") {
-      directions.push(Direction.DOWN);
-    }
-    if (corner.left === "1") {
-      directions.push(Direction.LEFT);
-    }
-    if (corner.right === "1") {
-      directions.push(Direction.RIGHT);
-    }
-
-    return newCorner({
-      tileX: parseInt(corner.x),
-      tileY: parseInt(corner.y),
-      directions,
-    });
-  });
-}
-
 export const CORNERS = [
   // ROW 1
   newCorner({
@@ -378,22 +349,4 @@ export function newCorner({
     radius: 1,
     directions,
   });
-}
-
-export async function readCsv(
-  filename: string
-): Promise<Record<string, string>[]> {
-  const response = await fetch(filename);
-  const text = await response.text();
-  const headers = text.split("\n")[0].split(",");
-  return text
-    .split("\n")
-    .map((row) => row.split(","))
-    .slice(1)
-    .map((row) => {
-      return headers.reduce((acc: Record<string, string>, header, index) => {
-        acc[header] = row[index];
-        return acc;
-      }, {});
-    });
 }

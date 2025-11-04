@@ -8,6 +8,8 @@ import { MS_PER_FRAME } from "@/lib/constant";
 export function getGameLoop(state: State) {
   function animate(current: number) {
     if (!areSpritesLoaded(state.spriteSheets)) {
+      console.debug("Sprites not loaded...");
+      requestAnimationFrame(animate);
       return;
     }
 

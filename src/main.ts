@@ -15,6 +15,8 @@ import {
 import { createState } from "@/lib/state";
 
 function main() {
+  console.debug("Running main function...");
+
   const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
     [SpriteSheetID.ARCADE, { width: 160, height: 144 }],
     [SpriteSheetID.BEAR, { width: 16, height: 16 }],
@@ -153,6 +155,7 @@ function main() {
 
   state.resizeHandler = resizeHandler;
 
+  console.debug("Initializing game loop...");
   const gameLoop = getGameLoop(state);
   requestAnimationFrame(gameLoop);
 }
