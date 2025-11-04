@@ -14,7 +14,7 @@ import {
 } from "@/lib/sprite";
 import { createState } from "@/lib/state";
 
-async function main() {
+function main() {
   const spriteSheetConfigs: Map<SpriteSheetID, SpriteSheetConfig> = new Map([
     [SpriteSheetID.ARCADE, { width: 160, height: 144 }],
     [SpriteSheetID.BEAR, { width: 16, height: 16 }],
@@ -139,8 +139,10 @@ async function main() {
     }),
   ];
 
-  state.corners = await defaultCorners();
-  console.log(state.corners);
+  state.corners = [];
+  defaultCorners().then((corners) => {
+    state.corners = corners;
+  });
 
   const resizeHandler = getResizeHandler(state);
   const keyDownHandler = getKeyDownHandler(state);
@@ -158,4 +160,4 @@ async function main() {
   requestAnimationFrame(gameLoop);
 }
 
-await main();
+main();
