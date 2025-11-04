@@ -1,4 +1,4 @@
-import { defaultCorners } from "@/lib/corner";
+import { CORNERS } from "@/lib/corner";
 import { Direction } from "@/lib/direction";
 import { newEntity } from "@/lib/entity";
 import {
@@ -139,10 +139,7 @@ function main() {
     }),
   ];
 
-  state.corners = [];
-  defaultCorners().then((corners) => {
-    state.corners = corners;
-  });
+  state.corners = CORNERS;
 
   const resizeHandler = getResizeHandler(state);
   const keyDownHandler = getKeyDownHandler(state);
