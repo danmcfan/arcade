@@ -7,8 +7,11 @@ import "syscall/js"
 var SpriteArcade = NewSprite("arcade.png", 160, 144)
 var SpriteBear = NewSprite("bear.png", 16, 16)
 var SpriteBee = NewSprite("bee.png", 16, 16)
+var SpriteDigits = NewSprite("digits.png", 8, 8)
+var SpriteFood = NewSprite("food.png", 8, 8)
 var SpriteGamer = NewSprite("gamer.png", 16, 24)
 var SpriteHive = NewSprite("hive.png", 224, 288)
+var SpriteReady = NewSprite("ready.png", 48, 8)
 var SpriteSweetSamTitle = NewSprite("sweet-sam-title.png", 160, 144)
 
 type Sprite struct {

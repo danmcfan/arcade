@@ -39,8 +39,15 @@ type State struct {
 	Gamer *Entity
 	Bear  *Entity
 	Bees  []*Entity
+	Food  []*Entity
 
-	Title bool
+	Title       bool
+	BlueFrames  int
+	StartFrames int
+
+	Lives     int
+	Score     int
+	HighScore int
 }
 
 type Level struct {
@@ -59,7 +66,33 @@ func NewState(window js.Value, document js.Value, parent js.Value, canvas js.Val
 		Level:       LevelArcade,
 		LevelSprite: SpriteArcade,
 		Gamer:       EntityGamer,
-		Bear:        EntityBear,
-		Bees:        EntityBees,
+		BlueFrames:  FRAMES_PER_SECOND * 10,
 	}
+}
+
+func (s *State) SwitchArcade() {
+	s.Title = true
+	s.Level = LevelArcade
+	s.LevelSprite = SpriteArcade
+	HandleResize(s)
+}
+
+func (s *State) SwitchHive() {
+	s.Title = true
+	s.Level = LevelHive
+	s.LevelSprite = SpriteHive
+
+	s.Lives = 3
+	s.Score = 0
+
+	s.Food = NewFood()
+	s.Reset()
+
+	HandleResize(s)
+}
+
+func (s *State) Reset() {
+	s.StartFrames = FRAMES_PER_SECOND * 2
+	s.Bear = EntityBear()
+	s.Bees = EntityBees()
 }

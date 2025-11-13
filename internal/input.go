@@ -2,6 +2,10 @@
 
 package internal
 
+import (
+	"slices"
+)
+
 type keyMapping struct {
 	key     string
 	command Command
@@ -17,9 +21,44 @@ type moveCommand struct {
 }
 
 func (c *moveCommand) Execute(s *State) {
-	e := s.Gamer
-	e.Direction = c.direction
-	s.MovementKeyPressed = true
+	switch s.Level {
+	case LevelArcade:
+		e := s.Gamer
+
+		e.Direction = c.direction
+		s.MovementKeyPressed = true
+	case LevelHive:
+		e := s.Bear
+
+		corner := findCorner(e)
+		if corner == nil {
+			var validDirections []Direction
+			switch e.Direction.Axis() {
+			case AxisVertical:
+				validDirections = []Direction{DirectionUp, DirectionDown}
+			case AxisHorizontal:
+				validDirections = []Direction{DirectionLeft, DirectionRight}
+			}
+
+			if !slices.Contains(validDirections, c.direction) {
+				return
+			}
+
+			e.Direction = c.direction
+			return
+		}
+
+		if !slices.Contains(corner.Directions, c.direction) {
+			return
+		}
+
+		if e.Direction.Axis() != c.direction.Axis() {
+			e.X = corner.X
+			e.Y = corner.Y
+		}
+
+		e.Direction = c.direction
+	}
 }
 
 type interactCommand struct{}
@@ -29,19 +68,13 @@ func (c *interactCommand) Execute(s *State) {
 		return
 	}
 
-	s.Title = false
-	s.Level = LevelHive
-	s.LevelSprite = SpriteHive
-	HandleResize(s)
+	s.SwitchHive()
 }
 
 type exitCommand struct{}
 
 func (c *exitCommand) Execute(s *State) {
-	s.Title = true
-	s.Level = LevelArcade
-	s.LevelSprite = SpriteArcade
-	HandleResize(s)
+	s.SwitchArcade()
 }
 
 var moveUpCommand = &moveCommand{direction: DirectionUp, velocity: 1.0}
@@ -67,6 +100,10 @@ func handleInput(s *State) {
 		if contains(s.Keys, km.key) {
 			km.command.Execute(s)
 		}
+	}
+
+	if s.Level == LevelHive {
+		return
 	}
 
 	if s.MovementKeyPressed {

@@ -11,30 +11,52 @@ const (
 	DirectionRight Direction = "RIGHT"
 )
 
-var EntityBear = &Entity{
-	Sprite:         SpriteBear,
-	FrameIncrement: 0.1,
-	FrameTotal:     4,
-	FrameDirection: map[Direction]int{
-		DirectionDown:  0,
-		DirectionUp:    1,
-		DirectionLeft:  2,
-		DirectionRight: 3,
-	},
-	X:         112,
-	Y:         212,
-	OffsetX:   8,
-	OffsetY:   8,
-	Direction: DirectionLeft,
-	Radius:    4,
-	Velocity:  1.0,
+type Axis string
+
+const (
+	AxisVertical   Axis = "VERTICAL"
+	AxisHorizontal Axis = "HORIZONTAL"
+)
+
+func (d Direction) Axis() Axis {
+	switch d {
+	case DirectionUp, DirectionDown:
+		return AxisVertical
+	case DirectionLeft, DirectionRight:
+		return AxisHorizontal
+	default:
+		return AxisVertical
+	}
 }
 
-var EntityBees = []*Entity{
-	NewEntityBee(1, 4, DirectionRight),
-	NewEntityBee(26, 4, DirectionLeft),
-	NewEntityBee(1, 29, DirectionRight),
-	NewEntityBee(26, 29, DirectionLeft),
+func EntityBear() *Entity {
+	return &Entity{
+		Sprite:         SpriteBear,
+		FrameIncrement: 0.1,
+		FrameTotal:     4,
+		FrameDirection: map[Direction]int{
+			DirectionDown:  0,
+			DirectionUp:    1,
+			DirectionLeft:  2,
+			DirectionRight: 3,
+		},
+		X:         112,
+		Y:         212,
+		OffsetX:   8,
+		OffsetY:   8,
+		Direction: DirectionLeft,
+		Radius:    4,
+		Velocity:  1.0,
+	}
+}
+
+func EntityBees() []*Entity {
+	return []*Entity{
+		NewEntityBee(1, 4, DirectionRight),
+		NewEntityBee(26, 4, DirectionLeft),
+		NewEntityBee(1, 29, DirectionRight),
+		NewEntityBee(26, 29, DirectionLeft),
+	}
 }
 
 var EntityGamer = &Entity{
@@ -62,13 +84,25 @@ type Entity struct {
 	FrameTotal     float64
 	FrameDirection map[Direction]int
 
-	X         float64
-	Y         float64
-	OffsetX   float64
-	OffsetY   float64
-	Direction Direction
-	Radius    float64
-	Velocity  float64
+	X          float64
+	Y          float64
+	OffsetX    float64
+	OffsetY    float64
+	Direction  Direction
+	Directions []Direction
+	Radius     float64
+	Velocity   float64
+
+	LastCorner *Entity
+
+	BlueFrames int
+
+	FlashFrames int
+	Flash       bool
+}
+
+func (e *Entity) IsPower() bool {
+	return e.Sprite == SpriteFood && e.Frame == 1
 }
 
 func NewEntityBee(tx, ty int, d Direction) *Entity {
