@@ -3,12 +3,25 @@
 package internal
 
 import (
-	"log"
 	"syscall/js"
 )
 
+var LevelArcade = Level{
+	Width:  160,
+	Height: 144,
+}
+
+var LevelHive = Level{
+	Width:  224,
+	Height: 288,
+}
+
 type State struct {
-	Ctx js.Value
+	Window   js.Value
+	Document js.Value
+	Parent   js.Value
+	Canvas   js.Value
+	Ctx      js.Value
 
 	Width  float64
 	Height float64
@@ -17,40 +30,36 @@ type State struct {
 	Previous int
 	Lag      int
 
-	Keys map[string]bool
+	Keys               map[string]bool
+	MovementKeyPressed bool
 
 	Level       Level
 	LevelSprite *Sprite
 
-	GamerEntity *Entity
+	Gamer *Entity
+	Bear  *Entity
+	Bees  []*Entity
+
+	Title bool
 }
 
 type Level struct {
+	Name   string
 	Width  int
 	Height int
 }
 
-func NewState(ctx js.Value, level Level, levelSprite *Sprite, gamerEntity *Entity) *State {
-	if ctx.IsNull() {
-		log.Println("context is null")
-		return nil
-	}
-
-	if levelSprite == nil {
-		log.Println("level sprite is nil")
-		return nil
-	}
-
-	if gamerEntity == nil {
-		log.Println("gamer entity is nil")
-		return nil
-	}
-
+func NewState(window js.Value, document js.Value, parent js.Value, canvas js.Value) *State {
 	return &State{
-		Ctx:         ctx,
+		Window:      window,
+		Document:    document,
+		Parent:      parent,
+		Canvas:      canvas,
 		Keys:        make(map[string]bool),
-		Level:       level,
-		LevelSprite: levelSprite,
-		GamerEntity: gamerEntity,
+		Level:       LevelArcade,
+		LevelSprite: SpriteArcade,
+		Gamer:       EntityGamer,
+		Bear:        EntityBear,
+		Bees:        EntityBees,
 	}
 }

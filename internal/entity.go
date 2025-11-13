@@ -11,11 +11,55 @@ const (
 	DirectionRight Direction = "RIGHT"
 )
 
+var EntityBear = &Entity{
+	Sprite:         SpriteBear,
+	FrameIncrement: 0.1,
+	FrameTotal:     4,
+	FrameDirection: map[Direction]int{
+		DirectionDown:  0,
+		DirectionUp:    1,
+		DirectionLeft:  2,
+		DirectionRight: 3,
+	},
+	X:         112,
+	Y:         212,
+	OffsetX:   8,
+	OffsetY:   8,
+	Direction: DirectionLeft,
+	Radius:    4,
+	Velocity:  1.0,
+}
+
+var EntityBees = []*Entity{
+	NewEntityBee(1, 4, DirectionRight),
+	NewEntityBee(26, 4, DirectionLeft),
+	NewEntityBee(1, 29, DirectionRight),
+	NewEntityBee(26, 29, DirectionLeft),
+}
+
+var EntityGamer = &Entity{
+	Sprite:         SpriteGamer,
+	FrameIncrement: 0.1,
+	FrameTotal:     4,
+	FrameDirection: map[Direction]int{
+		DirectionUp:    0,
+		DirectionDown:  1,
+		DirectionLeft:  2,
+		DirectionRight: 3,
+	},
+	X:         80,
+	Y:         92,
+	OffsetX:   8,
+	OffsetY:   16,
+	Direction: DirectionDown,
+}
+
 type Entity struct {
 	Sprite *Sprite
 
 	Frame          float64
-	FrameTotal     int
+	FrameIncrement float64
+	FrameTotal     float64
 	FrameDirection map[Direction]int
 
 	X         float64
@@ -27,10 +71,23 @@ type Entity struct {
 	Velocity  float64
 }
 
-func NewEntity(sprite *Sprite) *Entity {
+func NewEntityBee(tx, ty int, d Direction) *Entity {
 	return &Entity{
-		Sprite:         sprite,
-		FrameDirection: make(map[Direction]int),
-		Direction:      DirectionDown,
+		Sprite:         SpriteBee,
+		FrameIncrement: 0.1,
+		FrameTotal:     4,
+		FrameDirection: map[Direction]int{
+			DirectionDown:  0,
+			DirectionUp:    1,
+			DirectionLeft:  1,
+			DirectionRight: 0,
+		},
+		X:         float64(8*tx + 4),
+		Y:         float64(8*ty + 4),
+		OffsetX:   8,
+		OffsetY:   8,
+		Direction: d,
+		Radius:    4,
+		Velocity:  0.75,
 	}
 }

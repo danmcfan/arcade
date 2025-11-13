@@ -4,40 +4,69 @@ package internal
 
 import (
 	"log"
-	"syscall/js"
 )
 
-func render(state *State) {
-	ctx := state.Ctx
+func render(s *State) {
+	s.Ctx.Call("save")
+	defer s.Ctx.Call("restore")
 
-	ctx.Call("save")
-	defer ctx.Call("restore")
+	s.Ctx.Call("scale", s.Scale, s.Scale)
 
-	ctx.Call("scale", state.Scale, state.Scale)
+	s.Ctx.Call("clearRect", 0, 0, s.Level.Width, s.Level.Height)
 
-	ctx.Call("clearRect", 0, 0, state.Level.Width, state.Level.Height)
-
-	if !state.LevelSprite.Ready {
+	if !s.LevelSprite.Ready {
 		log.Println("level sprite is not ready")
 		return
 	}
 
-	img := *state.LevelSprite.Image
+	img := s.LevelSprite.Image
 	sx := 0
 	sy := 0
-	sw := state.LevelSprite.Width
-	sh := state.LevelSprite.Height
+	sw := s.LevelSprite.Width
+	sh := s.LevelSprite.Height
 	dx := 0
 	dy := 0
-	dw := state.Level.Width
-	dh := state.Level.Height
+	dw := s.Level.Width
+	dh := s.Level.Height
 
-	ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
+	s.Ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
 
-	renderEntity(ctx, state.GamerEntity)
+	switch s.Level {
+	case LevelArcade:
+		renderTitle(s)
+		renderEntity(s, s.Gamer)
+	case LevelHive:
+		renderEntity(s, s.Bear)
+		for _, bee := range s.Bees {
+			renderEntity(s, bee)
+		}
+	}
 }
 
-func renderEntity(ctx js.Value, e *Entity) {
+func renderTitle(s *State) {
+	if !s.Title {
+		return
+	}
+
+	if !SpriteSweetSamTitle.Ready {
+		log.Println("title sprite is not ready")
+		return
+	}
+
+	img := SpriteSweetSamTitle.Image
+	sx := 0
+	sy := 0
+	sw := SpriteSweetSamTitle.Width
+	sh := SpriteSweetSamTitle.Height
+	dx := 0
+	dy := 0
+	dw := s.Level.Width
+	dh := s.Level.Height
+
+	s.Ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
+}
+
+func renderEntity(s *State, e *Entity) {
 	if !e.Sprite.Ready {
 		log.Println("entity sprite is not ready")
 		return
@@ -45,7 +74,7 @@ func renderEntity(ctx js.Value, e *Entity) {
 
 	row := e.FrameDirection[e.Direction]
 
-	img := *e.Sprite.Image
+	img := e.Sprite.Image
 
 	sx := e.Sprite.Width * int(e.Frame)
 	sy := e.Sprite.Height * row
@@ -57,5 +86,5 @@ func renderEntity(ctx js.Value, e *Entity) {
 	dw := e.Sprite.Width
 	dh := e.Sprite.Height
 
-	ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
+	s.Ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
 }
