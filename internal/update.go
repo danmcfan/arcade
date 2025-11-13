@@ -22,46 +22,48 @@ const (
 )
 
 func update(s *State) {
-	var e *Entity
 	var updatePosition func(*Entity)
+
 	switch s.Level {
 	case LevelArcade:
-		e = s.Gamer
 		updatePosition = updatePositionArcade
-	case LevelHive:
-		e = s.Bear
-		updatePosition = updatePositionHive
-	}
+		e := s.Gamer
 
-	if s.StartFrames > 0 {
-		s.StartFrames--
-		return
-	}
+		handleInput(s)
 
-	winner := true
-	for _, f := range s.Food {
-		if f != nil {
-			winner = false
-			break
-		}
-	}
+		updateFrame(e)
+		updatePosition(e)
 
-	if winner {
-		s.Food = NewFood()
-		s.Reset()
-		return
-	}
-
-	handleInput(s)
-
-	updateFrame(e)
-	updatePosition(e)
-
-	switch s.Level {
-	case LevelArcade:
 		clampPosition(e)
 		s.Title = checkPosition(e)
 	case LevelHive:
+		updatePosition = updatePositionHive
+		e := s.Bear
+
+		if s.StartFrames > 0 {
+			s.StartFrames--
+			return
+		}
+
+		winner := true
+		for _, f := range s.Food {
+			if f != nil {
+				winner = false
+				break
+			}
+		}
+
+		if winner {
+			s.Food = NewFood()
+			s.Reset()
+			return
+		}
+
+		handleInput(s)
+
+		updateFrame(e)
+		updatePosition(e)
+
 		for _, bee := range s.Bees {
 			if collideWithDistance(e, bee, 1.0) {
 				if bee.BlueFrames > 0 {
