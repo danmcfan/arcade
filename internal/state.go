@@ -17,6 +17,8 @@ var LevelHive = Level{
 }
 
 type State struct {
+	World *World
+
 	Window   js.Value
 	Document js.Value
 	Parent   js.Value
@@ -33,15 +35,12 @@ type State struct {
 	Keys               map[string]bool
 	MovementKeyPressed bool
 
-	Level       Level
-	LevelSprite *Sprite
+	Game Game
 
-	Gamer *Entity
-	Bear  *Entity
-	Bees  []*Entity
-	Food  []*Entity
+	Bear *Entity
+	Bees []*Entity
+	Food []*Entity
 
-	Title       bool
 	BlueFrames  int
 	StartFrames int
 
@@ -58,29 +57,23 @@ type Level struct {
 
 func NewState(window js.Value, document js.Value, parent js.Value, canvas js.Value) *State {
 	return &State{
-		Window:      window,
-		Document:    document,
-		Parent:      parent,
-		Canvas:      canvas,
-		Keys:        make(map[string]bool),
-		Level:       LevelArcade,
-		LevelSprite: SpriteArcade,
-		Gamer:       EntityGamer,
-		BlueFrames:  FRAMES_PER_SECOND * 10,
+		Window:     window,
+		Document:   document,
+		Parent:     parent,
+		Canvas:     canvas,
+		Keys:       make(map[string]bool),
+		Game:       GameArcade,
+		BlueFrames: FRAMES_PER_SECOND * 10,
 	}
 }
 
 func (s *State) SwitchArcade() {
-	s.Title = true
-	s.Level = LevelArcade
-	s.LevelSprite = SpriteArcade
+	s.Game = GameArcade
 	HandleResize(s)
 }
 
 func (s *State) SwitchHive() {
-	s.Title = true
-	s.Level = LevelHive
-	s.LevelSprite = SpriteHive
+	s.Game = GameHive
 
 	s.Lives = 3
 	s.Score = 0
@@ -89,6 +82,8 @@ func (s *State) SwitchHive() {
 	s.Reset()
 
 	HandleResize(s)
+
+	SoundStart.Play()
 }
 
 func (s *State) Reset() {

@@ -59,23 +59,6 @@ func EntityBees() []*Entity {
 	}
 }
 
-var EntityGamer = &Entity{
-	Sprite:         SpriteGamer,
-	FrameIncrement: 0.1,
-	FrameTotal:     4,
-	FrameDirection: map[Direction]int{
-		DirectionUp:    0,
-		DirectionDown:  1,
-		DirectionLeft:  2,
-		DirectionRight: 3,
-	},
-	X:         80,
-	Y:         92,
-	OffsetX:   8,
-	OffsetY:   16,
-	Direction: DirectionDown,
-}
-
 type Entity struct {
 	Sprite *Sprite
 

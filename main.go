@@ -44,6 +44,8 @@ func main() {
 		return
 	}
 
+	state.World = internal.NewWorld()
+
 	internal.HandleResize(state)
 	window.Call("addEventListener", "resize", js.FuncOf(func(this js.Value, args []js.Value) any {
 		internal.HandleResize(state)

@@ -12,8 +12,8 @@ func HandleResize(s *State) {
 	pw := p.Get("clientWidth").Float()
 	ph := p.Get("clientHeight").Float()
 
-	lw := s.Level.Width
-	lh := s.Level.Height
+	lw := s.Game.Width()
+	lh := s.Game.Height()
 
 	sw := pw / float64(lw)
 	sh := ph / float64(lh)

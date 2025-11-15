@@ -15,55 +15,34 @@ func render(s *State) {
 
 	s.Ctx.Call("scale", s.Scale, s.Scale)
 
-	s.Ctx.Call("clearRect", 0, 0, s.Level.Width, s.Level.Height)
+	s.Ctx.Call("clearRect", 0, 0, s.Game.Width(), s.Game.Height())
 
-	if !s.LevelSprite.Ready {
+	sprite := s.Game.Sprite()
+	if !sprite.Ready {
 		log.Println("level sprite is not ready")
 		return
 	}
 
-	img := s.LevelSprite.Image
+	img := sprite.Image
 	sx := 0
 	sy := 0
-	sw := s.LevelSprite.Width
-	sh := s.LevelSprite.Height
+	sw := sprite.Width
+	sh := sprite.Height
 	dx := 0
 	dy := 0
-	dw := s.Level.Width
-	dh := s.Level.Height
+	dw := s.Game.Width()
+	dh := s.Game.Height()
 
 	s.Ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
 
-	switch s.Level {
-	case LevelArcade:
-		renderTitle(s)
-		renderEntity(s, s.Gamer)
-	case LevelHive:
-		renderScore(s)
-		renderHighScore(s)
-		renderLives(s)
-
-		if s.StartFrames > 0 {
-			renderReady(s)
-		}
-
-		for _, food := range s.Food {
-			renderEntity(s, food)
-		}
-
-		renderEntity(s, s.Bear)
-		for _, bee := range s.Bees {
-			renderEntity(s, bee)
-		}
-
-		for _, c := range Corners {
-			renderCorner(s, c)
-		}
+	if s.Game == nil {
+		return
 	}
+	s.Game.Render(s)
 }
 
 func renderTitle(s *State) {
-	if !s.Title {
+	if !s.World.MachineActive {
 		return
 	}
 
@@ -79,8 +58,8 @@ func renderTitle(s *State) {
 	sh := SpriteSweetSamTitle.Height
 	dx := 0
 	dy := 0
-	dw := s.Level.Width
-	dh := s.Level.Height
+	dw := s.Game.Width()
+	dh := s.Game.Height()
 
 	s.Ctx.Call("drawImage", img, sx, sy, sw, sh, dx, dy, dw, dh)
 }

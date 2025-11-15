@@ -17,17 +17,16 @@ type Command interface {
 
 type moveCommand struct {
 	direction Direction
-	velocity  float64
 }
 
 func (c *moveCommand) Execute(s *State) {
-	switch s.Level {
-	case LevelArcade:
-		e := s.Gamer
-
-		e.Direction = c.direction
+	switch s.Game {
+	case GameArcade:
+		v := s.World.Vectors[GamerID]
+		v.SetDirection(c.direction)
 		s.MovementKeyPressed = true
-	case LevelHive:
+		s.World.Vectors[GamerID] = v
+	case GameHive:
 		e := s.Bear
 
 		corner := findCorner(e)
@@ -64,7 +63,7 @@ func (c *moveCommand) Execute(s *State) {
 type interactCommand struct{}
 
 func (c *interactCommand) Execute(s *State) {
-	if !s.Title {
+	if !s.World.MachineActive {
 		return
 	}
 
@@ -77,10 +76,10 @@ func (c *exitCommand) Execute(s *State) {
 	s.SwitchArcade()
 }
 
-var moveUpCommand = &moveCommand{direction: DirectionUp, velocity: 1.0}
-var moveDownCommand = &moveCommand{direction: DirectionDown, velocity: 1.0}
-var moveLeftCommand = &moveCommand{direction: DirectionLeft, velocity: 1.0}
-var moveRightCommand = &moveCommand{direction: DirectionRight, velocity: 1.0}
+var moveUpCommand = &moveCommand{direction: DirectionUp}
+var moveDownCommand = &moveCommand{direction: DirectionDown}
+var moveLeftCommand = &moveCommand{direction: DirectionLeft}
+var moveRightCommand = &moveCommand{direction: DirectionRight}
 
 var keyMappings = []keyMapping{
 	{key: "ArrowUp", command: moveUpCommand},
@@ -102,16 +101,18 @@ func handleInput(s *State) {
 		}
 	}
 
-	if s.Level == LevelHive {
+	if s.Game == GameHive {
 		return
 	}
 
+	v := s.World.Vectors[GamerID]
 	if s.MovementKeyPressed {
-		s.Gamer.Velocity = 1.0
+		v.SetVelocity(1.0)
 		s.MovementKeyPressed = false
 	} else {
-		s.Gamer.Velocity = 0
+		v.SetVelocity(0)
 	}
+	s.World.Vectors[GamerID] = v
 }
 
 func contains(km map[string]bool, ks ...string) bool {
