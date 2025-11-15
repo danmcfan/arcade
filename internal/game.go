@@ -19,7 +19,14 @@ type Game interface {
 	Render(s *State)
 }
 
-type ArcadeGame struct{}
+type BaseGame struct {
+	player   *Entity
+	entities []*Entity
+}
+
+type ArcadeGame struct {
+	BaseGame
+}
 
 func (g *ArcadeGame) Width() int {
 	return 160
@@ -36,13 +43,17 @@ func (g *ArcadeGame) Sprite() *Sprite {
 func (g *ArcadeGame) Update(s *State) {
 	handleInput(s)
 
+	if s.Game != GameArcade {
+		return
+	}
+
 	GraphicSystem(s.World)
 	VectorSystem(s.World)
 
 	if s.World.MachineActive {
 		SoundMelody.Play()
 	} else {
-		SoundMelody.Stop()
+		SoundMelody.Pause()
 	}
 }
 
@@ -56,7 +67,9 @@ func (g *ArcadeGame) Render(s *State) {
 	}
 }
 
-type HiveGame struct{}
+type HiveGame struct {
+	BaseGame
+}
 
 func (g *HiveGame) Width() int {
 	return 224
@@ -93,6 +106,10 @@ func (g *HiveGame) Update(s *State) {
 	}
 
 	handleInput(s)
+
+	if s.Game != GameHive {
+		return
+	}
 
 	updateFrame(e)
 	g.updatePosition(e)

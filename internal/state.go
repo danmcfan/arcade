@@ -83,6 +83,7 @@ func (s *State) SwitchHive() {
 
 	HandleResize(s)
 
+	SoundMelody.Pause()
 	SoundStart.Play()
 }
 
