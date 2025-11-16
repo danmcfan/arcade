@@ -13,8 +13,8 @@ const (
 	MaxAttempts  = 3
 )
 
-func Connect(url string, window js.Value) {
-	local := window.Get("location").Get("protocol").String() == "http:"
+func Connect(url string) {
+	local := js.Global().Get("location").Get("protocol").String() == "http:"
 	if local {
 		attempts := 0
 		connectWithReload(url, false, attempts)

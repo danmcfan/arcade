@@ -1,6 +1,6 @@
-//go:build js
-
 package internal
+
+import "github.com/hajimehoshi/ebiten/v2"
 
 type Direction string
 
@@ -29,38 +29,8 @@ func (d Direction) Axis() Axis {
 	}
 }
 
-func EntityBear() *Entity {
-	return &Entity{
-		Sprite:         SpriteBear,
-		FrameIncrement: 0.1,
-		FrameTotal:     4,
-		FrameDirection: map[Direction]int{
-			DirectionDown:  0,
-			DirectionUp:    1,
-			DirectionLeft:  2,
-			DirectionRight: 3,
-		},
-		X:         112,
-		Y:         212,
-		OffsetX:   8,
-		OffsetY:   8,
-		Direction: DirectionLeft,
-		Radius:    4,
-		Velocity:  1.0,
-	}
-}
-
-func EntityBees() []*Entity {
-	return []*Entity{
-		NewEntityBee(1, 4, DirectionRight),
-		NewEntityBee(26, 4, DirectionLeft),
-		NewEntityBee(1, 29, DirectionRight),
-		NewEntityBee(26, 29, DirectionLeft),
-	}
-}
-
 type Entity struct {
-	Sprite *Sprite
+	Sprite *ebiten.Image
 
 	Frame          float64
 	FrameIncrement float64
@@ -85,12 +55,12 @@ type Entity struct {
 }
 
 func (e *Entity) IsPower() bool {
-	return e.Sprite == SpriteFood && e.Frame == 1
+	return e.Sprite == imageFood && e.Frame == 1
 }
 
 func NewEntityBee(tx, ty int, d Direction) *Entity {
 	return &Entity{
-		Sprite:         SpriteBee,
+		Sprite:         imageBee,
 		FrameIncrement: 0.1,
 		FrameTotal:     4,
 		FrameDirection: map[Direction]int{
@@ -106,5 +76,35 @@ func NewEntityBee(tx, ty int, d Direction) *Entity {
 		Direction: d,
 		Radius:    4,
 		Velocity:  0.75,
+	}
+}
+
+func EntityBear() *Entity {
+	return &Entity{
+		Sprite:         imageBear,
+		FrameIncrement: 0.1,
+		FrameTotal:     4,
+		FrameDirection: map[Direction]int{
+			DirectionDown:  0,
+			DirectionUp:    1,
+			DirectionLeft:  2,
+			DirectionRight: 3,
+		},
+		X:         112,
+		Y:         212,
+		OffsetX:   8,
+		OffsetY:   8,
+		Direction: DirectionLeft,
+		Radius:    4,
+		Velocity:  1.0,
+	}
+}
+
+func EntityBees() []*Entity {
+	return []*Entity{
+		NewEntityBee(1, 4, DirectionRight),
+		NewEntityBee(26, 4, DirectionLeft),
+		NewEntityBee(1, 29, DirectionRight),
+		NewEntityBee(26, 29, DirectionLeft),
 	}
 }

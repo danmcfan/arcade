@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
     <title>Arcade</title>
     <script src="wasm_exec.js"></script>
@@ -15,28 +13,4 @@
         go.run(result.instance);
       });
     </script>
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        overscroll-behavior: none;
-        background-color: black;
-      }
-      #parent {
-        width: 100dvw;
-        height: 100dvh;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="parent">
-      <canvas id="canvas" />
-    </div>
-  </body>
 </html>
