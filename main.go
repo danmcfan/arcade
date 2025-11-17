@@ -16,7 +16,8 @@ func main() {
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Arcade")
 
-	if err := ebiten.RunGame(&internal.Game{}); err != nil {
+	game := internal.NewGame()
+	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
 }

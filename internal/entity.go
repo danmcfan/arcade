@@ -39,11 +39,10 @@ type Entity struct {
 
 	X          float64
 	Y          float64
-	OffsetX    float64
-	OffsetY    float64
+	Width      float64
+	Height     float64
 	Direction  Direction
 	Directions []Direction
-	Radius     float64
 	Velocity   float64
 
 	LastCorner *Entity
@@ -71,10 +70,9 @@ func NewEntityBee(tx, ty int, d Direction) *Entity {
 		},
 		X:         float64(8*tx + 4),
 		Y:         float64(8*ty + 4),
-		OffsetX:   8,
-		OffsetY:   8,
+		Width:     16,
+		Height:    16,
 		Direction: d,
-		Radius:    4,
 		Velocity:  0.75,
 	}
 }
@@ -92,10 +90,9 @@ func EntityBear() *Entity {
 		},
 		X:         112,
 		Y:         212,
-		OffsetX:   8,
-		OffsetY:   8,
+		Width:     16,
+		Height:    16,
 		Direction: DirectionLeft,
-		Radius:    4,
 		Velocity:  1.0,
 	}
 }
