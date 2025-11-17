@@ -35,9 +35,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screenWidth := screen.Bounds().Dx()
 	screenHeight := screen.Bounds().Dy()
 
-	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(screenWidth)*buffer/2, float64(screenHeight)*buffer/2)
-	screen.DrawImage(imageBackground, opts)
+	drawImage(screen, imageBackground, float64(screenWidth)*buffer/2, float64(screenHeight)*buffer/2)
+
+	imageGamerFrame := getImageFrame(imageGamer, 0, 24, 16, 24)
+	drawImage(screen, imageGamerFrame, 81, 81)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

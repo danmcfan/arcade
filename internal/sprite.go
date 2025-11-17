@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"embed"
+	"image"
 	"image/png"
 	"log"
 
@@ -48,4 +49,14 @@ func loadImage(filename string) *ebiten.Image {
 		log.Fatal(err)
 	}
 	return ebiten.NewImageFromImage(img)
+}
+
+func getImageFrame(img *ebiten.Image, sx, sy, sw, sh float64) *ebiten.Image {
+	return img.SubImage(image.Rect(int(sx), int(sy), int(sx+sw), int(sy+sh))).(*ebiten.Image)
+}
+
+func drawImage(screen *ebiten.Image, img *ebiten.Image, dx, dy float64) {
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(dx, dy)
+	screen.DrawImage(img, opts)
 }
