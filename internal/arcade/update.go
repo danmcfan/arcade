@@ -16,11 +16,13 @@ func Update(s *State, i input.InputState) error {
 
 	if ok && s.player.Direction == DirectionUp {
 		if !s.melodyPlaying {
+			s.imageTitle = machine.imageTitle
 			s.melodyPlaying = true
 			assets.SoundMelody.Play()
 		}
 	} else {
 		if s.melodyPlaying {
+			s.imageTitle = nil
 			s.melodyPlaying = false
 			assets.SoundMelody.Pause()
 			assets.SoundMelody.Rewind()

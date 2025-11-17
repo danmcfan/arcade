@@ -18,39 +18,31 @@ var images embed.FS
 //go:embed sounds
 var sounds embed.FS
 
-var ImageArcade *ebiten.Image
-var ImageBear *ebiten.Image
-var ImageBee *ebiten.Image
-var ImageDigits *ebiten.Image
-var ImageFood *ebiten.Image
-var ImageGamer *ebiten.Image
-var ImageHive *ebiten.Image
-var ImageReady *ebiten.Image
-var ImageTitle *ebiten.Image
+var ImageArcade = loadImage("arcade")
+var ImageGamer = loadImage("gamer")
+var ImageTitleFirefly = loadImage("firefly")
+var ImageTitleGearhead = loadImage("gearhead")
+var ImageTitleSweet = loadImage("sweet")
+
+var ImageHive = loadImage("hive")
+var ImageBear = loadImage("bear")
+var ImageBee = loadImage("bee")
+var ImageFood = loadImage("food")
+var ImageReady = loadImage("ready")
+var ImageDigits = loadImage("digits")
+
+var ImageGalaxy = loadImage("galaxy")
+var ImageShip = loadImage("ship")
+var ImageBullet = loadImage("bullet")
+
+var ImageWorkshop = loadImage("workshop")
 
 var audioContext = audio.NewContext(sampleRate)
 
-var SoundDeath *Sound
-var SoundMelody *Sound
-var SoundPower *Sound
-var SoundStart *Sound
-
-func init() {
-	ImageArcade = loadImage("arcade")
-	ImageBear = loadImage("bear")
-	ImageBee = loadImage("bee")
-	ImageDigits = loadImage("digits")
-	ImageFood = loadImage("food")
-	ImageGamer = loadImage("gamer")
-	ImageHive = loadImage("hive")
-	ImageReady = loadImage("ready")
-	ImageTitle = loadImage("title")
-
-	SoundDeath = loadSound("death.wav", false)
-	SoundMelody = loadSound("melody.ogg", true)
-	SoundPower = loadSound("power.wav", false)
-	SoundStart = loadSound("start.wav", false)
-}
+var SoundDeath = loadSound("death.wav", false)
+var SoundMelody = loadSound("melody.ogg", true)
+var SoundPower = loadSound("power.wav", false)
+var SoundStart = loadSound("start.wav", false)
 
 func loadImage(filename string) *ebiten.Image {
 	data, err := images.ReadFile("images/" + filename + ".png")

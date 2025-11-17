@@ -44,6 +44,7 @@ func (g *Game) Update() error {
 	}
 
 	if input.Exit && g.software != nil {
+		assets.SoundStart.Pause()
 		g.software = nil
 		return nil
 	}

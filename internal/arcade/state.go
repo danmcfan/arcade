@@ -3,6 +3,8 @@ package arcade
 import (
 	"arcade/internal/software"
 	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const tileSize = 8
@@ -13,6 +15,7 @@ type State struct {
 	machines []machine
 
 	melodyPlaying  bool
+	imageTitle     *ebiten.Image
 	LoadedSoftware software.Software
 
 	HighScore int

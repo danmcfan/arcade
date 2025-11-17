@@ -16,7 +16,7 @@ func Draw(screen *ebiten.Image, s *State, buffer float64, debugMode bool) {
 	drawImage(screen, playerImageFrame, player.X+buffer-player.Width/2, player.Y+buffer-player.Height/2)
 
 	if s.melodyPlaying {
-		drawImage(screen, assets.ImageTitle, buffer, buffer)
+		drawImage(screen, s.imageTitle, buffer, buffer)
 	}
 
 	if debugMode {
