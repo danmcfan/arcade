@@ -1,95 +1,74 @@
 package internal
 
 import (
+	_ "embed"
 	"image/color"
 
+	"arcade/internal/arcade"
+
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// DebugColors holds the configurable colors for debug rendering
-type DebugColors struct {
-	Player   color.Color
-	Wall     color.Color
-	Machine  color.Color
-	Interact color.Color
+type DebugPanel struct {
+	enabled bool
+	x       float64 // X position where panel starts (relative)
+	y       float64 // Y position where panel starts
+	width   float64
 }
 
-// DefaultDebugColors returns the default color scheme for debug mode
-func DefaultDebugColors() DebugColors {
-	return DebugColors{
-		Player:   color.RGBA{R: 0, G: 255, B: 0, A: 128},   // Green
-		Wall:     color.RGBA{R: 255, G: 0, B: 0, A: 128},   // Red
-		Machine:  color.RGBA{R: 255, G: 255, B: 0, A: 128}, // Yellow
-		Interact: color.RGBA{R: 0, G: 255, B: 255, A: 64},  // Cyan (interaction radius)
+// Width returns the panel width (exported for layout calculations)
+func (dp *DebugPanel) Width() float64 {
+	return dp.width
+}
+
+// NewDebugPanel creates a new debug panel
+func NewDebugPanel(x, y, width float64) *DebugPanel {
+	return &DebugPanel{
+		enabled: true,
+		x:       x,
+		y:       y,
+		width:   width,
 	}
 }
 
-// DrawDebugRect draws a rectangle outline for rectangular collision shapes
-func DrawDebugRect(screen *ebiten.Image, x, y, width, height float32, clr color.Color) {
-	vector.StrokeRect(screen, x, y, width-1, height-1, 1, clr, false)
-}
+// Draw renders the debug panel with game state information
+func (dp *DebugPanel) Draw(screen *ebiten.Image, arcade *arcade.State, gameWidth, gameHeight float64) {
+	if !dp.enabled {
+		return
+	}
 
-// DrawDebugPlayer draws the player's collision bounding box
-func DrawDebugPlayer(screen *ebiten.Image, player *Entity, colors DebugColors, offsetX, offsetY float64) {
-	// Draw player as a bounding box centered on their position
-	// Player X,Y is center, so subtract half width/height to get top-left corner
-	halfWidth := float32(player.Width / 2)
-	halfHeight := float32(player.Height / 2)
-	DrawDebugRect(
-		screen,
-		float32(player.X+offsetX)-halfWidth,
-		float32(player.Y+offsetY)-halfHeight,
-		float32(player.Width),
-		float32(player.Height),
-		colors.Player,
-	)
-}
+	// Calculate panel position (right side of the game area)
+	panelX := gameWidth
 
-// DrawDebugWalls draws all wall collision boxes
-func DrawDebugWalls(screen *ebiten.Image, walls []Wall, colors DebugColors, offsetX, offsetY float64) {
-	for _, wall := range walls {
-		DrawDebugRect(
-			screen,
-			float32(wall.X+offsetX),
-			float32(wall.Y+offsetY),
-			float32(wall.Width),
-			float32(wall.Height),
-			colors.Wall,
-		)
+	// Background for the debug panel - match game height
+	panelBg := ebiten.NewImage(int(dp.width), int(gameHeight))
+	panelBg.Fill(color.RGBA{R: 20, G: 20, B: 20, A: 200})
+
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(panelX, dp.y)
+	screen.DrawImage(panelBg, opts)
+
+	// Prepare debug info text
+	lines := arcade.DebugInfo()
+
+	// Draw each line of text
+	// ebitenutil.DebugPrint uses a font that's about 8 pixels tall with 8 pixels line height
+	lineHeight := 12.0 // Adjusted line height for built-in font
+	padding := 8.0
+
+	for i, line := range lines {
+		yPos := dp.y + padding + float64(i)*lineHeight
+		ebitenutil.DebugPrintAt(screen, line, int(panelX+padding), int(yPos))
 	}
 }
 
-// DrawDebugMachines draws machine collision boxes and interaction zones
-func DrawDebugMachines(screen *ebiten.Image, machines []Machine, colors DebugColors, offsetX, offsetY float64) {
-	for _, machine := range machines {
-		// Draw machine collision box
-		DrawDebugRect(
-			screen,
-			float32(machine.X+offsetX),
-			float32(machine.Y+offsetY),
-			float32(machine.Width),
-			float32(machine.Height),
-			colors.Machine,
-		)
-
-		// Draw interaction zone (front of machine only)
-		// Assume machines face down, so interaction zone is below
-		interactZoneY := float32(machine.Y + machine.Height + offsetY)
-		DrawDebugRect(
-			screen,
-			float32(machine.X+offsetX),
-			interactZoneY,
-			float32(machine.Width),
-			float32(machine.InteractRadius),
-			colors.Interact,
-		)
-	}
+// Toggle enables or disables the debug panel
+func (dp *DebugPanel) Toggle() {
+	dp.enabled = !dp.enabled
 }
 
-// DrawDebugOverlay renders all debug visualizations with buffer offset
-func DrawDebugOverlay(screen *ebiten.Image, player *Entity, walls []Wall, machines []Machine, colors DebugColors, bufferOffsetX, bufferOffsetY float64) {
-	DrawDebugWalls(screen, walls, colors, bufferOffsetX, bufferOffsetY)
-	DrawDebugMachines(screen, machines, colors, bufferOffsetX, bufferOffsetY)
-	DrawDebugPlayer(screen, player, colors, bufferOffsetX, bufferOffsetY)
+// IsEnabled returns whether the panel is currently enabled
+func (dp *DebugPanel) IsEnabled() bool {
+	return dp.enabled
 }
