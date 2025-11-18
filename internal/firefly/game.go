@@ -120,6 +120,9 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 				Direction: vector{x: 0, y: -5.0},
 			})
 			f.fireDelay = 20
+
+			assets.SoundLaser.Rewind()
+			assets.SoundLaser.Play()
 		}
 	}
 
@@ -160,6 +163,9 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 			if collide(bullet.Position, bug.Position) {
 				bullet.Dead = true
 				bug.DeadFrames = 75
+
+				assets.SoundBoom.Rewind()
+				assets.SoundBoom.Play()
 			}
 		}
 	}

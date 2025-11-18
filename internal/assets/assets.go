@@ -41,10 +41,14 @@ var ImageWorkshop = loadImage("workshop")
 
 var audioContext = audio.NewContext(sampleRate)
 
-var SoundDeath = loadSound("death.wav", false)
 var SoundMelody = loadSound("melody.ogg", true)
-var SoundPower = loadSound("power.wav", false)
+
 var SoundStart = loadSound("start.wav", false)
+var SoundPower = loadSound("power.wav", false)
+var SoundDeath = loadSound("death.wav", false)
+
+var SoundLaser = loadSound("laser.wav", false)
+var SoundBoom = loadSound("boom.wav", false)
 
 func loadImage(filename string) *ebiten.Image {
 	data, err := images.ReadFile("images/" + filename + ".png")
