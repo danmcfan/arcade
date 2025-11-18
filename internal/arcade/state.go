@@ -1,11 +1,14 @@
 package arcade
 
 import (
-	"arcade/internal/software"
 	"fmt"
+
+	"arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+var initialLoadedSoftware software.Software
 
 const tileSize = 8
 
@@ -23,10 +26,11 @@ type State struct {
 
 func NewState() *State {
 	return &State{
-		player:    newPlayer(),
-		walls:     newWalls(),
-		machines:  newMachines(),
-		HighScore: 0,
+		player:         newPlayer(),
+		walls:          newWalls(),
+		machines:       newMachines(),
+		LoadedSoftware: initialLoadedSoftware,
+		HighScore:      0,
 	}
 }
 

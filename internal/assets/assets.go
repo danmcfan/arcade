@@ -34,6 +34,8 @@ var ImageDigits = loadImage("digits")
 var ImageGalaxy = loadImage("galaxy")
 var ImageShip = loadImage("ship")
 var ImageBullet = loadImage("bullet")
+var ImageBug = loadImage("bug")
+var ImageExplosion = loadImage("explosion")
 
 var ImageWorkshop = loadImage("workshop")
 
