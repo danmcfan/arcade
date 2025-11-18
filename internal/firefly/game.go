@@ -116,7 +116,7 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 		if f.fireDelay <= 0 {
 			f.bullets = append(f.bullets, &entity{
 				Image:     assets.ImageBullet,
-				Position:  add(f.player.Position, vector{x: 0, y: -tileSize}),
+				Position:  add(f.player.Position, vector{x: -tileSize / 2, y: -tileSize}),
 				Direction: vector{x: 0, y: -5.0},
 			})
 			f.fireDelay = 20
