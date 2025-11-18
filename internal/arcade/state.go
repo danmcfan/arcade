@@ -3,12 +3,13 @@ package arcade
 import (
 	"fmt"
 
+	"arcade/internal/firefly"
 	"arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var initialLoadedSoftware software.Software
+var initialLoadedSoftware = firefly.NewFireFlySoftware()
 
 const tileSize = 8
 

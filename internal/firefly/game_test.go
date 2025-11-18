@@ -6,18 +6,18 @@ import (
 
 func TestAngle(t *testing.T) {
 	tests := []struct {
-		direction vector
+		direction vec
 		angle     float64
 	}{
-		{direction: vector{x: 0, y: 0}, angle: 0},
-		{direction: vector{x: 0, y: -1}, angle: 0},
-		{direction: vector{x: 1, y: -1}, angle: 45},
-		{direction: vector{x: 1, y: 0}, angle: 90},
-		{direction: vector{x: 1, y: 1}, angle: 135},
-		{direction: vector{x: 0, y: 1}, angle: 180},
-		{direction: vector{x: -1, y: 1}, angle: 225},
-		{direction: vector{x: -1, y: 0}, angle: 270},
-		{direction: vector{x: -1, y: -1}, angle: 315},
+		{direction: vec{x: 0, y: 0}, angle: 0},
+		{direction: vec{x: 0, y: -1}, angle: 0},
+		{direction: vec{x: 1, y: -1}, angle: 45},
+		{direction: vec{x: 1, y: 0}, angle: 90},
+		{direction: vec{x: 1, y: 1}, angle: 135},
+		{direction: vec{x: 0, y: 1}, angle: 180},
+		{direction: vec{x: -1, y: 1}, angle: 225},
+		{direction: vec{x: -1, y: 0}, angle: 270},
+		{direction: vec{x: -1, y: -1}, angle: 315},
 	}
 
 	for _, test := range tests {

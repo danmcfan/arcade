@@ -11,87 +11,93 @@ import (
 )
 
 const (
+	debug = false
+
 	tileSize   = 8
 	tileWidth  = 28
 	tileHeight = 36
 )
 
-type vector struct {
+var leftBezierConfig = bezierConfig{
+	p0: vec{x: tileSize * 16, y: tileSize * 1},
+	p1: vec{x: tileSize * -14, y: tileSize * 24},
+	p2: vec{x: tileSize * 14, y: tileSize * 36},
+	p3: vec{x: tileSize * 14, y: tileSize * 12},
+}
+
+var rightBezierConfig = bezierConfig{
+	p0: vec{x: tileSize * 12, y: tileSize * 1},
+	p1: vec{x: tileSize * 42, y: tileSize * 24},
+	p2: vec{x: tileSize * 14, y: tileSize * 36},
+	p3: vec{x: tileSize * 14, y: tileSize * 12},
+}
+
+type vec struct {
 	x float64
 	y float64
 }
 
-func add(a, b vector) vector {
-	return vector{x: a.x + b.x, y: a.y + b.y}
+func add(a, b vec) vec {
+	return vec{x: a.x + b.x, y: a.y + b.y}
 }
 
-func sub(a, b vector) vector {
-	return vector{x: a.x - b.x, y: a.y - b.y}
-}
-
-type Pattern func(t int) vector
-
-func NewPatternFigureEight(cx, cy, w, h, s float64) Pattern {
-	return func(t int) vector {
-		angle := float64(t) * s
-
-		x := cx + w*math.Sin(angle)
-		y := cy + h*math.Sin(2*angle)
-
-		return vector{x: x, y: y}
-	}
+func sub(a, b vec) vec {
+	return vec{x: a.x - b.x, y: a.y - b.y}
 }
 
 type entity struct {
 	Image            *ebiten.Image
-	Position         vector
-	PreviousPosition vector
-	Direction        vector
+	Position         vec
+	PreviousPosition vec
+	Direction        vec
 	Width            float64
 	Height           float64
 	Dead             bool
 	DeadFrames       int
-	Pattern          Pattern
-	Duration         int
+	Pattern          patternFunc
+	Duration         float64
+	DurationStep     float64
 }
 
 func newPlayer() *entity {
 	return &entity{
 		Image:     assets.ImageShip,
-		Position:  vector{x: tileSize * tileWidth / 2, y: tileSize*tileHeight - tileSize*3},
-		Direction: vector{x: 2.0, y: 0},
+		Position:  vec{x: tileSize * tileWidth / 2, y: tileSize*tileHeight - tileSize*3},
+		Direction: vec{x: 2.0, y: 0},
 		Width:     tileSize * 2,
 		Height:    tileSize * 2,
 	}
 }
 
-func newBug(pattern Pattern, duration int) *entity {
+func newBug(pattern patternFunc, initialDuration float64, durationStep float64) *entity {
 	return &entity{
-		Image:    assets.ImageBug,
-		Width:    tileSize * 2,
-		Height:   tileSize * 2,
-		Pattern:  pattern,
-		Duration: duration,
+		Image:        assets.ImageBug,
+		Width:        tileSize * 2,
+		Height:       tileSize * 2,
+		Pattern:      pattern,
+		Duration:     initialDuration,
+		DurationStep: durationStep,
 	}
 }
 
 func newBugs() []*entity {
+	durationStep := 1.0 / (FRAMES_PER_SECOND * 3)
+
+	leftPatternFunc := NewBezierPatternFunc(leftBezierConfig)
+	rightPatternFunc := NewBezierPatternFunc(rightBezierConfig)
+
 	return []*entity{
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*6, tileSize*10, tileSize*3, 0.025), 0),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*6, tileSize*10, tileSize*3, 0.025), 25),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*6, tileSize*10, tileSize*3, 0.025), 50),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*6, tileSize*10, tileSize*3, 0.025), 75),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*6, tileSize*10, tileSize*3, 0.025), 100),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*10, tileSize*10, tileSize*3, 0.025), 0),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*10, tileSize*10, tileSize*3, 0.025), 25),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*10, tileSize*10, tileSize*3, 0.025), 50),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*10, tileSize*10, tileSize*3, 0.025), 75),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*10, tileSize*10, tileSize*3, 0.025), 100),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*14, tileSize*10, tileSize*3, 0.025), 0),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*14, tileSize*10, tileSize*3, 0.025), 25),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*14, tileSize*10, tileSize*3, 0.025), 50),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*14, tileSize*10, tileSize*3, 0.025), 75),
-		newBug(NewPatternFigureEight(tileSize*14, tileSize*14, tileSize*10, tileSize*3, 0.025), 100),
+		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0, durationStep),
+		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
+		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
+		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
+		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
+
+		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0, durationStep),
+		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
+		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
+		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
+		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
 	}
 }
 
@@ -112,12 +118,16 @@ func NewFireFlySoftware() *FireFlySoftware {
 }
 
 func (f *FireFlySoftware) Update(i input.InputState) error {
+	if len(f.bugs) == 0 {
+		f.bugs = newBugs()
+	}
+
 	if i.Interact {
 		if f.fireDelay <= 0 {
 			f.bullets = append(f.bullets, &entity{
 				Image:     assets.ImageBullet,
-				Position:  add(f.player.Position, vector{x: -tileSize / 2, y: -tileSize}),
-				Direction: vector{x: 0, y: -5.0},
+				Position:  add(f.player.Position, vec{x: -tileSize / 2, y: -tileSize}),
+				Direction: vec{x: 0, y: -5.0},
 			})
 			f.fireDelay = 20
 
@@ -166,6 +176,8 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 
 				assets.SoundBoom.Rewind()
 				assets.SoundBoom.Play()
+
+				break // only one bug per bullet
 			}
 		}
 	}
@@ -183,10 +195,24 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 			continue
 		}
 
+		if bug.Duration < 0 {
+			bug.Duration += bug.DurationStep
+			continue
+		}
+
 		bug.PreviousPosition = bug.Position
-		bug.Position = bug.Pattern(bug.Duration)
+		if bug.Duration > 1 {
+			bug.Position = sub(bug.Position, vec{x: 0, y: 2.5})
+		} else {
+			bug.Position = bug.Pattern(bug.Duration)
+			bug.Duration += bug.DurationStep
+		}
+
 		bug.Direction = sub(bug.Position, bug.PreviousPosition)
-		bug.Duration++
+
+		if bug.Position.y < 0 {
+			bug.Dead = true
+		}
 	}
 
 	f.bugs = slices.DeleteFunc(f.bugs, func(b *entity) bool {
@@ -197,23 +223,32 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 }
 
 func (f *FireFlySoftware) Draw(screen *ebiten.Image, buffer float64) {
-	drawImage(screen, f.Background(), vector{x: buffer, y: buffer})
+	drawImage(screen, f.Background(), vec{x: buffer, y: buffer})
 
-	position := add(f.player.Position, vector{x: buffer, y: buffer})
-	position = sub(position, vector{x: f.player.Width / 2, y: f.player.Height / 2})
+	if debug {
+		DrawBezierDebug(screen, leftBezierConfig, buffer, 100)
+		DrawBezierDebug(screen, rightBezierConfig, buffer, 100)
+	}
+
+	position := add(f.player.Position, vec{x: buffer, y: buffer})
+	position = sub(position, vec{x: f.player.Width / 2, y: f.player.Height / 2})
 	drawImage(screen, f.player.Image, position)
 
 	for _, bullet := range f.bullets {
-		position := add(bullet.Position, vector{x: buffer, y: buffer})
-		position = sub(position, vector{x: bullet.Width / 2, y: bullet.Height / 2})
+		position := add(bullet.Position, vec{x: buffer, y: buffer})
+		position = sub(position, vec{x: bullet.Width / 2, y: bullet.Height / 2})
 		drawImage(screen, bullet.Image, position)
 	}
 
 	for _, bug := range f.bugs {
-		position := add(bug.Position, vector{x: buffer, y: buffer})
+		if bug.Position.x <= 0 || bug.Position.x >= tileSize*tileWidth || bug.Position.y <= 0 || bug.Position.y >= tileSize*tileHeight {
+			continue
+		}
+
+		position := add(bug.Position, vec{x: buffer, y: buffer})
 
 		if bug.DeadFrames > 0 {
-			position = sub(position, vector{x: 16, y: 16})
+			position = sub(position, vec{x: 16, y: 16})
 
 			col := 5 - float64(int(bug.DeadFrames/15))
 			img := cutImage(assets.ImageExplosion, image.Rect(int(col*32), 0, int((col+1)*32), 32))
@@ -221,7 +256,7 @@ func (f *FireFlySoftware) Draw(screen *ebiten.Image, buffer float64) {
 			continue
 		}
 
-		position = sub(position, vector{x: bug.Width / 2, y: bug.Height / 2})
+		position = sub(position, vec{x: bug.Width / 2, y: bug.Height / 2})
 
 		row, col := frameAngle(angle(bug.Direction))
 		img := cutImage(bug.Image, image.Rect(int(col*bug.Width), int(row*bug.Height), int((col+1)*bug.Width), int((row+1)*bug.Height)))
@@ -241,7 +276,7 @@ func (f *FireFlySoftware) Background() *ebiten.Image {
 	return assets.ImageGalaxy
 }
 
-func collide(a, b vector) bool {
+func collide(a, b vec) bool {
 	return math.Abs(a.x-b.x) < tileSize && math.Abs(a.y-b.y) < tileSize
 }
 
@@ -251,7 +286,7 @@ func frameAngle(angle float64) (float64, float64) {
 	return row, col
 }
 
-func angle(direction vector) float64 {
+func angle(direction vec) float64 {
 	if direction.x == 0 && direction.y == 0 {
 		return 0
 	}
@@ -270,7 +305,7 @@ func cutImage(img *ebiten.Image, rect image.Rectangle) *ebiten.Image {
 	return img.SubImage(rect).(*ebiten.Image)
 }
 
-func drawImage(screen *ebiten.Image, img *ebiten.Image, position vector) {
+func drawImage(screen *ebiten.Image, img *ebiten.Image, position vec) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(position.x, position.y)
 	screen.DrawImage(img, op)
