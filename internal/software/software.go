@@ -8,7 +8,7 @@ import (
 
 type Software interface {
 	Background() *ebiten.Image
-	Update(input input.InputState) error
+	Update(input input.Input) error
 	Draw(screen *ebiten.Image, buffer float64)
 	GameOver() bool
 	Score() int

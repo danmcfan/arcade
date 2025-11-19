@@ -15,45 +15,64 @@ const (
 	DirectionRight Direction = "RIGHT"
 )
 
-type InputState struct {
-	MoveDirection Direction
-	Moving        bool
-	Interact      bool
-	Exit          bool
-	ToggleDebug   bool
+type Axis string
+
+const (
+	AxisVertical   Axis = "VERTICAL"
+	AxisHorizontal Axis = "HORIZONTAL"
+)
+
+func (d Direction) Axis() Axis {
+	if d == DirectionUp || d == DirectionDown {
+		return AxisVertical
+	}
+	return AxisHorizontal
 }
 
-// ReadInput processes keyboard input and returns the input state.
-// This is a pure function that translates key presses into game actions.
-func ReadInput(pressedKeys []ebiten.Key, justPressedKeys []ebiten.Key) InputState {
-	state := InputState{}
+type Input struct {
+	Up     bool
+	Down   bool
+	Left   bool
+	Right  bool
+	Space  bool
+	Escape bool
+	ShiftP bool
+}
 
-	// Check movement keys (priority: last checked wins)
-	if slices.Contains(pressedKeys, ebiten.KeyW) || slices.Contains(pressedKeys, ebiten.KeyArrowUp) {
-		state.MoveDirection = DirectionUp
-		state.Moving = true
-	}
-	if slices.Contains(pressedKeys, ebiten.KeyS) || slices.Contains(pressedKeys, ebiten.KeyArrowDown) {
-		state.MoveDirection = DirectionDown
-		state.Moving = true
-	}
-	if slices.Contains(pressedKeys, ebiten.KeyA) || slices.Contains(pressedKeys, ebiten.KeyArrowLeft) {
-		state.MoveDirection = DirectionLeft
-		state.Moving = true
-	}
-	if slices.Contains(pressedKeys, ebiten.KeyD) || slices.Contains(pressedKeys, ebiten.KeyArrowRight) {
-		state.MoveDirection = DirectionRight
-		state.Moving = true
-	}
+func (i *Input) Moving() bool {
+	return i.Up || i.Down || i.Left || i.Right
+}
 
-	// Check action keys
-	state.Interact = slices.Contains(pressedKeys, ebiten.KeySpace)
-	state.Exit = slices.Contains(pressedKeys, ebiten.KeyEscape)
+func (i *Input) Direction() Direction {
+	if i.Up {
+		return DirectionUp
+	}
+	if i.Down {
+		return DirectionDown
+	}
+	if i.Left {
+		return DirectionLeft
+	}
+	if i.Right {
+		return DirectionRight
+	}
+	return ""
+}
 
-	// Check debug toggle (Shift+P)
+func ReadInput(pressedKeys []ebiten.Key, justPressedKeys []ebiten.Key) Input {
+	state := Input{}
+
+	state.Up = slices.Contains(pressedKeys, ebiten.KeyW) || slices.Contains(pressedKeys, ebiten.KeyArrowUp)
+	state.Down = slices.Contains(pressedKeys, ebiten.KeyS) || slices.Contains(pressedKeys, ebiten.KeyArrowDown)
+	state.Left = slices.Contains(pressedKeys, ebiten.KeyA) || slices.Contains(pressedKeys, ebiten.KeyArrowLeft)
+	state.Right = slices.Contains(pressedKeys, ebiten.KeyD) || slices.Contains(pressedKeys, ebiten.KeyArrowRight)
+
+	state.Space = slices.Contains(pressedKeys, ebiten.KeySpace)
+	state.Escape = slices.Contains(pressedKeys, ebiten.KeyEscape)
+
 	shiftPressed := slices.Contains(pressedKeys, ebiten.KeyShift) || slices.Contains(pressedKeys, ebiten.KeyShiftLeft) || slices.Contains(pressedKeys, ebiten.KeyShiftRight)
 	pPressed := slices.Contains(justPressedKeys, ebiten.KeyP)
-	state.ToggleDebug = shiftPressed && pPressed
+	state.ShiftP = shiftPressed && pPressed
 
 	return state
 }

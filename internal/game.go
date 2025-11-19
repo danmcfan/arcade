@@ -3,6 +3,7 @@ package internal
 import (
 	"arcade/internal/arcade"
 	"arcade/internal/assets"
+	"arcade/internal/hive"
 	"arcade/internal/input"
 	"arcade/internal/software"
 	"math"
@@ -17,6 +18,8 @@ const (
 	initialDebugMode = false
 )
 
+var initialSoftware = hive.NewHiveSoftware(0)
+
 type Game struct {
 	arcade *arcade.State
 
@@ -28,7 +31,7 @@ type Game struct {
 
 func NewGame() *Game {
 	return &Game{
-		arcade:     arcade.NewState(),
+		arcade:     arcade.NewState(initialSoftware),
 		debugMode:  initialDebugMode,
 		debugPanel: NewDebugPanel(0, 0, 120),
 	}
@@ -39,11 +42,11 @@ func (g *Game) Update() error {
 	justPressedKeys := inpututil.AppendJustPressedKeys(nil)
 	input := input.ReadInput(pressedKeys, justPressedKeys)
 
-	if input.ToggleDebug {
+	if input.ShiftP {
 		g.debugMode = !g.debugMode
 	}
 
-	if input.Exit && g.software != nil {
+	if input.Escape && g.software != nil {
 		assets.SoundStart.Pause()
 		g.software = nil
 		return nil

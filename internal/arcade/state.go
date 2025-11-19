@@ -8,8 +8,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var initialLoadedSoftware software.Software
-
 const tileSize = 8
 
 type State struct {
@@ -24,7 +22,7 @@ type State struct {
 	HighScore int
 }
 
-func NewState() *State {
+func NewState(initialLoadedSoftware software.Software) *State {
 	return &State{
 		player:         newPlayer(),
 		walls:          newWalls(),

@@ -48,8 +48,8 @@ func (g *GearHeadSoftware) Background() *ebiten.Image {
 	return assets.ImageWorkshop
 }
 
-func (g *GearHeadSoftware) Update(i input.InputState) error {
-	if i.Moving {
+func (g *GearHeadSoftware) Update(i input.Input) error {
+	if i.Moving() {
 		g.player.Moving = true
 		g.player.Frame += g.player.FrameIncrement
 		if g.player.Frame >= 4 {
@@ -60,11 +60,11 @@ func (g *GearHeadSoftware) Update(i input.InputState) error {
 		g.player.Frame = 0
 	}
 
-	if i.MoveDirection == input.DirectionLeft {
+	if i.Direction() == input.DirectionLeft {
 		g.player.Left = true
 	}
 
-	if i.MoveDirection == input.DirectionRight {
+	if i.Direction() == input.DirectionRight {
 		g.player.Left = false
 	}
 

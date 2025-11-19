@@ -7,7 +7,7 @@ import (
 	"arcade/internal/input"
 )
 
-func Update(s *State, i input.InputState) error {
+func Update(s *State, i input.Input) error {
 	applyInput(s, i)
 	updatePlayer(s)
 
@@ -29,7 +29,7 @@ func Update(s *State, i input.InputState) error {
 		}
 	}
 
-	if ok && s.player.Direction == DirectionUp && i.Interact {
+	if ok && s.player.Direction == DirectionUp && i.Space {
 		s.melodyPlaying = false
 		assets.SoundMelody.Pause()
 		assets.SoundMelody.Rewind()
@@ -40,9 +40,9 @@ func Update(s *State, i input.InputState) error {
 	return nil
 }
 
-func applyInput(s *State, i input.InputState) {
-	if i.Moving {
-		s.player.Direction = Direction(i.MoveDirection)
+func applyInput(s *State, i input.Input) {
+	if i.Moving() {
+		s.player.Direction = Direction(i.Direction())
 		s.player.Velocity = 1
 		return
 	}

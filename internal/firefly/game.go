@@ -117,12 +117,12 @@ func NewFireFlySoftware() *FireFlySoftware {
 	}
 }
 
-func (f *FireFlySoftware) Update(i input.InputState) error {
+func (f *FireFlySoftware) Update(i input.Input) error {
 	if len(f.bugs) == 0 {
 		f.bugs = newBugs()
 	}
 
-	if i.Interact {
+	if i.Space {
 		if f.fireDelay <= 0 {
 			f.bullets = append(f.bullets, &entity{
 				Image:     assets.ImageBullet,
@@ -141,7 +141,7 @@ func (f *FireFlySoftware) Update(i input.InputState) error {
 	}
 
 	newPosition := f.player.Position
-	switch i.MoveDirection {
+	switch i.Direction() {
 	case input.DirectionLeft:
 		newPosition = sub(newPosition, f.player.Direction)
 	case input.DirectionRight:
