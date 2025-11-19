@@ -38,6 +38,7 @@ var ImageBug = loadImage("bug")
 var ImageExplosion = loadImage("explosion")
 
 var ImageWorkshop = loadImage("workshop")
+var ImageGnome = loadImage("gnome")
 
 var audioContext = audio.NewContext(sampleRate)
 

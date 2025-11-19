@@ -3,13 +3,13 @@ package arcade
 import (
 	"fmt"
 
-	"arcade/internal/firefly"
+	"arcade/internal/gearhead"
 	"arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var initialLoadedSoftware = firefly.NewFireFlySoftware()
+var initialLoadedSoftware = gearhead.NewGearHeadSoftware()
 
 const tileSize = 8
 
