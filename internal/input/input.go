@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -21,6 +22,21 @@ const (
 	AxisVertical   Axis = "VERTICAL"
 	AxisHorizontal Axis = "HORIZONTAL"
 )
+
+func (d Direction) Opposite() Direction {
+	switch d {
+	case DirectionUp:
+		return DirectionDown
+	case DirectionDown:
+		return DirectionUp
+	case DirectionLeft:
+		return DirectionRight
+	case DirectionRight:
+		return DirectionLeft
+	}
+
+	panic(fmt.Sprintf("invalid direction: %s", d))
+}
 
 func (d Direction) Axis() Axis {
 	if d == DirectionUp || d == DirectionDown {

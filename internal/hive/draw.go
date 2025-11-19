@@ -48,7 +48,7 @@ func drawLives(s *HiveSoftware, screen *ebiten.Image, buffer float64) {
 }
 
 func drawReady(s *HiveSoftware, screen *ebiten.Image, buffer float64) {
-	if s.startFrames <= 0 {
+	if s.startTicks <= 0 {
 		return
 	}
 

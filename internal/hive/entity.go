@@ -3,13 +3,35 @@ package hive
 import (
 	"arcade/internal/assets"
 	"arcade/internal/input"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const (
-	DistanceThreshold = 0.25
+	tileSize   = 8
+	tileWidth  = 28
+	tileHeight = 36
 )
+
+var (
+	targetTopLeft     = tile{x: 2, y: 0}
+	targetTopRight    = tile{x: tileWidth - 3, y: 0}
+	targetBottomLeft  = tile{x: 0, y: tileHeight - 2}
+	targetBottomRight = tile{x: tileWidth - 1, y: tileHeight - 2}
+)
+
+type tile struct {
+	x, y int
+}
+
+func pointToTile(x, y float64) tile {
+	return tile{x: int(x / tileSize), y: int(y / tileSize)}
+}
+
+func distance(a, b tile) float64 {
+	return math.Sqrt(math.Pow(float64(a.x-b.x), 2) + math.Pow(float64(a.y-b.y), 2))
+}
 
 type Entity struct {
 	Sprite *ebiten.Image
@@ -27,11 +49,11 @@ type Entity struct {
 	Directions []input.Direction
 	Velocity   float64
 
-	LastCorner *Entity
-
 	BlueFrames  int
 	FlashFrames int
 	Flash       bool
+
+	target tile
 }
 
 func (e *Entity) IsPellet() bool {
@@ -64,14 +86,14 @@ func NewPlayer() *Entity {
 
 func newEnemies() []*Entity {
 	return []*Entity{
-		newEnemy(1, 4, input.DirectionRight),
-		newEnemy(26, 4, input.DirectionLeft),
-		newEnemy(1, 29, input.DirectionRight),
-		newEnemy(26, 29, input.DirectionLeft),
+		newEnemy(3, 8, input.DirectionRight, targetTopLeft),
+		newEnemy(24, 8, input.DirectionLeft, targetTopRight),
+		newEnemy(1, 29, input.DirectionRight, targetBottomLeft),
+		newEnemy(26, 29, input.DirectionLeft, targetBottomRight),
 	}
 }
 
-func newEnemy(tx, ty int, direction input.Direction) *Entity {
+func newEnemy(tx, ty int, direction input.Direction, target tile) *Entity {
 	return &Entity{
 		Sprite:         assets.ImageBee,
 		FrameIncrement: 0.1,
@@ -88,6 +110,7 @@ func newEnemy(tx, ty int, direction input.Direction) *Entity {
 		Height:    16,
 		Direction: direction,
 		Velocity:  0.75,
+		target:    target,
 	}
 }
 

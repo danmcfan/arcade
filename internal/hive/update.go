@@ -3,15 +3,31 @@ package hive
 import (
 	"arcade/internal/assets"
 	"arcade/internal/input"
+	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"slices"
 )
 
+const (
+	distanceThreshold = 0.25
+)
+
 func (s *HiveSoftware) Update(i input.Input) error {
-	if s.startFrames > 0 {
-		s.startFrames--
+	if s.startTicks > 0 {
+		s.startTicks--
 		return nil
+	}
+
+	if s.modeTicks == 0 {
+		log.Println("mode change")
+		s.modeCurrent, s.modeNext = s.modeNext, s.modeCurrent
+		s.modeTicks = framesPerSecond * 10
+	}
+
+	if s.modeTicks > 0 {
+		s.modeTicks--
 	}
 
 	if winner(s) {
@@ -28,7 +44,15 @@ func (s *HiveSoftware) Update(i input.Input) error {
 
 	for _, e := range s.enemies {
 		updateBlue(e)
-		updateDirection(e, s.corners)
+
+		var target tile
+		switch s.modeCurrent {
+		case ModeScatter:
+			target = e.target
+		case ModeChase:
+			target = pointToTile(s.player.X, s.player.Y)
+		}
+		updateDirection(e, s.corners, target)
 
 		if !collideWithDistance(e, s.player, 1.0) {
 			continue
@@ -94,7 +118,7 @@ func start(s *HiveSoftware) {
 	s.player = NewPlayer()
 	s.enemies = newEnemies()
 	s.items = newItems()
-	s.startFrames = framesPerSecond * 2
+	s.startTicks = framesPerSecond * 2
 
 	assets.SoundStart.Rewind()
 	assets.SoundStart.Play()
@@ -197,44 +221,84 @@ func updatePosition(e *Entity, cs []*Entity) {
 	}
 }
 
-func updateDirection(e *Entity, cs []*Entity) {
+func updateDirection(e *Entity, cs []*Entity, target tile) {
 	corner := findCorner(e, cs)
 	if corner == nil {
 		return
 	}
 
-	if corner == e.LastCorner {
-		return
-	}
+	tileCorner := pointToTile(corner.X, corner.Y)
 
 	validDirections := make([]input.Direction, len(corner.Directions))
 	copy(validDirections, corner.Directions)
 
 	validDirections = slices.DeleteFunc(validDirections, func(d input.Direction) bool {
-		return d == e.Direction
+		return d == e.Direction.Opposite()
 	})
 
 	if len(validDirections) == 0 {
-		return
+		panic(fmt.Sprintf("no valid directions for enemy at (%v, %v)", e.X, e.Y))
+	}
+
+	distances := make(map[input.Direction]float64)
+
+	minDistance := math.MaxFloat64
+	for _, direction := range validDirections {
+		tileNext := tileCorner
+		switch direction {
+		case input.DirectionUp:
+			tileNext.y--
+		case input.DirectionDown:
+			tileNext.y++
+		case input.DirectionLeft:
+			tileNext.x--
+		case input.DirectionRight:
+			tileNext.x++
+		}
+
+		distance := distance(tileNext, target)
+		if distance < minDistance {
+			minDistance = distance
+		}
+		distances[direction] = distance
+	}
+
+	minDirections := make([]input.Direction, 0)
+	for direction, distance := range distances {
+		if distance == minDistance {
+			minDirections = append(minDirections, direction)
+		}
+	}
+
+	switch {
+	case slices.Contains(minDirections, input.DirectionUp):
+		e.Direction = input.DirectionUp
+	case slices.Contains(minDirections, input.DirectionLeft):
+		e.Direction = input.DirectionLeft
+	case slices.Contains(minDirections, input.DirectionDown):
+		e.Direction = input.DirectionDown
+	case slices.Contains(minDirections, input.DirectionRight):
+		e.Direction = input.DirectionRight
 	}
 
 	e.X = corner.X
 	e.Y = corner.Y
-	e.Direction = validDirections[rand.Intn(len(validDirections))]
-	e.LastCorner = corner
 }
 
 func restart(s *HiveSoftware) {
-	s.startFrames = framesPerSecond * 2
+	s.startTicks = framesPerSecond * 2
 	s.player = NewPlayer()
 	s.enemies = newEnemies()
+
+	s.modeCurrent = ModeScatter
+	s.modeNext = ModeChase
+	s.modeTicks = framesPerSecond * 10
 }
 
 func resetEnemy(e *Entity) {
 	e.X = 8*13 + 4
 	e.Y = 8*14 + 4
 	e.Direction = []input.Direction{input.DirectionLeft, input.DirectionRight}[rand.Intn(2)]
-	e.LastCorner = nil
 	e.BlueFrames = 0
 	e.FlashFrames = 0
 	e.Flash = false
@@ -250,7 +314,7 @@ func findCorner(e *Entity, cs []*Entity) *Entity {
 }
 
 func collide(a *Entity, b *Entity) bool {
-	return math.Abs(a.X-b.X) <= DistanceThreshold && math.Abs(a.Y-b.Y) <= DistanceThreshold
+	return math.Abs(a.X-b.X) <= distanceThreshold && math.Abs(a.Y-b.Y) <= distanceThreshold
 }
 
 func collideWithDistance(a *Entity, b *Entity, distance float64) bool {
