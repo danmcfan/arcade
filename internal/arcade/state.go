@@ -3,13 +3,12 @@ package arcade
 import (
 	"fmt"
 
-	"arcade/internal/gearhead"
 	"arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var initialLoadedSoftware = gearhead.NewGearHeadSoftware()
+var initialLoadedSoftware software.Software
 
 const tileSize = 8
 
