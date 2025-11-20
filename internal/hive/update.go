@@ -4,15 +4,39 @@ import (
 	"arcade/internal/assets"
 	"arcade/internal/input"
 	"fmt"
-	"log"
+	"image/color"
 	"math"
 	"math/rand"
 	"slices"
 )
 
 const (
-	distanceThreshold = 0.25
+	distanceThreshold = 0.5
+	startTicks        = framesPerSecond * 2
 )
+
+type mode int
+
+const (
+	modeScatter mode = iota
+	modeChase
+)
+
+var modeSequence = []modeConfig{
+	{mode: modeScatter, ticks: framesPerSecond * 7},
+	{mode: modeChase, ticks: framesPerSecond * 20},
+	{mode: modeScatter, ticks: framesPerSecond * 7},
+	{mode: modeChase, ticks: framesPerSecond * 20},
+	{mode: modeScatter, ticks: framesPerSecond * 5},
+	{mode: modeChase, ticks: framesPerSecond * 20},
+	{mode: modeScatter, ticks: framesPerSecond * 5},
+	{mode: modeChase, ticks: -1},
+}
+
+type modeConfig struct {
+	mode  mode
+	ticks int
+}
 
 func (s *HiveSoftware) Update(i input.Input) error {
 	if s.startTicks > 0 {
@@ -20,10 +44,20 @@ func (s *HiveSoftware) Update(i input.Input) error {
 		return nil
 	}
 
+	if s.pauseTicks > 0 {
+		s.pauseTicks--
+		return nil
+	}
+
 	if s.modeTicks == 0 {
-		log.Println("mode change")
-		s.modeCurrent, s.modeNext = s.modeNext, s.modeCurrent
-		s.modeTicks = framesPerSecond * 10
+		modeConfig := modeSequence[s.modeIndex]
+		s.modeCurrent = modeConfig.mode
+		s.modeTicks = modeConfig.ticks
+		s.modeIndex++
+		for _, e := range s.enemies {
+			e.reverseDirection = true
+			e.reverseTile = pointToTile(e.X, e.Y)
+		}
 	}
 
 	if s.modeTicks > 0 {
@@ -40,18 +74,25 @@ func (s *HiveSoftware) Update(i input.Input) error {
 		return nil
 	}
 
+	s.player.Velocity = velocityPlayerNormal
+	for _, e := range s.enemies {
+		e.Velocity = velocityEnemyNormal
+		if e.BlueFrames > 0 {
+			s.player.Velocity = velocityPlayerPower
+			e.Velocity = velocityEnemyPower
+		}
+
+		if e.Y == 8*17+4 && (e.X < tileSize*4.5 || e.X > tileSize*(tileWidth-4.5)) {
+			e.Velocity = velocityEnemyTunnel
+		}
+	}
+
 	applyInput(s, i)
 
 	for _, e := range s.enemies {
 		updateBlue(e)
 
-		var target tile
-		switch s.modeCurrent {
-		case ModeScatter:
-			target = e.target
-		case ModeChase:
-			target = pointToTile(s.player.X, s.player.Y)
-		}
+		target := findTarget(e, s.enemies, s.player, s.modeCurrent)
 		updateDirection(e, s.corners, target)
 
 		if !collideWithDistance(e, s.player, 1.0) {
@@ -59,6 +100,10 @@ func (s *HiveSoftware) Update(i input.Input) error {
 		}
 
 		if e.BlueFrames > 0 {
+			assets.SoundPower.Rewind()
+			assets.SoundPower.Play()
+
+			s.pauseTicks = framesPerSecond * 1
 			s.score += 200
 			resetEnemy(e)
 			continue
@@ -84,7 +129,7 @@ func (s *HiveSoftware) Update(i input.Input) error {
 			continue
 		}
 
-		if !collide(item, s.player) {
+		if !collideWithDistance(item, s.player, distanceThreshold) {
 			continue
 		}
 
@@ -93,15 +138,21 @@ func (s *HiveSoftware) Update(i input.Input) error {
 		}
 
 		if item.IsPower() {
-			assets.SoundPower.Rewind()
-			assets.SoundPower.Play()
-
 			s.score += 50
 
 			for _, e := range s.enemies {
+				e.reverseDirection = true
+				e.reverseTile = pointToTile(e.X, e.Y)
+
 				e.BlueFrames = blueFramesDuration
 				e.FlashFrames = 0
 				e.Flash = false
+			}
+		}
+
+		for _, e := range s.enemies {
+			if e.dotMinimum > 0 {
+				e.dotMinimum--
 			}
 		}
 
@@ -118,7 +169,7 @@ func start(s *HiveSoftware) {
 	s.player = NewPlayer()
 	s.enemies = newEnemies()
 	s.items = newItems()
-	s.startTicks = framesPerSecond * 2
+	s.startTicks = startTicks
 
 	assets.SoundStart.Rewind()
 	assets.SoundStart.Play()
@@ -192,6 +243,29 @@ func updateBlue(e *Entity) {
 }
 
 func updatePosition(e *Entity, cs []*Entity) {
+	if e.dotMinimum > 0 {
+		return
+	}
+
+	if e.home {
+		if e.X < tileSize*14 {
+			e.X += velocityEnemyTunnel
+			return
+		}
+
+		if e.X > tileSize*14 {
+			e.X -= velocityEnemyTunnel
+			return
+		}
+
+		if e.Y > tileSize*14.5 {
+			e.Y -= velocityEnemyTunnel
+			return
+		}
+
+		e.home = false
+	}
+
 	validDirections := []input.Direction{e.Direction}
 
 	corner := findCorner(e, cs)
@@ -222,6 +296,13 @@ func updatePosition(e *Entity, cs []*Entity) {
 }
 
 func updateDirection(e *Entity, cs []*Entity, target tile) {
+	tileCurrent := pointToTile(e.X, e.Y)
+	if e.reverseDirection && tileCurrent != e.reverseTile {
+		e.reverseDirection = false
+		e.Direction = e.Direction.Opposite()
+		return
+	}
+
 	corner := findCorner(e, cs)
 	if corner == nil {
 		return
@@ -238,6 +319,13 @@ func updateDirection(e *Entity, cs []*Entity, target tile) {
 
 	if len(validDirections) == 0 {
 		panic(fmt.Sprintf("no valid directions for enemy at (%v, %v)", e.X, e.Y))
+	}
+
+	if e.BlueFrames > 0 {
+		e.Direction = validDirections[rand.Intn(len(validDirections))]
+		e.X = corner.X
+		e.Y = corner.Y
+		return
 	}
 
 	distances := make(map[input.Direction]float64)
@@ -286,37 +374,98 @@ func updateDirection(e *Entity, cs []*Entity, target tile) {
 }
 
 func restart(s *HiveSoftware) {
-	s.startTicks = framesPerSecond * 2
+	s.startTicks = startTicks
 	s.player = NewPlayer()
 	s.enemies = newEnemies()
 
-	s.modeCurrent = ModeScatter
-	s.modeNext = ModeChase
-	s.modeTicks = framesPerSecond * 10
+	s.modeIndex = 0
+	s.modeTicks = 0
 }
 
 func resetEnemy(e *Entity) {
-	e.X = 8*13 + 4
-	e.Y = 8*14 + 4
+	e.X = tileSize * 14
+	e.Y = tileSize * 17.5
 	e.Direction = []input.Direction{input.DirectionLeft, input.DirectionRight}[rand.Intn(2)]
 	e.BlueFrames = 0
 	e.FlashFrames = 0
 	e.Flash = false
+	e.home = true
+	e.dotMinimum = 0
 }
 
 func findCorner(e *Entity, cs []*Entity) *Entity {
 	for _, c := range cs {
-		if collide(c, e) {
+		if collideWithDistance(c, e, distanceThreshold) {
 			return c
 		}
 	}
 	return nil
 }
 
-func collide(a *Entity, b *Entity) bool {
-	return math.Abs(a.X-b.X) <= distanceThreshold && math.Abs(a.Y-b.Y) <= distanceThreshold
-}
-
 func collideWithDistance(a *Entity, b *Entity, distance float64) bool {
 	return math.Abs(a.X-b.X) <= distance && math.Abs(a.Y-b.Y) <= distance
+}
+
+func findTarget(e *Entity, enemies []*Entity, player *Entity, mode mode) tile {
+	if mode == modeScatter {
+		return e.target
+	}
+
+	tilePlayer := pointToTile(player.X, player.Y)
+
+	switch e.color {
+	case colorRed:
+		return tilePlayer
+	case colorPink:
+		switch player.Direction {
+		case input.DirectionUp:
+			tilePlayer.y -= 4
+		case input.DirectionDown:
+			tilePlayer.y += 4
+		case input.DirectionLeft:
+			tilePlayer.x -= 4
+		case input.DirectionRight:
+			tilePlayer.x += 4
+		}
+		return tilePlayer
+	case colorTeal:
+		enemyRed := getEnemy(enemies, colorRed)
+		tileRed := pointToTile(enemyRed.X, enemyRed.Y)
+
+		switch player.Direction {
+		case input.DirectionUp:
+			tilePlayer.y -= 2
+		case input.DirectionDown:
+			tilePlayer.y += 2
+		case input.DirectionLeft:
+			tilePlayer.x -= 2
+		case input.DirectionRight:
+			tilePlayer.x += 2
+		}
+
+		dx := tilePlayer.x - tileRed.x
+		dy := tilePlayer.y - tileRed.y
+
+		tilePlayer.x += dx
+		tilePlayer.y += dy
+
+		return tilePlayer
+	case colorOrange:
+		distance := distance(pointToTile(e.X, e.Y), tilePlayer)
+		if distance < 8 {
+			return e.target
+		}
+		return tilePlayer
+	}
+
+	panic(fmt.Sprintf("unknown color: %v", e.color))
+}
+
+func getEnemy(e []*Entity, color color.Color) *Entity {
+	for _, enemy := range e {
+		if enemy.color == color {
+			return enemy
+		}
+	}
+	return nil
 }

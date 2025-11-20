@@ -3,6 +3,7 @@ package hive
 import (
 	"arcade/internal/assets"
 	"arcade/internal/input"
+	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,6 +13,15 @@ const (
 	tileSize   = 8
 	tileWidth  = 28
 	tileHeight = 36
+
+	velocityMax = 1.25
+
+	velocityPlayerNormal = velocityMax * 0.8
+	velocityPlayerPower  = velocityMax * 0.9
+
+	velocityEnemyNormal = velocityMax * 0.75
+	velocityEnemyPower  = velocityMax * 0.50
+	velocityEnemyTunnel = velocityMax * 0.40
 )
 
 var (
@@ -19,6 +29,13 @@ var (
 	targetTopRight    = tile{x: tileWidth - 3, y: 0}
 	targetBottomLeft  = tile{x: 0, y: tileHeight - 2}
 	targetBottomRight = tile{x: tileWidth - 1, y: tileHeight - 2}
+)
+
+var (
+	colorRed    = color.RGBA{R: 255, G: 0, B: 0, A: 128}
+	colorPink   = color.RGBA{R: 255, G: 0, B: 180, A: 128}
+	colorTeal   = color.RGBA{R: 0, G: 255, B: 220, A: 128}
+	colorOrange = color.RGBA{R: 255, G: 128, B: 0, A: 128}
 )
 
 type tile struct {
@@ -35,6 +52,7 @@ func distance(a, b tile) float64 {
 
 type Entity struct {
 	Sprite *ebiten.Image
+	color  color.Color
 
 	Frame          float64
 	FrameIncrement float64
@@ -48,6 +66,12 @@ type Entity struct {
 	Direction  input.Direction
 	Directions []input.Direction
 	Velocity   float64
+
+	reverseDirection bool
+	reverseTile      tile
+
+	home       bool
+	dotMinimum int
 
 	BlueFrames  int
 	FlashFrames int
@@ -80,22 +104,23 @@ func NewPlayer() *Entity {
 		Width:     16,
 		Height:    16,
 		Direction: input.DirectionLeft,
-		Velocity:  1.0,
+		Velocity:  velocityMax,
 	}
 }
 
 func newEnemies() []*Entity {
 	return []*Entity{
-		newEnemy(3, 8, input.DirectionRight, targetTopLeft),
-		newEnemy(24, 8, input.DirectionLeft, targetTopRight),
-		newEnemy(1, 29, input.DirectionRight, targetBottomLeft),
-		newEnemy(26, 29, input.DirectionLeft, targetBottomRight),
+		newEnemy(14, 14.5, input.DirectionRight, targetTopLeft, colorRed, false, 0),
+		newEnemy(14, 17.5, input.DirectionLeft, targetTopRight, colorPink, true, 0),
+		newEnemy(12, 17.5, input.DirectionRight, targetBottomLeft, colorTeal, true, 30),
+		newEnemy(16, 17.5, input.DirectionLeft, targetBottomRight, colorOrange, true, 60),
 	}
 }
 
-func newEnemy(tx, ty int, direction input.Direction, target tile) *Entity {
+func newEnemy(tx, ty float64, direction input.Direction, target tile, color color.Color, home bool, dotMinimum int) *Entity {
 	return &Entity{
 		Sprite:         assets.ImageBee,
+		color:          color,
 		FrameIncrement: 0.1,
 		FrameTotal:     4,
 		FrameDirection: map[input.Direction]int{
@@ -104,13 +129,15 @@ func newEnemy(tx, ty int, direction input.Direction, target tile) *Entity {
 			input.DirectionLeft:  1,
 			input.DirectionRight: 0,
 		},
-		X:         float64(8*tx + 4),
-		Y:         float64(8*ty + 4),
-		Width:     16,
-		Height:    16,
-		Direction: direction,
-		Velocity:  0.75,
-		target:    target,
+		X:          float64(tileSize * tx),
+		Y:          float64(tileSize * ty),
+		Width:      16,
+		Height:     16,
+		Direction:  direction,
+		Velocity:   0.75,
+		target:     target,
+		home:       home,
+		dotMinimum: dotMinimum,
 	}
 }
 

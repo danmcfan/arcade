@@ -2,11 +2,17 @@ package hive
 
 import (
 	"arcade/internal/assets"
+	"fmt"
 	"image"
+	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
+
+const debug = false
 
 func (s *HiveSoftware) Draw(screen *ebiten.Image, buffer float64) {
 	drawBackground(s, screen, buffer)
@@ -16,7 +22,10 @@ func (s *HiveSoftware) Draw(screen *ebiten.Image, buffer float64) {
 	drawReady(s, screen, buffer)
 	drawItems(s, screen, buffer)
 	drawPlayer(s, screen, buffer)
+	drawTiles(s, screen, buffer, debug)
+	drawLines(s, screen, buffer, debug)
 	drawEnemies(s, screen, buffer)
+	drawMode(s, screen, buffer, debug)
 }
 
 func drawBackground(s *HiveSoftware, screen *ebiten.Image, buffer float64) {
@@ -71,11 +80,55 @@ func drawPlayer(s *HiveSoftware, screen *ebiten.Image, buffer float64) {
 	drawEntity(s.player, screen, buffer)
 }
 
+func drawTiles(s *HiveSoftware, screen *ebiten.Image, buffer float64, debug bool) {
+	if !debug {
+		return
+	}
+
+	for _, e := range s.enemies {
+		drawTile(screen, buffer, pointToTile(e.X, e.Y), e.color)
+		drawTile(screen, buffer, findTarget(e, s.enemies, s.player, s.modeCurrent), e.color)
+	}
+}
+
+func drawLines(s *HiveSoftware, screen *ebiten.Image, buffer float64, debug bool) {
+	if !debug {
+		return
+	}
+
+	for _, e := range s.enemies {
+		target := findTarget(e, s.enemies, s.player, s.modeCurrent)
+
+		sx := float32(e.X + buffer)
+		sy := float32(e.Y + buffer)
+		dx := float32(target.x*tileSize + int(buffer))
+		dy := float32(target.y*tileSize + int(buffer))
+
+		vector.StrokeLine(screen, sx, sy, dx, dy, 1, e.color, false)
+	}
+}
+
 func drawEnemies(s *HiveSoftware, screen *ebiten.Image, buffer float64) {
 	for _, enemy := range s.enemies {
 		drawEntity(enemy, screen, buffer)
 	}
 }
+
+func drawMode(s *HiveSoftware, screen *ebiten.Image, buffer float64, debug bool) {
+	if !debug {
+		return
+	}
+
+	var mode string
+	switch s.modeCurrent {
+	case modeScatter:
+		mode = "Scatter"
+	case modeChase:
+		mode = "Chase"
+	}
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("[%d] %s: %d", s.modeIndex, mode, s.modeTicks), int(tileSize*(tileWidth-14)+buffer), int(tileSize*(tileHeight-2)+buffer))
+}
+
 func drawInteger(screen *ebiten.Image, buffer float64, value int, tx int, ty int) {
 	digits := []int{
 		value / 100_000,
@@ -134,4 +187,14 @@ func drawEntity(e *Entity, screen *ebiten.Image, buffer float64) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(e.X-e.Width/2+buffer, e.Y-e.Height/2+buffer)
 	screen.DrawImage(spriteFrame, op)
+}
+
+func drawTile(screen *ebiten.Image, buffer float64, tile tile, color color.Color) {
+	img := ebiten.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, tileSize, tileSize)))
+	img.Fill(color)
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(buffer, buffer)
+	op.GeoM.Translate(float64(tile.x*tileSize), float64(tile.y*tileSize))
+	screen.DrawImage(img, op)
 }

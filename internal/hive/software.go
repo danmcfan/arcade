@@ -11,36 +11,29 @@ const (
 	blueFramesDuration = framesPerSecond * 10
 )
 
-type Mode int
-
-const (
-	ModeScatter Mode = iota
-	ModeChase
-)
-
 type HiveSoftware struct {
 	player  *Entity
 	enemies []*Entity
 	items   []*Entity
 	corners []*Entity
 
-	modeCurrent Mode
-	modeNext    Mode
+	modeIndex   int
+	modeCurrent mode
 	modeTicks   int
 
+	pauseTicks int
+
 	startTicks int
-	lives      int
-	score      int
-	highScore  int
+
+	lives     int
+	score     int
+	highScore int
 }
 
 func NewHiveSoftware(highscore int) *HiveSoftware {
 	s := &HiveSoftware{
-		modeCurrent: ModeScatter,
-		modeNext:    ModeChase,
-		modeTicks:   framesPerSecond * 10,
-		highScore:   highscore,
-		corners:     newCorners(),
+		highScore: highscore,
+		corners:   newCorners(),
 	}
 	start(s)
 	return s

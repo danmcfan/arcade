@@ -49,5 +49,5 @@ func drawLine(screen *ebiten.Image, x1, y1, x2, y2 float64, clr color.Color) {
 }
 
 func drawCircle(screen *ebiten.Image, x, y, radius float64, clr color.Color) {
-	vector.DrawFilledCircle(screen, float32(x), float32(y), float32(radius), clr, false)
+	vector.FillCircle(screen, float32(x), float32(y), float32(radius), clr, false)
 }

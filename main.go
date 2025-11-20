@@ -8,6 +8,8 @@ import (
 	"arcade/internal"
 )
 
+const tps = 60
+
 func main() {
 	go func() {
 		internal.Connect("ws://localhost:8080/ws")
@@ -15,6 +17,8 @@ func main() {
 
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Arcade")
+
+	ebiten.SetTPS(tps)
 
 	game := internal.NewGame()
 	if err := ebiten.RunGame(game); err != nil {
