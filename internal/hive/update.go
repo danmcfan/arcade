@@ -141,6 +141,10 @@ func (s *HiveSoftware) Update(i input.Input) error {
 			s.score += 50
 
 			for _, e := range s.enemies {
+				if e.home {
+					continue
+				}
+
 				e.reverseDirection = true
 				e.reverseTile = pointToTile(e.X, e.Y)
 
