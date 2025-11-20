@@ -3,7 +3,6 @@ package internal
 import (
 	"arcade/internal/arcade"
 	"arcade/internal/assets"
-	"arcade/internal/hive"
 	"arcade/internal/input"
 	"arcade/internal/software"
 	"math"
@@ -18,7 +17,7 @@ const (
 	initialDebugMode = false
 )
 
-var initialSoftware = hive.NewHiveSoftware(0)
+var initialSoftware software.Software
 
 type Game struct {
 	arcade *arcade.State
