@@ -5,23 +5,22 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"arcade/internal"
+	"arcade/internal/reload"
+	"arcade/internal/wave"
 )
 
 const tps = 60
 
 func main() {
-	go func() {
-		internal.Connect("ws://localhost:8080/ws")
-	}()
+	reload.Connect("ws://localhost:8080/ws")
+
+	ebiten.SetTPS(tps)
 
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Arcade")
 
-	ebiten.SetTPS(tps)
-
-	game := internal.NewGame()
-	if err := ebiten.RunGame(game); err != nil {
+	g := wave.New()
+	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
 }

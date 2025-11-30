@@ -1,4 +1,4 @@
-package internal
+package debug
 
 import (
 	_ "embed"
@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-type DebugPanel struct {
+type Panel struct {
 	enabled bool
 	x       float64 // X position where panel starts (relative)
 	y       float64 // Y position where panel starts
@@ -18,13 +18,13 @@ type DebugPanel struct {
 }
 
 // Width returns the panel width (exported for layout calculations)
-func (dp *DebugPanel) Width() float64 {
+func (dp *Panel) Width() float64 {
 	return dp.width
 }
 
 // NewDebugPanel creates a new debug panel
-func NewDebugPanel(x, y, width float64) *DebugPanel {
-	return &DebugPanel{
+func NewDebugPanel(x, y, width float64) *Panel {
+	return &Panel{
 		enabled: true,
 		x:       x,
 		y:       y,
@@ -33,7 +33,7 @@ func NewDebugPanel(x, y, width float64) *DebugPanel {
 }
 
 // Draw renders the debug panel with game state information
-func (dp *DebugPanel) Draw(screen *ebiten.Image, arcade *arcade.State, gameWidth, gameHeight float64) {
+func (dp *Panel) Draw(screen *ebiten.Image, arcade *arcade.State, gameWidth, gameHeight float64) {
 	if !dp.enabled {
 		return
 	}
@@ -64,11 +64,11 @@ func (dp *DebugPanel) Draw(screen *ebiten.Image, arcade *arcade.State, gameWidth
 }
 
 // Toggle enables or disables the debug panel
-func (dp *DebugPanel) Toggle() {
+func (dp *Panel) Toggle() {
 	dp.enabled = !dp.enabled
 }
 
 // IsEnabled returns whether the panel is currently enabled
-func (dp *DebugPanel) IsEnabled() bool {
+func (dp *Panel) IsEnabled() bool {
 	return dp.enabled
 }

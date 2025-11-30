@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-const debug = false
+const debug = true
 
 func (s *HiveSoftware) Draw(screen *ebiten.Image, buffer float64) {
 	drawBackground(s, screen, buffer)

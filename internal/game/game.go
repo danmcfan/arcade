@@ -1,8 +1,9 @@
-package internal
+package game
 
 import (
 	"arcade/internal/arcade"
 	"arcade/internal/assets"
+	"arcade/internal/debug"
 	"arcade/internal/input"
 	"arcade/internal/software"
 	"math"
@@ -25,14 +26,14 @@ type Game struct {
 	software software.Software
 
 	debugMode  bool
-	debugPanel *DebugPanel
+	debugPanel *debug.Panel
 }
 
-func NewGame() *Game {
+func New() *Game {
 	return &Game{
 		arcade:     arcade.NewState(initialSoftware),
 		debugMode:  initialDebugMode,
-		debugPanel: NewDebugPanel(0, 0, 120),
+		debugPanel: debug.NewDebugPanel(0, 0, 120),
 	}
 }
 
@@ -98,7 +99,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	}
 
 	if g.debugMode {
-		baseWidth += int(g.debugPanel.width)
+		baseWidth += int(g.debugPanel.Width())
 	}
 
 	return baseWidth, baseHeight
