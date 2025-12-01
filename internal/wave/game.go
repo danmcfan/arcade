@@ -17,15 +17,15 @@ import (
 )
 
 const (
+	tileSize        = 16
 	framesPerSecond = 60
-	seconds         = 5
-
-	gridSize = 128
-	tileSize = 16
-
-	gridCount    = gridSize * gridSize
-	stepInterval = gridCount / (framesPerSecond * seconds)
 )
+
+var gridSize int = 128
+var activeGridSize int = gridSize
+
+var seconds int = 5
+var activeSeconds int = seconds
 
 //go:embed three.png
 var imageData []byte
@@ -44,6 +44,10 @@ var (
 	ui = debugui.DebugUI{}
 )
 
+func StepInterval() int {
+	return (activeGridSize * activeGridSize) / (framesPerSecond * activeSeconds)
+}
+
 func newTile(color color.Color) *ebiten.Image {
 	img := ebiten.NewImage(tileSize, tileSize)
 	img.Fill(color)
@@ -61,25 +65,27 @@ func New() *Game {
 }
 
 func (g *Game) Update() error {
+	keys := inpututil.AppendJustPressedKeys(nil)
 	if _, err := ui.Update(func(ctx *debugui.Context) error {
-		ctx.Window("Wave", image.Rect(10, 10, 120, 120), func(layout debugui.ContainerLayout) {
-			ctx.SetScale(gridSize / 64)
+		ctx.Window("Wave", image.Rect(10, 10, 160, 160), func(layout debugui.ContainerLayout) {
+			ctx.SetScale(activeGridSize / 64)
+			ctx.Slider(&gridSize, 64, 256, 64)
+			ctx.Slider(&seconds, 1, 30, 1)
 			ctx.Text(fmt.Sprintf("FPS: %0.2f", ebiten.ActualFPS()))
 			ctx.Text(fmt.Sprintf("TPS: %0.2f", ebiten.ActualTPS()))
-			ctx.Text(fmt.Sprintf("%d / %d", g.grid.CollapsedCount, gridCount))
+			ctx.Text(fmt.Sprintf("%d / %d", g.grid.CollapsedCount, activeGridSize*activeGridSize))
 		})
 		return nil
 	}); err != nil {
 		return err
 	}
 
-	keys := make([]ebiten.Key, 0)
-	keys = inpututil.AppendJustPressedKeys(keys)
-
 	if slices.Contains(keys, ebiten.KeySpace) {
-		g.grid.Reset()
+		activeGridSize = gridSize
+		activeSeconds = seconds
+		g.grid = grid.New(activeGridSize, activeGridSize)
 	} else {
-		for range stepInterval {
+		for range StepInterval() {
 			g.grid.Step()
 		}
 	}
@@ -103,5 +109,5 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return tileSize * gridSize, tileSize * gridSize
+	return tileSize * activeGridSize, tileSize * activeGridSize
 }
