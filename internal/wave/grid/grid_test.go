@@ -1,57 +1,32 @@
 package grid
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestStep(t *testing.T) {
-	g := NewGrid(16, 123)
-
-	if !g.empty() {
-		t.Errorf("grid should be empty")
-	}
-
-	g.Step(1)
-
-	if g.empty() {
-		t.Errorf("grid should not be empty")
-	}
-
-	if g.CollapsedCount != 1 {
-		t.Errorf("collapsedCount = %d, want %d", g.CollapsedCount, 1)
-	}
-
-	if len(g.Uncollapsed) != g.Size*g.Size-1 {
-		t.Errorf("uncollapsed = %d, want %d", len(g.Uncollapsed), g.Size*g.Size-1)
-	}
-
-	if len(g.UncollapsedIdx) != g.Size*g.Size-1 {
-		t.Errorf("uncollapsedIdx = %d, want %d", len(g.UncollapsedIdx), g.Size*g.Size-1)
-	}
+func BenchmarkGrid512(b *testing.B) {
+	benchmarkGrid(b, 512)
 }
 
-func BenchmarkAssignLowestEntropy(b *testing.B) {
-	g := NewGrid(16, 123)
-	for b.Loop() {
-		g.Step(2)
-		g.Reset()
-	}
+func BenchmarkGrid1024(b *testing.B) {
+	benchmarkGrid(b, 1024)
 }
 
-func BenchmarkStep(b *testing.B) {
-	g := NewGrid(16, 123)
-	for b.Loop() {
-		g.Step(100)
-	}
+func BenchmarkGrid2048(b *testing.B) {
+	benchmarkGrid(b, 2048)
 }
 
-func BenchmarkNewGame(b *testing.B) {
-	for b.Loop() {
-		NewGrid(16, 123)
-	}
+func BenchmarkGrid4096(b *testing.B) {
+	benchmarkGrid(b, 4096)
 }
 
-func BenchmarkReset(b *testing.B) {
-	g := NewGrid(16, 123)
+func benchmarkGrid(b *testing.B, size int) {
+	b.Logf("size: %d", size)
 	for b.Loop() {
-		g.Reset()
+		grid := New(size, size)
+		for range grid.Width * grid.Height {
+			grid.Step()
+		}
 	}
+	b.Logf("time per loop: %.2fs", float64(b.Elapsed().Seconds())/float64(b.N))
 }

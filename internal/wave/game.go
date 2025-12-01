@@ -9,11 +9,11 @@ import (
 	"image/png"
 	"slices"
 
-	"arcade/internal/wave/simple"
-
 	"github.com/ebitengine/debugui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+
+	"arcade/internal/wave/grid"
 )
 
 const (
@@ -51,12 +51,12 @@ func newTile(color color.Color) *ebiten.Image {
 }
 
 type Game struct {
-	grid *simple.Grid
+	grid *grid.Grid
 }
 
 func New() *Game {
 	return &Game{
-		grid: simple.NewGrid(gridSize, gridSize),
+		grid: grid.New(gridSize, gridSize),
 	}
 }
 
