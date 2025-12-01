@@ -1,125 +1,175 @@
 package simple
 
 import (
+	"fmt"
 	"math/rand"
+	"slices"
 )
 
-var patterns = [4][4][]int{
-	{{}, {}, {}, {}},
-	{{1}, {1, 2}, {1, 2}, {1, 2, 3}},
-	{{1}, {1, 2, 3}, {1, 2, 3}, {3}},
-	{{3}, {2, 3}, {2, 3}, {1, 2, 3}},
+var constraints = [4][4][]int{
+	{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}},
+	{{1, 2}, {1, 2}, {1, 2}, {1, 2}},
+	{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}},
+	{{2, 3}, {2, 3}, {2, 3}, {2, 3}},
+}
+
+type Cell struct {
+	Possible  []int
+	Collapsed bool
 }
 
 type Grid struct {
-	values []int
-	size   int
-	count  int
-	queue  []struct{ x, y int }
+	Width          int
+	Height         int
+	Cells          [][]Cell
+	CollapsedCount int
+	Patterns       []int
+	Constraints    [4][4][]int
+
+	EntropyBuckets map[int][]struct{ x, y int }
+	Entropy        [][]int
+	BucketIndex    [][]int
 }
 
-func NewGrid(size int) *Grid {
-	return &Grid{
-		values: make([]int, size*size),
-		size:   size,
+func NewGrid(width, height int) *Grid {
+	grid := &Grid{
+		Width:       width,
+		Height:      height,
+		Patterns:    []int{1, 2, 3},
+		Constraints: constraints,
 	}
-}
 
-func (g *Grid) Get(x, y int) int {
-	return g.values[x*g.size+y]
-}
+	grid.Cells = make([][]Cell, width)
+	for x := range width {
+		grid.Cells[x] = make([]Cell, height)
+	}
 
-func (g *Grid) Set(x, y int, value int) {
-	g.values[x*g.size+y] = value
+	grid.Entropy = make([][]int, grid.Width)
+	for x := range grid.Width {
+		grid.Entropy[x] = make([]int, grid.Height)
+	}
+
+	grid.BucketIndex = make([][]int, grid.Width)
+	for x := range grid.Width {
+		grid.BucketIndex[x] = make([]int, grid.Height)
+	}
+
+	grid.EntropyBuckets = make(map[int][]struct{ x, y int })
+
+	grid.Reset()
+
+	return grid
 }
 
 func (g *Grid) Reset() {
-	for i := range g.values {
-		g.values[i] = 0
+	for e := range len(g.Patterns) + 1 {
+		g.EntropyBuckets[e] = make([]struct{ x, y int }, 0, g.Width*g.Height)
 	}
-	g.count = 0
-	g.queue = make([]struct{ x, y int }, 0)
+
+	for x := range g.Width {
+		for y := range g.Height {
+			g.Cells[x][y].Possible = slices.Clone(g.Patterns)
+			g.Cells[x][y].Collapsed = false
+
+			g.BucketIndex[x][y] = len(g.EntropyBuckets[len(g.Patterns)])
+			g.Entropy[x][y] = len(g.Patterns)
+			g.EntropyBuckets[len(g.Patterns)] = append(g.EntropyBuckets[len(g.Patterns)], struct{ x, y int }{x, y})
+		}
+	}
+
+	g.CollapsedCount = 0
 }
 
 func (g *Grid) Step() {
-	if g.count == g.size*g.size {
+	if g.CollapsedCount == g.Width*g.Height {
 		return
 	}
 
-	if g.count == 0 {
-		x := rand.Intn(int(g.size))
-		y := rand.Intn(int(g.size))
-		g.Set(int(x), int(y), rand.Intn(3)+1)
-		g.count++
+	var x, y int
+	if g.CollapsedCount == 0 {
+		x, y = rand.Intn(g.Width), rand.Intn(g.Height)
+	} else {
+		x, y = g.Next()
+	}
 
-		for _, neighbor := range g.Neighbors(int(x), int(y)) {
-			if !g.InBounds(neighbor.x, neighbor.y) {
-				continue
-			}
+	g.Collapse(x, y)
+	g.Propogate(x, y)
+}
 
-			if g.Get(neighbor.x, neighbor.y) != 0 {
-				continue
-			}
-
-			g.queue = append(g.queue, neighbor)
+func (g *Grid) Next() (int, int) {
+	for e := 1; e <= len(g.Patterns); e++ {
+		if cells := g.EntropyBuckets[e]; len(cells) > 0 {
+			sel := cells[rand.Intn(len(cells))]
+			return sel.x, sel.y
 		}
-
-		return
 	}
+	panic("no next cell found")
+}
 
-	next := g.queue[0]
-	g.queue = g.queue[1:]
+func (g *Grid) Collapse(x, y int) {
+	cell := &g.Cells[x][y]
+	g.UpdateEntropy(x, y, len(cell.Possible), 0)
+	selection := cell.Possible[rand.Intn(len(cell.Possible))]
+	cell.Possible = []int{selection}
+	cell.Collapsed = true
+	g.CollapsedCount++
+}
 
-	for g.Get(next.x, next.y) != 0 {
-		next = g.queue[0]
-		g.queue = g.queue[1:]
+func (g *Grid) Propogate(x, y int) {
+	cell := &g.Cells[x][y]
+
+	if len(cell.Possible) != 1 {
+		panic(fmt.Sprintf("cell (%d, %d) has %d possible values", x, y, len(cell.Possible)))
 	}
+	value := cell.Possible[0]
 
-	choices := [4]bool{false, false, false, false}
-	for direction, neighbor := range g.Neighbors(next.x, next.y) {
+	for direction, neighbor := range g.Neighbors(x, y) {
 		if !g.InBounds(neighbor.x, neighbor.y) {
 			continue
 		}
 
-		ncolor := g.Get(neighbor.x, neighbor.y)
-		if ncolor == 0 {
-			g.queue = append(g.queue, neighbor)
+		if g.Cells[neighbor.x][neighbor.y].Collapsed {
 			continue
 		}
 
-		ndirection := -1
+		nDirection := -1
 		switch direction {
 		case 0:
-			ndirection = 2
+			nDirection = 2
 		case 1:
-			ndirection = 3
+			nDirection = 3
 		case 2:
-			ndirection = 0
+			nDirection = 0
 		case 3:
-			ndirection = 1
+			nDirection = 1
 		}
 
-		nchoice := patterns[ncolor][ndirection]
-		for _, choice := range nchoice {
-			choices[choice] = true
+		nCell := &g.Cells[neighbor.x][neighbor.y]
+		newPossible := g.Constraints[value][nDirection]
+
+		if len(newPossible) < len(nCell.Possible) {
+			g.UpdateEntropy(neighbor.x, neighbor.y, len(nCell.Possible), len(newPossible))
+			nCell.Possible = newPossible
 		}
 	}
+}
 
-	colors := make([]int, 0)
-	for color, ok := range choices {
-		if !ok {
-			continue
-		}
-		colors = append(colors, int(color))
+func (g *Grid) UpdateEntropy(x, y int, oldEntropy, newEntropy int) {
+	oldBucket := g.EntropyBuckets[oldEntropy]
+	idx := g.BucketIndex[x][y]
+
+	lastIdx := len(oldBucket) - 1
+	if idx != lastIdx {
+		lastCell := oldBucket[lastIdx]
+		oldBucket[idx] = lastCell
+		g.BucketIndex[lastCell.x][lastCell.y] = idx
 	}
+	g.EntropyBuckets[oldEntropy] = oldBucket[:lastIdx]
 
-	if len(colors) == 0 {
-		panic("no colors")
-	}
-
-	choice := colors[rand.Intn(len(colors))]
-	g.Set(next.x, next.y, choice)
-	g.count++
+	newBucket := g.EntropyBuckets[newEntropy]
+	g.BucketIndex[x][y] = len(newBucket)
+	g.EntropyBuckets[newEntropy] = append(newBucket, struct{ x, y int }{x, y})
+	g.Entropy[x][y] = newEntropy
 }
 
 func (g *Grid) Neighbors(x, y int) [4]struct{ x, y int } {
@@ -127,5 +177,5 @@ func (g *Grid) Neighbors(x, y int) [4]struct{ x, y int } {
 }
 
 func (g *Grid) InBounds(x, y int) bool {
-	return x >= 0 && x < g.size && y >= 0 && y < g.size
+	return x >= 0 && x < g.Width && y >= 0 && y < g.Height
 }
