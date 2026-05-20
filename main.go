@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
-	"arcade/internal/avatar"
+	"arcade/internal/lumberjack"
 )
 
 const (
@@ -53,7 +53,7 @@ func main() {
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Arcade")
 
-	if err := ebiten.RunGame(avatar.NewGame()); err != nil {
+	if err := ebiten.RunGame(lumberjack.NewGame()); err != nil {
 		log.Fatal(err)
 	}
 }
