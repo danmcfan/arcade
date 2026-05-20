@@ -7,13 +7,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
-	"arcade/internal/game"
-	"arcade/internal/reload"
-	"arcade/internal/wave"
+	"arcade/internal/avatar"
 )
 
 const (
-	tps   = 60
 	start = 0
 )
 
@@ -53,19 +50,10 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	reload.Connect("ws://localhost:8080/ws")
-
-	ebiten.SetTPS(tps)
-
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Arcade")
 
-	gameArcade := game.New()
-	gameWave := wave.New()
-
-	gameToggle := NewGame(start, gameArcade, gameWave)
-
-	if err := ebiten.RunGame(gameToggle); err != nil {
+	if err := ebiten.RunGame(avatar.NewGame()); err != nil {
 		log.Fatal(err)
 	}
 }
