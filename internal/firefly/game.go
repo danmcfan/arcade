@@ -1,8 +1,8 @@
 package firefly
 
 import (
-	"arcade/internal/assets"
-	"arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/input"
 	"image"
 	"math"
 	"slices"

@@ -3,7 +3,7 @@ package arcade
 import (
 	"fmt"
 
-	"arcade/internal/software"
+	"github.com/danmcfan/arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -22,12 +22,12 @@ type State struct {
 	HighScore int
 }
 
-func NewState(initialLoadedSoftware software.Software) *State {
+func NewState(initialSoftware software.Software) *State {
 	return &State{
 		player:         newPlayer(),
 		walls:          newWalls(),
 		machines:       newMachines(),
-		LoadedSoftware: initialLoadedSoftware,
+		LoadedSoftware: initialSoftware,
 		HighScore:      0,
 	}
 }

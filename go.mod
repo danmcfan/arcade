@@ -1,4 +1,4 @@
-module arcade
+module github.com/danmcfan/arcade
 
 go 1.26.1
 

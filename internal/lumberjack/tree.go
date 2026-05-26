@@ -1,6 +1,7 @@
 package lumberjack
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -8,6 +9,8 @@ import (
 
 const (
 	radians = math.Pi / 180.0
+
+	splitHeight = 56
 
 	pivotXLeft  = 26.0
 	pivotXRight = 37.0
@@ -21,8 +24,11 @@ var (
 	oakTreeBigSpritesheet      = NewSpritesheet("Trees/Big_Oak_Tree.png", 64, 80)
 	oakLeafParticleSpritesheet = NewSpritesheet("Trees/Oak_Leaf_Particle.png", 16, 16)
 
-	treeTrunkFrame = oakTreeBigSpritesheet.Frame(0, 0)
-	treeTopFrame   = oakTreeBigSpritesheet.Frame(2, 0)
+	treeTrunkFrame  = oakTreeBigSpritesheet.Frame(0, 0)
+	treeCanopyFrame = oakTreeBigSpritesheet.Frame(2, 0)
+
+	treeBottomFrame = ebiten.NewImageFromImage(oakTreeBigSpritesheet.Frame(1, 0))
+	treeTopFrame    = ebiten.NewImageFromImage(oakTreeBigSpritesheet.Frame(1, 0))
 )
 
 type Tree struct {
@@ -37,12 +43,29 @@ type Tree struct {
 
 	Behind      bool
 	Transparent bool
+
+	Health float64 // 0-100
+}
+
+func init() {
+	for y := range splitHeight {
+		for x := range 64 {
+			treeBottomFrame.Set(x, y, color.RGBA{R: 0, G: 0, B: 0, A: 0})
+		}
+	}
+
+	for y := splitHeight; y < 80; y++ {
+		for x := range 64 {
+			treeTopFrame.Set(x, y, color.RGBA{R: 0, G: 0, B: 0, A: 0})
+		}
+	}
 }
 
 func NewTree(positionX, positionY float64) *Tree {
 	return &Tree{
 		PositionX: positionX,
 		PositionY: positionY,
+		Health:    100.0,
 	}
 }
 
@@ -112,6 +135,10 @@ func (t *Tree) Update() {
 }
 
 func (t *Tree) Draw(screen *ebiten.Image) {
+	if t.Health <= 0 {
+		return
+	}
+
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(t.MinX(), t.MinY())
 	op.GeoM.Scale(float64(scale), float64(scale))
@@ -119,18 +146,23 @@ func (t *Tree) Draw(screen *ebiten.Image) {
 	if t.Transparent {
 		op.ColorScale.ScaleAlpha(0.5)
 	}
-
-	screen.DrawImage(treeTrunkFrame, op)
+	screen.DrawImage(treeBottomFrame, op)
 
 	op = &ebiten.DrawImageOptions{}
+
 	op.GeoM.Translate(-t.PivotX(), -pivotY)
 	op.GeoM.Rotate(t.Theta)
 	op.GeoM.Translate(t.PivotX(), pivotY)
+
 	op.GeoM.Translate(t.MinX(), t.MinY())
 	op.GeoM.Scale(float64(scale), float64(scale))
+
+	if t.Transparent {
+		op.ColorScale.ScaleAlpha(0.5)
+	}
 	screen.DrawImage(treeTopFrame, op)
 
 	if debug {
-		Draw(screen, t.Hitbox())
+		Draw(screen, t.Hitbox(), colorRed)
 	}
 }

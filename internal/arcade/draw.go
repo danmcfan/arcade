@@ -1,7 +1,7 @@
 package arcade
 
 import (
-	"arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/assets"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"

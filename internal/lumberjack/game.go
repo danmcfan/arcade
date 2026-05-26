@@ -1,16 +1,14 @@
 package lumberjack
 
 import (
-	"math/rand"
-
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const (
 	debug = false
 
-	width  = 256
-	height = 144
+	width  = 512
+	height = 288
 
 	tileWidth  = 16
 	tileHeight = 16
@@ -45,14 +43,29 @@ func (g *Game) Update() error {
 	player.Update(input)
 
 	for _, tree := range trees {
-		if input.Space && !tree.Shaking {
-			tree.Shake(rand.Float64() < 0.5)
+		if Overlaps(player.ActionHitbox(), tree.Hitbox()) && player.Acting && player.FrameX == 2 {
+			overlapX, overlapY := Resolve(player.ActionHitbox(), tree.Hitbox())
+			if overlapX < 0 {
+				tree.Shake(true)
+				tree.Health -= 10
+			} else if overlapX > 0 {
+				tree.Shake(false)
+				tree.Health -= 10
+			}
+
+			if overlapY < 0 {
+				tree.Shake(true)
+				tree.Health -= 10
+			} else if overlapY > 0 {
+				tree.Shake(false)
+				tree.Health -= 10
+			}
 		}
 
 		tree.Update()
 		withinX := tree.PositionX-20 < player.PositionX && tree.PositionX+20 > player.PositionX
 
-		above := player.PositionY < tree.PositionY+8
+		above := player.PositionY < tree.PositionY+16
 		withinY := tree.PositionY-32 < player.PositionY && above
 
 		tree.Behind = above
@@ -63,6 +76,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	// move to background specific function, grid specific function
 	for x := 0; x < width; x += tileWidth {
 		for y := 0; y < height; y += tileHeight {
 			grassFrame := grassSpritesheet.Frame(0, 0)
@@ -73,6 +87,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
+	// move to z-index drawing that takes all entities and determines draw order
 	for _, tree := range trees {
 		if !tree.Behind {
 			tree.Draw(screen)

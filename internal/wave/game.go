@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
-	"arcade/internal/wave/grid"
+	"github.com/danmcfan/arcade/internal/wave/grid"
 )
 
 const (

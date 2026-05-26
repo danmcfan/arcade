@@ -8,6 +8,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+var (
+	colorRed    = color.RGBA{R: 255, G: 0, B: 0, A: 8}
+	colorGreen  = color.RGBA{R: 0, G: 255, B: 0, A: 8}
+	colorBlue   = color.RGBA{R: 0, G: 0, B: 255, A: 8}
+	colorYellow = color.RGBA{R: 255, G: 255, B: 0, A: 8}
+	colorPurple = color.RGBA{R: 255, G: 0, B: 255, A: 8}
+	colorOrange = color.RGBA{R: 255, G: 128, B: 0, A: 8}
+	colorPink   = color.RGBA{R: 255, G: 0, B: 180, A: 8}
+	colorTeal   = color.RGBA{R: 0, G: 255, B: 220, A: 8}
+)
+
 type Hitbox struct {
 	x, y, w, h float64
 }
@@ -42,6 +53,6 @@ func Resolve(src, dst Hitbox) (float64, float64) {
 	}
 }
 
-func Draw(screen *ebiten.Image, h Hitbox) {
-	vector.FillRect(screen, float32(h.x), float32(h.y), float32(h.w), float32(h.h), color.RGBA{R: 255, G: 0, B: 0, A: 16}, true)
+func Draw(screen *ebiten.Image, h Hitbox, color color.Color) {
+	vector.FillRect(screen, float32(h.x), float32(h.y), float32(h.w), float32(h.h), color, false)
 }

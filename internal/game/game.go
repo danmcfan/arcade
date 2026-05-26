@@ -1,12 +1,13 @@
 package game
 
 import (
-	"arcade/internal/arcade"
-	"arcade/internal/assets"
-	"arcade/internal/debug"
-	"arcade/internal/input"
-	"arcade/internal/software"
 	"math"
+
+	"github.com/danmcfan/arcade/internal/arcade"
+	"github.com/danmcfan/arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/debug"
+	"github.com/danmcfan/arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -18,8 +19,6 @@ const (
 	initialDebugMode = false
 )
 
-var initialSoftware software.Software
-
 type Game struct {
 	arcade *arcade.State
 
@@ -29,7 +28,7 @@ type Game struct {
 	debugPanel *debug.Panel
 }
 
-func New() *Game {
+func New(initialSoftware software.Software) *Game {
 	return &Game{
 		arcade:     arcade.NewState(initialSoftware),
 		debugMode:  initialDebugMode,

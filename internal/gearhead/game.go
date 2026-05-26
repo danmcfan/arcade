@@ -1,9 +1,9 @@
 package gearhead
 
 import (
-	"arcade/internal/assets"
-	"arcade/internal/draw"
-	"arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/draw"
+	"github.com/danmcfan/arcade/internal/input"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"

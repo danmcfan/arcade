@@ -1,7 +1,7 @@
 package software
 
 import (
-	"arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/input"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

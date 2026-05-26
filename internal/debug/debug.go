@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"image/color"
 
-	"arcade/internal/arcade"
+	"github.com/danmcfan/arcade/internal/arcade"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"

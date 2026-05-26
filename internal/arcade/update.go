@@ -3,8 +3,8 @@ package arcade
 import (
 	"math"
 
-	"arcade/internal/assets"
-	"arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/input"
 )
 
 func Update(s *State, i input.Input) error {

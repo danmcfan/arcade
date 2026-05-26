@@ -1,11 +1,11 @@
 package arcade
 
 import (
-	"arcade/internal/assets"
-	"arcade/internal/firefly"
-	"arcade/internal/gearhead"
-	"arcade/internal/hive"
-	"arcade/internal/software"
+	"github.com/danmcfan/arcade/internal/assets"
+	"github.com/danmcfan/arcade/internal/firefly"
+	"github.com/danmcfan/arcade/internal/gearhead"
+	"github.com/danmcfan/arcade/internal/hive"
+	"github.com/danmcfan/arcade/internal/software"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

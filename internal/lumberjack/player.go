@@ -92,6 +92,41 @@ func (p *Player) Hitbox() Hitbox {
 	return Hitbox{x: p.MinX() + offsetX, y: p.MinY() + offsetY, w: width, h: height}
 }
 
+func (p *Player) ActionHitbox() Hitbox {
+	const offsetSize = 16.0
+	const hitboxSize = 16.0
+
+	centerX := p.PositionX
+	centerY := p.PositionY
+
+	var offsetX, offsetY float64
+
+	switch p.Direction {
+	case DirectionUp:
+		offsetX = 0
+		offsetY = -offsetSize
+	case DirectionDown:
+		offsetX = 0
+		offsetY = offsetSize
+	case DirectionLeft:
+		offsetX = -offsetSize
+		offsetY = 0
+	case DirectionRight:
+		offsetX = offsetSize
+		offsetY = 0
+	}
+
+	hitboxX := centerX + offsetX - hitboxSize/2
+	hitboxY := centerY + offsetY - hitboxSize/2
+
+	return Hitbox{
+		x: hitboxX,
+		y: hitboxY,
+		w: hitboxSize,
+		h: hitboxSize,
+	}
+}
+
 type Input struct {
 	Up    bool
 	Down  bool
@@ -213,6 +248,7 @@ func (p *Player) Draw(screen *ebiten.Image) {
 	}
 
 	if debug {
-		Draw(screen, p.Hitbox())
+		Draw(screen, p.Hitbox(), colorRed)
+		Draw(screen, p.ActionHitbox(), colorPink)
 	}
 }

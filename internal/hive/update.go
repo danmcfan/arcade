@@ -1,13 +1,13 @@
 package hive
 
 import (
-	"arcade/internal/assets"
-	"arcade/internal/input"
 	"fmt"
 	"image/color"
 	"math"
 	"math/rand"
 	"slices"
+
+	"github.com/danmcfan/arcade/internal/input"
 )
 
 const (
@@ -39,144 +39,10 @@ type modeConfig struct {
 }
 
 func (s *HiveSoftware) Update(i input.Input) error {
-	if s.startTicks > 0 {
-		s.startTicks--
-		return nil
-	}
-
-	if s.pauseTicks > 0 {
-		s.pauseTicks--
-		return nil
-	}
-
-	if s.modeTicks == 0 {
-		modeConfig := modeSequence[s.modeIndex]
-		s.modeCurrent = modeConfig.mode
-		s.modeTicks = modeConfig.ticks
-		s.modeIndex++
-		for _, e := range s.enemies {
-			e.reverseDirection = true
-			e.reverseTile = pointToTile(e.X, e.Y)
-		}
-	}
-
-	if s.modeTicks > 0 {
-		s.modeTicks--
-	}
-
-	if winner(s) {
-		s.items = newItems()
-		restart(s)
-
-		assets.SoundStart.Rewind()
-		assets.SoundStart.Play()
-
-		return nil
-	}
-
-	s.player.Velocity = velocityPlayerNormal
-	for _, e := range s.enemies {
-		e.Velocity = velocityEnemyNormal
-		if e.BlueFrames > 0 {
-			s.player.Velocity = velocityPlayerPower
-			e.Velocity = velocityEnemyPower
-		}
-
-		if e.Y == 8*17+4 && (e.X < tileSize*4.5 || e.X > tileSize*(tileWidth-4.5)) {
-			e.Velocity = velocityEnemyTunnel
-		}
-	}
-
-	applyInput(s, i)
-
-	for _, e := range s.enemies {
-		updateBlue(e)
-
-		target := findTarget(e, s.enemies, s.player, s.modeCurrent)
-		updateDirection(e, s.corners, target)
-
-		if !collideWithDistance(e, s.player, 1.0) {
-			continue
-		}
-
-		if e.BlueFrames > 0 {
-			assets.SoundPower.Rewind()
-			assets.SoundPower.Play()
-
-			s.pauseTicks = framesPerSecond * 1
-			s.score += 200
-			resetEnemy(e)
-			continue
-		}
-
-		assets.SoundDeath.Rewind()
-		assets.SoundDeath.Play()
-
-		s.lives--
-		if s.lives <= 0 {
-			return nil
-		}
-		restart(s)
-	}
-
-	for _, e := range s.movingEntities() {
-		updateFrame(e)
-		updatePosition(e, s.corners)
-	}
-
-	for i, item := range s.items {
-		if item == nil {
-			continue
-		}
-
-		if !collideWithDistance(item, s.player, distanceThreshold) {
-			continue
-		}
-
-		if item.IsPellet() {
-			s.score += 10
-		}
-
-		if item.IsPower() {
-			s.score += 50
-
-			for _, e := range s.enemies {
-				if e.home {
-					continue
-				}
-
-				e.reverseDirection = true
-				e.reverseTile = pointToTile(e.X, e.Y)
-
-				e.BlueFrames = blueFramesDuration
-				e.FlashFrames = 0
-				e.Flash = false
-			}
-		}
-
-		for _, e := range s.enemies {
-			if e.dotMinimum > 0 {
-				e.dotMinimum--
-			}
-		}
-
-		s.items[i] = nil
-		break
-	}
-
+	s.camera.Update()
+	s.particles.Update()
+	s.stateMachine.Update(i)
 	return nil
-}
-
-func start(s *HiveSoftware) {
-	s.lives = 3
-	s.score = 0
-	s.player = NewPlayer()
-	s.enemies = newEnemies()
-	s.items = newItems()
-	s.startTicks = startTicks
-
-	assets.SoundStart.Rewind()
-	assets.SoundStart.Play()
 }
 
 func winner(s *HiveSoftware) bool {
@@ -377,8 +243,7 @@ func updateDirection(e *Entity, cs []*Entity, target tile) {
 	e.Y = corner.Y
 }
 
-func restart(s *HiveSoftware) {
-	s.startTicks = startTicks
+func (s *HiveSoftware) restartRound() {
 	s.player = NewPlayer()
 	s.enemies = newEnemies()
 
