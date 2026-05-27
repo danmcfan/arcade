@@ -75,7 +75,11 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.software != nil {
-		g.software.Draw(screen, buffer)
+		margin := buffer
+		if _, fixed := g.software.(software.FixedViewport); fixed {
+			margin = 0
+		}
+		g.software.Draw(screen, float64(margin))
 		return
 	}
 
@@ -93,8 +97,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	baseHeight := assets.ImageArcade.Bounds().Dy() + buffer*2
 
 	if g.software != nil {
-		baseWidth = g.software.Background().Bounds().Dx() + buffer*2
-		baseHeight = g.software.Background().Bounds().Dy() + buffer*2
+		if fv, ok := g.software.(software.FixedViewport); ok {
+			baseWidth, baseHeight = fv.FixedViewportSize()
+		} else {
+			baseWidth = g.software.Background().Bounds().Dx() + buffer*2
+			baseHeight = g.software.Background().Bounds().Dy() + buffer*2
+		}
 	}
 
 	if g.debugMode {

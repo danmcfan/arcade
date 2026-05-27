@@ -14,6 +14,15 @@ const (
 	tileWidth  = 28
 	tileHeight = 36
 
+	// Hive food atlas (food.png): two rows of four 8×12 frames (32×24). Small pellets use row 1 (y=0);
+	// power pellets use row 2 (y=12).
+	pelletAtlasCellW     = 8
+	pelletAtlasCellH     = 12
+	pelletAtlasSmallRowY = 0
+	pelletAtlasPowerRowY = pelletAtlasCellH
+	pelletAnimHoldTicks  = 15
+	pelletAnimFrameCount = 4
+
 	velocityMax = 1.25
 
 	velocityPlayerNormal = velocityMax * 0.8
@@ -77,15 +86,21 @@ type Entity struct {
 	FlashFrames int
 	Flash       bool
 
+	// Hidden skips drawing only; gameplay states own when this is toggled.
+	Hidden bool
+
+	// PowerPellet distinguishes power pellets from small dots within the hive food atlas.
+	PowerPellet bool
+
 	target tile
 }
 
 func (e *Entity) IsPellet() bool {
-	return e.Frame == 0
+	return !e.PowerPellet && e.Sprite == assets.ImageFood
 }
 
 func (e *Entity) IsPower() bool {
-	return e.Frame == 1
+	return e.PowerPellet && e.Sprite == assets.ImageFood
 }
 
 func NewPlayer() *Entity {
@@ -103,7 +118,7 @@ func NewPlayer() *Entity {
 		Y:         212,
 		Width:     16,
 		Height:    16,
-		Direction: input.DirectionLeft,
+		Direction: input.DirectionDown,
 		Velocity:  velocityMax,
 	}
 }
@@ -228,24 +243,23 @@ func newPelletColumn(tya, tyb, tx int) []*Entity {
 func newPellet(tx, ty int) *Entity {
 	return &Entity{
 		Sprite:     assets.ImageFood,
-		Frame:      0,
 		FrameTotal: 1,
 		X:          float64(8*tx + 4),
 		Y:          float64(8*(ty+3) + 4),
-		Width:      8,
-		Height:     8,
+		Width:      pelletAtlasCellW,
+		Height:     pelletAtlasCellH,
 	}
 }
 
 func newPower(tx, ty int) *Entity {
 	return &Entity{
-		Sprite:     assets.ImageFood,
-		Frame:      1,
-		FrameTotal: 1,
-		X:          float64(8*tx + 4),
-		Y:          float64(8*(ty+3) + 4),
-		Width:      8,
-		Height:     8,
+		Sprite:      assets.ImageFood,
+		PowerPellet: true,
+		FrameTotal:  1,
+		X:           float64(8*tx + 4),
+		Y:           float64(8*(ty+3) + 4),
+		Width:       pelletAtlasCellW,
+		Height:      pelletAtlasCellH,
 	}
 }
 

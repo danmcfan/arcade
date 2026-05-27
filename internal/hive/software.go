@@ -13,8 +13,9 @@ const (
 
 type HiveSoftware struct {
 	stateMachine *StateMachine
-	camera       *CameraSystem
-	particles    *ParticleSystem
+
+	camera    *CameraSystem
+	particles *ParticleSystem
 
 	player  *Entity
 	enemies []*Entity
@@ -32,6 +33,18 @@ type HiveSoftware struct {
 	lives     int
 	score     int
 	highScore int
+
+	scoreDial        [6]DigitReel
+	highScoreDial    [6]DigitReel
+	digitDialScratch *ebiten.Image // reused cell for clipped score/high-score draws
+
+	// pelletAnimTick advances every Hive update; food atlases cycle (tick/holdTicks % frameCount) per pellet row.
+	pelletAnimTick int
+
+	bonusEatPopups     []bonusEatPopup // transient sprites when eating scared bees (bonus_eat.go)
+	scaredEatAwardNext int             // index for next 200→400→800→1600 payout while bees stay scared
+
+	cabinetJoystickFrame int
 }
 
 func NewHiveSoftware(highscore int) *HiveSoftware {
@@ -47,11 +60,30 @@ func NewHiveSoftware(highscore int) *HiveSoftware {
 	s.stateMachine.RegisterState(StateIDStart, &StartState{s: s})
 	s.stateMachine.RegisterState(StateIDPlay, &PlayState{s: s})
 	s.stateMachine.RegisterState(StateIDPause, &PauseState{s: s})
+	s.stateMachine.RegisterState(StateIDDeathWait, &DeathWaitState{s: s})
+	s.stateMachine.RegisterState(StateIDFinalDeathWait, &FinalDeathWaitState{s: s})
 	s.stateMachine.RegisterState(StateIDGameOver, &GameOverState{s: s})
 
 	s.lives = 3
 	s.score = 0
 	s.items = newItems()
+
+	z := digits6(0)
+	for i := range s.scoreDial {
+		s.scoreDial[i].Boot(z[i])
+	}
+	hc := highscore
+	if hc < 0 {
+		hc = 0
+	}
+	if hc > 999_999 {
+		hc = 999_999
+	}
+	hd := digits6(hc)
+	for i := range s.highScoreDial {
+		s.highScoreDial[i].Boot(hd[i])
+	}
+
 	s.restartRound()
 
 	s.stateMachine.ChangeState(StateIDStart)
@@ -63,8 +95,12 @@ func (s *HiveSoftware) Background() *ebiten.Image {
 	return assets.ImageHive
 }
 
+func (s *HiveSoftware) FixedViewportSize() (int, int) {
+	return cabinetWidth, cabinetHeight
+}
+
 func (s *HiveSoftware) GameOver() bool {
-	return s.lives <= 0
+	return s.lives <= 0 && s.stateMachine.CurrentID() == StateIDGameOver
 }
 
 func (s *HiveSoftware) Score() int {

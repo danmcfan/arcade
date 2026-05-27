@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	distanceThreshold = 0.5
-	startTicks        = framesPerSecond * 2
+	distanceThreshold    = 0.5
+	startTicks           = framesPerSecond * 2
+	deathRoundDelayTicks = framesPerSecond * 2
 )
 
 type mode int
@@ -39,9 +40,14 @@ type modeConfig struct {
 }
 
 func (s *HiveSoftware) Update(i input.Input) error {
+	s.cabinetJoystickFrame = cabinetJoystickFrame(i)
+	s.pelletAnimTick++
 	s.camera.Update()
 	s.particles.Update()
 	s.stateMachine.Update(i)
+	s.tickBonusEatPopups()
+	s.syncAndTickScoreRollingDials()
+	s.syncAndTickHighScoreRollingDials()
 	return nil
 }
 
@@ -249,6 +255,9 @@ func (s *HiveSoftware) restartRound() {
 
 	s.modeIndex = 0
 	s.modeTicks = 0
+
+	s.scaredEatAwardNext = 0
+	s.bonusEatPopups = s.bonusEatPopups[:0]
 }
 
 func resetEnemy(e *Entity) {

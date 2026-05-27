@@ -25,11 +25,13 @@ var ImageTitleGearhead = loadImage("gearhead")
 var ImageTitleSweet = loadImage("sweet")
 
 var ImageHive = loadImage("hive")
+var ImageCabinet = loadImage("cabinet")
 var ImageBear = loadImage("bear")
 var ImageBee = loadImage("bee")
 var ImageFood = loadImage("food")
 var ImageReady = loadImage("ready")
 var ImageDigits = loadImage("digits")
+var ImageBonus = loadImage("bonus")
 
 var ImageGalaxy = loadImage("galaxy")
 var ImageShip = loadImage("ship")
