@@ -3,6 +3,9 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
+ARCADE_PNG :: #load("assets/arcade.png")
+GAMER_PNG :: #load("assets/gamer.png")
+
 width :: 160
 height :: 144
 scale :: 4
@@ -57,8 +60,8 @@ init :: proc() {
 		zoom     = scale,
 	}
 
-	arcade_texture = rl.LoadTexture("assets/arcade.png")
-	gamer_texture = rl.LoadTexture("assets/gamer.png")
+	arcade_texture = load_texture_from_bytes(ARCADE_PNG, ".png")
+	gamer_texture = load_texture_from_bytes(GAMER_PNG, ".png")
 
 	player_source = rl.Rectangle {
 		x      = 0,
@@ -73,6 +76,13 @@ init :: proc() {
 		width  = player_sprite_width,
 		height = player_sprite_height,
 	}
+}
+
+load_texture_from_bytes :: proc(bytes: []u8, file_type: cstring) -> rl.Texture2D {
+	image := rl.LoadImageFromMemory(file_type, raw_data(bytes), i32(len(bytes)))
+	texture := rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
+	return texture
 }
 
 cleanup :: proc() {
