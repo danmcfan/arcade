@@ -18,13 +18,15 @@ P = {
     "H": (190, 220, 127),
     "E": (238, 255, 204),
 }
+from palette import AMBER, INK, RED, CYAN
+P.update({"y": AMBER[0], "a": AMBER[1], "A": AMBER[2], "o": INK, "r": RED[2], "c": CYAN[1]})
 C = {k: v + (255,) for k, v in P.items()}
 
 GIRDER = grid("""
 HHHHHHHHHHHHHHHH
 LLLLLLLLLLLLLLLL
 SSSSSSSSSSSSSSSS
-SMMMSkSEkSMMMMMS
+SMMMSkSakSMMMMMS
 SkkSMMMMMMMSkkSS
 SSSSSSSSSSSSSSSS
 MMMMMMMMMMMMMMMM
@@ -35,9 +37,9 @@ GIRDER_HAZARD = grid("""
 HHHHHHHHHHHHHHHH
 LLLLLLLLLLLLLLLL
 MHMMMMMMMMMMMHMM
-LLSSLLSSLLSSLLSS
-LSSLLSSLLSSLLSSL
-SSLLSSLLSSLLSSLL
+aaooaaooaaooaaoo
+aooaaooaaooaaooa
+ooaaooaaooaaooaa
 MMMMMMMMMMMMMMMM
 kkkkkkkkkkkkkkkk
 """, P)
@@ -180,8 +182,8 @@ def gear_rack(im, x, y):
 def gauge(im, cx, cy):
     d = ImageDraw.Draw(im)
     d.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=C["k"], outline=C["S"])
-    d.line([(cx, cy), (cx + 3, cy - 3)], fill=C["M"])
-    d.point((cx, cy), fill=C["L"])
+    d.line([(cx, cy), (cx + 3, cy - 3)], fill=C["a"])
+    d.point((cx, cy), fill=C["r"])
 
 
 def exit_door(im, x, y):
@@ -204,7 +206,7 @@ def exit_door(im, x, y):
     # handles + status light
     d.point((x + 8, y + 19), fill=C["H"])
     d.point((x + 11, y + 19), fill=C["H"])
-    d.rectangle([x + 8, y + 12, x + 11, y + 13], fill=C["E"])
+    d.rectangle([x + 8, y + 12, x + 11, y + 13], fill=C["c"])
 
 
 def render():

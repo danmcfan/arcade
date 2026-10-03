@@ -1,15 +1,20 @@
 """Gearhead villain: the gnome engineer who built Gearhead (Donkey Kong's role). 32x32 frames."""
 from pix import *
 
-K = (30, 58, 41)
+from palette import *
+
 P = {
-    "k": K,
-    "S": (48, 93, 66),
-    "M": (77, 128, 97),
-    "L": (137, 162, 87),
-    "H": (190, 220, 127),
-    "E": (238, 255, 204),
+    "o": INK,
+    "1": RED[0], "2": RED[1], "3": RED[2], "4": RED[3],
+    "s": STEEL[1], "S": STEEL[2], "Z": STEEL[3],
+    "y": AMBER[0], "a": AMBER[1], "A": AMBER[2],
+    "e": CYAN[0], "E": CYAN[2],
+    "f": SKIN[0], "b": SKIN[1], "c": SKIN[2],
+    "V": STEEL[3], "W": STEEL[4], "w": WHITE,
+    "T": TEAL[0], "t": TEAL[1], "u": TEAL[2], "U": TEAL[3],
+    "n": COPPER[0], "m": COPPER[1], "M": COPPER[2], "h": COPPER[2], "H": COPPER[3],
 }
+K = INK
 
 
 def g(art):
@@ -17,176 +22,177 @@ def g(art):
 
 
 HAT = g("""
-...........MS.
-..........MMS.
-.........MMMS.
-........MMMMS.
-.......MMMMSS.
-......MMMMMMS.
-.....MMLMMMMS.
-.....MLMMMMMMS
-....MMLMMMMMMS
-...MMMMMMMMMMMS
+............32.
+...........332.
+..........3321.
+.........43321.
+........433321.
+.......4333221.
+......43333221.
+.....433333221.
+....4333333221.
+...43333333322.
+..433333333332.
 """)
 
 GOGGLES = g("""
-SSSSSSSSSSSSSSSS
-SkkkkkSSSSkkkkkS
-kEEHMMkSSkEEHMMk
-kEHMMMkkkkEHMMMk
-SkkkkkSSSSkkkkkS
+.ssssssssssssss.
+.yaaay.ss.yaaay.
+yaEeeaysSyaEeeay
+yaeeeaysSyaeeeay
+.yaay......yaay.
 """)
 
 FACE = g("""
-.HHHHHHHHHHHH.
-.SSSHHHHHHSSS.
-.HkkHHHHHHkkH.
-HHHHHLLLLHHHHH
-.HHHLLHHLLHHH.
-..HHHLLLLHHH..
+.bbbbbbbbbbbb.
+.WWWbbbbbbWWW.
+.bobbbbbbbbob.
+fbbbbbccbbbbbf
+.fbbbcbbbfbbf.
+..fbbbffbbbf..
 """)
 
 FACE_ANGRY = g("""
-.HHHHHHHHHHHH.
-.HSSSHHHHSSSH.
-.HHkkHHHHkkHH.
-HHHHHLLLLHHHHH
-.HHHLLHHLLHHH.
-..HHHLLLLHHH..
+.bbbbbbbbbbbb.
+.bWWWbbbbWWWb.
+.bboobbbboobb.
+fbbbbbccbbbbbf
+.fbbbcbbbfbbf.
+..fbbbffbbbf..
 """)
 
 FACE_LAUGH = g("""
-.HHHHHHHHHHHH.
-.SSSHHHHHHSSS.
-.HkHkHHHHkHkH.
-HHHHHLLLLHHHHH
-.HHHLLHHLLHHH.
-..HHHLLLLHHH..
+.bbbbbbbbbbbb.
+.WWWbbbbbbWWW.
+.obobbbbbobob.
+fbbbbbccbbbbbf
+.fbbbcbbbfbbf.
+..fbbbffbbbf..
 """)
 
 FACE_DAZED = g("""
-.HHHHHHHHHHHH.
-.HHHHHHHHHHHH.
-.kHkHHHHHkHkH.
-HHkHHLLLLHkHHH
-.kHkLLHHLLkHk.
-..HHHLLLLHHH..
+.bbbbbbbbbbbb.
+.bbbbbbbbbbbb.
+.obobbbbbobob.
+fbobbbccbbobbf
+.obobcbbbobof.
+..fbbbffbbbf..
 """)
 
 BEARD = g("""
-EEE..........EEE
-EEEEEE....EEEEEE
-EEEEEEEkkEEEEEEE
-EHEEEEkkkkEEEEHE
-.EHEEEEEEEEEEHE.
-.EEHEEEEEEEEHEE.
-..EEHEEEEEEHEE..
-...EEEHEEHEEE...
-....EEEEEEEE....
-......EEEE......
+wWW..........WVV
+wwWWWW....WWWWVV
+wWWWWWWooWWWWWWV
+WwWWWWooooWWWWVV
+.WwWWVWWWWVWWWV.
+.WWwWWVWWVWWWVW.
+..WWwWWWWWWWVW..
+...WWWVWWVWWV...
+....WWWWWWWV....
+......WWWV......
 """)
 
 BEARD_LAUGH = g("""
-EEE..........EEE
-EEEEEE....EEEEEE
-EEEEEkkkkkkEEEEE
-EHEEkSSSSSSkEEHE
-.EHEEkkkkkkEEHE.
-.EEHEEEEEEEEHEE.
-..EEHEEEEEEHEE..
-...EEEHEEHEEE...
-....EEEEEEEE....
-......EEEE......
+wWW..........WVV
+wwWWWW....WWWWVV
+wWWWWooooooWWWWV
+WwWWo1333331oWVV
+.WwWWoooooooWWV.
+.WWwWWVWWVWWWVW.
+..WWwWWWWWWWVW..
+...WWWVWWVWWV...
+....WWWWWWWV....
+......WWWV......
 """)
 
 COAT = g("""
-...LLLLLLLLLLLL...
-..LLLLLLLLLLLLLL..
-.LLLLLLLLLLLLLLLL.
-.LLLLSSSSSSSSLLLL.
-.LLLLSSSSSSSSLLLL.
-.LLLLSSSSSSSSLLLL.
-.LLLLSSSSSSSSLLLL.
-.kkkkkkkkEEkkkkkk.
-.LLLLSHSSSSHSLLLL.
-.LLLLSSSSSSSSLLLL.
-..LLLLLLLLLLLLLL..
+...uuuuuuuuuuuu...
+..uUuuuuuuuuuutt..
+.uUuuummmmmmuuttT.
+.uUuummMmmmmnuttT.
+.uuuumMmmmmmnuttT.
+.uuuummmmmmmnuttT.
+.uuuummmmmmmnuttT.
+.nnnnnnnnaAnnnnnn.
+.uuuummmmyymnuttT.
+.tuuummmmmmmnuttT.
+..ttttttttttttTT..
 """)
 
 COAT_BACK = g("""
-...LLLLLLLLLLLL...
-..LLLLLLLLLLLLLL..
-.LLLLLLLLLLLLLLLL.
-.LLLLLLLLLLLLLLLL.
-.LLLLLLLLLLLLLLLL.
-.LLLLLLLLLLLLLLLL.
-.LLLLLLLLLLLLLLLL.
-.kkkkkkkkkkkkkkkk.
-.LLLLSSLLLLSSLLLL.
-.LLLLSSLLLLSSLLLL.
-..LLLLLLLLLLLLLL..
+...uuuuuuuuuuuu...
+..uUuuuuuuuuuutt..
+.uUuuuuuuuuuuuttT.
+.uUuuuuuuuuuuuttT.
+.uuuuuuuuuuuuuttT.
+.uuuuuuuuuuuuuttT.
+.uuuuuuuuuuuuuttT.
+.nnnnnnnnnnnnnnnn.
+.uuuuttuuuuttuttT.
+.tuuuttuuuuttuttT.
+..ttttttttttttTT..
 """)
 
 HEAD_BACK = g("""
-.MMMMMMMMMMMMM.
-MMMMMMMMMMMMMMM
-SSSSSSSSSSSSSSS
-LHHHHHHHHHHHHHL
-EEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEE
-.EEEEEEEEEEEEE.
-..EEEEEEEEEEE..
+.3333333333322.
+433333333332221
+sssssssssssssss
+WwWWWWWWWWWWWVV
+wWWWWWWWWWWWWVV
+WWWWWWWWWWWWWVV
+.WWWWWWWWWWWVV.
+..WWWWWWWWWVV..
 """)
 
 ARM = g("""
-.LLL.
-LLLLL
-LLLLS
-.LLS.
-.LLS.
-.LLS.
-MMMMM
-MHMMM
-MMMMS
-.SSS.
+.uuu.
+uUuut
+uuutt
+.uut.
+.uut.
+.uut.
+hHHhh
+hHhhm
+hhhmm
+.mmm.
 """)
 
 ARM_UP = g("""
-MMMMM
-MHMMM
-MMMMS
-.SSS.
-.LLS.
-.LLS.
-.LLS.
-LLLLS
-LLLLL
-.LLL.
+.HHh.
+hHhhm
+hhhmm
+hhmmm
+.uut.
+.uut.
+.uut.
+uuutt
+uUuut
+.uuu.
 """)
 
 ARM_CHEST = g("""
-.LLL.....
-LLLLL....
-LLLLS....
-.LLS.....
-.LLSLLMMM.
-..LLLLMHMM
-...SSSMMMS
-......SSS.
+.uuu.....
+uUuut....
+uuutt....
+.uut.....
+.uutuuhHh.
+..uuuuhHhm
+...tttmhmm
+......mmm.
 """)
 
 ARM_OUT = g("""
-....LLLLLLMMMM
-...LLLLLLLMHMMM
-...LLLLLLLMMMMS
-......SSSSSSSS.
+....uuuuuuhHHh
+...uUuuuuuhHhhm
+...uuuuuuthhhmm
+......tttttmmm.
 """)
 
 BOOT = g("""
-.SS.
-.SS.
-kkkkk
-kSSSk
+.nm.
+.nm.
+nmMmm
+nmmmn
 """)
 
 
@@ -209,35 +215,35 @@ def frame(face=FACE, beard=BEARD, arms=("down", "down"), bob=0, back=False,
     def arm(side, pose, front):
         l = side == "l"
         if pose == "down" and front:
-            put(c, ARM if l else flip(ARM), 5 if l else 22, 16 + y)
+            put(c, ARM if l else flip(ARM), 5 if l else 22, 17 + y)
         elif pose == "up" and not front:
-            put(c, ARM_UP if l else flip(ARM_UP), 4 if l else 23, 5 + y)
+            put(c, ARM_UP if l else flip(ARM_UP), 4 if l else 23, 7 + y)
         elif pose == "chest" and front:
-            put(c, ARM_CHEST if l else flip(ARM_CHEST), 5 if l else 18, 16 + y)
+            put(c, ARM_CHEST if l else flip(ARM_CHEST), 5 if l else 18, 17 + y)
         elif pose == "out" and front:
             part = flip(ARM_OUT) if l else ARM_OUT
-            put(c, part, -1 if l else 18, 16 + y)
+            put(c, part, -1 if l else 18, 17 + y)
 
     for s, p in zip("lr", arms):
         arm(s, p, False)
     if gear is not None and not gear_front:
         c.alpha_composite(gear_img(gear[2]), (gear[0], gear[1] + y))
-    put(c, COAT_BACK if back else COAT, 7, 16 + y)
+    put(c, COAT_BACK if back else COAT, 7, 17 + y)
     if back:
-        put(c, HEAD_BACK, 8, 8 + y)
-        put(c, HAT, 9, 0 + y)
+        put(c, HEAD_BACK, 8, 10 + y)
+        put(c, HAT, 8, 0 + y)
     else:
-        put(c, face, 9, 10 + y)
-        put(c, beard, 8, 15 + y)
-        put(c, HAT, 9, 0 + y)
-        put(c, GOGGLES, 8, 6 + y)
+        put(c, face, 9, 12 + y)
+        put(c, beard, 8, 17 + y)
+        put(c, HAT, 8, 0 + y)
+        put(c, GOGGLES, 8, 8 + y)
     for s, p in zip("lr", arms):
         arm(s, p, True)
     if gear is not None and gear_front:
         c.alpha_composite(gear_img(gear[2]), (gear[0], gear[1] + y))
     spark = g("""
 .E.
-EHE
+EeE
 .E.
 """)
     for sx, sy in sparks:

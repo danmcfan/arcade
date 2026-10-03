@@ -19,6 +19,7 @@ os.makedirs(f"{OUT}/sheets", exist_ok=True)
 os.makedirs(f"{OUT}/gifs", exist_ok=True)
 
 BG = (4, 12, 6)
+from palette import RAMPS
 PANEL = (24, 26, 34)
 TEXT = (255, 241, 232)
 DIM = (150, 160, 175)
@@ -34,7 +35,7 @@ lvl = lvl.convert("RGBA")
 strip([hf[k] for k in hero.ORDER], 6).save(f"{OUT}/sheets/hero_monkey.png")
 strip([ef[k] for k in engineer.ORDER], 4).save(f"{OUT}/sheets/gnome_engineer.png")
 strip(gf).save(f"{OUT}/sheets/gear.png")
-PROP_ORDER = ["wrench_up", "wrench_down", "spark_1", "spark_2", "generator_1", "generator_2",
+PROP_ORDER = ["wrench_up", "wrench_down", "spark_1", "spark_2", "spark_3", "spark_4", "generator_1", "generator_2",
               "bolt", "battery", "oilcan"]
 strip([pf[k] for k in PROP_ORDER]).save(f"{OUT}/sheets/props.png")
 lvl.convert("RGB").save(f"{OUT}/sheets/workshop.png")
@@ -89,13 +90,30 @@ def hero_extra(img, d, y):
 
 
 labelled_grid("Gearhead hero - robot monkey (Jumpman's role)",
-              "16x16, faces right (flip for left). Sheet 6x4 = 96x64. Brighter palette than the villain so he pops.",
+              "16x16, faces right (flip for left). Sheet 6x4 = 96x64. Copper body, cream face plate, cyan eye.",
               [hf[k] for k in hero.ORDER], hero.ORDER, 6, 9, f"{OUT}/preview_hero.png",
               extra=(hero_extra, 30 * 7 + 70))
 
 labelled_grid("Gearhead villain - gnome engineer (Donkey Kong's role)",
               "32x32, built Gearhead and won't let him escape. Sheet 4x3 = 128x96. Throws gears from the rack.",
               [ef[k] for k in engineer.ORDER], engineer.ORDER, 4, 6, f"{OUT}/preview_engineer.png")
+
+def palette_sheet():
+    sw, gap = 48, 6
+    rows = len(RAMPS)
+    img = Image.new("RGBA", (860, 100 + rows * (sw + gap) + 20), PANEL + (255,))
+    d = ImageDraw.Draw(img)
+    text(d, (30, 22), "Gearhead palette", 28, bold=True)
+    text(d, (30, 62), "Original workshop greens + hue-shifted ramps (shadows cool, highlights warm).", 15, DIM)
+    for r, (name, ramp) in enumerate(RAMPS):
+        y = 100 + r * (sw + gap)
+        text(d, (30, y + 14), name, 16, DIM)
+        for i, c in enumerate(ramp):
+            d.rectangle((130 + i * (sw + gap), y, 130 + i * (sw + gap) + sw - 1, y + sw - 1), fill=c + (255,))
+    img.save(f"{OUT}/preview_palette.png")
+
+
+palette_sheet()
 
 labelled_grid("Gearhead props",
               "16x16. Gear = barrel, spark + generator = fireball + oil drum, bolt/battery/oil can = Pauline's bonus items.",
@@ -212,7 +230,6 @@ def gameplay_gif():
 
 
 
-gameplay_gif()
 
 # ------------------------------------------------------------------ per-animation gifs
 ANIMS = {
@@ -255,5 +272,5 @@ save_gif([ef[k] for k in ["idle_1", "idle_2"] * 2 + ["stomp_1", "stomp_2"] * 3 +
          f"{OUT}/gifs/engineer_routine.gif", 220, 6)
 save_gif([ef[k] for k in ["dazed_1", "dazed_2"]], f"{OUT}/gifs/engineer_dazed.gif", 200, 6)
 save_gif(gf, f"{OUT}/gifs/gear_roll.gif", 90, 8)
-save_gif([pf["spark_1"], pf["spark_2"]], f"{OUT}/gifs/spark.gif", 120, 8)
+save_gif([pf[f"spark_{i}"] for i in range(1, 5)], f"{OUT}/gifs/spark.gif", 90, 8)
 print("ok")
