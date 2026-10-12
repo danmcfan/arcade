@@ -24,11 +24,11 @@ function screen(w = 192, h = 176): { s: Surface; ctx: FakeContext } {
 }
 
 describe("Surface.draw", () => {
-  test("draws the sprite's source rect at the snapped translate (D13)", () => {
+  test("draws the sprite's source rect at the snapped translate (D13: 10.5 lands on 11)", () => {
     const { s, ctx } = screen();
     s.draw(sprite, 10.5, 3.51);
     expect(ctx.ops).toHaveLength(1);
-    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: pixels, src: [16, 0, 16, 16], x: 10, y: 4, w: 16, h: 16 });
+    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: pixels, src: [16, 0, 16, 16], x: 11, y: 4, w: 16, h: 16 });
     expect(ctx.ops[0]?.smoothing).toBe(false);
   });
 
@@ -47,14 +47,31 @@ describe("Surface.draw", () => {
     expect(ctx.ops.map((o) => o.alpha)).toEqual([0.5, 1]);
   });
 
-  test("rotated draws are not snapped and rotate about the pivot", () => {
+  test("rotated draws rotate about the pivot with corners on Ebitengine's adjusted vertices", () => {
     const { s, ctx } = screen();
     s.draw(sprite, 10.25, 20.75, { rotate: { angle: Math.PI, pivotX: 8, pivotY: 8 } });
-    const op = ctx.ops[0];
-    // A 180° turn about the sprite's centre covers the same box.
-    expect(op?.x).toBeCloseTo(10.25, 9);
-    expect(op?.y).toBeCloseTo(20.75, 9);
-    expect(op?.m[0]).toBeCloseTo(-1, 9);
+    const m = ctx.ops[0]?.m ?? [];
+    // A 180° turn about the sprite's centre: corner (0,0) lands on (26.25, 36.75),
+    // which adjustDestinationPixel moves to (26 + 5/16, 36 + 11/16); the other
+    // corners move the same way, so the sprite still covers columns 10..25.
+    const expected = [-1, 0, 0, -1, 26.3125, 36.6875];
+    expected.forEach((v, i) => expect(m[i]).toBeCloseTo(v, 6));
+  });
+
+  test("small rotations (lumberjack tree top) use the adjusted vertices, not the exact affine", () => {
+    const { s, ctx } = screen(512, 288);
+    const angle = 0.030543261909900764;
+    s.draw(sub(whole(sheet), 0, 0, 64, 32), 96, 32, { rotate: { angle, pivotX: 37, pivotY: 58 } });
+    const m = ctx.ops[0]?.m ?? [];
+    // Exact corners (0,0) → (97.788, 30.897), (64,0) → (161.759, 32.852),
+    // (0,32) → (96.811, 62.882); adjustDestinationPixel moves them to
+    // (97 + 11/16, 31), (161 + 11/16, 33), (96 + 11/16, 63).
+    expect(m[4]).toBe(97.6875);
+    expect(m[5]).toBe(31);
+    expect(m[0]).toBe(1);
+    expect(m[1]).toBe(2 / 64);
+    expect(m[2]).toBe(-1 / 32);
+    expect(m[3]).toBe(1);
   });
 
   test("0x0 sprites (empty sub-images) draw nothing", () => {
@@ -93,7 +110,7 @@ describe("offscreen surfaces", () => {
     const off = Surface.offscreen(8, 8);
     off.fill("#ff0000");
     s.drawSurface(off, 2.5, 2.5, { alpha: 0.5 });
-    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: made[0], src: [0, 0, 8, 8], x: 2, y: 2, w: 8, h: 8, alpha: 0.5 });
+    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: made[0], src: [0, 0, 8, 8], x: 3, y: 3, w: 8, h: 8, alpha: 0.5 });
   });
 
   test("drawing a never-used offscreen surface is a no-op", () => {
@@ -144,10 +161,10 @@ describe("rect primitives", () => {
     ]);
   });
 
-  test("fillRect covers the pixels whose centres fall inside (snapped edges)", () => {
+  test("fillRect edges snap like vertices: half rounds up, so x = 1.5 starts at column 2", () => {
     const { s, ctx } = screen();
     s.fillRect(1.5, 2.25, 3, 2.5, "#ff0000");
-    expect(ctx.ops[0]).toMatchObject({ op: "fillRect", x: 1, y: 2, w: 3, h: 3, fill: "#ff0000" });
+    expect(ctx.ops[0]).toMatchObject({ op: "fillRect", x: 2, y: 2, w: 3, h: 3, fill: "#ff0000" });
   });
 
   test("fillPremul draws dst' = C + dst*(1-a): black at a/255, then rgb added with 'lighter' (D15)", () => {
@@ -158,6 +175,29 @@ describe("rect primitives", () => {
       { op: "fillRect", x: 5, y: 8, w: 3, h: 3, fill: "rgb(114, 220, 187)", alpha: 1, composite: "lighter" },
     ]);
     expect([ctx.globalAlpha, ctx.globalCompositeOperation]).toEqual([1, "source-over"]);
+  });
+
+  test("fillPremul with a valid premultiplied colour is one source-over fill of its straight colour, so a transparent destination keeps alpha a", () => {
+    const { s, ctx } = screen();
+    s.fillPremul(192, 0, 120, 176, { r: 20, g: 20, b: 20, a: 200 });
+    expect(ctx.ops).toHaveLength(1);
+    expect(ctx.ops[0]).toMatchObject({
+      op: "fillRect",
+      x: 192,
+      y: 0,
+      w: 120,
+      h: 176,
+      fill: "rgb(25.5, 25.5, 25.5)",
+      alpha: 200 / 255,
+      composite: "source-over",
+    });
+    expect([ctx.globalAlpha, ctx.globalCompositeOperation]).toEqual([1, "source-over"]);
+  });
+
+  test("fillPremul of transparent black {0,0,0,0} draws nothing", () => {
+    const { s, ctx } = screen();
+    s.fillPremul(0, 0, 1, 1, { r: 0, g: 0, b: 0, a: 0 });
+    expect(ctx.ops).toHaveLength(0);
   });
 
   test("strokeRect outlines [x, x+w] x [y, y+h] with 1px premultiplied edges, no overlaps", () => {
