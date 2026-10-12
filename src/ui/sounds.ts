@@ -1,7 +1,7 @@
 // Chiptune source for the title music and the menu sounds. Notes are MIDI
 // numbers (69 = A4), lengths are in eighth notes. scripts/gen-ui-sounds.ts
-// synthesises these into src/assets/sounds/title.wav, move.wav and
-// select.wav; the runtime only plays the WAVs.
+// synthesises these into src/assets/sounds/title.wav, move.wav,
+// select.wav and ticket.wav; the runtime only plays the WAVs.
 
 /** Samples per second of every generated sound. */
 export const sampleRate = 22050;
@@ -42,5 +42,7 @@ export const melody: readonly Note[] = [
 export const moveBlip: readonly Note[] = [[84, 1]];
 /** Choice made: a quick rising pair. */
 export const selectChirp: readonly Note[] = [[79, 1], [91, 2]];
+/** One ticket paid out: a short bright two-note ding. */
+export const ticketDing: readonly Note[] = [[88, 1], [93, 1]];
 /** Length of one eighth note in the menu sounds, in seconds. */
 export const blipEighth = 0.035;

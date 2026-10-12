@@ -2,7 +2,7 @@
 // browser half; the recorder half below is the contract porters and parity
 // tests rely on, and it works with no DOM.
 
-export type SoundName = "melody" | "start" | "power" | "death" | "laser" | "boom" | "title" | "move" | "select";
+export type SoundName = "melody" | "start" | "power" | "death" | "laser" | "boom" | "title" | "move" | "select" | "ticket";
 export type SoundAction = "play" | "pause" | "rewind";
 /** Recorded as `"<action>:<name>"`, e.g. `"rewind:laser"`, `"pause:melody"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;
