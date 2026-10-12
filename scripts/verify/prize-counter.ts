@@ -111,13 +111,13 @@ function lastChance(v: Verify): void {
   v.tap("space");
   check(JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}', "with a token and 0 tickets the next one can't be bought", wallet(v));
   check(sounds(v).includes("play:deny"), "and Space on it plays the no sound");
-  v.tap("down");
+  v.tap("up"); // wraps round to CLOSE, past the prizes (#22)
   v.tap("space");
   check(game(v).menu === null, "CLOSE closes the menu", game(v).menu);
   check(stored(v)?.tokens === 1 && stored(v)?.tickets === 0, "the save holds 1 token and 0 tickets", stored(v));
 }
 
-/** Walk down to the counter, open it, buy, then close with CLOSE. */
+/** Walk down to the counter, open it, buy, then close with CLOSE (Up wraps round to it). */
 function buyOnVideo(v: Verify): void {
   v.wait(800);
   v.key("Space"); // Continue
@@ -130,7 +130,7 @@ function buyOnVideo(v: Verify): void {
   v.wait(1500);
   v.key("Space"); // a second try: another token, or the no sound
   v.wait(1200);
-  v.key("ArrowDown");
+  v.key("ArrowUp"); // wraps round to CLOSE
   v.wait(400);
   v.key("Space"); // CLOSE
   v.wait(1000);
