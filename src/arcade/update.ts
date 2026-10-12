@@ -43,7 +43,7 @@ export function update(s: State, i: Input): void {
     soundMelody.rewind();
 
     s.loadedRun = startRun(s);
-    s.loadedSoftware = machine.newSoftware(s.highScore);
+    s.loadedSoftware = machine.newSoftware(s.highScore, s.prizes);
   }
 
   if (i.space && facing(s.player, s.counter)) {

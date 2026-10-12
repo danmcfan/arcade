@@ -1,16 +1,23 @@
-// The save behind "Continue": the hub high score, tokens and tickets, and
-// where the player stood. Minigame progress is not saved. The title scene talks to a `SaveStore`
+// The save behind "Continue": the hub high score, tokens, tickets and owned
+// prizes, and where the player stood. Minigame progress is not saved. The title scene talks to a `SaveStore`
 // so it stays DOM-free (D12); main.ts passes `localStorageStore()`, tests
 // pass `memoryStore()`.
 
 import type { Direction } from "../engine/input.ts";
 import { startingTokens } from "../arcade/state.ts";
+import { inCatalogueOrder, isPrizeId } from "../arcade/prizes.ts";
 import type { Progress } from "../game/game.ts";
 
 export interface SaveData extends Progress {
-  /** Format version. A `v: 1` save (no tokens or tickets) is upgraded on load; any other `v` is ignored. */
-  v: 2;
+  /**
+   * Format version. Older saves are upgraded on load: `v: 1` (no tokens,
+   * tickets or prizes) and `v: 2` (no prizes). Any other `v` is ignored.
+   */
+  v: 3;
 }
+
+/** The current format version. */
+export const saveVersion = 3;
 
 /** What a `v: 1` save gets on upgrade: a New game's tokens and tickets. */
 const v1Upgrade = { tokens: startingTokens, tickets: 0 };
@@ -36,14 +43,24 @@ function count(v: unknown): v is number {
 export function parseSave(raw: unknown): SaveData | null {
   if (raw === null || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if ((o.v !== 1 && o.v !== 2) || !finite(o.highScore) || o.highScore < 0) return null;
+  if ((o.v !== 1 && o.v !== 2 && o.v !== 3) || !finite(o.highScore) || o.highScore < 0) return null;
   const p = o.player as Record<string, unknown> | null | undefined;
   if (p === null || typeof p !== "object") return null;
   if (!finite(p.x) || !finite(p.y) || !DIRECTIONS.includes(p.dir as Direction)) return null;
   const tokens = o.v === 1 ? v1Upgrade.tokens : o.tokens;
   const tickets = o.v === 1 ? v1Upgrade.tickets : o.tickets;
   if (!count(tokens) || !count(tickets)) return null;
-  return { v: 2, highScore: o.highScore, tokens, tickets, player: { x: p.x, y: p.y, dir: p.dir as Direction } };
+  // v1 and v2 saves own no prizes.
+  const prizes = o.v === 3 ? o.prizes : [];
+  if (!Array.isArray(prizes) || !prizes.every(isPrizeId)) return null;
+  return {
+    v: 3,
+    highScore: o.highScore,
+    tokens,
+    tickets,
+    prizes: inCatalogueOrder(prizes),
+    player: { x: p.x, y: p.y, dir: p.dir as Direction },
+  };
 }
 
 export function memoryStore(initial: SaveData | null = null): SaveStore {

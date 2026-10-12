@@ -6,6 +6,8 @@ import type { PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
+import { prizeRects } from "../ui/prizeArt.ts";
+import type { PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
 import type { GearheadSnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
@@ -127,8 +129,8 @@ const factory = (name: SoftwareName): Software => {
 };
 
 const games: { dispose(): void }[] = [];
-function newGame(initial: SoftwareName | null = null, tokens = 5) {
-  const restore = { highScore: 0, tokens, tickets: 0, player: { x: 80, y: 92, dir: "DOWN" as const } };
+function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []) {
+  const restore = { highScore: 0, tokens, tickets: 0, prizes, player: { x: 80, y: 92, dir: "DOWN" as const } };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
   games.push(g);
   return g;
@@ -159,6 +161,29 @@ describe("hub draw", () => {
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "gamer", 0, 24, 16, 24, 88, 96],
     ]);
+  });
+
+  test("each owned prize's decoration is drawn by the Sweet Sam cabinet, after the counter and under the player", () => {
+    const game = newGame(null, 5, ["honeyJar", "runningShoes", "sleepyBees"]);
+    const { calls, surface } = recordingSurface();
+    game.draw(surface);
+    const r = prizeRects;
+    expect(calls).toEqual([
+      ["draw", "arcade", 0, 0, 160, 144, 16, 16],
+      ["draw", "counter", 0, 0, 40, 14, 76, 122],
+      // The jar and the shoe either side of the cabinet (art x 73..86), the picture above it; + the buffer.
+      ["draw", "prizes", r.honeyJar.x, 0, 8, 9, 81, 71],
+      ["draw", "prizes", r.runningShoes.x, 0, 9, 6, 103, 74],
+      ["draw", "prizes", r.sleepyBees.x, 0, 12, 11, 90, 44],
+      ["draw", "gamer", 0, 24, 16, 24, 88, 96],
+    ]);
+  });
+
+  test("only owned prizes are drawn", () => {
+    const game = newGame(null, 5, ["runningShoes"]);
+    const { calls, surface } = recordingSurface();
+    game.draw(surface);
+    expect(calls.filter((c) => c[1] === "prizes")).toEqual([["draw", "prizes", prizeRects.runningShoes.x, 0, 9, 6, 103, 74]]);
   });
 
   test("the sprite column is int(frame); the row follows the facing direction", () => {
@@ -371,8 +396,8 @@ describe("menus over a minigame", () => {
 });
 
 describe("prize counter menu", () => {
-  function atCounter(tokens: number, tickets: number): Game {
-    const g = new Game(null, { createSoftware: factory, debugPrint, restore: { highScore: 0, tokens, tickets, player: { x: 80, y: 92, dir: "DOWN" } } });
+  function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Game {
+    const g = new Game(null, { createSoftware: factory, debugPrint, restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } } });
     games.push(g);
     for (let t = 0; t < 2; t++) g.step(input({ down: true }));
     g.step(input({ space: true }));
@@ -380,13 +405,13 @@ describe("prize counter menu", () => {
     return g;
   }
 
-  test("dims the hub image, not the counts, and lists the tickets, the token and CLOSE", () => {
+  test("dims the hub image, not the counts, and lists the tickets, the token, the prizes and CLOSE", () => {
     const r = recordingSurface();
-    atCounter(2, 12).draw(r.surface);
+    atCounter(2, 120).draw(r.surface);
     expect(r.dimmed()).toEqual([16, 16, 160, 144]);
-    // HUD 2 and 12, the title, the selected token, the ticket count in the panel.
-    expect(r.text("yellow")).toBe("212PRIZE COUNTER12>TOKEN: 5 TICKETS<");
-    expect(r.text("white")).toBe("CLOSESPACEESCOKBACK") // key caps sit 1 px above their labels;
+    // HUD 2 and 120, the title, the selected token, the ticket count in the panel.
+    expect(r.text("yellow")).toBe("2120PRIZE COUNTER120>TOKEN: 5 TICKETS<");
+    expect(r.text("white")).toBe("HONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETSCLOSESPACEESCOKBACK") // key caps sit 1 px above their labels;
     expect(r.text("grey")).toBe("");
     expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket", "ticket"]);
   });
@@ -412,10 +437,34 @@ describe("prize counter menu", () => {
     expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
   });
 
-  test("with tokens left and too few tickets the token item is greyed out", () => {
+  test("with tokens left and too few tickets the token item and every prize are greyed out", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
-    expect(r.text("grey")).toBe("TOKEN: 5 TICKETS");
+    expect(r.text("grey")).toBe("TOKEN: 5 TICKETSHONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS");
     expect(r.text("yellow")).toBe("13PRIZE COUNTER3><");
+  });
+
+  test("a prize the player can't afford is greyed out; an owned one reads OWNED, greyed out", () => {
+    const r = recordingSurface();
+    atCounter(1, 60, ["honeyJar"]).draw(r.surface);
+    expect(r.text("grey")).toBe("HONEY JAR: OWNEDSLEEPY BEES: 100 TICKETS");
+    expect(r.text("white")).toContain("RUNNING SHOES: 50 TICKETS");
+  });
+
+  test("the longest prize, selected, keeps its arrows inside the panel; the hints sit below CLOSE", () => {
+    const game = atCounter(5, 60);
+    game.step(input({ down: true }));
+    game.step(input());
+    game.step(input({ down: true }));
+    while (game.snapshot().tick % 40 !== 20) game.step(input());
+    const r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.text("yellow")).toContain(">RUNNING SHOES: 50 TICKETS<");
+    const arrows = r.glyphs.filter((g) => g.ch === ">" || g.ch === "<");
+    expect(Math.min(...arrows.map((g) => g.x))).toBeGreaterThanOrEqual(8 + 3);
+    expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
+    const close = r.glyphs.find((g) => g.ch === "C" && g.ink === "white" && r.glyphs.some((h) => h.ch === "L" && h.y === g.y && h.x > g.x))!;
+    const hint = r.glyphs.find((g) => g.ch === "O" && g.y > close.y)!;
+    expect(hint.y - close.y).toBeGreaterThanOrEqual(12);
   });
 });

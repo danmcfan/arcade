@@ -53,7 +53,7 @@ function pauseMenu(v: Verify): void {
   startSweetSam(v);
   g = game(v);
   check(g.software === "hive" && g.run === "paid" && g.arcade.tokens === 4, "starting Sweet Sam spends exactly 1 token", g.arcade);
-  check(stored(v)?.v === 2 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 2)", stored(v));
+  check(stored(v)?.v === 3 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 3)", stored(v));
   v.step(150, { left: true });
 
   v.tap("escape");
@@ -155,7 +155,7 @@ function upgradeV1(v: Verify): void {
   const g = game(v);
   check(g.arcade.highScore === 300 && g.arcade.player.x === 60 && g.arcade.player.dir === "LEFT", "Continue from a v: 1 save keeps its high score and position", g.arcade);
   check(g.arcade.tokens === 5 && g.arcade.tickets === 0, "and adds 5 tokens and 0 tickets", g.arcade);
-  check(stored(v)?.v === 2, "the save is rewritten as v: 2", stored(v));
+  check(stored(v)?.v === 3, "the save is rewritten as v: 3", stored(v));
 }
 
 function freePlay(v: Verify): void {

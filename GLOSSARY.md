@@ -77,7 +77,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the hub high score, where the player stood, and their tokens and tickets. Minigame progress is not part of it.
+What Continue restores: the hub high score, where the player stood, their tokens and tickets, and the prizes they own. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

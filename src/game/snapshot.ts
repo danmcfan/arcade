@@ -17,6 +17,7 @@
 import type { Direction } from "../engine/input.ts";
 import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
+import type { PrizeId } from "../arcade/prizes.ts";
 
 /** Fields every top-level scene snapshot carries. */
 export interface SceneSnapshotBase {
@@ -58,6 +59,12 @@ export interface ArcadeSnapshot {
   tokens: number;
   /** Tickets won so far (no Go original). */
   tickets: number;
+  /**
+   * Prizes the player owns, in catalogue order (no Go original, #22). The
+   * key is absent while they own none, so the traces recorded before prizes
+   * existed (which own none) still match key for key.
+   */
+  prizes?: PrizeId[];
 }
 
 /** How the running minigame was started (`RunKind` in src/arcade/state.ts). */
@@ -81,7 +88,7 @@ export interface GameSnapshot extends SceneSnapshotBase {
   menu: GameMenu | null;
   /**
    * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
-   * or the prize counter menu (the token, CLOSE). Stays 1 (CONTROLS) while
+   * or the prize counter menu (the token, the prizes, CLOSE). Stays 1 (CONTROLS) while
    * the controls panel shows; 0 in the hub, the running minigame and the
    * payout.
    */

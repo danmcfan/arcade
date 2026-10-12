@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { findMachine, newMachines } from "./machine.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
+import type { PrizeId } from "./prizes.ts";
 
 function recordingFactory() {
-  const calls: [SoftwareName, number][] = [];
-  const factory = (name: SoftwareName, highScore: number): Software => {
-    calls.push([name, highScore]);
+  const calls: [SoftwareName, number, readonly PrizeId[]][] = [];
+  const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
+    calls.push([name, highScore, prizes]);
     return { name } as Software;
   };
   return { calls, factory };
@@ -22,14 +23,14 @@ describe("newMachines", () => {
     ]);
   });
 
-  test("newSoftware builds the matching software and passes the high score through", () => {
+  test("newSoftware builds the matching software and passes the high score and owned prizes through", () => {
     const { calls, factory } = recordingFactory();
     const ms = newMachines(factory);
-    expect(ms.map((m) => m.newSoftware(1234).name)).toEqual(["gearhead", "hive", "firefly"]);
+    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["gearhead", "hive", "firefly"]);
     expect(calls).toEqual([
-      ["gearhead", 1234],
-      ["hive", 1234],
-      ["firefly", 1234],
+      ["gearhead", 1234, ["honeyJar"]],
+      ["hive", 1234, ["honeyJar"]],
+      ["firefly", 1234, ["honeyJar"]],
     ]);
   });
 });
