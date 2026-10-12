@@ -44,11 +44,23 @@ _Avoid_: coin, credit
 
 **Ticket**:
 The reward the payout gives when a minigame ends.
-_Avoid_: points, prize
+_Avoid_: points
 
 **Payout**:
 The menu shown when a minigame ends, which turns the score into tickets.
 _Avoid_: reward screen, cutscene
+
+**Prize counter**:
+The place in the hub where the player spends tickets on tokens and prizes.
+_Avoid_: shop, store, token exchange, redemption
+
+**Last-chance token**:
+The token the prize counter sells for all the player's tickets, even 0, when they have no tokens and too few tickets to buy one.
+_Avoid_: free token, pity token, bailout
+
+**Prize**:
+A decoration bought with tickets that shows in the hub and gives the player an ability or advantage in one minigame.
+_Avoid_: power-up, upgrade, item, reward
 
 **Free play**:
 A play that costs nothing because the player has no tokens. It pays no tickets.
