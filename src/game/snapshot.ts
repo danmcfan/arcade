@@ -333,4 +333,22 @@ export interface LumberjackSnapshot extends SceneSnapshotBase {
 }
 
 /** What `Scene.snapshot()` returns. */
-export type SceneSnapshot = GameSnapshot | WaveSnapshot | LumberjackSnapshot;
+// ---------------------------------------------------------------------------
+// title (src/title): no Go original, so no parity trace.
+
+/** Which screen the title scene shows. */
+export type TitlePhase = "menu" | "confirm" | "intro" | "playing" | "paused" | "controls";
+
+export interface TitleSnapshot extends SceneSnapshotBase {
+  phase: TitlePhase;
+  /** Labels of the menu on screen ("menu", "confirm" and "paused" phases), else []. */
+  items: string[];
+  /** Index into `items` of the selected entry (0 when there is no menu). */
+  cursor: number;
+  /** A save exists, so "Continue" can be chosen. */
+  canContinue: boolean;
+  /** The hosted Game's snapshot once a game is running, else null. */
+  game: GameSnapshot | null;
+}
+
+export type SceneSnapshot = TitleSnapshot | GameSnapshot | WaveSnapshot | LumberjackSnapshot;

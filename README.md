@@ -2,6 +2,8 @@
 
 Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **hive** (a Pac-Man-like bear and bees), **firefly** (a Galaga-like shooter) and **gearhead** (a gnome in a workshop).
 
+The page opens on a title screen: **Continue** brings back the hub high score and where you were standing (saved in `localStorage` when you leave a minigame, quit to the menu, or close the tab). **New game** asks first when there is a save (starting one deletes it), then shows a short how-to-play screen and starts in the hub. Minigame progress is not saved.
+
 **Play it in the browser:** https://arcade.dannyobrien.dev/
 
 The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no framework and there are no runtime dependencies. [Bun](https://bun.sh/) builds, serves and tests it. Pushes to `main` deploy `dist/` to GitHub Pages (`.github/workflows/static.yml`).
@@ -10,9 +12,9 @@ The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no frame
 
 | Key | Action |
 | --- | --- |
-| WASD / arrow keys | Move |
-| Space | Interact / action |
-| Esc | Back |
+| WASD / arrow keys | Move; choose in menus |
+| Space | Interact / action; confirm in menus |
+| Esc | Leave a minigame; in the hub, open the pause menu (Resume, Controls, Quit to menu) |
 | Shift+P | Toggle debug (hitboxes and a side panel in the hub) |
 
 ## Running
@@ -26,9 +28,16 @@ bun test             # unit tests and the parity suite
 bun run build        # production bundle in dist/
 bun run preview      # serve dist/
 bun run check        # typecheck + test + build, as CI does
+bun run art          # rebuild font.png and logo.png from src/ui/glyphs.ts
 ```
 
-## Lab scenes
+## Pixel art for text
+
+All on-screen text is pixel art. The UI font and the title logo are drawn as ASCII (`#` and `.`) in `src/ui/glyphs.ts`; `bun run art` turns them into `src/assets/images/font.png` and `logo.png`, and a test fails if the committed PNGs drift from the source. `src/ui/text.ts` draws text, panels and key caps with them. The debug panel still uses the engine's debug font.
+
+## Scenes
+
+The page opens the `title` scene. `?scene=game` skips the title and starts straight in the hub (as the parity fixtures do).
 
 Two demos are not wired into the arcade hub. Open them with a query parameter:
 
@@ -39,6 +48,13 @@ Two demos are not wired into the arcade hub. Open them with a query parameter:
 
 With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumberjack`), the page exposes `window.__arcade` for deterministic browser checks. It can pause the loop, step fixed ticks with scripted input, seed the RNG, load any scene, and read back the state snapshot, the frame as a PNG data URL at logical resolution, and the sound calls. The full contract is `ArcadeTestHook` in `src/engine/testhook.ts`. Without the parameter the hook is not installed.
 
+`bun run check:title` drives the title screen, intro, pause menu and save end to end with agent-browser, through the hook and through real keyboard events without it. It writes frames and screenshots to `out/title/` and exits non-zero on the first failed check:
+
+```sh
+ARCADE_PORT=3002 bun run dev &
+ARCADE_PORT=3002 bun run check:title
+```
+
 ## Layout
 
 | Path | What |
@@ -46,11 +62,13 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 | `src/main.ts` | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop |
 | `src/engine/` | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook |
 | `src/game/` | Top-level loop (hub and active minigame), scene registry, snapshot types |
+| `src/title/` | Title scene: title menu, intro, pause menu, save (`SaveStore`) |
+| `src/ui/` | Pixel font and logo source, text and panel drawing |
 | `src/arcade/`, `src/hive/`, `src/firefly/`, `src/gearhead/` | The hub and the three minigames |
 | `src/lab/wave/`, `src/lab/lumberjack/` | Lab scenes |
 | `test/fixtures/` | Recorded input scripts, per-tick traces and golden frames (see below) |
 | `test/parity/` | Replays every fixture scenario and compares it tick by tick |
-| `scripts/` | Frame capture and diff tools |
+| `scripts/` | Frame capture and diff tools, UI art generator, title screen browser check |
 | `art/cabinet.ase` | Aseprite source for `src/assets/images/cabinet.png` (not shipped) |
 | `docs/` | Port plan, port notes, agent workflow docs |
 
