@@ -1,7 +1,8 @@
-// Entry module for the wave lab scene (T7 owns src/lab/**). Replace the stub
-// body; keep the export name and signature, which src/game/registry.ts imports.
+// Entry module for the wave lab scene (T7 owns src/lab/**). Keep the export
+// name and signature, which src/game/registry.ts imports.
 
 import type { Scene, WaveOptions } from "../../game/software.ts";
+import { Wave } from "./game.ts";
 
 /**
  * Go `wave.New()` with the package globals turned into instance fields;
@@ -15,5 +16,5 @@ import type { Scene, WaveOptions } from "../../game/software.ts";
  * no `Step` that tick. `snapshot({ full: true })` adds `cells`.
  */
 export function createWave(opts?: Partial<WaveOptions>): Scene {
-  throw new Error(`TODO: createWave(${JSON.stringify(opts)})`);
+  return new Wave(opts);
 }
