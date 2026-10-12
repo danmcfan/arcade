@@ -56,6 +56,30 @@ _Avoid_: boss, bird (when the Owl is meant)
 The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `gearhead` until it is renamed.
 _Avoid_: gearhead (in player-facing text), gnome game
 
+**Gnome**:
+The Brass Monkey villain who built the monkey. It stands at the top of each floor and sends hazards down.
+_Avoid_: boss, Kong
+
+**Floor**:
+One factory floor in Brass Monkey. The monkey escapes it by climbing to its exit.
+_Avoid_: level, stage, board
+
+**Hazard**:
+Anything the gnome sends that costs the monkey a life when it touches the monkey: a gear or an ember.
+_Avoid_: enemy, obstacle
+
+**Gear**:
+A hazard that rolls down the girders. The monkey jumps over it.
+_Avoid_: barrel, cog
+
+**Ember**:
+A hazard that moves along the girders and climbs ladders.
+_Avoid_: spark (a spark is the firefly's light), fireball
+
+**Bolt**:
+An item the monkey collects in Brass Monkey for points.
+_Avoid_: coin, pickup
+
 **Lab scene**:
 A demo reachable only by URL (`?scene=wave`, `?scene=lumberjack`), outside the hub and not part of the game.
 _Avoid_: minigame, bonus game
