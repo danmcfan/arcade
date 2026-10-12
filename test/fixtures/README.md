@@ -20,7 +20,7 @@ on purpose (ADR 0004; see "Re-recorded from the TypeScript game" below).
 | `rng.json` | mulberry32 reference outputs for seeds 1 and 42 |
 | `hive.goReference.json` | Trimmed hive-only Go reference used by `src/hive/hive.test.ts` (not from `tools/golden/`; see below) |
 
-Total size: about 2.8 MB (traces 1.7 MB, frames 0.94 MB, inputs 96 KB, rng 68 KB).
+Total size: about 2.9 MB (traces 1.7 MB, frames 0.98 MB, inputs 96 KB, rng 68 KB).
 
 ## Input scripts
 
@@ -66,7 +66,9 @@ are exactly those in `src/game/snapshot.ts`:
 - `lumberjack`: `LumberjackSnapshot`.
 
 Number formatting is Go's `encoding/json` (shortest round-trip), so
-`JSON.parse` gives the exact float64 Go had. Watch for:
+`JSON.parse` gives the exact float64 Go had. Traces re-recorded from
+TypeScript (see "Regenerating") use `JSON.stringify` instead, which parses
+to the same values. Watch for:
 
 - **Exponent notation** for tiny or huge floats (e.g. a lumberjack `theta` of
   `-5.204170427930421e-18`). `JSON.parse` handles it.
@@ -86,9 +88,10 @@ scene's logical size at that tick (`Layout`), read back with `ReadPixels`
 and written as a normal non-premultiplied RGBA PNG. Pixels Go never draws
 are transparent (alpha 0), not black.
 
-- Sizes follow the layout: hub 192×176, firefly 256×320, gearhead 256×288,
-  hive 336×428, lumberjack 512×288, plus 120 px of width while debug mode is
-  on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
+- Sizes follow the layout: hub 192×176, hive, firefly and gearhead 336×428
+  (each plays inside its cabinet; firefly and gearhead were 256×320 and
+  256×288 in the Go capture, before #15), lumberjack 512×288, plus 120 px
+  of width while debug mode is on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
   after Space with `gridSize` 64).
 - Wave frames contain `drawCells` only (no debugui window; that becomes an
   HTML overlay in TS).
@@ -182,38 +185,54 @@ it; it is test-only and not in the bundle). The full `hive-*` traces above
 supersede it for regression purposes: if the two ever disagree, the traces
 win.
 
-## Re-recorded from the TypeScript game
+## Regenerating
 
-When a change alters behaviour a fixture covers, on purpose, its trace and
-frames are re-recorded from the TS game (ADR 0004), and the PR says which
-and why:
+**The Go captures can no longer be regenerated from the current tree.** The
+Go game, `internal/rng` and the harness in `tools/golden/` were deleted in
+Phase 5 (ticket #12). Fixtures that nothing has changed since are still the
+Go originals.
+
+### Re-recording a deliberately changed fixture from TypeScript
+
+When a change alters what a scenario records (ADR 0004: the PR says which
+fixtures and why), re-record just those scenarios from the TypeScript game,
+keeping their input scripts as they are:
 
 ```sh
-bun run traces <scenario ...>   # traces/<scenario>.jsonl.gz, via replay() in test/parity/harness.ts
-bun run frames <scenario ...>   # out/frames/<scenario>/<tick>.png; copy the changed ones into frames/
-bun run frames:report           # unchanged frames must still diff at 0
+bun run traces <scenario> [scenario ...]   # traces/<scenario>.jsonl.gz (scripts/record-traces.ts)
+bun run frames <scenario> [scenario ...]   # out/frames/<scenario>/*.png
+cp out/frames/<scenario>/*.png test/fixtures/frames/<scenario>/
+bun run frames:report                      # every other scenario still matches
 ```
 
-Re-recorded so far:
+`bun run traces` has no "all" default, so untouched fixtures are never
+rewritten. Its JSONL is `JSON.stringify` output, not Go's: `-0` is written
+as `0` and exponents look different. Both parse to values the harness's
+`===` compare treats as equal.
 
-| Change | Scenarios | Why |
-|---|---|---|
-| Tokens and tickets (#16) | `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-gearhead`, `hive-highscore` | the hub draws the token and ticket counts, Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded. |
-| Tokens and tickets (#16) | `hive-fuzz-1..4`, `hive-clear`, `hive-modes`, `firefly-play`, `gearhead-walk` | inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded after checking that every old line equals the new one with those keys removed. Frames unchanged except `hive-clear/9684` (the hub now shows the counts). |
+Re-recorded from TypeScript so far:
+
+| Scenario | Why |
+|---|---|
+| `arcade-enter-firefly`, `firefly-play` | #15: Firefly plays inside its cabinet bezel (336×428 layout) and its snapshot gains `joystick` |
+| `arcade-enter-gearhead`, `gearhead-walk` | #15: same for Brass Monkey (`gearhead`) |
+| `arcade-enter-hive`, `hive-clear`, `hive-fuzz-1`..`4`, `hive-highscore`, `hive-modes` (frames only) | #15: Sweet Sam's marquee is regenerated at the other cabinets' letter height. Only rows 0..53 (the marquee) were copied from the TypeScript capture; the rest of each frame is still the Go original |
+| `arcade-walk` (frame 70 only) | #15: the Brass Monkey hub title card reads BRASS MONKEY (`titleCards` in `src/ui/glyphs.ts`). The frame differs from the Go original only in those 1080 title pixels |
+| `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-gearhead`, `hive-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded |
+| `hive-fuzz-1`..`4`, `hive-clear`, `hive-modes`, `firefly-play`, `gearhead-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `hive-clear/9684` (the hub shows the counts) |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end
 straight back in the hub.
 
-## Regenerating the Go originals
+### The original Go capture
 
-**The Go-recorded fixtures can no longer be regenerated from the current tree.** The
-Go game, `internal/rng` and the harness in `tools/golden/` were deleted in
-Phase 5 (ticket #12). Commit `34840f8` is the last commit that still has
-them. Check it out (for example in a separate worktree:
+Commit `34840f8` is the last commit that still has the Go harness. Check it
+out (for example in a separate worktree:
 `git worktree add ../arcade-golden 34840f8`), run the commands below from
 its root, and copy the resulting `test/fixtures/` back. You need Go 1.26
-with `CGO_ENABLED=1 GOARCH=amd64` (Rosetta on Apple Silicon).
+with `CGO_ENABLED=1 GOARCH=amd64` (Rosetta on Apple Silicon). This would
+overwrite the TypeScript re-recordings above with the older Go behaviour.
 
 ```sh
 ./tools/golden/capture.sh          # rng.json, traces, frames (one window per scenario), verify, coverage

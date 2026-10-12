@@ -3,9 +3,9 @@
 
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
-import { imageBear, imageDigits, imageReady } from "../engine/assets.ts";
+import { imageBear, imageCabinet, imageDigits, imageReady } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
-import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "./cabinet.ts";
+import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import {
@@ -33,7 +33,7 @@ export interface DrawCache {
 
 /** Go `HiveSoftware.Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
 export function draw(s: HiveSoftware, screen: Surface): void {
-  drawCabinet(screen, s.cabinetJoystickFrame);
+  drawCabinet(screen, s.cabinetJoystickFrame, imageCabinet);
 
   const [ox, oy] = s.camera.cameraOffset();
   const bufX = cabinetInsetLeft + ox;

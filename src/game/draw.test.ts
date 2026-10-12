@@ -110,7 +110,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): GearheadSnapshot {
-    return { x: 0, y: 0, frame: 0, left: false, moving: false };
+    return { x: 0, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
   }
 }
 class FakeFixed extends FakeSoftware implements FixedViewport {

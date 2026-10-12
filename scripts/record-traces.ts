@@ -1,34 +1,42 @@
-// Re-record parity traces from the TypeScript game, for fixtures whose
-// behaviour changed on purpose (ADR 0004):
+// Re-record parity traces from the TypeScript game, for fixtures a change
+// deliberately alters (ADR 0004):
 //
-//   bun run traces <scenario ...>
+//   bun run traces <scenario> [scenario ...]
 //
-// Replays test/fixtures/inputs/<scenario>.json exactly as the parity test
-// does (`replay()` in test/parity/harness.ts) and writes one snapshot per
-// tick as gzipped JSONL to test/fixtures/traces/<scenario>.jsonl.gz. Name the
-// scenarios: re-recording everything would silently turn every Go-recorded
-// fixture into a TS self-recording. Re-capture the golden frames with
-// `bun run frames <scenario ...>` too.
+// Replays test/fixtures/inputs/<scenario>.json with the parity harness and
+// writes test/fixtures/traces/<scenario>.jsonl.gz. There is no "all": name
+// each scenario you mean to change, so untouched fixtures are never
+// rewritten. Re-capture the matching golden frames with `bun run frames`.
 
-import { writeFileSync } from "node:fs";
-import type { InputScript } from "../src/game/script.ts";
+import { existsSync, writeFileSync } from "node:fs";
+import { relative } from "node:path";
 import { inputPath, loadScript, replay, tracePath } from "../test/parity/harness.ts";
+import { repoRoot } from "../test/parity/fixtures.ts";
 
-/** The trace for `script`, gzipped JSONL (deterministic bytes). */
-export function recordTrace(script: InputScript): Uint8Array<ArrayBuffer> {
-  const lines = replay(script).map((s) => JSON.stringify(s));
-  return Bun.gzipSync(new TextEncoder().encode(`${lines.join("\n")}\n`), { level: 9 });
+/**
+ * Gzipped JSONL: one `JSON.stringify` per snapshot, each ending in "\n".
+ * JS writes `-0` as `0` and its own exponent style; both parse back to
+ * values the harness's `===` compare treats as equal.
+ */
+export function encodeTrace(snapshots: readonly unknown[]): Uint8Array<ArrayBuffer> {
+  const text = snapshots.map((s) => `${JSON.stringify(s)}\n`).join("");
+  return Bun.gzipSync(new TextEncoder().encode(text));
+}
+
+function record(scenario: string): void {
+  const input = inputPath(scenario);
+  if (!existsSync(input)) throw new Error(`no input script ${relative(repoRoot, input)}`);
+  const snapshots = replay(loadScript(input));
+  const out = tracePath(scenario);
+  writeFileSync(out, encodeTrace(snapshots));
+  console.log(`${scenario}: ${snapshots.length} ticks → ${relative(repoRoot, out)}`);
 }
 
 if (import.meta.main) {
-  const names = process.argv.slice(2);
-  if (names.length === 0) {
-    console.error("usage: bun run traces <scenario ...>");
+  const scenarios = process.argv.slice(2);
+  if (scenarios.length === 0) {
+    console.error("usage: bun run traces <scenario> [scenario ...]");
     process.exit(1);
   }
-  for (const name of names) {
-    const data = recordTrace(loadScript(inputPath(name)));
-    writeFileSync(tracePath(name), data);
-    console.log(`wrote ${tracePath(name)} (${data.length} bytes)`);
-  }
+  for (const s of scenarios) record(s);
 }

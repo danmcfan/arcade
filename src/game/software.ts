@@ -23,8 +23,9 @@ export interface Software {
 }
 
 /**
- * Software that fills the window without the standard playfield margin
- * (hive draws a cabinet bezel at 0,0).
+ * Software that fills the window without the standard playfield margin:
+ * every minigame plays inside its cabinet bezel, drawn at 0,0 by
+ * src/ui/cabinet.ts.
  */
 export interface FixedViewport extends Software {
   fixedViewportSize(): [number, number];

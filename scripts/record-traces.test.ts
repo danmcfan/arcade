@@ -1,18 +1,35 @@
 import { describe, expect, test } from "bun:test";
-import { compareTrace, inputPath, loadScript, parseTrace } from "../test/parity/harness.ts";
-import { recordTrace } from "./record-traces.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { diff, inputPath, loadScript, readTrace, replay, tracePath } from "../test/parity/harness.ts";
+import { encodeTrace } from "./record-traces.ts";
 
-describe("record-traces", () => {
-  test("a recorded trace replays with no mismatch", () => {
-    const script = loadScript(inputPath("gearhead-walk"));
-    const trace = parseTrace(recordTrace(script));
-    expect(trace).toHaveLength(206);
-    expect(trace[0]).toMatchObject({ tick: 1, software: "gearhead" });
-    expect(compareTrace(script, trace)).toBeNull();
+describe("encodeTrace", () => {
+  test("one JSON object per line, gzipped, read back by readTrace", () => {
+    const dir = mkdtempSync(join(tmpdir(), "traces-"));
+    try {
+      const path = join(dir, "t.jsonl.gz");
+      writeFileSync(path, encodeTrace([{ tick: 1, a: [1, 2] }, { tick: 2, a: [] }]));
+      expect(readTrace(path)).toEqual([{ tick: 1, a: [1, 2] }, { tick: 2, a: [] }]);
+      expect(new TextDecoder().decode(Bun.gunzipSync(encodeTrace([{ tick: 1 }])))).toBe('{"tick":1}\n');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
-  test("recording is deterministic", () => {
-    const script = loadScript(inputPath("gearhead-walk"));
-    expect(recordTrace(script)).toEqual(recordTrace(script));
+  test("re-recording an unchanged scenario reproduces its committed trace", () => {
+    const scenario = "lumberjack-chop";
+    const dir = mkdtempSync(join(tmpdir(), "traces-"));
+    try {
+      const path = join(dir, `${scenario}.jsonl.gz`);
+      writeFileSync(path, encodeTrace(replay(loadScript(inputPath(scenario)))));
+      const fresh = readTrace(path);
+      const committed = readTrace(tracePath(scenario));
+      expect(fresh.length).toBe(committed.length);
+      expect(diff(committed, fresh)).toBeNull();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

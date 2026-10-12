@@ -35,7 +35,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): SoftwareSnapshot {
-    const s: GearheadSnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false };
+    const s: GearheadSnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
     return s;
   }
 }
@@ -46,7 +46,7 @@ class FakeFixed extends FakeSoftware implements FixedViewport {
   }
 }
 
-/** Fake factory: hive is a FixedViewport (like the real one), the others use a 224x288 / 224x256 background. */
+/** Fake factory: hive is a FixedViewport, the others stay plain Software (224x288 / 224x256 background) so the margin path stays covered. */
 function fakes() {
   const built: FakeSoftware[] = [];
   const factory = (name: SoftwareName, highScore: number): Software => {
@@ -157,7 +157,7 @@ describe("snapshot", () => {
     run(game, 3);
     const s = snap(game);
     expect(s.software).toBe("gearhead");
-    expect(s.sw).toEqual({ x: 3, y: 0, frame: 0, left: false, moving: false });
+    expect(s.sw).toEqual({ x: 3, y: 0, frame: 0, left: false, moving: false, joystick: 0 });
   });
 });
 

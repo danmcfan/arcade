@@ -1,11 +1,28 @@
 // Port of internal/firefly/game.go.
 
-import { imageBug, imageBullet, imageExplosion, imageGalaxy, imageShip, soundBoom, soundLaser } from "../engine/assets.ts";
+import {
+  imageBug,
+  imageBullet,
+  imageCabinetFirefly,
+  imageExplosion,
+  imageGalaxy,
+  imageShip,
+  soundBoom,
+  soundLaser,
+} from "../engine/assets.ts";
 import { sub as cutImage, type Sprite } from "../engine/image.ts";
 import { direction, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
-import type { Software } from "../game/software.ts";
+import type { FixedViewport } from "../game/software.ts";
+import {
+  cabinetHeight,
+  cabinetInsetLeft,
+  cabinetInsetTop,
+  cabinetJoystickFrame,
+  cabinetWidth,
+  drawCabinet,
+} from "../ui/cabinet.ts";
 import { drawBezierDebug } from "./debug.ts";
 import { FRAMES_PER_SECOND, newBezierPatternFunc, type BezierConfig, type PatternFunc } from "./pattern.ts";
 
@@ -127,9 +144,15 @@ function newBugs(): Entity[] {
   ];
 }
 
-/** Go `FireFlySoftware`. Fields are public so tests can stage states, as Go's in-package tests could. */
-export class FireflySoftware implements Software {
+/**
+ * Go `FireFlySoftware`, played inside its cabinet (#15). Fields are public so
+ * tests can stage states, as Go's in-package tests could.
+ */
+export class FireflySoftware implements FixedViewport {
   readonly name = "firefly" as const;
+
+  /** The bezel's joystick frame for the last input (no gameplay effect). */
+  cabinetJoystickFrame = 0;
 
   player: Entity = newPlayer();
   bullets: Entity[] = [];
@@ -137,6 +160,8 @@ export class FireflySoftware implements Software {
   fireDelay = 0;
 
   update(i: Input): void {
+    this.cabinetJoystickFrame = cabinetJoystickFrame(i);
+
     if (this.bugs.length === 0) {
       this.bugs = newBugs();
     }
@@ -247,20 +272,28 @@ export class FireflySoftware implements Software {
     this.bugs = this.bugs.filter((b) => !b.dead);
   }
 
-  draw(screen: Surface, buffer: number): void {
-    drawImage(screen, this.background(), { x: buffer, y: buffer });
+  fixedViewportSize(): [number, number] {
+    return [cabinetWidth, cabinetHeight];
+  }
+
+  /** A `FixedViewport`: `buffer` is 0; the 224x288 playfield fills the cabinet's screen. */
+  draw(screen: Surface, _buffer: number): void {
+    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetFirefly);
+
+    const origin: Vec = { x: cabinetInsetLeft, y: cabinetInsetTop };
+    drawImage(screen, this.background(), origin);
 
     if (debug) {
-      drawBezierDebug(screen, leftBezierConfig, buffer, 100);
-      drawBezierDebug(screen, rightBezierConfig, buffer, 100);
+      drawBezierDebug(screen, leftBezierConfig, origin, 100);
+      drawBezierDebug(screen, rightBezierConfig, origin, 100);
     }
 
-    let position = add(this.player.position, { x: buffer, y: buffer });
+    let position = add(this.player.position, origin);
     position = sub(position, { x: this.player.width / 2, y: this.player.height / 2 });
     drawImage(screen, this.player.image, position);
 
     for (const bullet of this.bullets) {
-      let p = add(bullet.position, { x: buffer, y: buffer });
+      let p = add(bullet.position, origin);
       p = sub(p, { x: bullet.width / 2, y: bullet.height / 2 });
       drawImage(screen, bullet.image, p);
     }
@@ -276,7 +309,7 @@ export class FireflySoftware implements Software {
         continue;
       }
 
-      let p = add(bug.position, { x: buffer, y: buffer });
+      let p = add(bug.position, origin);
 
       if (bug.deadFrames > 0) {
         p = sub(p, { x: 16, y: 16 });
@@ -334,6 +367,7 @@ export class FireflySoftware implements Software {
           deadFrames: b.deadFrames,
         };
       }),
+      joystick: this.cabinetJoystickFrame,
     };
   }
 }
