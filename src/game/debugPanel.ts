@@ -7,7 +7,7 @@ import type { State } from "../arcade/state.ts";
 /** Go `color.RGBA{20, 20, 20, 200}`: premultiplied (fact 10, D15). */
 const panelBackground: PremulColor = { r: 20, g: 20, b: 20, a: 200 };
 
-/** `ebitenutil.DebugPrintAt`; tests pass a recorder. */
+/** `DebugPrintAt`; tests pass a recorder. */
 export type DebugPrinter = (screen: Surface, text: string, x: number, y: number) => void;
 
 export class Panel {

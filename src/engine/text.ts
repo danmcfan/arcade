@@ -1,5 +1,5 @@
-// Debug text (D14): a port of Ebitengine's `ebitenutil.DebugPrintAt`
-// (`ebitenutil/debugprint.go`, `drawDebugText`) using its own bitmap font,
+// Debug text (D14): a port of the Go engine's `DebugPrintAt`
+// (`debugprint.go`, `drawDebugText`) using its own bitmap font,
 // so debug frames can match Go pixel for pixel. No `fillText`.
 
 import { debugFont } from "./assets.ts";
@@ -28,7 +28,7 @@ function glyph(c: number): Sprite {
 }
 
 /**
- * `ebitenutil.DebugPrintAt(screen, text, x, y)`: one 6×16 glyph per code
+ * `DebugPrintAt(screen, text, x, y)`: one 6×16 glyph per code
  * point starting at `(x + 1, y)`; `\n` returns to the left margin 16 px
  * lower. Go passes `int` coordinates; callers truncate as Go does.
  */

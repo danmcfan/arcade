@@ -1,4 +1,4 @@
-// Ebitengine-shaped draw API over Canvas 2D (§3.2). The signatures here are
+// Go-engine-shaped draw API over Canvas 2D (§3.2). The signatures here are
 // the contract every porter draws against.
 //
 // Rules: `imageSmoothingEnabled = false` on every context, re-applied after
@@ -24,7 +24,7 @@ export interface DrawOpts {
   flipX?: boolean;
   /**
    * `Translate(-pivot)`, `Rotate(angle)`, `Translate(+pivot)`, applied before
-   * x/y. Instead of snapping, the quad corners go where Ebitengine's
+   * x/y. Instead of snapping, the quad corners go where the Go engine's
    * vertex adjustment puts them (`rotatedTransform`, D13). An angle of 0 is
    * a plain, snapped draw (Go's `Rotate(0)` is a no-op).
    */
@@ -34,9 +34,9 @@ export interface DrawOpts {
 }
 
 /**
- * Where Ebitengine puts a vertex at fractional `v` (fact 11, D13 as settled
+ * Where the Go engine puts a vertex at fractional `v` (fact 11, D13 as settled
  * by the Phase 4 golden frames). `DrawImage` passes every vertex through
- * `adjustDestinationPixel` (ebiten `internal/graphics/vertex.go`), which
+ * `adjustDestinationPixel` (the Go engine's `graphics/vertex.go`), which
  * moves a fraction below 0.5 to 0 or 5/16 and one at or above 0.5 to 11/16
  * or 1, so the first covered pixel centre is `floor(v + 0.5)`: half rounds
  * up. The GeoM translate is a float32, hence `Math.fround`. Never `-0`.
@@ -46,7 +46,7 @@ export function snap(v: number): number {
 }
 
 /**
- * Ebitengine `adjustDestinationPixel` (`internal/graphics/vertex.go`), in
+ * the Go engine's `adjustDestinationPixel` (`graphics/vertex.go`), in
  * float32 like the vertex buffer: a vertex fraction in [0, 3/16) goes to 0,
  * [3/16, 1/2) to 5/16, [1/2, 13/16) to 11/16 and the rest to 1.
  */
@@ -65,11 +65,11 @@ function adjustDestinationPixel(v: number): number {
  * settled in Phase 4). Builds the GeoM in float64 in Go's order
  * (`[Scale(-1,1) Translate(w,0)]`, `Translate(-p) Rotate(θ) Translate(p)`,
  * `Translate(x, y)`), converts it to float32 and places the quad corners
- * where Ebitengine's vertex buffer puts them (`QuadVerticesFromSrcAndMatrix`
+ * where the Go engine's vertex buffer puts them (`QuadVerticesFromSrcAndMatrix`
  * plus `adjustDestinationPixel`). The returned affine maps source (0,0),
  * (w,0) and (0,h) onto those adjusted corners, so canvas nearest-neighbour
- * sampling at pixel centres picks the same texels as Ebitengine's GPU
- * (Ebitengine splits the quad into two triangles whose fourth corner can sit
+ * sampling at pixel centres picks the same texels as the Go engine's GPU
+ * (The Go engine splits the quad into two triangles whose fourth corner can sit
  * a fraction of a pixel off this parallelogram; the golden lumberjack frames
  * do not show the difference).
  */
@@ -171,7 +171,7 @@ export class Surface {
   }
 
   /**
-   * `ebiten.NewImage(w, h)`: a transparent offscreen surface. Safe to call
+   * Go `NewImage(w, h)`: a transparent offscreen surface. Safe to call
    * with no DOM (e.g. in a scene constructor); the canvas is created on first
    * use.
    */
@@ -241,7 +241,7 @@ export class Surface {
     this.blit(source, s.sx, s.sy, s.w, s.h, x, y, opts);
   }
 
-  /** `DrawImage` with another surface (an offscreen `ebiten.Image`) as source. */
+  /** `DrawImage` with another surface (an offscreen Go `Image`) as source. */
   drawSurface(src: Surface, x: number, y: number, opts?: DrawOpts): void {
     // A surface that was never drawn to is fully transparent.
     if (src.canvas === null || src.w <= 0 || src.h <= 0) return;

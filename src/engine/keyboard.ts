@@ -1,8 +1,8 @@
 // DOM key tracking (D3). Key events update a live `Set<code>`; the loop
 // samples it once per fixed tick. "Just pressed" means in this tick's sample
-// but not the previous tick's, mirroring Ebitengine's
+// but not the previous tick's, mirroring the Go engine's
 // `inpututil.AppendPressedKeys` / `AppendJustPressedKeys`. A press and
-// release that both land between two ticks is not seen, as in Ebitengine.
+// release that both land between two ticks is not seen, as in the Go engine.
 
 export interface KeySample {
   /** Every key (`KeyboardEvent.code`) held this tick. */

@@ -2,8 +2,8 @@
 // the only frame pixels allowed to differ from Go are the edge pixels of
 // each rotated tree top, derived from the snapshot.
 //
-// Canvas and Ebitengine both sample the rotated sprite with the nearest
-// filter, but they disagree on which pixels an edge covers (Ebitengine
+// Canvas and the Go engine both sample the rotated sprite with the nearest
+// filter, but they disagree on which pixels an edge covers (the Go engine
 // nudges every vertex with `adjustDestinationPixel`, Canvas antialiases the
 // quad edge). A destination pixel is an edge pixel when its footprint
 // straddles an opaque/transparent texel boundary of the tree-top image:

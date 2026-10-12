@@ -47,7 +47,7 @@ describe("Surface.draw", () => {
     expect(ctx.ops.map((o) => o.alpha)).toEqual([0.5, 1]);
   });
 
-  test("rotated draws rotate about the pivot with corners on Ebitengine's adjusted vertices", () => {
+  test("rotated draws rotate about the pivot with corners on the Go engine's adjusted vertices", () => {
     const { s, ctx } = screen();
     s.draw(sprite, 10.25, 20.75, { rotate: { angle: Math.PI, pivotX: 8, pivotY: 8 } });
     const m = ctx.ops[0]?.m ?? [];

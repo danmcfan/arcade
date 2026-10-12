@@ -108,7 +108,7 @@ export const imageGnome: Sprite = whole(images.gnome);
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
 
 /**
- * Ebitengine's debug font (`ebitenutil/text.png`, Apache-2.0, see
+ * The Go engine's debug font (`text.png`, Apache-2.0, see
  * debugfont.LICENSE.txt): 6×16 glyphs indexed by code point. Drawn by
  * `debugPrint` in text.ts (D14).
  */
