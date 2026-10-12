@@ -1,6 +1,6 @@
-# Go parity fixtures
+# Parity fixtures
 
-Captured from the Go/Ebitengine game before it is deleted (ticket T2, §4 of
+Most of these were captured from the Go/Ebitengine game before it was deleted (ticket T2, §4 of
 `docs/ts-port-plan.md`). The TypeScript port must reproduce them: traces tick
 for tick, frames pixel for pixel. Everything here was produced by the
 temporary harness in `tools/golden/` (deleted in Phase 5 with the rest of
@@ -8,6 +8,9 @@ the Go code; see "Regenerating" below) with `CGO_ENABLED=1 GOARCH=amd64`
 (Rosetta on Apple Silicon; default `GOAMD64=v1`). On arm64, or with
 `GOAMD64=v3`, Go fuses `x*y+z` into FMA and the firefly beziers come out
 different, so the harness refuses to run on any other GOARCH.
+
+Some were re-recorded later from the TypeScript game, when behaviour changed
+on purpose (ADR 0004; see "Re-recorded from the TypeScript game" below).
 
 | Path | What |
 |---|---|
@@ -96,12 +99,12 @@ What the capture ticks show:
 
 | Scenario | Ticks |
 |---|---|
-| `arcade-walk` | 1 hub start · 41 hive cabinet title · 70 gearhead title · 359 firefly title · 390 debug panel + overlay · 410 debug + hive title · 432 hub after debug off |
-| `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · tick after Esc (back in the hub) |
+| `arcade-walk` | 1 hub start (token and ticket counts on top) · 41 hive cabinet title · 70 gearhead title · 359 firefly title · 390 debug panel + overlay · 410 debug + hive title · 432 hub after debug off |
+| `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · Esc tick (minigame pause menu opens) · QUIT GAME selected (NO TICKETS) · hub after Quit game (1 token spent) |
 | `hive-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 7977 flashing bees · 9683 last FINALDEATHWAIT tick · 9684 hub after game over |
 | `hive-modes` | 3358 flashing bees (unshaken) |
 | `hive-fuzz-*` | 1 |
-| `hive-highscore` | 2871 hub after game over · 2912 re-entered hive (high score dials) · 3042 later in that hive |
+| `hive-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered hive (high score dials) · 3124 later in that hive · 3125 minigame pause menu · 3158 hub after Quit game |
 | `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 explosions mid-animation |
 | `gearhead-walk` | 191 facing left walking · 201 facing left idle |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
@@ -131,20 +134,20 @@ reproduce every entry exactly.
 | Scenario | Scene | Seed | Ticks | Purpose |
 |---|---|---|---|---|
 | `arcade-walk` | hub | 1 | 432 | every wall face (top, left, bottom, right), all 3 cabinets approached facing Up (title + `play:melody`, then `pause:melody`/`rewind:melody`), Shift+P on (+120 px) and off, Esc in the hub (no-op) |
-| `arcade-enter-gearhead` | hub | 1 | 409 | Up+Space at the cabinet, ~300 ticks inside, Esc (`pause:start`, layout change), back in the hub |
-| `arcade-enter-hive` | hub | 1 | 385 | same for hive |
-| `arcade-enter-firefly` | hub | 1 | 409 | same for firefly |
+| `arcade-enter-gearhead` | hub | 1 | 442 | Up+Space at the cabinet (1 token), ~300 ticks inside, Esc opens the minigame pause menu (minigame sounds paused), Down, Down, Space: Quit game, back in the hub (layout change) |
+| `arcade-enter-hive` | hub | 1 | 418 | same for hive |
+| `arcade-enter-firefly` | hub | 1 | 442 | same for firefly |
 | `hive-fuzz-1..4` | `game.New(hive)` | 1..4 | 3616–3650 | random held directions, 10–60 tick holds; after game over the rest drives the hub |
 | `hive-clear` | `game.New(hive)` | 11 | 9714 | look-ahead bot eats everything: round win at ~6700, bee chains 200→400→800→1600; then random holds to game over |
 | `hive-modes` | `game.New(hive)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
-| `hive-highscore` | hub | 21 | 3063 | enter hive from the hub, play to game over, hub `highScore` updated, re-enter hive (its high score dials boot from it), Esc |
+| `hive-highscore` | hub | 21 | 3178 | enter hive from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter hive (its high score dials boot from it), Esc and Quit game |
 | `firefly-play` | `game.New(firefly)` | 1 | 1501 | Space held while sweeping: bullets, hits, explosions, wave cleared (`bugs: []`) and respawned, bugs leaving off the top, a bullet hitting an unspawned bug at (0,0) |
 | `gearhead-walk` | `game.New(gearhead)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
 | `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-38,930 ticks in total. The hive bot only picked inputs; the scripts replay
+39,144 ticks in total. The hive bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -155,9 +158,11 @@ bee eaten (PAUSE with a 200 and a 400 award), popup + particles, tunnel wrap
 FINALDEATHWAIT → back in the hub with the high score taken), round win
 (items 0 → START with a fresh set), the hub high score passed to a new hive,
 and `modeIndex` 1..8. It also checks the firefly-play and lumberjack-chop
-must-cover items above. Note that hive's GAMEOVER state never appears in a
-trace: the tick it is entered, `Game.Update` sees `GameOver()` and drops the
-software, so that tick's snapshot already has `software: null`.
+must-cover items above. Note that in the Go-recorded traces hive's GAMEOVER
+state never appears: the tick it is entered, `Game.Update` sees `GameOver()`
+and drops the software, so that tick's snapshot already has
+`software: null`. In the TS-recorded `hive-highscore` it shows for as long
+as the payout is open.
 
 ## hive.goReference.json
 
@@ -177,9 +182,32 @@ it; it is test-only and not in the bundle). The full `hive-*` traces above
 supersede it for regression purposes: if the two ever disagree, the traces
 win.
 
-## Regenerating
+## Re-recorded from the TypeScript game
 
-**These fixtures can no longer be regenerated from the current tree.** The
+When a change alters behaviour a fixture covers, on purpose, its trace and
+frames are re-recorded from the TS game (ADR 0004), and the PR says which
+and why:
+
+```sh
+bun run traces <scenario ...>   # traces/<scenario>.jsonl.gz, via replay() in test/parity/harness.ts
+bun run frames <scenario ...>   # out/frames/<scenario>/<tick>.png; copy the changed ones into frames/
+bun run frames:report           # unchanged frames must still diff at 0
+```
+
+Re-recorded so far:
+
+| Change | Scenarios | Why |
+|---|---|---|
+| Tokens and tickets (#16) | `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-gearhead`, `hive-highscore` | the hub draws the token and ticket counts, Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded. |
+| Tokens and tickets (#16) | `hive-fuzz-1..4`, `hive-clear`, `hive-modes`, `firefly-play`, `gearhead-walk` | inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded after checking that every old line equals the new one with those keys removed. Frames unchanged except `hive-clear/9684` (the hub now shows the counts). |
+
+A minigame started straight from `game.New(software)` (every scenario with
+`software`) costs no token and has no payout, so those scenarios still end
+straight back in the hub.
+
+## Regenerating the Go originals
+
+**The Go-recorded fixtures can no longer be regenerated from the current tree.** The
 Go game, `internal/rng` and the harness in `tools/golden/` were deleted in
 Phase 5 (ticket #12). Commit `34840f8` is the last commit that still has
 them. Check it out (for example in a separate worktree:

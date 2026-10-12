@@ -1,4 +1,4 @@
-{"name":"hive-highscore","scene":"game","seed":21,"captureTicks":[2871,2912,3042],"steps": [
+{"name":"hive-highscore","scene":"game","seed":21,"captureTicks":[2871,2900,2943,2994,3124,3125,3158],"steps": [
   {"ticks":1,"input":{}},
   {"ticks":32,"input":{"up":true}},
   {"ticks":1,"input":{"up":true,"space":true}},
@@ -78,10 +78,21 @@
   {"ticks":45,"input":{"down":true}},
   {"ticks":28,"input":{"up":true}},
   {"ticks":21,"input":{"up":true}},
+  {"ticks":60,"input":{}},
+  {"ticks":1,"input":{"space":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"space":true}},
+  {"ticks":10,"input":{}},
   {"ticks":20,"input":{"down":true}},
   {"ticks":20,"input":{"up":true}},
   {"ticks":1,"input":{"up":true,"space":true}},
   {"ticks":130,"input":{}},
   {"ticks":1,"input":{"escape":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"space":true}},
   {"ticks":20,"input":{}}
 ]}

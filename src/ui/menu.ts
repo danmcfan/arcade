@@ -114,7 +114,7 @@ export function drawPausePanel(
   y: number,
   note?: ItemNote,
 ): void {
-  const extra = note ? textWidth(note.text) + 8 : 0;
+  const extra = note ? textWidth(note.text) + 12 : 0;
   const w = pausePanelWidth + extra;
   drawPanel(screen, centre - w / 2, y, w, pausePanelHeight);
   drawTextCentered(screen, "PAUSED", centre, y + 8, "yellow");
@@ -122,7 +122,7 @@ export function drawPausePanel(
   drawMenuItems(screen, items, cursor, y + 22, tick, listCentre);
   if (note) {
     const label = items[note.item] ?? "";
-    const x = listCentre - Math.trunc(textWidth(label) / 2) + textWidth(label) + 12;
+    const x = listCentre - Math.trunc(textWidth(label) / 2) + textWidth(label) + 14;
     drawText(screen, note.text, x, y + 22 + note.item * 12, note.ink);
   }
 }

@@ -1,4 +1,4 @@
-{"name":"arcade-enter-firefly","scene":"game","seed":1,"captureTicks":[58,358,359],"steps": [
+{"name":"arcade-enter-firefly","scene":"game","seed":1,"captureTicks":[58,358,359,381,392],"steps": [
   {"ticks":1,"input":{}},
   {"ticks":24,"input":{"right":true}},
   {"ticks":32,"input":{"up":true}},
@@ -7,6 +7,12 @@
   {"ticks":100,"input":{"right":true,"space":true}},
   {"ticks":100,"input":{"space":true}},
   {"ticks":1,"input":{"escape":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"space":true}},
   {"ticks":30,"input":{}},
   {"ticks":20,"input":{"down":true}}
 ]}
