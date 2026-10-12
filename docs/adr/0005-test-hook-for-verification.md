@@ -1,0 +1,3 @@
+# Browser checks drive the game through a `?debug` test hook
+
+With `?debug` in the URL, the page installs `window.__arcade` (D7, contract in `src/engine/testhook.ts`). It can pause the loop, step ticks with scripted input, seed the RNG, load scenes, and read back the state snapshot, the frame at logical resolution and the sound calls. Without the parameter it is not installed. It is always compiled into the production bundle, a deliberate choice that gives agents and scripts a deterministic way to drive the real page. The reusable harness built on it is `scripts/harness.ts` (see `docs/agents/visual-verification.md`).

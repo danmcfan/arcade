@@ -1,8 +1,8 @@
 // Capture TS frames for the golden scenarios through the `?debug` test hook
-// (§3.5), driving a browser with agent-browser. Start the dev server first:
+// (§3.5), driving a browser with agent-browser. It starts its own dev server
+// (scripts/harness.ts):
 //
-//   ARCADE_PORT=3002 bun run dev &
-//   ARCADE_PORT=3002 bun run frames [scenario ...]
+//   bun run frames [scenario ...]
 //
 // For each test/fixtures/inputs/<scenario>.json (all of them by default) it
 // seeds, loads the scene, runs the script up to each `captureTicks` entry
@@ -16,13 +16,13 @@ import type { Input } from "../src/engine/input.ts";
 import { expandSteps, type InputScript, type InputStep } from "../src/game/script.ts";
 import { fixturesDir, inputPath, loadScript, repoRoot } from "../test/parity/fixtures.ts";
 import { browser, decodeDataUrl } from "./browser.ts";
-import { ARCADE_PORT, ARCADE_URL } from "./config.ts";
+import { startServer } from "./harness.ts";
 
 export { decodeDataUrl } from "./browser.ts";
 
 const inputsDir = join(fixturesDir, "inputs");
 const outDir = join(repoRoot, "out/frames");
-const page = browser(`arcade-frames-${ARCADE_PORT}`);
+const page = browser(`arcade-frames-${process.pid}`);
 
 const KEYS = ["up", "down", "left", "right", "space", "escape", "shiftP"] as const;
 
@@ -96,14 +96,16 @@ if (import.meta.main) {
       : readdirSync(inputsDir)
           .filter((f) => f.endsWith(".json"))
           .map((f) => basename(f, ".json"));
-  page.run("open", `${ARCADE_URL}/?debug`);
-  page.run("wait", "--fn", "window.__arcade !== undefined");
+  const server = await startServer();
   try {
+    page.run("open", `${server.url}/?debug`);
+    page.run("wait", "--fn", "window.__arcade !== undefined");
     for (const name of names) {
       const script = loadScript(inputPath(name));
       if (script.captureTicks.length > 0) capture(script);
     }
   } finally {
     page.run("close");
+    server.stop();
   }
 }

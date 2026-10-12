@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "bun --hot --port=${ARCADE_PORT:-3000} ./index.html",
     "build": "bun build ./index.html --outdir dist --minify",
     "preview": "bunx serve dist",
@@ -12,7 +13,7 @@
     "sounds": "bun scripts/gen-ui-sounds.ts",
     "frames": "bun scripts/capture-frames.ts",
     "frames:report": "bun scripts/frame-report.ts",
-    "check:title": "bun scripts/check-title.ts",
+    "verify": "bun scripts/verify.ts",
     "check": "bun run typecheck && bun test && bun run build"
   },
   "devDependencies": {

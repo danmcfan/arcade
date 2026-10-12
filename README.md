@@ -27,7 +27,8 @@ bun run dev          # dev server with hot reload on http://localhost:3000 (ARCA
 bun test             # unit tests and the parity suite
 bun run build        # production bundle in dist/
 bun run preview      # serve dist/
-bun run check        # typecheck + test + build, as CI does
+bun run check        # typecheck + test + build, as CI does (also run by the pre-push hook)
+bun run verify       # browser checks with screenshots and video (see below)
 bun run art          # rebuild font.png and logo.png from src/ui/glyphs.ts
 bun run sounds       # rebuild the title music and menu sounds from src/ui/sounds.ts
 ```
@@ -51,12 +52,9 @@ Two demos are not wired into the arcade hub. Open them with a query parameter:
 
 With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumberjack`), the page exposes `window.__arcade` for deterministic browser checks. It can pause the loop, step fixed ticks with scripted input, seed the RNG, load any scene, and read back the state snapshot, the frame as a PNG data URL at logical resolution, and the sound calls. The full contract is `ArcadeTestHook` in `src/engine/testhook.ts`. Without the parameter the hook is not installed.
 
-`bun run check:title` drives the title screen, intro, pause menu and save end to end with agent-browser, through the hook and through real keyboard events without it. It writes frames and screenshots to `out/title/` and exits non-zero on the first failed check:
+## Verify checks
 
-```sh
-ARCADE_PORT=3002 bun run dev &
-ARCADE_PORT=3002 bun run check:title
-```
+`bun run verify` runs the browser checks in `scripts/verify/` (or `bun run verify title` for one). Each starts its own dev server, drives the real page with agent-browser through the test hook and through real keyboard events, and writes screenshots, frames and an mp4 to `out/verify/<name>/`. It exits non-zero on the first failed check. `scripts/harness.ts` is the shared driver; `docs/agents/visual-verification.md` explains how to write a check.
 
 ## Layout
 
@@ -71,9 +69,9 @@ ARCADE_PORT=3002 bun run check:title
 | `src/lab/wave/`, `src/lab/lumberjack/` | Lab scenes |
 | `test/fixtures/` | Recorded input scripts, per-tick traces and golden frames (see below) |
 | `test/parity/` | Replays every fixture scenario and compares it tick by tick |
-| `scripts/` | Frame capture and diff tools, UI art generator, title screen browser check |
+| `scripts/` | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
 | `art/cabinet.ase` | Aseprite source for `src/assets/images/cabinet.png` (not shipped) |
-| `docs/` | Port plan, port notes, agent workflow docs |
+| `docs/` | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`) |
 
 ## Parity fixtures
 
@@ -86,11 +84,10 @@ This is a port of an earlier Go version of the game. Before the Go code was remo
 
 `bun test` replays every script and must match every trace field on every tick. Behaviour differences found during the port, and the Go quirks kept on purpose, are listed in `docs/port-notes.md`.
 
-To compare frames, start the dev server, capture the TS frames, then diff them against the goldens:
+To compare frames, capture the TS frames, then diff them against the goldens:
 
 ```sh
-ARCADE_PORT=3002 bun run dev &
-ARCADE_PORT=3002 bun run frames      # writes out/frames/ (needs agent-browser)
+bun run frames                       # starts a dev server, writes out/frames/ (needs agent-browser)
 bun run frames:report                # writes out/frame-report.md and out/diff/
 ```
 
