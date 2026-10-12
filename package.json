@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "frames": "bun scripts/capture-frames.ts",
+    "frames:report": "bun scripts/frame-report.ts",
     "check": "bun run typecheck && bun test && bun run build"
   },
   "devDependencies": {

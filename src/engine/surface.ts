@@ -24,7 +24,9 @@ export interface DrawOpts {
   flipX?: boolean;
   /**
    * `Translate(-pivot)`, `Rotate(angle)`, `Translate(+pivot)`, applied before
-   * x/y. Disables snapping (D13).
+   * x/y. Instead of snapping, the quad corners go where Ebitengine's
+   * vertex adjustment puts them (`rotatedTransform`, D13). An angle of 0 is
+   * a plain, snapped draw (Go's `Rotate(0)` is a no-op).
    */
   rotate?: { angle: number; pivotX: number; pivotY: number };
   /** `ColorScale.ScaleAlpha`, 0..1. */
@@ -32,11 +34,75 @@ export interface DrawOpts {
 }
 
 /**
- * Ebitengine's nearest-filter result for a fractional translate (fact 11,
- * D13): `Math.ceil(v - 0.5)`, normalized so it never returns `-0`.
+ * Where Ebitengine puts a vertex at fractional `v` (fact 11, D13 as settled
+ * by the Phase 4 golden frames). `DrawImage` passes every vertex through
+ * `adjustDestinationPixel` (ebiten `internal/graphics/vertex.go`), which
+ * moves a fraction below 0.5 to 0 or 5/16 and one at or above 0.5 to 11/16
+ * or 1, so the first covered pixel centre is `floor(v + 0.5)`: half rounds
+ * up. The GeoM translate is a float32, hence `Math.fround`. Never `-0`.
  */
 export function snap(v: number): number {
-  return Math.ceil(v - 0.5) + 0;
+  return Math.floor(Math.fround(v) + 0.5) + 0;
+}
+
+/**
+ * Ebitengine `adjustDestinationPixel` (`internal/graphics/vertex.go`), in
+ * float32 like the vertex buffer: a vertex fraction in [0, 3/16) goes to 0,
+ * [3/16, 1/2) to 5/16, [1/2, 13/16) to 11/16 and the rest to 1.
+ */
+function adjustDestinationPixel(v: number): number {
+  const x = Math.fround(v);
+  const ix = Math.floor(x);
+  const frac = Math.fround(x - ix);
+  if (frac < 3 / 16) return ix;
+  if (frac < 8 / 16) return ix + 5 / 16;
+  if (frac < 13 / 16) return ix + 11 / 16;
+  return ix + 1;
+}
+
+/**
+ * Canvas transform for a rotated `DrawImage` of a `w × h` source (D13 as
+ * settled in Phase 4). Builds the GeoM in float64 in Go's order
+ * (`[Scale(-1,1) Translate(w,0)]`, `Translate(-p) Rotate(θ) Translate(p)`,
+ * `Translate(x, y)`), converts it to float32 and places the quad corners
+ * where Ebitengine's vertex buffer puts them (`QuadVerticesFromSrcAndMatrix`
+ * plus `adjustDestinationPixel`). The returned affine maps source (0,0),
+ * (w,0) and (0,h) onto those adjusted corners, so canvas nearest-neighbour
+ * sampling at pixel centres picks the same texels as Ebitengine's GPU
+ * (Ebitengine splits the quad into two triangles whose fourth corner can sit
+ * a fraction of a pixel off this parallelogram; the golden lumberjack frames
+ * do not show the difference).
+ */
+function rotatedTransform(
+  w: number,
+  h: number,
+  x: number,
+  y: number,
+  rot: { angle: number; pivotX: number; pivotY: number },
+  flipX: boolean,
+): [number, number, number, number, number, number] {
+  // GeoM fields a, b, c, d, tx, ty (x' = a·x + b·y + tx, y' = c·x + d·y + ty).
+  let [a, b, c, d, tx, ty] = [1, 0, 0, 1, 0, 0];
+  if (flipX) {
+    a = -1;
+    tx = w;
+  }
+  tx -= rot.pivotX;
+  ty -= rot.pivotY;
+  const sin = Math.sin(rot.angle);
+  const cos = Math.cos(rot.angle);
+  [a, b, tx, c, d, ty] = [cos * a - sin * c, cos * b - sin * d, cos * tx - sin * ty, sin * a + cos * c, sin * b + cos * d, sin * tx + cos * ty];
+  tx += rot.pivotX + x;
+  ty += rot.pivotY + y;
+  const f = Math.fround;
+  [a, b, c, d, tx, ty] = [f(a), f(b), f(c), f(d), f(tx), f(ty)];
+  const x0 = adjustDestinationPixel(tx);
+  const y0 = adjustDestinationPixel(ty);
+  const x1 = adjustDestinationPixel(f(f(a * w) + tx));
+  const y1 = adjustDestinationPixel(f(f(c * w) + ty));
+  const x2 = adjustDestinationPixel(f(f(b * h) + tx));
+  const y2 = adjustDestinationPixel(f(f(d * h) + ty));
+  return [(x1 - x0) / w, (y1 - y0) / w, (x2 - x0) / h, (y2 - y0) / h, x0, y0];
 }
 
 type Canvas = HTMLCanvasElement | OffscreenCanvas;
@@ -166,7 +232,7 @@ export class Surface {
 
   /**
    * `DrawImage(s, op)` where `x, y` is the final `GeoM` translate. Snapped
-   * unless rotated; a no-op for 0×0 sprites and for images not decoded yet.
+   * unless rotated (rotated corners follow `rotatedTransform`); a no-op for 0×0 sprites and for images not decoded yet.
    */
   draw(s: Sprite, x: number, y: number, opts?: DrawOpts): void {
     if (s.w <= 0 || s.h <= 0) return;
@@ -196,27 +262,24 @@ export class Surface {
     ctx.save();
     ctx.globalAlpha = opts?.alpha ?? 1;
     const rot = opts?.rotate;
-    if (rot) {
-      // GeoM: Translate(-p), Rotate(a), Translate(+p), then Translate(x, y).
-      ctx.setTransform(1, 0, 0, 1, x, y);
-      ctx.translate(rot.pivotX, rot.pivotY);
-      ctx.rotate(rot.angle);
-      ctx.translate(-rot.pivotX, -rot.pivotY);
+    // GeoM.Rotate(0) is a no-op in Go, so an angle of 0 is a plain draw.
+    if (rot && rot.angle !== 0) {
+      ctx.setTransform(...rotatedTransform(w, h, x, y, rot, opts?.flipX ?? false));
     } else {
       ctx.setTransform(1, 0, 0, 1, snap(x), snap(y));
-    }
-    if (opts?.flipX) {
-      // GeoM: Scale(-1, 1) then Translate(w, 0), applied first.
-      ctx.translate(w, 0);
-      ctx.scale(-1, 1);
+      if (opts?.flipX) {
+        // GeoM: Scale(-1, 1) then Translate(w, 0), applied first.
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+      }
     }
     ctx.drawImage(source, sx, sy, w, h, 0, 0, w, h);
     ctx.restore();
   }
 
   /**
-   * Fill the pixels whose centres fall inside the rect (the non-antialiased
-   * GPU rule): edges at `snap(x)` and `snap(x + w)`.
+   * Fill a non-antialiased rect with edges at `snap(x)` and `snap(x + w)`,
+   * the same rule as a sprite's vertices (half rounds up).
    */
   private pixelRect(
     x: number,
@@ -248,14 +311,32 @@ export class Surface {
   }
 
   /**
-   * D15: `dst' = C + dst*(1 - a/255)` on a snapped rect: black at alpha
-   * `a/255` (source-over), then `rgb(r,g,b)` added with "lighter". Exact on
-   * an opaque destination; on a transparent one the result is opaque, where
-   * Go would leave alpha `a`.
+   * D15: `dst' = C + dst*(1 - a/255)` on a snapped rect, alpha included.
+   *
+   * A valid premultiplied colour (`r, g, b <= a`) is plain source-over of its
+   * straight colour `rgb(r*255/a, ...)` at alpha `a/255`, which is exact over
+   * any destination, transparent included (the hub debug panel hangs over
+   * the transparent +120 strip).
+   *
+   * An "invalid" one (a component above `a`: hive particles, the debug
+   * overlay, fact 10) cannot be expressed as source-over: black at alpha
+   * `a/255`, then `rgb(r,g,b)` added with "lighter". Exact on an opaque
+   * destination; on a transparent one the result is opaque, where Go would
+   * leave an invalid premultiplied pixel.
    */
   fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
+    const valid = c.r <= c.a && c.g <= c.a && c.b <= c.a;
+    if (valid && c.a === 0) return;
     this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => {
       ctx.globalCompositeOperation = "source-over";
+      if (valid) {
+        const k = 255 / c.a;
+        ctx.globalAlpha = c.a / 255;
+        ctx.fillStyle = `rgb(${c.r * k}, ${c.g * k}, ${c.b * k})`;
+        ctx.fillRect(px, py, pw, ph);
+        ctx.globalAlpha = 1;
+        return;
+      }
       ctx.globalAlpha = c.a / 255;
       ctx.fillStyle = "#000000";
       ctx.fillRect(px, py, pw, ph);
