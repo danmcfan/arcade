@@ -5,7 +5,7 @@
 
 import { createHive } from "../hive/index.ts";
 import { createFirefly } from "../firefly/index.ts";
-import { createGearhead } from "../gearhead/index.ts";
+import { createBrassMonkey } from "../brass-monkey/index.ts";
 import { createWave } from "../lab/wave/index.ts";
 import { createLumberjack } from "../lab/lumberjack/index.ts";
 import { createGame } from "./index.ts";
@@ -16,14 +16,14 @@ import type { Scene, SceneName, Software, SoftwareName, WaveOptions } from "./so
 
 /**
  * Go `machine.newSoftware func(highscore int)`: every factory takes the hub's
- * high score; only hive uses it (firefly and gearhead ignore it, as in Go).
+ * high score; only hive uses it (firefly and brassMonkey ignore it, as in Go).
  * They also take the player's owned prizes (#22); each minigame applies its
  * own (only hive has prizes so far).
  */
 export const softwareFactories: Readonly<Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>> = {
   hive: (highScore, prizes) => createHive(highScore, prizes),
   firefly: () => createFirefly(),
-  gearhead: () => createGearhead(),
+  brassMonkey: () => createBrassMonkey(),
 };
 
 export function createSoftware(name: SoftwareName, highScore: number, prizes: readonly PrizeId[] = []): Software {

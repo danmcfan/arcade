@@ -6,7 +6,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { Game, type Progress } from "./game.ts";
-import type { GameSnapshot, GearheadSnapshot, SoftwareSnapshot } from "./snapshot.ts";
+import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 
@@ -37,7 +37,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): SoftwareSnapshot {
-    const s: GearheadSnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
+    const s: BrassMonkeySnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
     return s;
   }
 }
@@ -93,8 +93,8 @@ function enterHive(game: Game): void {
   run(game, 31, { up: true });
   game.step(input({ up: true, space: true }));
 }
-/** From spawn, walk to the gearhead cabinet and press Space. */
-function enterGearhead(game: Game): void {
+/** From spawn, walk to the Brass Monkey cabinet and press Space. */
+function enterBrassMonkey(game: Game): void {
   run(game, 31, { up: true });
   run(game, 24, { left: true });
   game.step(input({ up: true, space: true }));
@@ -155,10 +155,10 @@ describe("snapshot", () => {
 
   test("inside a software, sw is that software's snapshot", () => {
     const { game } = newGame();
-    enterGearhead(game);
+    enterBrassMonkey(game);
     run(game, 3);
     const s = snap(game);
-    expect(s.software).toBe("gearhead");
+    expect(s.software).toBe("brassMonkey");
     expect(s.sw).toEqual({ x: 3, y: 0, frame: 0, left: false, moving: false, joystick: 0 });
   });
 });
@@ -742,7 +742,7 @@ describe("debug mode and layout", () => {
   const sizes: [SoftwareName, [number, number], [number, number]][] = [
     ["hive", [336, 428], [456, 428]],
     ["firefly", [256, 320], [376, 320]],
-    ["gearhead", [256, 288], [376, 288]],
+    ["brassMonkey", [256, 288], [376, 288]],
   ];
   for (const [name, plain, debug] of sizes) {
     test(`${name} layout is ${plain.join("x")}, ${debug.join("x")} with debug`, () => {
@@ -756,7 +756,7 @@ describe("debug mode and layout", () => {
   }
 
   test("Shift+P inside a software still updates the software that tick", () => {
-    const { game, built } = newGame("gearhead");
+    const { game, built } = newGame("brassMonkey");
     game.step(input());
     game.step(input({ shiftP: true }));
     expect(built[0]?.updates.length).toBe(1);

@@ -1,4 +1,4 @@
-// Port of internal/draw/draw.go (D8): the 2D vector helpers gearhead uses.
+// Port of internal/draw/draw.go (D8): the 2D vector helpers Brass Monkey uses.
 // Go's `CutImage` and `DrawImage` are engine calls here: `sub()` in
 // src/engine/image.ts and `Surface.draw` in src/engine/surface.ts.
 

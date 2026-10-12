@@ -24,7 +24,7 @@ const standardControls: readonly ControlRow[] = [
 export const minigameControls: Readonly<Record<SoftwareName, readonly ControlRow[]>> = {
   hive: standardControls,
   firefly: standardControls,
-  gearhead: standardControls,
+  brassMonkey: standardControls,
 };
 
 export const prizeCounterTitle = "PRIZE COUNTER";

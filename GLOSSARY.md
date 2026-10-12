@@ -53,8 +53,8 @@ The large Firefly enemy, a bird that swoops down to eat the firefly. Two hits ki
 _Avoid_: boss, bird (when the Owl is meant)
 
 **Brass Monkey**:
-The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `gearhead` until it is renamed.
-_Avoid_: gearhead (in player-facing text), gnome game
+The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `brassMonkey` (`src/brass-monkey/`).
+_Avoid_: gnome game
 
 **Gnome**:
 The Brass Monkey villain who built the monkey. It stands at the top of each floor and sends hazards down.

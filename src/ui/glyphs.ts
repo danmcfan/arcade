@@ -6,7 +6,8 @@
 //
 // The small font copies the 7-px lettering on the hub title cards
 // ("PRESS SPACE TO PLAY"): thin strokes with the corners knocked off. The
-// logo letters are cut from the GEARHEAD card's display font.
+// logo letters are cut from the display font of the Go port's original Brass
+// Monkey title card.
 
 /** Height of every small-font glyph. */
 export const glyphHeight = 7;
@@ -96,7 +97,7 @@ export const bandRows = Math.ceil(charset.length / sheetColumns);
 export const fontSheetWidth = sheetColumns * cell;
 export const fontSheetHeight = bandRows * cell * inkOrder.length;
 
-/** Logo letters (15 px tall), cut from the GEARHEAD title card. */
+/** Logo letters (15 px tall), cut from the Go port's original Brass Monkey title card. */
 export const logoLetters: Readonly<Record<string, readonly string[]>> = {
   A: [
     "..##########..",
@@ -132,7 +133,7 @@ export const logoLetters: Readonly<Record<string, readonly string[]>> = {
     "###.......###.",
     "###.......###.",
   ],
-  // GEARHEAD's G with the inner bar and right side removed.
+  // That card's G with the inner bar and right side removed.
   C: [
     ".############.",
     "##############",
@@ -373,7 +374,7 @@ export const titleGap = 2;
  * `titleLetters`, replacing the original art's name.
  */
 export const titleCards: readonly { file: string; text: string; color: string }[] = [
-  { file: "gearhead.png", text: "BRASS MONKEY", color: "#38b764" },
+  { file: "brass-monkey.png", text: "BRASS MONKEY", color: "#38b764" },
 ];
 
 /** `text` in `titleLetters` as rows of `#` and `.`. */

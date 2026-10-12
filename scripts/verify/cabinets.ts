@@ -33,7 +33,7 @@ function canvas(v: Verify): PNG {
 const walks: { name: SoftwareName; label: string; sideways: Partial<Input> | null }[] = [
   { name: "hive", label: "sweet-sam", sideways: null },
   { name: "firefly", label: "firefly", sideways: { right: true } },
-  { name: "gearhead", label: "brass-monkey", sideways: { left: true } },
+  { name: "brassMonkey", label: "brass-monkey", sideways: { left: true } },
 ];
 
 const directions: [string, Partial<Input>, number][] = [
@@ -151,7 +151,7 @@ function recordWalk(v: Verify): void {
     },
     { scene: "game" },
   );
-  check(seen.join() === "firefly,gearhead", "the recording walks into Firefly, then Brass Monkey", seen);
+  check(seen.join() === "firefly,brassMonkey", "the recording walks into Firefly, then Brass Monkey", seen);
 }
 
 await verify("cabinets", (v) => {

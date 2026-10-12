@@ -1,11 +1,11 @@
-// Port of internal/gearhead/game.go.
+// Port of the Go Brass Monkey minigame's game.go (docs/port-notes.md gives its old Go name).
 
 import * as draw from "../draw/draw.ts";
-import { imageCabinetGearhead, imageGnome, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGnome, imageWorkshop } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { direction, moving, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
-import type { GearheadSnapshot } from "../game/snapshot.ts";
+import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
 import {
   cabinetHeight,
@@ -50,9 +50,9 @@ function newPlayer(): Entity {
   };
 }
 
-/** Go `GearHeadSoftware`, played inside its cabinet (#15). */
-export class GearheadSoftware implements FixedViewport {
-  readonly name = "gearhead" as const;
+/** The Go minigame's `Software`, played inside its cabinet (#15). */
+export class BrassMonkeySoftware implements FixedViewport {
+  readonly name = "brassMonkey" as const;
 
   private player: Entity = newPlayer();
   /** The bezel's joystick frame for the last input (no gameplay effect). */
@@ -109,7 +109,7 @@ export class GearheadSoftware implements FixedViewport {
 
   /** A `FixedViewport`: `buffer` is 0; the workshop is centred vertically in the cabinet's screen. */
   draw(screen: Surface, _buffer: number): void {
-    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetGearhead);
+    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetBrassMonkey);
 
     screen.fillRect(cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldWidth, bandHeight, bandColour);
     screen.fillRect(cabinetInsetLeft, cabinetInsetTop + bandHeight + height, cabinetPlayfieldWidth, bandHeight, bandColour);
@@ -128,7 +128,7 @@ export class GearheadSoftware implements FixedViewport {
     return 0;
   }
 
-  snapshot(): GearheadSnapshot {
+  snapshot(): BrassMonkeySnapshot {
     return {
       x: this.player.position.x,
       y: this.player.position.y,
@@ -140,9 +140,9 @@ export class GearheadSoftware implements FixedViewport {
   }
 }
 
-/** Go `NewGearHeadSoftware()`. */
-export function newGearheadSoftware(): GearheadSoftware {
-  return new GearheadSoftware();
+/** The Go minigame's constructor. */
+export function newBrassMonkeySoftware(): BrassMonkeySoftware {
+  return new BrassMonkeySoftware();
 }
 
 function drawBackground(screen: Surface, background: Sprite, origin: draw.Vector): void {

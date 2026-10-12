@@ -31,7 +31,7 @@ export interface SceneSnapshotBase {
 // game (internal/game + internal/arcade)
 
 /** Title image shown by the hub: Go `State.imageTitle` (nil → null). */
-export type ArcadeTitle = "gearhead" | "sweet" | "firefly";
+export type ArcadeTitle = "brassMonkey" | "sweet" | "firefly";
 
 export interface ArcadePlayerSnapshot {
   /** `entity.X` (float64). */
@@ -49,7 +49,7 @@ export interface ArcadeSnapshot {
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
   /**
-   * `State.imageTitle`: `assets.ImageTitleGearhead` → "gearhead",
+   * `State.imageTitle`: `assets.ImageTitleBrassMonkey` → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
    */
   title: ArcadeTitle | null;
@@ -285,9 +285,9 @@ export interface FireflySnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// gearhead (internal/gearhead)
+// brassMonkey (the Go port's Brass Monkey package)
 
-export interface GearheadSnapshot {
+export interface BrassMonkeySnapshot {
   /** `player.Position.X`. */
   x: number;
   /** `player.Position.Y`. */
@@ -298,12 +298,12 @@ export interface GearheadSnapshot {
   left: boolean;
   /** `player.Moving`. */
   moving: boolean;
-  /** `GearheadSoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
   joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
-export type SoftwareSnapshot = HiveSnapshot | FireflySnapshot | GearheadSnapshot;
+export type SoftwareSnapshot = HiveSnapshot | FireflySnapshot | BrassMonkeySnapshot;
 
 // ---------------------------------------------------------------------------
 // wave (internal/wave, lab scene)

@@ -1,32 +1,32 @@
 import { describe, expect, test } from "bun:test";
-import { imageCabinetGearhead, imageGnome, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGnome, imageWorkshop } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { DrawOpts, Surface } from "../engine/surface.ts";
-import type { GearheadSnapshot } from "../game/snapshot.ts";
+import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { createGearhead } from "./index.ts";
+import { createBrassMonkey } from "./index.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
-const snap = (g: ReturnType<typeof createGearhead>) => g.snapshot() as GearheadSnapshot;
+const snap = (g: ReturnType<typeof createBrassMonkey>) => g.snapshot() as BrassMonkeySnapshot;
 
-describe("GearHeadSoftware", () => {
-  test("is the gearhead software on the workshop background, never over, scoreless", () => {
-    const g = createGearhead();
-    expect(g.name).toBe("gearhead");
+describe("BrassMonkeySoftware", () => {
+  test("is the brassMonkey software on the workshop background, never over, scoreless", () => {
+    const g = createBrassMonkey();
+    expect(g.name).toBe("brassMonkey");
     expect(g.background()).toBe(imageWorkshop);
     expect(g.gameOver()).toBe(false);
     expect(g.score()).toBe(0);
   });
 
   test("starts idle at (16, 240) facing right", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(NO_INPUT);
     expect(snap(g)).toEqual({ x: 16, y: 240, frame: 0, left: false, moving: false, joystick: 0 });
   });
 
   test("walking moves 1 px per tick and advances the frame by 0.2", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(held({ right: true }));
     expect(snap(g)).toEqual({ x: 17, y: 240, frame: 0.2, left: false, moving: true, joystick: 4 });
     g.update(held({ left: true }));
@@ -35,7 +35,7 @@ describe("GearHeadSoftware", () => {
   });
 
   test("the frame wraps to 0 once it reaches 4", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     const frames: number[] = [];
     for (let t = 0; t < 30; t++) {
       g.update(held({ right: true }));
@@ -46,7 +46,7 @@ describe("GearHeadSoftware", () => {
   });
 
   test("letting go resets the frame and stops", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(held({ right: true }));
     g.update(held({ right: true }));
     g.update(NO_INPUT);
@@ -54,14 +54,14 @@ describe("GearHeadSoftware", () => {
   });
 
   test("Up or Down alone walks in the current facing (direction priority masks Left/Right)", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(held({ left: true }));
     g.update(held({ up: true, right: true }));
     expect(snap(g)).toMatchObject({ x: 14, left: true, moving: true });
   });
 
   test("x is clamped to [6, 108]", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     for (let t = 0; t < 30; t++) g.update(held({ left: true }));
     expect(snap(g).x).toBe(6);
     for (let t = 0; t < 200; t++) g.update(held({ right: true }));
@@ -71,13 +71,13 @@ describe("GearHeadSoftware", () => {
 
 describe("cabinet", () => {
   test("is a FixedViewport the size of the cabinet", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     expect(isFixedViewport(g)).toBe(true);
     if (isFixedViewport(g)) expect(g.fixedViewportSize()).toEqual([336, 428]);
   });
 
   test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     expect(snap(g).joystick).toBe(0);
     const frames = [held({}), held({ up: true }), held({ down: true }), held({ left: true }), held({ right: true })].map((i) => {
       g.update(i);
@@ -97,7 +97,7 @@ interface DrawCall {
 type Fill = [x: number, y: number, w: number, h: number, css: string];
 
 /** Brass Monkey is a FixedViewport: drawn with buffer 0. Returns sprite draws and, separately, fills. */
-function record(g: ReturnType<typeof createGearhead>, buffer = 0): { calls: DrawCall[]; fills: Fill[]; order: string[] } {
+function record(g: ReturnType<typeof createBrassMonkey>, buffer = 0): { calls: DrawCall[]; fills: Fill[]; order: string[] } {
   const calls: DrawCall[] = [];
   const fills: Fill[] = [];
   const order: string[] = [];
@@ -115,19 +115,19 @@ function record(g: ReturnType<typeof createGearhead>, buffer = 0): { calls: Draw
   return { calls, fills, order };
 }
 
-function drawCalls(g: ReturnType<typeof createGearhead>): DrawCall[] {
+function drawCalls(g: ReturnType<typeof createBrassMonkey>): DrawCall[] {
   return record(g).calls;
 }
 
 const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
 
-describe("gearhead draw", () => {
+describe("brassMonkey draw", () => {
   test("cabinet, 16 px workshop-dark bands above and below, workshop centred in the screen, then the gnome", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     const { calls, fills, order } = record(g);
     expect(order).toEqual(["draw", "fill", "fill", "draw", "draw"]);
     const [cabinet, bg, gnome] = calls;
-    expect(cabinet?.sprite.asset).toBe(imageCabinetGearhead.asset);
+    expect(cabinet?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
     expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
     expect(fills).toEqual([
       [56, 56, 224, 16, "#040c06"],
@@ -141,13 +141,13 @@ describe("gearhead draw", () => {
   });
 
   test("the cabinet shows the joystick frame of the last input", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(held({ down: true }));
     expect(rect(drawCalls(g)[0]!.sprite)).toEqual([2 * 336, 0, 336, 428]);
   });
 
   test("frames 0,1,2,3 map to sheet columns 0,1,0,2", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     const columns: number[] = [];
     let lastFrame = -1;
     for (let t = 0; t < 20; t++) {
@@ -162,7 +162,7 @@ describe("gearhead draw", () => {
   });
 
   test("facing left draws flipped", () => {
-    const g = createGearhead();
+    const g = createBrassMonkey();
     g.update(held({ left: true }));
     const gnome = drawCalls(g)[2];
     expect(gnome?.opts?.flipX).toBe(true);

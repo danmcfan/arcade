@@ -1,6 +1,6 @@
 # Arcade
 
-Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **hive** (a Pac-Man-like bear and bees), **firefly** (a Galaga-like shooter) and **gearhead** (a gnome in a workshop).
+Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **hive** (a Pac-Man-like bear and bees), **firefly** (a Galaga-like shooter) and **Brass Monkey** (a gnome in a workshop).
 
 The page opens on a title screen: **Continue** brings back the hub high score and where you were standing (saved in `localStorage` when you leave a minigame, quit to the menu, or close the tab). **New game** asks first when there is a save (starting one deletes it), then shows a short how-to-play screen and starts in the hub. Minigame progress is not saved.
 
@@ -65,7 +65,7 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 | `src/game/` | Top-level loop (hub and active minigame), scene registry, snapshot types |
 | `src/title/` | Title scene: title menu, intro, pause menu, save (`SaveStore`) |
 | `src/ui/` | Pixel font and logo source, text and panel drawing |
-| `src/arcade/`, `src/hive/`, `src/firefly/`, `src/gearhead/` | The hub and the three minigames |
+| `src/arcade/`, `src/hive/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames |
 | `src/lab/wave/`, `src/lab/lumberjack/` | Lab scenes |
 | `test/fixtures/` | Recorded input scripts, per-tick traces and golden frames (see below) |
 | `test/parity/` | Replays every fixture scenario and compares it tick by tick |
