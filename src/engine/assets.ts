@@ -28,6 +28,7 @@ import workshopUrl from "../assets/images/workshop.png";
 import gnomeUrl from "../assets/images/gnome.png";
 import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
+import iconsUrl from "../assets/images/icons.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -84,9 +85,11 @@ export const images = {
   workshop: asset(workshopUrl, 224, 256),
   gnome: asset(gnomeUrl, 64, 64),
 
-  // Title screen and menus; generated from src/ui/glyphs.ts by `bun run art`.
+  // Title screen, menus and HUD; generated from src/ui/glyphs.ts and
+  // src/ui/icons.ts by `bun run art`.
   font: asset(fontUrl, 128, 192),
   logo: asset(logoUrl, 100, 17),
+  icons: asset(iconsUrl, 23, 9),
 } as const;
 
 // Go `assets.ImageX` package variables, as whole-image sprites.
@@ -116,6 +119,7 @@ export const imageGnome: Sprite = whole(images.gnome);
 
 export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
+export const imageIcons: Sprite = whole(images.icons);
 
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);

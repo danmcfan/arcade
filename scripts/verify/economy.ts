@@ -193,7 +193,7 @@ function recordPayout(v: Verify): void {
       v.wait(2000); // the death animation ends; the payout opens
       v.wait(3000); // 5 tickets count up
       v.key("Space"); // close
-      v.wait(1500); // the hub, with TICKETS 5
+      v.wait(1500); // the hub, with 5 tickets
     },
     { scene: "game" },
   );

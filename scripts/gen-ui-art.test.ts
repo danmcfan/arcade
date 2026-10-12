@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, logoLetters } from "../src/ui/glyphs.ts";
-import { fontPath, logoPath, renderFont, renderLogo } from "./gen-ui-art.ts";
+import { iconPalette, icons } from "../src/ui/icons.ts";
+import { fontPath, iconsPath, logoPath, renderFont, renderIcons, renderLogo } from "./gen-ui-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
@@ -23,12 +24,22 @@ describe("UI art source", () => {
       });
     }
   });
+
+  test("every icon is rows of one width, in palette letters and .", () => {
+    const allowed = new RegExp(`^[.${Object.keys(iconPalette).join("")}]+$`);
+    for (const [name, rows] of Object.entries(icons)) {
+      for (const row of rows) {
+        expect({ name, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ name, row, ok: true });
+      }
+    }
+  });
 });
 
-describe("committed PNGs match src/ui/glyphs.ts (run `bun run art` after editing it)", () => {
+describe("committed PNGs match src/ui/glyphs.ts and icons.ts (run `bun run art` after editing them)", () => {
   for (const [name, path, render] of [
     ["font.png", fontPath, renderFont],
     ["logo.png", logoPath, renderLogo],
+    ["icons.png", iconsPath, renderIcons],
   ] as const) {
     test(name, () => {
       const onDisk = PNG.sync.read(readFileSync(path));

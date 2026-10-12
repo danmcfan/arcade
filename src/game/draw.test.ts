@@ -4,6 +4,7 @@ import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
+import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
 import { Game } from "./game.ts";
 import type { GearheadSnapshot } from "./snapshot.ts";
@@ -30,14 +31,23 @@ interface Glyph {
   h: number;
 }
 
+interface Icon {
+  name: IconName;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /**
  * Records the Surface calls the hub makes (only the ones it uses). Pixel-font
- * glyphs are decoded into `glyphs` instead of `calls`; panel and key-cap
- * fills are counted in `fills`.
+ * glyphs and HUD icons are decoded into `glyphs` and `icons` instead of
+ * `calls`; panel and key-cap fills are counted in `fills`.
  */
 function recordingSurface() {
   const calls: Call[] = [];
   const glyphs: Glyph[] = [];
+  const icons: Icon[] = [];
   let fills = 0;
   let dimmed: [number, number, number, number] | null = null;
   const surface = {
@@ -47,6 +57,11 @@ function recordingSurface() {
         const band = Math.trunc(row / bandRows);
         const i = (row % bandRows) * sheetColumns + s.sx / cell;
         glyphs.push({ ch: charset[i]!, ink: inkOrder[band]!, x, y, h: s.h });
+        return;
+      }
+      if (s.asset === images.icons) {
+        const name = (Object.keys(iconRects) as IconName[]).find((n) => iconRects[n].x === s.sx)!;
+        icons.push({ name, x, y, w: s.w, h: s.h });
         return;
       }
       const name = Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?";
@@ -73,7 +88,7 @@ function recordingSurface() {
       .sort((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
-  return { calls, glyphs, text, surface: surface as unknown as Surface, fills: () => fills, dimmed: () => dimmed };
+  return { calls, glyphs, icons, text, surface: surface as unknown as Surface, fills: () => fills, dimmed: () => dimmed };
 }
 
 class FakeSoftware implements Software {
@@ -220,31 +235,37 @@ describe("software draw", () => {
 });
 
 describe("hub HUD", () => {
-  test("tokens and tickets are drawn in the pixel font in the top margin", () => {
+  test("a coin and the token count on the left, a ticket and the ticket count on the right, in the top margin", () => {
     const game = newGame();
     const r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow")).toBe("TOKENS 5TICKETS 0");
+    expect(r.text("yellow")).toBe("50");
     expect(r.glyphs.every((g) => g.y >= 0 && g.y + glyphHeight <= 16)).toBe(true);
-    const tokens = r.glyphs.filter((g) => g.x < 96);
-    const tickets = r.glyphs.filter((g) => g.x >= 96);
-    expect(tokens.map((g) => g.ch).join("")).toBe("TOKENS 5");
-    expect(tickets.map((g) => g.ch).join("")).toBe("TICKETS 0");
-    expect(Math.min(...tokens.map((g) => g.x))).toBe(16);
+    const [coin, ticket] = r.icons;
+    expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket"]);
+    expect(r.icons.every((i) => i.y >= 0 && i.y + i.h <= 16)).toBe(true);
+    // Each icon is vertically centred on the text.
+    expect(r.icons.every((i) => 2 * i.y + i.h === 2 * r.glyphs[0]!.y + glyphHeight)).toBe(true);
+    expect(coin!.x).toBe(16);
+    const [tokens, tickets] = r.glyphs;
+    expect(tokens!.x).toBeGreaterThan(coin!.x + coin!.w);
+    expect(ticket!.x).toBeGreaterThan(tokens!.x);
+    expect(tickets!.x).toBeGreaterThan(ticket!.x + ticket!.w);
   });
 
   test("a spent token shows at once; at 0 tokens the count reads FREE PLAY", () => {
     const game = newGame(null, 1);
     const r1 = recordingSurface();
     game.draw(r1.surface);
-    expect(r1.text("yellow")).toContain("TOKENS 1");
+    expect(r1.text("yellow")).toBe("10");
     for (let t = 0; t < 31; t++) game.step(input({ up: true }));
     game.step(input({ up: true, space: true }));
     for (const keys of [{ escape: true }, {}, { down: true }, {}, { down: true }, {}, { space: true }]) game.step(input(keys));
     const r0 = recordingSurface();
     game.draw(r0.surface);
     expect(r0.text("orange")).toBe("FREE PLAY");
-    expect(r0.text("yellow")).toBe("TICKETS 0");
+    expect(r0.text("yellow")).toBe("0");
+    expect(r0.icons.map((i) => i.name)).toEqual(["token", "ticket"]);
   });
 
   test("the hub pause dims only the hub image, so the counts stay readable (title scene)", () => {
