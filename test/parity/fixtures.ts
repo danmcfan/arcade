@@ -29,7 +29,7 @@ export function readTrace(path: string): unknown[] {
 }
 
 /** Parse gzipped JSONL trace bytes, one object per non-empty line. */
-export function parseTrace(gz: Uint8Array): unknown[] {
+export function parseTrace(gz: Uint8Array<ArrayBuffer>): unknown[] {
   const text = new TextDecoder().decode(Bun.gunzipSync(gz));
   const out: unknown[] = [];
   for (const line of text.split("\n")) if (line.trim() !== "") out.push(JSON.parse(line));

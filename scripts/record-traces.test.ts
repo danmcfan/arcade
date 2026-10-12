@@ -13,6 +13,6 @@ describe("record-traces", () => {
 
   test("recording is deterministic", () => {
     const script = loadScript(inputPath("gearhead-walk"));
-    expect(Buffer.compare(recordTrace(script), recordTrace(script))).toBe(0);
+    expect(recordTrace(script)).toEqual(recordTrace(script));
   });
 });

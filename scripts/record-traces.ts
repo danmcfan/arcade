@@ -15,9 +15,9 @@ import type { InputScript } from "../src/game/script.ts";
 import { inputPath, loadScript, replay, tracePath } from "../test/parity/harness.ts";
 
 /** The trace for `script`, gzipped JSONL (deterministic bytes). */
-export function recordTrace(script: InputScript): Buffer {
+export function recordTrace(script: InputScript): Uint8Array<ArrayBuffer> {
   const lines = replay(script).map((s) => JSON.stringify(s));
-  return Buffer.from(Bun.gzipSync(new TextEncoder().encode(`${lines.join("\n")}\n`), { level: 9 }));
+  return Bun.gzipSync(new TextEncoder().encode(`${lines.join("\n")}\n`), { level: 9 });
 }
 
 if (import.meta.main) {
