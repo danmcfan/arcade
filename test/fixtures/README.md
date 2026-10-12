@@ -110,14 +110,15 @@ What the capture ticks show:
 
 ```json
 { "algorithm": "mulberry32", "count": 1000,
-  "sequences": [
-    { "seed": 1,  "float": [1000 numbers], "state": [1000 uint32s], "intn": [1000 ints] },
-    { "seed": 42, "float": [...],          "state": [...],          "intn": [...] } ] }
+  "seeds": { "1": [1000 numbers], "42": [1000 numbers] },
+  "state": { "1": [1000 uint32s], "42": [...] },
+  "intn":  { "1": [1000 ints],    "42": [...] } }
 ```
 
-- `float[i]`: the (i+1)-th `rng.float()` after `rng.seed(seed)`;
-  `state[i]`: `rng.state()` right after that call.
-- `intn[i]`: a fresh run from `rng.seed(seed)` calling `rng.intn(i + 1)` for
+- `seeds[s][i]`: the (i+1)-th `rng.float()` after `rng.seed(s)` (the shape
+  `src/engine/rng.test.ts` reads); `state[s][i]`: `rng.state()` right after
+  that call.
+- `intn[s][i]`: a fresh run from `rng.seed(s)` calling `rng.intn(i + 1)` for
   i = 0..999 (one call each, so the bound grows 1, 2, 3, ...).
 
 The Go side is `internal/rng` (uint32 arithmetic); `src/engine/rng.ts` must

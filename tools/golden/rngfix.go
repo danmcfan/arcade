@@ -4,41 +4,44 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/danmcfan/arcade/internal/rng"
 )
 
 // rngFixture is test/fixtures/rng.json (format in test/fixtures/README.md).
+// `seeds` is the shape src/engine/rng.test.ts reads: seed -> float() outputs.
 type rngFixture struct {
-	Algorithm string        `json:"algorithm"`
-	Count     int           `json:"count"`
-	Sequences []rngSequence `json:"sequences"`
-}
-
-type rngSequence struct {
-	Seed  uint32    `json:"seed"`
-	Float []float64 `json:"float"`
-	State []uint32  `json:"state"`
-	// Intn: a fresh run from the same seed calling rng.Intn(n) for n = 1, 2,
-	// 3, ... 1000 (one call each, so n = i+1 for entry i).
-	Intn []int `json:"intn"`
+	Algorithm string               `json:"algorithm"`
+	Count     int                  `json:"count"`
+	Seeds     map[string][]float64 `json:"seeds"`
+	// State: seed -> rng.state() right after each float() call above.
+	State map[string][]uint32 `json:"state"`
+	// Intn: seed -> a fresh run from that seed calling rng.Intn(i+1) for
+	// i = 0..count-1 (one call each).
+	Intn map[string][]int `json:"intn"`
 }
 
 func writeRNG(fixtures string) error {
 	const count = 1000
-	fix := rngFixture{Algorithm: "mulberry32", Count: count}
+	fix := rngFixture{
+		Algorithm: "mulberry32",
+		Count:     count,
+		Seeds:     map[string][]float64{},
+		State:     map[string][]uint32{},
+		Intn:      map[string][]int{},
+	}
 	for _, seed := range []uint32{1, 42} {
-		seq := rngSequence{Seed: seed}
+		key := strconv.FormatUint(uint64(seed), 10)
 		rng.Seed(seed)
 		for range count {
-			seq.Float = append(seq.Float, rng.Float64())
-			seq.State = append(seq.State, rng.State())
+			fix.Seeds[key] = append(fix.Seeds[key], rng.Float64())
+			fix.State[key] = append(fix.State[key], rng.State())
 		}
 		rng.Seed(seed)
 		for i := range count {
-			seq.Intn = append(seq.Intn, rng.Intn(i+1))
+			fix.Intn[key] = append(fix.Intn[key], rng.Intn(i+1))
 		}
-		fix.Sequences = append(fix.Sequences, seq)
 	}
 	data, err := json.Marshal(fix)
 	if err != nil {
