@@ -1,12 +1,12 @@
 // Port of internal/firefly/game.go.
 
 import {
-  imageBug,
-  imageBullet,
   imageCabinetFirefly,
-  imageExplosion,
-  imageGalaxy,
-  imageShip,
+  imageFirefly,
+  imageFireflyBackground,
+  imageHit,
+  imageMoth,
+  imageSpark,
   soundBoom,
   soundLaser,
 } from "../engine/assets.ts";
@@ -99,7 +99,7 @@ function newEntity(image: Sprite): Entity {
 
 function newPlayer(): Entity {
   return {
-    ...newEntity(imageShip),
+    ...newEntity(imageFirefly),
     position: { x: (tileSize * tileWidth) / 2, y: tileSize * tileHeight - tileSize * 3 },
     direction: { x: 2.0, y: 0 },
     width: tileSize * 2,
@@ -109,7 +109,7 @@ function newPlayer(): Entity {
 
 function newBug(pattern: PatternFunc, patternName: PatternName, initialDuration: number, durationStep: number): Entity {
   return {
-    ...newEntity(imageBug),
+    ...newEntity(imageMoth),
     width: tileSize * 2,
     height: tileSize * 2,
     pattern,
@@ -154,6 +154,7 @@ export class FireflySoftware implements FixedViewport {
   /** The bezel's joystick frame for the last input (no gameplay effect). */
   cabinetJoystickFrame = 0;
 
+  /** The firefly. Sparks and Moths keep their Go names, `bullets` and `bugs`, as the snapshot does. */
   player: Entity = newPlayer();
   bullets: Entity[] = [];
   bugs: Entity[] = newBugs();
@@ -169,7 +170,7 @@ export class FireflySoftware implements FixedViewport {
     if (i.space) {
       if (this.fireDelay <= 0) {
         this.bullets.push({
-          ...newEntity(imageBullet),
+          ...newEntity(imageSpark),
           position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
           direction: { x: 0, y: -5.0 },
         });
@@ -318,7 +319,7 @@ export class FireflySoftware implements FixedViewport {
         // never shown; for deadFrames 1..14 column 5 is off the 5-column
         // sheet and the sub-image is empty (nothing drawn), as in Go.
         const col = 5 - Math.trunc(bug.deadFrames / 15);
-        const img = cutImage(imageExplosion, Math.trunc(col * 32), 0, Math.trunc((col + 1) * 32), 32);
+        const img = cutImage(imageHit, Math.trunc(col * 32), 0, Math.trunc((col + 1) * 32), 32);
         drawImage(screen, img, p);
         continue;
       }
@@ -346,7 +347,7 @@ export class FireflySoftware implements FixedViewport {
   }
 
   background(): Sprite {
-    return imageGalaxy;
+    return imageFireflyBackground;
   }
 
   snapshot(): FireflySnapshot {

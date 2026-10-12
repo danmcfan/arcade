@@ -46,7 +46,7 @@ function hex(css: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function plot(png: PNG, x: number, y: number, css: string): void {
+export function plot(png: PNG, x: number, y: number, css: string): void {
   const i = (y * png.width + x) * 4;
   const [r, g, b] = hex(css);
   png.data[i] = r;
@@ -55,7 +55,7 @@ function plot(png: PNG, x: number, y: number, css: string): void {
   png.data[i + 3] = 255;
 }
 
-function blank(width: number, height: number): PNG {
+export function blank(width: number, height: number): PNG {
   const png = new PNG({ width, height });
   png.data.fill(0);
   return png;
