@@ -15,6 +15,7 @@ different, so the harness refuses to run on any other GOARCH.
 | `traces/<name>.jsonl.gz` | Per-tick state snapshots (§4.3, `src/game/snapshot.ts`) |
 | `frames/<name>/<tick>.png` | Golden frames at logical resolution for each `captureTicks` entry |
 | `rng.json` | mulberry32 reference outputs for seeds 1 and 42 |
+| `hive.goReference.json` | Trimmed hive-only Go reference used by `src/hive/hive.test.ts` (not from `tools/golden/`; see below) |
 
 Total size: about 2.8 MB (traces 1.7 MB, frames 0.94 MB, inputs 96 KB, rng 68 KB).
 
@@ -157,6 +158,24 @@ and `modeIndex` 1..8. It also checks the firefly-play and lumberjack-chop
 must-cover items above. Note that hive's GAMEOVER state never appears in a
 trace: the tick it is entered, `Game.Update` sees `GameOver()` and drops the
 software, so that tick's snapshot already has `software: null`.
+
+## hive.goReference.json
+
+A trimmed Go reference for hive on its own: seed 8, 6,000 ticks, driving the
+hive software directly (no hub) with the "greedy" input generator in
+`src/hive/hive.test.ts`. It holds the state transitions (`trans`), a few
+complete snapshots (`snaps`) and the end state (`final`). It was captured during T5
+by the hive porter's throwaway Go harness, not by `tools/golden/`: a copy of
+`internal/hive` with `math/rand` swapped for mulberry32 at the same call
+positions, a `Snapshot()` emitting the §4.3 keys, built with
+`CGO_ENABLED=1 GOARCH=amd64`. The full per-tick traces matched the TS port
+bit for bit at the time.
+
+That harness was never committed, so **this file cannot be regenerated**.
+It is kept as a cheap hive-level regression check (`hive.test.ts` imports
+it; it is test-only and not in the bundle). The full `hive-*` traces above
+supersede it for regression purposes: if the two ever disagree, the traces
+win.
 
 ## Regenerating
 

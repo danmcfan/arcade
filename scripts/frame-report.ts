@@ -10,18 +10,15 @@
 // Exits 1 if any frame has differing pixels after masking.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import type { LumberjackSnapshot } from "../src/game/snapshot.ts";
+import { fixturesDir, readTrace, repoRoot, tracePath } from "../test/parity/fixtures.ts";
 import { diffImages, type Mask } from "./frame-diff.ts";
-import { treeTopEdgeMasks, treeTopTexels } from "./tree-mask.ts";
+import { lumberjackTrees, treeTopEdgeMasks, treeTopTexels } from "./tree-mask.ts";
 
-const repoRoot = new URL("../", import.meta.url).pathname;
-const goldenDir = join(repoRoot, "test/fixtures/frames");
+const goldenDir = join(fixturesDir, "frames");
 const actualDir = join(repoRoot, "out/frames");
 const diffDir = join(repoRoot, "out/diff");
-const tracesDir = join(repoRoot, "test/fixtures/traces");
 const reportPath = join(repoRoot, "out/frame-report.md");
 const treeSheet = join(repoRoot, "src/lab/lumberjack/images/Trees/Big_Oak_Tree.png");
 
@@ -43,17 +40,15 @@ export interface FrameRow {
 }
 
 function snapshotAt(scenario: string, tick: number): unknown {
-  const lines = gunzipSync(readFileSync(join(tracesDir, `${scenario}.jsonl.gz`))).toString().split("\n");
-  const prefix = `{"tick":${tick},`;
-  const line = lines.find((l) => l.startsWith(prefix));
-  if (!line) throw new Error(`${scenario}: no trace line for tick ${tick}`);
-  return JSON.parse(line);
+  const snap = readTrace(tracePath(scenario)).find((s) => (s as { tick?: unknown } | null)?.tick === tick);
+  if (snap === undefined) throw new Error(`${scenario}: no trace line for tick ${tick}`);
+  return snap;
 }
 
 function masksFor(scenario: string, tick: number, width: number, height: number): Mask[] {
   if (!scenario.startsWith("lumberjack")) return [];
-  const snap = snapshotAt(scenario, tick) as LumberjackSnapshot;
-  return treeTopEdgeMasks(snap.trees, treeTopTexels(PNG.sync.read(readFileSync(treeSheet))), width, height);
+  const trees = lumberjackTrees(snapshotAt(scenario, tick));
+  return treeTopEdgeMasks(trees, treeTopTexels(PNG.sync.read(readFileSync(treeSheet))), width, height);
 }
 
 function exactDiff(a: PNG, b: PNG): number {

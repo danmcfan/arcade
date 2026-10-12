@@ -34,6 +34,27 @@ export function treeTopTexels(sheet: { width: number; data: Uint8Array }): Texel
   };
 }
 
+const TREE_NUMBERS = ["x", "y", "theta", "health"] as const;
+
+/**
+ * The `trees` of a lumberjack trace snapshot (parsed JSON), checking the
+ * fields `treeTopEdgeMasks` reads; throws if the snapshot is not
+ * lumberjack-shaped.
+ */
+export function lumberjackTrees(snapshot: unknown): LumberjackTreeSnapshot[] {
+  const trees = (snapshot as { trees?: unknown } | null)?.trees;
+  if (!Array.isArray(trees)) throw new Error("not a lumberjack snapshot: no trees array");
+  for (const [i, t] of trees.entries()) {
+    const ok =
+      typeof t === "object" &&
+      t !== null &&
+      TREE_NUMBERS.every((k) => typeof (t as Record<string, unknown>)[k] === "number") &&
+      typeof (t as Record<string, unknown>).shakeRight === "boolean";
+    if (!ok) throw new Error(`not a lumberjack snapshot: bad trees[${i}]`);
+  }
+  return trees as LumberjackTreeSnapshot[];
+}
+
 /**
  * 1×1 masks for the edge pixels of every rotated, visible tree top inside a
  * `width × height` frame. Unrotated trees (theta 0) and felled trees

@@ -8,24 +8,16 @@
 //   parityTest("hive-fuzz-1");
 
 import { test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { relative } from "node:path";
 import * as rng from "../../src/engine/rng.ts";
 import { createScene, type SceneOptions } from "../../src/game/registry.ts";
 import { expandSteps, type InputScript } from "../../src/game/script.ts";
 import type { Scene, SceneName } from "../../src/game/software.ts";
 import type { SceneSnapshot } from "../../src/game/snapshot.ts";
+import { inputPath, loadScript, readTrace, repoRoot, tracePath } from "./fixtures.ts";
 
-const repoRoot = new URL("../../", import.meta.url).pathname;
-export const fixturesDir = new URL("../fixtures/", import.meta.url).pathname;
-
-export function inputPath(scenario: string): string {
-  return `${fixturesDir}inputs/${scenario}.json`;
-}
-
-export function tracePath(scenario: string): string {
-  return `${fixturesDir}traces/${scenario}.jsonl.gz`;
-}
+export { fixturesDir, inputPath, loadScript, readTrace, tracePath } from "./fixtures.ts";
 
 /** How scenes are built; the default is the real registry. */
 export type SceneFactory = (name: SceneName, opts: SceneOptions) => Scene;
@@ -42,17 +34,6 @@ export interface Mismatch extends Divergence {
   tick: number;
 }
 
-export function loadScript(path: string): InputScript {
-  return JSON.parse(readFileSync(path, "utf8")) as InputScript;
-}
-
-/** Gunzip a `.jsonl.gz` trace and parse one object per non-empty line. */
-export function readTrace(path: string): unknown[] {
-  const text = new TextDecoder().decode(Bun.gunzipSync(readFileSync(path)));
-  const out: unknown[] = [];
-  for (const line of text.split("\n")) if (line.trim() !== "") out.push(JSON.parse(line));
-  return out;
-}
 
 function kind(v: unknown): string {
   if (v === null) return "null";
