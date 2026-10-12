@@ -7,7 +7,8 @@
 // For each test/fixtures/inputs/<scenario>.json (all of them by default) it
 // seeds, loads the scene, runs the script up to each `captureTicks` entry
 // and writes out/frames/<scenario>/<tick>.png at logical resolution. Compare
-// against test/fixtures/frames/ with scripts/frame-diff.ts.
+// against test/fixtures/frames/ with `bun run frames:report` (all frames,
+// writes out/frame-report.md) or scripts/frame-diff.ts (one frame).
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
