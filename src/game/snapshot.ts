@@ -250,6 +250,8 @@ export interface GearheadSnapshot {
   left: boolean;
   /** `player.Moving`. */
   moving: boolean;
+  /** `GearheadSoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
