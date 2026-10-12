@@ -43,12 +43,16 @@ The currency spent to start a minigame: one token per play.
 _Avoid_: coin, credit
 
 **Ticket**:
-The reward a cabinet pays out when a minigame is completed.
+The reward the payout gives when a minigame ends.
 _Avoid_: points, prize
 
 **Payout**:
-The short cutscene where tickets feed out of the cabinet and the ticket count climbs.
-_Avoid_: reward screen
+The menu shown when a minigame ends, which turns the score into tickets.
+_Avoid_: reward screen, cutscene
+
+**Free play**:
+A play that costs nothing because the player has no tokens. It pays no tickets.
+_Avoid_: free credit, bonus play
 
 **Score**:
 Points earned inside one minigame run. The hub keeps the high score.
@@ -61,12 +65,12 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the hub high score and where the player stood. Minigame progress is not part of it.
+What Continue restores: the hub high score, where the player stood, and their tokens and tickets. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:
 The title-screen choice that resumes from the save. It appears only when a save exists.
-_Avoid_: load, resume (Resume is the pause-menu choice)
+_Avoid_: load, resume (Resume is a pause-menu choice)
 
 **New game**:
 The title-screen choice that starts over. It asks for confirmation when a save would be deleted.
@@ -76,9 +80,13 @@ _Avoid_: restart, reset
 The how-to-play screen shown after New game, before the hub.
 _Avoid_: tutorial, help
 
-**Pause menu**:
+**Hub pause menu**:
 The menu Esc opens in the hub: Resume, Controls, Quit to menu.
-_Avoid_: in-game menu, options
+_Avoid_: pause menu (say which one), in-game menu, options
+
+**Minigame pause menu**:
+The menu Esc opens during a minigame: Resume, Controls, Quit game. Quitting a minigame pays no tickets for that run.
+_Avoid_: pause menu (say which one), quit dialog
 
 ## Verification
 
