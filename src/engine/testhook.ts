@@ -35,8 +35,8 @@ export interface ArcadeTestHook {
   load(scene: SceneName, opts?: LoadOptions): void;
   /** Ticks stepped since the last `load()`. */
   tick(): number;
-  /** The current scene's §4.3 snapshot. */
-  snapshot(): SceneSnapshot;
+  /** The current scene's §4.3 snapshot; `{ full: true }` adds the full grid (as on a trace's last tick). */
+  snapshot(opts?: { full?: boolean }): SceneSnapshot;
   /** `canvas.toDataURL()` at logical resolution. */
   frame(): string;
   layout(): [number, number];
@@ -83,7 +83,7 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
     seed: (n) => rng.seed(n),
     load: (scene, opts) => runtime.load(scene, opts ?? {}),
     tick: () => runtime.ticks,
-    snapshot: () => runtime.scene.snapshot(),
+    snapshot: (opts) => runtime.scene.snapshot(opts),
     frame() {
       host.draw();
       return host.frame();

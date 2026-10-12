@@ -23,8 +23,10 @@ class FakeScene implements Scene {
   layout(): [number, number] {
     return [192, 176];
   }
-  snapshot(): SceneSnapshot {
-    return { tick: this.inputs.length, rng: rng.state() } as unknown as SceneSnapshot;
+  snapshot(opts?: { full?: boolean }): SceneSnapshot {
+    const snap: Record<string, unknown> = { tick: this.inputs.length, rng: rng.state() };
+    if (opts?.full) snap.full = true;
+    return snap as unknown as SceneSnapshot;
   }
   dispose(): void {
     this.disposed = true;
@@ -123,6 +125,14 @@ describe("window.__arcade (§3.5)", () => {
     expect(hook.snapshot()).toEqual({ tick: 2, rng: 5 } as unknown as SceneSnapshot);
     expect(hook.layout()).toEqual([192, 176]);
     expect(hook.frame()).toBe("data:image/png;base64,AAAA");
+  });
+
+  test("snapshot({ full: true }) asks the scene for its full snapshot (§4.3 last tick)", () => {
+    const { hook } = setup();
+    hook.seed(5);
+    hook.step(1);
+    expect(hook.snapshot({ full: true })).toEqual({ tick: 1, rng: 5, full: true } as unknown as SceneSnapshot);
+    expect(hook.snapshot({ full: false })).toEqual({ tick: 1, rng: 5 } as unknown as SceneSnapshot);
   });
 
   test("sounds() returns the calls since the last call, regardless of ready", () => {
