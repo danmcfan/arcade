@@ -2,8 +2,9 @@ package grid
 
 import (
 	"fmt"
-	"math/rand"
 	"slices"
+
+	"github.com/danmcfan/arcade/internal/rng"
 )
 
 var constraints = [4][4][]int{
@@ -87,7 +88,7 @@ func (g *Grid) Step() {
 
 	var x, y int
 	if g.CollapsedCount == 0 {
-		x, y = rand.Intn(g.Width), rand.Intn(g.Height)
+		x, y = rng.Intn(g.Width), rng.Intn(g.Height)
 	} else {
 		x, y = g.Next()
 	}
@@ -99,7 +100,7 @@ func (g *Grid) Step() {
 func (g *Grid) Next() (int, int) {
 	for e := 1; e <= len(g.Patterns); e++ {
 		if cells := g.EntropyBuckets[e]; len(cells) > 0 {
-			sel := cells[rand.Intn(len(cells))]
+			sel := cells[rng.Intn(len(cells))]
 			return sel.x, sel.y
 		}
 	}
@@ -109,7 +110,7 @@ func (g *Grid) Next() (int, int) {
 func (g *Grid) Collapse(x, y int) {
 	cell := &g.Cells[x][y]
 	g.UpdateEntropy(x, y, len(cell.Possible), 0)
-	selection := cell.Possible[rand.Intn(len(cell.Possible))]
+	selection := cell.Possible[rng.Intn(len(cell.Possible))]
 	cell.Possible = []int{selection}
 	cell.Collapsed = true
 	g.CollapsedCount++

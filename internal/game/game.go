@@ -39,8 +39,12 @@ func New(initialSoftware software.Software) *Game {
 func (g *Game) Update() error {
 	pressedKeys := inpututil.AppendPressedKeys(nil)
 	justPressedKeys := inpututil.AppendJustPressedKeys(nil)
-	input := input.ReadInput(pressedKeys, justPressedKeys)
+	return g.UpdateWithInput(input.ReadInput(pressedKeys, justPressedKeys))
+}
 
+// UpdateWithInput runs one tick with the given input. Update reads the
+// keyboard and delegates here; the golden harness calls it directly.
+func (g *Game) UpdateWithInput(input input.Input) error {
 	if input.ShiftP {
 		g.debugMode = !g.debugMode
 	}

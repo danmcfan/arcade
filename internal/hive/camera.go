@@ -1,16 +1,16 @@
 package hive
 
-import "math/rand"
+import "github.com/danmcfan/arcade/internal/rng"
 
 // Preset screen shake for picking up a power pellet (~0.10s at 60 ticks/s).
 const (
-	CameraShakePowerPelletTicks     = 6 // ticks, 100ms
+	CameraShakePowerPelletTicks     = 6   // ticks, 100ms
 	CameraShakePowerPelletIntensity = 4.0 // pixels
 )
 
 // Preset screen shake when the player eats a bee while it is vulnerable (~0.15s at 60 ticks/s; twice pellet intensity).
 const (
-	CameraShakeEnemyEatTicks     = 9 // ticks, 150ms
+	CameraShakeEnemyEatTicks     = 9   // ticks, 150ms
 	CameraShakeEnemyEatIntensity = 8.0 // pixels
 )
 
@@ -46,8 +46,8 @@ func (cs *CameraSystem) Update() {
 		return
 	}
 
-	cs.shakeOffsetX = (rand.Float64()*2.0 - 1.0) * cs.shakeIntensity
-	cs.shakeOffsetY = (rand.Float64()*2.0 - 1.0) * cs.shakeIntensity
+	cs.shakeOffsetX = (rng.Float64()*2.0 - 1.0) * cs.shakeIntensity
+	cs.shakeOffsetY = (rng.Float64()*2.0 - 1.0) * cs.shakeIntensity
 	cs.shakeTicksRemaining--
 }
 

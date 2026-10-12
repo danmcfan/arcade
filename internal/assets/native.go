@@ -15,7 +15,14 @@ import (
 
 type Sound struct {
 	Player *audio.Player
+	// Name is the file name without extension ("melody", "laser", ...), used
+	// for OnSoundEvent.
+	Name string
 }
+
+// Silent skips the actual audio calls (OnSoundEvent still fires). Golden
+// harness only; the game never sets it.
+var Silent bool
 
 func loadSound(filename string, loop bool) *Sound {
 	data, err := sounds.ReadFile("sounds/" + filename)
@@ -67,24 +74,36 @@ func loadSound(filename string, loop bool) *Sound {
 		if err != nil {
 			log.Fatal(err)
 		}
-		return &Sound{Player: player}
+		return &Sound{Player: player, Name: soundName(filename)}
 	}
 
 	player, err := audioContext.NewPlayer(stream)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &Sound{Player: player}
+	return &Sound{Player: player, Name: soundName(filename)}
 }
 
 func (s *Sound) Play() {
+	emitSoundEvent("play", s.Name)
+	if Silent {
+		return
+	}
 	s.Player.Play()
 }
 
 func (s *Sound) Pause() {
+	emitSoundEvent("pause", s.Name)
+	if Silent {
+		return
+	}
 	s.Player.Pause()
 }
 
 func (s *Sound) Rewind() {
+	emitSoundEvent("rewind", s.Name)
+	if Silent {
+		return
+	}
 	s.Player.Rewind()
 }

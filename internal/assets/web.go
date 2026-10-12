@@ -11,6 +11,9 @@ import (
 type Sound struct {
 	Audio js.Value
 	Ready bool
+	// Name is the file name without extension ("melody", "laser", ...), used
+	// for OnSoundEvent.
+	Name string
 }
 
 func loadSound(filename string, loop bool) *Sound {
@@ -43,7 +46,7 @@ func loadSound(filename string, loop bool) *Sound {
 	audio.Set("src", url)
 	audio.Set("loop", loop)
 
-	s := &Sound{Audio: audio}
+	s := &Sound{Audio: audio, Name: soundName(filename)}
 
 	audio.Call("addEventListener", "canplaythrough", js.FuncOf(func(this js.Value, args []js.Value) any {
 		s.Ready = true
@@ -54,6 +57,7 @@ func loadSound(filename string, loop bool) *Sound {
 }
 
 func (s *Sound) Play() {
+	emitSoundEvent("play", s.Name)
 	if !s.Ready {
 		return
 	}
@@ -61,6 +65,7 @@ func (s *Sound) Play() {
 }
 
 func (s *Sound) Pause() {
+	emitSoundEvent("pause", s.Name)
 	if !s.Ready {
 		return
 	}
@@ -68,6 +73,7 @@ func (s *Sound) Pause() {
 }
 
 func (s *Sound) Rewind() {
+	emitSoundEvent("rewind", s.Name)
 	if !s.Ready {
 		return
 	}

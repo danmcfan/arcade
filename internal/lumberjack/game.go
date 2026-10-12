@@ -40,6 +40,13 @@ func (g *Game) Update() error {
 		Right: ebiten.IsKeyPressed(ebiten.KeyD) || ebiten.IsKeyPressed(ebiten.KeyArrowRight),
 		Space: ebiten.IsKeyPressed(ebiten.KeySpace),
 	}
+	Step(input)
+	return nil
+}
+
+// Step runs one tick with the given input. Update reads the keyboard and
+// delegates here; the golden harness calls it directly.
+func Step(input Input) {
 	player.Update(input)
 
 	for _, tree := range trees {
@@ -71,8 +78,6 @@ func (g *Game) Update() error {
 		tree.Behind = above
 		tree.Transparent = withinX && withinY
 	}
-
-	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
