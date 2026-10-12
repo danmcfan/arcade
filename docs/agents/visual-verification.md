@@ -46,6 +46,7 @@ await verify("pause-menu", (v) => {
 | Exact pixels at game resolution | `frame(name, scale)` |
 | The page as a player sees it | `open()`, `key()`, `wait()`, `screenshot()` |
 | Motion, animation, a flow | `record(name, play, { scene, storage })` writes `.mp4` (for the PR) and `.webm` |
+| A phone or tablet (touch, no hover) | `await phone()` before `open()`; `await recordPhone(name, play, opts)` for its video |
 | Anything else | `v.page.run(...)` / `v.page.eval(js)` (raw agent-browser) |
 
 Keep the check in the repo and in the PR, so the next change to that screen can rerun it.

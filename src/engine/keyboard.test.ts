@@ -40,6 +40,31 @@ describe("KeyTracker (D3: input is read per tick)", () => {
     expect(keys.sample().pressed.size).toBe(0);
   });
 
+  test("ignoreHeld() hides held keys, auto-repeat included, until each is released", () => {
+    const keys = new KeyTracker();
+    keys.keyDown("Space");
+    keys.keyDown("KeyK");
+    keys.sample();
+    keys.ignoreHeld();
+    expect(keys.sample().pressed.size).toBe(0);
+    keys.keyDown("Space"); // auto-repeat
+    expect(keys.sample().pressed.size).toBe(0);
+    keys.keyUp("Space");
+    keys.keyDown("Space");
+    expect([...keys.sample().justPressed]).toEqual(["Space"]);
+    keys.keyDown("ArrowUp");
+    expect([...keys.sample().justPressed]).toEqual(["ArrowUp"]);
+  });
+
+  test("clear() also forgets ignored keys, whose keyup may never arrive", () => {
+    const keys = new KeyTracker();
+    keys.keyDown("Space");
+    keys.ignoreHeld();
+    keys.clear();
+    keys.keyDown("Space");
+    expect([...keys.sample().justPressed]).toEqual(["Space"]);
+  });
+
   test("samples are snapshots, not live views", () => {
     const keys = new KeyTracker();
     keys.keyDown("KeyW");

@@ -94,6 +94,12 @@ export interface Verify {
   snapshot<T extends SceneSnapshot = SceneSnapshot>(): T;
   /** A real keydown on `code` (e.g. "Space", "ArrowLeft"), held `ms` so the game loop sees it, then keyup. */
   key(code: string, ms?: number): void;
+  /**
+   * Emulate a phone for the rest of this run: the `device` viewport (an
+   * agent-browser device name) plus a touch screen, so `(pointer: coarse)`
+   * and `(hover: none)` match. Needs a page open; `open()` reloads keep it.
+   */
+  phone(device?: string): Promise<void>;
   /** Let the page run in real time. */
   wait(ms: number): void;
   /** Browser screenshot (the page as a person sees it, scaled) to <dir>/<name>.png. */
@@ -106,6 +112,8 @@ export interface Verify {
    * `play` would freeze the video. See `RecordOptions`.
    */
   record(name: string, play: () => void, opts?: RecordOptions): string;
+  /** `record()` on an emulated phone (see `phone()`); `device` is an agent-browser device name. */
+  recordPhone(name: string, play: () => void, opts?: RecordOptions & { device?: string }): Promise<string>;
   /** Page errors and console errors since the last call. */
   errors(): string[];
   /** Throw if the page logged any error. */
@@ -140,12 +148,86 @@ function keyScript(code: string, ms: number): string {
   })()`;
 }
 
-function makeVerify(name: string, url: string): Verify {
+/**
+ * Turn on touch emulation for the session's page over raw CDP (agent-browser
+ * has no command for it). The emulation lasts as long as the CDP connection,
+ * so this returns the function that closes it.
+ */
+async function emulateTouch(page: Browser): Promise<() => void> {
+  const ws = new WebSocket(page.run("get", "cdp-url").trim());
+  const replies = new Map<number, (m: { result?: unknown; error?: unknown }) => void>();
+  let id = 0;
+  ws.onmessage = (e) => {
+    const m = JSON.parse(String(e.data)) as { id?: number; result?: unknown; error?: unknown };
+    if (m.id !== undefined) replies.get(m.id)?.(m);
+  };
+  await new Promise((resolve, reject) => {
+    ws.onopen = resolve;
+    ws.onerror = reject;
+  });
+  const send = async <T>(method: string, params: object = {}, sessionId?: string): Promise<T> => {
+    const m = await new Promise<{ result?: unknown; error?: unknown }>((resolve) => {
+      replies.set(++id, resolve);
+      ws.send(JSON.stringify({ id, method, params, sessionId }));
+    });
+    if (m.error) throw new Error(`CDP ${method}: ${JSON.stringify(m.error)}`);
+    return m.result as T;
+  };
+  // The browser may hold other pages (a recording opens a new context), so
+  // mark the one agent-browser drives and find it by the mark.
+  const mark = `touch-${Date.now()}-${Math.random()}`;
+  page.eval(`window.__touchMark = ${JSON.stringify(mark)}; "ok"`);
+  const { targetInfos } = await send<{ targetInfos: { targetId: string; type: string }[] }>("Target.getTargets");
+  let sessionId: string | null = null;
+  for (const t of targetInfos.filter((t) => t.type === "page")) {
+    const s = (await send<{ sessionId: string }>("Target.attachToTarget", { targetId: t.targetId, flatten: true })).sessionId;
+    const r = await send<{ result: { value?: unknown } }>("Runtime.evaluate", { expression: "window.__touchMark" }, s);
+    if (r.result.value === mark) {
+      sessionId = s;
+      break;
+    }
+    await send("Target.detachFromTarget", { sessionId: s });
+  }
+  if (sessionId === null) throw new Error("phone(): could not find the page over CDP");
+  await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 }, sessionId);
+  await send("Emulation.setEmitTouchEventsForMouse", { enabled: true, configuration: "mobile" }, sessionId);
+  return () => ws.close();
+}
+
+function makeVerify(name: string, url: string): Verify & { cleanups: (() => void)[] } {
   const dir = join(repoRoot, "out/verify", name);
   mkdirSync(dir, { recursive: true });
   const page = browser(`arcade-verify-${name}-${process.pid}`);
   const file = (n: string, ext: string) => join(dir, `${n}.${ext}`);
   const waitCanvas = () => page.run("wait", "--fn", "document.getElementById('screen')?.width > 0");
+  const cleanups: (() => void)[] = [];
+
+  /** Start recording `<name>.webm` on a fresh load of `scene` with the test hook. */
+  const startRecording = (n: string, scene?: SceneName): string => {
+    const webm = file(n, "webm");
+    rmSync(webm, { force: true });
+    page.run("record", "start", webm, `${url}/${scene ? `?debug&scene=${scene}` : "?debug"}`);
+    waitCanvas();
+    page.run("wait", "--fn", "window.__arcade !== undefined");
+    return webm;
+  };
+  const seedStorage = (storage: Record<string, string>): void => {
+    const entries = JSON.stringify(Object.entries(storage));
+    page.eval(`for (const [k, val] of ${entries}) localStorage.setItem(k, val); "ok"`);
+  };
+  /** Run `play`, stop recording, and convert to `<name>.mp4`. */
+  const finishRecording = (n: string, webm: string, play: () => void): string => {
+    try {
+      play();
+    } finally {
+      page.run("record", "stop");
+    }
+    // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
+    const mp4 = file(n, "mp4");
+    const ff = Bun.spawnSync(["ffmpeg", "-y", "-loglevel", "error", "-i", webm, "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", mp4]);
+    if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${ff.stderr.toString()}`);
+    return mp4;
+  };
 
   const v: Verify = {
     dir,
@@ -173,6 +255,10 @@ function makeVerify(name: string, url: string): Verify {
     key(code, ms = 120) {
       page.eval(keyScript(code, ms));
     },
+    async phone(device = "iPhone 15") {
+      page.run("set", "device", device);
+      cleanups.push(await emulateTouch(page));
+    },
     wait(ms) {
       page.run("wait", String(ms));
     },
@@ -187,29 +273,26 @@ function makeVerify(name: string, url: string): Verify {
       return path;
     },
     record(n, play, opts = {}) {
-      const webm = file(n, "webm");
-      const mp4 = file(n, "mp4");
-      rmSync(webm, { force: true });
+      const webm = startRecording(n, opts.scene);
       // No navigation once recording starts (it freezes the video), so record
       // the final URL with the hook installed and seed storage through it.
-      const query = opts.scene ? `?debug&scene=${opts.scene}` : "?debug";
-      page.run("record", "start", webm, `${url}/${query}`);
-      waitCanvas();
-      page.run("wait", "--fn", "window.__arcade !== undefined");
       if (opts.storage) {
-        const entries = JSON.stringify(Object.entries(opts.storage));
-        page.eval(`for (const [k, val] of ${entries}) localStorage.setItem(k, val); "ok"`);
+        seedStorage(opts.storage);
         page.eval(`window.__arcade.load(${JSON.stringify(opts.scene ?? "title")}); "ok"`);
       }
-      try {
-        play();
-      } finally {
-        page.run("record", "stop");
-      }
-      // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
-      const ff = Bun.spawnSync(["ffmpeg", "-y", "-loglevel", "error", "-i", webm, "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", mp4]);
-      if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${ff.stderr.toString()}`);
-      return mp4;
+      return finishRecording(n, webm, play);
+    },
+    async recordPhone(n, play, opts = {}) {
+      const webm = startRecording(n, opts.scene);
+      if (opts.storage) seedStorage(opts.storage);
+      // The recording's fresh context drops the emulation, and the page reads
+      // the device only on load, so emulate and reload once. This one reload
+      // shows in the video (agent-browser 0.33).
+      await v.phone(opts.device);
+      page.eval("location.reload(); 'ok'");
+      page.run("wait", "--fn", "window.__touchMark === undefined && window.__arcade !== undefined");
+      waitCanvas();
+      return finishRecording(n, webm, play);
     },
     errors() {
       const lines = [
@@ -226,7 +309,7 @@ function makeVerify(name: string, url: string): Verify {
       if (errs.length) throw new Error(`page errors:\n  ${errs.join("\n  ")}`);
     },
   };
-  return v;
+  return Object.assign(v, { cleanups });
 }
 
 /**
@@ -243,6 +326,7 @@ export async function verify(name: string, body: (v: Verify) => void | Promise<v
     console.error(`verify ${name}: FAILED\n${err instanceof Error ? err.message : String(err)}`);
     process.exitCode = 1;
   } finally {
+    for (const fn of v.cleanups) fn();
     try {
       v.page.run("close");
     } catch {}
