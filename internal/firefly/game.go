@@ -57,6 +57,9 @@ type entity struct {
 	Pattern          patternFunc
 	Duration         float64
 	DurationStep     float64
+	// PatternName is "L" or "R" (which bezier Pattern follows); golden
+	// snapshots only, since funcs can't be compared.
+	PatternName string
 }
 
 func newPlayer() *entity {
@@ -69,8 +72,9 @@ func newPlayer() *entity {
 	}
 }
 
-func newBug(pattern patternFunc, initialDuration float64, durationStep float64) *entity {
+func newBug(pattern patternFunc, patternName string, initialDuration float64, durationStep float64) *entity {
 	return &entity{
+		PatternName:  patternName,
 		Image:        assets.ImageBug,
 		Width:        tileSize * 2,
 		Height:       tileSize * 2,
@@ -87,17 +91,17 @@ func newBugs() []*entity {
 	rightPatternFunc := NewBezierPatternFunc(rightBezierConfig)
 
 	return []*entity{
-		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0, durationStep),
-		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
-		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
-		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
-		newBug(leftPatternFunc, -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
+		newBug(leftPatternFunc, "L", -durationStep*FRAMES_PER_SECOND*0, durationStep),
+		newBug(leftPatternFunc, "L", -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
+		newBug(leftPatternFunc, "L", -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
+		newBug(leftPatternFunc, "L", -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
+		newBug(leftPatternFunc, "L", -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
 
-		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0, durationStep),
-		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
-		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
-		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
-		newBug(rightPatternFunc, -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
+		newBug(rightPatternFunc, "R", -durationStep*FRAMES_PER_SECOND*0, durationStep),
+		newBug(rightPatternFunc, "R", -durationStep*FRAMES_PER_SECOND*0.2, durationStep),
+		newBug(rightPatternFunc, "R", -durationStep*FRAMES_PER_SECOND*0.4, durationStep),
+		newBug(rightPatternFunc, "R", -durationStep*FRAMES_PER_SECOND*0.6, durationStep),
+		newBug(rightPatternFunc, "R", -durationStep*FRAMES_PER_SECOND*0.8, durationStep),
 	}
 }
 

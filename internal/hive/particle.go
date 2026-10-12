@@ -3,7 +3,8 @@ package hive
 import (
 	"image/color"
 	"math"
-	"math/rand"
+
+	"github.com/danmcfan/arcade/internal/rng"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,7 +12,7 @@ import (
 const maxParticles = 300
 
 const (
-	particleSize              = 3
+	particleSize                  = 3
 	particleBurstBeeEatenCount    = 25
 	particleBurstPlayerEatenCount = 25
 )
@@ -24,12 +25,12 @@ var (
 )
 
 type Particle struct {
-	X, Y           float64
-	Vx, Vy         float64 // pixels per tick
-	Color          color.RGBA
-	LifeTicks      int
-	MaxLifeTicks   int
-	Active         bool
+	X, Y         float64
+	Vx, Vy       float64 // pixels per tick
+	Color        color.RGBA
+	LifeTicks    int
+	MaxLifeTicks int
+	Active       bool
 }
 
 // ParticleSystem recycles a fixed pool of particles to avoid per-frame allocations.
@@ -57,15 +58,15 @@ func (ps *ParticleSystem) SpawnBurst(x, y float64, col color.RGBA, count int) {
 			continue
 		}
 
-		angle := rand.Float64() * 2 * math.Pi
-		speed := (50.0 + rand.Float64()*100.0) / float64(framesPerSecond)
+		angle := rng.Float64() * 2 * math.Pi
+		speed := (50.0 + rng.Float64()*100.0) / float64(framesPerSecond)
 
 		ps.pool[i].X = x
 		ps.pool[i].Y = y
 		ps.pool[i].Vx = math.Cos(angle) * speed
 		ps.pool[i].Vy = math.Sin(angle) * speed
 		ps.pool[i].Color = col
-		ps.pool[i].MaxLifeTicks = 18 + int(rand.Float64()*24) // ~0.3–0.7s at 60 ticks/s
+		ps.pool[i].MaxLifeTicks = 18 + int(rng.Float64()*24) // ~0.3–0.7s at 60 ticks/s
 		ps.pool[i].LifeTicks = ps.pool[i].MaxLifeTicks
 		ps.pool[i].Active = true
 

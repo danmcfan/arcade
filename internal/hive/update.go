@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"math/rand"
 	"slices"
 
 	"github.com/danmcfan/arcade/internal/input"
+	"github.com/danmcfan/arcade/internal/rng"
 )
 
 const (
@@ -198,7 +198,7 @@ func updateDirection(e *Entity, cs []*Entity, target tile) {
 	}
 
 	if e.BlueFrames > 0 {
-		e.Direction = validDirections[rand.Intn(len(validDirections))]
+		e.Direction = validDirections[rng.Intn(len(validDirections))]
 		e.X = corner.X
 		e.Y = corner.Y
 		return
@@ -263,7 +263,7 @@ func (s *HiveSoftware) restartRound() {
 func resetEnemy(e *Entity) {
 	e.X = tileSize * 14
 	e.Y = tileSize * 17.5
-	e.Direction = []input.Direction{input.DirectionLeft, input.DirectionRight}[rand.Intn(2)]
+	e.Direction = []input.Direction{input.DirectionLeft, input.DirectionRight}[rng.Intn(2)]
 	e.BlueFrames = 0
 	e.FlashFrames = 0
 	e.Flash = false

@@ -1,0 +1,12 @@
+{"name":"arcade-enter-firefly","scene":"game","seed":1,"captureTicks":[58,358,359],"steps": [
+  {"ticks":1,"input":{}},
+  {"ticks":24,"input":{"right":true}},
+  {"ticks":32,"input":{"up":true}},
+  {"ticks":1,"input":{"up":true,"space":true}},
+  {"ticks":100,"input":{"left":true,"space":true}},
+  {"ticks":100,"input":{"right":true,"space":true}},
+  {"ticks":100,"input":{"space":true}},
+  {"ticks":1,"input":{"escape":true}},
+  {"ticks":30,"input":{}},
+  {"ticks":20,"input":{"down":true}}
+]}
