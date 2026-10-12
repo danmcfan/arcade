@@ -3,7 +3,10 @@
 // types are the contract scripts/capture-frames.ts and agents code against.
 
 import type { Input } from "./input.ts";
-import type { SoundEvent } from "./audio.ts";
+import { addSoundListener, type SoundEvent } from "./audio.ts";
+import * as rng from "./rng.ts";
+import type { Runtime } from "./runtime.ts";
+import { expandSteps } from "../game/script.ts";
 import type { SceneName, SoftwareName, WaveOptions } from "../game/software.ts";
 import type { SceneSnapshot } from "../game/snapshot.ts";
 import type { InputScript } from "../game/script.ts";
@@ -45,4 +48,58 @@ declare global {
   interface Window {
     __arcade?: ArcadeTestHook;
   }
+}
+
+/** What the hook drives: the shared runtime plus the page's loop and screen. */
+export interface TestHookHost {
+  runtime: Runtime;
+  /** Resize the screen to the scene layout and draw one frame. */
+  draw(): void;
+  /** The screen's PNG data URL at logical resolution. */
+  frame(): string;
+  /** Stop/restart the rAF loop's stepping. */
+  pause(): void;
+  resume(): void;
+}
+
+/** Build the hook object (DOM-free; `installTestHook` puts it on `window`). */
+export function createTestHook(host: TestHookHost): ArcadeTestHook {
+  let recorded: SoundEvent[] = [];
+  addSoundListener((e) => recorded.push(e));
+  const { runtime } = host;
+
+  return {
+    pause: () => host.pause(),
+    resume: () => host.resume(),
+    step(n, input) {
+      // Same expansion as a script step: `shiftP` only on the first tick.
+      for (const i of expandSteps([{ ticks: n, input: input ?? {} }])) runtime.step(i);
+      host.draw();
+    },
+    runScript(script) {
+      for (const i of expandSteps(script.steps)) runtime.step(i);
+      host.draw();
+    },
+    seed: (n) => rng.seed(n),
+    load: (scene, opts) => runtime.load(scene, opts ?? {}),
+    tick: () => runtime.ticks,
+    snapshot: () => runtime.scene.snapshot(),
+    frame() {
+      host.draw();
+      return host.frame();
+    },
+    layout: () => runtime.scene.layout(),
+    sounds() {
+      const out = recorded;
+      recorded = [];
+      return out;
+    },
+  };
+}
+
+/** Browser only, `?debug` only (D7): expose the hook as `window.__arcade`. */
+export function installTestHook(host: TestHookHost): ArcadeTestHook {
+  const hook = createTestHook(host);
+  window.__arcade = hook;
+  return hook;
 }
