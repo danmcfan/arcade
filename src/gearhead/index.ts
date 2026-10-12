@@ -1,10 +1,10 @@
-// Entry module for the gearhead port (T6 owns src/gearhead/**). Replace the
-// stub body; keep the export name and signature, which src/game/registry.ts
-// imports.
+// Entry module for the gearhead port (T6). src/game/registry.ts imports
+// `createGearhead`.
 
 import type { Software } from "../game/software.ts";
+import { newGearheadSoftware } from "./game.ts";
 
 /** Go `gearhead.NewGearHeadSoftware()` (takes no high score); `name` is "gearhead". */
 export function createGearhead(): Software {
-  throw new Error("TODO: createGearhead");
+  return newGearheadSoftware();
 }
