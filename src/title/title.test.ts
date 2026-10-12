@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { images } from "../engine/assets.ts";
+import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -224,6 +225,75 @@ describe("pause menu", () => {
     expect(store.saves).toBe(saves + 1);
     t.step(NO_INPUT);
     tap(t, "escape");
+    expect(t.phase).toBe("paused");
+  });
+});
+
+describe("sounds", () => {
+  /** The sound calls made while `fn` runs. */
+  function heard(fn: () => void): SoundEvent[] {
+    const events: SoundEvent[] = [];
+    const off = addSoundListener((e) => events.push(e));
+    try {
+      fn();
+    } finally {
+      off();
+    }
+    return events;
+  }
+
+  test("the title music starts on the first tick and plays through the New game check and intro", () => {
+    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    expect(heard(() => t.step(NO_INPUT))).toEqual(["play:title"]);
+    // Retried on key presses until the browser lets it play (never, without a DOM).
+    expect(heard(() => tap(t, "down"))).toContain("play:title");
+    expect(heard(() => tap(t, "space"))).not.toContain("pause:title");
+    expect(t.phase).toBe("confirm");
+    tap(t, "down");
+    expect(heard(() => tap(t, "space"))).not.toContain("pause:title");
+    expect(t.phase).toBe("intro");
+  });
+
+  test("the music stops when play starts and comes back on Quit to menu", () => {
+    const t = new Title();
+    t.step(NO_INPUT);
+    tap(t, "space");
+    const start = heard(() => tap(t, "space"));
+    expect(t.phase).toBe("playing");
+    expect(start).toContain("pause:title");
+    expect(start).toContain("rewind:title");
+    expect(heard(() => hold(t, { left: true }, 5))).not.toContain("play:title");
+    tap(t, "escape");
+    tap(t, "down");
+    tap(t, "down");
+    expect(heard(() => tap(t, "space"))).toContain("play:title");
+    expect(t.phase).toBe("menu");
+  });
+
+  test("moving the cursor blips; a choice or Back chirps; nothing else does", () => {
+    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    t.step(NO_INPUT);
+    const effects = (fn: () => void) => heard(fn).filter((e) => !e.endsWith(":title"));
+    expect(effects(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
+    expect(effects(() => tap(t, "escape"))).toEqual([]);
+    expect(effects(() => hold(t, { left: true }, 3))).toEqual([]);
+    expect(effects(() => tap(t, "space"))).toEqual(["rewind:select", "play:select"]);
+    expect(t.phase).toBe("confirm");
+    expect(effects(() => tap(t, "escape"))).toEqual(["rewind:select", "play:select"]);
+    expect(t.phase).toBe("menu");
+  });
+
+  test("the pause menu chirps when it opens and on choices, and blips when the cursor moves", () => {
+    const t = new Title();
+    tap(t, "space");
+    tap(t, "space");
+    const select: SoundEvent[] = ["rewind:select", "play:select"];
+    expect(heard(() => tap(t, "escape"))).toEqual(expect.arrayContaining(select));
+    expect(t.phase).toBe("paused");
+    expect(heard(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
+    expect(heard(() => tap(t, "space"))).toEqual(select);
+    expect(t.phase).toBe("controls");
+    expect(heard(() => tap(t, "escape"))).toEqual(select);
     expect(t.phase).toBe("paused");
   });
 });

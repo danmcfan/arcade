@@ -42,10 +42,9 @@ describe("image registry (D12)", () => {
 });
 
 describe("sound registry", () => {
-  test("mirrors assets.go: melody loops, effects don't", () => {
-    expect(Object.keys(sounds).sort()).toEqual(["boom", "death", "laser", "melody", "power", "start"]);
-    expect(sounds.melody.loop).toBe(true);
-    expect(sounds.laser.loop).toBe(false);
+  test("mirrors assets.go plus the title's sounds: the two tunes loop, effects don't", () => {
+    expect(Object.keys(sounds).sort()).toEqual(["boom", "death", "laser", "melody", "move", "power", "select", "start", "title"]);
+    expect(Object.values(sounds).filter((s) => s.loop).map((s) => s.name)).toEqual(["melody", "title"]);
   });
 });
 

@@ -2,10 +2,14 @@
 // that explains the game and its controls, then the arcade Game itself.
 // New game over an existing save asks first, since it deletes that save.
 // Esc in the hub opens a pause menu (Resume / Controls / Quit to menu).
+// Title music plays until the Game starts; menus blip when the cursor moves
+// and chirp when a choice is made.
 //
 // The Game runs unchanged inside this scene, so `?scene=game` and the parity
 // fixtures still start straight in the hub.
 
+import { soundMove, soundSelect, soundTitleMusic } from "../engine/assets.ts";
+import type { Sound } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -22,6 +26,15 @@ export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 /** Keys a menu reacts to on the tick they go down. */
 const EDGE_KEYS = ["up", "down", "space", "escape"] as const;
 type EdgeKey = (typeof EDGE_KEYS)[number];
+
+/** Phases the title music plays in: everything before the Game starts. */
+const MUSIC_PHASES: readonly TitlePhase[] = ["menu", "confirm", "intro"];
+
+/** Restart a short sound effect, even if it is still playing. */
+function blip(s: Sound): void {
+  s.rewind();
+  s.play();
+}
 
 export interface TitleDeps {
   /** Where the save lives; default: an in-memory store. */
@@ -49,6 +62,8 @@ export class Title implements Scene {
    * the cabinet the player is facing.
    */
   private readonly masked = new Set<keyof Input>();
+  /** Whether the title music was started and not stopped since. */
+  private musicOn = false;
 
   constructor(deps: TitleDeps = {}) {
     this.store = deps.store ?? memoryStore();
@@ -81,8 +96,16 @@ export class Title implements Scene {
   step(i: Input): void {
     const pressed = (k: EdgeKey): boolean => i[k] && !this.prev[k];
     const edges = Object.fromEntries(EDGE_KEYS.map((k) => [k, pressed(k)])) as Record<EdgeKey, boolean>;
+    const anyPressed = (Object.keys(i) as (keyof Input)[]).some((k) => i[k] && !this.prev[k]);
     this.prev = i;
     this.tick++;
+    this.stepPhase(i, edges);
+    this.updateMusic(anyPressed);
+  }
+
+  private stepPhase(i: Input, edges: Record<EdgeKey, boolean>): void {
+    // Every choice or Back chirps (Esc does nothing on the title menu itself).
+    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) blip(soundSelect);
 
     switch (this.phase) {
       case "menu":
@@ -129,6 +152,24 @@ export class Title implements Scene {
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta === 0) return;
     this.cursor = (this.cursor + delta + n) % n;
+    blip(soundMove);
+  }
+
+  /**
+   * Start the title music on the first tick and retry on each key press until
+   * it plays: browsers block audio until the page gets a key press, and it
+   * may still be loading. Stop it once play starts.
+   */
+  private updateMusic(anyPressed: boolean): void {
+    const wanted = MUSIC_PHASES.includes(this.phase);
+    if (wanted && (!this.musicOn || (anyPressed && !soundTitleMusic.playing))) {
+      this.musicOn = true;
+      soundTitleMusic.play();
+    } else if (!wanted && this.musicOn) {
+      this.musicOn = false;
+      soundTitleMusic.pause();
+      soundTitleMusic.rewind();
+    }
   }
 
   private show(phase: TitlePhase, cursor: number): void {
@@ -152,6 +193,7 @@ export class Title implements Scene {
   private stepGame(i: Input, escapePressed: boolean): void {
     const game = this.game!;
     if (game.inHub() && escapePressed) {
+      blip(soundSelect);
       game.pauseAudio();
       this.phase = "paused";
       this.cursor = 0;
@@ -213,6 +255,10 @@ export class Title implements Scene {
   }
 
   dispose(): void {
+    if (this.musicOn) {
+      soundTitleMusic.pause();
+      soundTitleMusic.rewind();
+    }
     this.game?.dispose();
   }
 }
