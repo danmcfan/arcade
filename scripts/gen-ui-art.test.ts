@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
+import { counterRect } from "../src/arcade/prizeCounter.ts";
+import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
 import { iconPalette, icons } from "../src/ui/icons.ts";
-import { fontPath, iconsPath, logoPath, renderFont, renderIcons, renderLogo, renderTitleCard, titleCardPath } from "./gen-ui-art.ts";
+import { counterPath, fontPath, iconsPath, renderCounter, logoPath, renderFont, renderIcons, renderLogo, renderTitleCard, titleCardPath } from "./gen-ui-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
@@ -34,6 +36,12 @@ describe("UI art source", () => {
     }
   });
 
+  test("the prize counter is the size of its collision rect, in palette letters and .", () => {
+    expect([counterArt[0]!.length, counterArt.length]).toEqual([counterRect.w, counterRect.h]);
+    const allowed = new RegExp(`^[.${Object.keys(counterPalette).join("")}]+$`);
+    for (const row of counterArt) expect({ row, ok: allowed.test(row) && row.length === counterRect.w }).toEqual({ row, ok: true });
+  });
+
   test("every title letter is 11x15 (the space only sets a width)", () => {
     for (const [ch, rows] of Object.entries(titleLetters)) {
       if (ch === " ") continue;
@@ -46,11 +54,12 @@ describe("UI art source", () => {
   });
 });
 
-describe("committed PNGs match src/ui/glyphs.ts and icons.ts (run `bun run art` after editing them)", () => {
+describe("committed PNGs match src/ui/glyphs.ts, icons.ts and counterArt.ts (run `bun run art` after editing them)", () => {
   const pngs: [name: string, path: string, render: () => PNG][] = [
     ["font.png", fontPath, renderFont],
     ["logo.png", logoPath, renderLogo],
     ["icons.png", iconsPath, renderIcons],
+    ["counter.png", counterPath, renderCounter],
     ...titleCards.map((card): [string, string, () => PNG] => [card.file, titleCardPath(card.file), () => renderTitleCard(card)]),
   ];
   for (const [name, path, render] of pngs) {

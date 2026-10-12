@@ -2,9 +2,10 @@
 
 import type { Software } from "../game/software.ts";
 import type { ArcadeTitle, RunKindSnapshot } from "../game/snapshot.ts";
-import { newWalls, type Rect } from "./collision.ts";
+import { checkCollision, checkCollisions, newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
+import { counterRect } from "./prizeCounter.ts";
 
 export const tileSize = 8;
 
@@ -23,6 +24,8 @@ export class State {
   player: Entity;
   walls: Rect[];
   machines: Machine[];
+  /** The prize counter: solid, and used like a cabinet. */
+  counter: Rect;
 
   melodyPlaying = false;
   /** Go `imageTitle` (nil → null), by name; see `titleImages`. */
@@ -31,6 +34,8 @@ export class State {
   loadedSoftware: Software | null;
   /** How `loadedSoftware` was started; null when nothing was loaded yet. */
   loadedRun: RunKind | null;
+  /** Space was pressed facing the prize counter: picked up (and cleared) by the Game, which opens its menu. */
+  counterOpened = false;
 
   highScore = 0;
   tokens = startingTokens;
@@ -40,6 +45,7 @@ export class State {
     this.player = newPlayer();
     this.walls = newWalls();
     this.machines = newMachines(factory);
+    this.counter = { ...counterRect };
     this.loadedSoftware = initialSoftware;
     this.loadedRun = initialSoftware === null ? null : "direct";
   }
@@ -49,6 +55,11 @@ export class State {
     lines.push(`Player: (${formatFloat0(this.player.x)},${formatFloat0(this.player.y)})`);
     return lines;
   }
+}
+
+/** Whether a player rect at `r` would be inside a wall or the prize counter. */
+export function blocked(s: State, r: Rect): boolean {
+  return checkCollisions(r, s.walls) || checkCollision(r, s.counter);
 }
 
 /** Go `arcade.NewState(initialSoftware)`; `factory` builds a machine's software. */

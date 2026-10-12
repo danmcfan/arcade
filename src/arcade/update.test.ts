@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
+import { counterRect } from "./prizeCounter.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update } from "./update.ts";
 
@@ -128,7 +129,7 @@ describe("walking", () => {
     expect(s.player.frame).not.toBe(0);
     run(s, 100, { right: true });
     expect(s.player.x).toBe(128);
-    run(s, 100, { down: true });
+    run(s, 100, { down: true }); // x 128: beside the prize counter, not above it
     expect(s.player.y).toBe(108);
     run(s, 100, { up: true });
     expect(s.player.y).toBe(60);
@@ -226,6 +227,62 @@ describe("entering a machine", () => {
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
     expect(sounds).toEqual(["pause:melody", "rewind:melody", "play:start"]);
+  });
+});
+
+describe("prize counter", () => {
+  test("is solid: walking down from the start stops at its top edge", () => {
+    const s = newState(null, fakeFactory);
+    run(s, 100, { down: true });
+    expect(s.player.y).toBe(counterRect.y - s.player.height / 2);
+    expect(s.player.y).toBe(94);
+  });
+
+  test("can't be walked through from the side", () => {
+    const s = newState(null, fakeFactory);
+    run(s, 40, { left: true }); // x 40
+    run(s, 40, { down: true }); // y 108, against the bottom wall
+    run(s, 100, { right: true });
+    expect(s.player.x).toBe(counterRect.x - s.player.width / 2);
+    run(s, 40, { left: true });
+    run(s, 100, { up: true }); // round the counter to its right-hand side
+    run(s, 100, { right: true });
+    run(s, 100, { down: true });
+    run(s, 100, { left: true });
+    expect(s.player.x).toBe(counterRect.x + counterRect.w + s.player.width / 2);
+  });
+
+  test("Space facing it from above opens it, and starts no minigame", () => {
+    const s = newState(null, fakeFactory);
+    run(s, 100, { down: true });
+    expect(s.counterOpened).toBe(false);
+    update(s, input({ space: true }));
+    expect(s.counterOpened).toBe(true);
+    expect(s.loadedSoftware).toBeNull();
+    expect(s.tokens).toBe(startingTokens);
+  });
+
+  test("Space facing it from the side opens it", () => {
+    const s = newState(null, fakeFactory);
+    run(s, 40, { left: true });
+    run(s, 40, { down: true });
+    run(s, 100, { right: true });
+    update(s, input({ space: true }));
+    expect(s.counterOpened).toBe(true);
+  });
+
+  test("Space elsewhere, or next to it but facing away, does not open it", () => {
+    const s = newState(null, fakeFactory);
+    update(s, input({ space: true })); // start position, facing down: 2 px short of the counter
+    expect(s.counterOpened).toBe(false);
+    run(s, 100, { down: true });
+    run(s, 1, { left: true });
+    run(s, 1, { right: true });
+    update(s, input({ space: true })); // touching it, facing right
+    expect(s.counterOpened).toBe(false);
+    run(s, 30, { up: true });
+    update(s, input({ space: true }));
+    expect(s.counterOpened).toBe(false);
   });
 });
 

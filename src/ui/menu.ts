@@ -20,17 +20,30 @@ export function arrowOffset(tick: number): number {
   return Math.round(1 - Math.cos((tick * 2 * Math.PI) / 40));
 }
 
-/** Menu items 12 px apart, centred on `centre`; the selected one is yellow between arrows. */
-export function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number, tick: number, centre: number): void {
+/**
+ * Menu items 12 px apart, centred on `centre`; the selected one is yellow
+ * between arrows. Items listed in `greyed` can't be chosen right now: they
+ * are grey, even when selected.
+ */
+export function drawMenuItems(
+  screen: Surface,
+  items: readonly string[],
+  cursor: number,
+  top: number,
+  tick: number,
+  centre: number,
+  greyed: readonly number[] = [],
+): void {
   const off = arrowOffset(tick);
   items.forEach((label, i) => {
     const y = top + i * 12;
+    const grey = greyed.includes(i);
     if (i !== cursor) {
-      drawTextCentered(screen, label, centre, y, "white");
+      drawTextCentered(screen, label, centre, y, grey ? "grey" : "white");
       return;
     }
     const half = Math.trunc(textWidth(label) / 2);
-    drawTextCentered(screen, label, centre, y, "yellow");
+    drawTextCentered(screen, label, centre, y, grey ? "grey" : "yellow");
     drawText(screen, ">", centre - half - 8 - off, y, "yellow");
     drawText(screen, "<", centre - half + textWidth(label) + 4 + off, y, "yellow");
   });

@@ -31,6 +31,8 @@ export function drawDebugOverlay(screen: Surface, s: State, buffer: number): voi
     rect.y += buffer;
     drawDebugRect(screen, rect, colorMachine);
   }
+
+  drawDebugRect(screen, { ...s.counter, x: s.counter.x + buffer, y: s.counter.y + buffer }, colorMachine);
 }
 
 function drawDebugRect(screen: Surface, rect: Rect, clr: PremulColor): void {

@@ -3,12 +3,15 @@
 // `Layout`. Beyond the Go original: Esc in a minigame opens the minigame pause
 // menu (Resume / Controls / Quit game), and a minigame that ends shows the
 // payout, which turns its score into tickets, before the hub comes back.
+// Space at the prize counter opens the prize counter menu over the hub, where
+// tickets buy tokens.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import {
   imageArcade,
   soundBoom,
   soundDeath,
+  soundDeny,
   soundLaser,
   soundMelody,
   soundMove,
@@ -20,14 +23,14 @@ import {
 import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
-import { checkCollisions } from "../arcade/collision.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
-import { newState, type RunKind, type State } from "../arcade/state.ts";
+import { buyToken, tokenOffer } from "../arcade/prizeCounter.ts";
+import { blocked, newState, type RunKind, type State } from "../arcade/state.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./registry.ts";
-import { minigamePauseMenu, quitGameIndex } from "./menus.ts";
+import { minigamePauseMenu, prizeCounterItems, quitGameIndex, tokenItemIndex } from "./menus.ts";
 import { drawHud } from "../ui/hud.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
@@ -67,9 +70,9 @@ export class Game implements Scene {
   private software: Software | null = null;
   /** How `software` was started; null in the hub. */
   private run: RunKind | null = null;
-  /** The menu over the minigame, if any. */
+  /** The menu over the minigame or the hub, if any. */
   private menu: GameMenu | null = null;
-  /** Selected item of the minigame pause menu. */
+  /** Selected item of the minigame pause menu or the prize counter menu. */
   private cursor = 0;
   private payout: Payout | null = null;
   /** Minigame sounds that were playing when the pause menu opened; Resume restarts them. */
@@ -106,9 +109,9 @@ export class Game implements Scene {
   }
 
   /**
-   * A position in or beyond a wall (a stale or edited save) keeps the start
-   * position. The walls frame the hub image, so "inside the image and
-   * touching no wall" means "on the floor".
+   * A position in or beyond a wall or the prize counter (a stale or edited
+   * save) keeps the start position. The walls frame the hub image, so
+   * "inside the image and touching no wall" means "on the floor".
    */
   private restore(p: Progress): void {
     const player = this.arcade.player;
@@ -118,15 +121,15 @@ export class Game implements Scene {
     player.direction = p.player.dir;
     const rect = { x: p.player.x - player.width / 2, y: p.player.y - player.height / 2, w: player.width, h: player.height };
     const inside = rect.x >= 0 && rect.y >= 0 && rect.x + rect.w <= imageArcade.w && rect.y + rect.h <= imageArcade.h;
-    if (inside && !checkCollisions(rect, this.arcade.walls)) {
+    if (inside && !blocked(this.arcade, rect)) {
       player.x = p.player.x;
       player.y = p.player.y;
     }
   }
 
-  /** True while the hub is running: not in a minigame, its pause menu or the payout. */
+  /** True while the hub is running: not in a minigame, its pause menu, the payout or the prize counter menu. */
   inHub(): boolean {
-    return this.software === null;
+    return this.software === null && this.menu === null;
   }
 
   progress(): Progress {
@@ -168,7 +171,8 @@ export class Game implements Scene {
     const input = this.keys.unmasked(raw);
 
     if (this.software === null) {
-      this.updateHub(input);
+      if (this.menu === "prizeCounter") this.updatePrizeCounter(raw, edges);
+      else this.updateHub(input);
       return;
     }
     switch (this.menu) {
@@ -187,6 +191,8 @@ export class Game implements Scene {
       case "payout":
         this.updatePayout(this.payout!, raw, edges);
         return;
+      case "prizeCounter":
+        return; // only opens in the hub
     }
   }
 
@@ -198,6 +204,39 @@ export class Game implements Scene {
       this.run = this.arcade.loadedRun;
       this.arcade.loadedSoftware = null;
     }
+
+    if (this.arcade.counterOpened) {
+      this.arcade.counterOpened = false;
+      soundSelect.blip();
+      this.menu = "prizeCounter";
+      this.cursor = 0;
+    }
+  }
+
+  private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
+    const n = prizeCounterItems(tokenOffer(this.arcade)).length;
+    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
+    if (delta !== 0) {
+      this.cursor = (this.cursor + delta + n) % n;
+      soundMove.blip();
+    }
+    if (edges.space && this.cursor === tokenItemIndex) {
+      const after = buyToken(this.arcade);
+      if (after === null) {
+        soundDeny.blip();
+        return;
+      }
+      soundSelect.blip();
+      this.arcade.tokens = after.tokens;
+      this.arcade.tickets = after.tickets;
+      return;
+    }
+    if (!edges.space && !edges.escape) return;
+    // CLOSE or Esc: back to the hub.
+    soundSelect.blip();
+    this.menu = null;
+    this.cursor = 0;
+    this.keys.maskHeld(raw);
   }
 
   private updateMinigame(software: Software, input: Input, edges: MenuEdges): void {
@@ -290,6 +329,7 @@ export class Game implements Scene {
           software: this.software.name,
           cursor: this.cursor,
           payout: this.payout,
+          wallet: this.arcade,
           tick: this.tick,
           width: w,
           height: h,
@@ -300,12 +340,26 @@ export class Game implements Scene {
     }
 
     drawArcade(screen, this.arcade, buffer, this.debugMode);
-    drawHud(screen, this.arcade.tokens, this.arcade.tickets, imageArcade.w + buffer * 2);
+    const hubWidth = imageArcade.w + buffer * 2;
+    const hubHeight = imageArcade.h + buffer * 2;
+    drawHud(screen, this.arcade.tokens, this.arcade.tickets, hubWidth);
+    if (this.menu === "prizeCounter") {
+      // Only the hub image dims, so the HUD counts stay readable and change as tokens are bought.
+      drawMenuOverlay(screen, {
+        menu: this.menu,
+        software: null,
+        cursor: this.cursor,
+        payout: null,
+        wallet: this.arcade,
+        tick: this.tick,
+        width: hubWidth,
+        height: hubHeight,
+        playfield: { x: buffer, y: buffer, w: imageArcade.w, h: imageArcade.h },
+      });
+    }
 
     if (this.debugMode) {
-      const gameWidth = imageArcade.w + buffer * 2;
-      const gameHeight = imageArcade.h + buffer * 2;
-      this.debugPanel.draw(screen, this.arcade, gameWidth, gameHeight);
+      this.debugPanel.draw(screen, this.arcade, hubWidth, hubHeight);
     }
   }
 
