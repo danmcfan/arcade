@@ -3,7 +3,7 @@
 import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
-import { cabinetJoystickFrame } from "./cabinet.ts";
+import { cabinetJoystickFrame } from "../ui/cabinet.ts";
 import { tickBonusEatPopups } from "./bonusEat.ts";
 import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {

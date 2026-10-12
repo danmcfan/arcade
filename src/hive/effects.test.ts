@@ -1,11 +1,9 @@
-// camera.ts, particle.ts, bonusEat.ts, cabinet.ts
+// camera.ts, particle.ts, bonusEat.ts
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
-import { NO_INPUT } from "../engine/input.ts";
 import { CameraSystem } from "./camera.ts";
 import { maxParticles, ParticleSystem, particleColorRed, particleColorTeal } from "./particle.ts";
 import { bonusEatFrameRect, bonusEatIndicatorTicks, scaredBeeEatPoints } from "./bonusEat.ts";
-import { cabinetJoystickFrame } from "./cabinet.ts";
 
 describe("CameraSystem", () => {
   test("idle: zero offsets and no random draws", () => {
@@ -113,16 +111,5 @@ describe("bonus eat", () => {
     expect(bonusEatFrameRect(-1)).toEqual([0, 0, 16, 16]);
     expect(bonusEatFrameRect(2)).toEqual([32, 0, 48, 16]);
     expect(bonusEatFrameRect(9)).toEqual([48, 0, 64, 16]);
-  });
-});
-
-describe("cabinetJoystickFrame", () => {
-  test("neutral 0, then up 1, down 2, left 3, right 4 by input priority", () => {
-    expect(cabinetJoystickFrame(NO_INPUT)).toBe(0);
-    expect(cabinetJoystickFrame({ ...NO_INPUT, up: true, left: true })).toBe(1);
-    expect(cabinetJoystickFrame({ ...NO_INPUT, down: true, right: true })).toBe(2);
-    expect(cabinetJoystickFrame({ ...NO_INPUT, left: true, right: true })).toBe(3);
-    expect(cabinetJoystickFrame({ ...NO_INPUT, right: true })).toBe(4);
-    expect(cabinetJoystickFrame({ ...NO_INPUT, space: true })).toBe(0);
   });
 });

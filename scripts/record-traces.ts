@@ -18,7 +18,7 @@ import { repoRoot } from "../test/parity/fixtures.ts";
  * JS writes `-0` as `0` and its own exponent style; both parse back to
  * values the harness's `===` compare treats as equal.
  */
-export function encodeTrace(snapshots: readonly unknown[]): Uint8Array {
+export function encodeTrace(snapshots: readonly unknown[]): Uint8Array<ArrayBuffer> {
   const text = snapshots.map((s) => `${JSON.stringify(s)}\n`).join("");
   return Bun.gzipSync(new TextEncoder().encode(text));
 }
