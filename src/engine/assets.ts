@@ -32,6 +32,7 @@ import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
 import counterUrl from "../assets/images/counter.png";
+import prizesUrl from "../assets/images/prizes.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -92,12 +93,14 @@ export const images = {
   workshop: asset(workshopUrl, 224, 256),
   gnome: asset(gnomeUrl, 64, 64),
 
-  // Title screen, menus, HUD and the hub's prize counter; generated from
-  // src/ui/glyphs.ts, src/ui/icons.ts and src/ui/counterArt.ts by `bun run art`.
+  // Title screen, menus, HUD, the hub's prize counter and prize decorations;
+  // generated from src/ui/glyphs.ts, src/ui/icons.ts, src/ui/counterArt.ts and
+  // src/ui/prizeArt.ts by `bun run art`.
   font: asset(fontUrl, 128, 192),
   logo: asset(logoUrl, 100, 17),
   icons: asset(iconsUrl, 23, 9),
   counter: asset(counterUrl, 40, 14),
+  prizes: asset(prizesUrl, 31, 11),
 } as const;
 
 // Go `assets.ImageX` package variables, as whole-image sprites.
@@ -131,6 +134,7 @@ export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
 export const imageIcons: Sprite = whole(images.icons);
 export const imageCounter: Sprite = whole(images.counter);
+export const imagePrizes: Sprite = whole(images.prizes);
 
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);

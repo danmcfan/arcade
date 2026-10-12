@@ -11,20 +11,23 @@ import { createLumberjack } from "../lab/lumberjack/index.ts";
 import { createGame } from "./index.ts";
 import { createTitle } from "../title/index.ts";
 import type { SaveStore } from "../title/save.ts";
+import type { PrizeId } from "../arcade/prizes.ts";
 import type { Scene, SceneName, Software, SoftwareName, WaveOptions } from "./software.ts";
 
 /**
  * Go `machine.newSoftware func(highscore int)`: every factory takes the hub's
  * high score; only hive uses it (firefly and gearhead ignore it, as in Go).
+ * They also take the player's owned prizes (#22); each minigame applies its
+ * own (only hive has prizes so far).
  */
-export const softwareFactories: Readonly<Record<SoftwareName, (highScore: number) => Software>> = {
-  hive: (highScore) => createHive(highScore),
+export const softwareFactories: Readonly<Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>> = {
+  hive: (highScore, prizes) => createHive(highScore, prizes),
   firefly: () => createFirefly(),
   gearhead: () => createGearhead(),
 };
 
-export function createSoftware(name: SoftwareName, highScore: number): Software {
-  return softwareFactories[name](highScore);
+export function createSoftware(name: SoftwareName, highScore: number, prizes: readonly PrizeId[] = []): Software {
+  return softwareFactories[name](highScore, prizes);
 }
 
 export interface SceneOptions {

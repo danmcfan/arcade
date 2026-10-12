@@ -18,7 +18,7 @@ import { Game, type Progress } from "../game/game.ts";
 import type { TitlePhase, TitleSnapshot } from "../game/snapshot.ts";
 import type { Scene } from "../game/software.ts";
 import { draw, screenHeight, screenWidth } from "./draw.ts";
-import { memoryStore, type SaveData, type SaveStore } from "./save.ts";
+import { memoryStore, saveVersion, type SaveData, type SaveStore } from "./save.ts";
 
 import { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 
@@ -191,9 +191,10 @@ export class Title implements Scene {
     game.step(this.keys.unmasked(i));
     const after = game.progress();
     // A cabinet start spent a token, a minigame just ended (after its payout,
-    // or Quit game), the prize counter menu opened or closed, or tokens or
-    // tickets changed (a purchase, a payout): save.
-    if (wasInHub !== game.inHub() || before.tokens !== after.tokens || before.tickets !== after.tickets) this.persist();
+    // or Quit game), the prize counter menu opened or closed, or tokens,
+    // tickets or prizes changed (a purchase, a payout): save.
+    const changed = before.tokens !== after.tokens || before.tickets !== after.tickets || before.prizes.length !== after.prizes.length;
+    if (wasInHub !== game.inHub() || changed) this.persist();
   }
 
   private resume(i: Input): void {
@@ -213,7 +214,7 @@ export class Title implements Scene {
 
   persist(): void {
     if (this.game === null) return;
-    this.saved = { v: 2, ...this.game.progress() };
+    this.saved = { v: saveVersion, ...this.game.progress() };
     this.store.save(this.saved);
   }
 

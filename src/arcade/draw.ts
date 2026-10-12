@@ -1,16 +1,23 @@
-// Port of internal/arcade/draw.go, plus the prize counter.
+// Port of internal/arcade/draw.go, plus the prize counter and the decorations
+// of the prizes the player owns.
 
 import { imageArcade, imageCounter } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { titleImages } from "./machine.ts";
+import { prize } from "./prizes.ts";
 import type { State } from "./state.ts";
 
 export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // The player can't overlap the counter, so drawing it first is enough.
   drawImage(screen, imageCounter, s.counter.x + buffer, s.counter.y + buffer);
+  // Decorations are not solid: the player walks in front of them.
+  for (const id of s.prizes) {
+    const p = prize(id);
+    drawImage(screen, p.sprite, p.x + buffer, p.y + buffer);
+  }
 
   const player = s.player;
   const row = player.frameDirection[player.direction];

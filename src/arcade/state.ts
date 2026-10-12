@@ -6,6 +6,7 @@ import { checkCollision, checkCollisions, newWalls, type Rect } from "./collisio
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
 import { counterRect } from "./prizeCounter.ts";
+import type { PrizeId } from "./prizes.ts";
 
 export const tileSize = 8;
 
@@ -40,6 +41,8 @@ export class State {
   highScore = 0;
   tokens = startingTokens;
   tickets = 0;
+  /** Prizes the player owns, in catalogue order (src/arcade/prizes.ts). */
+  prizes: PrizeId[] = [];
 
   constructor(initialSoftware: Software | null, factory: SoftwareFactory) {
     this.player = newPlayer();

@@ -4,6 +4,7 @@
 // centred on the layout.
 
 import { tokenOffer, type Wallet } from "../arcade/prizeCounter.ts";
+import { prizeOffers, prizes, type PrizeWallet } from "../arcade/prizes.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawIcon } from "../ui/hud.ts";
 import { iconRects } from "../ui/icons.ts";
@@ -20,7 +21,7 @@ import {
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
-import { minigameControls, minigamePauseMenu, prizeCounterItems, prizeCounterTitle, quitGameIndex, quitGameNote, tokenItemIndex } from "./menus.ts";
+import { firstPrizeIndex, minigameControls, minigamePauseMenu, prizeCounterItems, prizeCounterTitle, quitGameIndex, quitGameNote, tokenItemIndex } from "./menus.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
 import type { SoftwareName } from "./software.ts";
@@ -31,8 +32,8 @@ export interface MenuOverlay {
   software: SoftwareName | null;
   cursor: number;
   payout: Payout | null;
-  /** The player's tokens and tickets, for the prize counter menu. */
-  wallet: Wallet;
+  /** The player's tokens, tickets and prizes, for the prize counter menu. */
+  wallet: Wallet & PrizeWallet;
   tick: number;
   /** The minigame's layout. */
   width: number;
@@ -53,9 +54,10 @@ export const counterHints: readonly Hint[] = [
   { keys: ["SPACE"], label: "OK" },
   { keys: ["ESC"], label: "BACK" },
 ];
-/** Wide enough for LAST CHANCE: ALL TICKETS with its arrows at their furthest out (8 px of the hub's margin each side). */
+/** Wide enough for RUNNING SHOES: 50 TICKETS with its arrows at their furthest out (8 px of the hub's margin each side). */
 const counterWidth = 176;
-const counterHeight = 82;
+/** Title, tickets, the token, each prize, CLOSE and the hints. */
+const counterHeight = 82 + 12 * prizes.length;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
@@ -86,10 +88,11 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
 }
 
 /**
- * The prize counter panel, top at `y`: the player's tickets, then the token
- * (greyed out when it can't be bought) and CLOSE.
+ * The prize counter panel, top at `y`: the player's tickets, then the token,
+ * the prizes (each greyed out when it can't be bought, owned ones read
+ * OWNED) and CLOSE.
  */
-function drawPrizeCounter(screen: Surface, w: Wallet, cursor: number, tick: number, centre: number, y: number): void {
+function drawPrizeCounter(screen: Surface, w: Wallet & PrizeWallet, cursor: number, tick: number, centre: number, y: number): void {
   drawPanel(screen, centre - counterWidth / 2, y, counterWidth, counterHeight);
   drawTextCentered(screen, prizeCounterTitle, centre, y + 8, "yellow");
   const count = `${w.tickets}`;
@@ -98,8 +101,12 @@ function drawPrizeCounter(screen: Surface, w: Wallet, cursor: number, tick: numb
   drawIcon(screen, "ticket", left, y + 21 - (icon.h - textHeight) / 2);
   drawText(screen, count, left + icon.w + 3, y + 21, "yellow");
   const offer = tokenOffer(w);
+  const offers = prizeOffers(w);
   const greyed = offer === "short" ? [tokenItemIndex] : [];
-  drawMenuItems(screen, prizeCounterItems(offer), cursor, y + 37, tick, centre, greyed);
+  offers.forEach((o, i) => {
+    if (o !== "buy") greyed.push(firstPrizeIndex + i);
+  });
+  drawMenuItems(screen, prizeCounterItems(offer, offers), cursor, y + 37, tick, centre, greyed);
   drawHints(screen, counterHints, y + counterHeight - keyHeight - 6, centre);
 }
 
