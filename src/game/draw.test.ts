@@ -400,9 +400,16 @@ describe("prize counter menu", () => {
   });
 
   test("with 0 tokens and too few tickets the token item is the last-chance token", () => {
+    const game = atCounter(0, 3);
+    // Tick 20 of 40: the selection arrows are at their furthest out.
+    while (game.snapshot().tick % 40 !== 20) game.step(input());
     const r = recordingSurface();
-    atCounter(0, 3).draw(r.surface);
+    game.draw(r.surface);
     expect(r.text("yellow")).toContain(">LAST CHANCE: ALL TICKETS<");
+    // Inside the 176-px panel (x 8..184) and clear of its 3-px frame.
+    const arrows = r.glyphs.filter((g) => g.ch === ">" || g.ch === "<");
+    expect(Math.min(...arrows.map((g) => g.x))).toBeGreaterThanOrEqual(8 + 3);
+    expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
   });
 
   test("with tokens left and too few tickets the token item is greyed out", () => {

@@ -53,7 +53,8 @@ export const counterHints: readonly Hint[] = [
   { keys: ["SPACE"], label: "OK" },
   { keys: ["ESC"], label: "BACK" },
 ];
-const counterWidth = 168;
+/** Wide enough for LAST CHANCE: ALL TICKETS with its arrows at their furthest out (8 px of the hub's margin each side). */
+const counterWidth = 176;
 const counterHeight = 82;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
