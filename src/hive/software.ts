@@ -11,7 +11,7 @@ import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
 import type { BonusEatPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "./cabinet.ts";
-import { digits6, newDigitReels, type DigitReel, type DigitReels } from "./digitReel.ts";
+import { digits6, newDigitReels, type DigitReel, type DigitReels } from "../ui/digitReel.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import {
   DeathWaitState,

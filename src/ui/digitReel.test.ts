@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DigitReel, digitReelDurationFrames, digits6, easeDialOut } from "./digitReel.ts";
+import { bootReels, DigitReel, digitReelDurationFrames, digits6, easeDialOut, newDigitReels, syncAndTick } from "./digitReel.ts";
 
 describe("digits6", () => {
   test("splits into six decimal columns, most significant first", () => {
@@ -83,5 +83,22 @@ describe("DigitReel", () => {
     r.boot(6);
     r.stepFrame();
     expect([r.active, r.settledDigit, r.t]).toEqual([false, 6, 0]);
+  });
+});
+
+describe("reel sets", () => {
+  test("syncAndTick starts a spin on each column whose digit changed and steps them all", () => {
+    const reels = newDigitReels();
+    bootReels(reels, 1420);
+    syncAndTick(reels, digits6(1320));
+    expect(reels.map((r) => r.active)).toEqual([false, false, false, true, false, false]);
+    expect([reels[3]!.from, reels[3]!.to, reels[3]!.t]).toEqual([4, 3, 1 / 18]);
+  });
+
+  test("bootReels settles every column on its digit with no spin", () => {
+    const reels = newDigitReels();
+    syncAndTick(reels, digits6(99));
+    bootReels(reels, 1420);
+    expect(reels.map((r) => [r.settledDigit, r.active])).toEqual([[0, false], [0, false], [1, false], [4, false], [2, false], [0, false]]);
   });
 });
