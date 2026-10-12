@@ -303,7 +303,7 @@ function recordingSurface() {
     }));
   /** Like `text`, but only what was drawn over the last dimming fill (a panel). */
   const over = (ink?: Ink) => text(ink, dimmedAt);
-  return { surface: surface as unknown as Surface, sprites, text, over, keys };
+  return { surface: surface as unknown as Surface, sprites, glyphs, text, over, keys };
 }
 
 describe("drawing", () => {
@@ -320,7 +320,8 @@ describe("drawing", () => {
     const t = new Title();
     const r = recordingSurface();
     t.draw(r.surface);
-    expect(r.sprites.map(([name]) => name)).toEqual(["logo"]);
+    // One slice of logo.png per letter of ARCADE, so each can bob.
+    expect(r.sprites.map(([name]) => name)).toEqual(Array(6).fill("logo"));
     expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
     expect(r.text("white")).not.toContain("CONTINUE");
@@ -362,6 +363,28 @@ describe("drawing", () => {
     t.draw(r.surface);
     expect(r.text("yellow")).toBe(">CONTINUE<");
     expect(r.text("orange")).toBe("HIGH SCORE 120");
+  });
+
+  test("the logo's letters bob on a wave and the selection arrows move in and out", () => {
+    const t = new Title();
+    const frames = Array.from({ length: 60 }, () => {
+      const r = recordingSurface();
+      t.draw(r.surface);
+      hold(t, {}, 1);
+      return r;
+    });
+    const letterTops = frames.map((r) => r.sprites.map(([, , y]) => y).join());
+    expect(new Set(letterTops).size).toBeGreaterThan(1);
+    // Mid-wave, neighbouring letters sit at different heights.
+    expect(new Set(frames[10]!.sprites.map(([, , y]) => y)).size).toBeGreaterThan(1);
+
+    const gaps = frames.map((r) => {
+      const [left, ...rest] = r.glyphs.filter((g) => g.ink === "yellow").sort((a, b) => a.x - b.x);
+      return rest[0]!.x - left!.x;
+    });
+    // From the left arrow to the label's first letter, which stays put.
+    expect(new Set(gaps)).toEqual(new Set([8, 9, 10]));
+    expect(new Set(frames.map((r) => r.text("yellow")))).toEqual(new Set([">NEW GAME<"]));
   });
 
   test("the intro explains the game and the controls; the prompt blinks", () => {

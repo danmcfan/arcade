@@ -1,7 +1,8 @@
 // Pixel-art source for the UI text font and the title logo. Each glyph is
 // drawn as rows of `#` (ink) and `.` (blank). scripts/gen-ui-art.ts turns
-// these into src/assets/images/font.png and logo.png; the runtime reads only
-// the glyph widths from here (src/ui/text.ts), never the pixels.
+// these into src/assets/images/font.png and logo.png; the runtime reads the
+// glyph widths from here (src/ui/text.ts) and the logo letters' pixels only to
+// paint the title's rainbow sweep over them (src/title/draw.ts).
 //
 // The small font copies the 7-px lettering on the hub title cards
 // ("PRESS SPACE TO PLAY"): thin strokes with the corners knocked off. The

@@ -3,7 +3,9 @@
 // pixel art: font.png and logo.png (src/ui/glyphs.ts).
 
 import { imageArcade, imageLogo } from "../engine/assets.ts";
+import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
 import { drawKey, drawPanel, drawText, drawTextCentered, keyHeight, keyWidth, textWidth } from "../ui/text.ts";
 import type { Title } from "./title.ts";
 
@@ -89,7 +91,13 @@ function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
 }
 
-function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number): void {
+/** How far the selection arrows sit out from their resting place: 0, 1 or 2 px, easing in and out every 40 ticks. */
+export function arrowOffset(tick: number): number {
+  return Math.round(1 - Math.cos((tick * 2 * Math.PI) / 40));
+}
+
+function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number, tick: number): void {
+  const off = arrowOffset(tick);
   items.forEach((label, i) => {
     const y = top + i * 12;
     if (i !== cursor) {
@@ -98,8 +106,8 @@ function drawMenuItems(screen: Surface, items: readonly string[], cursor: number
     }
     const half = Math.trunc(textWidth(label) / 2);
     drawTextCentered(screen, label, centre, y, "yellow");
-    drawText(screen, ">", centre - half - 9, y, "yellow");
-    drawText(screen, "<", centre - half + textWidth(label) + 5, y, "yellow");
+    drawText(screen, ">", centre - half - 8 - off, y, "yellow");
+    drawText(screen, "<", centre - half + textWidth(label) + 4 + off, y, "yellow");
   });
 }
 
@@ -120,12 +128,51 @@ export function drawHints(screen: Surface, hints: readonly Hint[], top = hintsTo
   }
 }
 
+const logoLetterWidth = logoLetters.A![0]!.length;
+/** Ticks between the starts of two rainbow sweeps across the logo. */
+const sweepPeriod = 180;
+/** Ticks the sweep takes to cross the logo; it starts off the left edge. */
+const sweepTicks = 70;
+/** The sweep's diagonal stripes, leading edge first (Sweetie 16), each `stripeWidth` px wide. */
+const sweepColours = ["#41a6f6", "#73eff7", "#f4f4f4", "#a7f070", "#38b764"] as const;
+const stripeWidth = 2;
+
+/** Each logo letter's rise above its resting row, a wave running left to right. */
+export function logoBob(tick: number, letter: number): number {
+  return Math.round(Math.sin(tick * 0.07 - letter * 0.7) * 1.4);
+}
+
+/**
+ * ARCADE with each letter bobbing on a wave, and every few seconds a rainbow
+ * of diagonal stripes sweeping across the letters (not their shadow).
+ */
+function drawLogo(screen: Surface, left: number, top: number, tick: number): void {
+  const phase = tick % sweepPeriod;
+  // Leading stripe's diagonal (x + y); off the logo between sweeps.
+  const band = sweepColours.length * stripeWidth;
+  const span = imageLogo.w + 15 + band;
+  const lead = phase < sweepTicks ? Math.trunc((phase * span) / sweepTicks) : -1;
+  [...logoWord].forEach((ch, i) => {
+    const ox = i * (logoLetterWidth + logoGap);
+    const x = left + ox;
+    const y = top - logoBob(tick, i);
+    screen.draw(sub(imageLogo, ox, 0, ox + logoLetterWidth + logoShadow[0], imageLogo.h), x, y);
+    if (lead < 0) return;
+    logoLetters[ch]!.forEach((row, ry) => {
+      [...row].forEach((px, rx) => {
+        const d = lead - (ox + rx + ry);
+        if (px === "#" && d >= 0 && d < band) screen.fillRect(x + rx, y + ry, 1, 1, sweepColours[Math.trunc(d / stripeWidth)]!);
+      });
+    });
+  });
+}
+
 /** The logo, the tagline, the title menu with `cursor` selected and the saved high score. */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
-  screen.draw(imageLogo, centre - Math.trunc(imageLogo.w / 2), 34);
+  drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 88);
+  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick);
   if (t.savedHighScore) drawTextCentered(screen, `HIGH SCORE ${t.savedHighScore}`, centre, 122, "orange");
 }
 
@@ -144,7 +191,7 @@ function drawConfirm(screen: Surface, t: Title): void {
   const y = 40;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"));
-  drawMenuItems(screen, t.items(), t.cursor, y + 44);
+  drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick);
   drawHints(screen, menuHints);
 }
 
@@ -185,7 +232,7 @@ function drawPause(screen: Surface, t: Title): void {
   const y = 56;
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "PAUSED", centre, y + 8, "yellow");
-  drawMenuItems(screen, t.items(), t.cursor, y + 22);
+  drawMenuItems(screen, t.items(), t.cursor, y + 22, t.tick);
 }
 
 function drawControlsPanel(screen: Surface): void {
