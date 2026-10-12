@@ -3,7 +3,8 @@
 Captured from the Go/Ebitengine game before it is deleted (ticket T2, §4 of
 `docs/ts-port-plan.md`). The TypeScript port must reproduce them: traces tick
 for tick, frames pixel for pixel. Everything here was produced by the
-temporary harness in `tools/golden/` with `CGO_ENABLED=1 GOARCH=amd64`
+temporary harness in `tools/golden/` (deleted in Phase 5 with the rest of
+the Go code; see "Regenerating" below) with `CGO_ENABLED=1 GOARCH=amd64`
 (Rosetta on Apple Silicon; default `GOAMD64=v1`). On arm64, or with
 `GOAMD64=v3`, Go fuses `x*y+z` into FMA and the firefly beziers come out
 different, so the harness refuses to run on any other GOARCH.
@@ -159,8 +160,13 @@ software, so that tick's snapshot already has `software: null`.
 
 ## Regenerating
 
-From the repo root, while the Go code still exists (it is deleted in
-Phase 5; after that, check out the commit that added this file):
+**These fixtures can no longer be regenerated from the current tree.** The
+Go game, `internal/rng` and the harness in `tools/golden/` were deleted in
+Phase 5 (ticket #12). Commit `34840f8` is the last commit that still has
+them. Check it out (for example in a separate worktree:
+`git worktree add ../arcade-golden 34840f8`), run the commands below from
+its root, and copy the resulting `test/fixtures/` back. You need Go 1.26
+with `CGO_ENABLED=1 GOARCH=amd64` (Rosetta on Apple Silicon).
 
 ```sh
 ./tools/golden/capture.sh          # rng.json, traces, frames (one window per scenario), verify, coverage

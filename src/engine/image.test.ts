@@ -4,7 +4,7 @@ import { snap } from "./surface.ts";
 
 const sheet: ImageAsset = { url: "sheet.png", width: 160, height: 32, image: null };
 
-describe("snap (D13 as settled in Phase 4: Ebitengine adjustDestinationPixel)", () => {
+describe("snap (D13 as settled in Phase 4: Go adjustDestinationPixel)", () => {
   test("rounds half up, everything else to nearest (golden frames: hive y = 99.5 lands on row 100)", () => {
     expect(snap(2)).toBe(2);
     expect(snap(0.5)).toBe(1);
@@ -17,7 +17,7 @@ describe("snap (D13 as settled in Phase 4: Ebitengine adjustDestinationPixel)", 
     expect(snap(-1.25)).toBe(-1);
   });
 
-  test("works on the float32 translate Ebitengine's GeoM holds", () => {
+  test("works on the float32 translate the Go engine's GeoM holds", () => {
     // 0.49999999 is below half in float64 but rounds to 0.5 in float32.
     expect(snap(0.49999999)).toBe(1);
   });
@@ -28,7 +28,7 @@ describe("snap (D13 as settled in Phase 4: Ebitengine adjustDestinationPixel)", 
   });
 });
 
-describe("sub (Ebitengine SubImage)", () => {
+describe("sub (Go SubImage)", () => {
   test("whole covers the asset", () => {
     expect(whole(sheet)).toEqual({ asset: sheet, sx: 0, sy: 0, w: 160, h: 32 });
   });

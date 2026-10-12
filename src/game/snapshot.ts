@@ -7,7 +7,7 @@
 // - One JSON object per tick (JSONL), written AFTER the tick's update. The
 //   object written after the Nth `step()` has `tick: N` (the first is 1).
 // - Go `int` fields are integers; Go `float64` fields are serialized with
-//   `encoding/json` (shortest round-trip), compared exactly.
+//   Go's JSON encoder (shortest round-trip), compared exactly.
 // - Go `nil` becomes JSON `null`; Go empty slices must serialize as `[]`,
 //   never `null` (Go harness: initialize with `make`/`[]T{}`).
 // - Tuples (`[x, y]`, `shake`, `dials`) are JSON arrays.

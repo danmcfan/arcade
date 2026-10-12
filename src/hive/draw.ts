@@ -191,7 +191,7 @@ function drawEnemies(s: HiveSoftware, screen: Surface, bufX: number, bufY: numbe
 }
 
 /**
- * Go prints `[modeIndex] Scatter|Chase: modeTicks` with `ebitenutil.DebugPrintAt`.
+ * Go prints `[modeIndex] Scatter|Chase: modeTicks` with `DebugPrintAt`.
  * `debug` is a compile-time false, so this never draws; the text is built for
  * reference only (see docs/port-notes.md).
  */

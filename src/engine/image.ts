@@ -20,7 +20,7 @@ export interface ImageAsset {
 }
 
 /**
- * The TS equivalent of an `*ebiten.Image` used as a draw source: an asset plus
+ * The TS equivalent of a Go `*Image` used as a draw source: an asset plus
  * a source rectangle in the asset's (root) pixel coordinates.
  */
 export interface Sprite {
@@ -31,13 +31,13 @@ export interface Sprite {
   readonly h: number;
 }
 
-/** The whole asset as a sprite (an `*ebiten.Image` loaded from a PNG). */
+/** The whole asset as a sprite (a Go `*Image` loaded from a PNG). */
 export function whole(asset: ImageAsset): Sprite {
   return { asset, sx: 0, sy: 0, w: asset.width, h: asset.height };
 }
 
 /**
- * Ebitengine `SubImage(image.Rect(x0, y0, x1, y1))`. Coordinates are in the
+ * Go `SubImage(image.Rect(x0, y0, x1, y1))`. Coordinates are in the
  * **root asset's** space, as with Go sub-images (a sub-image of a sub-image
  * still uses the original image's coordinates). Corners are canonicalized
  * like `image.Rect`, then intersected with `s`'s bounds. An empty
@@ -55,7 +55,7 @@ export function sub(s: Sprite, x0: number, y0: number, x1: number, y1: number): 
 }
 
 /**
- * `ebiten.NewImage(w, h)` + `Fill(css)`. Returns a descriptor only; the
+ * Go `NewImage(w, h)` + `Fill(css)`. Returns a descriptor only; the
  * backing canvas is created lazily by `Surface.draw` on first draw (D12).
  */
 export function makeSolid(w: number, h: number, css: string): Sprite {

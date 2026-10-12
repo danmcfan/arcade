@@ -20,8 +20,8 @@ function print(text: string, x: number, y: number) {
   return ctx.ops.map((o) => ({ src: o.src, x: o.x, y: o.y }));
 }
 
-describe("debugPrint (D14: port of ebitenutil drawDebugText)", () => {
-  test("the font is Ebitengine's 192x128 sheet of 6x16 glyphs", () => {
+describe("debugPrint (D14: port of the Go engine's drawDebugText)", () => {
+  test("the font is the Go engine's 192x128 sheet of 6x16 glyphs", () => {
     const png = PNG.sync.read(readFileSync(debugFont.url));
     expect([png.width, png.height, debugFont.width, debugFont.height]).toEqual([192, 128, 192, 128]);
   });

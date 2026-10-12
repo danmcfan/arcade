@@ -78,7 +78,7 @@ describe("loadImages (D5)", () => {
 
   test("rejects with the failing URL", async () => {
     const bad: ImageAsset = { url: "missing.png", width: 1, height: 1, image: null };
-    const broken = { src: "", decode: () => Promise.reject(new Error("EncodingError")) };
+    const broken = { src: "", decode: () => Promise.reject(new Error("decode failed")) };
     await expect(loadImages([bad], () => broken as unknown as HTMLImageElement)).rejects.toThrow("missing.png");
     expect(bad.image).toBeNull();
   });

@@ -148,7 +148,7 @@ export class Tree {
     screen.drawSurface(bottom, this.minX(), this.minY(), { alpha });
 
     // Translate(-pivot) Rotate(theta) Translate(+pivot), then the tree's
-    // position. Rotated corners follow Ebitengine's vertex adjustment (D13).
+    // position. Rotated corners follow the Go engine's vertex adjustment (D13).
     screen.drawSurface(top, this.minX(), this.minY(), {
       rotate: { angle: this.theta, pivotX: this.pivotX(), pivotY },
       alpha,

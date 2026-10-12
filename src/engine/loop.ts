@@ -2,7 +2,7 @@
 // at most 5 catch-up updates per frame, any time beyond the cap discarded,
 // one draw per frame. `FixedStepClock` is the pure, testable core.
 
-/** One Ebitengine tick: 60 TPS (fact 2). */
+/** One Go engine tick: 60 TPS (fact 2). */
 export const TICK_MS = 1000 / 60;
 export const MAX_UPDATES_PER_FRAME = 5;
 
