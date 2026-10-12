@@ -1,7 +1,8 @@
-// Entry module for the hive port (T5 owns src/hive/**). Replace the stub body;
-// keep the export name and signature, which src/game/registry.ts imports.
+// Entry module for the hive port (T5 owns src/hive/**). src/game/registry.ts
+// imports `createHive`.
 
 import type { FixedViewport } from "../game/software.ts";
+import { HiveSoftware } from "./software.ts";
 
 /**
  * Go `hive.NewHiveSoftware(highscore)`. Returns a `FixedViewport` (336×428
@@ -9,5 +10,5 @@ import type { FixedViewport } from "../game/software.ts";
  * enters START, which plays "rewind:start" then "play:start".
  */
 export function createHive(highScore: number): FixedViewport {
-  throw new Error(`TODO: createHive(${highScore})`);
+  return new HiveSoftware(highScore);
 }
