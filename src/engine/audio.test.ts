@@ -159,3 +159,13 @@ describe("installAudioUnlock", () => {
     expect(playing.calls).toEqual([]);
   });
 });
+
+describe("Sound.blip", () => {
+  test("rewinds, then plays", () => {
+    const events: SoundEvent[] = [];
+    const off = addSoundListener((e) => events.push(e));
+    new Sound("move", "move.wav", false).blip();
+    off();
+    expect(events).toEqual(["rewind:move", "play:move"]);
+  });
+});

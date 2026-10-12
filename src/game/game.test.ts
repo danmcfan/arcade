@@ -440,13 +440,13 @@ describe("payout", () => {
     expect(s.run).toBe("paid");
     expect(s.arcade.highScore).toBe(1420);
     expect(s.arcade.tickets).toBe(14);
-    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true, done: false });
+    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true });
     expect(game.inHub()).toBe(false);
     expect(game.layout()).toEqual([336, 428]);
     const sounds = heard(game, () => run(game, 14 * 20 + 40));
     expect(sounds.filter((e) => e === "play:ticket")).toHaveLength(14);
     s = snap(game);
-    expect(s.payout).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false, done: false });
+    expect(s.payout).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false });
     expect(sw.updates.length).toBe(1); // never updated after the game over
   });
 
@@ -480,7 +480,7 @@ describe("payout", () => {
     let s = snap(game);
     expect(s.run).toBe("free");
     expect(s.arcade.tokens).toBe(0);
-    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false, done: false });
+    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false });
     expect(s.arcade.tickets).toBe(0);
     tap(game, "space");
     s = snap(game);

@@ -17,7 +17,7 @@ import {
   soundStart,
   soundTicket,
 } from "../engine/assets.ts";
-import { NO_INPUT, type Direction, type Input } from "../engine/input.ts";
+import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { checkCollisions } from "../arcade/collision.ts";
@@ -27,7 +27,7 @@ import { newState, type RunKind, type State } from "../arcade/state.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./registry.ts";
-import { minigamePauseMenu, quitGameIndex } from "../ui/menus.ts";
+import { minigamePauseMenu, quitGameIndex } from "./menus.ts";
 import { drawHud } from "../ui/hud.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
@@ -48,17 +48,6 @@ export interface Progress {
 
 /** The minigames' sounds: paused with the minigame pause menu. */
 const minigameSounds: readonly Sound[] = [soundStart, soundPower, soundDeath, soundLaser, soundBoom];
-
-/** Keys a menu reacts to on the tick they go down. */
-const EDGE_KEYS = ["up", "down", "space", "escape"] as const;
-type EdgeKey = (typeof EDGE_KEYS)[number];
-type Edges = Record<EdgeKey, boolean>;
-
-/** Restart a short sound effect, even if it is still playing. */
-function blip(s: Sound): void {
-  s.rewind();
-  s.play();
-}
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
@@ -85,14 +74,12 @@ export class Game implements Scene {
   private payout: Payout | null = null;
   /** Minigame sounds that were playing when the pause menu opened; Resume restarts them. */
   private pausedSounds: Sound[] = [];
-  /** Last tick's input, for key presses (edges). */
-  private prev: Input = NO_INPUT;
   /**
-   * Keys held when a menu closes. They are hidden until released, so the
-   * Space that chose Resume does not also fire in the minigame, and the
-   * Space that closed a menu does not start the cabinet again.
+   * Menu key presses, and keys held when a menu closes: those are hidden
+   * until released, so the Space that chose Resume does not also fire in the
+   * minigame, and the Space that closed a menu does not start the cabinet again.
    */
-  private readonly masked = new Set<keyof Input>();
+  private readonly keys = new MenuKeys();
 
   private debugMode = initialDebugMode;
   private debugPanel: Panel;
@@ -177,11 +164,8 @@ export class Game implements Scene {
       this.debugMode = !this.debugMode;
     }
 
-    const edges = Object.fromEntries(EDGE_KEYS.map((k) => [k, raw[k] && !this.prev[k]])) as Edges;
-    this.prev = raw;
-    for (const k of this.masked) if (!raw[k]) this.masked.delete(k);
-    const input = { ...raw };
-    for (const k of this.masked) input[k] = false;
+    const { edges } = this.keys.read(raw);
+    const input = this.keys.unmasked(raw);
 
     if (this.software === null) {
       this.updateHub(input);
@@ -196,7 +180,7 @@ export class Game implements Scene {
         return;
       case "controls":
         if (edges.space || edges.escape) {
-          blip(soundSelect);
+          soundSelect.blip();
           this.menu = "paused";
         }
         return;
@@ -216,7 +200,7 @@ export class Game implements Scene {
     }
   }
 
-  private updateMinigame(software: Software, input: Input, edges: Edges): void {
+  private updateMinigame(software: Software, input: Input, edges: MenuEdges): void {
     if (edges.escape) {
       this.openPauseMenu();
       return;
@@ -239,45 +223,45 @@ export class Game implements Scene {
   }
 
   private openPauseMenu(): void {
-    blip(soundSelect);
+    soundSelect.blip();
     this.pausedSounds = minigameSounds.filter((s) => s.playing);
     for (const s of minigameSounds) s.pause();
     this.menu = "paused";
     this.cursor = 0;
   }
 
-  private updatePauseMenu(raw: Input, edges: Edges): void {
+  private updatePauseMenu(raw: Input, edges: MenuEdges): void {
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta !== 0) {
       const n = minigamePauseMenu.length;
       this.cursor = (this.cursor + delta + n) % n;
-      blip(soundMove);
+      soundMove.blip();
     }
     if (!edges.space && !edges.escape) return;
-    blip(soundSelect);
+    soundSelect.blip();
     if (edges.escape || this.cursor === 0) {
       // Resume: the minigame carries on from this tick.
       this.menu = null;
       this.cursor = 0;
       for (const s of this.pausedSounds) s.play();
       this.pausedSounds = [];
-      this.maskHeld(raw);
+      this.keys.maskHeld(raw);
     } else if (this.cursor === quitGameIndex) {
       // Quit game: the token stays spent, no tickets, no payout.
       this.pausedSounds = [];
       this.leaveMinigame();
-      this.maskHeld(raw);
+      this.keys.maskHeld(raw);
     } else {
       this.menu = "controls";
     }
   }
 
-  private updatePayout(payout: Payout, raw: Input, edges: Edges): void {
-    if (edges.space) blip(soundSelect);
-    if (payout.step(edges.space)) blip(soundTicket);
+  private updatePayout(payout: Payout, raw: Input, edges: MenuEdges): void {
+    if (edges.space) soundSelect.blip();
+    if (payout.step(edges.space)) soundTicket.blip();
     if (payout.done) {
       this.leaveMinigame();
-      this.maskHeld(raw);
+      this.keys.maskHeld(raw);
     }
   }
 
@@ -287,11 +271,6 @@ export class Game implements Scene {
     this.menu = null;
     this.cursor = 0;
     this.payout = null;
-  }
-
-  private maskHeld(i: Input): void {
-    this.masked.clear();
-    for (const k of Object.keys(i) as (keyof Input)[]) if (i[k]) this.masked.add(k);
   }
 
   draw(screen: Surface): void {

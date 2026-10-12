@@ -6,11 +6,9 @@ import { imageArcade, imageLogo } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
-import { dim, dimColour, drawControls as drawControlsTable, drawControlsPanel as drawControlsBox, drawHints as drawHintsRow, drawMenuItems as drawMenuItemsAt, drawPausePanel, panelHints, type ControlRow, type Hint } from "../ui/menu.ts";
+import { dim, dimColour, drawControls, drawControlsPanel, drawHints, drawMenuItems, drawPausePanel, moveControl, type ControlRow, type Hint } from "../ui/menu.ts";
 import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
 import type { Title } from "./title.ts";
-
-export { arrowOffset, panelHints, type Hint } from "../ui/menu.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
 export const screenWidth = 192;
@@ -28,7 +26,7 @@ export const introLines = [
 
 /** One row of the controls table: the keys, then what they do. */
 export const controls: readonly ControlRow[] = [
-  { keys: [["↑", "←", "↓", "→"], ["WASD"]], label: "MOVE" },
+  moveControl,
   { keys: [["SPACE"]], label: "PLAY / ACTION" },
   { keys: [["ESC"]], label: "BACK / PAUSE" },
 ];
@@ -65,7 +63,7 @@ export function draw(screen: Surface, t: Title): void {
     case "controls":
       t.game!.draw(screen);
       dimHub(screen);
-      drawControlsBox(screen, controls, 4, 40);
+      drawControlsPanel(screen, controls, 4, 40);
       return;
   }
 }
@@ -77,15 +75,6 @@ function blinkOn(t: Title): boolean {
 
 function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
-}
-
-function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number, tick: number): void {
-  drawMenuItemsAt(screen, items, cursor, top, tick, centre);
-}
-
-/** Key hints in a centred row with their key tops at `top`, keys drawn as in the controls table. */
-export function drawHints(screen: Surface, hints: readonly Hint[], top = hintsTop): void {
-  drawHintsRow(screen, hints, top, centre);
 }
 
 const logoLetterWidth = logoLetters.A![0]!.length;
@@ -132,13 +121,13 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
   drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick);
+  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
   if (t.savedHighScore) drawTextCentered(screen, `HIGH SCORE ${t.savedHighScore}`, centre, 122, "orange");
 }
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints);
+  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -151,22 +140,17 @@ function drawConfirm(screen: Surface, t: Title): void {
   const y = 40;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"));
-  drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick);
-  drawHints(screen, menuHints);
+  drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
+  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
   introLines.forEach((line, i) => drawTextCentered(screen, line, centre, 26 + i * 10, "white"));
-  drawControls(screen, 86);
+  drawControls(screen, controls, 12, 104, 86);
   if (blinkOn(t)) drawTextCentered(screen, "PRESS SPACE TO START", centre, 146, "yellow");
-  drawHints(screen, backHints);
-}
-
-/** The controls table with its top edge at `top`. */
-export function drawControls(screen: Surface, top: number): void {
-  drawControlsTable(screen, controls, 12, 104, top);
+  drawHints(screen, backHints, hintsTop, centre);
 }
 
 /** The Game's margin around the hub image, which stays transparent. */

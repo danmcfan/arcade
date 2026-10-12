@@ -94,7 +94,6 @@ export class Payout {
       total: this.total,
       freePlay: this.freePlay,
       counting: this.counting,
-      done: this.done,
     };
   }
 }

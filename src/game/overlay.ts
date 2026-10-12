@@ -3,10 +3,10 @@
 // pieces in src/ui/menu.ts), centred on the minigame's layout.
 
 import type { Surface } from "../engine/surface.ts";
-import { controlsHeight, controlsPanelWidth, dim, drawControlsPanel, drawHints, drawPausePanel, type Hint } from "../ui/menu.ts";
-import { minigameControls, minigamePauseMenu, quitGameIndex, quitGameNote } from "../ui/menus.ts";
+import { controlsPanelHeight, controlsPanelWidth, dim, drawControlsPanel, drawHints, drawPausePanel, pausePanelHeight, type Hint } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight } from "../ui/text.ts";
+import { minigameControls, minigamePauseMenu, quitGameIndex, quitGameNote } from "./menus.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
 import type { SoftwareName } from "./software.ts";
@@ -31,7 +31,6 @@ export const closeHints: readonly Hint[] = [{ keys: ["SPACE"], label: "OK" }];
 
 const payoutWidth = 152;
 const payoutHeight = 74;
-const pauseHeight = 64;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
@@ -40,7 +39,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const middle = Math.trunc(o.height / 2);
   switch (o.menu) {
     case "paused":
-      drawPausePanel(screen, minigamePauseMenu, o.cursor, o.tick, centre, middle - pauseHeight / 2, {
+      drawPausePanel(screen, minigamePauseMenu, o.cursor, o.tick, centre, middle - pausePanelHeight / 2, {
         item: quitGameIndex,
         text: quitGameNote,
         ink: "orange",
@@ -48,8 +47,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       return;
     case "controls": {
       const rows = minigameControls[o.software];
-      const ph = controlsHeight(rows.length) + 46;
-      drawControlsPanel(screen, rows, centre - controlsPanelWidth / 2, middle - Math.trunc(ph / 2));
+      drawControlsPanel(screen, rows, centre - controlsPanelWidth / 2, middle - Math.trunc(controlsPanelHeight(rows.length) / 2));
       return;
     }
     case "payout":

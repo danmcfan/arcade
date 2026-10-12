@@ -69,6 +69,9 @@ export interface ControlRow {
 
 const controlsRowHeight = 14;
 
+/** The MOVE row every controls table starts with, so its key caps match everywhere. */
+export const moveControl: ControlRow = { keys: [["↑", "←", "↓", "→"], ["WASD"]], label: "MOVE" };
+
 /** Height of a controls table with `rows` rows. */
 export function controlsHeight(rows: number): number {
   return rows * controlsRowHeight - (controlsRowHeight - keyHeight);
@@ -90,9 +93,10 @@ export function drawControls(screen: Surface, rows: readonly ControlRow[], left:
 /** Back out of a panel: Space or Esc. */
 export const panelHints: readonly Hint[] = [{ keys: ["SPACE", "ESC"], label: "BACK" }];
 
-/** Width of the pause panels (hub and minigame). */
+/** Width of the pause panels (hub and minigame), without a note. */
 export const pausePanelWidth = 120;
-const pausePanelHeight = 64;
+/** Height of the pause panels (hub and minigame). */
+export const pausePanelHeight = 64;
 
 /** A note drawn after a menu item, e.g. NO TICKETS beside QUIT GAME. */
 export interface ItemNote {
@@ -130,10 +134,15 @@ export function drawPausePanel(
 /** Width of the controls panel. */
 export const controlsPanelWidth = 184;
 
+/** Height of the controls panel around a table of `rows` rows. */
+export function controlsPanelHeight(rows: number): number {
+  return controlsHeight(rows) + 46;
+}
+
 /** The CONTROLS panel with its left edge at `x` and top at `y`, and a Back hint. */
 export function drawControlsPanel(screen: Surface, rows: readonly ControlRow[], x: number, y: number): void {
   const w = controlsPanelWidth;
-  const h = controlsHeight(rows.length) + 46;
+  const h = controlsPanelHeight(rows.length);
   const centre = x + w / 2;
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");

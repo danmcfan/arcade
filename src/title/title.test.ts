@@ -9,7 +9,8 @@ import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
-import { backHints, confirmLines, controls, introLines, menuHints, panelHints, screenWidth } from "./draw.ts";
+import { panelHints } from "../ui/menu.ts";
+import { backHints, confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { confirmMenu, pauseMenu, Title, titleMenu } from "./title.ts";
 

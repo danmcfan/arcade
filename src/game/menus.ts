@@ -1,9 +1,9 @@
 // Labels for the menus the Game draws over a minigame: the minigame pause
 // menu and its controls panel. (The title scene's menus are in
-// src/title/menus.ts.)
+// src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
-import type { SoftwareName } from "../game/software.ts";
-import type { ControlRow } from "./menu.ts";
+import { moveControl, type ControlRow } from "../ui/menu.ts";
+import type { SoftwareName } from "./software.ts";
 
 export const minigamePauseMenu = ["RESUME", "CONTROLS", "QUIT GAME"] as const;
 /** Index of QUIT GAME in `minigamePauseMenu`. */
@@ -12,7 +12,7 @@ export const quitGameIndex = 2;
 export const quitGameNote = "NO TICKETS";
 
 const standardControls: readonly ControlRow[] = [
-  { keys: [["↑", "←", "↓", "→"], ["WASD"]], label: "MOVE" },
+  moveControl,
   { keys: [["SPACE"]], label: "ACTION" },
   { keys: [["ESC"]], label: "PAUSE" },
 ];

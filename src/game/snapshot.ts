@@ -76,7 +76,11 @@ export interface GameSnapshot extends SceneSnapshotBase {
   run: RunKindSnapshot | null;
   /** The menu over the minigame, or null (no Go original). */
   menu: GameMenu | null;
-  /** Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME); 0 otherwise. */
+  /**
+   * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME).
+   * Stays 1 (CONTROLS) while its controls panel shows; 0 in the hub, the
+   * running minigame and the payout.
+   */
   cursor: number;
   /** The payout while it shows, else null. */
   payout: PayoutSnapshot | null;
@@ -105,8 +109,6 @@ export interface PayoutSnapshot {
   freePlay: boolean;
   /** The numbers or their reels are still moving; Space skips to the totals. */
   counting: boolean;
-  /** Closed (the Game is back in the hub after this tick). */
-  done: boolean;
 }
 
 // ---------------------------------------------------------------------------

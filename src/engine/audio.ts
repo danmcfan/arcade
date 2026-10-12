@@ -65,6 +65,12 @@ export class Sound {
     this.element.currentTime = 0;
   }
 
+  /** Rewind and play: restarts a short sound effect even if it is still playing. */
+  blip(): void {
+    this.rewind();
+    this.play();
+  }
+
   private emit(action: SoundAction): void {
     const e: SoundEvent = `${action}:${this.name}`;
     for (const fn of listeners) fn(e);

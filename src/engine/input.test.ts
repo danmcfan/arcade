@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NO_INPUT, axis, direction, moving, opposite, readInput, type Input } from "./input.ts";
+import { MenuKeys, NO_INPUT, axis, direction, moving, opposite, readInput, type Input } from "./input.ts";
 
 const held = (over: Partial<Input>): Input => ({ ...NO_INPUT, ...over });
 
@@ -41,5 +41,41 @@ describe("direction helpers", () => {
     expect(axis("DOWN")).toBe("VERTICAL");
     expect(axis("RIGHT")).toBe("HORIZONTAL");
     expect(() => opposite("" as never)).toThrow("invalid direction: ");
+  });
+});
+
+describe("MenuKeys", () => {
+  test("reports menu keys on the tick they go down, not while held", () => {
+    const keys = new MenuKeys();
+    expect(keys.read(held({ space: true })).edges).toEqual({ up: false, down: false, space: true, escape: false });
+    expect(keys.read(held({ space: true })).edges.space).toBe(false);
+    expect(keys.read(NO_INPUT).edges.space).toBe(false);
+    expect(keys.read(held({ escape: true, down: true })).edges).toEqual({ up: false, down: true, space: false, escape: true });
+  });
+
+  test("anyPressed is true when any key goes down, menu key or not", () => {
+    const keys = new MenuKeys();
+    expect(keys.read(held({ left: true })).anyPressed).toBe(true);
+    expect(keys.read(held({ left: true })).anyPressed).toBe(false);
+    expect(keys.read(held({ left: true, right: true })).anyPressed).toBe(true);
+  });
+
+  test("maskHeld hides the keys held now until each is released", () => {
+    const keys = new MenuKeys();
+    keys.read(held({ space: true, up: true }));
+    keys.maskHeld();
+    expect(keys.unmasked(held({ space: true, up: true, left: true }))).toEqual(held({ left: true }));
+    // Up released: it comes back on the next press; Space stays hidden while held.
+    expect(keys.unmasked(held({ space: true }))).toEqual(NO_INPUT);
+    expect(keys.unmasked(held({ space: true, up: true }))).toEqual(held({ up: true }));
+    expect(keys.unmasked(NO_INPUT)).toEqual(NO_INPUT);
+    expect(keys.unmasked(held({ space: true }))).toEqual(held({ space: true }));
+  });
+
+  test("maskHeld with an input masks that input's keys and replaces the old mask", () => {
+    const keys = new MenuKeys();
+    keys.maskHeld(held({ space: true }));
+    keys.maskHeld(held({ escape: true }));
+    expect(keys.unmasked(held({ space: true, escape: true }))).toEqual(held({ space: true }));
   });
 });

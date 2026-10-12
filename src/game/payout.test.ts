@@ -36,7 +36,7 @@ describe("Payout: a paid run", () => {
 
   test("opens on the score and 0 tickets, counting", () => {
     const p = new Payout(1420, false);
-    expect(p.snapshot()).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true, done: false });
+    expect(p.snapshot()).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true });
   });
 
   test("each interval the score drops 100 and the tickets rise 1, with a ticket sound", () => {
@@ -53,7 +53,7 @@ describe("Payout: a paid run", () => {
     const p = new Payout(1420, false);
     const paid = runOut(p);
     expect(paid).toEqual(Array.from({ length: 14 }, (_, i) => (i + 1) * ticksPerTicket));
-    expect(p.snapshot()).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false, done: false });
+    expect(p.snapshot()).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false });
   });
 
   test("the leftover spin happens one interval after the last ticket", () => {
@@ -92,7 +92,7 @@ describe("Payout: a paid run", () => {
     const p = new Payout(1420, false);
     for (let t = 0; t < 30; t++) p.step(false);
     expect(p.step(true)).toBe(false);
-    expect(p.snapshot()).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false, done: false });
+    expect(p.snapshot()).toEqual({ score: 0, tickets: 14, total: 14, freePlay: false, counting: false });
     expect(p.scoreReels.every((r) => !r.active && r.settledDigit === 0)).toBe(true);
     expect(p.ticketReels.map((r) => r.settledDigit)).toEqual([0, 0, 0, 0, 1, 4]);
     p.step(false);
@@ -112,7 +112,7 @@ describe("Payout: a paid run", () => {
 describe("Payout: free play", () => {
   test("shows the score, pays nothing and one Space closes it", () => {
     const p = new Payout(1420, true);
-    expect(p.snapshot()).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false, done: false });
+    expect(p.snapshot()).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false });
     for (let t = 0; t < 100; t++) expect(p.step(false)).toBe(false);
     expect(p.score).toBe(1420);
     p.step(true);

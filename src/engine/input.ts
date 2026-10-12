@@ -75,3 +75,41 @@ export function readInput(pressed: ReadonlySet<string>, justPressed: ReadonlySet
     shiftP: (pressed.has("ShiftLeft") || pressed.has("ShiftRight")) && justPressed.has("KeyP"),
   };
 }
+
+/** Keys a menu reacts to on the tick they go down. */
+export const MENU_KEYS = ["up", "down", "space", "escape"] as const;
+export type MenuKey = (typeof MENU_KEYS)[number];
+/** Which menu keys went down this tick. */
+export type MenuEdges = Record<MenuKey, boolean>;
+
+/**
+ * Key presses (edges) for a scene's menus, plus keys hidden until released:
+ * when a menu closes, the Space or Esc that closed it must not also act on
+ * what comes back (start a cabinet, fire in a minigame).
+ */
+export class MenuKeys {
+  private prev: Input = NO_INPUT;
+  private readonly masked = new Set<keyof Input>();
+
+  /** Feed this tick's raw input; call once per tick. */
+  read(i: Input): { edges: MenuEdges; anyPressed: boolean } {
+    const edges = Object.fromEntries(MENU_KEYS.map((k) => [k, i[k] && !this.prev[k]])) as MenuEdges;
+    const anyPressed = (Object.keys(i) as (keyof Input)[]).some((k) => i[k] && !this.prev[k]);
+    this.prev = i;
+    return { edges, anyPressed };
+  }
+
+  /** Hide the keys held in `i` (default: the last input read) until each is released. */
+  maskHeld(i: Input = this.prev): void {
+    this.masked.clear();
+    for (const k of Object.keys(i) as (keyof Input)[]) if (i[k]) this.masked.add(k);
+  }
+
+  /** `i` with the hidden keys released; a key that is up is no longer hidden. */
+  unmasked(i: Input): Input {
+    for (const k of this.masked) if (!i[k]) this.masked.delete(k);
+    const out = { ...i };
+    for (const k of this.masked) out[k] = false;
+    return out;
+  }
+}
