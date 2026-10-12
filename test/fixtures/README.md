@@ -179,13 +179,44 @@ win.
 
 ## Regenerating
 
-**These fixtures can no longer be regenerated from the current tree.** The
+**The Go captures can no longer be regenerated from the current tree.** The
 Go game, `internal/rng` and the harness in `tools/golden/` were deleted in
-Phase 5 (ticket #12). Commit `34840f8` is the last commit that still has
-them. Check it out (for example in a separate worktree:
+Phase 5 (ticket #12). Fixtures that nothing has changed since are still the
+Go originals.
+
+### Re-recording a deliberately changed fixture from TypeScript
+
+When a change alters what a scenario records (ADR 0004: the PR says which
+fixtures and why), re-record just those scenarios from the TypeScript game,
+keeping their input scripts as they are:
+
+```sh
+bun run traces <scenario> [scenario ...]   # traces/<scenario>.jsonl.gz (scripts/record-traces.ts)
+bun run frames <scenario> [scenario ...]   # out/frames/<scenario>/*.png
+cp out/frames/<scenario>/*.png test/fixtures/frames/<scenario>/
+bun run frames:report                      # every other scenario still matches
+```
+
+`bun run traces` has no "all" default, so untouched fixtures are never
+rewritten. Its JSONL is `JSON.stringify` output, not Go's: `-0` is written
+as `0` and exponents look different. Both parse to values the harness's
+`===` compare treats as equal.
+
+Re-recorded from TypeScript so far:
+
+| Scenario | Why |
+|---|---|
+| `arcade-enter-firefly`, `firefly-play` | #15: Firefly plays inside its cabinet bezel (336×428 layout) and its snapshot gains `joystick` |
+| `arcade-enter-gearhead`, `gearhead-walk` | #15: same for Brass Monkey (`gearhead`) |
+
+### The original Go capture
+
+Commit `34840f8` is the last commit that still has the Go harness. Check it
+out (for example in a separate worktree:
 `git worktree add ../arcade-golden 34840f8`), run the commands below from
 its root, and copy the resulting `test/fixtures/` back. You need Go 1.26
-with `CGO_ENABLED=1 GOARCH=amd64` (Rosetta on Apple Silicon).
+with `CGO_ENABLED=1 GOARCH=amd64` (Rosetta on Apple Silicon). This would
+overwrite the TypeScript re-recordings above with the older Go behaviour.
 
 ```sh
 ./tools/golden/capture.sh          # rng.json, traces, frames (one window per scenario), verify, coverage
