@@ -66,20 +66,57 @@ export class Sound {
   }
 }
 
-/**
- * Browser only: create an `HTMLAudioElement` per sound, set `ready` on
- * `canplaythrough`. Never awaited (D5).
- */
-export function loadSounds(list: readonly Sound[]): void {
-  void list;
-  throw new Error("TODO");
+function defaultAudio(): HTMLAudioElement | null {
+  return typeof Audio === "undefined" ? null : new Audio();
 }
 
 /**
- * Browser only: install the first-keydown/pointerdown unlock (`play()` then
- * `pause()` on each element, promises caught).
+ * Browser only: create an `HTMLAudioElement` per sound, set `ready` on
+ * `canplaythrough`. Never awaited (D5): sounds stay silent until ready, as in
+ * web.go. A no-op where there is no `Audio` (bun test). `create` is a seam for
+ * tests.
  */
-export function installAudioUnlock(list: readonly Sound[]): void {
-  void list;
-  throw new Error("TODO");
+export function loadSounds(
+  list: readonly Sound[],
+  create: () => HTMLAudioElement | null = defaultAudio,
+): void {
+  for (const sound of list) {
+    const el = create();
+    if (el === null) return;
+    el.preload = "auto";
+    el.loop = sound.loop;
+    el.addEventListener("canplaythrough", () => {
+      sound.ready = true;
+    });
+    el.src = sound.url;
+    sound.element = el;
+  }
+}
+
+/** The subset of `EventTarget` used by `installAudioUnlock`. */
+export interface UnlockTarget {
+  addEventListener(type: string, fn: () => void, opts?: AddEventListenerOptions): void;
+  removeEventListener(type: string, fn: () => void, opts?: EventListenerOptions): void;
+}
+
+/**
+ * Browser only: on the first keydown or pointerdown, "unlock" audio by
+ * calling `play()` then `pause()` on each element that is not already
+ * playing. Every play promise is caught (D4): the immediate `pause()` makes
+ * it reject with `AbortError`, and a blocked one rejects with
+ * `NotAllowedError`. Runs once, then removes its listeners.
+ */
+export function installAudioUnlock(list: readonly Sound[], target: UnlockTarget = window): void {
+  const unlock = (): void => {
+    target.removeEventListener("keydown", unlock, { capture: true });
+    target.removeEventListener("pointerdown", unlock, { capture: true });
+    for (const sound of list) {
+      const el = sound.element;
+      if (el === null || !el.paused) continue;
+      el.play().catch(() => {});
+      el.pause();
+    }
+  };
+  target.addEventListener("keydown", unlock, { capture: true });
+  target.addEventListener("pointerdown", unlock, { capture: true });
 }
