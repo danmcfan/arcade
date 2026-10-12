@@ -337,11 +337,11 @@ export interface LumberjackSnapshot extends SceneSnapshotBase {
 // title (src/title): no Go original, so no parity trace.
 
 /** Which screen the title scene shows. */
-export type TitlePhase = "menu" | "intro" | "playing" | "paused" | "controls";
+export type TitlePhase = "menu" | "confirm" | "intro" | "playing" | "paused" | "controls";
 
 export interface TitleSnapshot extends SceneSnapshotBase {
   phase: TitlePhase;
-  /** Labels of the menu on screen ("menu" and "paused" phases), else []. */
+  /** Labels of the menu on screen ("menu", "confirm" and "paused" phases), else []. */
   items: string[];
   /** Index into `items` of the selected entry (0 when there is no menu). */
   cursor: number;

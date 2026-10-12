@@ -7,10 +7,10 @@ import { Game } from "../game/game.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
-import { canDraw, textWidth } from "../ui/text.ts";
-import { controls, introLines, screenWidth } from "./draw.ts";
+import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
+import { backHints, confirmLines, controls, introLines, menuHints, panelHints, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
-import { pauseMenu, Title, titleMenu } from "./title.ts";
+import { confirmMenu, pauseMenu, Title, titleMenu } from "./title.ts";
 
 const press = (k: keyof Input): Input => ({ ...NO_INPUT, [k]: true });
 
@@ -56,19 +56,22 @@ function atCabinet(): SaveData {
 }
 
 describe("title menu", () => {
-  test("opens on the menu; Continue is disabled and skipped without a save", () => {
+  test("opens on the menu; Continue is listed first but disabled and skipped without a save", () => {
     const t = new Title();
-    expect(t.snapshot()).toMatchObject({ phase: "menu", items: [...titleMenu], cursor: 0, canContinue: false, game: null });
+    expect(titleMenu).toEqual(["CONTINUE", "NEW GAME"]);
+    expect(t.snapshot()).toMatchObject({ phase: "menu", items: [...titleMenu], cursor: 1, canContinue: false, game: null });
     tap(t, "down");
-    expect(t.cursor).toBe(0);
+    expect(t.cursor).toBe(1);
     tap(t, "up");
-    expect(t.cursor).toBe(0);
+    expect(t.cursor).toBe(1);
     expect(t.layout()).toEqual([192, 176]);
   });
 
   test("with a save, the cursor starts on Continue and wraps", () => {
     const t = new Title({ store: memoryStore(atCabinet()) });
-    expect(t.snapshot()).toMatchObject({ cursor: 1, canContinue: true });
+    expect(t.snapshot()).toMatchObject({ cursor: 0, canContinue: true });
+    tap(t, "down");
+    expect(t.cursor).toBe(1);
     tap(t, "down");
     expect(t.cursor).toBe(0);
     tap(t, "up");
@@ -78,25 +81,44 @@ describe("title menu", () => {
   test("keys react on the tick they go down, not while held", () => {
     const t = new Title({ store: memoryStore(atCabinet()) });
     hold(t, { down: true }, 30);
-    expect(t.cursor).toBe(0);
+    expect(t.cursor).toBe(1);
   });
 });
 
 describe("new game", () => {
-  test("New game shows the intro; a held Space does not skip it", () => {
+  test("without a save, New game goes straight to the intro; a held Space does not skip it", () => {
     const t = new Title();
     hold(t, { space: true }, 30);
     expect(t.phase).toBe("intro");
     t.step(NO_INPUT);
     tap(t, "escape");
-    expect(t.phase).toBe("menu");
+    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1 });
   });
 
-  test("Space on the intro starts a fresh hub and replaces the old save", () => {
+  test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
+    const save: SaveData = { v: 1, highScore: 900, player: { x: 50, y: 100, dir: "LEFT" } };
+    const store = memoryStore(save);
+    const t = new Title({ store });
+    tap(t, "down"); // Continue -> New game
+    tap(t, "space");
+    expect(t.snapshot()).toMatchObject({ phase: "confirm", items: [...confirmMenu], cursor: 0 });
+    tap(t, "space");
+    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1 });
+    tap(t, "space");
+    tap(t, "escape");
+    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1 });
+    expect(store.load()).toEqual(save);
+    expect(t.canContinue).toBe(true);
+  });
+
+  test("Yes, then Space on the intro, starts a fresh hub and replaces the old save", () => {
     const store = spyStore({ v: 1, highScore: 900, player: { x: 50, y: 100, dir: "LEFT" } });
     const t = new Title({ store });
-    tap(t, "up"); // Continue -> New game
+    tap(t, "down"); // Continue -> New game
     tap(t, "space");
+    tap(t, "down"); // No -> Yes
+    tap(t, "space");
+    expect(t.phase).toBe("intro");
     tap(t, "space");
     expect(t.phase).toBe("playing");
     const fresh = new Game(null).snapshot();
@@ -182,7 +204,7 @@ describe("pause menu", () => {
     tap(t, "up"); // wraps to Quit to menu
     expect(t.cursor).toBe(2);
     tap(t, "space");
-    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1, canContinue: true, game: null });
+    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 0, canContinue: true, game: null });
     expect(store.load()?.player).toEqual({ x: 60, y: 92, dir: "LEFT" });
     tap(t, "space");
     expect(game(t).arcade.player).toMatchObject({ x: 60, y: 92, dir: "LEFT" });
@@ -237,6 +259,10 @@ interface Glyph {
 function recordingSurface() {
   const glyphs: Glyph[] = [];
   const sprites: [string, number, number][] = [];
+  /** Key caps, found by the face `drawKey` fills first: x, top and width. */
+  const caps: { x: number; y: number; w: number }[] = [];
+  /** How many glyphs were drawn before the last dimming fill. */
+  let dimmedAt = 0;
   const surface = {
     draw(s: Sprite, x: number, y: number) {
       if (s.asset === images.font) {
@@ -249,37 +275,80 @@ function recordingSurface() {
       }
       sprites.push([Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?", x, y]);
     },
-    fillRect() {},
-    fillPremul() {},
+    fillRect(x: number, y: number, w: number, h: number, colour: string) {
+      if (colour === "#566c86" && h === keyHeight - 1) caps.push({ x: x - 1, y, w: w + 2 });
+    },
+    fillPremul() {
+      dimmedAt = glyphs.length;
+    },
     strokeRect() {},
   };
   /** The drawn characters in reading order (top to bottom, left to right), optionally of one ink. */
-  const text = (ink?: Ink) =>
+  const text = (ink?: Ink, from = 0) =>
     glyphs
+      .slice(from)
       .filter((g) => ink === undefined || g.ink === ink)
       .sort((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
-  return { surface: surface as unknown as Surface, sprites, text };
+  /** Each key cap drawn, with the label printed on it. */
+  const keys = () =>
+    caps.map((c) => ({
+      ...c,
+      label: glyphs
+        .filter((g) => g.y === c.y + 1 && g.x >= c.x && g.x < c.x + c.w)
+        .sort((a, b) => a.x - b.x)
+        .map((g) => g.ch)
+        .join(""),
+    }));
+  /** Like `text`, but only what was drawn over the last dimming fill (a panel). */
+  const over = (ink?: Ink) => text(ink, dimmedAt);
+  return { surface: surface as unknown as Surface, sprites, text, over, keys };
 }
 
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
-    const strings = [...titleMenu, ...pauseMenu, ...introLines, ...controls.map((c) => c.label), "GAMES WITHIN A GAME", "PRESS SPACE TO START"];
+    const hints = [...menuHints, ...backHints, ...panelHints];
+    const strings = [...titleMenu, ...confirmMenu, ...confirmLines, ...pauseMenu, ...introLines, ...controls.map((c) => c.label), ...hints.flatMap((h) => [...h.keys, h.label]), "GAMES WITHIN A GAME", "PRESS SPACE TO START"];
     for (const s of strings) {
       expect({ s, ok: canDraw(s) }).toEqual({ s, ok: true });
       expect(textWidth(s)).toBeLessThanOrEqual(screenWidth - 8);
     }
   });
 
-  test("the menu draws the logo, the hub scene, and Continue in grey without a save", () => {
+  test("the menu draws the logo and tagline (no hub scene), and Continue in grey without a save", () => {
     const t = new Title();
     const r = recordingSurface();
     t.draw(r.surface);
-    expect(r.sprites.map(([name]) => name)).toEqual(["logo", "arcade", "gamer"]);
+    expect(r.sprites.map(([name]) => name)).toEqual(["logo"]);
+    expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
-    expect(r.text("grey")).toContain("CONTINUE");
+    expect(r.text("grey")).toBe("CONTINUE");
     expect(r.text("orange")).toBe("");
+  });
+
+  test("the menu's choose and select hints are key caps, as in the controls table", () => {
+    const t = new Title();
+    const r = recordingSurface();
+    t.draw(r.surface);
+    const keys = r.keys();
+    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
+    // One row, below everything else on the menu.
+    expect(new Set(keys.map((k) => k.y)).size).toBe(1);
+    expect(r.text("white")).toContain("CHOOSE");
+    expect(r.text("white")).toContain("OK");
+    expect(r.text()).not.toContain("↑↓ CHOOSE");
+  });
+
+  test("the New game check draws its warning, No and Yes, and key hints", () => {
+    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    tap(t, "down");
+    tap(t, "space");
+    const r = recordingSurface();
+    t.draw(r.surface);
+    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓SPACECHOOSEOK`);
+    expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
+    expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
   });
 
   test("with a save, the menu shows the saved high score (when there is one)", () => {

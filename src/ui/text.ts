@@ -64,9 +64,14 @@ export function drawPanel(screen: Surface, x: number, y: number, w: number, h: n
 /** Height of a key cap drawn by `drawKey`. */
 export const keyHeight = 11;
 
+/** Width of the key cap `drawKey` draws for `label`. */
+export function keyWidth(label: string): number {
+  return textWidth(label) + 6;
+}
+
 /** A keyboard key with `label` on it; returns its width. */
 export function drawKey(screen: Surface, label: string, x: number, y: number): number {
-  const w = textWidth(label) + 6;
+  const w = keyWidth(label);
   screen.fillRect(x + 1, y, w - 2, keyHeight - 1, "#566c86");
   screen.fillRect(x, y + 1, 1, keyHeight - 3, "#566c86");
   screen.fillRect(x + w - 1, y + 1, 1, keyHeight - 3, "#566c86");

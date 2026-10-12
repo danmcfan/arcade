@@ -1,5 +1,6 @@
-// The scene the page opens on: a title menu (New game / Continue), an intro
+// The scene the page opens on: a title menu (Continue / New game), an intro
 // that explains the game and its controls, then the arcade Game itself.
+// New game over an existing save asks first, since it deletes that save.
 // Esc in the hub opens a pause menu (Resume / Controls / Quit to menu).
 //
 // The Game runs unchanged inside this scene, so `?scene=game` and the parity
@@ -14,8 +15,9 @@ import type { Scene } from "../game/software.ts";
 import { draw, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, type SaveData, type SaveStore } from "./save.ts";
 
-export const titleMenu = ["NEW GAME", "CONTINUE"] as const;
-export const pauseMenu = ["RESUME", "CONTROLS", "QUIT TO MENU"] as const;
+import { confirmMenu, newGameIndex, pauseMenu, titleMenu } from "./menus.ts";
+
+export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 
 /** Keys a menu reacts to on the tick they go down. */
 const EDGE_KEYS = ["up", "down", "space", "escape"] as const;
@@ -52,7 +54,7 @@ export class Title implements Scene {
     this.store = deps.store ?? memoryStore();
     this.createGame = deps.createGame ?? ((restore) => new Game(null, restore ? { restore } : {}));
     this.saved = this.store.load();
-    this.cursor = this.saved ? 1 : 0;
+    this.cursor = this.menuCursor();
   }
 
   get canContinue(): boolean {
@@ -67,6 +69,7 @@ export class Title implements Scene {
   /** The labels of the menu on screen, or [] when there is none. */
   items(): readonly string[] {
     if (this.phase === "menu") return titleMenu;
+    if (this.phase === "confirm") return confirmMenu;
     if (this.phase === "paused") return pauseMenu;
     return [];
   }
@@ -81,12 +84,18 @@ export class Title implements Scene {
       case "menu":
         this.moveCursor(edges);
         if (edges.space) {
-          if (this.cursor === 0) this.phase = "intro";
-          else this.startGame(this.saved ?? undefined);
+          if (this.cursor === 0) this.startGame(this.saved ?? undefined);
+          else if (this.canContinue) this.show("confirm", 0);
+          else this.show("intro", 0);
         }
         break;
+      case "confirm":
+        this.moveCursor(edges);
+        if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", newGameIndex);
+        else if (edges.space) this.show("intro", 0);
+        break;
       case "intro":
-        if (edges.escape) this.phase = "menu";
+        if (edges.escape) this.show("menu", newGameIndex);
         else if (edges.space) {
           this.store.clear();
           this.saved = null;
@@ -117,8 +126,18 @@ export class Title implements Scene {
     if (delta === 0) return;
     let next = this.cursor;
     do next = (next + delta + n) % n;
-    while (this.phase === "menu" && next === 1 && !this.canContinue);
+    while (this.phase === "menu" && next === 0 && !this.canContinue);
     this.cursor = next;
+  }
+
+  private show(phase: TitlePhase, cursor: number): void {
+    this.phase = phase;
+    this.cursor = cursor;
+  }
+
+  /** Continue when there is a save to continue, else New game. */
+  private menuCursor(): number {
+    return this.canContinue ? 0 : newGameIndex;
   }
 
   private startGame(restore?: Progress): void {
@@ -158,8 +177,7 @@ export class Title implements Scene {
     this.game!.stopAudio();
     this.game!.dispose();
     this.game = null;
-    this.phase = "menu";
-    this.cursor = this.canContinue ? 1 : 0;
+    this.show("menu", this.menuCursor());
   }
 
   private maskHeld(i: Input): void {

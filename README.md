@@ -2,7 +2,7 @@
 
 Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **hive** (a Pac-Man-like bear and bees), **firefly** (a Galaga-like shooter) and **gearhead** (a gnome in a workshop).
 
-The page opens on a title screen: **New game** shows a short how-to-play screen, then starts in the hub; **Continue** brings back the hub high score and where you were standing (saved in `localStorage` when you leave a minigame, quit to the menu, or close the tab). Minigame progress is not saved.
+The page opens on a title screen: **Continue** brings back the hub high score and where you were standing (saved in `localStorage` when you leave a minigame, quit to the menu, or close the tab). **New game** asks first when there is a save (starting one deletes it), then shows a short how-to-play screen and starts in the hub. Minigame progress is not saved.
 
 **Play it in the browser:** https://arcade.dannyobrien.dev/
 

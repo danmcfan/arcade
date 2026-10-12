@@ -86,10 +86,10 @@ function hookChecks(): void {
   openHook();
 
   let s = snap();
-  check(s.phase === "menu" && s.cursor === 0 && !s.canContinue, "opens on the title menu, New game selected, no Continue", s);
+  check(s.phase === "menu" && s.items.join() === "CONTINUE,NEW GAME" && s.cursor === 1 && !s.canContinue, "opens on the title menu, Continue above New game, New game selected, no Continue", s);
   frame("1-menu-new");
-  tap("down");
-  check(snap().cursor === 0, "Down cannot select a disabled Continue");
+  tap("up");
+  check(snap().cursor === 1, "Up cannot select a disabled Continue");
 
   tap("space");
   check(snap().phase === "intro", "New game shows the intro");
@@ -121,14 +121,25 @@ function hookChecks(): void {
   tap("down");
   tap("space");
   s = snap();
-  check(s.phase === "menu" && s.canContinue && s.cursor === 1, "Quit to menu returns to the title with Continue selected", s);
+  check(s.phase === "menu" && s.canContinue && s.cursor === 0, "Quit to menu returns to the title with Continue selected", s);
   check(stored()?.player.x === 60 && stored()?.player.dir === "LEFT", "Quit to menu saves the player position", stored());
   frame("5-menu-continue");
+
+  // New game over a save asks first; No keeps the save.
+  tap("down");
+  tap("space");
+  s = snap();
+  check(s.phase === "confirm" && s.items.join() === "NO,YES" && s.cursor === 0, "New game with a save asks to confirm, No selected", s);
+  frame("5b-confirm");
+  tap("space");
+  s = snap();
+  check(s.phase === "menu" && s.cursor === 1 && stored()?.player.x === 60, "No returns to the menu and keeps the save", s);
+  tap("up");
 
   // Reload: the save must come back from localStorage.
   openHook();
   s = snap();
-  check(s.phase === "menu" && s.canContinue && s.cursor === 1, "after a reload, Continue is available and selected", s);
+  check(s.phase === "menu" && s.canContinue && s.cursor === 0, "after a reload, Continue is available and selected", s);
   tap("space");
   s = snap();
   check(s.phase === "playing" && s.game?.arcade.player.x === 60 && s.game.arcade.player.dir === "LEFT", "Continue restores the position", s.game?.arcade.player);
@@ -173,6 +184,14 @@ function keyboardChecks(): void {
   const saved = stored();
   check(saved !== null && saved.player.x < 80 && saved.player.dir === "LEFT", "Esc, Up, Space quits to the menu and saves the walk left", saved);
   screenshot("10-live-menu-continue");
+  key("ArrowDown");
+  key("Space");
+  screenshot("11-live-confirm");
+  key("ArrowDown");
+  key("Space");
+  check(JSON.stringify(stored()) === JSON.stringify(saved), "Down, Space, Down, Space (Yes) opens the intro; the save stays until play starts");
+  key("Space");
+  check(stored()?.player.x === 80, "Space on the intro starts a new game over the old save", stored());
 }
 
 if (import.meta.main) {
