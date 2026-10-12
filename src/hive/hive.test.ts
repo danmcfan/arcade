@@ -1,7 +1,8 @@
 // Hive-level self-check: drive `createHive` directly (no hub) with scripted
 // inputs and compare against values captured from the Go original.
 //
-// hive.goReference.json was produced during T5 by a throwaway Go harness: a
+// test/fixtures/hive.goReference.json (provenance in test/fixtures/README.md)
+// was produced during T5 by a throwaway Go harness: a
 // copy of internal/hive with `math/rand` swapped for the same mulberry32 as
 // src/engine/rng.ts (same call positions), a Snapshot() emitting the §4.3
 // keys, built with CGO_ENABLED=1 GOARCH=amd64 and fed the exact input stream
@@ -17,7 +18,7 @@ import type { Input } from "../engine/input.ts";
 import type { HiveSnapshot } from "../game/snapshot.ts";
 import { createHive } from "./index.ts";
 import { HiveSoftware } from "./software.ts";
-import reference from "./hive.goReference.json";
+import reference from "../../test/fixtures/hive.goReference.json";
 
 interface Tick {
   tick: number;
