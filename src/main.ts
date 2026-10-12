@@ -12,15 +12,10 @@ import { Runtime } from "./engine/runtime.ts";
 import { fitScale } from "./engine/scale.ts";
 import { Surface } from "./engine/surface.ts";
 import { installTestHook } from "./engine/testhook.ts";
-import { createTestPattern } from "./engine/testPattern.ts"; // testPattern: temporary (T3)
 import { createScene } from "./game/registry.ts";
 import type { SceneName } from "./game/software.ts";
 
 const SCENES: readonly SceneName[] = ["game", "wave", "lumberjack"];
-
-function isTodo(err: unknown): boolean {
-  return err instanceof Error && err.message.startsWith("TODO");
-}
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
@@ -44,21 +39,9 @@ async function main(): Promise<void> {
     unmountOverlay = next.mountOverlay?.(document.body) ?? null;
   });
 
+  // A factory error propagates out of main() and is logged by the catch below.
   const requested = params.get("scene");
-  // testPattern: temporary (T3). Shown for ?scene=test, or while the real
-  // scene factories still throw "TODO".
-  if (requested === "test") {
-    runtime.replace(createTestPattern());
-  } else {
-    const name = SCENES.find((s) => s === requested) ?? "game";
-    try {
-      runtime.load(name);
-    } catch (err) {
-      if (!isTodo(err)) throw err;
-      console.info(`scene "${name}" is not ported yet; showing the engine test pattern`);
-      runtime.replace(createTestPattern());
-    }
-  }
+  runtime.load(SCENES.find((s) => s === requested) ?? "game");
 
   // D1: logical-resolution canvas, CSS-upscaled by an integer device-pixel factor.
   let fitKey = "";

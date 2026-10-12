@@ -1,5 +1,5 @@
 // Parity: the top-level Game (hub + software switching) against the Go traces.
-// The minigame parts pass once the matching porters have landed.
+// Minigames started directly (`software` in the script) live in their own files.
 import { parityTest } from "./harness.ts";
 
 parityTest("arcade-walk");
