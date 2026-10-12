@@ -187,12 +187,12 @@ export const logoLetters: Readonly<Record<string, readonly string[]>> = {
 };
 
 /**
- * Marquee letters (15 px tall, like the title-card display font) for a
- * cabinet whose name has no title art yet. Condensed to 11 px wide so
- * "BRASS MONKEY" fits the marquee at 2x (scripts/gen-cabinets.ts). The space
- * is one row: only its width matters.
+ * Title-card letters (15 px tall, like the cards' display font) for a name
+ * the original card art does not spell. Condensed to 11 px wide so
+ * "BRASS MONKEY" fits the 160 px card, and the cabinet marquee lettered from
+ * it at 2x. The space is one row: only its width matters.
  */
-export const marqueeLetters: Readonly<Record<string, readonly string[]>> = {
+export const titleLetters: Readonly<Record<string, readonly string[]>> = {
   " ": ["....."],
   A: [
     ".#########.",
@@ -365,8 +365,28 @@ export const marqueeLetters: Readonly<Record<string, readonly string[]>> = {
     "....###....",
   ],
 };
-/** Blank columns between marquee letters. */
-export const marqueeGap = 2;
+/** Blank columns between title-card letters. */
+export const titleGap = 2;
+
+/**
+ * Hub title cards whose top line scripts/gen-ui-art.ts letters from
+ * `titleLetters`, replacing the original art's name.
+ */
+export const titleCards: readonly { file: string; text: string; color: string }[] = [
+  { file: "gearhead.png", text: "BRASS MONKEY", color: "#38b764" },
+];
+
+/** `text` in `titleLetters` as rows of `#` and `.`. */
+export function titleRows(text: string): string[] {
+  const rows: string[] = [];
+  for (const [i, ch] of [...text].entries()) {
+    const letter = titleLetters[ch];
+    if (letter === undefined) throw new Error(`title text: no letter for ${JSON.stringify(ch)}`);
+    const w = letter[0]!.length;
+    for (let y = 0; y < 15; y++) rows[y] = (rows[y] ?? "") + (i > 0 ? ".".repeat(titleGap) : "") + (letter[y] ?? ".".repeat(w));
+  }
+  return rows;
+}
 
 export const logoWord = "ARCADE";
 export const logoGap = 3;

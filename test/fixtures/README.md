@@ -212,6 +212,7 @@ Re-recorded from TypeScript so far:
 | `arcade-enter-firefly`, `firefly-play` | #15: Firefly plays inside its cabinet bezel (336×428 layout) and its snapshot gains `joystick` |
 | `arcade-enter-gearhead`, `gearhead-walk` | #15: same for Brass Monkey (`gearhead`) |
 | `arcade-enter-hive`, `hive-clear`, `hive-fuzz-1`..`4`, `hive-highscore`, `hive-modes` (frames only) | #15: Sweet Sam's marquee is regenerated at the other cabinets' letter height. Only rows 0..53 (the marquee) were copied from the TypeScript capture; the rest of each frame is still the Go original |
+| `arcade-walk` (frame 70 only) | #15: the Brass Monkey hub title card reads BRASS MONKEY (`titleCards` in `src/ui/glyphs.ts`). The frame differs from the Go original only in those 1080 title pixels |
 
 ### The original Go capture
 
