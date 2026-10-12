@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LumberjackTreeSnapshot } from "../src/game/snapshot.ts";
-import { treeTopEdgeMasks, treeTopTexels, FRAME_W } from "./tree-mask.ts";
+import { lumberjackTrees, treeTopEdgeMasks, treeTopTexels, FRAME_W } from "./tree-mask.ts";
 
 function tree(over: Partial<LumberjackTreeSnapshot>): LumberjackTreeSnapshot {
   return {
@@ -57,5 +57,18 @@ describe("treeTopEdgeMasks", () => {
     expect(opaque(8, 5)).toBe(false);
     expect(opaque(7, 60)).toBe(false);
     expect(opaque(-1, 5)).toBe(false);
+  });
+});
+
+describe("lumberjackTrees", () => {
+  test("returns the trees of a lumberjack trace snapshot", () => {
+    const trees = [tree({ x: 10 }), tree({ x: 20, health: -1 })];
+    expect(lumberjackTrees({ tick: 3, rng: 1, player: {}, trees })).toEqual(trees);
+  });
+
+  test("throws on a snapshot that is not lumberjack-shaped", () => {
+    expect(() => lumberjackTrees({ tick: 3, rng: 1, sw: {} })).toThrow(/trees/);
+    expect(() => lumberjackTrees({ trees: [{ x: 1, y: 2 }] })).toThrow(/trees\[0\]/);
+    expect(() => lumberjackTrees(null)).toThrow();
   });
 });

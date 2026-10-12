@@ -10,14 +10,14 @@
 // against test/fixtures/frames/ with `bun run frames:report` (all frames,
 // writes out/frame-report.md) or scripts/frame-diff.ts (one frame).
 
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Input } from "../src/engine/input.ts";
 import { expandSteps, type InputScript, type InputStep } from "../src/game/script.ts";
+import { fixturesDir, inputPath, loadScript, repoRoot } from "../test/parity/fixtures.ts";
 import { ARCADE_PORT, ARCADE_URL } from "./config.ts";
 
-const repoRoot = new URL("../", import.meta.url).pathname;
-const inputsDir = join(repoRoot, "test/fixtures/inputs");
+const inputsDir = join(fixturesDir, "inputs");
 const outDir = join(repoRoot, "out/frames");
 const SESSION = `arcade-frames-${ARCADE_PORT}`;
 
@@ -128,7 +128,7 @@ if (import.meta.main) {
   agentBrowser("wait", "--fn", "window.__arcade !== undefined");
   try {
     for (const name of names) {
-      const script = JSON.parse(readFileSync(join(inputsDir, `${name}.json`), "utf8")) as InputScript;
+      const script = loadScript(inputPath(name));
       if (script.captureTicks.length > 0) capture(script);
     }
   } finally {
