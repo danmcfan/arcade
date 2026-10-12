@@ -1,6 +1,6 @@
 // Synthesise the title music and menu sounds from src/ui/sounds.ts:
 //
-//   bun run sounds   # writes src/assets/sounds/title.wav, move.wav, select.wav
+//   bun run sounds   # writes src/assets/sounds/title.wav, move.wav, select.wav, ticket.wav
 //
 // Square-wave lead and arpeggio over a triangle bass, with a soft noise
 // hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
@@ -9,7 +9,7 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { arpeggio, bass, blipEighth, eighthsPerMinute, melody, moveBlip, sampleRate, selectChirp, type Note } from "../src/ui/sounds.ts";
+import { arpeggio, bass, blipEighth, eighthsPerMinute, melody, moveBlip, sampleRate, selectChirp, ticketDing, type Note } from "../src/ui/sounds.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
 type Wave = (phase: number) => number;
@@ -98,17 +98,20 @@ function blip(notes: readonly Note[]): Buffer {
 
 export const renderMove = (): Buffer => blip(moveBlip);
 export const renderSelect = (): Buffer => blip(selectChirp);
+export const renderTicket = (): Buffer => blip(ticketDing);
 
 const dir = join(repoRoot, "src/assets/sounds");
 export const titlePath = join(dir, "title.wav");
 export const movePath = join(dir, "move.wav");
 export const selectPath = join(dir, "select.wav");
+export const ticketPath = join(dir, "ticket.wav");
 
 if (import.meta.main) {
   for (const [path, render] of [
     [titlePath, renderTitle],
     [movePath, renderMove],
     [selectPath, renderSelect],
+    [ticketPath, renderTicket],
   ] as const) {
     const data = render();
     writeFileSync(path, data);

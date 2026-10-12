@@ -36,7 +36,7 @@ _Avoid_: gearhead (in player-facing text), gnome game
 A demo reachable only by URL (`?scene=wave`, `?scene=lumberjack`), outside the hub and not part of the game.
 _Avoid_: minigame, bonus game
 
-## Economy (planned)
+## Economy
 
 **Token**:
 The currency spent to start a minigame: one token per play.
@@ -95,7 +95,7 @@ One fixed 1/60 s step of game time. All game timing is counted in ticks.
 _Avoid_: frame (a frame is one draw)
 
 **Parity fixture**:
-A recorded scenario from the original Go game (input script, per-tick trace, golden frames) that the TypeScript game must reproduce exactly.
+A recorded scenario (input script, per-tick trace, golden frames) that the TypeScript game must reproduce exactly. Most were recorded from the original Go game; ones whose behaviour changed on purpose are re-recorded from the TypeScript game.
 _Avoid_: snapshot test, golden test
 
 **Golden frame**:

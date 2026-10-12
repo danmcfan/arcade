@@ -7,7 +7,7 @@ import { imageBear, imageCabinet, imageDigits, imageReady } from "../engine/asse
 import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
-import { digits6, type DigitReels } from "./digitReel.ts";
+import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import {
   pelletAnimFrameCount,
   pelletAnimHoldTicks,

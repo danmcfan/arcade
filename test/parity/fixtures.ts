@@ -25,7 +25,12 @@ export function loadScript(path: string): InputScript {
 
 /** Gunzip a `.jsonl.gz` trace and parse one object per non-empty line. */
 export function readTrace(path: string): unknown[] {
-  const text = new TextDecoder().decode(Bun.gunzipSync(readFileSync(path)));
+  return parseTrace(readFileSync(path));
+}
+
+/** Parse gzipped JSONL trace bytes, one object per non-empty line. */
+export function parseTrace(gz: Uint8Array<ArrayBuffer>): unknown[] {
+  const text = new TextDecoder().decode(Bun.gunzipSync(gz));
   const out: unknown[] = [];
   for (const line of text.split("\n")) if (line.trim() !== "") out.push(JSON.parse(line));
   return out;

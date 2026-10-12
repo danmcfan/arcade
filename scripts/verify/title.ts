@@ -92,19 +92,23 @@ function hookChecks(v: Verify): void {
   v.page.eval(`window.dispatchEvent(new Event("pagehide"))`);
   check(stored(v)?.player.x === 70, "pagehide saves the current position", stored(v));
 
-  // Into a minigame and out: Esc leaves the minigame and does not open the pause menu.
+  // Into a minigame and out: Esc opens the minigame pause menu, not the hub one.
   v.step(10, { right: true });
   v.step(60, { up: true });
   v.step(2, { space: true });
   v.page.eval("window.__arcade.step(1)");
   check(v.snapshot<TitleSnapshot>().game?.software === "hive", "Space at a cabinet starts its minigame");
   v.frame("6-hive");
-  v.step(20, { escape: true });
-  v.page.eval("window.__arcade.step(1)");
-  s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "playing" && s.game?.software === null, "Esc in a minigame returns to the hub, not the pause menu", s.phase);
   v.tap("escape");
-  check(v.snapshot<TitleSnapshot>().phase === "paused", "the next Esc opens the pause menu");
+  s = v.snapshot<TitleSnapshot>();
+  check(s.phase === "playing" && s.game?.menu === "paused", "Esc in a minigame opens the minigame pause menu, not the hub pause menu", s.phase);
+  v.tap("down");
+  v.tap("down");
+  v.tap("space");
+  s = v.snapshot<TitleSnapshot>();
+  check(s.phase === "playing" && s.game?.software === null, "Quit game returns to the hub", s.game?.software);
+  v.tap("escape");
+  check(v.snapshot<TitleSnapshot>().phase === "paused", "the next Esc opens the hub pause menu");
 }
 
 function keyboardChecks(v: Verify): void {

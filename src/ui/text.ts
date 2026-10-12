@@ -39,6 +39,22 @@ export function drawText(screen: Surface, text: string, x: number, y: number, in
   }
 }
 
+/**
+ * Draw only rows `from` (inclusive) to `to` (exclusive) of one glyph, the
+ * first of them at `y`: a glyph cut off at the top or bottom, for the
+ * payout's rolling digits.
+ */
+export function drawGlyphRows(screen: Surface, ch: string, x: number, y: number, from: number, to: number, ink: Ink = "white"): void {
+  const i = index.get(ch.toUpperCase());
+  const top = Math.max(0, from);
+  const bottom = Math.min(glyphHeight, to);
+  if (i === undefined || bottom <= top) return;
+  const band = inkOrder.indexOf(ink);
+  const sx = (i % sheetColumns) * cell;
+  const sy = (band * bandRows + Math.trunc(i / sheetColumns)) * cell;
+  screen.draw(sub(imageFont, sx, sy + top, sx + glyphWidth(ch), sy + bottom), x, y);
+}
+
 /** Draw `text` horizontally centred on `cx`. */
 export function drawTextCentered(screen: Surface, text: string, cx: number, y: number, ink: Ink = "white"): void {
   drawText(screen, text, cx - Math.trunc(textWidth(text) / 2), y, ink);

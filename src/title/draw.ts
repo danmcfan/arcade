@@ -6,15 +6,14 @@ import { imageArcade, imageLogo } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
-import { drawKey, drawPanel, drawText, drawTextCentered, keyHeight, keyWidth, textWidth } from "../ui/text.ts";
+import { dim, dimColour, drawControls, drawControlsPanel, drawHints, drawMenuItems, drawPausePanel, moveControl, type ControlRow, type Hint } from "../ui/menu.ts";
+import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
 import type { Title } from "./title.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
 export const screenWidth = 192;
 export const screenHeight = 176;
 const background = "#1a1c2c";
-/** Sweetie 16 #1a1c2c at 75%, premultiplied: darkens what is behind a panel. */
-const dimColour = { r: 20, g: 21, b: 33, a: 192 };
 const centre = screenWidth / 2;
 
 export const introLines = [
@@ -26,34 +25,21 @@ export const introLines = [
 ] as const;
 
 /** One row of the controls table: the keys, then what they do. */
-export const controls: readonly { keys: readonly (readonly string[])[]; label: string }[] = [
-  { keys: [["↑", "←", "↓", "→"], ["WASD"]], label: "MOVE" },
+export const controls: readonly ControlRow[] = [
+  moveControl,
   { keys: [["SPACE"]], label: "PLAY / ACTION" },
   { keys: [["ESC"]], label: "BACK / PAUSE" },
 ];
-
-/** A key hint along the bottom of a screen: the keys, then what they do. */
-export interface Hint {
-  keys: readonly string[];
-  label: string;
-}
 
 export const menuHints: readonly Hint[] = [
   { keys: ["↑", "↓"], label: "CHOOSE" },
   { keys: ["SPACE"], label: "OK" },
 ];
 export const backHints: readonly Hint[] = [{ keys: ["ESC"], label: "BACK" }];
-export const panelHints: readonly Hint[] = [{ keys: ["SPACE", "ESC"], label: "BACK" }];
 
 export const confirmLines = ["START A NEW GAME?", "THIS DELETES YOUR", "SAVED GAME."] as const;
 
 const hintsTop = screenHeight - keyHeight - 6;
-const hintGap = 12;
-
-const controlsLeft = 12;
-const controlsLabelX = 104;
-const controlsRowHeight = 14;
-export const controlsHeight = controls.length * controlsRowHeight - (controlsRowHeight - keyHeight);
 
 export function draw(screen: Surface, t: Title): void {
   switch (t.phase) {
@@ -71,13 +57,13 @@ export function draw(screen: Surface, t: Title): void {
       return;
     case "paused":
       t.game!.draw(screen);
-      dim(screen);
-      drawPause(screen, t);
+      dimHub(screen);
+      drawPausePanel(screen, t.items(), t.cursor, t.tick, centre, 56);
       return;
     case "controls":
       t.game!.draw(screen);
-      dim(screen);
-      drawControlsPanel(screen);
+      dimHub(screen);
+      drawControlsPanel(screen, controls, 4, 40);
       return;
   }
 }
@@ -89,43 +75,6 @@ function blinkOn(t: Title): boolean {
 
 function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
-}
-
-/** How far the selection arrows sit out from their resting place: 0, 1 or 2 px, easing in and out every 40 ticks. */
-export function arrowOffset(tick: number): number {
-  return Math.round(1 - Math.cos((tick * 2 * Math.PI) / 40));
-}
-
-function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number, tick: number): void {
-  const off = arrowOffset(tick);
-  items.forEach((label, i) => {
-    const y = top + i * 12;
-    if (i !== cursor) {
-      drawTextCentered(screen, label, centre, y, "white");
-      return;
-    }
-    const half = Math.trunc(textWidth(label) / 2);
-    drawTextCentered(screen, label, centre, y, "yellow");
-    drawText(screen, ">", centre - half - 8 - off, y, "yellow");
-    drawText(screen, "<", centre - half + textWidth(label) + 4 + off, y, "yellow");
-  });
-}
-
-/** Width of one hint: its keys 1 px apart, a gap, then its label. */
-function hintWidth(h: Hint): number {
-  return h.keys.reduce((w, k) => w + keyWidth(k) + 1, 0) + 3 + textWidth(h.label);
-}
-
-/** Key hints in a centred row with their key tops at `top`, keys drawn as in the controls table. */
-export function drawHints(screen: Surface, hints: readonly Hint[], top = hintsTop): void {
-  const width = hints.reduce((w, h) => w + hintWidth(h), 0) + hintGap * (hints.length - 1);
-  let x = centre - Math.trunc(width / 2);
-  for (const h of hints) {
-    for (const key of h.keys) x += drawKey(screen, key, x, top) + 1;
-    x += 3;
-    drawText(screen, h.label, x, top + 2, "white");
-    x += textWidth(h.label) + hintGap;
-  }
 }
 
 const logoLetterWidth = logoLetters.A![0]!.length;
@@ -172,13 +121,13 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
   drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick);
+  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
   if (t.savedHighScore) drawTextCentered(screen, `HIGH SCORE ${t.savedHighScore}`, centre, 122, "orange");
 }
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints);
+  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -191,57 +140,23 @@ function drawConfirm(screen: Surface, t: Title): void {
   const y = 40;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"));
-  drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick);
-  drawHints(screen, menuHints);
+  drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
+  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
   introLines.forEach((line, i) => drawTextCentered(screen, line, centre, 26 + i * 10, "white"));
-  drawControls(screen, 86);
+  drawControls(screen, controls, 12, 104, 86);
   if (blinkOn(t)) drawTextCentered(screen, "PRESS SPACE TO START", centre, 146, "yellow");
-  drawHints(screen, backHints);
-}
-
-/** The controls table with its top edge at `top`. */
-export function drawControls(screen: Surface, top: number): void {
-  controls.forEach((row, r) => {
-    const y = top + r * controlsRowHeight;
-    let x = controlsLeft;
-    row.keys.forEach((group, g) => {
-      if (g > 0) x += 4;
-      for (const key of group) x += drawKey(screen, key, x, y) + 1;
-    });
-    drawText(screen, row.label, controlsLabelX, y + 2, "white");
-  });
+  drawHints(screen, backHints, hintsTop, centre);
 }
 
 /** The Game's margin around the hub image, which stays transparent. */
 const hubMargin = (screenWidth - imageArcade.w) / 2;
 
 /** Darken the hub image behind a panel. */
-function dim(screen: Surface): void {
-  screen.fillPremul(hubMargin, hubMargin, imageArcade.w, imageArcade.h, dimColour);
-}
-
-function drawPause(screen: Surface, t: Title): void {
-  const w = 120;
-  const h = 64;
-  const x = centre - w / 2;
-  const y = 56;
-  drawPanel(screen, x, y, w, h);
-  drawTextCentered(screen, "PAUSED", centre, y + 8, "yellow");
-  drawMenuItems(screen, t.items(), t.cursor, y + 22, t.tick);
-}
-
-function drawControlsPanel(screen: Surface): void {
-  const x = 4;
-  const y = 40;
-  const w = screenWidth - 8;
-  const h = controlsHeight + 46;
-  drawPanel(screen, x, y, w, h);
-  drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");
-  drawControls(screen, y + 20);
-  drawHints(screen, panelHints, y + h - keyHeight - 6);
+function dimHub(screen: Surface): void {
+  dim(screen, hubMargin, hubMargin, imageArcade.w, imageArcade.h);
 }

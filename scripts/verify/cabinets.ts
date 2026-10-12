@@ -74,8 +74,12 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   const cabinet = canvas(v);
   check(cabinet.width === 336 && cabinet.height === 428, `${w.label} draws a 336x428 cabinet`, [cabinet.width, cabinet.height]);
 
-  v.step(1, { escape: true });
-  check(v.snapshot<GameSnapshot>().software === null, `Esc leaves ${w.label} for the hub`);
+  // Esc opens the minigame pause menu; Quit game is its third item.
+  v.tap("escape");
+  v.tap("down");
+  v.tap("down");
+  v.tap("space");
+  check(v.snapshot<GameSnapshot>().software === null, `Esc, Quit game leaves ${w.label} for the hub`);
   return { hub, cabinet };
 }
 
@@ -108,6 +112,14 @@ function recordWalk(v: Verify): void {
   console.log("video:");
   const software = () => (JSON.parse(v.page.eval("JSON.stringify(window.__arcade.snapshot())")) as GameSnapshot).software;
   const seen: (SoftwareName | null)[] = [];
+  // Esc opens the minigame pause menu; Quit game is its third item.
+  const quitGame = () => {
+    v.key("Escape");
+    v.wait(250);
+    v.key("ArrowDown");
+    v.key("ArrowDown");
+    v.key("Space");
+  };
   v.record(
     "walkthrough",
     () => {
@@ -122,7 +134,7 @@ function recordWalk(v: Verify): void {
         v.key(code, 450);
         v.wait(250);
       }
-      v.key("Escape");
+      quitGame();
       v.wait(500);
       // Brass Monkey: left of the spawn.
       v.key("ArrowLeft", 800);
@@ -134,7 +146,7 @@ function recordWalk(v: Verify): void {
         v.key(code, 450);
         v.wait(250);
       }
-      v.key("Escape");
+      quitGame();
       v.wait(600);
     },
     { scene: "game" },

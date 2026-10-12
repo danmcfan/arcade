@@ -1,12 +1,23 @@
 // Port of internal/arcade/state.go.
 
 import type { Software } from "../game/software.ts";
-import type { ArcadeTitle } from "../game/snapshot.ts";
+import type { ArcadeTitle, RunKindSnapshot } from "../game/snapshot.ts";
 import { newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
 
 export const tileSize = 8;
+
+/** Tokens a New game starts with. */
+export const startingTokens = 5;
+
+/**
+ * How the loaded minigame was started: at a cabinet for a token ("paid"),
+ * at a cabinet with no tokens ("free", free play), or straight from
+ * `game.New(software)` without the hub ("direct": the parity fixtures and
+ * `?scene=game&software=`), which costs nothing and has no payout.
+ */
+export type RunKind = RunKindSnapshot;
 
 export class State {
   player: Entity;
@@ -18,14 +29,19 @@ export class State {
   imageTitle: ArcadeTitle | null = null;
   /** Go `LoadedSoftware`: picked up (and cleared) by the Game after each hub update. */
   loadedSoftware: Software | null;
+  /** How `loadedSoftware` was started; null when nothing was loaded yet. */
+  loadedRun: RunKind | null;
 
   highScore = 0;
+  tokens = startingTokens;
+  tickets = 0;
 
   constructor(initialSoftware: Software | null, factory: SoftwareFactory) {
     this.player = newPlayer();
     this.walls = newWalls();
     this.machines = newMachines(factory);
     this.loadedSoftware = initialSoftware;
+    this.loadedRun = initialSoftware === null ? null : "direct";
   }
 
   debugInfo(): string[] {
