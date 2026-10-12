@@ -74,6 +74,22 @@ export interface GameSnapshot extends SceneSnapshotBase {
   sounds: SoundEvent[];
 }
 
+/** The payout menu (src/game/payout.ts): no Go original. */
+export interface PayoutSnapshot {
+  /** Score still shown; spins down to 0. */
+  score: number;
+  /** Tickets shown so far; spins up to `total`. */
+  tickets: number;
+  /** Tickets this run pays (already added to `arcade.tickets`). */
+  total: number;
+  /** The run was free play: it pays nothing. */
+  freePlay: boolean;
+  /** The numbers or their reels are still moving; Space skips to the totals. */
+  counting: boolean;
+  /** Closed (the Game is back in the hub after this tick). */
+  done: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // hive (internal/hive)
 
