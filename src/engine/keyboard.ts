@@ -13,18 +13,31 @@ export interface KeySample {
 
 export class KeyTracker {
   private readonly down = new Set<string>();
+  /** Keys hidden by `ignoreHeld()` until their keyup. */
+  private readonly ignored = new Set<string>();
   private previous: ReadonlySet<string> = new Set();
 
   keyDown(code: string): void {
-    this.down.add(code);
+    if (!this.ignored.has(code)) this.down.add(code);
   }
 
   keyUp(code: string): void {
     this.down.delete(code);
+    this.ignored.delete(code);
   }
 
   /** Release every key (window blur, page hidden). */
   clear(): void {
+    this.down.clear();
+    this.ignored.clear();
+  }
+
+  /**
+   * Hide every key held now, auto-repeat included, until it is released: the
+   * key that dismissed the keyboard notice must not also act on the scene.
+   */
+  ignoreHeld(): void {
+    for (const code of this.down) this.ignored.add(code);
     this.down.clear();
   }
 
