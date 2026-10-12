@@ -35,7 +35,7 @@ export function isFixedViewport(s: Software): s is FixedViewport {
   return typeof (s as Partial<FixedViewport>).fixedViewportSize === "function";
 }
 
-export type SceneName = "game" | "wave" | "lumberjack";
+export type SceneName = "title" | "game" | "wave" | "lumberjack";
 
 /** Pending wave slider values (Go globals `gridSize`, `seconds`). */
 export interface WaveOptions {
@@ -71,4 +71,6 @@ export interface Scene {
   mountOverlay?(parent: HTMLElement): () => void;
   /** Optional: release listeners (e.g. the Game's sound listener) when the scene is replaced. */
   dispose?(): void;
+  /** Optional, browser only: write the save now (main.ts calls it when the page is hidden). */
+  persist?(): void;
 }

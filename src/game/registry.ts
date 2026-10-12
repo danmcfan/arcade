@@ -9,6 +9,8 @@ import { createGearhead } from "../gearhead/index.ts";
 import { createWave } from "../lab/wave/index.ts";
 import { createLumberjack } from "../lab/lumberjack/index.ts";
 import { createGame } from "./index.ts";
+import { createTitle } from "../title/index.ts";
+import type { SaveStore } from "../title/save.ts";
 import type { Scene, SceneName, Software, SoftwareName, WaveOptions } from "./software.ts";
 
 /**
@@ -30,6 +32,8 @@ export interface SceneOptions {
   software?: SoftwareName;
   /** `wave` only: pending slider values (defaults 128 and 5). */
   wave?: Partial<WaveOptions>;
+  /** `title` only: where the save lives; default: in memory. */
+  store?: SaveStore;
 }
 
 /**
@@ -38,6 +42,8 @@ export interface SceneOptions {
  */
 export function createScene(name: SceneName, opts: SceneOptions = {}): Scene {
   switch (name) {
+    case "title":
+      return createTitle(opts.store);
     case "game":
       return createGame(opts.software);
     case "wave":

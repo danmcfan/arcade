@@ -8,8 +8,10 @@
     "preview": "bunx serve dist",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "art": "bun scripts/gen-ui-art.ts",
     "frames": "bun scripts/capture-frames.ts",
     "frames:report": "bun scripts/frame-report.ts",
+    "check:title": "bun scripts/check-title.ts",
     "check": "bun run typecheck && bun test && bun run build"
   },
   "devDependencies": {

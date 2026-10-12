@@ -3,10 +3,11 @@
 // `Layout`.
 
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
-import { imageArcade, soundStart } from "../engine/assets.ts";
-import type { Input } from "../engine/input.ts";
+import { imageArcade, soundMelody, soundStart } from "../engine/assets.ts";
+import type { Direction, Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
+import { checkCollisions } from "../arcade/collision.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
 import { newState, type State } from "../arcade/state.ts";
@@ -20,12 +21,20 @@ const buffer = 16;
 
 const initialDebugMode = false;
 
+/** What "Continue" brings back: the hub high score and where the player stood. */
+export interface Progress {
+  highScore: number;
+  player: { x: number; y: number; dir: Direction };
+}
+
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
   /** Builds a machine's software; default: `createSoftware` from ./registry.ts. */
   createSoftware?: SoftwareFactory;
   /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
   debugPrint?: DebugPrinter;
+  /** Start from a save (title scene "Continue"); omit for a fresh hub. */
+  restore?: Progress;
 }
 
 export class Game implements Scene {
@@ -55,7 +64,51 @@ export class Game implements Scene {
     this.unsubscribe = addSoundListener((e) => this.pendingSounds.push(e));
     const sw = initialSoftware === null ? null : factory(initialSoftware, 0);
     this.arcade = newState(sw, factory);
+    if (deps.restore) this.restore(deps.restore);
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
+  }
+
+  /**
+   * A position in or beyond a wall (a stale or edited save) keeps the start
+   * position. The walls frame the hub image, so "inside the image and
+   * touching no wall" means "on the floor".
+   */
+  private restore(p: Progress): void {
+    const player = this.arcade.player;
+    this.arcade.highScore = p.highScore;
+    player.direction = p.player.dir;
+    const rect = { x: p.player.x - player.width / 2, y: p.player.y - player.height / 2, w: player.width, h: player.height };
+    const inside = rect.x >= 0 && rect.y >= 0 && rect.x + rect.w <= imageArcade.w && rect.y + rect.h <= imageArcade.h;
+    if (inside && !checkCollisions(rect, this.arcade.walls)) {
+      player.x = p.player.x;
+      player.y = p.player.y;
+    }
+  }
+
+  /** True while the hub (not a minigame) is running. */
+  inHub(): boolean {
+    return this.software === null;
+  }
+
+  progress(): Progress {
+    const p = this.arcade.player;
+    return { highScore: this.arcade.highScore, player: { x: p.x, y: p.y, dir: p.direction } };
+  }
+
+  /** Silence the hub melody while a menu covers the game. */
+  pauseAudio(): void {
+    if (this.arcade.melodyPlaying) soundMelody.pause();
+  }
+
+  /** Undo `pauseAudio`. */
+  resumeAudio(): void {
+    if (this.arcade.melodyPlaying) soundMelody.play();
+  }
+
+  /** Stop the hub melody for good (leaving the game). */
+  stopAudio(): void {
+    soundMelody.pause();
+    soundMelody.rewind();
   }
 
   step(i: Input): void {

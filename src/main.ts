@@ -1,4 +1,4 @@
-// Browser entry point: preload images (D5), pick the scene from `?scene=`
+// Browser entry point: preload images (D5), pick the scene from `?scene=` (default: title)
 // via `createScene` (src/game/registry.ts), run the fixed-step loop (D2), and
 // install `window.__arcade` when `?debug` is present (D7).
 
@@ -14,8 +14,9 @@ import { Surface } from "./engine/surface.ts";
 import { installTestHook } from "./engine/testhook.ts";
 import { createScene } from "./game/registry.ts";
 import type { SceneName } from "./game/software.ts";
+import { localStorageStore } from "./title/save.ts";
 
-const SCENES: readonly SceneName[] = ["game", "wave", "lumberjack"];
+const SCENES: readonly SceneName[] = ["title", "game", "wave", "lumberjack"];
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
@@ -32,7 +33,9 @@ async function main(): Promise<void> {
   const keys = new KeyTracker();
   installKeyboard(keys);
 
-  const runtime = new Runtime(createScene);
+  // The title scene keeps its save in localStorage, also when the test hook loads it.
+  const store = localStorageStore();
+  const runtime = new Runtime((name, opts) => createScene(name, { store, ...opts }));
   let unmountOverlay: (() => void) | null = null;
   runtime.onReplace((next) => {
     unmountOverlay?.();
@@ -41,7 +44,14 @@ async function main(): Promise<void> {
 
   // A factory error propagates out of main() and is logged by the catch below.
   const requested = params.get("scene");
-  runtime.load(SCENES.find((s) => s === requested) ?? "game");
+  runtime.load(SCENES.find((s) => s === requested) ?? "title");
+
+  // Save "Continue" progress when the tab is closed or hidden.
+  const persist = (): void => runtime.scene.persist?.();
+  window.addEventListener("pagehide", persist);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") persist();
+  });
 
   // D1: logical-resolution canvas, CSS-upscaled by an integer device-pixel factor.
   let fitKey = "";

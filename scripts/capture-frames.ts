@@ -15,11 +15,14 @@ import { basename, join } from "node:path";
 import type { Input } from "../src/engine/input.ts";
 import { expandSteps, type InputScript, type InputStep } from "../src/game/script.ts";
 import { fixturesDir, inputPath, loadScript, repoRoot } from "../test/parity/fixtures.ts";
+import { browser, decodeDataUrl } from "./browser.ts";
 import { ARCADE_PORT, ARCADE_URL } from "./config.ts";
+
+export { decodeDataUrl } from "./browser.ts";
 
 const inputsDir = join(fixturesDir, "inputs");
 const outDir = join(repoRoot, "out/frames");
-const SESSION = `arcade-frames-${ARCADE_PORT}`;
+const page = browser(`arcade-frames-${ARCADE_PORT}`);
 
 const KEYS = ["up", "down", "left", "right", "space", "escape", "shiftP"] as const;
 
@@ -69,48 +72,17 @@ export function planCaptures(script: InputScript): CapturePlan[] {
   });
 }
 
-export function decodeDataUrl(url: string): Buffer {
-  const m = /^data:image\/png;base64,(.*)$/.exec(url);
-  if (!m?.[1]) throw new Error(`not a PNG data URL: ${url.slice(0, 40)}...`);
-  return Buffer.from(m[1], "base64");
-}
-
-function agentBrowser(...args: string[]): string {
-  const r = Bun.spawnSync(["agent-browser", "--session", SESSION, ...args], { stdout: "pipe", stderr: "pipe" });
-  if (r.exitCode !== 0) {
-    throw new Error(`agent-browser ${args[0]} failed: ${r.stderr.toString()}${r.stdout.toString()}`);
-  }
-  return r.stdout.toString();
-}
-
-/** Evaluate JS in the page and return its (string) result. */
-function evalInPage(js: string): string {
-  const out = agentBrowser("--json", "eval", "-b", Buffer.from(js).toString("base64")).trim();
-  const parsed: unknown = JSON.parse(out);
-  const pick = (v: unknown): unknown => {
-    if (v !== null && typeof v === "object") {
-      const o = v as Record<string, unknown>;
-      if (o.success === false) throw new Error(`eval failed: ${JSON.stringify(o.error ?? o)}`);
-      if ("data" in o) return pick(o.data);
-      if ("result" in o) return o.result;
-    }
-    return v;
-  };
-  const result = pick(parsed);
-  return typeof result === "string" ? result : JSON.stringify(result);
-}
-
 function capture(script: InputScript): void {
   const plan = planCaptures(script);
   const dir = join(outDir, script.name);
   mkdirSync(dir, { recursive: true });
   const loadOpts = JSON.stringify({ software: script.software, wave: script.wave });
-  evalInPage(
+  page.eval(
     `(() => { const a = window.__arcade; a.pause(); a.seed(${script.seed}); a.load(${JSON.stringify(script.scene)}, ${loadOpts}); return "ok"; })()`,
   );
   for (const { tick, steps } of plan) {
     const runScript = JSON.stringify({ ...script, steps, captureTicks: [] });
-    const url = evalInPage(`(() => { const a = window.__arcade; a.runScript(${runScript}); return a.frame(); })()`);
+    const url = page.eval(`(() => { const a = window.__arcade; a.runScript(${runScript}); return a.frame(); })()`);
     writeFileSync(join(dir, `${tick}.png`), decodeDataUrl(url));
   }
   console.log(`${script.name}: ${plan.length} frame(s) → ${dir}`);
@@ -124,14 +96,14 @@ if (import.meta.main) {
       : readdirSync(inputsDir)
           .filter((f) => f.endsWith(".json"))
           .map((f) => basename(f, ".json"));
-  agentBrowser("open", `${ARCADE_URL}/?debug`);
-  agentBrowser("wait", "--fn", "window.__arcade !== undefined");
+  page.run("open", `${ARCADE_URL}/?debug`);
+  page.run("wait", "--fn", "window.__arcade !== undefined");
   try {
     for (const name of names) {
       const script = loadScript(inputPath(name));
       if (script.captureTicks.length > 0) capture(script);
     }
   } finally {
-    agentBrowser("close");
+    page.run("close");
   }
 }
