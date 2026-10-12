@@ -232,6 +232,8 @@ export interface FireflySnapshot {
   bullets: FireflyBulletSnapshot[];
   /** `FireFlySoftware.bugs` in slice order. */
   bugs: FireflyBugSnapshot[];
+  /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  joystick: number;
 }
 
 // ---------------------------------------------------------------------------

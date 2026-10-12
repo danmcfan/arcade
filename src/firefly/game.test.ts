@@ -3,6 +3,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { imageGalaxy } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
+import { isFixedViewport } from "../game/software.ts";
 import { FireflySoftware, angle, collide, durationStep, frameAngle, radToDeg } from "./game.ts";
 import { createFirefly } from "./index.ts";
 
@@ -87,6 +88,24 @@ describe("FireflySoftware", () => {
       expect(b?.dy).toBe(0);
       expect(b?.duration).toBeCloseTo((1 - 12 * k) / 180, 12);
     }
+  });
+});
+
+describe("cabinet", () => {
+  test("is a FixedViewport the size of the cabinet", () => {
+    const f = createFirefly();
+    expect(isFixedViewport(f)).toBe(true);
+    if (isFixedViewport(f)) expect(f.fixedViewportSize()).toEqual([336, 428]);
+  });
+
+  test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
+    const f = createFirefly();
+    expect((f.snapshot() as FireflySnapshot).joystick).toBe(0);
+    const frames = [held({}), held({ up: true }), held({ down: true }), held({ left: true }), held({ right: true })].map((i) => {
+      f.update(i);
+      return (f.snapshot() as FireflySnapshot).joystick;
+    });
+    expect(frames).toEqual([0, 1, 2, 3, 4]);
   });
 });
 
