@@ -53,7 +53,7 @@ function atCabinet(): SaveData {
   const s = g.snapshot();
   g.dispose();
   expect(s.arcade.title).toBe("sweet");
-  return { v: 1, highScore: 0, player: { x: s.arcade.player.x, y: s.arcade.player.y, dir: "UP" } };
+  return { v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: s.arcade.player.x, y: s.arcade.player.y, dir: "UP" } };
 }
 
 describe("title menu", () => {
@@ -97,7 +97,7 @@ describe("new game", () => {
   });
 
   test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
-    const save: SaveData = { v: 1, highScore: 900, player: { x: 50, y: 100, dir: "LEFT" } };
+    const save: SaveData = { v: 2, highScore: 900, tokens: 5, tickets: 0, player: { x: 50, y: 100, dir: "LEFT" } };
     const store = memoryStore(save);
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
@@ -113,7 +113,7 @@ describe("new game", () => {
   });
 
   test("Yes, then Space on the intro, starts a fresh hub and replaces the old save", () => {
-    const store = spyStore({ v: 1, highScore: 900, player: { x: 50, y: 100, dir: "LEFT" } });
+    const store = spyStore({ v: 2, highScore: 900, tokens: 5, tickets: 0, player: { x: 50, y: 100, dir: "LEFT" } });
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
     tap(t, "space");
@@ -125,13 +125,25 @@ describe("new game", () => {
     const fresh = new Game(null).snapshot();
     expect(game(t).arcade).toEqual(fresh.arcade);
     expect(game(t).software).toBeNull();
-    expect(store.load()).toEqual({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "DOWN" } });
+    expect(store.load()).toEqual({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "DOWN" } });
+  });
+
+  test("New game resets tokens and tickets", () => {
+    const store = memoryStore({ v: 2, highScore: 900, tokens: 0, tickets: 88, player: { x: 50, y: 100, dir: "LEFT" } });
+    const t = new Title({ store });
+    tap(t, "down");
+    tap(t, "space");
+    tap(t, "down");
+    tap(t, "space");
+    tap(t, "space");
+    expect(game(t).arcade).toMatchObject({ tokens: 5, tickets: 0, highScore: 0 });
+    expect(store.load()).toMatchObject({ tokens: 5, tickets: 0 });
   });
 });
 
 describe("continue", () => {
   test("restores the player's position, facing and the high score", () => {
-    const t = new Title({ store: memoryStore({ v: 1, highScore: 120, player: { x: 50, y: 100, dir: "LEFT" } }) });
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 120, tokens: 5, tickets: 0, player: { x: 50, y: 100, dir: "LEFT" } }) });
     tap(t, "space");
     expect(t.phase).toBe("playing");
     expect(game(t).arcade.player).toMatchObject({ x: 50, y: 100, dir: "LEFT" });
@@ -151,7 +163,7 @@ describe("continue", () => {
 
   test("a saved position in or beyond a wall falls back to the start position", () => {
     for (const [x, y] of [[-500, -500], [10, 92], [80, 20], [80, 500]]) {
-      const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: x!, y: y!, dir: "UP" } }) });
+      const t = new Title({ store: memoryStore({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: x!, y: y!, dir: "UP" } }) });
       tap(t, "space");
       expect(game(t).arcade.player).toMatchObject({ x: 80, y: 92, dir: "UP" });
     }
@@ -211,19 +223,52 @@ describe("pause menu", () => {
     expect(game(t).arcade.player).toMatchObject({ x: 60, y: 92, dir: "LEFT" });
   });
 
-  test("Esc inside a minigame leaves it (and saves) without opening the pause menu", () => {
-    const store = spyStore(atCabinet());
+  test("restores tokens and tickets", () => {
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 120, tokens: 2, tickets: 37, player: { x: 50, y: 100, dir: "LEFT" } }) });
+    tap(t, "space");
+    expect(game(t).arcade).toMatchObject({ highScore: 120, tokens: 2, tickets: 37 });
+  });
+});
+
+describe("minigames inside the title scene", () => {
+  /** Continue at the hive cabinet, then start it. */
+  function inHive(store: SaveStore & { saves: number }): Title {
     const t = new Title({ store });
     tap(t, "space");
     hold(t, { up: true, space: true }, 2);
     t.step(NO_INPUT);
     expect(game(t).software).toBe("hive");
+    return t;
+  }
+
+  test("a cabinet start saves at once, so the spent token is kept", () => {
+    const store = spyStore(atCabinet());
+    inHive(store);
+    expect(store.load()?.tokens).toBe(4);
+  });
+
+  test("Esc in a minigame opens the minigame pause menu, not the hub pause menu", () => {
+    const store = spyStore(atCabinet());
+    const t = inHive(store);
+    tap(t, "escape");
+    expect(t.phase).toBe("playing");
+    expect(game(t)).toMatchObject({ software: "hive", menu: "paused" });
+    tap(t, "escape");
+    expect(game(t).menu).toBeNull();
+  });
+
+  test("Quit game returns to the hub and saves; the next Esc opens the hub pause menu", () => {
+    const store = spyStore(atCabinet());
+    const t = inHive(store);
     const saves = store.saves;
-    hold(t, { escape: true }, 20);
+    tap(t, "escape");
+    tap(t, "down");
+    tap(t, "down");
+    tap(t, "space");
     expect(game(t).software).toBeNull();
     expect(t.phase).toBe("playing");
     expect(store.saves).toBe(saves + 1);
-    t.step(NO_INPUT);
+    expect(store.load()).toMatchObject({ tokens: 4, tickets: 0 });
     tap(t, "escape");
     expect(t.phase).toBe("paused");
   });
@@ -243,7 +288,7 @@ describe("sounds", () => {
   }
 
   test("the title music starts on the first tick and plays through the New game check and intro", () => {
-    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "UP" } }) });
     expect(heard(() => t.step(NO_INPUT))).toEqual(["play:title"]);
     // Retried on key presses until the browser lets it play (never, without a DOM).
     expect(heard(() => tap(t, "down"))).toContain("play:title");
@@ -271,7 +316,7 @@ describe("sounds", () => {
   });
 
   test("moving the cursor blips; a choice or Back chirps; nothing else does", () => {
-    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "UP" } }) });
     t.step(NO_INPUT);
     const effects = (fn: () => void) => heard(fn).filter((e) => !e.endsWith(":title"));
     expect(effects(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
@@ -299,10 +344,37 @@ describe("sounds", () => {
 });
 
 describe("parseSave", () => {
-  test("accepts a v1 save and rejects anything else", () => {
-    const ok = { v: 1, highScore: 3, player: { x: 1, y: 2, dir: "UP" } };
+  const ok = { v: 2, highScore: 3, tokens: 4, tickets: 12, player: { x: 1, y: 2, dir: "UP" } };
+
+  test("accepts a v2 save", () => {
     expect(parseSave(ok)).toEqual(ok as SaveData);
-    for (const bad of [null, 1, "x", {}, { ...ok, v: 2 }, { ...ok, highScore: -1 }, { ...ok, player: null }, { ...ok, player: { x: 1, y: Number.NaN, dir: "UP" } }, { ...ok, player: { x: 1, y: 2, dir: "NORTH" } }]) {
+    expect(parseSave({ ...ok, tokens: 0, tickets: 0 })).toEqual({ ...ok, tokens: 0, tickets: 0 } as SaveData);
+  });
+
+  test("upgrades a v1 save: same high score and position, plus 5 tokens and 0 tickets", () => {
+    const v1 = { v: 1, highScore: 3, player: { x: 1, y: 2, dir: "UP" } };
+    expect(parseSave(v1)).toEqual({ v: 2, highScore: 3, tokens: 5, tickets: 0, player: { x: 1, y: 2, dir: "UP" } });
+    expect(parseSave({ ...v1, player: null })).toBeNull();
+  });
+
+  test("rejects anything else", () => {
+    for (const bad of [
+      null,
+      1,
+      "x",
+      {},
+      { ...ok, v: 3 },
+      { ...ok, v: 0 },
+      { ...ok, highScore: -1 },
+      { ...ok, tokens: -1 },
+      { ...ok, tokens: 1.5 },
+      { ...ok, tickets: Number.POSITIVE_INFINITY },
+      { ...ok, tickets: "3" },
+      { ...ok, tokens: undefined },
+      { ...ok, player: null },
+      { ...ok, player: { x: 1, y: Number.NaN, dir: "UP" } },
+      { ...ok, player: { x: 1, y: 2, dir: "NORTH" } },
+    ]) {
       expect(parseSave(bad)).toBeNull();
     }
   });
@@ -412,7 +484,7 @@ describe("drawing", () => {
   });
 
   test("the New game check draws its warning, No and Yes, and key hints", () => {
-    const t = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "UP" } }) });
     tap(t, "down");
     tap(t, "space");
     const r = recordingSurface();
@@ -423,12 +495,12 @@ describe("drawing", () => {
   });
 
   test("with a save, the menu shows the saved high score (when there is one)", () => {
-    const zero = new Title({ store: memoryStore({ v: 1, highScore: 0, player: { x: 80, y: 92, dir: "UP" } }) });
+    const zero = new Title({ store: memoryStore({ v: 2, highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "UP" } }) });
     const r0 = recordingSurface();
     zero.draw(r0.surface);
     expect(r0.text("orange")).toBe("");
 
-    const t = new Title({ store: memoryStore({ v: 1, highScore: 120, player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({ store: memoryStore({ v: 2, highScore: 120, tokens: 5, tickets: 0, player: { x: 80, y: 92, dir: "UP" } }) });
     const r = recordingSurface();
     t.draw(r.surface);
     expect(r.text("yellow")).toBe(">CONTINUE<");

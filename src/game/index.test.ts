@@ -53,8 +53,12 @@ for (const [name, size] of real) {
       expect(s.sw).not.toBeNull();
       scene.step({ ...NO_INPUT, escape: true });
       s = scene.snapshot() as GameSnapshot;
+      expect(s.menu).toBe("paused");
+      expect(s.sounds).toEqual(["rewind:select", "play:select", "pause:start", "pause:power", "pause:death", "pause:laser", "pause:boom"]);
+      expect(scene.layout()).toEqual(size);
+      for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }]) scene.step({ ...NO_INPUT, ...keys });
+      s = scene.snapshot() as GameSnapshot;
       expect(s.software).toBeNull();
-      expect(s.sounds).toEqual(["pause:start"]);
       expect(scene.layout()).toEqual([192, 176]);
     } finally {
       scene.dispose?.();

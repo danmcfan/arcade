@@ -17,7 +17,7 @@ import type { Scene, SceneName } from "../../src/game/software.ts";
 import type { SceneSnapshot } from "../../src/game/snapshot.ts";
 import { inputPath, loadScript, readTrace, repoRoot, tracePath } from "./fixtures.ts";
 
-export { fixturesDir, inputPath, loadScript, readTrace, tracePath } from "./fixtures.ts";
+export { fixturesDir, inputPath, loadScript, parseTrace, readTrace, tracePath } from "./fixtures.ts";
 
 /** How scenes are built; the default is the real registry. */
 export type SceneFactory = (name: SceneName, opts: SceneOptions) => Scene;

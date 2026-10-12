@@ -12,6 +12,7 @@
     "art": "bun scripts/gen-ui-art.ts",
     "sounds": "bun scripts/gen-ui-sounds.ts",
     "frames": "bun scripts/capture-frames.ts",
+    "traces": "bun scripts/record-traces.ts",
     "frames:report": "bun scripts/frame-report.ts",
     "verify": "bun scripts/verify.ts",
     "check": "bun run typecheck && bun test && bun run build"

@@ -1,7 +1,8 @@
 // The scene the page opens on: a title menu (Continue / New game), an intro
 // that explains the game and its controls, then the arcade Game itself.
 // New game over an existing save asks first, since it deletes that save.
-// Esc in the hub opens a pause menu (Resume / Controls / Quit to menu).
+// Esc in the hub opens the hub pause menu (Resume / Controls / Quit to menu);
+// in a minigame the Game itself opens the minigame pause menu.
 // Title music plays until the Game starts; menus blip when the cursor moves
 // and chirp when a choice is made.
 //
@@ -204,8 +205,9 @@ export class Title implements Scene {
     for (const k of this.masked) input[k] = false;
     const wasInHub = game.inHub();
     game.step(input);
-    // A minigame just ended (game over or Esc): its score may be a new high.
-    if (!wasInHub && game.inHub()) this.persist();
+    // A cabinet start spent a token, or a minigame just ended (after its
+    // payout, or Quit game): save either way.
+    if (wasInHub !== game.inHub()) this.persist();
   }
 
   private resume(i: Input): void {
@@ -230,7 +232,7 @@ export class Title implements Scene {
 
   persist(): void {
     if (this.game === null) return;
-    this.saved = { v: 1, ...this.game.progress() };
+    this.saved = { v: 2, ...this.game.progress() };
     this.store.save(this.saved);
   }
 

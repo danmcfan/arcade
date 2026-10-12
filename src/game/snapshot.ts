@@ -1,5 +1,6 @@
-// Per-tick state snapshots (§4.3). THIS FILE IS THE CONTRACT: the Go golden
-// harness (T2) emits exactly these JSON keys, every porter's `snapshot()`
+// Per-tick state snapshots (§4.3). THIS FILE IS THE CONTRACT: the recorded
+// traces (Go-recorded, or re-recorded from the TS game with `bun run traces`)
+// hold exactly these JSON keys, every porter's `snapshot()`
 // returns exactly these keys, and `test/parity/harness.ts` diffs them
 // field for field. Do not add, rename or drop keys without updating all three.
 //
@@ -53,7 +54,17 @@ export interface ArcadeSnapshot {
   title: ArcadeTitle | null;
   /** `State.HighScore`. */
   highScore: number;
+  /** Tokens left (no Go original); 0 means the next cabinet start is free play. */
+  tokens: number;
+  /** Tickets won so far (no Go original). */
+  tickets: number;
 }
+
+/** How the running minigame was started (`RunKind` in src/arcade/state.ts). */
+export type RunKindSnapshot = "paid" | "free" | "direct";
+
+/** A menu the Game shows over a minigame: the minigame pause menu, its controls panel, or the payout. */
+export type GameMenu = "paused" | "controls" | "payout";
 
 export interface GameSnapshot extends SceneSnapshotBase {
   /** `Game.debugMode`. */
@@ -61,6 +72,14 @@ export interface GameSnapshot extends SceneSnapshotBase {
   /** Name of the active `Game.software` after the tick, or null in the hub. */
   software: SoftwareName | null;
   arcade: ArcadeSnapshot;
+  /** How the running minigame was started, or null in the hub (no Go original). */
+  run: RunKindSnapshot | null;
+  /** The menu over the minigame, or null (no Go original). */
+  menu: GameMenu | null;
+  /** Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME); 0 otherwise. */
+  cursor: number;
+  /** The payout while it shows, else null. */
+  payout: PayoutSnapshot | null;
   /** Snapshot of the active software (matches `software`), or null in the hub. */
   sw: SoftwareSnapshot | null;
   /**

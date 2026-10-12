@@ -1,7 +1,7 @@
 // Port of internal/arcade/state.go.
 
 import type { Software } from "../game/software.ts";
-import type { ArcadeTitle } from "../game/snapshot.ts";
+import type { ArcadeTitle, RunKindSnapshot } from "../game/snapshot.ts";
 import { newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
@@ -17,7 +17,7 @@ export const startingTokens = 5;
  * `game.New(software)` without the hub ("direct": the parity fixtures and
  * `?scene=game&software=`), which costs nothing and has no payout.
  */
-export type RunKind = "paid" | "free" | "direct";
+export type RunKind = RunKindSnapshot;
 
 export class State {
   player: Entity;
