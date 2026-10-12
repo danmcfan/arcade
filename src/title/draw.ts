@@ -5,7 +5,6 @@
 import { imageArcade, imageLogo } from "../engine/assets.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawKey, drawPanel, drawText, drawTextCentered, keyHeight, keyWidth, textWidth } from "../ui/text.ts";
-import { newGameIndex, titleMenu } from "./menus.ts";
 import type { Title } from "./title.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
@@ -90,13 +89,9 @@ function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
 }
 
-function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number, enabled: (i: number) => boolean): void {
+function drawMenuItems(screen: Surface, items: readonly string[], cursor: number, top: number): void {
   items.forEach((label, i) => {
     const y = top + i * 12;
-    if (!enabled(i)) {
-      drawTextCentered(screen, label, centre, y, "grey");
-      return;
-    }
     if (i !== cursor) {
       drawTextCentered(screen, label, centre, y, "white");
       return;
@@ -130,7 +125,7 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
   screen.draw(imageLogo, centre - Math.trunc(imageLogo.w / 2), 34);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, titleMenu, cursor, 88, (i) => i !== 0 || t.canContinue);
+  drawMenuItems(screen, t.menuItems(), cursor, 88);
   if (t.savedHighScore) drawTextCentered(screen, `HIGH SCORE ${t.savedHighScore}`, centre, 122, "orange");
 }
 
@@ -141,7 +136,7 @@ function drawMenu(screen: Surface, t: Title): void {
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
 function drawConfirm(screen: Surface, t: Title): void {
-  drawMenuBody(screen, t, newGameIndex);
+  drawMenuBody(screen, t, t.newGameIndex);
   screen.fillPremul(0, 0, screenWidth, screenHeight, dimColour);
   const w = 152;
   const h = 76;
@@ -149,7 +144,7 @@ function drawConfirm(screen: Surface, t: Title): void {
   const y = 40;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"));
-  drawMenuItems(screen, t.items(), t.cursor, y + 44, () => true);
+  drawMenuItems(screen, t.items(), t.cursor, y + 44);
   drawHints(screen, menuHints);
 }
 
@@ -190,7 +185,7 @@ function drawPause(screen: Surface, t: Title): void {
   const y = 56;
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "PAUSED", centre, y + 8, "yellow");
-  drawMenuItems(screen, t.items(), t.cursor, y + 22, () => true);
+  drawMenuItems(screen, t.items(), t.cursor, y + 22);
 }
 
 function drawControlsPanel(screen: Surface): void {

@@ -56,14 +56,14 @@ function atCabinet(): SaveData {
 }
 
 describe("title menu", () => {
-  test("opens on the menu; Continue is listed first but disabled and skipped without a save", () => {
+  test("without a save, only New game is listed and selected", () => {
     const t = new Title();
     expect(titleMenu).toEqual(["CONTINUE", "NEW GAME"]);
-    expect(t.snapshot()).toMatchObject({ phase: "menu", items: [...titleMenu], cursor: 1, canContinue: false, game: null });
+    expect(t.snapshot()).toMatchObject({ phase: "menu", items: ["NEW GAME"], cursor: 0, canContinue: false, game: null });
     tap(t, "down");
-    expect(t.cursor).toBe(1);
+    expect(t.cursor).toBe(0);
     tap(t, "up");
-    expect(t.cursor).toBe(1);
+    expect(t.cursor).toBe(0);
     expect(t.layout()).toEqual([192, 176]);
   });
 
@@ -92,7 +92,7 @@ describe("new game", () => {
     expect(t.phase).toBe("intro");
     t.step(NO_INPUT);
     tap(t, "escape");
-    expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1 });
+    expect(t.snapshot()).toMatchObject({ phase: "menu", items: ["NEW GAME"], cursor: 0 });
   });
 
   test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
@@ -316,14 +316,14 @@ describe("drawing", () => {
     }
   });
 
-  test("the menu draws the logo and tagline (no hub scene), and Continue in grey without a save", () => {
+  test("the menu draws the logo and tagline (no hub scene), and no Continue without a save", () => {
     const t = new Title();
     const r = recordingSurface();
     t.draw(r.surface);
     expect(r.sprites.map(([name]) => name)).toEqual(["logo"]);
     expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
-    expect(r.text("grey")).toBe("CONTINUE");
+    expect(r.text("white")).not.toContain("CONTINUE");
     expect(r.text("orange")).toBe("");
   });
 

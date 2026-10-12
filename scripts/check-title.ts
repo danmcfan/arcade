@@ -86,10 +86,10 @@ function hookChecks(): void {
   openHook();
 
   let s = snap();
-  check(s.phase === "menu" && s.items.join() === "CONTINUE,NEW GAME" && s.cursor === 1 && !s.canContinue, "opens on the title menu, Continue above New game, New game selected, no Continue", s);
+  check(s.phase === "menu" && s.items.join() === "NEW GAME" && s.cursor === 0 && !s.canContinue, "opens on the title menu with only New game, selected", s);
   frame("1-menu-new");
   tap("up");
-  check(snap().cursor === 1, "Up cannot select a disabled Continue");
+  check(snap().cursor === 0, "Up stays on New game");
 
   tap("space");
   check(snap().phase === "intro", "New game shows the intro");
