@@ -49,7 +49,7 @@ export interface ArcadeSnapshot {
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
   /**
-   * `State.imageTitle`: `assets.ImageTitleBrassMonkey` → "brassMonkey",
+   * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
    */
   title: ArcadeTitle | null;

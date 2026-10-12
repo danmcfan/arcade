@@ -88,8 +88,8 @@ scene's logical size at that tick (`Layout`), read back with `ReadPixels`
 and written as a normal non-premultiplied RGBA PNG. Pixels Go never draws
 are transparent (alpha 0), not black.
 
-- Sizes follow the layout: hub 192×176, hive, firefly and brassMonkey 336×428
-  (each plays inside its cabinet; firefly and brassMonkey were 256×320 and
+- Sizes follow the layout: hub 192×176, hive, firefly and Brass Monkey 336×428
+  (each plays inside its cabinet; firefly and Brass Monkey were 256×320 and
   256×288 in the Go capture, before #15), lumberjack 512×288, plus 120 px
   of width while debug mode is on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
   after Space with `gridSize` 64).
