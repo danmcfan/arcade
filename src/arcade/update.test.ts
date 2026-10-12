@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
-import { formatFloat0, newState, type State } from "./state.ts";
-import { update } from "./update.ts";
+import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
+import { startRun, update } from "./update.ts";
 
 const fakeFactory = (name: SoftwareName, highScore: number): Software =>
   ({ name, highScore }) as unknown as Software;
@@ -41,6 +41,49 @@ describe("newState", () => {
   test("the initial software is handed over as loadedSoftware", () => {
     const sw = fakeFactory("hive", 0);
     expect(newState(sw, fakeFactory).loadedSoftware).toBe(sw);
+  });
+});
+
+describe("tokens and tickets", () => {
+  test("a new hub starts with 5 tokens and 0 tickets", () => {
+    const s = newState(null, fakeFactory);
+    expect([s.tokens, s.tickets]).toEqual([startingTokens, 0]);
+    expect(startingTokens).toBe(5);
+  });
+
+  test("a cabinet start spends exactly 1 token and is a paid run", () => {
+    const s = newState(null, fakeFactory);
+    run(s, 31, { up: true });
+    update(s, input({ up: true, space: true }));
+    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.tokens).toBe(4);
+    expect(s.loadedRun).toBe("paid");
+  });
+
+  test("with 0 tokens the minigame still starts, as free play", () => {
+    const s = newState(null, fakeFactory);
+    s.tokens = 0;
+    run(s, 31, { up: true });
+    update(s, input({ up: true, space: true }));
+    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.tokens).toBe(0);
+    expect(s.loadedRun).toBe("free");
+  });
+
+  test("a minigame started directly (not at a cabinet) is outside the economy", () => {
+    const s = newState(fakeFactory("hive", 0), fakeFactory);
+    expect(s.loadedRun).toBe("direct");
+    expect(s.tokens).toBe(5);
+    expect(newState(null, fakeFactory).loadedRun).toBeNull();
+  });
+
+  test("startRun picks the kind of run and spends the token", () => {
+    const s = newState(null, fakeFactory);
+    s.tokens = 1;
+    expect(startRun(s)).toBe("paid");
+    expect(s.tokens).toBe(0);
+    expect(startRun(s)).toBe("free");
+    expect(s.tokens).toBe(0);
   });
 });
 

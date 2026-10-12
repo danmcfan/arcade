@@ -1,10 +1,10 @@
-// Port of internal/arcade/update.go.
+// Port of internal/arcade/update.go, plus the token a cabinet start costs.
 
 import { direction, moving, type Direction, type Input } from "../engine/input.ts";
 import { soundMelody } from "../engine/assets.ts";
 import { checkCollisions, type Rect } from "./collision.ts";
 import { findMachine } from "./machine.ts";
-import type { State } from "./state.ts";
+import type { RunKind, State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
   applyInput(s, i);
@@ -40,8 +40,18 @@ export function update(s: State, i: Input): void {
     soundMelody.pause();
     soundMelody.rewind();
 
+    s.loadedRun = startRun(s);
     s.loadedSoftware = machine.newSoftware(s.highScore);
   }
+}
+
+/** A cabinet start: spend a token, or play free when there are none. */
+export function startRun(s: State): RunKind {
+  if (s.tokens > 0) {
+    s.tokens--;
+    return "paid";
+  }
+  return "free";
 }
 
 function applyInput(s: State, i: Input): void {

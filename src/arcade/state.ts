@@ -8,6 +8,17 @@ import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
 
 export const tileSize = 8;
 
+/** Tokens a New game starts with. */
+export const startingTokens = 5;
+
+/**
+ * How the loaded minigame was started: at a cabinet for a token ("paid"),
+ * at a cabinet with no tokens ("free", free play), or straight from
+ * `game.New(software)` without the hub ("direct": the parity fixtures and
+ * `?scene=game&software=`), which costs nothing and has no payout.
+ */
+export type RunKind = "paid" | "free" | "direct";
+
 export class State {
   player: Entity;
   walls: Rect[];
@@ -18,14 +29,19 @@ export class State {
   imageTitle: ArcadeTitle | null = null;
   /** Go `LoadedSoftware`: picked up (and cleared) by the Game after each hub update. */
   loadedSoftware: Software | null;
+  /** How `loadedSoftware` was started; null when nothing was loaded yet. */
+  loadedRun: RunKind | null;
 
   highScore = 0;
+  tokens = startingTokens;
+  tickets = 0;
 
   constructor(initialSoftware: Software | null, factory: SoftwareFactory) {
     this.player = newPlayer();
     this.walls = newWalls();
     this.machines = newMachines(factory);
     this.loadedSoftware = initialSoftware;
+    this.loadedRun = initialSoftware === null ? null : "direct";
   }
 
   debugInfo(): string[] {
