@@ -36,7 +36,7 @@ describe("generated cabinets", () => {
       }
     });
 
-    test(`${c.name}: marquee is the title-art lettering, not Sweet Sam's`, () => {
+    test(`${c.name}: marquee is regenerated, not the hand-drawn Sweet Sam one's`, () => {
       const out = renderCabinet(c);
       const letter = c.palette.ffcd75!;
       let lit = 0;

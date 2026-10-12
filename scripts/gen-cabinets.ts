@@ -1,26 +1,32 @@
-// Build the Firefly and Brass Monkey cabinet strips from the Sweet Sam one:
+// Build every minigame's cabinet strip from the Sweet Sam one:
 //
-//   bun run art      # also writes src/assets/images/cabinet-<name>.png
+//   bun run art      # also writes the cabinet PNGs in src/assets/images
 //
-// Sources, in art/: cabinet.png's source cabinet.ase (Sweet Sam's strip,
-// exported to src/assets/images/cabinet.png) and cabinets.json (per cabinet
-// a palette map and the hub title art to letter its marquee with). Each strip
-// is cabinet.png with every colour swapped through the palette, and the
-// "SWEET SAM" marquee replaced by the title art's top line of lettering at 2x
-// with a one-pixel (2 px) drop shadow, like Sweet Sam's. Recolouring later
+// Sources, in art/: cabinet.png (Sweet Sam's strip, exported from
+// cabinet.ase) and cabinets.json (per cabinet its output file, a palette map,
+// and what to letter its marquee with). Each strip is art/cabinet.png with
+// every colour swapped through the palette, and the hand-drawn "SWEET SAM"
+// marquee replaced by lettering at 2x with a one-pixel (2 px) drop shadow:
+// the hub title art's top line (`title`), or `text` in the marquee letters of
+// src/ui/glyphs.ts for a name with no title art yet. Recolouring later
 // (#18, #19) means editing cabinets.json or the title art and rerunning.
 // gen-cabinets.test.ts fails when the committed PNGs drift from the sources.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
+import { marqueeGap, marqueeLetters } from "../src/ui/glyphs.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
 export interface CabinetSource {
-  /** Software name; the output is cabinet-<name>.png. */
+  /** Software name. */
   name: string;
+  /** Output file in src/assets/images. */
+  file: string;
   /** Hub title art in src/assets/images whose lettering goes on the marquee. */
-  title: string;
+  title?: string;
+  /** Marquee text in `marqueeLetters`, when there is no title art to letter it from. */
+  text?: string;
   /** Source colour (hex, no #) → replacement, for every colour in cabinet.png. */
   palette: Record<string, string>;
 }
@@ -45,11 +51,11 @@ const shadowColour = "ef7d57";
 const bodyColour = "b13e53";
 
 export function cabinetPath(c: CabinetSource): string {
-  return join(imagesDir, `cabinet-${c.name}.png`);
+  return join(imagesDir, c.file);
 }
 
 export function sourceCabinet(): PNG {
-  return PNG.sync.read(readFileSync(join(imagesDir, "cabinet.png")));
+  return PNG.sync.read(readFileSync(join(repoRoot, "art/cabinet.png")));
 }
 
 function hexAt(png: PNG, i: number): string {
@@ -72,8 +78,14 @@ export function colours(png: PNG): string[] {
   return [...out];
 }
 
+interface Lettering {
+  w: number;
+  h: number;
+  on: (x: number, y: number) => boolean;
+}
+
 /** The opaque pixels of the title art's top line of lettering, cropped to their bounds. */
-function titleLettering(file: string): { w: number; h: number; on: (x: number, y: number) => boolean } {
+function titleLettering(file: string): Lettering {
   const png = PNG.sync.read(readFileSync(join(imagesDir, file)));
   const lit = (x: number, y: number) => png.data[(y * png.width + x) * 4 + 3]! > 0;
   let [x0, y0, x1, y1] = [png.width, titleRows, -1, -1];
@@ -85,6 +97,24 @@ function titleLettering(file: string): { w: number; h: number; on: (x: number, y
   }
   if (x1 < 0) throw new Error(`${file}: no lettering in the top ${titleRows} rows`);
   return { w: x1 - x0 + 1, h: y1 - y0 + 1, on: (x, y) => lit(x0 + x, y0 + y) };
+}
+
+/** `text` set in `marqueeLetters`, `marqueeGap` apart. */
+function textLettering(text: string): Lettering {
+  const rows: string[] = [];
+  for (const [i, ch] of [...text].entries()) {
+    const glyph = marqueeLetters[ch];
+    if (glyph === undefined) throw new Error(`marquee text: no letter for ${JSON.stringify(ch)}`);
+    const w = glyph[0]!.length;
+    for (let y = 0; y < 15; y++) rows[y] = (rows[y] ?? "") + (i > 0 ? ".".repeat(marqueeGap) : "") + (glyph[y] ?? ".".repeat(w));
+  }
+  return { w: rows[0]!.length, h: rows.length, on: (x, y) => rows[y]![x] === "#" };
+}
+
+function lettering(c: CabinetSource): Lettering {
+  if (c.text !== undefined) return textLettering(c.text);
+  if (c.title !== undefined) return titleLettering(c.title);
+  throw new Error(`${c.name}: needs a title or text for its marquee`);
 }
 
 export function renderCabinet(c: CabinetSource): PNG {
@@ -106,7 +136,7 @@ export function renderCabinet(c: CabinetSource): PNG {
     }
   }
 
-  const word = titleLettering(c.title);
+  const word = lettering(c);
   const left = Math.trunc((frameWidth - (word.w + 1) * scale) / 2);
   const top = marqueeCentreY - Math.trunc(((word.h + 1) * scale) / 2);
   const frames = png.width / frameWidth;

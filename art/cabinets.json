@@ -1,14 +1,22 @@
 {
-  "about": "Cabinet strips recoloured from cabinet.png (exported from cabinet.ase) by `bun run art` (scripts/gen-cabinets.ts). palette maps each source colour to its Sweetie-16 replacement: 1a1c2c screen, b13e53 body, 5d275d joystick base, ffcd75 marquee letters and ball, ef7d57 letter shadow. The marquee is the lettering of `title` (the hub title art) at 2x. Colours are provisional until #18 and #19 settle the title art.",
+  "about": "Cabinet strips recoloured from cabinet.png (exported from cabinet.ase) by `bun run art` (scripts/gen-cabinets.ts). palette maps each source colour to its Sweetie-16 replacement: 1a1c2c screen, b13e53 body, 5d275d joystick base, ffcd75 marquee letters and ball, ef7d57 letter shadow. The marquee is lettered at 2x from `title` (the hub title art's top line) or from `text` (marqueeLetters in src/ui/glyphs.ts, for a name with no title art yet). Colours are provisional until #18 and #19 settle the title art.",
   "cabinets": [
     {
+      "name": "hive",
+      "file": "cabinet.png",
+      "title": "sweet.png",
+      "palette": { "1a1c2c": "1a1c2c", "b13e53": "b13e53", "5d275d": "5d275d", "ffcd75": "ffcd75", "ef7d57": "ef7d57" }
+    },
+    {
       "name": "firefly",
+      "file": "cabinet-firefly.png",
       "title": "firefly.png",
-      "palette": { "1a1c2c": "1a1c2c", "b13e53": "29366f", "5d275d": "3b5dc9", "ffcd75": "41a6f6", "ef7d57": "73eff7" }
+      "palette": { "1a1c2c": "1a1c2c", "b13e53": "3b5dc9", "5d275d": "29366f", "ffcd75": "73eff7", "ef7d57": "41a6f6" }
     },
     {
       "name": "gearhead",
-      "title": "gearhead.png",
+      "file": "cabinet-gearhead.png",
+      "text": "BRASS MONKEY",
       "palette": { "1a1c2c": "1a1c2c", "b13e53": "257179", "5d275d": "333c57", "ffcd75": "a7f070", "ef7d57": "38b764" }
     }
   ]
