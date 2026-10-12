@@ -1,5 +1,6 @@
 // Port of internal/gearhead/game.go.
 
+import * as draw from "../draw/draw.ts";
 import { imageGnome, imageWorkshop } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { direction, moving, type Input } from "../engine/input.ts";
@@ -9,16 +10,10 @@ import type { Software } from "../game/software.ts";
 
 const height = 256.0;
 
-/** Go `draw.Vector` (a value type). */
-interface Vector {
-  x: number;
-  y: number;
-}
-
 /** Go `entity`. */
 interface Entity {
   image: Sprite;
-  position: Vector;
+  position: draw.Vector;
   width: number;
   height: number;
   frame: number;
@@ -30,7 +25,7 @@ interface Entity {
 function newPlayer(): Entity {
   return {
     image: imageGnome,
-    position: { x: 16, y: height - 16 },
+    position: draw.newVector(16, height - 16),
     width: 16,
     height: 16,
     frame: 0,
@@ -74,9 +69,9 @@ export class GearheadSoftware implements Software {
 
     if (this.player.moving) {
       if (this.player.left) {
-        this.player.position = { x: this.player.position.x - 1, y: this.player.position.y - 0 };
+        this.player.position = draw.sub(this.player.position, draw.newVector(1, 0));
       } else {
-        this.player.position = { x: this.player.position.x + 1, y: this.player.position.y + 0 };
+        this.player.position = draw.add(this.player.position, draw.newVector(1, 0));
       }
     }
 
@@ -138,9 +133,9 @@ function drawPlayer(screen: Surface, player: Entity, buffer: number): void {
 
   const w = Math.trunc(player.width);
   const img = sub(player.image, frame * w, 0, (frame + 1) * w, Math.trunc(player.height));
-  const x = player.position.x + buffer - player.width / 2;
-  const y = player.position.y + buffer - player.height / 2;
+  let position = draw.add(player.position, draw.newVector(buffer, buffer));
+  position = draw.sub(position, draw.newVector(player.width / 2, player.height / 2));
 
   // Go: Scale(-1, 1), Translate(width, 0), then Translate(position).
-  screen.draw(img, x, y, player.left ? { flipX: true } : undefined);
+  screen.draw(img, position.x, position.y, player.left ? { flipX: true } : undefined);
 }
