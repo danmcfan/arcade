@@ -29,6 +29,8 @@ import gnomeUrl from "../assets/images/gnome.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
+import debugFontUrl from "./debugfont.png";
+
 import ljGrassUrl from "../lab/lumberjack/images/Tiles/Grass/Grass_1_Middle.png";
 import ljBaseUrl from "../lab/lumberjack/images/Player/Player_Base/Player_Base_animations.png";
 import ljHairUrl from "../lab/lumberjack/images/Player/Head/Hair_1/Hair_1_Brown.png";
@@ -106,6 +108,13 @@ export const imageGnome: Sprite = whole(images.gnome);
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
 
 /**
+ * Ebitengine's debug font (`ebitenutil/text.png`, Apache-2.0, see
+ * debugfont.LICENSE.txt): 6×16 glyphs indexed by code point. Drawn by
+ * `debugPrint` in text.ts (D14).
+ */
+export const debugFont: ImageAsset = asset(debugFontUrl, 192, 128);
+
+/**
  * The 9 lumberjack sheets Go draws, keyed by the path Go passes to
  * `NewSpritesheet` (relative to `internal/lumberjack/images/`).
  * `Trees/Oak_Leaf_Particle.png` is loaded by Go but never drawn: skipped.
@@ -128,6 +137,7 @@ export const allImages: readonly ImageAsset[] = [
   ...Object.values(images),
   waveThree,
   ...Object.values(lumberjackImages),
+  debugFont,
 ];
 
 /** Go `assets.SoundX` package variables. Only the melody loops. */
@@ -151,9 +161,23 @@ export const allSounds: readonly Sound[] = Object.values(sounds);
 
 /**
  * Browser only: decode every image (`await img.decode()`) and attach it to
- * its `ImageAsset.image` (D5, D12).
+ * its `ImageAsset.image` (D5, D12). Resolves once all are decoded; rejects
+ * naming the first URL that fails. `create` is a seam for tests.
  */
-export async function loadImages(list: readonly ImageAsset[] = allImages): Promise<void> {
-  void list;
-  throw new Error("TODO");
+export async function loadImages(
+  list: readonly ImageAsset[] = allImages,
+  create: () => HTMLImageElement = () => new Image(),
+): Promise<void> {
+  await Promise.all(
+    list.map(async (a) => {
+      const img = create();
+      img.src = a.url;
+      try {
+        await img.decode();
+      } catch (err) {
+        throw new Error(`loadImages: could not decode ${a.url}`, { cause: err });
+      }
+      a.image = img;
+    }),
+  );
 }
