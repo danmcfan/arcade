@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { arpeggio, bass, melody, type Note } from "../src/ui/sounds.ts";
-import { movePath, renderMove, renderSelect, renderTicket, renderTitle, selectPath, ticketPath, titlePath } from "./gen-ui-sounds.ts";
+import { denyPath, movePath, renderDeny, renderMove, renderSelect, renderTicket, renderTitle, selectPath, ticketPath, titlePath } from "./gen-ui-sounds.ts";
 
 const length = (notes: readonly Note[]) => notes.reduce((t, [, len]) => t + len, 0);
 
@@ -18,6 +18,7 @@ describe("committed WAVs match src/ui/sounds.ts (run `bun run sounds` after edit
     ["move.wav", movePath, renderMove],
     ["select.wav", selectPath, renderSelect],
     ["ticket.wav", ticketPath, renderTicket],
+    ["deny.wav", denyPath, renderDeny],
   ] as const) {
     test(name, () => {
       expect(Buffer.compare(readFileSync(path), render())).toBe(0);

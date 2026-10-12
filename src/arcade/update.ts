@@ -1,10 +1,12 @@
-// Port of internal/arcade/update.go, plus the token a cabinet start costs.
+// Port of internal/arcade/update.go, plus the token a cabinet start costs and
+// the prize counter (solid, opened with Space while facing it).
 
 import { direction, moving, type Direction, type Input } from "../engine/input.ts";
 import { soundMelody } from "../engine/assets.ts";
-import { checkCollisions, type Rect } from "./collision.ts";
+import { checkCollision, type Rect } from "./collision.ts";
+import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
-import type { RunKind, State } from "./state.ts";
+import { blocked, type RunKind, type State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
   applyInput(s, i);
@@ -43,6 +45,16 @@ export function update(s: State, i: Input): void {
     s.loadedRun = startRun(s);
     s.loadedSoftware = machine.newSoftware(s.highScore);
   }
+
+  if (i.space && facing(s.player, s.counter)) {
+    s.counterOpened = true;
+  }
+}
+
+/** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */
+export function facing(p: Entity, r: Rect): boolean {
+  const [x, y] = newPosition(p.x, p.y, p.direction, 1);
+  return checkCollision({ x: x - p.width / 2, y: y - p.height / 2, w: p.width, h: p.height }, r);
 }
 
 /** A cabinet start: spend a token, or play free when there are none. */
@@ -74,7 +86,7 @@ function updatePlayer(s: State): void {
     w: s.player.width,
     h: s.player.height,
   };
-  const collides = checkCollisions(newRect, s.walls);
+  const collides = blocked(s, newRect);
 
   if (!collides) {
     s.player.x = newX;

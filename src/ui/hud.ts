@@ -20,18 +20,19 @@ export function tokensLabel(tokens: number): string {
   return tokens > 0 ? `${tokens}` : "FREE PLAY";
 }
 
-function drawIcon(screen: Surface, name: IconName, x: number): void {
+/** A HUD icon with its top-left corner at `x, y`. */
+export function drawIcon(screen: Surface, name: IconName, x: number, y: number): void {
   const r = iconRects[name];
-  screen.draw(sub(imageIcons, r.x, 0, r.x + r.w, r.h), x, iconTop);
+  screen.draw(sub(imageIcons, r.x, 0, r.x + r.w, r.h), x, y);
 }
 
 /** Draw the counts across a hub `width` px wide. */
 export function drawHud(screen: Surface, tokens: number, tickets: number, width: number): void {
-  drawIcon(screen, "token", hudInset);
+  drawIcon(screen, "token", hudInset, iconTop);
   drawText(screen, tokensLabel(tokens), hudInset + iconRects.token.w + iconGap, hudTop, tokens > 0 ? "yellow" : "orange");
 
   const t = `${tickets}`;
   const tx = width - hudInset - textWidth(t);
   drawText(screen, t, tx, hudTop, "yellow");
-  drawIcon(screen, "ticket", tx - iconGap - iconRects.ticket.w);
+  drawIcon(screen, "ticket", tx - iconGap - iconRects.ticket.w, iconTop);
 }

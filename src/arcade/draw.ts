@@ -1,6 +1,6 @@
-// Port of internal/arcade/draw.go.
+// Port of internal/arcade/draw.go, plus the prize counter.
 
-import { imageArcade } from "../engine/assets.ts";
+import { imageArcade, imageCounter } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawDebugOverlay } from "./debug.ts";
@@ -9,6 +9,8 @@ import type { State } from "./state.ts";
 
 export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
   drawImage(screen, imageArcade, buffer, buffer);
+  // The player can't overlap the counter, so drawing it first is enough.
+  drawImage(screen, imageCounter, s.counter.x + buffer, s.counter.y + buffer);
 
   const player = s.player;
   const row = player.frameDirection[player.direction];

@@ -275,6 +275,42 @@ describe("minigames inside the title scene", () => {
   });
 });
 
+describe("prize counter inside the title scene", () => {
+  /** Continue from a save at the start position with these counts, then open the prize counter. */
+  function atCounter(store: SaveStore, tokens: number, tickets: number): Title {
+    store.save({ v: 2, highScore: 0, tokens, tickets, player: { x: 80, y: 92, dir: "DOWN" } });
+    const t = new Title({ store });
+    tap(t, "space"); // Continue
+    hold(t, { down: true }, 2);
+    tap(t, "space");
+    expect(game(t).menu).toBe("prizeCounter");
+    return t;
+  }
+
+  test("Esc closes the prize counter menu, not the hub pause menu; the next Esc pauses", () => {
+    const t = atCounter(spyStore(), 5, 0);
+    tap(t, "escape");
+    expect(t.phase).toBe("playing");
+    expect(game(t).menu).toBeNull();
+    tap(t, "escape");
+    expect(t.phase).toBe("paused");
+  });
+
+  test("a purchase saves at once, and Continue brings back the new counts", () => {
+    const store = spyStore();
+    const t = atCounter(store, 0, 7);
+    tap(t, "space");
+    expect(game(t).arcade).toMatchObject({ tokens: 1, tickets: 2 });
+    expect(store.load()).toMatchObject({ tokens: 1, tickets: 2 });
+    t.dispose();
+
+    const again = new Title({ store });
+    tap(again, "space"); // Continue
+    expect(game(again).arcade).toMatchObject({ tokens: 1, tickets: 2 });
+    again.dispose();
+  });
+});
+
 describe("sounds", () => {
   /** The sound calls made while `fn` runs. */
   function heard(fn: () => void): SoundEvent[] {

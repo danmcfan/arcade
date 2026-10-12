@@ -1,11 +1,12 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, counter.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. logo.png is "ARCADE" in the
 // title-card display font with a drop shadow. icons.png is the HUD icons from
-// src/ui/icons.ts. Each of `titleCards` is its hub title card with the top
+// src/ui/icons.ts. counter.png is the hub's prize counter from
+// src/ui/counterArt.ts. Each of `titleCards` is its hub title card with the top
 // line of lettering replaced by `text`. gen-ui-art.test.ts fails when the
 // committed PNGs no longer match the source.
 
@@ -33,6 +34,7 @@ import {
   titleCards,
   titleRows,
 } from "../src/ui/glyphs.ts";
+import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
 import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
@@ -103,6 +105,16 @@ export function renderIcons(): PNG {
   return png;
 }
 
+export function renderCounter(): PNG {
+  const png = blank(counterArt[0]!.length, counterArt.length);
+  counterArt.forEach((row, y) => {
+    [...row].forEach((px, x) => {
+      if (px !== ".") plot(png, x, y, counterPalette[px]!);
+    });
+  });
+  return png;
+}
+
 /** Title cards letter their name on rows 5..19; nothing else sits above row 21. */
 const titleTop = 5;
 const titleClearRows = 21;
@@ -127,16 +139,18 @@ export function renderTitleCard(card: (typeof titleCards)[number]): PNG {
 export const fontPath = join(repoRoot, "src/assets/images/font.png");
 export const logoPath = join(repoRoot, "src/assets/images/logo.png");
 export const iconsPath = join(repoRoot, "src/assets/images/icons.png");
+export const counterPath = join(repoRoot, "src/assets/images/counter.png");
 
 if (import.meta.main) {
   writeFileSync(fontPath, PNG.sync.write(renderFont()));
   writeFileSync(logoPath, PNG.sync.write(renderLogo()));
   writeFileSync(iconsPath, PNG.sync.write(renderIcons()));
+  writeFileSync(counterPath, PNG.sync.write(renderCounter()));
   for (const card of titleCards) {
     writeFileSync(titleCardPath(card.file), PNG.sync.write(renderTitleCard(card)));
     console.log(`wrote ${titleCardPath(card.file)} ("${card.text}")`);
   }
   console.log(
-    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) and ${iconsPath} (${iconSheetWidth}x${iconSheetHeight})`,
+    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}) and ${counterPath}`,
   );
 }

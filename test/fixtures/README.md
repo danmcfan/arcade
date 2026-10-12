@@ -102,7 +102,7 @@ What the capture ticks show:
 
 | Scenario | Ticks |
 |---|---|
-| `arcade-walk` | 1 hub start (token and ticket counts on top) · 41 hive cabinet title · 70 gearhead title · 359 firefly title · 390 debug panel + overlay · 410 debug + hive title · 432 hub after debug off |
+| `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 hive cabinet title · 70 gearhead title · 389 firefly title · 420 debug panel + overlay · 440 debug + hive title · 462 hub after debug off |
 | `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · Esc tick (minigame pause menu opens) · QUIT GAME selected (NO TICKETS) · hub after Quit game (1 token spent) |
 | `hive-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 7977 flashing bees · 9683 last FINALDEATHWAIT tick · 9684 hub after game over |
 | `hive-modes` | 3358 flashing bees (unshaken) |
@@ -136,7 +136,7 @@ reproduce every entry exactly.
 
 | Scenario | Scene | Seed | Ticks | Purpose |
 |---|---|---|---|---|
-| `arcade-walk` | hub | 1 | 432 | every wall face (top, left, bottom, right), all 3 cabinets approached facing Up (title + `play:melody`, then `pause:melody`/`rewind:melody`), Shift+P on (+120 px) and off, Esc in the hub (no-op) |
+| `arcade-walk` | hub | 1 | 462 | every wall face (top, left, bottom, right), the prize counter's left side (then round it), all 3 cabinets approached facing Up (title + `play:melody`, then `pause:melody`/`rewind:melody`), Shift+P on (+120 px) and off, Esc in the hub (no-op) |
 | `arcade-enter-gearhead` | hub | 1 | 442 | Up+Space at the cabinet (1 token), ~300 ticks inside, Esc opens the minigame pause menu (minigame sounds paused), Down, Down, Space: Quit game, back in the hub (layout change) |
 | `arcade-enter-hive` | hub | 1 | 418 | same for hive |
 | `arcade-enter-firefly` | hub | 1 | 442 | same for firefly |
@@ -150,7 +150,7 @@ reproduce every entry exactly.
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-39,144 ticks in total. The hive bot only picked inputs; the scripts replay
+39,174 ticks in total. The hive bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -220,6 +220,9 @@ Re-recorded from TypeScript so far:
 | `arcade-walk` (frame 70 only) | #15: the Brass Monkey hub title card reads BRASS MONKEY (`titleCards` in `src/ui/glyphs.ts`). The frame differs from the Go original only in those 1080 title pixels |
 | `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-gearhead`, `hive-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded |
 | `hive-fuzz-1`..`4`, `hive-clear`, `hive-modes`, `firefly-play`, `gearhead-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `hive-clear/9684` (the hub shows the counts) |
+| `arcade-walk` | #21: the prize counter stands on the bottom wall and is solid. The walk along the bottom wall now stops at the counter, goes up round it and comes back down to the bottom wall (the 110-tick Right step became Right 24, Up 16, Right 80, Down 20), so every capture after tick 70 moved 30 ticks later (359, 390, 410, 432 became 389, 420, 440, 462). Trace and every frame re-recorded |
+| `hive-fuzz-1`..`3` | #21: after game over the random walk in the hub runs into the prize counter. Traces re-recorded; inputs and frames unchanged |
+| `arcade-enter-*` (hub frame after Quit game), `hive-clear` (9684), `hive-highscore` (2943, 3158) | #21: hub frames show the prize counter. Only those frames were re-recorded; they differ from the old ones only in the counter's 556 pixels. Traces unchanged |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end

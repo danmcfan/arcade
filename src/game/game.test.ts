@@ -506,6 +506,125 @@ describe("payout", () => {
   });
 });
 
+describe("prize counter", () => {
+  /** A hub with these counts; the player walks down to the counter and presses Space. */
+  function atCounter(tokens: number, tickets: number) {
+    const g = newGame(null, { highScore: 0, tokens, tickets, player: { x: 80, y: 92, dir: "DOWN" } });
+    run(g.game, 2, { down: true });
+    g.game.step(input({ down: true, space: true }));
+    g.game.step(input());
+    return g;
+  }
+  function wallet(game: Game) {
+    const a = snap(game).arcade;
+    return { tokens: a.tokens, tickets: a.tickets };
+  }
+
+  test("Space facing the counter opens its menu over the hub", () => {
+    const { game, built } = newGame();
+    run(game, 2, { down: true });
+    const sounds = heard(game, () => game.step(input({ space: true })));
+    const s = snap(game);
+    expect(s.menu).toBe("prizeCounter");
+    expect(s.cursor).toBe(0);
+    expect(s.software).toBeNull();
+    expect(s.run).toBeNull();
+    expect(built).toEqual([]);
+    expect(game.inHub()).toBe(false);
+    expect(game.layout()).toEqual([192, 176]);
+    expect(sounds).toEqual(["rewind:select", "play:select"]);
+  });
+
+  test("Space elsewhere in the hub does not open it", () => {
+    const { game } = newGame();
+    game.step(input({ space: true }));
+    run(game, 20, { left: true });
+    game.step(input({ space: true }));
+    expect(snap(game).menu).toBeNull();
+  });
+
+  test("the hub stands still while the menu is open", () => {
+    const { game } = atCounter(5, 0);
+    const before = snap(game).arcade.player;
+    run(game, 10, { left: true });
+    expect(snap(game).arcade.player).toEqual(before);
+  });
+
+  test("Esc closes it and the hub carries on", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "escape");
+    expect(snap(game).menu).toBeNull();
+    expect(game.inHub()).toBe(true);
+    game.step(input({ left: true }));
+    expect(snap(game).arcade.player.x).toBe(79);
+  });
+
+  test("CLOSE closes it, and the Space that chose it does not open it again", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(1);
+    run(game, 5, { space: true });
+    expect(snap(game).menu).toBeNull();
+    expect(snap(game).cursor).toBe(0);
+    game.step(input());
+    game.step(input({ space: true }));
+    expect(snap(game).menu).toBe("prizeCounter");
+  });
+
+  test("Up and Down move the cursor round the two items with the move blip", () => {
+    const { game } = atCounter(5, 0);
+    const sounds = heard(game, () => tap(game, "up"));
+    expect(snap(game).cursor).toBe(1);
+    expect(sounds).toEqual(["rewind:move", "play:move"]);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(0);
+  });
+
+  test("with 5 or more tickets, Space buys a token for 5 and the counts update at once", () => {
+    const { game } = atCounter(2, 12);
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(wallet(game)).toEqual({ tokens: 3, tickets: 7 });
+    expect(sounds).toEqual(["rewind:select", "play:select"]);
+    expect(snap(game).menu).toBe("prizeCounter");
+    tap(game, "space");
+    expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
+    expect(game.progress()).toMatchObject({ tokens: 4, tickets: 2 });
+  });
+
+  test("with tokens left and too few tickets, Space gives the no sound and buys nothing", () => {
+    const { game } = atCounter(4, 2);
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
+    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+    expect(snap(game).menu).toBe("prizeCounter");
+  });
+
+  test("with 0 tokens and too few tickets, the last-chance token takes all the tickets", () => {
+    const { game } = atCounter(0, 3);
+    tap(game, "space");
+    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
+    // Now there is a token and too few tickets: no second one.
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
+    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+  });
+
+  test("the last-chance token is sold even for 0 tickets", () => {
+    const { game } = atCounter(0, 0);
+    tap(game, "space");
+    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
+  });
+
+  test("a bought token pays for the next cabinet start", () => {
+    const { game } = atCounter(0, 5);
+    tap(game, "space");
+    tap(game, "escape");
+    run(game, 40, { up: true });
+    game.step(input({ up: true, space: true }));
+    expect(snap(game)).toMatchObject({ software: "hive", run: "paid", arcade: { tokens: 0, tickets: 0 } });
+  });
+});
+
 describe("progress", () => {
   test("carries tokens and tickets, and restore brings them back", () => {
     const { game } = newGame();
@@ -514,6 +633,11 @@ describe("progress", () => {
     const restored = new Game(null, { createSoftware: fakes().factory, restore: { highScore: 9, tokens: 2, tickets: 31, player: { x: 80, y: 92, dir: "UP" } } });
     games.push(restored);
     expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
+  });
+
+  test("a saved position inside the prize counter keeps the start position", () => {
+    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 100, dir: "LEFT" } });
+    expect(snap(game).arcade.player).toMatchObject({ x: 80, y: 92, dir: "LEFT" });
   });
 });
 

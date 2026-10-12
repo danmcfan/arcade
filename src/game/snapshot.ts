@@ -63,8 +63,11 @@ export interface ArcadeSnapshot {
 /** How the running minigame was started (`RunKind` in src/arcade/state.ts). */
 export type RunKindSnapshot = "paid" | "free" | "direct";
 
-/** A menu the Game shows over a minigame: the minigame pause menu, its controls panel, or the payout. */
-export type GameMenu = "paused" | "controls" | "payout";
+/**
+ * A menu the Game shows: over a minigame, the minigame pause menu, its
+ * controls panel or the payout; over the hub, the prize counter menu.
+ */
+export type GameMenu = "paused" | "controls" | "payout" | "prizeCounter";
 
 export interface GameSnapshot extends SceneSnapshotBase {
   /** `Game.debugMode`. */
@@ -74,12 +77,13 @@ export interface GameSnapshot extends SceneSnapshotBase {
   arcade: ArcadeSnapshot;
   /** How the running minigame was started, or null in the hub (no Go original). */
   run: RunKindSnapshot | null;
-  /** The menu over the minigame, or null (no Go original). */
+  /** The menu over the minigame or the hub, or null (no Go original). */
   menu: GameMenu | null;
   /**
-   * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME).
-   * Stays 1 (CONTROLS) while its controls panel shows; 0 in the hub, the
-   * running minigame and the payout.
+   * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
+   * or the prize counter menu (the token, CLOSE). Stays 1 (CONTROLS) while
+   * the controls panel shows; 0 in the hub, the running minigame and the
+   * payout.
    */
   cursor: number;
   /** The payout while it shows, else null. */

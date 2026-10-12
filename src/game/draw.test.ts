@@ -148,12 +148,14 @@ const red = { r: 255, g: 0, b: 0, a: 64 };
 const yellow = { r: 255, g: 255, b: 0, a: 64 };
 
 describe("hub draw", () => {
-  test("background at the 16 px buffer, then the player frame centred on its position", () => {
+  test("background at the 16 px buffer, the prize counter, then the player frame centred on its position", () => {
     const game = newGame();
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
+      // On the bottom wall, centred: counterRect (60, 106) + the buffer.
+      ["draw", "counter", 0, 0, 40, 14, 76, 122],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "gamer", 0, 24, 16, 24, 88, 96],
     ]);
@@ -164,7 +166,7 @@ describe("hub draw", () => {
     for (let t = 0; t < 25; t++) game.step(input({ left: true })); // frame 2.5, x 55
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[1]).toEqual(["draw", "gamer", 32, 48, 16, 24, 63, 96]);
+    expect(calls[2]).toEqual(["draw", "gamer", 32, 48, 16, 24, 63, 96]);
   });
 
   test("the title is drawn over everything while the melody plays", () => {
@@ -172,8 +174,8 @@ describe("hub draw", () => {
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[2]).toEqual(["draw", "sweet", 0, 0, 160, 144, 16, 16]);
-    expect(calls.length).toBe(3);
+    expect(calls[3]).toEqual(["draw", "sweet", 0, 0, 160, 144, 16, 16]);
+    expect(calls.length).toBe(4);
   });
 
   test("debug mode adds the overlay rects and the side panel", () => {
@@ -181,7 +183,7 @@ describe("hub draw", () => {
     game.step(input({ shiftP: true }));
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls.slice(2)).toEqual([
+    expect(calls.slice(3)).toEqual([
       ["strokeRect", 88, 96, 15, 23, green],
       ["strokeRect", 16, 16, 159, 47, red],
       ["strokeRect", 16, 64, 23, 71, red],
@@ -190,6 +192,7 @@ describe("hub draw", () => {
       ["strokeRect", 64, 56, 15, 15, yellow],
       ["strokeRect", 88, 56, 15, 15, yellow],
       ["strokeRect", 112, 56, 15, 15, yellow],
+      ["strokeRect", 76, 122, 39, 13, yellow],
       ["fillPremul", 192, 0, 120, 176, { r: 20, g: 20, b: 20, a: 200 }],
     ]);
     expect(printed).toEqual([["Player: (80,92)", 200, 8]]);
@@ -364,5 +367,48 @@ describe("menus over a minigame", () => {
     game.draw(r.surface);
     expect(r.text("orange")).toBe("FREE PLAY: 0 TICKETS");
     expect(r.text("white")).toBe("SCORE1420SPACEOK");
+  });
+});
+
+describe("prize counter menu", () => {
+  function atCounter(tokens: number, tickets: number): Game {
+    const g = new Game(null, { createSoftware: factory, debugPrint, restore: { highScore: 0, tokens, tickets, player: { x: 80, y: 92, dir: "DOWN" } } });
+    games.push(g);
+    for (let t = 0; t < 2; t++) g.step(input({ down: true }));
+    g.step(input({ space: true }));
+    g.step(input());
+    return g;
+  }
+
+  test("dims the hub image, not the counts, and lists the tickets, the token and CLOSE", () => {
+    const r = recordingSurface();
+    atCounter(2, 12).draw(r.surface);
+    expect(r.dimmed()).toEqual([16, 16, 160, 144]);
+    // HUD 2 and 12, the title, the selected token, the ticket count in the panel.
+    expect(r.text("yellow")).toBe("212PRIZE COUNTER12>TOKEN: 5 TICKETS<");
+    expect(r.text("white")).toBe("CLOSESPACEESCOKBACK") // key caps sit 1 px above their labels;
+    expect(r.text("grey")).toBe("");
+    expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket", "ticket"]);
+  });
+
+  test("a bought token shows in the HUD at once", () => {
+    const game = atCounter(2, 12);
+    game.step(input({ space: true }));
+    const r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.text("yellow").startsWith("37PRIZE COUNTER7")).toBe(true);
+  });
+
+  test("with 0 tokens and too few tickets the token item is the last-chance token", () => {
+    const r = recordingSurface();
+    atCounter(0, 3).draw(r.surface);
+    expect(r.text("yellow")).toContain(">LAST CHANCE: ALL TICKETS<");
+  });
+
+  test("with tokens left and too few tickets the token item is greyed out", () => {
+    const r = recordingSurface();
+    atCounter(1, 3).draw(r.surface);
+    expect(r.text("grey")).toBe("TOKEN: 5 TICKETS");
+    expect(r.text("yellow")).toBe("13PRIZE COUNTER3><");
   });
 });
