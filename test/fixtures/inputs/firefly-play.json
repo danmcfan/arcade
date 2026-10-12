@@ -1,0 +1,16 @@
+{"name":"firefly-play","scene":"game","software":"firefly","seed":1,"captureTicks":[1,60,360,685,1098,1401],"steps": [
+  {"ticks":1,"input":{}},
+  {"ticks":60,"input":{"left":true,"space":true}},
+  {"ticks":120,"input":{"right":true,"space":true}},
+  {"ticks":60,"input":{"left":true,"space":true}},
+  {"ticks":90,"input":{"space":true}},
+  {"ticks":110,"input":{"left":true,"space":true}},
+  {"ticks":200,"input":{"space":true}},
+  {"ticks":100,"input":{"right":true,"space":true}},
+  {"ticks":60,"input":{"left":true,"space":true}},
+  {"ticks":120,"input":{"right":true,"space":true}},
+  {"ticks":80,"input":{"space":true}},
+  {"ticks":150,"input":{"left":true,"space":true}},
+  {"ticks":200,"input":{"space":true}},
+  {"ticks":150,"input":{"right":true,"space":true}}
+]}
