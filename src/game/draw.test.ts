@@ -6,6 +6,7 @@ import type { PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
+import { keyHeight, keyWidth } from "../ui/text.ts";
 import { Game } from "./game.ts";
 import type { GearheadSnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
@@ -157,7 +158,7 @@ describe("hub draw", () => {
       // On the bottom wall, centred: counterRect (60, 106) + the buffer.
       ["draw", "counter", 0, 0, 40, 14, 76, 122],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
-      ["draw", "gamer", 0, 24, 16, 24, 88, 96],
+      ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
   });
 
@@ -166,7 +167,7 @@ describe("hub draw", () => {
     for (let t = 0; t < 25; t++) game.step(input({ left: true })); // frame 2.5, x 55
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[2]).toEqual(["draw", "gamer", 32, 48, 16, 24, 63, 96]);
+    expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
   test("the title is drawn over everything while the melody plays", () => {
@@ -206,6 +207,52 @@ describe("hub draw", () => {
     const second = recordingSurface();
     game.draw(second.surface);
     expect(second.calls).toEqual(first.calls);
+  });
+});
+
+describe("use prompt", () => {
+  /** Where the SPACE key cap's first letter lands for a key cap at hub-image (x, y). */
+  const capText = (x: number, y: number) => ({ x: x + 16 + 3, y: y + 16 + 1 });
+  /** Top-left of the white SPACE label, or null when no use prompt (or other SPACE key cap) is drawn. */
+  function promptAt(game: Game, hubPaused = false): { x: number; y: number } | null {
+    const r = recordingSurface();
+    game.draw(r.surface, hubPaused);
+    const s = r.glyphs.find((g) => g.ch === "S" && g.ink === "white");
+    expect(r.text("white")).toBe(s === undefined ? "" : "SPACE");
+    return s === undefined ? null : { x: s.x, y: s.y };
+  }
+  const centred = (x: number, w: number) => x + Math.trunc((w - keyWidth("SPACE")) / 2);
+
+  test("none at the start position", () => {
+    expect(promptAt(newGame())).toBeNull();
+  });
+
+  test("a SPACE key cap above the cabinet the player faces, bobbing, with its title", () => {
+    const game = newGame();
+    for (let t = 0; t < 30; t++) game.step(input({ up: true })); // tick 30, y 62: at the Sweet Sam cabinet
+    expect(game.snapshot().arcade.title).toBe("sweet");
+    // The Sweet Sam cabinet's rect is (72, 40, 16, 16); ticks 20..39 are the bob's raised half.
+    expect(promptAt(game)).toEqual(capText(centred(72, 16), 40 - keyHeight - 2 - 1));
+    for (let t = 0; t < 10; t++) game.step(input()); // tick 40: back down
+    expect(promptAt(game)).toEqual(capText(centred(72, 16), 40 - keyHeight - 2));
+  });
+
+  test("on the front of the prize counter while facing it", () => {
+    const game = newGame();
+    for (let t = 0; t < 2; t++) game.step(input({ down: true })); // tick 2, y 94
+    expect(promptAt(game)).toEqual(capText(centred(60, 40), 106 + 14 - keyHeight));
+  });
+
+  test("hidden while the prize counter menu or the hub pause menu covers the hub", () => {
+    const game = newGame();
+    for (let t = 0; t < 2; t++) game.step(input({ down: true }));
+    expect(promptAt(game, true)).toBeNull();
+    game.step(input({ space: true }));
+    expect(game.snapshot().menu).toBe("prizeCounter");
+    const r = recordingSurface();
+    game.draw(r.surface);
+    // Only the menu's own hint key caps: CLOSE, then SPACE ESC (OK / BACK).
+    expect(r.text("white")).toBe("CLOSESPACEESCOKBACK");
   });
 });
 

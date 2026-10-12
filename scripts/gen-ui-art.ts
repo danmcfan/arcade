@@ -1,12 +1,14 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, counter.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, counter.png, arcade.png, player.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. logo.png is "ARCADE" in the
 // title-card display font with a drop shadow. icons.png is the HUD icons from
 // src/ui/icons.ts. counter.png is the hub's prize counter from
-// src/ui/counterArt.ts. Each of `titleCards` is its hub title card with the top
+// src/ui/counterArt.ts. arcade.png is the hub room with its cabinets
+// (src/ui/hubArt.ts) and player.png the player's sprite sheet
+// (src/ui/playerArt.ts). Each of `titleCards` is its hub title card with the top
 // line of lettering replaced by `text`. gen-ui-art.test.ts fails when the
 // committed PNGs no longer match the source.
 
@@ -34,7 +36,10 @@ import {
   titleCards,
   titleRows,
 } from "../src/ui/glyphs.ts";
+import { newMachines } from "../src/arcade/machine.ts";
 import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
+import { hubPalette, roomRows } from "../src/ui/hubArt.ts";
+import { playerPalette, playerSheetRows } from "../src/ui/playerArt.ts";
 import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
@@ -105,14 +110,35 @@ export function renderIcons(): PNG {
   return png;
 }
 
-export function renderCounter(): PNG {
-  const png = blank(counterArt[0]!.length, counterArt.length);
-  counterArt.forEach((row, y) => {
+/** Rows of palette letters (`.` is blank) as an image. */
+function renderRows(rows: readonly string[], palette: Readonly<Record<string, string>>): PNG {
+  const png = blank(rows[0]!.length, rows.length);
+  rows.forEach((row, y) => {
     [...row].forEach((px, x) => {
-      if (px !== ".") plot(png, x, y, counterPalette[px]!);
+      if (px !== ".") plot(png, x, y, palette[px]!);
     });
   });
   return png;
+}
+
+export function renderCounter(): PNG {
+  return renderRows(counterArt, counterPalette);
+}
+
+/** The hub room, its cabinets where the hub's machines stand. */
+export function hubRoomRows(): string[] {
+  const machines = newMachines(() => {
+    throw new Error("the room art builds no software");
+  });
+  return roomRows(machines.map((m) => ({ title: m.title, rect: m.rect })));
+}
+
+export function renderRoom(): PNG {
+  return renderRows(hubRoomRows(), hubPalette);
+}
+
+export function renderPlayer(): PNG {
+  return renderRows(playerSheetRows(), playerPalette);
 }
 
 /** Title cards letter their name on rows 5..19; nothing else sits above row 21. */
@@ -140,17 +166,21 @@ export const fontPath = join(repoRoot, "src/assets/images/font.png");
 export const logoPath = join(repoRoot, "src/assets/images/logo.png");
 export const iconsPath = join(repoRoot, "src/assets/images/icons.png");
 export const counterPath = join(repoRoot, "src/assets/images/counter.png");
+export const roomPath = join(repoRoot, "src/assets/images/arcade.png");
+export const playerPath = join(repoRoot, "src/assets/images/player.png");
 
 if (import.meta.main) {
   writeFileSync(fontPath, PNG.sync.write(renderFont()));
   writeFileSync(logoPath, PNG.sync.write(renderLogo()));
   writeFileSync(iconsPath, PNG.sync.write(renderIcons()));
   writeFileSync(counterPath, PNG.sync.write(renderCounter()));
+  writeFileSync(roomPath, PNG.sync.write(renderRoom()));
+  writeFileSync(playerPath, PNG.sync.write(renderPlayer()));
   for (const card of titleCards) {
     writeFileSync(titleCardPath(card.file), PNG.sync.write(renderTitleCard(card)));
     console.log(`wrote ${titleCardPath(card.file)} ("${card.text}")`);
   }
   console.log(
-    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}) and ${counterPath}`,
+    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}), ${counterPath}, ${roomPath} and ${playerPath}`,
   );
 }

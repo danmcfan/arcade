@@ -56,12 +56,12 @@ export function draw(screen: Surface, t: Title): void {
       t.game!.draw(screen);
       return;
     case "paused":
-      t.game!.draw(screen);
+      t.game!.draw(screen, true);
       dimHub(screen);
       drawPausePanel(screen, t.items(), t.cursor, t.tick, centre, 56);
       return;
     case "controls":
-      t.game!.draw(screen);
+      t.game!.draw(screen, true);
       dimHub(screen);
       drawControlsPanel(screen, controls, 4, 40);
       return;

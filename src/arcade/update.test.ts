@@ -4,7 +4,10 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import { counterRect } from "./prizeCounter.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
-import { startRun, update } from "./update.ts";
+import { startRun, update, useTarget } from "./update.ts";
+import type { Direction } from "../engine/input.ts";
+import { usePrompt, usePromptBobTicks } from "./draw.ts";
+import { keyHeight, keyWidth } from "../ui/text.ts";
 
 const fakeFactory = (name: SoftwareName, highScore: number): Software =>
   ({ name, highScore }) as unknown as Software;
@@ -283,6 +286,110 @@ describe("prize counter", () => {
     run(s, 30, { up: true });
     update(s, input({ space: true }));
     expect(s.counterOpened).toBe(false);
+  });
+});
+
+describe("use prompt", () => {
+  /** A hub with the player placed at (x, y), facing `dir`. */
+  function at(x: number, y: number, dir: Direction): State {
+    const s = newState(null, fakeFactory);
+    Object.assign(s.player, { x, y, direction: dir });
+    return s;
+  }
+  const directions: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
+  /** Below each cabinet, as close as the top wall allows (the player rect overlaps the cabinet's). */
+  const cabinets = [
+    { title: "gearhead", x: 56 },
+    { title: "sweet", x: 80 },
+    { title: "firefly", x: 104 },
+  ] as const;
+
+  test("shows facing up while touching each cabinet, above that cabinet", () => {
+    for (const c of cabinets) {
+      for (const y of [60, 67]) {
+        const s = at(c.x, y, "UP");
+        const target = useTarget(s);
+        expect(target !== null && target !== "counter" ? target.title : target).toBe(c.title);
+        const m = s.machines.find((m) => m.title === c.title)!;
+        expect(usePrompt(s, 0)).toEqual({
+          x: m.rect.x + Math.trunc((m.rect.w - keyWidth("SPACE")) / 2),
+          y: m.rect.y - keyHeight - 2,
+        });
+      }
+    }
+  });
+
+  test("does not show at a cabinet facing any other way, or one pixel out of reach", () => {
+    for (const c of cabinets) {
+      for (const dir of directions.filter((d) => d !== "UP")) expect(usePrompt(at(c.x, 60, dir), 0)).toBeNull();
+      expect(usePrompt(at(c.x, 68, "UP"), 0)).toBeNull();
+    }
+  });
+
+  test("shows facing and touching the prize counter from above and from either side, on the counter", () => {
+    const r = counterRect;
+    const want = { x: r.x + Math.trunc((r.w - keyWidth("SPACE")) / 2), y: r.y + r.h - keyHeight };
+    for (const [x, y, dir] of [
+      [80, 94, "DOWN"],
+      [53, 94, "DOWN"],
+      [107, 94, "DOWN"],
+      [52, 108, "RIGHT"],
+      [108, 108, "LEFT"],
+    ] as const) {
+      const s = at(x, y, dir);
+      expect(useTarget(s)).toBe("counter");
+      expect(usePrompt(s, 0)).toEqual(want);
+    }
+  });
+
+  test("does not show next to the counter facing away, or one pixel short of it", () => {
+    for (const [x, y, dir] of [
+      [80, 94, "UP"],
+      [80, 94, "LEFT"],
+      [52, 108, "LEFT"],
+      [52, 108, "DOWN"],
+      [108, 108, "RIGHT"],
+      [80, 93, "DOWN"],
+      [51, 108, "RIGHT"],
+      [109, 108, "LEFT"],
+      [52, 94, "DOWN"],
+    ] as const) {
+      expect(usePrompt(at(x, y, dir), 0)).toBeNull();
+    }
+  });
+
+  test("does not show at the start position", () => {
+    expect(usePrompt(newState(null, fakeFactory), 0)).toBeNull();
+  });
+
+  test("bobs up 1 px for every other stretch of usePromptBobTicks ticks", () => {
+    const s = at(80, 60, "UP");
+    const y = (tick: number) => usePrompt(s, tick)!.y;
+    expect([y(0), y(usePromptBobTicks - 1), y(usePromptBobTicks), y(2 * usePromptBobTicks - 1), y(2 * usePromptBobTicks)]).toEqual([
+      y(0),
+      y(0),
+      y(0) - 1,
+      y(0) - 1,
+      y(0),
+    ]);
+  });
+
+  test("everywhere on the floor, it shows exactly where Space would use something", () => {
+    let shown = 0;
+    for (let y = 60; y <= 108; y++) {
+      for (let x = 32; x <= 128; x++) {
+        for (const dir of directions) {
+          const s = at(x, y, dir);
+          if (s.player.y + 12 > counterRect.y && s.player.x + 8 > counterRect.x && s.player.x - 8 < counterRect.x + counterRect.w) continue; // inside the counter
+          const prompt = usePrompt(s, 0) !== null;
+          update(s, input({ space: true }));
+          const used = s.loadedSoftware !== null || s.counterOpened;
+          if (prompt !== used) throw new Error(`prompt ${prompt} but Space ${used ? "uses" : "does nothing"} at (${x}, ${y}) facing ${dir}`);
+          if (prompt) shown++;
+        }
+      }
+    }
+    expect(shown).toBeGreaterThan(0);
   });
 });
 

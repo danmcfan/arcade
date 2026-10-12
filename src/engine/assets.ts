@@ -7,7 +7,7 @@ import { whole, type ImageAsset, type Sprite } from "./image.ts";
 import { Sound } from "./audio.ts";
 
 import arcadeUrl from "../assets/images/arcade.png";
-import gamerUrl from "../assets/images/gamer.png";
+import playerUrl from "../assets/images/player.png";
 import fireflyUrl from "../assets/images/firefly.png";
 import gearheadUrl from "../assets/images/gearhead.png";
 import sweetUrl from "../assets/images/sweet.png";
@@ -65,8 +65,11 @@ function asset(url: string, width: number, height: number): ImageAsset {
 
 /** Every arcade image, keyed by its file name in internal/assets/images. */
 export const images = {
+  // The hub room and the player's sheet; generated from src/ui/hubArt.ts and
+  // src/ui/playerArt.ts by `bun run art`.
   arcade: asset(arcadeUrl, 160, 144),
-  gamer: asset(gamerUrl, 64, 96),
+  player: asset(playerUrl, 64, 96),
+
   firefly: asset(fireflyUrl, 160, 144),
   gearhead: asset(gearheadUrl, 160, 144),
   sweet: asset(sweetUrl, 160, 144),
@@ -102,7 +105,7 @@ export const images = {
 
 // Go `assets.ImageX` package variables, as whole-image sprites.
 export const imageArcade: Sprite = whole(images.arcade);
-export const imageGamer: Sprite = whole(images.gamer);
+export const imagePlayer: Sprite = whole(images.player);
 export const imageTitleFirefly: Sprite = whole(images.firefly);
 export const imageTitleGearhead: Sprite = whole(images.gearhead);
 export const imageTitleSweet: Sprite = whole(images.sweet);
