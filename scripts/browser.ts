@@ -1,5 +1,5 @@
-// agent-browser driver shared by the browser scripts (capture-frames.ts,
-// check-title.ts). Each script uses its own named session.
+// agent-browser driver shared by the browser scripts (harness.ts,
+// capture-frames.ts). Each script uses its own named session.
 
 export interface Browser {
   /** Run an agent-browser command in this session; returns stdout. */

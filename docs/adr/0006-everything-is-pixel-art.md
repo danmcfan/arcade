@@ -1,0 +1,3 @@
+# Everything on screen is pixel art, generated from source in the repo
+
+Every visual in the game is pixel art at logical resolution, including all text: no `fillText`, no web fonts, no vector UI. The UI font and the logo are drawn as ASCII grids in `src/ui/glyphs.ts`, and `bun run art` turns them into PNGs. The music and sound effects are chiptune written as notes in `src/ui/sounds.ts`, and `bun run sounds` synthesises them into WAVs. The generated PNGs and WAVs are committed, and tests fail if they drift from their source. This keeps the style consistent and lets an agent change art and audio by editing text. The engine's debug font (D14) is the one exception, and it only appears in debug mode.
