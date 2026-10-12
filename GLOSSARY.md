@@ -32,6 +32,26 @@ _Avoid_: hive (in player-facing text), bear game
 The Galaga-style shooter: a firefly fighting off the insects and birds that try to eat it.
 _Avoid_: galaxy, space shooter
 
+**Stage**:
+One group of Firefly enemies that flies in and attacks. The next stage starts when the player kills them all, and each stage is harder.
+_Avoid_: wave, level, round
+
+**Spark**:
+The light the firefly shoots at enemies.
+_Avoid_: bullet, laser, shot (for the firefly's)
+
+**Moth**:
+The basic Firefly enemy. One hit kills it.
+_Avoid_: bug, bee, grunt
+
+**Wasp**:
+The Firefly enemy that dives at the firefly most often. One hit kills it.
+_Avoid_: butterfly, diver
+
+**Owl**:
+The large Firefly enemy, a bird that swoops down to eat the firefly. Two hits kill it.
+_Avoid_: boss, bird (when the Owl is meant)
+
 **Brass Monkey**:
 The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `gearhead` until it is renamed.
 _Avoid_: gearhead (in player-facing text), gnome game
