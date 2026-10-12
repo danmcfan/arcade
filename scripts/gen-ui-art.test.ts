@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
-import { glyphHeight, glyphs, logoLetters } from "../src/ui/glyphs.ts";
-import { fontPath, logoPath, renderFont, renderLogo } from "./gen-ui-art.ts";
+import { glyphHeight, glyphs, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
+import { fontPath, logoPath, renderFont, renderLogo, renderTitleCard, titleCardPath } from "./gen-ui-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
@@ -23,13 +23,26 @@ describe("UI art source", () => {
       });
     }
   });
+
+  test("every title letter is 11x15 (the space only sets a width)", () => {
+    for (const [ch, rows] of Object.entries(titleLetters)) {
+      if (ch === " ") continue;
+      expect({ ch, rows: rows.length, widths: [...new Set(rows.map((r) => r.length))] }).toEqual({
+        ch,
+        rows: 15,
+        widths: [11],
+      });
+    }
+  });
 });
 
 describe("committed PNGs match src/ui/glyphs.ts (run `bun run art` after editing it)", () => {
-  for (const [name, path, render] of [
+  const pngs: [name: string, path: string, render: () => PNG][] = [
     ["font.png", fontPath, renderFont],
     ["logo.png", logoPath, renderLogo],
-  ] as const) {
+    ...titleCards.map((card): [string, string, () => PNG] => [card.file, titleCardPath(card.file), () => renderTitleCard(card)]),
+  ];
+  for (const [name, path, render] of pngs) {
     test(name, () => {
       const onDisk = PNG.sync.read(readFileSync(path));
       const fresh = render();

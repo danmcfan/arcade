@@ -70,7 +70,7 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 | `test/fixtures/` | Recorded input scripts, per-tick traces and golden frames (see below) |
 | `test/parity/` | Replays every fixture scenario and compares it tick by tick |
 | `scripts/` | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
-| `art/cabinet.ase` | Aseprite source for `src/assets/images/cabinet.png` (not shipped) |
+| `art/cabinet.ase` | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped) |
 | `docs/` | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`) |
 
 ## Parity fixtures

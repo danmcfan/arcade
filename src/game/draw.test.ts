@@ -54,7 +54,7 @@ class FakeSoftware implements Software {
     return 0;
   }
   snapshot(): GearheadSnapshot {
-    return { x: 0, y: 0, frame: 0, left: false, moving: false };
+    return { x: 0, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
   }
 }
 class FakeFixed extends FakeSoftware implements FixedViewport {

@@ -13,6 +13,8 @@ import gearheadUrl from "../assets/images/gearhead.png";
 import sweetUrl from "../assets/images/sweet.png";
 import hiveUrl from "../assets/images/hive.png";
 import cabinetUrl from "../assets/images/cabinet.png";
+import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
+import cabinetGearheadUrl from "../assets/images/cabinet-gearhead.png";
 import bearUrl from "../assets/images/bear.png";
 import beeUrl from "../assets/images/bee.png";
 import foodUrl from "../assets/images/food.png";
@@ -67,6 +69,9 @@ export const images = {
 
   hive: asset(hiveUrl, 224, 288),
   cabinet: asset(cabinetUrl, 1680, 428),
+  // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
+  cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
+  cabinetGearhead: asset(cabinetGearheadUrl, 1680, 428),
   bear: asset(bearUrl, 64, 64),
   bee: asset(beeUrl, 64, 96),
   food: asset(foodUrl, 32, 24),
@@ -97,6 +102,8 @@ export const imageTitleSweet: Sprite = whole(images.sweet);
 
 export const imageHive: Sprite = whole(images.hive);
 export const imageCabinet: Sprite = whole(images.cabinet);
+export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
+export const imageCabinetGearhead: Sprite = whole(images.cabinetGearhead);
 export const imageBear: Sprite = whole(images.bear);
 export const imageBee: Sprite = whole(images.bee);
 export const imageFood: Sprite = whole(images.food);

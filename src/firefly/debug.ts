@@ -11,15 +11,20 @@ const colorControlPoint = "rgb(255, 0, 255)"; // Magenta for control points
 // Dead code while `debug` is false; see docs/port-notes.md.
 const colorControlLine = "rgba(255, 255, 0, 0.5)"; // Yellow for control lines
 
-/** Draws a bezier curve with its control points. */
-export function drawBezierDebug(screen: Surface, bezierConfig: BezierConfig, buffer: number, steps: number): void {
+/** Draws a bezier curve with its control points, offset by the playfield `origin`. */
+export function drawBezierDebug(
+  screen: Surface,
+  bezierConfig: BezierConfig,
+  origin: { x: number; y: number },
+  steps: number,
+): void {
   const patternFunc = newBezierPatternFunc(bezierConfig);
   const { p0, p1, p2, p3 } = bezierConfig;
 
   // Draw control point lines
-  drawLine(screen, p0.x + buffer, p0.y + buffer, p1.x + buffer, p1.y + buffer, colorControlLine);
-  drawLine(screen, p1.x + buffer, p1.y + buffer, p2.x + buffer, p2.y + buffer, colorControlLine);
-  drawLine(screen, p2.x + buffer, p2.y + buffer, p3.x + buffer, p3.y + buffer, colorControlLine);
+  drawLine(screen, p0.x + origin.x, p0.y + origin.y, p1.x + origin.x, p1.y + origin.y, colorControlLine);
+  drawLine(screen, p1.x + origin.x, p1.y + origin.y, p2.x + origin.x, p2.y + origin.y, colorControlLine);
+  drawLine(screen, p2.x + origin.x, p2.y + origin.y, p3.x + origin.x, p3.y + origin.y, colorControlLine);
 
   // Draw the bezier curve by sampling points
   let prevPoint = patternFunc(0);
@@ -27,16 +32,16 @@ export function drawBezierDebug(screen: Surface, bezierConfig: BezierConfig, buf
     const t = i / steps;
     const currentPoint = patternFunc(t);
 
-    drawLine(screen, prevPoint.x + buffer, prevPoint.y + buffer, currentPoint.x + buffer, currentPoint.y + buffer, colorCurve);
+    drawLine(screen, prevPoint.x + origin.x, prevPoint.y + origin.y, currentPoint.x + origin.x, currentPoint.y + origin.y, colorCurve);
 
     prevPoint = currentPoint;
   }
 
   // Draw control points as circles
-  drawCircle(screen, p0.x + buffer, p0.y + buffer, 3, colorControlPoint);
-  drawCircle(screen, p1.x + buffer, p1.y + buffer, 3, colorControlPoint);
-  drawCircle(screen, p2.x + buffer, p2.y + buffer, 3, colorControlPoint);
-  drawCircle(screen, p3.x + buffer, p3.y + buffer, 3, colorControlPoint);
+  drawCircle(screen, p0.x + origin.x, p0.y + origin.y, 3, colorControlPoint);
+  drawCircle(screen, p1.x + origin.x, p1.y + origin.y, 3, colorControlPoint);
+  drawCircle(screen, p2.x + origin.x, p2.y + origin.y, 3, colorControlPoint);
+  drawCircle(screen, p3.x + origin.x, p3.y + origin.y, 3, colorControlPoint);
 }
 
 function drawLine(screen: Surface, x1: number, y1: number, x2: number, y2: number, clr: string): void {

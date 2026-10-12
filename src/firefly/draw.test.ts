@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageBug, imageBullet, imageExplosion, imageGalaxy, imageShip } from "../engine/assets.ts";
+import { imageBug, imageBullet, imageCabinetFirefly, imageExplosion, imageGalaxy, imageShip } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -12,7 +12,8 @@ interface DrawCall {
 }
 
 /** Records `Surface.draw` calls; nothing else is used by firefly's draw. */
-function drawCalls(f: FireflySoftware, buffer = 16): DrawCall[] {
+/** Firefly is a FixedViewport: drawn with buffer 0, the playfield at the cabinet insets (56, 56). */
+function drawCalls(f: FireflySoftware, buffer = 0): DrawCall[] {
   const calls: DrawCall[] = [];
   const fake: Pick<Surface, "draw"> = {
     draw: (sprite, x, y) => {
@@ -26,12 +27,20 @@ function drawCalls(f: FireflySoftware, buffer = 16): DrawCall[] {
 const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
 
 describe("firefly draw", () => {
-  test("background at the buffer, ship centred on its position; bugs at the origin are culled", () => {
-    const calls = drawCalls(new FireflySoftware());
+  test("cabinet at 0,0, galaxy inside the insets, ship centred on its position; bugs at the origin are culled", () => {
+    const [cabinet, ...calls] = drawCalls(new FireflySoftware());
+    expect(cabinet?.sprite.asset).toBe(imageCabinetFirefly.asset);
+    expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
     expect(calls).toEqual([
-      { sprite: imageGalaxy, x: 16, y: 16 },
-      { sprite: imageShip, x: 112 + 16 - 8, y: 264 + 16 - 8 },
+      { sprite: imageGalaxy, x: 56, y: 56 },
+      { sprite: imageShip, x: 112 + 56 - 8, y: 264 + 56 - 8 },
     ]);
+  });
+
+  test("the cabinet shows the joystick frame of the last input", () => {
+    const f = new FireflySoftware();
+    f.update({ ...NO_INPUT, left: true });
+    expect(rect(drawCalls(f)[0]!.sprite)).toEqual([3 * 336, 0, 336, 428]);
   });
 
   test("bullets draw with their top-left at their position (they are 0×0)", () => {
@@ -39,7 +48,7 @@ describe("firefly draw", () => {
     for (const b of f.bugs) b.deadFrames = 10_000;
     f.update({ ...NO_INPUT, space: true });
     const bullet = drawCalls(f).find((c) => c.sprite === imageBullet);
-    expect(bullet).toEqual({ sprite: imageBullet, x: 108 + 16, y: 251 + 16 });
+    expect(bullet).toEqual({ sprite: imageBullet, x: 108 + 56, y: 251 + 56 });
   });
 
   test("bug culling bounds are exclusive: (0, 224) × (0, 288)", () => {
@@ -56,7 +65,7 @@ describe("firefly draw", () => {
       b.position = positions[i] ?? { x: 0, y: 0 };
     });
     const bugs = drawCalls(f).filter((c) => c.sprite.asset === imageBug.asset);
-    expect(bugs.map((c) => [c.x, c.y])).toEqual([[0.5 + 16 - 8, 287.5 + 16 - 8]]);
+    expect(bugs.map((c) => [c.x, c.y])).toEqual([[0.5 + 56 - 8, 287.5 + 56 - 8]]);
   });
 
   test("bug sprite frame follows its heading: moving right is row 1, col 0", () => {
@@ -67,8 +76,8 @@ describe("firefly draw", () => {
     bug.position = { x: 100, y: 100 };
     bug.direction = { x: 1, y: 0 };
     const call = drawCalls(f).find((c) => c.sprite.asset === imageBug.asset);
-    expect(call?.x).toBe(108);
-    expect(call?.y).toBe(108);
+    expect(call?.x).toBe(100 + 56 - 8);
+    expect(call?.y).toBe(100 + 56 - 8);
     expect(call && rect(call.sprite)).toEqual([0, 16, 16, 16]);
   });
 
@@ -90,8 +99,8 @@ describe("firefly draw", () => {
     for (const [deadFrames, sheetRect] of cases) {
       bug.deadFrames = deadFrames;
       const call = drawCalls(f).find((c) => c.sprite.asset === imageExplosion.asset);
-      expect(call?.x).toBe(100);
-      expect(call?.y).toBe(100);
+      expect(call?.x).toBe(100 + 56 - 16);
+      expect(call?.y).toBe(100 + 56 - 16);
       expect(call && rect(call.sprite)).toEqual(sheetRect);
     }
   });

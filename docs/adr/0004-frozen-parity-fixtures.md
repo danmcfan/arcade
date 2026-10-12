@@ -6,3 +6,4 @@
 
 - Changing gameplay on purpose (the Firefly and Brass Monkey reworks, the hub visual pass) means updating or retiring the affected fixtures in the same PR, with a sentence explaining why.
 - Loosening a parity assertion just to make a test pass is never an acceptable fix.
+- Updating a fixture means re-recording it from the TypeScript game: `bun run traces <scenario>` for the trace and `bun run frames <scenario>` for the golden frames, with the input script unchanged (`test/fixtures/README.md`, "Regenerating"). The Go originals of every other fixture still cannot be regenerated.

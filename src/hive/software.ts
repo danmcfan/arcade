@@ -10,7 +10,7 @@ import type { HiveDialSnapshot, HiveSnapshot } from "../game/snapshot.ts";
 import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
 import type { BonusEatPopup } from "./bonusEat.ts";
-import { cabinetHeight, cabinetWidth } from "./cabinet.ts";
+import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { digits6, newDigitReels, type DigitReel, type DigitReels } from "./digitReel.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import {

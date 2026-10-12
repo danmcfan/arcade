@@ -1,14 +1,29 @@
 // Port of internal/gearhead/game.go.
 
 import * as draw from "../draw/draw.ts";
-import { imageGnome, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetGearhead, imageGnome, imageWorkshop } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { direction, moving, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { GearheadSnapshot } from "../game/snapshot.ts";
-import type { Software } from "../game/software.ts";
+import type { FixedViewport } from "../game/software.ts";
+import {
+  cabinetHeight,
+  cabinetInsetLeft,
+  cabinetInsetTop,
+  cabinetJoystickFrame,
+  cabinetPlayfieldHeight,
+  cabinetPlayfieldWidth,
+  cabinetWidth,
+  drawCabinet,
+} from "../ui/cabinet.ts";
 
 const height = 256.0;
+
+/** The 224x256 workshop sits centred in the cabinet's 224x288 screen, with a band this tall above and below. */
+const bandHeight = (cabinetPlayfieldHeight - height) / 2;
+/** The workshop's darkest colour, filling the bands. */
+const bandColour = "#040c06";
 
 /** Go `entity`. */
 interface Entity {
@@ -35,17 +50,21 @@ function newPlayer(): Entity {
   };
 }
 
-/** Go `GearHeadSoftware`. */
-export class GearheadSoftware implements Software {
+/** Go `GearHeadSoftware`, played inside its cabinet (#15). */
+export class GearheadSoftware implements FixedViewport {
   readonly name = "gearhead" as const;
 
   private player: Entity = newPlayer();
+  /** The bezel's joystick frame for the last input (no gameplay effect). */
+  private cabinetJoystickFrame = 0;
 
   background(): Sprite {
     return imageWorkshop;
   }
 
   update(i: Input): void {
+    this.cabinetJoystickFrame = cabinetJoystickFrame(i);
+
     if (moving(i)) {
       this.player.moving = true;
       this.player.frame += this.player.frameIncrement;
@@ -84,10 +103,21 @@ export class GearheadSoftware implements Software {
     }
   }
 
-  draw(screen: Surface, buffer: number): void {
-    drawBackground(screen, this.background(), buffer);
+  fixedViewportSize(): [number, number] {
+    return [cabinetWidth, cabinetHeight];
+  }
 
-    drawPlayer(screen, this.player, buffer);
+  /** A `FixedViewport`: `buffer` is 0; the workshop is centred vertically in the cabinet's screen. */
+  draw(screen: Surface, _buffer: number): void {
+    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetGearhead);
+
+    screen.fillRect(cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldWidth, bandHeight, bandColour);
+    screen.fillRect(cabinetInsetLeft, cabinetInsetTop + bandHeight + height, cabinetPlayfieldWidth, bandHeight, bandColour);
+
+    const origin = draw.newVector(cabinetInsetLeft, cabinetInsetTop + bandHeight);
+    drawBackground(screen, this.background(), origin);
+
+    drawPlayer(screen, this.player, origin);
   }
 
   gameOver(): boolean {
@@ -105,6 +135,7 @@ export class GearheadSoftware implements Software {
       frame: this.player.frame,
       left: this.player.left,
       moving: this.player.moving,
+      joystick: this.cabinetJoystickFrame,
     };
   }
 }
@@ -114,11 +145,11 @@ export function newGearheadSoftware(): GearheadSoftware {
   return new GearheadSoftware();
 }
 
-function drawBackground(screen: Surface, background: Sprite, buffer: number): void {
-  screen.draw(background, buffer, buffer);
+function drawBackground(screen: Surface, background: Sprite, origin: draw.Vector): void {
+  screen.draw(background, origin.x, origin.y);
 }
 
-function drawPlayer(screen: Surface, player: Entity, buffer: number): void {
+function drawPlayer(screen: Surface, player: Entity, origin: draw.Vector): void {
   let frame = Math.trunc(player.frame);
 
   // Walk cycle 0,1,2,3 shows sheet columns 0,1,0,2.
@@ -133,7 +164,7 @@ function drawPlayer(screen: Surface, player: Entity, buffer: number): void {
 
   const w = Math.trunc(player.width);
   const img = sub(player.image, frame * w, 0, (frame + 1) * w, Math.trunc(player.height));
-  let position = draw.add(player.position, draw.newVector(buffer, buffer));
+  let position = draw.add(player.position, origin);
   position = draw.sub(position, draw.newVector(player.width / 2, player.height / 2));
 
   // Go: Scale(-1, 1), Translate(width, 0), then Translate(position).

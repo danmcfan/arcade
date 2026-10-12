@@ -232,6 +232,8 @@ export interface FireflySnapshot {
   bullets: FireflyBulletSnapshot[];
   /** `FireFlySoftware.bugs` in slice order. */
   bugs: FireflyBugSnapshot[];
+  /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  joystick: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +250,8 @@ export interface GearheadSnapshot {
   left: boolean;
   /** `player.Moving`. */
   moving: boolean;
+  /** `GearheadSoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
