@@ -1,0 +1,157 @@
+// Port of internal/game/game.go: the top-level loop that switches between the
+// arcade hub and the active software (minigame), plus Esc, Shift+P debug and
+// `Layout`.
+
+import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
+import { imageArcade, soundStart } from "../engine/assets.ts";
+import type { Input } from "../engine/input.ts";
+import * as rng from "../engine/rng.ts";
+import type { Surface } from "../engine/surface.ts";
+import { draw as drawArcade } from "../arcade/draw.ts";
+import type { SoftwareFactory } from "../arcade/machine.ts";
+import { newState, type State } from "../arcade/state.ts";
+import { update as updateArcade } from "../arcade/update.ts";
+import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
+import { createSoftware } from "./registry.ts";
+import type { GameSnapshot } from "./snapshot.ts";
+import { isFixedViewport, type Scene, type Software, type SoftwareName } from "./software.ts";
+
+const buffer = 16;
+
+const initialDebugMode = false;
+
+/** Collaborators a test can replace; the real game uses the defaults. */
+export interface GameDeps {
+  /** Builds a machine's software; default: `createSoftware` from ./registry.ts. */
+  createSoftware?: SoftwareFactory;
+  /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
+  debugPrint?: DebugPrinter;
+}
+
+export class Game implements Scene {
+  readonly name = "game";
+
+  private arcade: State;
+
+  private software: Software | null = null;
+
+  private debugMode = initialDebugMode;
+  private debugPanel: Panel;
+
+  private tick = 0;
+  /** Sound events since the end of the previous tick. */
+  private pendingSounds: SoundEvent[] = [];
+  /** Sound events of the last completed tick (`GameSnapshot.sounds`). */
+  private tickSounds: SoundEvent[] = [];
+  private readonly unsubscribe: () => void;
+
+  /**
+   * Go `game.New(initialSoftware)`. The sound listener is installed before
+   * the initial software is built, so its construction sounds land in tick
+   * 1's `sounds`. `deps` swaps collaborators in tests only.
+   */
+  constructor(initialSoftware: SoftwareName | null, deps: GameDeps = {}) {
+    const factory = deps.createSoftware ?? createSoftware;
+    this.unsubscribe = addSoundListener((e) => this.pendingSounds.push(e));
+    const sw = initialSoftware === null ? null : factory(initialSoftware, 0);
+    this.arcade = newState(sw, factory);
+    this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
+  }
+
+  step(i: Input): void {
+    this.update(i);
+    this.tick++;
+    this.tickSounds = this.pendingSounds;
+    this.pendingSounds = [];
+  }
+
+  /** Go `Game.Update` with the input already read. */
+  private update(input: Input): void {
+    if (input.shiftP) {
+      this.debugMode = !this.debugMode;
+    }
+
+    if (input.escape && this.software !== null) {
+      soundStart.pause();
+      this.software = null;
+      return;
+    }
+
+    if (this.software !== null) {
+      this.software.update(input);
+      if (this.software.gameOver()) {
+        this.arcade.highScore = Math.max(this.arcade.highScore, this.software.score());
+        this.software = null;
+      }
+      return;
+    }
+
+    updateArcade(this.arcade, input);
+
+    if (this.arcade.loadedSoftware !== null) {
+      this.software = this.arcade.loadedSoftware;
+      this.arcade.loadedSoftware = null;
+    }
+  }
+
+  draw(screen: Surface): void {
+    if (this.software !== null) {
+      let margin = buffer;
+      if (isFixedViewport(this.software)) {
+        margin = 0;
+      }
+      this.software.draw(screen, margin);
+      return;
+    }
+
+    drawArcade(screen, this.arcade, buffer, this.debugMode);
+
+    if (this.debugMode) {
+      const gameWidth = imageArcade.w + buffer * 2;
+      const gameHeight = imageArcade.h + buffer * 2;
+      this.debugPanel.draw(screen, this.arcade, gameWidth, gameHeight);
+    }
+  }
+
+  layout(): [number, number] {
+    let baseWidth = imageArcade.w + buffer * 2;
+    let baseHeight = imageArcade.h + buffer * 2;
+
+    if (this.software !== null) {
+      if (isFixedViewport(this.software)) {
+        [baseWidth, baseHeight] = this.software.fixedViewportSize();
+      } else {
+        baseWidth = this.software.background().w + buffer * 2;
+        baseHeight = this.software.background().h + buffer * 2;
+      }
+    }
+
+    if (this.debugMode) {
+      baseWidth += Math.trunc(this.debugPanel.width());
+    }
+
+    return [baseWidth, baseHeight];
+  }
+
+  snapshot(): GameSnapshot {
+    const p = this.arcade.player;
+    return {
+      tick: this.tick,
+      rng: rng.state(),
+      debug: this.debugMode,
+      software: this.software === null ? null : this.software.name,
+      arcade: {
+        player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
+        melodyPlaying: this.arcade.melodyPlaying,
+        title: this.arcade.imageTitle,
+        highScore: this.arcade.highScore,
+      },
+      sw: this.software === null ? null : this.software.snapshot(),
+      sounds: [...this.tickSounds],
+    };
+  }
+
+  dispose(): void {
+    this.unsubscribe();
+  }
+}
