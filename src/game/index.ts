@@ -1,7 +1,7 @@
-// Entry module for the top-level Game (T4 owns src/game/** apart from the 1a
-// contract files). Replace the stub body; keep the export name and signature,
-// which src/game/registry.ts imports.
+// Entry module for the top-level Game. src/game/registry.ts imports
+// `createGame` from here.
 
+import { Game } from "./game.ts";
 import type { Scene, SoftwareName } from "./software.ts";
 
 /**
@@ -18,5 +18,5 @@ import type { Scene, SoftwareName } from "./software.ts";
  * That cycle is fine as long as neither calls the other at module top level.
  */
 export function createGame(initialSoftware?: SoftwareName): Scene {
-  throw new Error(`TODO: createGame(${initialSoftware ?? ""})`);
+  return new Game(initialSoftware ?? null);
 }

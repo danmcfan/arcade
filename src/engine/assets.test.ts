@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
-import { allImages, images, lumberjackImages, sounds } from "./assets.ts";
+import { allImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
+import type { ImageAsset } from "./image.ts";
 
 function pngSize(path: string): { width: number; height: number } {
   const png = PNG.sync.read(readFileSync(path));
@@ -45,5 +46,40 @@ describe("sound registry", () => {
     expect(Object.keys(sounds).sort()).toEqual(["boom", "death", "laser", "melody", "power", "start"]);
     expect(sounds.melody.loop).toBe(true);
     expect(sounds.laser.loop).toBe(false);
+  });
+});
+
+describe("loadImages (D5)", () => {
+  class FakeImage {
+    src = "";
+    decoded = false;
+    async decode(): Promise<void> {
+      await Promise.resolve();
+      this.decoded = true;
+    }
+  }
+
+  test("decodes every image before resolving and attaches it to its asset", async () => {
+    const a: ImageAsset = { url: "a.png", width: 1, height: 1, image: null };
+    const b: ImageAsset = { url: "b.png", width: 1, height: 1, image: null };
+    const made: FakeImage[] = [];
+    await loadImages([a, b], () => {
+      const img = new FakeImage();
+      made.push(img);
+      return img as unknown as HTMLImageElement;
+    });
+    expect(made.map((i) => [i.src, i.decoded])).toEqual([
+      ["a.png", true],
+      ["b.png", true],
+    ]);
+    expect(a.image).toBe(made[0] as unknown as HTMLImageElement);
+    expect(b.image).toBe(made[1] as unknown as HTMLImageElement);
+  });
+
+  test("rejects with the failing URL", async () => {
+    const bad: ImageAsset = { url: "missing.png", width: 1, height: 1, image: null };
+    const broken = { src: "", decode: () => Promise.reject(new Error("EncodingError")) };
+    await expect(loadImages([bad], () => broken as unknown as HTMLImageElement)).rejects.toThrow("missing.png");
+    expect(bad.image).toBeNull();
   });
 });

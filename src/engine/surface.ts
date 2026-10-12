@@ -1,10 +1,13 @@
-// Ebitengine-shaped draw API over Canvas 2D (§3.2). Implemented by T3
-// (engine); the signatures here are the contract every porter draws against.
+// Ebitengine-shaped draw API over Canvas 2D (§3.2). The signatures here are
+// the contract every porter draws against.
 //
 // Rules: `imageSmoothingEnabled = false` on every context, re-applied after
 // every resize (D1). Every unrotated `draw`/`fillRect` snaps its final
 // translate with `snap()` (D13). Translucent Go `color.RGBA` values are
 // premultiplied and go through `fillPremul`/`strokeRect` (D15).
+//
+// Headless-first (D12): constructing an offscreen `Surface` or a `makeSolid`
+// sprite touches no DOM; their canvases are created on first use.
 
 import type { Sprite } from "./image.ts";
 
@@ -36,91 +39,310 @@ export function snap(v: number): number {
   return Math.ceil(v - 0.5) + 0;
 }
 
+type Canvas = HTMLCanvasElement | OffscreenCanvas;
+type Context = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+type CanvasFactory = (w: number, h: number) => Canvas;
+
+function defaultCanvasFactory(w: number, h: number): Canvas {
+  if (typeof document !== "undefined") {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+  if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
+  throw new Error("Surface: no canvas available (draw is browser only, D12)");
+}
+
+let canvasFactory: CanvasFactory = defaultCanvasFactory;
+
+/**
+ * Seam for tests (bun test has no DOM): replace how lazily created canvases
+ * (offscreen surfaces, `makeSolid` images) are made. `null` restores the
+ * default (`document.createElement("canvas")`, else `OffscreenCanvas`).
+ */
+export function setCanvasFactory(factory: CanvasFactory | null): void {
+  canvasFactory = factory ?? defaultCanvasFactory;
+}
+
+function context2d(canvas: Canvas): Context {
+  const ctx = canvas.getContext("2d") as Context | null;
+  if (ctx === null) throw new Error("Surface: 2D context unavailable");
+  ctx.imageSmoothingEnabled = false;
+  return ctx;
+}
+
+/** The canvas behind a `makeSolid` sprite, created and filled on first draw. */
+function solidSource(s: Sprite): CanvasImageSource | null {
+  const asset = s.asset;
+  if (asset.image !== null) return asset.image;
+  if (asset.solid === undefined) return null;
+  const canvas = canvasFactory(asset.width, asset.height);
+  const ctx = context2d(canvas);
+  ctx.fillStyle = asset.solid;
+  ctx.fillRect(0, 0, asset.width, asset.height);
+  asset.image = canvas;
+  return canvas;
+}
+
 export class Surface {
+  private canvas: Canvas | null;
+  private ctx: Context | null = null;
+  private w: number;
+  private h: number;
+
   /**
    * Wraps a canvas (the visible screen or an offscreen one). Never call this
    * at import time or from `update()`/`snapshot()` (D12).
    */
-  constructor(canvas: HTMLCanvasElement | OffscreenCanvas) {
-    throw new Error("TODO");
+  constructor(canvas: HTMLCanvasElement | OffscreenCanvas);
+  /** @internal Lazy offscreen surface: see `Surface.offscreen`. */
+  constructor(canvas: null, w: number, h: number);
+  constructor(canvas: Canvas | null, w?: number, h?: number) {
+    this.canvas = canvas;
+    this.w = canvas?.width ?? w ?? 0;
+    this.h = canvas?.height ?? h ?? 0;
   }
 
-  /** `ebiten.NewImage(w, h)`: a transparent offscreen surface. */
+  /**
+   * `ebiten.NewImage(w, h)`: a transparent offscreen surface. Safe to call
+   * with no DOM (e.g. in a scene constructor); the canvas is created on first
+   * use.
+   */
   static offscreen(w: number, h: number): Surface {
-    throw new Error("TODO");
+    return new Surface(null, w, h);
   }
 
   get width(): number {
-    throw new Error("TODO");
+    return this.w;
   }
 
   get height(): number {
-    throw new Error("TODO");
+    return this.h;
+  }
+
+  /** The 2D context, creating the canvas first for a lazy offscreen surface. */
+  private context(): Context {
+    if (this.ctx !== null) return this.ctx;
+    if (this.canvas === null) this.canvas = canvasFactory(this.w, this.h);
+    this.ctx = context2d(this.canvas);
+    return this.ctx;
   }
 
   /**
    * Screen only: set the logical resolution (the loop calls this when
    * `scene.layout()` changes). Re-applies `imageSmoothingEnabled = false`.
+   * A no-op when the size is unchanged (assigning a canvas size clears it).
    */
   resize(w: number, h: number): void {
-    throw new Error("TODO");
+    if (w === this.w && h === this.h) return;
+    this.w = w;
+    this.h = h;
+    if (this.canvas === null) return;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    // D1: every size assignment resets the context state.
+    this.context().imageSmoothingEnabled = false;
   }
 
   /** Clear to transparent (D1: frames are never filled black). */
   clear(): void {
-    throw new Error("TODO");
+    const ctx = this.context();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.w, this.h);
   }
 
   /** `Image.Fill`: replace every pixel with an opaque colour. */
   fill(css: string): void {
-    throw new Error("TODO");
+    this.clear();
+    const ctx = this.context();
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = css;
+    ctx.fillRect(0, 0, this.w, this.h);
+    ctx.restore();
   }
 
   /**
    * `DrawImage(s, op)` where `x, y` is the final `GeoM` translate. Snapped
-   * unless rotated; a no-op for 0×0 sprites.
+   * unless rotated; a no-op for 0×0 sprites and for images not decoded yet.
    */
   draw(s: Sprite, x: number, y: number, opts?: DrawOpts): void {
-    throw new Error("TODO");
+    if (s.w <= 0 || s.h <= 0) return;
+    const source = solidSource(s);
+    if (source === null) return;
+    this.blit(source, s.sx, s.sy, s.w, s.h, x, y, opts);
   }
 
   /** `DrawImage` with another surface (an offscreen `ebiten.Image`) as source. */
   drawSurface(src: Surface, x: number, y: number, opts?: DrawOpts): void {
-    throw new Error("TODO");
+    // A surface that was never drawn to is fully transparent.
+    if (src.canvas === null || src.w <= 0 || src.h <= 0) return;
+    this.blit(src.canvas, 0, 0, src.w, src.h, x, y, opts);
+  }
+
+  private blit(
+    source: CanvasImageSource,
+    sx: number,
+    sy: number,
+    w: number,
+    h: number,
+    x: number,
+    y: number,
+    opts: DrawOpts | undefined,
+  ): void {
+    const ctx = this.context();
+    ctx.save();
+    ctx.globalAlpha = opts?.alpha ?? 1;
+    const rot = opts?.rotate;
+    if (rot) {
+      // GeoM: Translate(-p), Rotate(a), Translate(+p), then Translate(x, y).
+      ctx.setTransform(1, 0, 0, 1, x, y);
+      ctx.translate(rot.pivotX, rot.pivotY);
+      ctx.rotate(rot.angle);
+      ctx.translate(-rot.pivotX, -rot.pivotY);
+    } else {
+      ctx.setTransform(1, 0, 0, 1, snap(x), snap(y));
+    }
+    if (opts?.flipX) {
+      // GeoM: Scale(-1, 1) then Translate(w, 0), applied first.
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(source, sx, sy, w, h, 0, 0, w, h);
+    ctx.restore();
+  }
+
+  /**
+   * Fill the pixels whose centres fall inside the rect (the non-antialiased
+   * GPU rule): edges at `snap(x)` and `snap(x + w)`.
+   */
+  private pixelRect(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    paint: (ctx: Context, x: number, y: number, w: number, h: number) => void,
+  ): void {
+    const x0 = snap(x);
+    const y0 = snap(y);
+    const x1 = snap(x + w);
+    const y1 = snap(y + h);
+    if (x1 <= x0 || y1 <= y0) return;
+    const ctx = this.context();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    paint(ctx, x0, y0, x1 - x0, y1 - y0);
+    ctx.restore();
   }
 
   /** Opaque rectangle on a snapped rect (`vector.FillRect` with an opaque colour). */
   fillRect(x: number, y: number, w: number, h: number, css: string): void {
-    throw new Error("TODO");
+    this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => {
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = css;
+      ctx.fillRect(px, py, pw, ph);
+    });
   }
 
-  /** D15: `dst' = C + dst*(1 - a/255)` on a snapped rect. */
+  /**
+   * D15: `dst' = C + dst*(1 - a/255)` on a snapped rect: black at alpha
+   * `a/255` (source-over), then `rgb(r,g,b)` added with "lighter". Exact on
+   * an opaque destination; on a transparent one the result is opaque, where
+   * Go would leave alpha `a`.
+   */
   fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
-    throw new Error("TODO");
+    this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = c.a / 255;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(px, py, pw, ph);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = `rgb(${c.r}, ${c.g}, ${c.b})`;
+      ctx.fillRect(px, py, pw, ph);
+    });
   }
 
-  /** `vector.StrokeRect`, 1 px, premultiplied colour. Debug only. */
+  /**
+   * `vector.StrokeRect`, 1 px, premultiplied colour. Debug only. Outlines the
+   * pixels of `[x, x+w] × [y, y+h]` inclusive, so Go's
+   * `StrokeRect(x, y, w-1, h-1)` outlines exactly a `w × h` box. Edges do not
+   * overlap, so corners blend once. Phase 4 confirms the pixel rule.
+   */
   strokeRect(x: number, y: number, w: number, h: number, c: PremulColor): void {
-    throw new Error("TODO");
+    this.fillPremul(x, y, w + 1, 1, c);
+    if (h <= 0) return;
+    this.fillPremul(x, y + h, w + 1, 1, c);
+    if (h > 1) {
+      this.fillPremul(x, y + 1, 1, h - 1, c);
+      if (w > 0) this.fillPremul(x + w, y + 1, 1, h - 1, c);
+    }
   }
 
-  /** `vector.StrokeLine`, 1 px. Debug only. */
+  /**
+   * `vector.StrokeLine`, 1 px. Debug only. Bresenham between the snapped
+   * endpoints (crisp, no antialiasing); Phase 4 confirms the pixel rule.
+   */
   line(x1: number, y1: number, x2: number, y2: number, css: string): void {
-    throw new Error("TODO");
+    let x = snap(x1);
+    let y = snap(y1);
+    const xe = snap(x2);
+    const ye = snap(y2);
+    const dx = Math.abs(xe - x);
+    const dy = -Math.abs(ye - y);
+    const sx = x < xe ? 1 : -1;
+    const sy = y < ye ? 1 : -1;
+    let err = dx + dy;
+    for (;;) {
+      this.fillRect(x, y, 1, 1, css);
+      if (x === xe && y === ye) return;
+      const e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+    }
   }
 
-  /** `vector.FillCircle`. Debug only. */
+  /**
+   * `vector.FillCircle`. Debug only. Fills each pixel whose centre is within
+   * `r` of `(x, y)`, one row at a time.
+   */
   fillCircle(x: number, y: number, r: number, css: string): void {
-    throw new Error("TODO");
+    if (r <= 0) return;
+    for (let py = Math.floor(y - r); py <= Math.ceil(y + r); py++) {
+      const dy = py + 0.5 - y;
+      const span = r * r - dy * dy;
+      if (span < 0) continue;
+      const dx = Math.sqrt(span);
+      const x0 = Math.ceil(x - dx - 0.5);
+      const x1 = Math.floor(x + dx - 0.5);
+      if (x1 >= x0) this.fillRect(x0, py, x1 - x0 + 1, 1, css);
+    }
   }
 
   /** Make a rectangle transparent (lumberjack's init-time pixel clears). */
   clearRect(x: number, y: number, w: number, h: number): void {
-    throw new Error("TODO");
+    this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => ctx.clearRect(px, py, pw, ph));
   }
 
-  /** PNG data URL of the surface at logical resolution. */
+  /**
+   * PNG data URL of the surface at logical resolution. Needs an
+   * `HTMLCanvasElement` (the screen, or an offscreen surface in a page).
+   */
   toPNGDataURL(): string {
-    throw new Error("TODO");
+    this.context();
+    const canvas = this.canvas;
+    if (canvas === null || !("toDataURL" in canvas)) {
+      throw new Error("Surface.toPNGDataURL: needs an HTMLCanvasElement");
+    }
+    return canvas.toDataURL("image/png");
   }
 }
