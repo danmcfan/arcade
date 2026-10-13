@@ -270,12 +270,23 @@ describe("hits", () => {
 
     const b = withOnly("moth", { x: 100, y: 100 });
     b.e.state = "diving";
+    b.e.outOfFormation = true;
     b.e.path = { p0: { x: 100, y: 100 }, p1: { x: 100, y: 100 }, p2: { x: 100, y: 100 }, p3: { x: 100, y: 100 } };
     b.e.tStep = 0.001;
     sparkAt(b.f, 100, 100);
     b.f.update(NO_INPUT);
     expect(b.f.score()).toBe(points("moth", true));
     expect(b.f.score()).toBeGreaterThan(a.f.score());
+  });
+
+  test("an enemy flying back to the formation after its dive still scores the diving points", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 100 });
+    e.outOfFormation = true; // "joining" after its swoop, its slot far above
+    e.home = { x: 100, y: 40 };
+    e.hp = 1;
+    sparkAt(f, 100, 98);
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(points("owl", true));
   });
 });
 
@@ -294,6 +305,18 @@ describe("lives", () => {
     run(f, respawnTicks);
     expect(f.respawn).toBe(0);
     expect(f.gameOver()).toBe(false);
+  });
+
+  test("shots still falling when the firefly comes back are cleared, so it is not hit at once", () => {
+    const { f } = withOnly("moth", { x: 30, y: 40 });
+    f.loseLife();
+    run(f, respawnTicks - 1);
+    f.shots.push({ x: 112, y: playerY - 6, dx: 0, dy: 3 });
+    f.update(NO_INPUT);
+    expect(f.respawn).toBe(0);
+    expect(f.shots).toEqual([]);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives - 1);
   });
 
   test("an enemy touching the firefly costs a life, and that enemy dies too", () => {
@@ -323,6 +346,7 @@ describe("stages", () => {
   test("when the last enemy is dead and its hit effect has played, the next stage starts", () => {
     const { f } = withOnly("moth", { x: 100, y: 100 });
     sparkAt(f, 100, 100);
+    f.shots.push({ x: 20, y: 0, dx: 0, dy: 0 });
     f.update(NO_INPUT);
     expect(f.stage).toBe(1);
     run(f, hitEffectTicks - 2);
@@ -332,6 +356,7 @@ describe("stages", () => {
     expect(f.stageTick).toBe(0);
     expect(f.enemies.length).toBe(40);
     expect(f.diveTimer).toBe(difficulty(2).diveInterval);
+    expect(f.shots).toEqual([]);
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();

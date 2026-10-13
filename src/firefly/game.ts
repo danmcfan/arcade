@@ -110,6 +110,7 @@ export function newStageEnemies(): Enemy[] {
       tStep: 0,
       shotsLeft: 0,
       shotTimer: 0,
+      outOfFormation: false,
     };
     followPath(e, { ...curve, p3: home });
     return e;
@@ -213,6 +214,7 @@ export class FireflySoftware implements FixedViewport {
             e.x = tx;
             e.y = ty;
             e.state = "formation";
+            e.outOfFormation = false;
           } else {
             e.x += ((tx - e.x) / dist) * enemySpeed;
             e.y += ((ty - e.y) / dist) * enemySpeed;
@@ -282,6 +284,7 @@ export class FireflySoftware implements FixedViewport {
         ? { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }
         : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
     e.state = "diving";
+    e.outOfFormation = true;
     followPath(e, path);
     e.shotsLeft = shots;
     e.shotTimer = firstShotDelay;
@@ -327,7 +330,7 @@ export class FireflySoftware implements FixedViewport {
   private kill(e: Enemy): void {
     e.hp = 0;
     e.deadFrames = hitEffectTicks;
-    this.points += points(e.kind, e.state === "diving");
+    this.points += points(e.kind, e.outOfFormation);
   }
 
   private hitPlayer(): void {
@@ -366,6 +369,8 @@ export class FireflySoftware implements FixedViewport {
       return;
     }
     this.player = { ...playerStart };
+    // A fresh firefly starts with no enemy shot already falling on it.
+    this.shots = [];
     this.fireDelay = 0;
   }
 
@@ -373,6 +378,7 @@ export class FireflySoftware implements FixedViewport {
     this.stage++;
     this.stageTick = 0;
     this.enemies = newStageEnemies();
+    this.shots = [];
     this.diveTimer = difficulty(this.stage).diveInterval;
   }
 
@@ -419,6 +425,7 @@ export class FireflySoftware implements FixedViewport {
         dy: e.dy,
         hp: e.hp,
         deadFrames: e.deadFrames,
+        outOfFormation: e.outOfFormation,
       })),
       shots: this.shots.map((s) => ({ x: s.x, y: s.y, dx: s.dx, dy: s.dy })),
       diveTimer: this.diveTimer,

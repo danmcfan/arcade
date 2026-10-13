@@ -32,6 +32,8 @@ export interface Enemy {
   /** Shots still to drop on this dive, and ticks to the next. */
   shotsLeft: number;
   shotTimer: number;
+  /** It left the formation to dive and is not back yet: a kill scores the diving points. */
+  outOfFormation: boolean;
 }
 
 export interface Spark {

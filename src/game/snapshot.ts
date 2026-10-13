@@ -271,6 +271,8 @@ export interface FireflyEnemySnapshot {
   hp: number;
   /** Ticks left of its hit effect once killed, else 0. */
   deadFrames: number;
+  /** It dove and is not back in the formation yet: a kill scores the diving points. */
+  outOfFormation: boolean;
 }
 
 export interface FireflyShotSnapshot {
