@@ -156,16 +156,19 @@ function beltLoop(top: string, under: string): Conveyor {
 }
 
 /**
- * A belt riding on top of a girder: 2 rows of belt over the girder's lower 6
- * rows, with a small drum at each end. The girder part is filled in by the
- * viewer from the picked girder (its rows 2–7); here it is `#`.
+ * A belt of slats riding on top of a girder: the slats are the girder's top
+ * two rows, in its shading digits (recoloured with the girder), moving 1 px
+ * a frame, over the girder's lower 6 rows. The girder part is filled in by
+ * the viewer from the picked girder (its rows 2–7); here it is `#`. The ends
+ * round the belt's top corner. (The owner's note on C3: the belt's colours
+ * match the girder's.)
  */
-function beltOnGirder(top: string, edge: string): Conveyor {
+function beltOnGirder(top: string, under: string): Conveyor {
   const frames = [0, 1, 2, 3];
   const girder = Array.from({ length: 6 }, () => "########");
-  const middle = frames.map((f) => [tread(top, 8, f), edge.repeat(8)].concat(girder));
-  const left = frames.map((f) => [`.${tread(top, 8, f).slice(1)}`, edge.repeat(8)].concat(girder));
-  const right = frames.map((f) => [`${tread(top, 8, f).slice(0, 7)}.`, edge.repeat(8)].concat(girder));
+  const middle = frames.map((f) => [tread(top, 8, f), tread(under, 8, f)].concat(girder));
+  const left = frames.map((f) => [`.${tread(top, 8, f).slice(1)}`, tread(under, 8, f)].concat(girder));
+  const right = frames.map((f) => [`${tread(top, 8, f).slice(0, 7)}.`, tread(under, 8, f)].concat(girder));
   return { left, middle, right };
 }
 
@@ -174,8 +177,8 @@ export const conveyors = {
   c1: beltLoop("lmmm", "dddd"),
   /** The same loop with hazard stripes, so the belt's direction shows from afar. */
   c2: beltLoop("yykk", "yykk"),
-  /** A belt of steel slats riding on top of the floor's girder. */
-  c3: beltOnGirder("lllm", "d"),
+  /** A belt of slats in the girder's colours, riding on top of the floor's girder. */
+  c3: beltOnGirder("1113", "2223"),
 };
 
 /** The exit door, 16 wide, bottom row on the floor; outlined in black but not along the bottom. */

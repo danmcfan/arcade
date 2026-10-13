@@ -203,6 +203,7 @@
       <div class="bar">
         <button id="as-is">As is</button>
         <button id="proposed">Proposed</button>
+        <button id="picked">Picked</button>
         <button id="copy">Copy my picks</button>
         <output id="picks"></output>
       </div>
@@ -296,7 +297,18 @@
         door: "D4",
         wall: "K2",
       };
-      const picks = { ...PROPOSED };
+      // The owner's picks (#38), with the note that the conveyor's belt is in the girder's colours.
+      const PICKED = {
+        top: "T1",
+        girder: "S3",
+        colour: "red",
+        ladder: "L2",
+        ladderColour: "steel",
+        conveyor: "C3",
+        door: "D1",
+        wall: "K2",
+      };
+      const picks = { ...PICKED };
       const option = (knob, id = picks[knob]) => KNOBS[knob].find((o) => o.id === id);
 
       const recolour = (rows, map) => rows.map((r) => [...r].map((c) => map[c] ?? c).join(""));
@@ -577,6 +589,10 @@
       };
       document.getElementById("proposed").onclick = () => {
         Object.assign(picks, PROPOSED);
+        render();
+      };
+      document.getElementById("picked").onclick = () => {
+        Object.assign(picks, PICKED);
         render();
       };
       document.getElementById("as-is").onclick = () => {

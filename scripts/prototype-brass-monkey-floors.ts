@@ -159,7 +159,7 @@ const data = {
       id: "C3",
       name: "Slats on a girder",
       tag: "new",
-      note: "A belt of steel slats riding on top of the floor's own girder (the girder you pick), so both floors share one look.",
+      note: "A belt of slats riding on top of the floor's own girder, in the girder's colours (the girder you pick), so both floors share one look.",
       ...conveyors.c3,
     },
   ],
