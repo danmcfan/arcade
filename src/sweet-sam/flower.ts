@@ -4,6 +4,7 @@
 // `flowerPoints`, shown in the pixel font where it stood.
 
 import { sweetSamSounds } from "../engine/assets.ts";
+import { playSound } from "../engine/audio.ts";
 import { framesPerSecond } from "./constants.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { collideWithDistance, distanceThreshold } from "./update.ts";
@@ -36,8 +37,7 @@ export function updateFlower(s: SweetSamSoftware): void {
       s.scoreValue += points;
       s.flowerPopup = { points, ticks: flowerPopupTicks };
       s.flowerTicks = 0;
-      sweetSamSounds.flower.rewind();
-      sweetSamSounds.flower.play();
+      playSound(sweetSamSounds.flower);
     } else {
       s.flowerTicks--;
     }

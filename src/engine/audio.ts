@@ -156,3 +156,9 @@ export function installAudioUnlock(list: readonly Sound[], target: UnlockTarget 
   target.addEventListener("keydown", unlock, { capture: true });
   target.addEventListener("pointerdown", unlock, { capture: true });
 }
+
+/** Play `sound` from its start. */
+export function playSound(sound: Sound): void {
+  sound.rewind();
+  sound.play();
+}

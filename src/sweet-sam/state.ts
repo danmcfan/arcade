@@ -2,7 +2,7 @@
 
 import type { Input } from "../engine/input.ts";
 import { sweetSamSounds } from "../engine/assets.ts";
-import type { Sound } from "../engine/audio.ts";
+import { playSound } from "../engine/audio.ts";
 import type { SweetSamStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
 import {
@@ -73,11 +73,6 @@ export const levelBannerTicks = framesPerSecond;
  * respawn blink. Lower = faster blink.
  */
 export const playerRespawnBlinkToggleFrames = 15;
-
-function playSound(sound: Sound): void {
-  sound.rewind();
-  sound.play();
-}
 
 export function respawnBlinkHiddenForElapsed(elapsedFrames: number): boolean {
   return Math.trunc(elapsedFrames / playerRespawnBlinkToggleFrames) % 2 === 0;
@@ -218,8 +213,9 @@ export class PlayState implements State {
     }
 
     s.player.velocity = s.advantages.playerVelocity;
+    const { beeVelocity } = s.values();
     for (const e of s.enemies) {
-      e.velocity = s.values().beeVelocity;
+      e.velocity = beeVelocity;
       if (e.blueFrames > 0) {
         s.player.velocity = velocityPlayerPower;
         e.velocity = velocityEnemyPower;
