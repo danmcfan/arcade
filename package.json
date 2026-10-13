@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks && git config blame.ignoreRevsFile .git-blame-ignore-revs",
+    "prepare": "git config core.hooksPath .githooks && git config blame.ignoreRevsFile ':(optional).git-blame-ignore-revs'",
     "dev": "bun --hot --port=${ARCADE_PORT:-3000} ./index.html",
     "build": "bun build ./index.html --outdir dist --minify",
     "preview": "bunx serve dist",
