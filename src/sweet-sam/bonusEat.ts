@@ -2,18 +2,18 @@
 
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
-import { imageBonus } from "../engine/assets.ts";
+import { imagePoints } from "../engine/assets.ts";
+import { pointsFrameSize } from "./art.ts";
 import { tileSize } from "./entity.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
-export const bonusEatSpriteSize = 16;
 export const bonusEatFrameCount = 4;
 /** Go `int(bonusEatIndicatorTTLSecs * float64(framesPerSecond))` with a 0.75 s TTL, a constant expression (fact 3). */
 export const bonusEatIndicatorTicks = 45;
 
 export const scaredBeeEatPoints: readonly number[] = [200, 400, 800, 1600];
 
-/** A transient "200 / 400 / …" sprite above an eaten bee. A Go value type. */
+/** A transient "200 / 400 / …" above an eaten bee. A Go value type. */
 export interface BonusEatPopup {
   x: number;
   y: number;
@@ -32,10 +32,10 @@ function clampFrameIdx(frameIdx: number): number {
   return frameIdx;
 }
 
-/** Go `image.Rect(x0, 0, x0+16, 16)` as `[x0, y0, x1, y1]`. */
+/** Go `image.Rect(x0, 0, x0+16, 16)` as `[x0, y0, x1, y1]`: the popup's frame of points.png. */
 export function bonusEatFrameRect(frameIdx: number): [number, number, number, number] {
-  const x0 = clampFrameIdx(frameIdx) * bonusEatSpriteSize;
-  return [x0, 0, x0 + bonusEatSpriteSize, bonusEatSpriteSize];
+  const x0 = clampFrameIdx(frameIdx) * pointsFrameSize;
+  return [x0, 0, x0 + pointsFrameSize, pointsFrameSize];
 }
 
 export function spawnBonusEatIndicator(s: SweetSamSoftware, worldX: number, worldY: number, frameIdx: number): void {
@@ -78,14 +78,10 @@ export function resetScaredEatAwardIfNobodyScared(s: SweetSamSoftware): void {
 }
 
 export function drawBonusEatIndicators(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const sh = bonusEatSpriteSize;
   for (const p of s.bonusEatPopups) {
     const [x0, y0, x1, y1] = bonusEatFrameRect(p.frameIdx);
-    const frame = sub(imageBonus, x0, y0, x1, y1);
-
-    const screenX = p.x + bufX;
-    const screenY = p.y + bufY;
-    // Anchor center-X on bee; one tile gap above bee, sprite sits flush above that gap.
-    screen.draw(frame, screenX - bonusEatSpriteSize / 2, screenY - tileSize - sh);
+    const frame = sub(imagePoints, x0, y0, x1, y1);
+    // Centred on the bee; one tile gap above the bee, the frame flush above that gap.
+    screen.draw(frame, p.x + bufX - pointsFrameSize / 2, p.y + bufY - tileSize - pointsFrameSize);
   }
 }

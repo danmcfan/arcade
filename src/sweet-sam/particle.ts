@@ -3,6 +3,7 @@
 import * as rng from "../engine/rng.ts";
 import type { PremulColor, Surface } from "../engine/surface.ts";
 import { framesPerSecond } from "./constants.ts";
+import { sweetie, type SweetieLetter } from "../ui/sweetie16.ts";
 
 export const maxParticles = 300;
 
@@ -10,10 +11,16 @@ export const particleSize = 3;
 export const particleBurstBeeEatenCount = 25;
 export const particleBurstPlayerEatenCount = 25;
 
-/** #72dcbb — burst when the player eats a bee. */
-export const particleColorTeal: Readonly<PremulColor> = { r: 0x72, g: 0xdc, b: 0xbb, a: 255 };
-/** #ee6a7c — burst when a bee eats the player. */
-export const particleColorRed: Readonly<PremulColor> = { r: 0xee, g: 0x6a, b: 0x7c, a: 255 };
+/** An opaque particle colour from the palette (Go's particle colours were not Sweetie 16). */
+function opaque(letter: SweetieLetter): Readonly<PremulColor> {
+  const n = Number.parseInt(sweetie[letter].slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a: 255 };
+}
+
+/** Sweetie 16 cyan — burst when the player eats a bee. */
+export const particleColorCyan: Readonly<PremulColor> = opaque("c");
+/** Sweetie 16 red — burst when a bee eats the player. */
+export const particleColorRed: Readonly<PremulColor> = opaque("r");
 
 export class Particle {
   x = 0;

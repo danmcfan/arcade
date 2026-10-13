@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
-import { allImages, fireflyImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
+import { allImages, fireflyImages, images, loadImages, lumberjackImages, sounds, sweetSamImages } from "./assets.ts";
 import { defined } from "./defined.testutil.ts";
 import type { ImageAsset } from "./image.ts";
 
@@ -37,6 +37,23 @@ describe("image registry (D12)", () => {
       basename(String(f)),
     );
     expect(all.filter((f) => gone.has(f))).toEqual([]);
+  });
+
+  test("registers every Sweet Sam PNG, and none of the Go game's Sweet Sam art is left", () => {
+    const registered = Object.values(sweetSamImages).map((a) => basename(a.url));
+    const onDisk = readdirSync(new URL("../assets/images/sweet-sam", import.meta.url));
+    expect(registered.toSorted()).toEqual(onDisk.toSorted());
+    const gone = new Set([
+      "sweet-sam-maze.png",
+      "bear.png",
+      "bee.png",
+      "food.png",
+      "bonus.png",
+      "ready.png",
+      "digits.png",
+    ]);
+    const top = readdirSync(new URL("../assets/images", import.meta.url));
+    expect(top.filter((f) => gone.has(f))).toEqual([]);
   });
 
   test("registers the 9 lumberjack sheets by their Go paths", () => {

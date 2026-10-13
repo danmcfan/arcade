@@ -40,12 +40,12 @@ _Avoid_: round, stage, board
 One of the small dots along the Sweet Sam maze. The bear eats them all to clear the level.
 _Avoid_: pellet, dot, food
 
-**Smoke pot**:
+**Honey pot**:
 One of the four large items in the corners of the Sweet Sam maze. Eating one makes every bee sleepy for a while.
-_Avoid_: power pellet, energizer, power-up
+_Avoid_: power pellet, energizer, power-up, smoke pot
 
 **Sleepy bee**:
-A bee after the bear eats a smoke pot: slow, harmless, and worth points if the bear eats it. The Sleepy bees prize keeps them sleepy longer.
+A bee after the bear eats a honey pot: slow, harmless, and worth points if the bear eats it. The Sleepy bees prize keeps them sleepy longer.
 _Avoid_: scared bee, blue bee, frightened
 
 **Bonus flower**:

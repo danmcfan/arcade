@@ -9,18 +9,8 @@ import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
-import {
-  pelletAnimFrameCount,
-  pelletAnimHoldTicks,
-  pelletAtlasCellH,
-  pelletAtlasCellW,
-  pelletAtlasPowerRowY,
-  pelletAtlasSmallRowY,
-  pointToTile,
-  tileSize,
-  type Entity,
-  type Tile,
-} from "./entity.ts";
+import { frameSize, itemCellHeight, itemCellWidth } from "./art.ts";
+import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -69,9 +59,8 @@ function drawHighScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY:
 
 function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   for (let i = 0; i < s.lives - 1; i++) {
-    const sw = Math.trunc(imageBear.w / 4);
-    const sh = Math.trunc(imageBear.h / 4);
-    const spriteFrame = sub(imageBear, 0, 0, sw, sh);
+    // The first frame of bear.png: the bear facing down, standing.
+    const spriteFrame = sub(imageBear, 0, 0, frameSize, frameSize);
 
     screen.draw(spriteFrame, 8 * (2 + i * 2) + bufX, 8 * 34 + 1 + bufY);
   }
@@ -135,12 +124,8 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
   }
 
   const frame = animFrame % pelletAnimFrameCount;
-  const sx = frame * pelletAtlasCellW;
-  let sy = pelletAtlasSmallRowY;
-  if (e.powerPellet) {
-    sy = pelletAtlasPowerRowY;
-  }
-  const frameRect = sub(e.sprite, sx, sy, sx + pelletAtlasCellW, sy + pelletAtlasCellH);
+  const sx = frame * itemCellWidth;
+  const frameRect = sub(e.sprite, sx, 0, sx + itemCellWidth, itemCellHeight);
 
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }
@@ -310,8 +295,9 @@ function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): voi
     }
   }
 
-  const sx = e.width * Math.trunc(e.frame);
-  const sy = e.height * Math.trunc(row);
+  // A bee's sheet is a sub-image of bees.png, so frames count from its corner.
+  const sx = e.sprite.sx + e.width * Math.trunc(e.frame);
+  const sy = e.sprite.sy + e.height * Math.trunc(row);
   const sw = e.width;
   const sh = e.height;
 
