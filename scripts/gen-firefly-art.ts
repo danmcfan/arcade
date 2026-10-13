@@ -34,10 +34,7 @@ import {
   type FireflyColor,
 } from "../src/firefly/art.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, plot } from "./gen-ui-art.ts";
-
-/** Rows of palette letters, `.` blank. */
-export type Rows = readonly string[];
+import { blank, paint, plot, type Rows } from "./pixel-art.ts";
 
 const empty = ".";
 
@@ -104,22 +101,9 @@ export function mirrorQuarter(quarter: Rows): string[] {
   return [...top, ...[...top].reverse()];
 }
 
-/** Paint `rows` into `png` with its top-left at (ox, oy); `.` leaves what is there. */
-export function paint(png: PNG, rows: Rows, ox = 0, oy = 0): void {
-  rows.forEach((row, y) => {
-    [...row].forEach((px, x) => {
-      if (px === empty) return;
-      const X = ox + x;
-      const Y = oy + y;
-      if (X < 0 || Y < 0 || X >= png.width || Y >= png.height) return;
-      plot(png, X, Y, fireflyPalette[px as FireflyColor]);
-    });
-  });
-}
-
 function single(rows: Rows): PNG {
   const png = blank(rows[0]!.length, rows.length);
-  paint(png, rows);
+  paint(png, rows, fireflyPalette);
   return png;
 }
 
@@ -130,7 +114,7 @@ export function rotationSheet(rows: Rows): PNG {
   const png = blank(w * rotationColumns, h * rotationRows);
   for (let r = 0; r < rotationRows; r++) {
     for (let c = 0; c < rotationColumns; c++) {
-      paint(png, rotate(rows, r * 90 + c * rotationStep), c * w, r * h);
+      paint(png, rotate(rows, r * 90 + c * rotationStep), fireflyPalette, c * w, r * h);
     }
   }
   return png;
@@ -140,7 +124,7 @@ export function renderHit(): PNG {
   const frames = hitQuarters.map(mirrorQuarter);
   const size = frames[0]!.length;
   const png = blank(size * frames.length, size);
-  frames.forEach((rows, i) => paint(png, rows, i * size, 0));
+  frames.forEach((rows, i) => paint(png, rows, fireflyPalette, i * size, 0));
   return png;
 }
 
@@ -172,10 +156,10 @@ export function renderBackground(): PNG {
   }
   for (const [x, y, kind] of stars) {
     const rows = starArt[kind];
-    paint(png, rows, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
+    paint(png, rows, fireflyPalette, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
   }
   const tileW = grassTile[0]!.length;
-  for (let ox = 0; ox < backgroundWidth; ox += tileW) paint(png, grassTile, ox, backgroundHeight - grassTile.length);
+  for (let ox = 0; ox < backgroundWidth; ox += tileW) paint(png, grassTile, fireflyPalette, ox, backgroundHeight - grassTile.length);
   return png;
 }
 
