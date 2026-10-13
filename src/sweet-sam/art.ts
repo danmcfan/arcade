@@ -396,6 +396,13 @@ export const waxRimWidth = 1;
  */
 export const waxCornerCap = 4;
 
+/**
+ * The level-clear flash (#47): the maze alternates with itself in these
+ * colours, the wax white with a light grey border.
+ */
+export const waxFlashFill: SweetieLetter = "w";
+export const waxFlashRim: SweetieLetter = "l";
+
 /** Behind everything: the dark of the hive. */
 export const mazeBackground: SweetieLetter = "k";
 
@@ -459,3 +466,28 @@ export const pointsArt: readonly string[] = [
 ];
 export const pointsTop = 4;
 export const pointsFrameSize = 16;
+
+/**
+ * The bonus flower (#47), 16×16: the left half of a daisy with a honey
+ * centre on a green stem. The generator mirrors it into the right half and
+ * outlines it in black (`mirrorX`, `outline`). A candidate until the owner
+ * picks one in the flower playground.
+ */
+export const flowerLeft: readonly string[] = [
+  "........",
+  "......ww",
+  "...ww.ww",
+  "..wwwwww",
+  "..wwwyyy",
+  ".wwwyyoy",
+  ".wwwyyyy",
+  "..wwwyyy",
+  "..wwwwww",
+  "...ww.wG",
+  ".......G",
+  "..GG...G",
+  "...GGG.G",
+  "....GGGG",
+  ".......G",
+  "........",
+];

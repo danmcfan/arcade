@@ -23,6 +23,8 @@ import screensUrl from "../assets/images/screens.png";
 
 import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
 import bearUrl from "../assets/images/sweet-sam/bear.png";
+import sweetSamMazeFlashUrl from "../assets/images/sweet-sam/maze-flash.png";
+import flowerUrl from "../assets/images/sweet-sam/flower.png";
 import beesUrl from "../assets/images/sweet-sam/bees.png";
 import honeyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
 import honeyPotUrl from "../assets/images/sweet-sam/honey-pot.png";
@@ -138,7 +140,8 @@ export const imagePrizes: Sprite = whole(images.prizes);
  * Sweet Sam's sprites (src/assets/images/sweet-sam/), generated from
  * src/sweet-sam/art.ts by `bun run art`. Sprite frames are 16×16; bees.png
  * is one 64×96 sheet per bee (`beeOrder`), the honey drop and honey pot
- * are 4 frames of 8×12, and the points are 4 popup frames of 16×16.
+ * are 4 frames of 8×12, and the points are 4 popup frames of 16×16. The
+ * flash maze and the bonus flower are #47's.
  */
 export const sweetSamImages = {
   maze: asset(sweetSamMazeUrl, 224, 288),
@@ -149,9 +152,13 @@ export const sweetSamImages = {
   ready: asset(readyUrl, 48, 8),
   digits: asset(digitsUrl, 80, 8),
   points: asset(pointsUrl, 64, 16),
+  mazeFlash: asset(sweetSamMazeFlashUrl, 224, 288),
+  flower: asset(flowerUrl, 16, 16),
 } as const;
 
 export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
+export const imageSweetSamMazeFlash: Sprite = whole(sweetSamImages.mazeFlash);
+export const imageFlower: Sprite = whole(sweetSamImages.flower);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);

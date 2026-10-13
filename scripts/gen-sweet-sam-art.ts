@@ -12,6 +12,8 @@
 // then left. honey-drop.png and honey-pot.png are 4 bobbing frames of 8×12.
 // ready.png is READY!, six 8×8 letters. digits.png is the score dials' 0 to
 // 9, 8×8 each. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
+// maze-flash.png is the maze with its wax in the level-clear flash colours,
+// and flower.png the 16×16 bonus flower (#47).
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift.
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -29,6 +31,7 @@ import {
   dazedFace,
   dazedFaceAt,
   dialDigitsArt,
+  flowerLeft,
   doorBar,
   doorBarRows,
   frameSize,
@@ -58,13 +61,15 @@ import {
   walkCycle,
   waxCornerCap,
   waxFill,
+  waxFlashFill,
+  waxFlashRim,
   waxRim,
   waxRimWidth,
 } from "../src/sweet-sam/art.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
+import { blank, flipX, mirrorX, outline, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
 
 const tile = 8;
 
@@ -146,13 +151,27 @@ export function mazeLetter(x: number, y: number): SweetieLetter {
   return onRim(x, y) ? waxRim : waxFill;
 }
 
-export function renderMaze(): PNG {
+/** The letter at pixel (x, y) of maze-flash.png: the maze with its wax in the flash colours. */
+export function mazeFlashLetter(x: number, y: number): SweetieLetter {
+  const letter = mazeLetter(x, y);
+  if (letter === waxFill) return waxFlashFill;
+  if (letter === waxRim) return waxFlashRim;
+  return letter;
+}
+
+function mazeImage(letterAt: (x: number, y: number) => SweetieLetter): PNG {
   const png = blank(mazeWidth, mazeHeight);
   for (let y = 0; y < mazeHeight; y++) {
-    for (let x = 0; x < mazeWidth; x++) plot(png, x, y, sweetie[mazeLetter(x, y)]);
+    for (let x = 0; x < mazeWidth; x++) plot(png, x, y, sweetie[letterAt(x, y)]);
   }
   return png;
 }
+
+export const renderMaze = (): PNG => mazeImage(mazeLetter);
+export const renderMazeFlash = (): PNG => mazeImage(mazeFlashLetter);
+
+/** The bonus flower: `flowerLeft` mirrored into a whole flower and outlined. */
+export const flowerRows = (): string[] => outline(mirrorX(flowerLeft));
 
 /** A sheet of frames, `frames[row][column]`, each `frameSize` square. */
 function sheet(frames: readonly (readonly Rows[])[]): PNG {
@@ -272,6 +291,8 @@ export const sweetSamArtFiles: readonly { file: string; render: () => PNG }[] = 
   { file: "ready.png", render: () => image(readyArt) },
   { file: "digits.png", render: () => image(dialDigitsArt) },
   { file: "points.png", render: renderPoints },
+  { file: "maze-flash.png", render: renderMazeFlash },
+  { file: "flower.png", render: () => image(flowerRows()) },
 ];
 
 if (import.meta.main) {

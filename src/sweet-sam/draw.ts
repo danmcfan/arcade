@@ -4,10 +4,21 @@
 
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
-import { imageBear, imageCabinet, imageDigits, imageReady } from "../engine/assets.ts";
+import {
+  imageBear,
+  imageCabinet,
+  imageDigits,
+  imageFlower,
+  imageReady,
+  imageSweetSamMaze,
+  imageSweetSamMazeFlash,
+} from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
+import { drawText, drawTextCentered, textHeight, textWidth } from "../ui/text.ts";
+import { flowerX, flowerY } from "./flower.ts";
+import { stateIDLevelClear } from "./state.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import { frameSize, itemCellHeight, itemCellWidth } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
@@ -33,19 +44,23 @@ export function draw(s: SweetSamSoftware, screen: Surface): void {
   drawScore(s, screen, bufX, bufY);
   drawHighScore(s, screen, bufX, bufY);
   drawLives(s, screen, bufX, bufY);
+  drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
+  drawLevelBanner(s, screen, bufX, bufY);
   drawItems(s, screen, bufX, bufY);
+  drawFlower(s, screen, bufX, bufY);
   drawPlayer(s, screen, bufX, bufY);
   drawTiles(s, screen, bufX, bufY, debug);
   drawLines(s, screen, bufX, bufY, debug);
   drawEnemies(s, screen, bufX, bufY);
   drawBonusEatIndicators(s, screen, bufX, bufY);
+  drawFlowerPopup(s, screen, bufX, bufY);
   s.particles.draw(screen, bufX, bufY);
   drawMode(s, screen, bufX, bufY, debug);
 }
 
 function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  screen.draw(s.background(), bufX, bufY);
+  screen.draw(s.mazeFlash() ? imageSweetSamMazeFlash : imageSweetSamMaze, bufX, bufY);
 }
 
 function drawScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
@@ -66,6 +81,42 @@ function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
+/** The level counter: "L n" in the pixel font at the bottom right, level with the lives. */
+export const levelCounterRight = 8 * 26;
+
+function drawLevel(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  const text = `L${s.level}`;
+  const y = 8 * 34 + 1 + Math.trunc((frameSize - textHeight) / 2);
+  drawText(screen, text, levelCounterRight - textWidth(text) + bufX, y + bufY, "yellow");
+}
+
+/** Where READY! and "LEVEL n" stand: centred under the bee home. */
+const readyCentreX = 8 * 14;
+const readyTop = 8 * 20 + 1;
+
+/** "LEVEL n" before READY on every level after the first. */
+function drawLevelBanner(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  if (s.levelBannerTicks <= 0) return;
+  drawTextCentered(screen, `LEVEL ${s.level}`, readyCentreX + bufX, readyTop + bufY, "yellow");
+}
+
+function drawFlower(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  if (s.flowerTicks <= 0) return;
+  screen.draw(imageFlower, flowerX - frameSize / 2 + bufX, flowerY - frameSize / 2 + bufY);
+}
+
+/** An eaten flower's points, in the pixel font where it stood. */
+function drawFlowerPopup(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  if (s.flowerPopup === null) return;
+  drawTextCentered(
+    screen,
+    String(s.flowerPopup.points),
+    flowerX + bufX,
+    flowerY - Math.trunc(textHeight / 2) + bufY,
+    "white",
+  );
+}
+
 /** ImageReady ("READY!") strips: 48×8 → six 8×8 glyphs. */
 export const readyGlyphWidth = 8;
 
@@ -76,7 +127,7 @@ export const readyWaveTimeRad = 0.14;
 export const readyWaveGlyphPhaseRad = 1.05;
 
 function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.startTicks <= 0) {
+  if (s.startTicks <= 0 || s.levelBannerTicks > 0) {
     return;
   }
 
@@ -86,8 +137,8 @@ function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
     return;
   }
 
-  const baseX = 8 * 11 + bufX;
-  const baseY = 8 * 20 + bufY + 1;
+  const baseX = readyCentreX - Math.trunc((count * readyGlyphWidth) / 2) + bufX;
+  const baseY = readyTop + bufY;
 
   // startTicks counts down during START; more elapsed ⇒ larger phase progression.
   const intoReady = startTicks - s.startTicks;
@@ -130,7 +181,19 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }
 
+/** bear.png's row of death frames: dazed, sinking, flat, puddle. */
+export const bearDeathRow = 4;
+
 function drawPlayer(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  const death = s.deathFrame();
+  if (death !== null) {
+    const sx = death * frameSize;
+    const sy = bearDeathRow * frameSize;
+    const frame = sub(imageBear, sx, sy, sx + frameSize, sy + frameSize);
+    screen.draw(frame, s.player.x - frameSize / 2 + bufX, s.player.y - frameSize / 2 + bufY);
+    return;
+  }
+
   if (s.player.hidden) {
     return;
   }
@@ -171,6 +234,10 @@ function drawLines(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
 }
 
 function drawEnemies(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  // The bees leave the maze to the bear while it flashes.
+  if (s.stateMachine.currentId() === stateIDLevelClear) {
+    return;
+  }
   for (const enemy of s.enemies) {
     drawEntity(enemy, screen, bufX, bufY);
   }
