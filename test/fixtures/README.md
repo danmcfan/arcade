@@ -108,7 +108,7 @@ What the capture ticks show:
 | `sweet-sam-modes` | 3358 flashing bees (unshaken) |
 | `sweet-sam-fuzz-*` | 1 |
 | `sweet-sam-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered Sweet Sam (high score dials) · 3124 later in that game · 3125 minigame pause menu · 3158 hub after Quit game |
-| `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 hit effects mid-animation |
+| `firefly-stages` | 40 STAGE 1 · 160 Owls flying in, one hurt · 195 hit effect · 500 the formation filling · 745 a dive dropping shots · 1120 the firefly's burst after a lost life · 1160 STAGE 2 |
 | `brass-monkey-walk` | 191 facing left walking · 201 facing left idle |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
 | `wave-64-seed7` | 40 mid-run before Space (2048² canvas) · 199 50% collapsed · 357 100% collapsed |
@@ -144,13 +144,13 @@ reproduce every entry exactly.
 | `sweet-sam-clear` | `game.New(sweetSam)` | 11 | 9714 | look-ahead bot eats everything: round win at ~6700, bee chains 200→400→800→1600; then random holds to game over |
 | `sweet-sam-modes` | `game.New(sweetSam)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
 | `sweet-sam-highscore` | hub | 21 | 3178 | enter Sweet Sam from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter Sweet Sam (its high score dials boot from it), Esc and Quit game |
-| `firefly-play` | `game.New(firefly)` | 1 | 1501 | Space held while sweeping: bullets, hits, explosions, wave cleared (`bugs: []`) and respawned, bugs leaving off the top, a bullet hitting an unspawned bug at (0,0) |
+| `firefly-stages` | `game.New(firefly)` | 10 | 1261 | recorded from the TypeScript game (#34): a bot's inputs (Space held, steering under the nearest enemy) through stage 1's start, the entry, kills (an Owl hurt, then killed), dives with shots, a lost life, and stage 2's start |
 | `brass-monkey-walk` | `game.New(brassMonkey)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
 | `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-39,174 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
+38,934 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -160,8 +160,7 @@ bee eaten (PAUSE with a 200 and a 400 award), popup + particles, tunnel wrap
 (player and bee), death (PLAY → DEATHWAIT → START), final death (PLAY →
 FINALDEATHWAIT → back in the hub with the high score taken), round win
 (items 0 → START with a fresh set), the hub high score passed to a new Sweet Sam game,
-and `modeIndex` 1..8. It also checks the firefly-play and lumberjack-chop
-must-cover items above. Note that in the Go-recorded traces Sweet Sam's GAMEOVER
+and `modeIndex` 1..8. It also checks the lumberjack-chop must-cover items above. Note that in the Go-recorded traces Sweet Sam's GAMEOVER
 state never appears: the tick it is entered, `Game.Update` sees `GameOver()`
 and drops the software, so that tick's snapshot already has
 `software: null`. In the TS-recorded `sweet-sam-highscore` it shows for as long
@@ -235,6 +234,8 @@ Re-recorded from TypeScript so far:
 | `arcade-enter-firefly` (58, 358), `arcade-enter-brass-monkey` (58, 358), `firefly-play` (1, 60, 360, 685, 1098, 1401), `brass-monkey-walk` (191, 201) | #61: Firefly's and Brass Monkey's cabinets gain Sweet Sam's bevelled edge (lit in the letter-shadow colour, shaded in the old joystick-base colour) and a black joystick base (`art/cabinets.json`). Only the 12 frames that show those bezels were re-recorded; they differ only on the bezel's edge, the screen's lip and the joystick base. Inputs and traces unchanged |
 | `brass-monkey-walk` (every frame), `arcade-enter-brass-monkey` (58, 358, 359, 381) | #38: Brass Monkey's characters are generated from `src/brass-monkey/art.ts` (the owner's picks): the brass robot monkey replaces the Go player sprite on the same path, and the Gnome stands still on the workshop's top girder. Only the frames inside Brass Monkey were re-recorded; they differ only where the two sprites are drawn (x 64..141, y 130..319). Inputs and traces unchanged |
 | `brass-monkey-walk` (191, 201), `arcade-enter-brass-monkey` (58, 358, 359, 381) | #38, phase 1: Brass Monkey's girder floor is generated from `src/brass-monkey/art.ts` and `floors.ts` (the owner's picks: red I-beam girders, steel ladders, the steel exit door with a green lamp on the top platform, a riveted panel wall) in place of the green Go workshop, its "1UP HIGH SCORE 2UP" and bonus box; the bands above and below are Sweetie 16 black. The layout is the old workshop's. Only frames showing Brass Monkey were re-recorded; 58, 358, 191 and 201 differ only inside its screen (x 56..279, y 56..343). 359 and 381 (the pause menu) also pick up #61's bezel, which that re-recording missed. Inputs and traces unchanged |
+| `firefly-play` (deleted), `firefly-stages` (new), `arcade-enter-firefly` | #34: Firefly became a Galaga-style game (formation, dives, enemy shots, lives, score, stages), so the Go-recorded `firefly-play` no longer describes it and is deleted. `firefly-stages` is recorded from the TypeScript game. `arcade-enter-firefly` keeps its inputs; its trace and the frames inside Firefly (58, 358, 359, 381) were re-recorded |
+| `arcade-enter-brass-monkey`, `arcade-enter-sweet-sam`, `sweet-sam-highscore` | #34: Firefly's Go laser and boom sounds became generated spark, hit, lost-life and stage sounds, and the minigame pause menu pauses every minigame sound. Traces re-recorded; each equals the old one in every field but the `pause:` events in `sounds`. Inputs and frames unchanged |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end

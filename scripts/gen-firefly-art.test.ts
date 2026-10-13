@@ -10,15 +10,17 @@ import {
   hitQuarters,
   mothArt,
   owlArt,
+  owlHurtColours,
   rotationColumns,
   rotationRows,
   rotationStep,
+  shotArt,
   sparkArt,
   starArt,
   stars,
   waspArt,
 } from "../src/firefly/art.ts";
-import { frameAngle } from "../src/firefly/game.ts";
+import { frameAngle } from "../src/firefly/entity.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours } from "./pixel-art.ts";
 import {
@@ -62,6 +64,11 @@ describe("Firefly art source", () => {
         });
       });
     }
+  });
+
+  test("the enemy shot is 4×8 and the hurt Owl only swaps letters of the Owl's own", () => {
+    checkRows("shot", shotArt, { w: 4, h: 8 });
+    for (const from of Object.keys(owlHurtColours)) expect(owlArt.join("")).toContain(from);
   });
 
   test("the hit effect is 5 quarters of 16×16", () => {

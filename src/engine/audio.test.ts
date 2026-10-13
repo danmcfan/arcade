@@ -73,19 +73,19 @@ describe("Sound (D4: web.go semantics)", () => {
       events.push(e);
     });
     const fake = new FakeAudio();
-    const s = new Sound("laser", "laser.wav", false);
+    const s = new Sound("spark", "spark.wav", false);
     s.element = asElement(fake);
     s.rewind();
     s.play();
     s.pause();
-    expect(events).toEqual(["rewind:laser", "play:laser", "pause:laser"]);
+    expect(events).toEqual(["rewind:spark", "play:spark", "pause:spark"]);
     expect(fake.calls).toEqual([]);
     expect(fake.currentTime).toBe(5);
   });
 
   test("once ready, calls reach the element", () => {
     const fake = new FakeAudio(false);
-    const s = new Sound("boom", "boom.wav", false);
+    const s = new Sound("hit", "hit.wav", false);
     s.element = asElement(fake);
     s.ready = true;
     s.rewind();
@@ -120,20 +120,20 @@ describe("loadSounds (D5: never awaited)", () => {
   test("creates one element per sound and sets ready on canplaythrough", () => {
     const made: FakeAudio[] = [];
     const hub = new Sound("hub", "hub.wav", true, 0.3);
-    const laser = new Sound("laser", "laser.wav", false);
-    loadSounds([hub, laser], () => {
+    const spark = new Sound("spark", "spark.wav", false);
+    loadSounds([hub, spark], () => {
       const a = new FakeAudio();
       made.push(a);
       return asElement(a);
     });
     expect(made.map((a) => [a.src, a.loop, a.volume])).toEqual([
       ["hub.wav", true, 0.3],
-      ["laser.wav", false, 1],
+      ["spark.wav", false, 1],
     ]);
     expect(hub.ready).toBe(false);
     made[0]?.fire("canplaythrough");
     expect(hub.ready).toBe(true);
-    expect(laser.ready).toBe(false);
+    expect(spark.ready).toBe(false);
   });
 
   test("is a no-op with no Audio constructor (bun test has no DOM)", () => {
@@ -161,7 +161,7 @@ describe("installAudioUnlock", () => {
     const a = new FakeAudio(true);
     const b = new FakeAudio(true);
     const sa = new Sound("hub", "h.wav", true);
-    const sb = new Sound("laser", "l.wav", false);
+    const sb = new Sound("spark", "l.wav", false);
     sa.element = asElement(a);
     sb.element = asElement(b);
     installAudioUnlock([sa, sb], target);

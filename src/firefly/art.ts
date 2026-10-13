@@ -129,6 +129,15 @@ export const owlArt: readonly string[] = [
 ];
 
 /**
+ * The Owl after its first hit: the same rows with its warm feathers turned
+ * blue, so the player sees it is hurt. `bun run art` recolours `owlArt`.
+ */
+export const owlHurtColours: Readonly<Record<string, SweetieLetter>> = { r: "b", o: "B", y: "c" };
+
+/** An enemy shot: a falling ember. 4×8, drawn centred on the shot's position. */
+export const shotArt: readonly string[] = ["....", ".rr.", "roor", "ryyr", "ryyr", "roor", ".rr.", "...."];
+
+/**
  * The hit effect: 5 frames of a burst of light, each 32×32. Each frame is
  * written as its top-left quarter (16×16, the centre at its bottom-right
  * corner); `bun run art` mirrors it into the other three. Frames sit left to

@@ -1,7 +1,8 @@
-// Synthesise the title music, the hub song, the cabinets' attract loops and
-// the menu sounds from src/ui/sounds.ts:
+// Synthesise the title music, the hub song, the cabinets' attract loops, the
+// menu sounds and Firefly's sounds from src/ui/sounds.ts:
 //
-//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav
+//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav,
+//                    spark.wav, hit.wav, life-lost.wav, stage.wav
 //
 // Songs are a square-wave lead and arpeggio over a triangle bass, with a soft
 // noise hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
@@ -17,6 +18,7 @@ import {
   blipEighth,
   denyBuzz,
   eighthsPerMinute,
+  fireflyEffects,
   hubSong,
   melody,
   moveBlip,
@@ -25,6 +27,7 @@ import {
   selectChirp,
   ticketDing,
   type Attract,
+  type Effect,
   type Note,
   type Song,
 } from "../src/ui/sounds.ts";
@@ -155,6 +158,17 @@ function blip(notes: readonly Note[]): Buffer {
   return wav(out);
 }
 
+function effect({ notes, eighth }: Effect): Buffer {
+  const out = new Float64Array(Math.round(eighths(notes) * eighth * sampleRate));
+  voice(out, notes, eighth, square(0.5), 0.25, 0.5);
+  return wav(out);
+}
+
+export const renderSpark = (): Buffer => effect(fireflyEffects.spark);
+export const renderHit = (): Buffer => effect(fireflyEffects.hit);
+export const renderLifeLost = (): Buffer => effect(fireflyEffects.lifeLost);
+export const renderStage = (): Buffer => effect(fireflyEffects.stage);
+
 export const renderMove = (): Buffer => blip(moveBlip);
 export const renderSelect = (): Buffer => blip(selectChirp);
 export const renderTicket = (): Buffer => blip(ticketDing);
@@ -171,6 +185,10 @@ export const movePath = join(dir, "move.wav");
 export const selectPath = join(dir, "select.wav");
 export const ticketPath = join(dir, "ticket.wav");
 export const denyPath = join(dir, "deny.wav");
+export const sparkPath = join(dir, "spark.wav");
+export const hitPath = join(dir, "hit.wav");
+export const lifeLostPath = join(dir, "life-lost.wav");
+export const stagePath = join(dir, "stage.wav");
 
 if (import.meta.main) {
   for (const [path, render] of [
@@ -184,6 +202,10 @@ if (import.meta.main) {
     [selectPath, renderSelect],
     [ticketPath, renderTicket],
     [denyPath, renderDeny],
+    [sparkPath, renderSpark],
+    [hitPath, renderHit],
+    [lifeLostPath, renderLifeLost],
+    [stagePath, renderStage],
   ] as const) {
     const data = render();
     writeFileSync(path, data);

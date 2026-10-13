@@ -385,7 +385,15 @@ function heard(game: Game, fn: () => void): string[] {
   return out;
 }
 
-const minigameSoundPauses: SoundEvent[] = ["pause:start", "pause:power", "pause:death", "pause:laser", "pause:boom"];
+const minigameSoundPauses: SoundEvent[] = [
+  "pause:start",
+  "pause:power",
+  "pause:death",
+  "pause:spark",
+  "pause:hit",
+  "pause:lifeLost",
+  "pause:stage",
+];
 
 describe("minigame pause menu", () => {
   test("Esc opens it over the minigame: no update that tick, the tick still counts, sounds pause", () => {

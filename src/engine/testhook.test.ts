@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { soundLaser } from "./assets.ts";
+import { soundSpark } from "./assets.ts";
 import { NO_INPUT, type Input } from "./input.ts";
 import * as rng from "./rng.ts";
 import { Runtime } from "./runtime.ts";
@@ -161,9 +161,9 @@ describe("window.__arcade (§3.5)", () => {
   test("sounds() returns the calls since the last call, regardless of ready", () => {
     const { hook } = setup();
     hook.sounds();
-    soundLaser.rewind();
-    soundLaser.play();
-    expect(hook.sounds()).toEqual(["rewind:laser", "play:laser"]);
+    soundSpark.rewind();
+    soundSpark.play();
+    expect(hook.sounds()).toEqual(["rewind:spark", "play:spark"]);
     expect(hook.sounds()).toEqual([]);
   });
 
