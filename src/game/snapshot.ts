@@ -126,7 +126,7 @@ export interface PayoutSnapshot {
 // sweetSam (the Go port's Sweet Sam package)
 
 /** Go `StateID` values. */
-export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER";
+export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR";
 
 /** Enemy identity; Go compares `e.color` against `colorRed`, `colorPink`, `colorTeal`, `colorOrange`. */
 export type SweetSamEnemyKind = "red" | "pink" | "teal" | "orange";
@@ -242,6 +242,18 @@ export interface SweetSamSnapshot {
   joystick: number;
   /** 12 dials: `scoreDial[0..5]` then `highScoreDial[0..5]`. */
   dials: SweetSamDialSnapshot[];
+  /** The level being played, from 1 (#47). */
+  level: number;
+  /** START ticks left showing "LEVEL n" before READY (0 on level 1 and after a lost life). */
+  levelBannerTicks: number;
+  /** The maze is drawn in its flash colours this tick (the level-clear flash). */
+  mazeFlash: boolean;
+  /** The bonus flower: ticks it has left (0 = not there) and how many have appeared on this level. */
+  flower: { ticks: number; shown: number };
+  /** The points of the bonus flower just eaten, and the ticks they still show; null when none. */
+  flowerPopup: { points: number; ticks: number } | null;
+  /** The bear's death frame (0 dazed, 1 sinking, 2 flat, 3 puddle) during a death wait; null otherwise. */
+  deathFrame: number | null;
 }
 
 // ---------------------------------------------------------------------------

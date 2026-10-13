@@ -2,17 +2,8 @@ import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import type { Direction } from "../engine/input.ts";
 import { Entity, newCorners, newEnemies, newPlayer, type Tile } from "./entity.ts";
-import {
-  findTarget,
-  modeChase,
-  modeScatter,
-  modeSequence,
-  resetEnemy,
-  updateBlue,
-  updateDirection,
-  updateFrame,
-  updatePosition,
-} from "./update.ts";
+import { findTarget, resetEnemy, updateBlue, updateDirection, updateFrame, updatePosition } from "./update.ts";
+import { modeChase, modeScatter, modeSequence } from "./levels.ts";
 
 const corners = newCorners();
 

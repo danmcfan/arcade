@@ -1,7 +1,7 @@
 // Synthesise the title music, the hub song, the cabinets' attract loops and
 // the menu sounds from src/ui/sounds.ts:
 //
-//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav
+//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav, sweet-sam-*.wav
 //
 // Songs are a square-wave lead and arpeggio over a triangle bass, with a soft
 // noise hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
@@ -23,10 +23,11 @@ import {
   sampleRate,
   screenOn,
   selectChirp,
+  sweetSamTunes,
   ticketDing,
-  type Attract,
   type Note,
   type Song,
+  type Tune,
 } from "../src/ui/sounds.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
@@ -125,16 +126,16 @@ function renderSong(song: Song): Buffer {
 export const renderTitle = (): Buffer => renderSong({ eighthsPerMinute, bass, arpeggio, melody, hats: 0.05 });
 export const renderHub = (): Buffer => renderSong(hubSong);
 
-function renderAttract(loop: Attract): Buffer {
+function renderTune(loop: Tune): Buffer {
   const out = new Float64Array(Math.round(eighths(loop.notes) * loop.eighth * sampleRate));
   if (loop.wave === "square") voice(out, loop.notes, loop.eighth, square(0.25), 0.2, 0.4);
   else voice(out, loop.notes, loop.eighth, triangle, 0.3, 0.4);
   return wav(out);
 }
 
-export const renderAttractBrassMonkey = (): Buffer => renderAttract(attractLoops.brassMonkey);
-export const renderAttractSweet = (): Buffer => renderAttract(attractLoops.sweet);
-export const renderAttractFirefly = (): Buffer => renderAttract(attractLoops.firefly);
+export const renderAttractBrassMonkey = (): Buffer => renderTune(attractLoops.brassMonkey);
+export const renderAttractSweet = (): Buffer => renderTune(attractLoops.sweet);
+export const renderAttractFirefly = (): Buffer => renderTune(attractLoops.firefly);
 
 /** The thunk, then a sine whine sweeping up that swells in and dies away. */
 export function renderScreenOn(): Buffer {
@@ -161,6 +162,16 @@ export const renderTicket = (): Buffer => blip(ticketDing);
 export const renderDeny = (): Buffer => blip(denyBuzz);
 
 const dir = join(repoRoot, "src/assets/sounds");
+
+/** Sweet Sam's sounds: `sweet-sam-<name>.wav` for each of `sweetSamTunes`. */
+export const sweetSamSoundFiles: readonly (readonly [path: string, render: () => Buffer])[] = Object.entries(
+  sweetSamTunes,
+).map(([name, tune]) => [join(dir, `sweet-sam-${kebab(name)}.wav`), () => renderTune(tune)] as const);
+
+function kebab(name: string): string {
+  return name.replaceAll(/[A-Z]/gu, (c) => `-${c.toLowerCase()}`);
+}
+
 export const titlePath = join(dir, "title.wav");
 export const hubPath = join(dir, "hub.wav");
 export const screenOnPath = join(dir, "screen-on.wav");
@@ -184,6 +195,7 @@ if (import.meta.main) {
     [selectPath, renderSelect],
     [ticketPath, renderTicket],
     [denyPath, renderDeny],
+    ...sweetSamSoundFiles,
   ] as const) {
     const data = render();
     writeFileSync(path, data);

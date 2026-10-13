@@ -236,13 +236,13 @@ describe("entering a machine", () => {
 
   test("software construction sounds come after the melody stop", () => {
     const s = newState(null, (name) => {
-      sounds.push("play:start");
+      sounds.push("play:sweetStart");
       return fakeSoftware(name);
     });
     run(s, 31, { up: true });
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
-    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "play:start"]);
+    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "play:sweetStart"]);
   });
 });
 

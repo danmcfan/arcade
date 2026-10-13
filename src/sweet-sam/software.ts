@@ -10,7 +10,7 @@ import type { FixedViewport } from "../game/software.ts";
 import type { SweetSamDialSnapshot, SweetSamSnapshot } from "../game/snapshot.ts";
 import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
-import type { BonusEatPopup } from "./bonusEat.ts";
+import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { digits6, newDigitReels, type DigitReel, type DigitReels } from "../ui/digitReel.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
@@ -18,6 +18,9 @@ import {
   DeathWaitState,
   FinalDeathWaitState,
   GameOverState,
+  LevelClearState,
+  levelClearFlashTicks,
+  levelClearTicks,
   PauseState,
   PlayState,
   StartState,
@@ -25,11 +28,13 @@ import {
   stateIDDeathWait,
   stateIDFinalDeathWait,
   stateIDGameOver,
+  stateIDLevelClear,
   stateIDPause,
   stateIDPlay,
   stateIDStart,
 } from "./state.ts";
-import { modeScatter, restartRound, update, type Mode } from "./update.ts";
+import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
+import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
 import { draw, type DrawCache } from "./draw.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
@@ -58,6 +63,10 @@ export class SweetSamSoftware implements FixedViewport {
   startTicks = 0;
 
   lives = 0;
+  /** The level being played, from 1 (#47). */
+  level = 1;
+  /** START ticks left showing "LEVEL n" before READY; only after a level clear. */
+  levelBannerTicks = 0;
   /** Go `score` (renamed: `score()` is the Software method). */
   scoreValue = 0;
   highScore: number;
@@ -72,6 +81,12 @@ export class SweetSamSoftware implements FixedViewport {
 
   /** Transient sprites when eating scared bees (bonusEat.ts). */
   bonusEatPopups: BonusEatPopup[] = [];
+  /** Ticks the bonus flower has left; 0 when there is none (#47). */
+  flowerTicks = 0;
+  /** Bonus flowers shown so far on this level. */
+  flowersShown = 0;
+  /** The points of the flower just eaten, while they show. */
+  flowerPopup: FlowerPopup | null = null;
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
 
@@ -91,6 +106,7 @@ export class SweetSamSoftware implements FixedViewport {
     this.stateMachine.registerState(stateIDDeathWait, new DeathWaitState(this));
     this.stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(this));
     this.stateMachine.registerState(stateIDGameOver, new GameOverState());
+    this.stateMachine.registerState(stateIDLevelClear, new LevelClearState(this));
 
     this.lives = advantages.lives;
     this.scoreValue = 0;
@@ -140,6 +156,24 @@ export class SweetSamSoftware implements FixedViewport {
 
   gameOver(): boolean {
     return this.lives <= 0 && this.stateMachine.currentId() === stateIDGameOver;
+  }
+
+  /** How hard the current level is. */
+  values(): LevelValues {
+    return levelValues(this.level);
+  }
+
+  /** The maze shows its flash colours this tick (the level-clear flash). */
+  mazeFlash(): boolean {
+    if (this.stateMachine.currentId() !== stateIDLevelClear) return false;
+    return Math.trunc((levelClearTicks - this.pauseTicks) / levelClearFlashTicks) % 2 === 1;
+  }
+
+  /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */
+  deathFrame(): number | null {
+    const id = this.stateMachine.currentId();
+    if (id !== stateIDDeathWait && id !== stateIDFinalDeathWait) return null;
+    return deathFrameAt(deathRoundDelayTicks - this.pauseTicks);
   }
 
   movingEntities(): Entity[] {
@@ -197,6 +231,12 @@ export class SweetSamSoftware implements FixedViewport {
       pelletAnimTick: this.pelletAnimTick,
       joystick: this.cabinetJoystickFrame,
       dials: [...this.scoreDial.map(dial), ...this.highScoreDial.map(dial)],
+      level: this.level,
+      levelBannerTicks: this.levelBannerTicks,
+      mazeFlash: this.mazeFlash(),
+      flower: { ticks: this.flowerTicks, shown: this.flowersShown },
+      flowerPopup: this.flowerPopup === null ? null : { ...this.flowerPopup },
+      deathFrame: this.deathFrame(),
     };
   }
 }
