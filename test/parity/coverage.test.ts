@@ -60,7 +60,7 @@ const REQUIRED = [
   "sweet-sam-fuzz-4",
   "sweet-sam-clear",
   "sweet-sam-highscore",
-  "firefly-play",
+  "firefly-stages",
   "brass-monkey-play",
   "wave-64-seed7",
   "wave-128-seed3",

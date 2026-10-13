@@ -10,14 +10,16 @@ import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.t
 import {
   imageArcade,
   attractSounds,
-  soundBoom,
   soundDeath,
   soundDeny,
+  soundHit,
   soundHub,
-  soundLaser,
+  soundLifeLost,
   soundMove,
   soundPower,
   soundSelect,
+  soundSpark,
+  soundStage,
   soundStart,
   soundTicket,
 } from "../engine/assets.ts";
@@ -61,7 +63,15 @@ export interface Progress {
 }
 
 /** The minigames' sounds: paused with the minigame pause menu. */
-const minigameSounds: readonly Sound[] = [soundStart, soundPower, soundDeath, soundLaser, soundBoom];
+const minigameSounds: readonly Sound[] = [
+  soundStart,
+  soundPower,
+  soundDeath,
+  soundSpark,
+  soundHit,
+  soundLifeLost,
+  soundStage,
+];
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {

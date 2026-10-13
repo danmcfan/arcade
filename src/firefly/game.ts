@@ -1,153 +1,130 @@
-// Port of internal/firefly/game.go.
+// Firefly: the Galaga-style shooter (#34). Each stage opens with "STAGE n",
+// then the enemies fly in on curves to a swaying formation and break off to
+// dive at the firefly, dropping shots. Headless and on ticks (ADR 0002, ADR
+// 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
-import {
-  imageCabinetFirefly,
-  imageFirefly,
-  imageFireflyBackground,
-  imageHit,
-  imageMoth,
-  imageSpark,
-  soundBoom,
-  soundLaser,
-} from "../engine/assets.ts";
-import { sub as cutImage, type Sprite } from "../engine/image.ts";
-import { direction, type Input } from "../engine/input.ts";
+import { soundHit, soundLifeLost, soundSpark, soundStage } from "../engine/assets.ts";
+import type { Sound } from "../engine/audio.ts";
+import type { Input } from "../engine/input.ts";
+import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
+import { cabinetHeight, cabinetJoystickFrame, cabinetWidth } from "../ui/cabinet.ts";
+import { imageFireflyBackground } from "../engine/assets.ts";
+import type { Sprite } from "../engine/image.ts";
+import { drawFirefly } from "./draw.ts";
+import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
+import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
 import {
-  cabinetHeight,
-  cabinetInsetLeft,
-  cabinetInsetTop,
-  cabinetJoystickFrame,
-  cabinetWidth,
-  drawCabinet,
-} from "../ui/cabinet.ts";
-import { drawBezierDebug } from "./debug.ts";
-import { FRAMES_PER_SECOND, newBezierPatternFunc, type BezierConfig, type PatternFunc } from "./pattern.ts";
+  diveWeight,
+  difficulty,
+  enemyHalfSize,
+  enemyHp,
+  enemySpeed,
+  entryGroupGap,
+  entryGroupSize,
+  entrySpacing,
+  fieldHeight,
+  fieldWidth,
+  firstShotDelay,
+  formation,
+  hitEffectTicks,
+  maxSparks,
+  playerSpeed,
+  points,
+  respawnTicks,
+  shotMaxDrift,
+  shotSpacing,
+  shotSpeed,
+  sparkCooldown,
+  sparkSpeed,
+  stageIntroTicks,
+  startLives,
+  swayOffset,
+} from "./rules.ts";
 
-export const debug = false;
+/** The firefly's row and where it starts, centred. */
+export const playerY = 264;
+const playerHalfWidth = 8;
+const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
 
-export const tileSize = 8;
-export const tileWidth = 28;
-export const tileHeight = 36;
+/**
+ * The curves enemies fly in on, by group: from the top swinging right, from
+ * the top swinging left, then low from the left and from the right. Each ends
+ * at the enemy's own slot.
+ */
+const entryCurves: readonly Omit<BezierConfig, "p3">[] = [
+  { p0: { x: 96, y: -16 }, p1: { x: 96, y: 170 }, p2: { x: 210, y: 210 } },
+  { p0: { x: 128, y: -16 }, p1: { x: 128, y: 170 }, p2: { x: 14, y: 210 } },
+  { p0: { x: -16, y: 230 }, p1: { x: 170, y: 250 }, p2: { x: 170, y: 90 } },
+  { p0: { x: 240, y: 230 }, p1: { x: 54, y: 250 }, p2: { x: 54, y: 90 } },
+];
 
-export const leftBezierConfig: BezierConfig = {
-  p0: { x: tileSize * 16, y: tileSize * 1 },
-  p1: { x: tileSize * -14, y: tileSize * 24 },
-  p2: { x: tileSize * 14, y: tileSize * 36 },
-  p3: { x: tileSize * 14, y: tileSize * 12 },
-};
+/** Where a dive aims: the firefly's x, give or take this much. */
+const diveAimSpread = 24;
+/** A diving Moth or Wasp leaves the screen this far below the bottom, then comes back in from above. */
+const offscreenMargin = 24;
 
-export const rightBezierConfig: BezierConfig = {
-  p0: { x: tileSize * 12, y: tileSize * 1 },
-  p1: { x: tileSize * 42, y: tileSize * 24 },
-  p2: { x: tileSize * 14, y: tileSize * 36 },
-  p3: { x: tileSize * 14, y: tileSize * 12 },
-};
-
-/** Go `vec` (a value type: always build a new one, never mutate a shared one). */
-export interface Vec {
-  x: number;
-  y: number;
+/** Rough length of a curve, from 16 straight pieces. */
+function curveLength(c: BezierConfig): number {
+  const f = newBezierPatternFunc(c);
+  let len = 0;
+  let prev = f(0);
+  for (let i = 1; i <= 16; i++) {
+    const p = f(i / 16);
+    len += Math.hypot(p.x - prev.x, p.y - prev.y);
+    prev = p;
+  }
+  return len;
 }
 
-export function add(a: Vec, b: Vec): Vec {
-  return { x: a.x + b.x, y: a.y + b.y };
+function followPath(e: Enemy, path: BezierConfig): void {
+  e.path = path;
+  e.t = 0;
+  e.tStep = enemySpeed / Math.max(1, curveLength(path));
 }
 
-export function sub(a: Vec, b: Vec): Vec {
-  return { x: a.x - b.x, y: a.y - b.y };
+/** A fresh stage: every slot filled, waiting to fly in group by group. */
+export function newStageEnemies(): Enemy[] {
+  return formation().map((slot, i) => {
+    const group = Math.trunc(i / entryGroupSize);
+    const curve = entryCurves[group % entryCurves.length] ?? entryCurves[0];
+    if (curve === undefined) throw new Error("no entry curves");
+    const home = { x: slot.x, y: slot.y };
+    const e: Enemy = {
+      kind: slot.kind,
+      row: slot.row,
+      col: slot.col,
+      home,
+      state: "waiting",
+      x: curve.p0.x,
+      y: curve.p0.y,
+      dx: 0,
+      dy: 1,
+      hp: enemyHp[slot.kind],
+      deadFrames: 0,
+      wait: stageIntroTicks + group * entryGroupGap + (i % entryGroupSize) * entrySpacing,
+      path: null,
+      t: 0,
+      tStep: 0,
+      shotsLeft: 0,
+      shotTimer: 0,
+      outOfFormation: false,
+    };
+    followPath(e, { ...curve, p3: home });
+    return e;
+  });
 }
 
-/** Which bezier a bug follows; Go compares nothing, the snapshot needs a name. */
-export type PatternName = "L" | "R";
-
-/** Go `entity`. Fields keep their Go zero values unless a constructor sets them. */
-export interface Entity {
-  image: Sprite;
-  position: Vec;
-  previousPosition: Vec;
-  direction: Vec;
-  width: number;
-  height: number;
-  dead: boolean;
-  deadFrames: number;
-  pattern: PatternFunc | null;
-  /** TS only: identifies `pattern` for the snapshot. */
-  patternName: PatternName | null;
-  duration: number;
-  durationStep: number;
-}
-
-function newEntity(image: Sprite): Entity {
-  return {
-    image,
-    position: { x: 0, y: 0 },
-    previousPosition: { x: 0, y: 0 },
-    direction: { x: 0, y: 0 },
-    width: 0,
-    height: 0,
-    dead: false,
-    deadFrames: 0,
-    pattern: null,
-    patternName: null,
-    duration: 0,
-    durationStep: 0,
-  };
-}
-
-function newPlayer(): Entity {
-  return {
-    ...newEntity(imageFirefly),
-    position: { x: (tileSize * tileWidth) / 2, y: tileSize * tileHeight - tileSize * 3 },
-    direction: { x: 2.0, y: 0 },
-    width: tileSize * 2,
-    height: tileSize * 2,
-  };
-}
-
-function newBug(pattern: PatternFunc, patternName: PatternName, initialDuration: number, durationStep: number): Entity {
-  return {
-    ...newEntity(imageMoth),
-    width: tileSize * 2,
-    height: tileSize * 2,
-    pattern,
-    patternName,
-    duration: initialDuration,
-    durationStep,
-  };
-}
-
-/** Go `1.0 / (FRAMES_PER_SECOND * 3)`, a constant expression (exactly 1/180 rounded once). */
-export const durationStep = 1.0 / (FRAMES_PER_SECOND * 3);
-
-function newBugs(): Entity[] {
-  // Runtime float64 arithmetic in Go (durationStep is a typed variable there),
-  // evaluated left to right: ((-durationStep) * 60) * k. The first of each
-  // side is -0 (((-durationStep) * 60) * 0), which is not < 0, so it starts
-  // flying on the first update.
-  const leftPatternFunc = newBezierPatternFunc(leftBezierConfig);
-  const rightPatternFunc = newBezierPatternFunc(rightBezierConfig);
-
-  return [
-    newBug(leftPatternFunc, "L", -0, durationStep),
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.8, durationStep),
-
-    newBug(rightPatternFunc, "R", -0, durationStep),
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.8, durationStep),
-  ];
+function play(s: Sound): void {
+  s.rewind();
+  s.play();
 }
 
 /**
- * Go `FireFlySoftware`, played inside its cabinet (#15). Fields are public so
- * tests can stage states, as Go's in-package tests could.
+ * The Firefly `Software`, played inside its cabinet (#15). Fields are public
+ * so tests can stage states.
  */
 export class FireflySoftware implements FixedViewport {
   readonly name = "firefly" as const;
@@ -155,125 +132,254 @@ export class FireflySoftware implements FixedViewport {
   /** The bezel's joystick frame for the last input (no gameplay effect). */
   cabinetJoystickFrame = 0;
 
-  /** The firefly. Sparks and Moths keep their Go names, `bullets` and `bugs`, as the snapshot does. */
-  player: Entity = newPlayer();
-  bullets: Entity[] = [];
-  bugs: Entity[] = newBugs();
+  stage = 1;
+  stageTick = 0;
+  lives = startLives;
+  points = 0;
+  over = false;
+  player: Vec = { ...playerStart };
+  respawn = 0;
   fireDelay = 0;
+  sparks: Spark[] = [];
+  enemies: Enemy[] = newStageEnemies();
+  shots: Shot[] = [];
+  diveTimer = difficulty(1).diveInterval;
+  /** Ticks since the run started: drives the formation's sway. */
+  ticks = 0;
 
   update(i: Input): void {
     this.cabinetJoystickFrame = cabinetJoystickFrame(i);
+    if (this.over) return;
 
-    if (this.bugs.length === 0) {
-      this.bugs = newBugs();
+    if (this.stageTick === 0) play(soundStage);
+    this.stageTick++;
+    this.ticks++;
+
+    if (this.respawn === 0) this.movePlayer(i);
+    this.moveSparks();
+    this.moveEnemies();
+    this.moveShots();
+    this.hitEnemies();
+    if (this.respawn === 0) this.hitPlayer();
+    this.endHitEffects();
+    this.countDownRespawn();
+
+    if (this.enemies.length === 0) this.nextStage();
+  }
+
+  /** The formation's x offset this tick. */
+  sway(): number {
+    return swayOffset(this.ticks);
+  }
+
+  private movePlayer(i: Input): void {
+    if (i.left && !i.right) this.player.x -= playerSpeed;
+    if (i.right && !i.left) this.player.x += playerSpeed;
+    this.player.x = Math.max(playerHalfWidth, Math.min(fieldWidth - playerHalfWidth, this.player.x));
+
+    if (i.space && this.fireDelay === 0 && this.sparks.length < maxSparks) {
+      this.sparks.push({ x: this.player.x, y: this.player.y - 10 });
+      this.fireDelay = sparkCooldown;
+      play(soundSpark);
     }
+    if (this.fireDelay > 0) this.fireDelay--;
+  }
 
-    if (i.space && this.fireDelay <= 0) {
-      this.bullets.push({
-        ...newEntity(imageSpark),
-        position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
-        direction: { x: 0, y: -5.0 },
-      });
-      this.fireDelay = 20;
+  private moveSparks(): void {
+    for (const s of this.sparks) s.y -= sparkSpeed;
+    this.sparks = this.sparks.filter((s) => s.y > -4);
+  }
 
-      soundLaser.rewind();
-      soundLaser.play();
-    }
-
-    if (this.fireDelay > 0) {
-      this.fireDelay--;
-    }
-
-    // Uses the Up, Down, Left, Right priority: holding Up or Down masks Left/Right.
-    let newPosition = this.player.position;
-    switch (direction(i)) {
-      case "LEFT":
-        newPosition = sub(newPosition, this.player.direction);
-        break;
-      case "RIGHT":
-        newPosition = add(newPosition, this.player.direction);
-        break;
-      case "UP":
-      case "DOWN":
-      case "":
-        break;
-    }
-    newPosition = { ...newPosition };
-
-    if (newPosition.x < this.player.width / 2) {
-      newPosition.x = this.player.width / 2;
-    }
-    if (newPosition.x > tileSize * tileWidth - this.player.width / 2 + 1) {
-      newPosition.x = tileSize * tileWidth - this.player.width / 2 + 1;
-    }
-
-    this.player.position = newPosition;
-
-    for (const bullet of this.bullets) {
-      bullet.position = add(bullet.position, bullet.direction);
-      // Bullets are 0×0, so this is y <= 0.
-      if (bullet.position.y <= bullet.height / 2) {
-        bullet.dead = true;
-      }
-    }
-
-    // Dead bullets (just flown off the top) still collide this tick, and bugs
-    // that have not spawned yet (sitting at 0,0) are fair game: only
-    // DeadFrames is checked.
-    for (const bullet of this.bullets) {
-      for (const bug of this.bugs) {
-        if (bug.deadFrames > 0) {
-          continue;
+  private moveEnemies(): void {
+    const d = difficulty(this.stage);
+    const sway = this.sway();
+    for (const e of this.enemies) {
+      if (e.deadFrames > 0) continue;
+      const px = e.x;
+      const py = e.y;
+      switch (e.state) {
+        case "waiting":
+          if (--e.wait <= 0) e.state = "entering";
+          break;
+        case "entering":
+        case "diving":
+          this.stepPath(e, sway);
+          if (e.state === "diving") this.dropShot(e);
+          break;
+        case "joining": {
+          const tx = e.home.x + sway;
+          const ty = e.home.y;
+          const dist = Math.hypot(tx - e.x, ty - e.y);
+          if (dist <= enemySpeed) {
+            e.x = tx;
+            e.y = ty;
+            e.state = "formation";
+            e.outOfFormation = false;
+          } else {
+            e.x += ((tx - e.x) / dist) * enemySpeed;
+            e.y += ((ty - e.y) / dist) * enemySpeed;
+          }
+          break;
         }
-
-        if (collide(bullet.position, bug.position)) {
-          bullet.dead = true;
-          bug.deadFrames = 75;
-
-          soundBoom.rewind();
-          soundBoom.play();
-
-          break; // only one bug per bullet
-        }
+        case "formation":
+          e.x = e.home.x + sway;
+          e.y = e.home.y;
+          break;
+      }
+      if (e.state === "formation") {
+        e.dx = 0;
+        e.dy = 1;
+      } else if (e.x !== px || e.y !== py) {
+        e.dx = e.x - px;
+        e.dy = e.y - py;
       }
     }
 
-    this.bullets = this.bullets.filter((b) => !b.dead);
+    const allIn = this.enemies.every((e) => e.state !== "waiting" && e.state !== "entering");
+    if (!allIn || this.respawn > 0) return;
+    if (this.diveTimer > 0) this.diveTimer--;
+    if (this.diveTimer > 0) return;
+    this.diveTimer = d.diveInterval;
+    for (let n = 0; n < d.diversPerDive; n++) this.startDive(d.shotsPerDive);
+  }
 
-    for (const bug of this.bugs) {
-      if (bug.deadFrames > 0) {
-        bug.deadFrames--;
-        if (bug.deadFrames === 0) {
-          bug.dead = true;
-        }
-        continue;
-      }
-
-      if (bug.duration < 0) {
-        bug.duration += bug.durationStep;
-        continue;
-      }
-
-      bug.previousPosition = bug.position;
-      if (bug.duration > 1) {
-        bug.position = sub(bug.position, { x: 0, y: 2.5 });
-      } else {
-        // Every bug is built with a pattern; only the player has none.
-        if (bug.pattern === null) throw new Error("bug without pattern");
-        bug.position = bug.pattern(bug.duration);
-        bug.duration += bug.durationStep;
-      }
-
-      bug.direction = sub(bug.position, bug.previousPosition);
-
-      if (bug.position.y < 0) {
-        bug.dead = true;
-      }
+  /** One step along the enemy's curve; at its end it heads for its slot. */
+  private stepPath(e: Enemy, sway: number): void {
+    const path = e.path;
+    if (path === null) throw new Error(`${e.state} enemy without a path`);
+    e.t += e.tStep;
+    const p = e.t >= 1 ? path.p3 : newBezierPatternFunc(path)(e.t);
+    e.x = p.x;
+    e.y = p.y;
+    if (e.t < 1) return;
+    e.path = null;
+    e.state = "joining";
+    if (e.y > fieldHeight) {
+      // Off the bottom: come back in from above the slot.
+      e.x = e.home.x + sway;
+      e.y = -offscreenMargin;
     }
+  }
 
-    // Removed at the end of the tick: one snapshot can show `bugs: []` before
-    // the next update respawns the wave.
-    this.bugs = this.bugs.filter((b) => !b.dead);
+  /** Picks an enemy in formation, Wasps most often, and sends it at the firefly. */
+  private startDive(shots: number): void {
+    const candidates = this.enemies.filter((e) => e.state === "formation" && e.deadFrames === 0);
+    const total = candidates.reduce((t, e) => t + diveWeight[e.kind], 0);
+    if (total === 0) return;
+    let pick = rng.intn(total);
+    const e = candidates.find((c) => (pick -= diveWeight[c.kind]) < 0);
+    if (e === undefined) return;
+
+    const aim = Math.max(
+      16,
+      Math.min(fieldWidth - 16, this.player.x + rng.intn(2 * diveAimSpread + 1) - diveAimSpread),
+    );
+    const side = e.x < fieldWidth / 2 ? -1 : 1;
+    const p0 = { x: e.x, y: e.y };
+    const p1 = { x: e.x + side * 40, y: e.y - 30 };
+    // The Owl swoops right at the firefly to eat it, then flies back up; the
+    // others sweep past it and off the bottom.
+    const path: BezierConfig =
+      e.kind === "owl"
+        ? { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }
+        : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
+    e.state = "diving";
+    e.outOfFormation = true;
+    followPath(e, path);
+    e.shotsLeft = shots;
+    e.shotTimer = firstShotDelay;
+  }
+
+  /** A diving enemy above the firefly drops its shots, aimed down at it. */
+  private dropShot(e: Enemy): void {
+    if (e.shotsLeft === 0 || e.state !== "diving") return;
+    if (e.shotTimer > 0) e.shotTimer--;
+    if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
+    const ticksToPlayer = (playerY - e.y) / shotSpeed;
+    const drift = Math.max(-shotMaxDrift, Math.min(shotMaxDrift, (this.player.x - e.x) / ticksToPlayer));
+    this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
+    e.shotsLeft--;
+    e.shotTimer = shotSpacing;
+  }
+
+  private moveShots(): void {
+    for (const s of this.shots) {
+      s.x += s.dx;
+      s.y += s.dy;
+    }
+    this.shots = this.shots.filter((s) => s.y < fieldHeight + 8);
+  }
+
+  private hitEnemies(): void {
+    this.sparks = this.sparks.filter((s) => {
+      const e = this.enemies.find(
+        (en) =>
+          en.deadFrames === 0 &&
+          en.state !== "waiting" &&
+          Math.abs(s.x - en.x) < enemyHalfSize[en.kind] + 2 &&
+          Math.abs(s.y - en.y) < enemyHalfSize[en.kind] + 4,
+      );
+      if (e === undefined) return true;
+      e.hp--;
+      if (e.hp === 0) this.kill(e);
+      play(soundHit);
+      return false;
+    });
+  }
+
+  private kill(e: Enemy): void {
+    e.hp = 0;
+    e.deadFrames = hitEffectTicks;
+    this.points += points(e.kind, e.outOfFormation);
+  }
+
+  private hitPlayer(): void {
+    const p = this.player;
+    const body = this.enemies.find(
+      (e) =>
+        e.deadFrames === 0 &&
+        e.state !== "waiting" &&
+        Math.abs(e.x - p.x) < enemyHalfSize[e.kind] + 6 &&
+        Math.abs(e.y - p.y) < enemyHalfSize[e.kind] + 6,
+    );
+    const shot = this.shots.find((s) => Math.abs(s.x - p.x) < 5 && Math.abs(s.y - p.y) < 7);
+    if (body === undefined && shot === undefined) return;
+    if (body !== undefined) this.kill(body);
+    if (shot !== undefined) this.shots = this.shots.filter((s) => s !== shot);
+    this.loseLife();
+  }
+
+  /** The firefly is eaten or shot: one life gone, and the next after a pause. */
+  loseLife(): void {
+    this.lives--;
+    this.respawn = respawnTicks;
+    play(soundLifeLost);
+  }
+
+  private endHitEffects(): void {
+    for (const e of this.enemies) if (e.deadFrames > 0) e.deadFrames--;
+    this.enemies = this.enemies.filter((e) => e.hp > 0 || e.deadFrames > 0);
+  }
+
+  private countDownRespawn(): void {
+    if (this.respawn === 0) return;
+    if (--this.respawn > 0) return;
+    if (this.lives === 0) {
+      this.over = true;
+      return;
+    }
+    this.player = { ...playerStart };
+    // A fresh firefly starts with no enemy shot already falling on it.
+    this.shots = [];
+    this.fireDelay = 0;
+  }
+
+  private nextStage(): void {
+    this.stage++;
+    this.stageTick = 0;
+    this.enemies = newStageEnemies();
+    this.shots = [];
+    this.diveTimer = difficulty(this.stage).diveInterval;
   }
 
   fixedViewportSize(): [number, number] {
@@ -282,71 +388,15 @@ export class FireflySoftware implements FixedViewport {
 
   /** A `FixedViewport`: `buffer` is 0; the 224x288 playfield fills the cabinet's screen. */
   draw(screen: Surface, _buffer: number): void {
-    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetFirefly);
-
-    const origin: Vec = { x: cabinetInsetLeft, y: cabinetInsetTop };
-    drawImage(screen, this.background(), origin);
-
-    if (debug) {
-      drawBezierDebug(screen, leftBezierConfig, origin, 100);
-      drawBezierDebug(screen, rightBezierConfig, origin, 100);
-    }
-
-    let position = add(this.player.position, origin);
-    position = sub(position, { x: this.player.width / 2, y: this.player.height / 2 });
-    drawImage(screen, this.player.image, position);
-
-    for (const bullet of this.bullets) {
-      let p = add(bullet.position, origin);
-      p = sub(p, { x: bullet.width / 2, y: bullet.height / 2 });
-      drawImage(screen, bullet.image, p);
-    }
-
-    for (const bug of this.bugs) {
-      // Culled outside (0, 224) × (0, 288), bounds exclusive.
-      if (
-        bug.position.x <= 0 ||
-        bug.position.x >= tileSize * tileWidth ||
-        bug.position.y <= 0 ||
-        bug.position.y >= tileSize * tileHeight
-      ) {
-        continue;
-      }
-
-      let p = add(bug.position, origin);
-
-      if (bug.deadFrames > 0) {
-        p = sub(p, { x: 16, y: 16 });
-
-        // deadFrames 75 is decremented on the tick it is set, so column 0 is
-        // never shown; for deadFrames 1..14 column 5 is off the 5-column
-        // sheet and the sub-image is empty (nothing drawn), as in Go.
-        const col = 5 - Math.trunc(bug.deadFrames / 15);
-        const img = cutImage(imageHit, Math.trunc(col * 32), 0, Math.trunc((col + 1) * 32), 32);
-        drawImage(screen, img, p);
-        continue;
-      }
-
-      p = sub(p, { x: bug.width / 2, y: bug.height / 2 });
-
-      const [row, col] = frameAngle(angle(bug.direction));
-      const img = cutImage(
-        bug.image,
-        Math.trunc(col * bug.width),
-        Math.trunc(row * bug.height),
-        Math.trunc((col + 1) * bug.width),
-        Math.trunc((row + 1) * bug.height),
-      );
-      drawImage(screen, img, p);
-    }
+    drawFirefly(screen, this);
   }
 
   gameOver(): boolean {
-    return false;
+    return this.over;
   }
 
   score(): number {
-    return 0;
+    return this.points;
   }
 
   background(): Sprite {
@@ -355,66 +405,37 @@ export class FireflySoftware implements FixedViewport {
 
   snapshot(): FireflySnapshot {
     return {
-      player: { x: this.player.position.x, y: this.player.position.y },
+      stage: this.stage,
+      stageTick: this.stageTick,
+      lives: this.lives,
+      score: this.points,
+      over: this.over,
+      player: { x: this.player.x, y: this.player.y },
+      respawn: this.respawn,
       fireDelay: this.fireDelay,
-      bullets: this.bullets.map((b) => ({ x: b.position.x, y: b.position.y })),
-      bugs: this.bugs.map((b) => {
-        // Every bug is built with a pattern name.
-        if (b.patternName === null) throw new Error("bug without pattern");
-        return {
-          pattern: b.patternName,
-          x: b.position.x,
-          y: b.position.y,
-          dx: b.direction.x,
-          dy: b.direction.y,
-          duration: b.duration,
-          deadFrames: b.deadFrames,
-        };
-      }),
+      sparks: this.sparks.map((s) => ({ x: s.x, y: s.y })),
+      enemies: this.enemies.map((e) => ({
+        kind: e.kind,
+        row: e.row,
+        col: e.col,
+        state: e.state,
+        x: e.x,
+        y: e.y,
+        dx: e.dx,
+        dy: e.dy,
+        hp: e.hp,
+        deadFrames: e.deadFrames,
+        outOfFormation: e.outOfFormation,
+      })),
+      shots: this.shots.map((s) => ({ x: s.x, y: s.y, dx: s.dx, dy: s.dy })),
+      diveTimer: this.diveTimer,
+      sway: this.sway(),
       joystick: this.cabinetJoystickFrame,
     };
   }
 }
 
-/** Go `NewFireFlySoftware()`. */
+/** A new run. */
 export function newFireflySoftware(): FireflySoftware {
   return new FireflySoftware();
-}
-
-/** Both axes strictly closer than one tile. */
-export function collide(a: Vec, b: Vec): boolean {
-  return Math.abs(a.x - b.x) < tileSize && Math.abs(a.y - b.y) < tileSize;
-}
-
-/**
- * Go untyped constant `180 / math.Pi`, folded exactly at compile time and
- * rounded once (§6). Equals JS `180 / Math.PI` today; unit-tested.
- */
-export const radToDeg = 57.29577951308232;
-
-/** Sprite-sheet row (per 90°) and column (per 15°) for an angle in degrees. */
-export function frameAngle(degrees: number): [row: number, col: number] {
-  const row = Math.trunc(degrees / 90);
-  const col = Math.trunc((degrees % 90) / 15);
-  return [row, col];
-}
-
-/** Heading in degrees clockwise from up, in [0, 360). Draw-only (fact 3). */
-export function angle(heading: Vec): number {
-  if (heading.x === 0 && heading.y === 0) {
-    return 0;
-  }
-
-  let a = Math.atan2(heading.y, heading.x) * radToDeg;
-  a += 90;
-
-  if (a < 0) {
-    a += 360;
-  }
-
-  return a;
-}
-
-function drawImage(screen: Surface, img: Sprite, position: Vec): void {
-  screen.draw(img, position.x, position.y);
 }

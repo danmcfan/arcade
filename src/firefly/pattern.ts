@@ -1,8 +1,6 @@
-// Port of internal/firefly/pattern.go.
+// Cubic bezier curves: the paths Firefly enemies fly in on and dive along.
 
-import type { Vec } from "./game.ts";
-
-export const FRAMES_PER_SECOND = 60;
+import type { Vec } from "./entity.ts";
 
 export type PatternFunc = (t: number) => Vec;
 

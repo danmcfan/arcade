@@ -11,8 +11,10 @@ export type SoundName =
   | "start"
   | "power"
   | "death"
-  | "laser"
-  | "boom"
+  | "spark"
+  | "hit"
+  | "lifeLost"
+  | "stage"
   | "title"
   | "move"
   | "select"
@@ -25,7 +27,7 @@ export type SoundName =
   | "monkeyFloor"
   | "monkeyEscape";
 export type SoundAction = "play" | "pause" | "rewind";
-/** Recorded as `"<action>:<name>"`, e.g. `"rewind:laser"`, `"pause:hub"`. */
+/** Recorded as `"<action>:<name>"`, e.g. `"rewind:spark"`, `"pause:hub"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;
 
 type Listener = (e: SoundEvent) => void;

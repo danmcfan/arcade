@@ -247,39 +247,67 @@ export interface SweetSamSnapshot {
 // ---------------------------------------------------------------------------
 // firefly (internal/firefly)
 
-export interface FireflyBulletSnapshot {
-  /** `entity.Position.x`. */
+/** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
+export type FireflyEnemyKind = "moth" | "wasp" | "owl";
+
+/**
+ * Where an enemy is in its life: waiting to fly in, on its entry curve,
+ * flying straight to its slot, in the formation, or diving at the firefly.
+ */
+export type FireflyEnemyState = "waiting" | "entering" | "joining" | "formation" | "diving";
+
+export interface FireflyEnemySnapshot {
+  kind: FireflyEnemyKind;
+  /** Its formation slot: row (0 at the top) and column. */
+  row: number;
+  col: number;
+  state: FireflyEnemyState;
   x: number;
-  /** `entity.Position.y`. */
   y: number;
+  /** Its last move, which the sprite faces. */
+  dx: number;
+  dy: number;
+  /** Spark hits it can still take (an Owl at 1 is hurt). */
+  hp: number;
+  /** Ticks left of its hit effect once killed, else 0. */
+  deadFrames: number;
+  /** It dove and is not back in the formation yet: a kill scores the diving points. */
+  outOfFormation: boolean;
 }
 
-export interface FireflyBugSnapshot {
-  /** Which bezier the bug follows: "L" = `leftBezierConfig`, "R" = `rightBezierConfig`. */
-  pattern: "L" | "R";
-  /** `entity.Position.x`. */
+export interface FireflyShotSnapshot {
   x: number;
-  /** `entity.Position.y`. */
   y: number;
-  /** `entity.Direction.x`. */
   dx: number;
-  /** `entity.Direction.y`. */
   dy: number;
-  /** `entity.Duration` (float64; negative until spawned). */
-  duration: number;
-  /** `entity.DeadFrames`. */
-  deadFrames: number;
 }
 
 export interface FireflySnapshot {
-  /** `FireFlySoftware.player.Position`. */
+  /** The stage being played (1 is the first). */
+  stage: number;
+  /** Ticks since the stage started; "STAGE n" shows for the first `stageIntroTicks`. */
+  stageTick: number;
+  /** Lives left, the firefly in play included. */
+  lives: number;
+  score: number;
+  /** The run is over: `gameOver()`. */
+  over: boolean;
+  /** The firefly's centre. */
   player: { x: number; y: number };
-  /** `FireFlySoftware.fireDelay`. */
+  /** Ticks until the firefly comes back (or the run ends) after losing a life; 0 while it is in play. */
+  respawn: number;
+  /** Ticks until the firefly can shoot again. */
   fireDelay: number;
-  /** `FireFlySoftware.bullets` in slice order. */
-  bullets: FireflyBulletSnapshot[];
-  /** `FireFlySoftware.bugs` in slice order. */
-  bugs: FireflyBugSnapshot[];
+  /** Sparks in flight: their centres. */
+  sparks: { x: number; y: number }[];
+  /** Every enemy of the stage still alive or showing its hit effect, in formation order. */
+  enemies: FireflyEnemySnapshot[];
+  /** Enemy shots in flight: centre and velocity. */
+  shots: FireflyShotSnapshot[];
+  /** Ticks until the next dive may start. */
+  diveTimer: number;
+  /** The formation's x offset this tick. */
+  sway: number;
   /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }

@@ -72,6 +72,63 @@ export const denyBuzz: readonly Note[] = [
   [50, 2],
   [45, 3],
 ];
+/**
+ * Firefly's sounds: the notes and the length of one eighth, in seconds.
+ * `bun run sounds` writes each as a square-wave chiptune WAV.
+ */
+export interface Effect {
+  notes: readonly Note[];
+  eighth: number;
+}
+
+export const fireflyEffects = {
+  /** The firefly shoots a spark: a quick chirp up. */
+  spark: {
+    notes: [
+      [84, 1],
+      [91, 1],
+      [96, 1],
+    ],
+    eighth: 0.02,
+  },
+  /** A spark hits an enemy: a short crunch falling away. */
+  hit: {
+    notes: [
+      [64, 1],
+      [57, 1],
+      [52, 1],
+      [45, 2],
+    ],
+    eighth: 0.03,
+  },
+  /** The firefly is eaten or shot: a long slide down. */
+  lifeLost: {
+    notes: [
+      [76, 2],
+      [72, 2],
+      [69, 2],
+      [64, 2],
+      [60, 2],
+      [57, 2],
+      [52, 4],
+    ],
+    eighth: 0.06,
+  },
+  /** STAGE n: a little fanfare. */
+  stage: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [84, 2],
+      [null, 1],
+      [79, 1],
+      [84, 4],
+    ],
+    eighth: 0.09,
+  },
+} as const satisfies Record<string, Effect>;
+
 /** Length of one eighth note in the menu sounds, in seconds. */
 export const blipEighth = 0.035;
 
@@ -241,12 +298,6 @@ export const screenOn: ScreenOnSound = {
   whineGain: 0.03,
 };
 
-/** A one-shot sound effect: square-wave notes, each eighth `eighth` s long. */
-export interface Jingle {
-  notes: readonly Note[];
-  eighth: number;
-}
-
 /** Brass Monkey's sound effects (#39), one WAV each: monkey-<name>.wav. */
 export const brassMonkeyJingles = {
   /** A jump: a quick upward slide. */
@@ -319,4 +370,4 @@ export const brassMonkeyJingles = {
     ],
     eighth: 0.12,
   },
-} as const satisfies Record<string, Jingle>;
+} as const satisfies Record<string, Effect>;
