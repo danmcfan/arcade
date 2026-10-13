@@ -9,6 +9,7 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 | Art | Source | Generator |
 | --- | --- | --- |
 | Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour) | `scripts/gen-ui-art.ts` |
+| Hub room and cabinets, player | `src/ui/hubArt.ts`, `playerArt.ts` | `scripts/gen-ui-art.ts` |
 | HUD icons, prize counter, prizes | `src/ui/icons.ts`, `counterArt.ts`, `prizeArt.ts` | `scripts/gen-ui-art.ts` |
 | Firefly sprites and sky | `src/firefly/art.ts` | `scripts/gen-firefly-art.ts` |
 | Cabinet strips | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts` |
@@ -17,7 +18,7 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 
 ## Import before you redraw
 
-When the change touches art that already exists as a PNG, hand-made or not, **import** it first: `bun run pixel rows <png>` (or `<png>#x,y,w,h` for one frame of a sheet) prints its rows, and those rows become the source you edit. Hand-made art, the owner's especially (`gamer.png`, `art/cabinet.ase`), is the quality bar. Keep its look and change only what the issue asks for. Start from a blank grid only for things that do not exist yet.
+When the change touches art that already exists as a PNG, hand-made or not, **import** it first: `bun run pixel rows <png>` (or `<png>#x,y,w,h` for one frame of a sheet) prints its rows, and those rows become the source you edit. Art that only git still holds comes out with `git show <rev>:<png> > out/pixel/old.png` first. Hand-made art, the owner's especially (`art/cabinet.ase`, and the Go player `src/ui/playerArt.ts` was imported from), is the quality bar. Keep its look and change only what the issue asks for. Start from a blank grid only for things that do not exist yet.
 
 ## Derive what follows
 

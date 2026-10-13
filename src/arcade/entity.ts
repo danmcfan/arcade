@@ -2,7 +2,7 @@
 
 import type { Direction } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
-import { imageGamer } from "../engine/assets.ts";
+import { imagePlayer } from "../engine/assets.ts";
 
 export interface Entity {
   image: Sprite;
@@ -23,7 +23,7 @@ export interface Entity {
 
 export function newPlayer(): Entity {
   return {
-    image: imageGamer,
+    image: imagePlayer,
     frame: 0,
     frameIncrement: 0.1,
     frameTotal: 4,
