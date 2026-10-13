@@ -1,0 +1,131 @@
+// Brass Monkey's numbers: how the monkey moves, how often the Gnome sends its
+// hazards and how fast they go, the points, the bonus and how much harder each
+// loop through the floors gets. Every value is in floor pixels and ticks (1/60 s).
+
+/** Lives at the start of a run. */
+export const startLives = 3;
+
+/** The monkey walks this many px a tick. */
+export const walkSpeed = 1;
+/** It climbs a ladder this many px a tick. */
+export const climbSpeed = 0.75;
+/** A jump's upward speed, in px a tick; with `gravity` it rises 15 px and lands 31 ticks later. */
+export const jumpSpeed = 2;
+/** Added to the falling speed every tick, for the monkey and the gears alike. */
+export const gravity = 0.125;
+/** The fastest anything falls, in px a tick. */
+export const maxFallSpeed = 3;
+/**
+ * A fall from higher than this, measured from the top of the arc, costs a
+ * life. A jump's own arc is 15 px, so the monkey can jump on the flat but not
+ * walk off a girder to the one below (21 px or more).
+ */
+export const maxFall = 20;
+/** How far from a ladder's middle the monkey can be and still grab it. */
+export const ladderReach = 4;
+/** A conveyor carries what stands on it this many px a tick. */
+export const beltSpeed = 0.5;
+
+/** At the head of a ladder, a gear rolls down it this often. */
+export const gearLadderChance = 0.25;
+/** At a ladder down, an ember takes it this often... */
+export const emberDownChance = 0.5;
+/** ...and at a ladder up, this often. */
+export const emberUpChance = 0.25;
+
+/** Points for a hazard the monkey jumps over. */
+export const hazardPoints = 100;
+/** Points for a bolt. */
+export const boltPoints = 300;
+
+/** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
+export const touchX = 9;
+/** ...and this close up and down. */
+export const touchY = 10;
+/** A hazard counts as jumped when it passes under the airborne monkey this close across. */
+export const jumpOverX = 6;
+/** ...and no more than this far below the monkey's feet. */
+export const jumpOverHeight = 32;
+/** The monkey picks up a bolt this close across and up and down. */
+export const boltReach = 10;
+
+/** How each floor is played on the first loop. */
+export interface FloorTuning {
+  /** Ticks between gears; the first comes after `firstGear`. */
+  gearEvery: number;
+  firstGear: number;
+  /** Ticks between embers; the first comes after `firstEmber`. */
+  emberEvery: number;
+  firstEmber: number;
+  /** The most embers on the floor at once. */
+  maxEmbers: number;
+  /** A gear rolls this many px a tick. */
+  gearSpeed: number;
+  /** An ember walks and climbs this many px a tick. */
+  emberSpeed: number;
+  /** The bonus when the floor starts. */
+  bonusStart: number;
+}
+
+/** The girder floor, then the conveyor floor. */
+export const floorTunings: readonly FloorTuning[] = [
+  {
+    gearEvery: 150,
+    firstGear: 60,
+    emberEvery: 600,
+    firstEmber: 300,
+    maxEmbers: 2,
+    gearSpeed: 1,
+    emberSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: 180,
+    firstGear: 60,
+    emberEvery: 420,
+    firstEmber: 180,
+    maxEmbers: 3,
+    gearSpeed: 1,
+    emberSpeed: 0.5,
+    bonusStart: 5000,
+  },
+];
+
+/** The bonus drops by `bonusStep` every `bonusTicks`; at 0 the monkey loses a life. */
+export const bonusStep = 100;
+export const bonusTicks = 120;
+
+/** Each loop after the first multiplies the ticks between hazards by this (sent more often)... */
+export const loopSpawnFactor = 0.8;
+/** ...and their speeds by this (faster)... */
+export const loopSpeedFactor = 1.2;
+/** ...and takes this off the bonus the floor starts with... */
+export const loopBonusDrop = 1000;
+/** ...but the bonus never starts below this, and hazards never come more often than every `minSpawnEvery` ticks. */
+export const minBonusStart = 2000;
+export const minSpawnEvery = 60;
+
+/** `floor`'s tuning on loop `loop` (0 the first time through). */
+export function tuningFor(floor: number, loop: number): FloorTuning {
+  const base = floorTunings[floor];
+  if (base === undefined) throw new Error(`no tuning for floor ${floor}`);
+  const spawn = (n: number): number => Math.max(minSpawnEvery, Math.round(n * loopSpawnFactor ** loop));
+  const speed = (n: number): number => n * loopSpeedFactor ** loop;
+  return {
+    ...base,
+    gearEvery: spawn(base.gearEvery),
+    emberEvery: spawn(base.emberEvery),
+    gearSpeed: speed(base.gearSpeed),
+    emberSpeed: speed(base.emberSpeed),
+    bonusStart: Math.max(minBonusStart, base.bonusStart - loopBonusDrop * loop),
+  };
+}
+
+/** Ticks the monkey lies stunned after losing a life before the floor restarts (or the run ends). */
+export const dyingTicks = 90;
+/** Ticks the finished floor holds before the next one starts. */
+export const clearTicks = 120;
+/** Ticks of the escaped scene after the last floor: about 3 s. */
+export const escapeTicks = 180;
+/** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
+export const throwTicks = 20;

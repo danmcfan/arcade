@@ -1,7 +1,7 @@
 // Synthesise the title music, the hub song, the cabinets' attract loops and
 // the menu sounds from src/ui/sounds.ts:
 //
-//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav
+//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav, monkey-*.wav
 //
 // Songs are a square-wave lead and arpeggio over a triangle bass, with a soft
 // noise hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
@@ -15,6 +15,7 @@ import {
   attractLoops,
   bass,
   blipEighth,
+  brassMonkeyJingles,
   denyBuzz,
   eighthsPerMinute,
   hubSong,
@@ -25,6 +26,7 @@ import {
   selectChirp,
   ticketDing,
   type Attract,
+  type Jingle,
   type Note,
   type Song,
 } from "../src/ui/sounds.ts";
@@ -160,7 +162,18 @@ export const renderSelect = (): Buffer => blip(selectChirp);
 export const renderTicket = (): Buffer => blip(ticketDing);
 export const renderDeny = (): Buffer => blip(denyBuzz);
 
+function renderJingle(jingle: Jingle): Buffer {
+  const out = new Float64Array(Math.round(eighths(jingle.notes) * jingle.eighth * sampleRate));
+  voice(out, jingle.notes, jingle.eighth, square(0.5), 0.25, 0.5);
+  return wav(out);
+}
+
 const dir = join(repoRoot, "src/assets/sounds");
+
+/** Brass Monkey's sound effects: where each is written and how to render it. */
+export const brassMonkeySoundFiles: readonly { path: string; render: () => Buffer }[] = Object.entries(
+  brassMonkeyJingles,
+).map(([name, jingle]) => ({ path: join(dir, `monkey-${name}.wav`), render: () => renderJingle(jingle) }));
 export const titlePath = join(dir, "title.wav");
 export const hubPath = join(dir, "hub.wav");
 export const screenOnPath = join(dir, "screen-on.wav");
@@ -184,6 +197,7 @@ if (import.meta.main) {
     [selectPath, renderSelect],
     [ticketPath, renderTicket],
     [denyPath, renderDeny],
+    ...brassMonkeySoundFiles.map((f) => [f.path, f.render] as const),
   ] as const) {
     const data = render();
     writeFileSync(path, data);

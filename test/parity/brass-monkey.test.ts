@@ -1,4 +1,4 @@
-// Parity: the Brass Monkey minigame against the Go trace.
+// Parity: the Brass Monkey minigame against its TypeScript-recorded trace (#39).
 import { parityTest } from "./harness.ts";
 
-parityTest("brass-monkey-walk");
+parityTest("brass-monkey-play");

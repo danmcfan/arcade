@@ -12,8 +12,9 @@
 // ladder.png (8×4, its rows by height), conveyor.png (8×8: the left end,
 // middle and right end, 4 frames each), door.png (16×24, outlined but for its
 // foot) and wall.png (32×32), none outlined but the door. girder-floor.png
-// (224×256) is the girder floor drawn from them, laid out by
-// src/brass-monkey/floors.ts. gen-brass-monkey-art.test.ts fails when the
+// and conveyor-floor.png (224×256) are the two floors drawn from them, laid
+// out by src/brass-monkey/floors.ts (the conveyors in their first frame; the
+// game moves them). gen-brass-monkey-art.test.ts fails when the
 // committed PNGs drift.
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -41,7 +42,7 @@ import {
   type Part,
   wallPanel,
 } from "../src/brass-monkey/art.ts";
-import { girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
+import { conveyorFloor, girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
@@ -128,7 +129,17 @@ export function doorFrame(): Rows {
   return outline(door);
 }
 
-/** `floor` drawn from the tiles: the wall, then the ladders, the girders and the exit door. */
+/**
+ * The conveyor tile for column x of a belt from x0 to x1 (exclusive) in its
+ * first frame: the left end, the middle or the right end.
+ */
+function beltTile(x: number, x0: number, x1: number): Rows {
+  const frames = conveyorFrames();
+  const at = x === x0 ? 0 : x + 8 >= x1 ? 8 : 4;
+  return frames[at] ?? [];
+}
+
+/** `floor` drawn from the tiles: the wall, then the ladders, the girders (a conveyor's in its first frame) and the exit door. */
 function floorRows(floor: Floor): Rows {
   const tile = wallPanel.length;
   let rows: Rows = Array.from({ length: floor.height }, (_, y) =>
@@ -142,7 +153,8 @@ function floorRows(floor: Floor): Rows {
   }
   const step = girder[0]?.length ?? 0;
   for (const g of floor.girders) {
-    for (let x = g.x0; x < g.x1; x += step) rows = overlay(rows, girder, x, girderTop(g, x));
+    for (let x = g.x0; x < g.x1; x += step)
+      rows = overlay(rows, g.belt === undefined ? girder : beltTile(x, g.x0, g.x1), x, girderTop(g, x));
   }
   return overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
 }
@@ -150,6 +162,11 @@ function floorRows(floor: Floor): Rows {
 /** The girder floor. */
 export function girderFloorRows(): Rows {
   return floorRows(girderFloor);
+}
+
+/** The conveyor floor. */
+export function conveyorFloorRows(): Rows {
+  return floorRows(conveyorFloor);
 }
 
 /** `frames` side by side; they must all be one size. */
@@ -179,6 +196,7 @@ export const brassMonkeyArtFiles: readonly { file: string; render: () => PNG }[]
   { file: "door.png", render: () => sheet([doorFrame()]) },
   { file: "wall.png", render: () => sheet([wallPanel]) },
   { file: "girder-floor.png", render: () => sheet([girderFloorRows()]) },
+  { file: "conveyor-floor.png", render: () => sheet([conveyorFloorRows()]) },
 ];
 
 if (import.meta.main) {

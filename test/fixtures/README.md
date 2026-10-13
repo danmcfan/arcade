@@ -109,7 +109,7 @@ What the capture ticks show:
 | `sweet-sam-fuzz-*` | 1 |
 | `sweet-sam-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered Sweet Sam (high score dials) · 3124 later in that game · 3125 minigame pause menu · 3158 hub after Quit game |
 | `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 hit effects mid-animation |
-| `brass-monkey-walk` | 191 facing left walking · 201 facing left idle |
+| `brass-monkey-play` | 190 climbing the first ladder · 612 mid-jump over a gear · 1030 girder floor finished · 1400 the conveyor floor · 1662 a life lost · 8040 the escaped scene |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
 | `wave-64-seed7` | 40 mid-run before Space (2048² canvas) · 199 50% collapsed · 357 100% collapsed |
 | `wave-128-seed3` | 100 mid-run before Space · 253 50% · 405 100% |
@@ -145,12 +145,12 @@ reproduce every entry exactly.
 | `sweet-sam-modes` | `game.New(sweetSam)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
 | `sweet-sam-highscore` | hub | 21 | 3178 | enter Sweet Sam from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter Sweet Sam (its high score dials boot from it), Esc and Quit game |
 | `firefly-play` | `game.New(firefly)` | 1 | 1501 | Space held while sweeping: bullets, hits, explosions, wave cleared (`bugs: []`) and respawned, bugs leaving off the top, a bullet hitting an unspawned bug at (0,0) |
-| `brass-monkey-walk` | `game.New(brassMonkey)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
+| `brass-monkey-play` | `game.New(brassMonkey)` | 163 | 9136 | recorded from TypeScript (#39); inputs written by `scripts/gen-brass-monkey-play.ts`'s bot: climbs, jumps (hazards jumped), bolts, both floors finished, 2 lives lost, the escape, then standing still to game over and back in the hub |
 | `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-39,174 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
+48,104 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -235,6 +235,8 @@ Re-recorded from TypeScript so far:
 | `arcade-enter-firefly` (58, 358), `arcade-enter-brass-monkey` (58, 358), `firefly-play` (1, 60, 360, 685, 1098, 1401), `brass-monkey-walk` (191, 201) | #61: Firefly's and Brass Monkey's cabinets gain Sweet Sam's bevelled edge (lit in the letter-shadow colour, shaded in the old joystick-base colour) and a black joystick base (`art/cabinets.json`). Only the 12 frames that show those bezels were re-recorded; they differ only on the bezel's edge, the screen's lip and the joystick base. Inputs and traces unchanged |
 | `brass-monkey-walk` (every frame), `arcade-enter-brass-monkey` (58, 358, 359, 381) | #38: Brass Monkey's characters are generated from `src/brass-monkey/art.ts` (the owner's picks): the brass robot monkey replaces the Go player sprite on the same path, and the Gnome stands still on the workshop's top girder. Only the frames inside Brass Monkey were re-recorded; they differ only where the two sprites are drawn (x 64..141, y 130..319). Inputs and traces unchanged |
 | `brass-monkey-walk` (191, 201), `arcade-enter-brass-monkey` (58, 358, 359, 381) | #38, phase 1: Brass Monkey's girder floor is generated from `src/brass-monkey/art.ts` and `floors.ts` (the owner's picks: red I-beam girders, steel ladders, the steel exit door with a green lamp on the top platform, a riveted panel wall) in place of the green Go workshop, its "1UP HIGH SCORE 2UP" and bonus box; the bands above and below are Sweetie 16 black. The layout is the old workshop's. Only frames showing Brass Monkey were re-recorded; 58, 358, 191 and 201 differ only inside its screen (x 56..279, y 56..343). 359 and 381 (the pause menu) also pick up #61's bezel, which that re-recording missed. Inputs and traces unchanged |
+
+| `brass-monkey-walk` (deleted), `brass-monkey-play` (new), `arcade-enter-brass-monkey` | #39: Brass Monkey became a real game (run, jump, climb two floors past gears and embers, lives, score, bonus, the escape). The Go-recorded walk no longer describes the game (Up no longer walks, the snapshot grew), so it was deleted and `brass-monkey-play` recorded from TypeScript in its place. `arcade-enter-brass-monkey`'s inputs are unchanged; its trace (the new snapshot) and every frame inside Brass Monkey (the game fills the screen with its scores band) were re-recorded |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end

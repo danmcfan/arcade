@@ -8,6 +8,7 @@ import { defined } from "../engine/defined.testutil.ts";
 import type { Surface } from "../engine/surface.ts";
 import { Game, type Progress } from "./game.ts";
 import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snapshot.ts";
+import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 
@@ -43,7 +44,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): SoftwareSnapshot {
-    const s: BrassMonkeySnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
+    const s: BrassMonkeySnapshot = { ...fakeBrassMonkeySnapshot, x: this.updates.length };
     return s;
   }
 }
@@ -175,7 +176,7 @@ describe("snapshot", () => {
     run(game, 3);
     const s = snap(game);
     expect(s.software).toBe("brassMonkey");
-    expect(s.sw).toEqual({ x: 3, y: 0, frame: 0, left: false, moving: false, joystick: 0 });
+    expect(s.sw).toEqual({ ...fakeBrassMonkeySnapshot, x: 3 });
   });
 });
 

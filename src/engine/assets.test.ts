@@ -85,7 +85,7 @@ describe("image registry (D12)", () => {
 });
 
 describe("sound registry", () => {
-  test("the hub's sounds, assets.go's minigame sounds and the title's: the songs and attract loops loop, effects don't", () => {
+  test("the hub's sounds, assets.go's minigame sounds, the title's and Brass Monkey's: the songs and attract loops loop, effects don't", () => {
     expect(Object.keys(sounds).toSorted()).toEqual([
       "attractBrassMonkey",
       "attractFirefly",
@@ -95,6 +95,12 @@ describe("sound registry", () => {
       "deny",
       "hub",
       "laser",
+      "monkeyBolt",
+      "monkeyDeath",
+      "monkeyEscape",
+      "monkeyFloor",
+      "monkeyHazard",
+      "monkeyJump",
       "move",
       "power",
       "screenOn",

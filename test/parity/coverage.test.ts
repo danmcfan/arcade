@@ -61,7 +61,7 @@ const REQUIRED = [
   "sweet-sam-clear",
   "sweet-sam-highscore",
   "firefly-play",
-  "brass-monkey-walk",
+  "brass-monkey-play",
   "wave-64-seed7",
   "wave-128-seed3",
   "lumberjack-chop",

@@ -9,7 +9,7 @@ import type { Software, SoftwareName } from "./software.ts";
 
 /**
  * Go `machine.newSoftware func(highscore int)`: every factory takes the hub's
- * high score; only sweetSam uses it (firefly and brassMonkey ignore it, as in Go).
+ * high score; sweetSam and brassMonkey use it (firefly ignores it, as in Go).
  * They also take the player's owned prizes (#22); each minigame applies its
  * own (only sweetSam has prizes so far).
  */
@@ -18,7 +18,7 @@ export const softwareFactories: Readonly<
 > = {
   sweetSam: (highScore, prizes) => createSweetSam(highScore, prizes),
   firefly: () => createFirefly(),
-  brassMonkey: () => createBrassMonkey(),
+  brassMonkey: (highScore) => createBrassMonkey(highScore),
 };
 
 export function createSoftware(name: SoftwareName, highScore: number, prizes: readonly PrizeId[] = []): Software {

@@ -11,6 +11,7 @@ import { dimColour } from "../ui/menu.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
+import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { BrassMonkeySnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 
@@ -144,7 +145,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): BrassMonkeySnapshot {
-    return { x: 0, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
+    return fakeBrassMonkeySnapshot;
   }
 }
 class FakeFixed extends FakeSoftware implements FixedViewport {

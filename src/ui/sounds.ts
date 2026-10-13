@@ -240,3 +240,83 @@ export const screenOn: ScreenOnSound = {
   whineTo: 5000,
   whineGain: 0.03,
 };
+
+/** A one-shot sound effect: square-wave notes, each eighth `eighth` s long. */
+export interface Jingle {
+  notes: readonly Note[];
+  eighth: number;
+}
+
+/** Brass Monkey's sound effects (#39), one WAV each: monkey-<name>.wav. */
+export const brassMonkeyJingles = {
+  /** A jump: a quick upward slide. */
+  jump: {
+    notes: [
+      [67, 1],
+      [72, 1],
+      [79, 1],
+    ],
+    eighth: 0.03,
+  },
+  /** A bolt collected: a bright metallic ping. */
+  bolt: {
+    notes: [
+      [96, 1],
+      [91, 1],
+      [96, 2],
+    ],
+    eighth: 0.03,
+  },
+  /** A hazard jumped over: a little two-note cheer. */
+  hazard: {
+    notes: [
+      [76, 1],
+      [84, 2],
+    ],
+    eighth: 0.04,
+  },
+  /** A life lost: a falling chromatic run down to a low thud. */
+  death: {
+    notes: [
+      [72, 1],
+      [71, 1],
+      [70, 1],
+      [69, 1],
+      [68, 1],
+      [67, 1],
+      [55, 1],
+      [43, 4],
+    ],
+    eighth: 0.06,
+  },
+  /** A floor finished: a rising major arpeggio. */
+  floor: {
+    notes: [
+      [60, 1],
+      [64, 1],
+      [67, 1],
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [84, 4],
+    ],
+    eighth: 0.07,
+  },
+  /** The escape: the attract loop's tune played out in full into the daylight. */
+  escape: {
+    notes: [
+      [60, 1],
+      [64, 1],
+      [67, 1],
+      [72, 2],
+      [67, 1],
+      [72, 1],
+      [76, 2],
+      [74, 1],
+      [76, 1],
+      [79, 2],
+      [84, 6],
+    ],
+    eighth: 0.12,
+  },
+} as const satisfies Record<string, Jingle>;
