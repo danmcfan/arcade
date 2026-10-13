@@ -35,6 +35,7 @@ import { drawText, drawTextCentered } from "../ui/text.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
+import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
 const hudHeight = 32;
@@ -53,9 +54,10 @@ export class BrassMonkeySoftware implements FixedViewport {
   /** The bezel's joystick frame for the last input. */
   private cabinetJoystickFrame = 0;
 
-  constructor(highScore = 0) {
+  constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
     this.run = new Run({
+      advantages,
       onSound: (s): void => {
         brassMonkeySounds[s].rewind();
         brassMonkeySounds[s].play();
@@ -153,8 +155,11 @@ export class BrassMonkeySoftware implements FixedViewport {
   }
 }
 
-export function newBrassMonkeySoftware(highScore = 0): BrassMonkeySoftware {
-  return new BrassMonkeySoftware(highScore);
+export function newBrassMonkeySoftware(
+  highScore = 0,
+  advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages,
+): BrassMonkeySoftware {
+  return new BrassMonkeySoftware(highScore, advantages);
 }
 
 /** The monkey's sheet column: walk 0, 1, 0, 2; jump 3; climb 4 or 5. */

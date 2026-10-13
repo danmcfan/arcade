@@ -37,6 +37,49 @@ export const prizeArt = {
     "kooooooooook",
     "kkkkkkkkkkkk",
   ],
+  /** A squat brass oil can with a red label, on a wall shelf left of the Brass Monkey cabinet. */
+  oilCan: [
+    ".....k......",
+    "....kok.....",
+    "...kkkkk..k.",
+    "..kyyyyokkk.",
+    ".kywyyyyok..",
+    ".kyrrrryok..",
+    ".kyyyyyyok..",
+    ".kkkkkkkkk..",
+    "kkkkkkkkkkkk",
+    "kooooooooook",
+    ".k........k.",
+  ],
+  /** A red boot with a white sole on a brass spring, hung from a peg on the wall above the Brass Monkey cabinet. */
+  springBoots: [
+    ".m........",
+    ".k........",
+    "kkkk......",
+    "krrk......",
+    "krrk......",
+    "krrrkkkk..",
+    "krrrrrrrk.",
+    "kwwwwwwwk.",
+    "kkkkkkkkk.",
+    "..kyyk....",
+    ".kyyk.....",
+    "..kkkk....",
+  ],
+  /** A brass gear-edged pocket watch, hung from a peg on the wall above and right of the Brass Monkey cabinet. */
+  pocketWatch: [
+    "....m....",
+    "....k....",
+    ".k.kkk.k.",
+    "kokooooko",
+    ".koyyyok.",
+    "koywkwyok",
+    "koywkwyok",
+    "koywkkyok",
+    ".koyyyok.",
+    "kokooooko",
+    ".k.kkk.k.",
+  ],
 } as const satisfies Record<PrizeId, readonly string[]>;
 
 /** Gap between decorations in the sheet. */

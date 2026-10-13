@@ -10,12 +10,15 @@ import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
 
-export type PrizeId = "honeyJar" | "runningShoes" | "sleepyBees";
+export type PrizeId = "honeyJar" | "runningShoes" | "sleepyBees" | "oilCan" | "springBoots" | "pocketWatch";
 
 /** Tickets each prize costs. */
 export const honeyJarPrice = 25;
 export const runningShoesPrice = 50;
 export const sleepyBeesPrice = 100;
+export const oilCanPrice = 25;
+export const springBootsPrice = 50;
+export const pocketWatchPrice = 100;
 
 export interface Prize {
   id: PrizeId;
@@ -41,7 +44,10 @@ function decoration(id: PrizeId): Sprite {
  * Every prize, in the order the prize counter menu lists them. The Sweet Sam
  * cabinet's art is x 72..87, y 40..63 of the hub image: the jar and the shoe
  * stand on the floor against either side of it, the picture hangs on the
- * wall above it.
+ * wall above it. The Brass Monkey cabinet's art is x 48..63, y 40..63: the oil
+ * can stands on a shelf on the wall left of it, the spring boots and the
+ * pocket watch hang from pegs on the wall above it (the boots over its left
+ * side, the watch between it and the Sweet Sam picture).
  */
 export const prizes: readonly Prize[] = [
   {
@@ -69,6 +75,33 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
     x: 74,
+    y: 28,
+  },
+  {
+    id: "oilCan",
+    name: "OIL CAN",
+    price: oilCanPrice,
+    software: "brassMonkey",
+    sprite: decoration("oilCan"),
+    x: 35,
+    y: 41,
+  },
+  {
+    id: "springBoots",
+    name: "SPRING BOOTS",
+    price: springBootsPrice,
+    software: "brassMonkey",
+    sprite: decoration("springBoots"),
+    x: 48,
+    y: 27,
+  },
+  {
+    id: "pocketWatch",
+    name: "POCKET WATCH",
+    price: pocketWatchPrice,
+    software: "brassMonkey",
+    sprite: decoration("pocketWatch"),
+    x: 62,
     y: 28,
   },
 ];

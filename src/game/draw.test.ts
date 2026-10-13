@@ -473,7 +473,8 @@ describe("prize counter menu", () => {
     // HUD 2 and 120, the title, the selected token, the ticket count in the panel.
     expect(r.text("yellow")).toBe("2120PRIZE COUNTER120>TOKEN: 5 TICKETS<");
     expect(r.text("white")).toBe(
-      "HONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETSCLOSESPACEESCOKBACK",
+      "HONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS" +
+        "OIL CAN: 25 TICKETSSPRING BOOTS: 50 TICKETSPOCKET WATCH: 100 TICKETSCLOSESPACEESCOKBACK",
     ); // key caps sit 1 px above their labels;
     expect(r.text("grey")).toBe("");
     expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket", "ticket"]);
@@ -504,7 +505,8 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
     expect(r.text("grey")).toBe(
-      "TOKEN: 5 TICKETSHONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS",
+      "TOKEN: 5 TICKETSHONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS" +
+        "OIL CAN: 25 TICKETSSPRING BOOTS: 50 TICKETSPOCKET WATCH: 100 TICKETS",
     );
     expect(r.text("yellow")).toBe("13PRIZE COUNTER3><");
   });
@@ -512,7 +514,7 @@ describe("prize counter menu", () => {
   test("a prize the player can't afford is greyed out; an owned one reads OWNED, greyed out", () => {
     const r = recordingSurface();
     atCounter(1, 60, ["honeyJar"]).draw(r.surface);
-    expect(r.text("grey")).toBe("HONEY JAR: OWNEDSLEEPY BEES: 100 TICKETS");
+    expect(r.text("grey")).toBe("HONEY JAR: OWNEDSLEEPY BEES: 100 TICKETSPOCKET WATCH: 100 TICKETS");
     expect(r.text("white")).toContain("RUNNING SHOES: 50 TICKETS");
   });
 

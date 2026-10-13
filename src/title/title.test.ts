@@ -629,6 +629,15 @@ describe("parseSave", () => {
     ]);
   });
 
+  test("keeps the Brass Monkey prizes alongside the Sweet Sam ones", () => {
+    expect(parseSave({ ...ok, prizes: ["pocketWatch", "sleepyBees", "oilCan", "springBoots"] })?.prizes).toEqual([
+      "sleepyBees",
+      "oilCan",
+      "springBoots",
+      "pocketWatch",
+    ]);
+  });
+
   test("upgrades a v2 save: same counts and position, and no prizes", () => {
     const v2 = { v: 2, highScore: 3, tokens: 4, tickets: 12, player: { x: 1, y: 2, dir: "UP" } };
     expect(parseSave(v2)).toEqual({
