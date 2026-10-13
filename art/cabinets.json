@@ -14,9 +14,9 @@
       "palette": { "1a1c2c": "1a1c2c", "b13e53": "3b5dc9", "5d275d": "29366f", "ffcd75": "73eff7", "ef7d57": "41a6f6" }
     },
     {
-      "name": "gearhead",
-      "file": "cabinet-gearhead.png",
-      "title": "gearhead.png",
+      "name": "brassMonkey",
+      "file": "cabinet-brass-monkey.png",
+      "title": "brass-monkey.png",
       "palette": { "1a1c2c": "1a1c2c", "b13e53": "257179", "5d275d": "333c57", "ffcd75": "a7f070", "ef7d57": "38b764" }
     }
   ]

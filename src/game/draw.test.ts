@@ -9,7 +9,7 @@ import { dimColour } from "../ui/menu.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
-import type { GearheadSnapshot } from "./snapshot.ts";
+import type { BrassMonkeySnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 
 // debugPrint draws glyphs on the surface; record its calls instead.
@@ -111,7 +111,7 @@ class FakeSoftware implements Software {
   score(): number {
     return this.points;
   }
-  snapshot(): GearheadSnapshot {
+  snapshot(): BrassMonkeySnapshot {
     return { x: 0, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
   }
 }
@@ -236,7 +236,7 @@ describe("hub draw", () => {
 
 describe("software draw", () => {
   test("normal software draws with the 16 px margin and nothing else is drawn", () => {
-    const game = newGame("gearhead");
+    const game = newGame("brassMonkey");
     game.step(input());
     const { calls, surface } = recordingSurface();
     game.draw(surface);
@@ -252,7 +252,7 @@ describe("software draw", () => {
   });
 
   test("debug mode inside a software draws no panel (layout still grows)", () => {
-    const game = newGame("gearhead");
+    const game = newGame("brassMonkey");
     game.step(input({ shiftP: true }));
     const { calls, surface } = recordingSurface();
     game.draw(surface);
@@ -343,7 +343,7 @@ describe("menus over a minigame", () => {
     for (let t = 0; t < 31; t++) game.step(input({ up: true }));
     for (let t = 0; t < 24; t++) game.step(input({ left: true }));
     game.step(input({ up: true, space: true }));
-    expect(game.snapshot()).toMatchObject({ software: "gearhead" });
+    expect(game.snapshot()).toMatchObject({ software: "brassMonkey" });
     tapKeys(game, "escape");
     const r = recordingSurface();
     game.draw(r.surface);

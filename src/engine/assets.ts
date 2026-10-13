@@ -8,12 +8,12 @@ import { Sound } from "./audio.ts";
 import arcadeUrl from "../assets/images/arcade.png";
 import gamerUrl from "../assets/images/gamer.png";
 import fireflyUrl from "../assets/images/firefly.png";
-import gearheadUrl from "../assets/images/gearhead.png";
+import brassMonkeyUrl from "../assets/images/brass-monkey.png";
 import sweetUrl from "../assets/images/sweet.png";
 import hiveUrl from "../assets/images/hive.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
-import cabinetGearheadUrl from "../assets/images/cabinet-gearhead.png";
+import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
 import bearUrl from "../assets/images/bear.png";
 import beeUrl from "../assets/images/bee.png";
 import foodUrl from "../assets/images/food.png";
@@ -71,14 +71,14 @@ export const images = {
   arcade: asset(arcadeUrl, 160, 144),
   gamer: asset(gamerUrl, 64, 96),
   firefly: asset(fireflyUrl, 160, 144),
-  gearhead: asset(gearheadUrl, 160, 144),
+  brassMonkey: asset(brassMonkeyUrl, 160, 144),
   sweet: asset(sweetUrl, 160, 144),
 
   hive: asset(hiveUrl, 224, 288),
   cabinet: asset(cabinetUrl, 1680, 428),
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
   cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
-  cabinetGearhead: asset(cabinetGearheadUrl, 1680, 428),
+  cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 1680, 428),
   bear: asset(bearUrl, 64, 64),
   bee: asset(beeUrl, 64, 96),
   food: asset(foodUrl, 32, 24),
@@ -103,13 +103,13 @@ export const images = {
 export const imageArcade: Sprite = whole(images.arcade);
 export const imageGamer: Sprite = whole(images.gamer);
 export const imageTitleFirefly: Sprite = whole(images.firefly);
-export const imageTitleGearhead: Sprite = whole(images.gearhead);
+export const imageTitleBrassMonkey: Sprite = whole(images.brassMonkey);
 export const imageTitleSweet: Sprite = whole(images.sweet);
 
 export const imageHive: Sprite = whole(images.hive);
 export const imageCabinet: Sprite = whole(images.cabinet);
 export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
-export const imageCabinetGearhead: Sprite = whole(images.cabinetGearhead);
+export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
 export const imageBear: Sprite = whole(images.bear);
 export const imageBee: Sprite = whole(images.bee);
 export const imageFood: Sprite = whole(images.food);

@@ -88,8 +88,8 @@ scene's logical size at that tick (`Layout`), read back with `ReadPixels`
 and written as a normal non-premultiplied RGBA PNG. Pixels Go never draws
 are transparent (alpha 0), not black.
 
-- Sizes follow the layout: hub 192×176, hive, firefly and gearhead 336×428
-  (each plays inside its cabinet; firefly and gearhead were 256×320 and
+- Sizes follow the layout: hub 192×176, hive, firefly and Brass Monkey 336×428
+  (each plays inside its cabinet; firefly and Brass Monkey were 256×320 and
   256×288 in the Go capture, before #15), lumberjack 512×288, plus 120 px
   of width while debug mode is on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
   after Space with `gridSize` 64).
@@ -102,14 +102,14 @@ What the capture ticks show:
 
 | Scenario | Ticks |
 |---|---|
-| `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 hive cabinet title · 70 gearhead title · 389 firefly title · 420 debug panel + overlay · 440 debug + hive title · 462 hub after debug off |
+| `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 hive cabinet title · 70 Brass Monkey title · 389 firefly title · 420 debug panel + overlay · 440 debug + hive title · 462 hub after debug off |
 | `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · Esc tick (minigame pause menu opens) · QUIT GAME selected (NO TICKETS) · hub after Quit game (1 token spent) |
 | `hive-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 7977 flashing bees · 9683 last FINALDEATHWAIT tick · 9684 hub after game over |
 | `hive-modes` | 3358 flashing bees (unshaken) |
 | `hive-fuzz-*` | 1 |
 | `hive-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered hive (high score dials) · 3124 later in that hive · 3125 minigame pause menu · 3158 hub after Quit game |
 | `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 hit effects mid-animation |
-| `gearhead-walk` | 191 facing left walking · 201 facing left idle |
+| `brass-monkey-walk` | 191 facing left walking · 201 facing left idle |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
 | `wave-64-seed7` | 40 mid-run before Space (2048² canvas) · 199 50% collapsed · 357 100% collapsed |
 | `wave-128-seed3` | 100 mid-run before Space · 253 50% · 405 100% |
@@ -137,7 +137,7 @@ reproduce every entry exactly.
 | Scenario | Scene | Seed | Ticks | Purpose |
 |---|---|---|---|---|
 | `arcade-walk` | hub | 1 | 462 | every wall face (top, left, bottom, right), the prize counter's left side (then round it), all 3 cabinets approached facing Up (title + `play:melody`, then `pause:melody`/`rewind:melody`), Shift+P on (+120 px) and off, Esc in the hub (no-op) |
-| `arcade-enter-gearhead` | hub | 1 | 442 | Up+Space at the cabinet (1 token), ~300 ticks inside, Esc opens the minigame pause menu (minigame sounds paused), Down, Down, Space: Quit game, back in the hub (layout change) |
+| `arcade-enter-brass-monkey` | hub | 1 | 442 | Up+Space at the cabinet (1 token), ~300 ticks inside, Esc opens the minigame pause menu (minigame sounds paused), Down, Down, Space: Quit game, back in the hub (layout change) |
 | `arcade-enter-hive` | hub | 1 | 418 | same for hive |
 | `arcade-enter-firefly` | hub | 1 | 442 | same for firefly |
 | `hive-fuzz-1..4` | `game.New(hive)` | 1..4 | 3616–3650 | random held directions, 10–60 tick holds; after game over the rest drives the hub |
@@ -145,7 +145,7 @@ reproduce every entry exactly.
 | `hive-modes` | `game.New(hive)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
 | `hive-highscore` | hub | 21 | 3178 | enter hive from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter hive (its high score dials boot from it), Esc and Quit game |
 | `firefly-play` | `game.New(firefly)` | 1 | 1501 | Space held while sweeping: bullets, hits, explosions, wave cleared (`bugs: []`) and respawned, bugs leaving off the top, a bullet hitting an unspawned bug at (0,0) |
-| `gearhead-walk` | `game.New(gearhead)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
+| `brass-monkey-walk` | `game.New(brassMonkey)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
 | `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
@@ -215,15 +215,17 @@ Re-recorded from TypeScript so far:
 | Scenario | Why |
 |---|---|
 | `arcade-enter-firefly`, `firefly-play` | #15: Firefly plays inside its cabinet bezel (336×428 layout) and its snapshot gains `joystick` |
-| `arcade-enter-gearhead`, `gearhead-walk` | #15: same for Brass Monkey (`gearhead`) |
+| `arcade-enter-brass-monkey`, `brass-monkey-walk` | #15: same for Brass Monkey |
 | `arcade-enter-hive`, `hive-clear`, `hive-fuzz-1`..`4`, `hive-highscore`, `hive-modes` (frames only) | #15: Sweet Sam's marquee is regenerated at the other cabinets' letter height. Only rows 0..53 (the marquee) were copied from the TypeScript capture; the rest of each frame is still the Go original |
 | `arcade-walk` (frame 70 only) | #15: the Brass Monkey hub title card reads BRASS MONKEY (`titleCards` in `src/ui/glyphs.ts`). The frame differs from the Go original only in those 1080 title pixels |
-| `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-gearhead`, `hive-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded |
-| `hive-fuzz-1`..`4`, `hive-clear`, `hive-modes`, `firefly-play`, `gearhead-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `hive-clear/9684` (the hub shows the counts) |
+| `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-brass-monkey`, `hive-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded |
+| `hive-fuzz-1`..`4`, `hive-clear`, `hive-modes`, `firefly-play`, `brass-monkey-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `hive-clear/9684` (the hub shows the counts) |
 | `arcade-walk` | #21: the prize counter stands on the bottom wall and is solid. The walk along the bottom wall now stops at the counter, goes up round it and comes back down to the bottom wall (the 110-tick Right step became Right 24, Up 16, Right 80, Down 20), so every capture after tick 70 moved 30 ticks later (359, 390, 410, 432 became 389, 420, 440, 462). Trace and every frame re-recorded |
 | `hive-fuzz-1`..`3` | #21: after game over the random walk in the hub runs into the prize counter. Traces re-recorded; inputs and frames unchanged |
 | `arcade-enter-*` (hub frame after Quit game), `hive-clear` (9684), `hive-highscore` (2943, 3158) | #21: hub frames show the prize counter. Only those frames were re-recorded; they differ from the old ones only in the counter's 556 pixels. Traces unchanged |
 | `firefly-play` (every frame), `arcade-enter-firefly` (58, 358, 359, 381) | #33: Firefly's art is regenerated from `src/firefly/art.ts`: the firefly, sparks, Moths and hit effect on a night sky with grass. Only the frames that show the Firefly playfield were re-recorded, and they differ only inside it (x 56..279, y 56..343). Inputs and traces unchanged |
+| `arcade-enter-brass-monkey`, `brass-monkey-walk` | #37: the code name became `brassMonkey` (fixtures renamed from their old code name). The only input change is `software`; every key press is the same. Traces re-recorded and equal to the old ones with only the software and title name changed. Frames moved, byte-identical |
+| `arcade-walk` | #37: the walk passes the Brass Monkey cabinet, so its trace names the hub title. Trace re-recorded and equal to the old one with only the title name changed; input and frames unchanged |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end

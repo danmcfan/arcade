@@ -172,9 +172,9 @@ describe("melody and title", () => {
   test("each cabinet shows its own title", () => {
     const s = newState(null, fakeFactory);
     walkToSweet(s);
-    run(s, 24, { left: true }); // x = 56, under gearhead
+    run(s, 24, { left: true }); // x = 56, under brassMonkey
     run(s, 1, { up: true });
-    expect(s.imageTitle).toBe("gearhead");
+    expect(s.imageTitle).toBe("brassMonkey");
     run(s, 48, { right: true }); // x = 104, under firefly
     run(s, 1, { up: true });
     expect(s.imageTitle).toBe("firefly");

@@ -1,4 +1,4 @@
-{"name":"gearhead-walk","scene":"game","software":"gearhead","seed":1,"captureTicks":[191,201],"steps": [
+{"name":"brass-monkey-walk","scene":"game","software":"brassMonkey","seed":1,"captureTicks":[191,201],"steps": [
   {"ticks":1,"input":{}},
   {"ticks":10,"input":{}},
   {"ticks":20,"input":{"left":true}},

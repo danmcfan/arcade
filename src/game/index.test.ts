@@ -33,8 +33,8 @@ test('createScene("game", { software: "hive" }): START sounds land in tick 1; 33
   }
 });
 
-const real: ["gearhead" | "firefly", [number, number]][] = [
-  ["gearhead", [336, 428]], // its cabinet (#15)
+const real: ["brassMonkey" | "firefly", [number, number]][] = [
+  ["brassMonkey", [336, 428]], // its cabinet (#15)
   ["firefly", [336, 428]], // its cabinet (#15)
 ];
 for (const [name, size] of real) {

@@ -6,7 +6,7 @@ import type { Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { SceneSnapshot, SoftwareSnapshot } from "./snapshot.ts";
 
-export type SoftwareName = "hive" | "firefly" | "gearhead";
+export type SoftwareName = "hive" | "firefly" | "brassMonkey";
 
 /** A minigame hosted by the arcade hub (Go `software.Software`). */
 export interface Software {

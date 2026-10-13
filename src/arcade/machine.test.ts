@@ -13,11 +13,11 @@ function recordingFactory() {
 }
 
 describe("newMachines", () => {
-  test("three cabinets left to right: gearhead, sweet (hive), firefly", () => {
+  test("three cabinets left to right: brassMonkey, sweet (hive), firefly", () => {
     const { factory } = recordingFactory();
     const ms = newMachines(factory);
     expect(ms.map((m) => [m.rect, m.title])).toEqual([
-      [{ x: 48, y: 40, w: 16, h: 16 }, "gearhead"],
+      [{ x: 48, y: 40, w: 16, h: 16 }, "brassMonkey"],
       [{ x: 72, y: 40, w: 16, h: 16 }, "sweet"],
       [{ x: 96, y: 40, w: 16, h: 16 }, "firefly"],
     ]);
@@ -26,9 +26,9 @@ describe("newMachines", () => {
   test("newSoftware builds the matching software and passes the high score and owned prizes through", () => {
     const { calls, factory } = recordingFactory();
     const ms = newMachines(factory);
-    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["gearhead", "hive", "firefly"]);
+    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["brassMonkey", "hive", "firefly"]);
     expect(calls).toEqual([
-      ["gearhead", 1234, ["honeyJar"]],
+      ["brassMonkey", 1234, ["honeyJar"]],
       ["hive", 1234, ["honeyJar"]],
       ["firefly", 1234, ["honeyJar"]],
     ]);
@@ -45,7 +45,7 @@ describe("findMachine", () => {
   });
 
   test("standing against the top wall under each cabinet", () => {
-    expect(findMachine(playerAt(56, 60), ms)?.title).toBe("gearhead");
+    expect(findMachine(playerAt(56, 60), ms)?.title).toBe("brassMonkey");
     expect(findMachine(playerAt(80, 60), ms)?.title).toBe("sweet");
     expect(findMachine(playerAt(104, 60), ms)?.title).toBe("firefly");
   });
@@ -56,12 +56,12 @@ describe("findMachine", () => {
   });
 
   test("edges touching is not a hit; the first overlapping machine wins", () => {
-    // Player x range [64, 80) only touches gearhead's right edge (64) → sweet only.
+    // Player x range [64, 80) only touches brassMonkey's right edge (64) → sweet only.
     expect(findMachine(playerAt(72, 60), ms)?.title).toBe("sweet");
-    // Player x range [60, 76) overlaps gearhead [48, 64) and sweet [72, 88) → gearhead.
-    expect(findMachine(playerAt(68, 60), ms)?.title).toBe("gearhead");
-    // Between gearhead and sweet with no overlap is impossible (gap 8 < width 16);
-    // left of gearhead: player x range [32, 48) touches only.
+    // Player x range [60, 76) overlaps brassMonkey [48, 64) and sweet [72, 88) → brassMonkey.
+    expect(findMachine(playerAt(68, 60), ms)?.title).toBe("brassMonkey");
+    // Between brassMonkey and sweet with no overlap is impossible (gap 8 < width 16);
+    // left of brassMonkey: player x range [32, 48) touches only.
     expect(findMachine(playerAt(40, 60), ms)).toBeNull();
   });
 });
