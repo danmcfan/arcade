@@ -49,7 +49,7 @@ describe("prize catalogue", () => {
       const own = cabinetOf[p.software];
       const cabinet = defined(machines.find((m) => m.title === own)).rect;
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
-      // Within a cabinet's width of the Sweet Sam cabinet, nearer it than any other.
+      // Within a cabinet's width of its own minigame's cabinet, nearer it than any other.
       const centre = r.x + r.w / 2;
       const dist = (m: { x: number; w: number }): number => Math.abs(m.x + m.w / 2 - centre);
       expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({
