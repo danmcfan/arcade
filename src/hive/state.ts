@@ -25,7 +25,6 @@ import {
 import {
   newItems,
   pointToTile,
-  type Entity,
   tunnelLeftX,
   tunnelRightX,
   tunnelRowY,
@@ -178,36 +177,6 @@ export class PlayState implements State {
 
   update(i: Input): StateID {
     const s = this.s;
-    this.advanceMode();
-
-    if (winner(s)) {
-      s.items = newItems();
-      restartRound(s);
-      return stateIDStart;
-    }
-
-    this.applyVelocities();
-    applyInput(s, i);
-
-    const caught = this.chaseAndCollide();
-    if (caught !== null) {
-      return caught;
-    }
-
-    for (const e of s.movingEntities()) {
-      updateFrame(e);
-      updatePosition(e, s.corners);
-    }
-
-    this.eatOneItem();
-    resetScaredEatAwardIfNobodyScared(s);
-
-    return stateIDPlay;
-  }
-
-  /** Starts the next scatter/chase mode when the current one runs out. */
-  private advanceMode(): void {
-    const s = this.s;
     if (s.modeTicks === 0) {
       const modeConfig = modeSequence[s.modeIndex];
       if (modeConfig === undefined) {
@@ -226,10 +195,13 @@ export class PlayState implements State {
     if (s.modeTicks > 0) {
       s.modeTicks--;
     }
-  }
 
-  private applyVelocities(): void {
-    const s = this.s;
+    if (winner(s)) {
+      s.items = newItems();
+      restartRound(s);
+      return stateIDStart;
+    }
+
     s.player.velocity = s.advantages.playerVelocity;
     for (const e of s.enemies) {
       e.velocity = velocityEnemyNormal;
@@ -242,11 +214,9 @@ export class PlayState implements State {
         e.velocity = velocityEnemyTunnel;
       }
     }
-  }
 
-  /** Steers each bee; the first one touching the player decides the next state. */
-  private chaseAndCollide(): StateID | null {
-    const s = this.s;
+    applyInput(s, i);
+
     for (const e of s.enemies) {
       updateBlue(e);
 
@@ -260,51 +230,47 @@ export class PlayState implements State {
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
       if (e.blueFrames > 0) {
-        this.eatScaredBee(e);
+        soundPower.rewind();
+        soundPower.play();
+
+        s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
+        s.particles.spawnBurst(e.x, e.y, particleColorTeal, particleBurstBeeEatenCount);
+
+        let awardIdx = s.scaredEatAwardNext;
+        if (awardIdx >= bonusEatFrameCount) {
+          awardIdx = bonusEatFrameCount - 1;
+        }
+        s.scoreValue += scaredBeeEatPoints[awardIdx] ?? 0;
+        spawnBonusEatIndicator(s, e.x, e.y, awardIdx);
+        let nextAward = awardIdx + 1;
+        if (nextAward >= bonusEatFrameCount) {
+          nextAward = bonusEatFrameCount - 1;
+        }
+        s.scaredEatAwardNext = nextAward;
+        resetEnemy(e);
         return stateIDPause;
       }
-      return this.loseLife();
+
+      soundDeath.rewind();
+      soundDeath.play();
+
+      s.particles.spawnBurst(s.player.x, s.player.y, particleColorRed, particleBurstPlayerEatenCount);
+
+      s.lives--;
+      if (s.lives <= 0) {
+        s.player.hidden = true;
+        return stateIDFinalDeathWait;
+      }
+      s.player.hidden = true;
+      return stateIDDeathWait;
     }
-    return null;
-  }
 
-  private eatScaredBee(e: Entity): void {
-    const s = this.s;
-    soundPower.rewind();
-    soundPower.play();
-
-    s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
-    s.particles.spawnBurst(e.x, e.y, particleColorTeal, particleBurstBeeEatenCount);
-
-    let awardIdx = s.scaredEatAwardNext;
-    if (awardIdx >= bonusEatFrameCount) {
-      awardIdx = bonusEatFrameCount - 1;
+    for (const e of s.movingEntities()) {
+      updateFrame(e);
+      updatePosition(e, s.corners);
     }
-    s.scoreValue += scaredBeeEatPoints[awardIdx] ?? 0;
-    spawnBonusEatIndicator(s, e.x, e.y, awardIdx);
-    let nextAward = awardIdx + 1;
-    if (nextAward >= bonusEatFrameCount) {
-      nextAward = bonusEatFrameCount - 1;
-    }
-    s.scaredEatAwardNext = nextAward;
-    resetEnemy(e);
-  }
 
-  private loseLife(): StateID {
-    const s = this.s;
-    soundDeath.rewind();
-    soundDeath.play();
-
-    s.particles.spawnBurst(s.player.x, s.player.y, particleColorRed, particleBurstPlayerEatenCount);
-
-    s.lives--;
-    s.player.hidden = true;
-    return s.lives <= 0 ? stateIDFinalDeathWait : stateIDDeathWait;
-  }
-
-  /** At most one item is eaten per tick. */
-  private eatOneItem(): void {
-    const s = this.s;
+    // At most one item is eaten per tick.
     for (let idx = 0; idx < s.items.length; idx++) {
       const item = s.items[idx];
       if (item === null || item === undefined) {
@@ -315,45 +281,42 @@ export class PlayState implements State {
         continue;
       }
 
-      this.eatItem(item);
+      if (item.isPellet()) {
+        s.scoreValue += 10;
+      }
+
+      if (item.isPower()) {
+        s.scoreValue += 50;
+
+        s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
+
+        for (const e of s.enemies) {
+          if (e.home) {
+            continue;
+          }
+
+          e.reverseDirection = true;
+          e.reverseTile = pointToTile(e.x, e.y);
+
+          e.blueFrames = s.advantages.blueFrames;
+          e.flashFrames = 0;
+          e.flash = false;
+        }
+      }
+
+      for (const e of s.enemies) {
+        if (e.dotMinimum > 0) {
+          e.dotMinimum--;
+        }
+      }
+
       s.items[idx] = null;
       break;
     }
-  }
 
-  private eatItem(item: Entity): void {
-    const s = this.s;
-    if (item.isPellet()) {
-      s.scoreValue += 10;
-    }
+    resetScaredEatAwardIfNobodyScared(s);
 
-    if (item.isPower()) {
-      s.scoreValue += 50;
-      s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
-      this.scareBees();
-    }
-
-    for (const e of s.enemies) {
-      if (e.dotMinimum > 0) {
-        e.dotMinimum--;
-      }
-    }
-  }
-
-  /** A power pellet turns every bee out of the hive blue and reverses it. */
-  private scareBees(): void {
-    for (const e of this.s.enemies) {
-      if (e.home) {
-        continue;
-      }
-
-      e.reverseDirection = true;
-      e.reverseTile = pointToTile(e.x, e.y);
-
-      e.blueFrames = this.s.advantages.blueFrames;
-      e.flashFrames = 0;
-      e.flash = false;
-    }
+    return stateIDPlay;
   }
 
   onExit(): void {}
