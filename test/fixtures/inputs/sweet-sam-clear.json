@@ -1,4 +1,4 @@
-{"name":"sweet-sam-clear","scene":"game","software":"sweetSam","seed":11,"captureTicks":[1,61,383,387,444,601,7977,9683,9684],"steps": [
+{"name":"sweet-sam-clear","scene":"game","software":"sweetSam","seed":11,"captureTicks":[1,61,383,387,444,601,6705,6840,6950,8040,9179,9180],"steps": [
   {"ticks":1,"input":{}},
   {"ticks":16,"input":{"up":true}},
   {"ticks":21,"input":{}},
