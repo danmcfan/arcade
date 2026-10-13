@@ -1,6 +1,6 @@
 // The redrawn hub and the use prompt (#17) in a real browser
 // (`bun run verify hub`). Part 1 drives the `?debug` test hook in the hub
-// (`?scene=game`): the player on each colour of the floor, then the SPACE key
+// (`?scene=game`): the player on the arcade carpet, then the SPACE key
 // cap above each cabinet while facing it (with its title art), gone when the
 // player turns away, bobbing, above the prize counter (or above the player
 // standing on it) while facing it, and Space at a cabinet starting that
@@ -53,10 +53,16 @@ function keyCap(v: Verify): { x: number; y: number; w: number } | null {
   return x0 === Infinity ? null : { x: x0 - margin, y: y0 - margin, w: x1 - x0 + 1 };
 }
 
-/** The floor colour beside the player's feet, in the floor square their x starts. */
+/** The floor colour beside the player's feet. */
 function floorUnderFeet(v: Verify): string {
   const p = game(v).arcade.player;
   return pixel(canvas(v), p.x + 6 + margin, p.y + 11 + margin);
+}
+
+/** The colour at (dx, dy) in the player's 16x24 frame, as drawn on the canvas. */
+function playerPixel(v: Verify, dx: number, dy: number): string {
+  const p = game(v).arcade.player;
+  return pixel(canvas(v), p.x - 8 + dx + margin, p.y - 12 + dy + margin);
 }
 
 function game(v: Verify): GameSnapshot {
@@ -84,19 +90,20 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 function floorAndPlayer(v: Verify): void {
-  console.log("the room and the player on both floor colours:");
+  console.log("the room and the player on the carpet:");
   v.openHook("scene=game");
   const p = game(v).arcade.player;
   check(p.x === 80 && p.y === 92 && p.dir === "DOWN", "the hub opens with the player at the start position", p);
-  check(floorUnderFeet(v) === "#29366f", "at the start the player stands on a dark blue square", floorUnderFeet(v));
+  check(floorUnderFeet(v) === "#29366f", "the player stands on the navy carpet", floorUnderFeet(v));
+  check(playerPixel(v, 5, 5) === "#73eff7", "in the new sprite: the cyan headphone band across the hair", playerPixel(v, 5, 5));
+  check(pixel(canvas(v), 80 + margin, 26 + margin) === "#73eff7", "the neon tube runs along the top of the wall", pixel(canvas(v), 80 + margin, 26 + margin));
   check(keyCap(v) === null, "no use prompt at the start position", keyCap(v));
-  v.frame("1-player-on-dark-blue");
+  v.frame("1-player-on-carpet");
 
-  v.step(8, { right: true });
-  check(floorUnderFeet(v) === "#333c57", "8 px right the player stands on a slate square", floorUnderFeet(v));
-  check(keyCap(v) === null, "and still no use prompt");
-  v.frame("2-player-on-slate");
-  v.step(8, { left: true });
+  v.step(32, { left: true });
+  check(keyCap(v) === null, "32 px left on the carpet: still no use prompt", keyCap(v));
+  v.frame("2-player-walking-left");
+  v.step(32, { right: true });
 }
 
 function cabinets(v: Verify): void {
