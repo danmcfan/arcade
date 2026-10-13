@@ -2,21 +2,26 @@
 // letters (`.` is blank). scripts/gen-ui-art.ts writes `playerSheetRows()` to
 // src/assets/images/player.png.
 //
-// The sheet is 4 frames across (stand, step, stand, other step) and one row
-// per facing direction, in the order of `newPlayer().frameDirection`
-// (src/arcade/entity.ts): up, down, left, right. Each frame is 16x24, the
-// player's collision box. A dark outline and bright, warm clothes keep the
-// player readable on both colours of the hub floor.
+// The player is the original Go sprite (spiky black hair with purple
+// highlights, teal eyes) in cyan headphones, an orange tee, blue jeans and
+// white sneakers. The sheet is 4 frames across (stand, step, stand, other
+// step) and one row per facing direction, in the order of
+// `newPlayer().frameDirection` (src/arcade/entity.ts): up, down, left, right.
+// Each frame is 16x24, the player's collision box; the step frames sit 1 px
+// lower than the stand.
 
 import type { Direction } from "../engine/input.ts";
 
 /** Sweetie 16 colours, keyed by the letter the rows use. */
 export const playerPalette: Readonly<Record<string, string>> = {
   k: "#1a1c2c",
-  r: "#b13e53",
+  p: "#5d275d",
   o: "#ef7d57",
   y: "#ffcd75",
-  d: "#3b5dc9",
+  t: "#257179",
+  b: "#3b5dc9",
+  B: "#41a6f6",
+  c: "#73eff7",
   w: "#f4f4f4",
 };
 
@@ -25,137 +30,262 @@ export const playerFrameHeight = 24;
 /** Frames per walk cycle (`Entity.frameTotal`). */
 export const playerFrames = 4;
 
-/** One facing: rows 0..18 (head and body) and three leg poses for rows 19..23. */
+/** One facing's frames, each a whole 16x24 frame. */
 interface Facing {
-  body: readonly string[];
   stand: readonly string[];
   step: readonly string[];
   otherStep: readonly string[];
 }
 
-const frontLegs = {
-  stand: [
-    "...kkddddddkk...",
-    "....kddkkddk....",
-    "....kddkkddk....",
-    "....kwwkkwwk....",
-    ".....kk..kk.....",
-  ],
-  step: [
-    "...kkddddddkk...",
-    "....kddkkddk....",
-    "....kwwkkddk....",
-    ".....kk.kwwk....",
-    ".........kk.....",
-  ],
-  otherStep: [
-    "...kkddddddkk...",
-    "....kddkkddk....",
-    "....kddkkwwk....",
-    "....kwwk.kk.....",
-    ".....kk.........",
-  ],
-};
-
-const down: Facing = {
-  body: [
-    "................",
-    "................",
-    "................",
-    "................",
-    ".....kkkkkk.....",
-    "....krrrrrrk....",
-    "...krrrorrrrk...",
-    "..krrrorrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..krkyyyyyykrk..",
-    "..kryyyyyyyyrk..",
-    "..kyykyyyykyyk..",
-    "..kyykyyyykyyk..",
-    "...kyyyyyyyyk...",
-    "...kkkyyyykkk...",
-    "..kooooooooook..",
-    "..kokooooookok..",
-    "..kokyyyyyykok..",
-    "..kykrrrrrrkyk..",
-  ],
-  ...frontLegs,
-};
-
+/** Facing up: the back of the head, the headphone band across the hair. */
 const up: Facing = {
-  body: [
-    "................",
-    "................",
-    "................",
-    "................",
-    ".....kkkkkk.....",
-    "....krrrrrrk....",
-    "...krrrorrrrk...",
-    "..krrrorrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..krrrrrrrrrrk..",
-    "..kyrrrrrrrryk..",
-    "..kykrrrrrrkyk..",
-    "...kkrrrrrrkk...",
-    "...kkkyyyykkk...",
-    "..kooooooooook..",
-    "..kokooooookok..",
-    "..kokyyyyyykok..",
-    "..kykrrrrrrkyk..",
-  ],
-  ...frontLegs,
-};
-
-const right: Facing = {
-  body: [
-    "................",
-    "................",
-    "................",
-    "................",
-    "....kkkkkk......",
-    "...krrrrrrk.....",
-    "..krrorrrrrk....",
-    "..krorrrrrrrk...",
-    "..krrrrrrkkkk...",
-    "..krrrrkyyyyyk..",
-    "..krrrkyyyykyk..",
-    "..krrkyyyyykyk..",
-    "..krrkyyyyyyyk..",
-    "...kkyyyyyykk...",
-    "....kkyyyk......",
-    "....kooooook....",
-    "....kooooook....",
-    "....kyyyyyyk....",
-    "....krrrrrrk....",
-  ],
   stand: [
-    "....kddddddk....",
-    ".....kddddk.....",
-    ".....kddddk.....",
-    ".....kwwwwwk....",
-    "......kkkkk.....",
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkpkkk.....",
+    "..kcccccccccck..",
+    ".kckkkkkkkkkkck.",
+    ".kBkppkkkkkkkBk.",
+    ".kBkppkkkkkkkBk.",
+    "kBBBkppkkkkkBBBk",
+    "kBcBkpppppkkBcBk",
+    "kBBBkkkkkkkkBBBk",
+    ".kkkpkkkkkkpkkk.",
+    "..kkpppkkpppkk..",
+    "...kppppppppk...",
+    "..kkkkppppkkkk..",
+    ".kykookkkkookyk.",
+    ".kyykooooookyyk.",
+    "..kkooooooookk..",
+    "...kbbkkkkbbk...",
+    "...kwbbkkbbwk...",
+    "...kwwk..kwwk...",
+    "....kk....kk....",
+    "................",
   ],
   step: [
-    "....kddddddk....",
-    "...kddkkkddk....",
-    "...kddk.kddk....",
-    "..kwwwk.kwwwk...",
-    "...kkk...kkk....",
+    "................",
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkpkkk.....",
+    "..kcccccccccck..",
+    ".kckkkkkkkkkkck.",
+    ".kBkppkkkkkkkBk.",
+    ".kBkppkkkkkkkBk.",
+    "kBBBkppkkkkkBBBk",
+    "kBcBkpppppkkBcBk",
+    "kBBBkkkkkkkkBBBk",
+    ".kkkpkkkkkkpkkk.",
+    "..kkpppkkpppkk..",
+    "...kppppppppkk..",
+    "...kkkppppkkyk..",
+    "..kkookkkkookk..",
+    ".kyykoooooook...",
+    ".kyykoooooook...",
+    "..kkkbkkkkbbk...",
+    "....kkkkkbbwk...",
+    ".........kwwk...",
+    "..........kk....",
   ],
   otherStep: [
-    "....kddddddk....",
-    ".....kddddk.....",
-    "....kwwkddk.....",
-    ".....kkkwwwk....",
-    "........kkk.....",
+    "................",
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkpkkk.....",
+    "..kcccccccccck..",
+    ".kckkkkkkkkkkck.",
+    ".kBkppkkkkkkkBk.",
+    ".kBkppkkkkkkkBk.",
+    "kBBBkppkkkkkBBBk",
+    "kBcBkpppppkkBcBk",
+    "kBBBkkkkkkkkBBBk",
+    ".kkkpkkkkkkpkkk.",
+    "..kkpppkkpppkk..",
+    "...kppppppppkk..",
+    "..kykkppppkkk...",
+    "..kkookkkkookk..",
+    "...koooooookyyk.",
+    "...koooooookyyk.",
+    "...kbbkkkkbkkk..",
+    "...kwbbkkkkk....",
+    "...kwwk.........",
+    "....kk..........",
+  ],
+};
+
+/** Facing down: the face, both ear cups. */
+const down: Facing = {
+  stand: [
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkkkkk.....",
+    "..kcccccccccck..",
+    ".kckpppkkkkkkck.",
+    ".kBkpppkkkkkkBk.",
+    ".kBkppppkkkpkBk.",
+    "kBBBkpkppppkBBBk",
+    "kBcBkkkkkkkkBcBk",
+    "kBBBkkkykkykBBBk",
+    ".kkkkyyykyyykkk.",
+    "..kyyywyywyyyk..",
+    "...kyytyytyyk...",
+    "..kkkkyyyykkkk..",
+    ".kyykokkkkokyyk.",
+    ".kyykooooookyyk.",
+    "..kkooooooookk..",
+    "...kbbkkkkbbk...",
+    "...kwbbkkbbwk...",
+    "...kwwk..kwwk...",
+    "....kk....kk....",
+    "................",
+  ],
+  step: [
+    "................",
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkkkkk.....",
+    "..kcccccccccck..",
+    ".kckpppkkkkkkck.",
+    ".kBkpppkkkkkkBk.",
+    ".kBkppppkkkpkBk.",
+    "kBBBkpkppppkBBBk",
+    "kBcBkkkkkkkkBcBk",
+    "kBBBkkkykkykBBBk",
+    ".kkkkyyykyyykkk.",
+    "..kyyywyywyyyk..",
+    ".kykyytyytyyk...",
+    ".kyykkyyyykk....",
+    "..kkkokkkkkkk...",
+    "....koooookyyk..",
+    "...kooooookyyk..",
+    "...kbbkkkkwkk...",
+    "...kwbbkkkkk....",
+    "...kwwk.........",
+    "....kk..........",
+  ],
+  otherStep: [
+    "................",
+    "................",
+    "................",
+    "................",
+    ".......kk.......",
+    ".....kkkkkk.....",
+    "..kcccccccccck..",
+    ".kckpppkkkkkkck.",
+    ".kBkpppkkkkkkBk.",
+    ".kBkppppkkkpkBk.",
+    "kBBBkpkppppkBBBk",
+    "kBcBkkkkkkkkBcBk",
+    "kBBBkkkykkykBBBk",
+    ".kkkkyyykyyykkk.",
+    "..kyyywyywyyyk..",
+    "...kyytyytyykyk.",
+    "....kkyyyykkyyk.",
+    "...kkkkkkkokkk..",
+    "..kyykoooook....",
+    "..kyykooooook...",
+    "...kkwkkkkbbk...",
+    "....kkkkkbbwk...",
+    ".........kwwk...",
+    "..........kk....",
+  ],
+};
+
+/** Facing right: one ear cup at the back of the head. Left is this, mirrored. */
+const right: Facing = {
+  stand: [
+    "................",
+    "................",
+    "................",
+    "........kk......",
+    "......kckkkkkk..",
+    ".....kckkkkkkpk.",
+    "..k.kBkkkkkkkk..",
+    "..kkkBkkkkkkkk..",
+    "..kpkBkkkkkppkk.",
+    "..kpkBkkkpppkkkk",
+    "..kkBBBkkkkkkkk.",
+    "..kkBcBkkkkkyk..",
+    "...kBBBkkyykyk..",
+    "...kkkkkyywyyk..",
+    "....kyyyyytyk...",
+    ".....kyyyyyk....",
+    ".....kkkkkkk....",
+    ".....kokkook....",
+    ".....kkyykok....",
+    ".....kkyykk.....",
+    "......kkkwk.....",
+    "......kwwwk.....",
+    ".......kkk......",
+    "................",
+  ],
+  step: [
+    "................",
+    "................",
+    "................",
+    "................",
+    "........kk......",
+    "......kckkkkkk..",
+    ".....kckkkkkkpk.",
+    "..k.kBkkkkkkkk..",
+    "..kkkBkkkkkkkk..",
+    "..kpkBkkkkkppkk.",
+    "..kpkBkkkpppkkkk",
+    "..kkBBBkkkkkkkk.",
+    "..kkBcBkkkkkyk..",
+    "...kBBBkkyykyk..",
+    "...kkkkkyywyyk..",
+    "....kyyyyytyk...",
+    ".....kyyyyyk....",
+    ".....kkkkkk.....",
+    ".....kookyyk....",
+    "....kbookyykk...",
+    "...kwbbbkkkwk...",
+    "...kwwkkk.kk....",
+    "....kkk.........",
+    "................",
+  ],
+  otherStep: [
+    "................",
+    "................",
+    "................",
+    "................",
+    "........kk......",
+    "......kckkkkkk..",
+    ".....kckkkkkkpk.",
+    "..k.kBkkkkkkkk..",
+    "..kkkBkkkkkkkk..",
+    "..kpkBkkkkkppkk.",
+    "..kpkBkkkpppkkkk",
+    "..kkBBBkkkkkkkk.",
+    "..kkBcBkkkkkyk..",
+    "...kBBBkkyykyk..",
+    "...kkkkkyywyyk..",
+    "....kyyyyytyk...",
+    ".....kyyyyyk....",
+    ".....kkkkkk.....",
+    "....kyykook.....",
+    "....kyykobbk....",
+    "....kkkbbbwwk...",
+    "....kwkkkwwk....",
+    ".....kk..kk.....",
+    "................",
   ],
 };
 
 const mirror = (rows: readonly string[]): string[] => rows.map((r) => [...r].reverse().join(""));
 
 const left: Facing = {
-  body: mirror(right.body),
   stand: mirror(right.stand),
   step: mirror(right.step),
   otherStep: mirror(right.otherStep),
@@ -169,7 +299,7 @@ const facings: Readonly<Record<Direction, Facing>> = { UP: up, DOWN: down, LEFT:
 /** The 4 frames of one facing, left to right: stand, step, stand, other step. */
 export function playerFramesFor(dir: Direction): string[][] {
   const f = facings[dir];
-  return [f.stand, f.step, f.stand, f.otherStep].map((legs) => [...f.body, ...legs]);
+  return [f.stand, f.step, f.stand, f.otherStep].map((rows) => [...rows]);
 }
 
 /** The whole sheet: `playerFrames` frames across, one row of frames per direction in `sheetOrder`. */

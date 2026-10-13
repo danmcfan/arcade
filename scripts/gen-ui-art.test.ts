@@ -73,7 +73,7 @@ describe("UI art source", () => {
     expect([roomWidth, roomHeight]).toEqual([images.arcade.width, images.arcade.height]);
     const allowed = new RegExp(`^[${Object.keys(hubPalette).join("")}]+$`);
     for (const row of rows) expect({ row, ok: allowed.test(row) && row.length === roomWidth }).toEqual({ row, ok: true });
-    for (const row of cabinetArt) expect({ row, ok: /^[.k123]+$/.test(row) && row.length === cabinetArt[0]!.length }).toEqual({ row, ok: true });
+    for (const row of cabinetArt) expect({ row, ok: /^[.k1234S]+$/.test(row) && row.length === cabinetArt[0]!.length }).toEqual({ row, ok: true });
   });
 
   test("every player frame is the player's 16x24 box, in palette letters and .", () => {
