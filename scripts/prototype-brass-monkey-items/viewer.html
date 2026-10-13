@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brass Monkey Items</title>
+    <!-- PROTOTYPE (throwaway, #38 phase 3). prototype-brass-monkey-items.ts inlines the art where DATA is. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #232740;
+        --line: #333c57;
+        --fg: #f4f4f4;
+        --muted: #94b0c2;
+        --accent: #ffcd75;
+        --accent-ink: #1a1c2c;
+        --display: "Silkscreen", ui-monospace, monospace;
+        --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+      }
+      body {
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding: 24px 16px 48px;
+      }
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+      }
+      header {
+        display: grid;
+        gap: 6px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 28px;
+        margin: 0;
+        color: var(--accent);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 80ch;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+      }
+      .bar output {
+        flex: 1 1 200px;
+        font-family: ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--fg);
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      }
+      .card {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        cursor: pointer;
+      }
+      .card.picked {
+        border-color: var(--accent);
+      }
+      .card h3 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 15px;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .card .pick {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .card.picked .pick {
+        color: var(--accent);
+      }
+      .card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      canvas {
+        image-rendering: pixelated;
+        display: block;
+        max-width: 100%;
+        border-radius: 3px;
+      }
+      .frames {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: end;
+      }
+      .frames figure {
+        margin: 0;
+        display: grid;
+        gap: 2px;
+        justify-items: center;
+      }
+      .frames figcaption {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      button {
+        font-family: var(--display);
+        font-size: 12px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .tag {
+        font-family: var(--body);
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0 5px;
+        justify-self: start;
+      }
+      #together {
+        width: 100%;
+        max-width: 896px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Brass Monkey items</h1>
+        <p>
+          The things the Gnome sends down and the thing the monkey collects: the <b>gear</b> (a hazard that rolls down
+          the girders), the <b>ember</b> (a hazard that wanders the girders and climbs ladders) and the
+          <b>bolt</b> (worth points). None of them exist yet, so every option is new. Click a card to pick one of each;
+          the strip at the bottom plays your picks with the monkey and the Gnome at 2×. Then press
+          <b>Copy my picks</b> and paste the line back, with any notes ("G3, but brass").
+        </p>
+      </header>
+      <div class="bar">
+        <button id="proposed">Proposed</button>
+        <button id="copy">Copy my picks</button>
+        <output id="picks"></output>
+      </div>
+      <section>
+        <h2>Gear: hazard, rolls</h2>
+        <div class="grid" id="gears"></div>
+      </section>
+      <section>
+        <h2>Ember: hazard, wanders and climbs</h2>
+        <div class="grid" id="embers"></div>
+      </section>
+      <section>
+        <h2>Bolt: collect for points</h2>
+        <div class="grid" id="bolts"></div>
+      </section>
+      <section>
+        <h2>Your picks together, 2×</h2>
+        <canvas id="together" width="224" height="112"></canvas>
+      </section>
+    </main>
+    <script>
+      const DATA = /*DATA*/ null;
+      const S = DATA.sweetie;
+      const PROPOSED = { gear: "G1", ember: "E1", bolt: "B1" };
+      const picks = { ...PROPOSED };
+      const BACKDROP = S.k;
+      const GIRDER = ["rrrrrrrr", "r......r", ".r....r.", "..r..r..", "...rr...", "..r..r..", "rrrrrrrr", "........"];
+      const KINDS = { gear: DATA.gears, ember: DATA.embers, bolt: DATA.bolts };
+
+      function blit(ctx, rows, x, y, k = 1, flip = false) {
+        const w = rows[0].length;
+        rows.forEach((row, j) => {
+          for (let i = 0; i < w; i++) {
+            const ch = row[flip ? w - 1 - i : i];
+            if (ch === ".") continue;
+            ctx.fillStyle = S[ch];
+            ctx.fillRect(Math.round(x) + i * k, Math.round(y) + j * k, k, k);
+          }
+        });
+      }
+      function girders(ctx, y, from, to) {
+        for (let x = from; x < to; x += 8) blit(ctx, GIRDER, x, y);
+      }
+      function canvas(w, h, k) {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.style.width = `${w * k}px`;
+        return c;
+      }
+      function frameSheet(frames, k) {
+        const wrap = document.createElement("div");
+        wrap.className = "frames";
+        frames.forEach((f, i) => {
+          const c = canvas(f[0].length + 2, f.length + 2, k);
+          const x = c.getContext("2d");
+          x.fillStyle = BACKDROP;
+          x.fillRect(0, 0, c.width, c.height);
+          blit(x, f, 1, 1);
+          const fig = document.createElement("figure");
+          const cap = document.createElement("figcaption");
+          cap.textContent = `${i + 1}`;
+          fig.append(c, cap);
+          wrap.append(fig);
+        });
+        return wrap;
+      }
+      const height = (frames) => frames[0].length;
+      const width = (frames) => frames[0][0].length;
+
+      // Each animated stage draws itself from the shared clock.
+      const stages = [];
+      let t = 0;
+
+      // A gear's frame: the next one every 4 px rolled, backwards when rolling left.
+      function gearFrame(frames, x, left) {
+        const n = frames.length;
+        const i = Math.floor(x / 4) % n;
+        return frames[left ? (n - i) % n : i];
+      }
+      // An ember flickers: a new frame every 8 ticks.
+      const emberFrame = (frames) => frames[Math.floor(t / 8) % frames.length];
+      // A bolt rests, and every 2 s a glint runs over it (frames 2-4, 5 ticks each).
+      function boltFrame(frames) {
+        const g = Math.floor((t % 120) / 5);
+        return frames[g >= 1 && g < frames.length ? g : 0];
+      }
+      // Something pacing between `a` and `b`, 1 px every `every` ticks.
+      function pacer(a, b, every = 1) {
+        return { x: a, a, b, left: false, every };
+      }
+      function pace(p) {
+        if (t % p.every) return;
+        p.x += p.left ? -1 : 1;
+        if (p.x >= p.b) p.left = true;
+        if (p.x <= p.a) p.left = false;
+      }
+
+      function card(kind, c) {
+        const el = document.createElement("article");
+        el.className = "card";
+        el.dataset.kind = kind;
+        el.dataset.id = c.id;
+        const h = document.createElement("h3");
+        h.innerHTML = `<span>${c.id} · ${c.name}</span><span class="pick"></span>`;
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = `${c.tag} · ${width(c.frames)}×${height(c.frames)}`;
+        const p = document.createElement("p");
+        p.textContent = c.note;
+        const stage = canvas(72, 28, 4);
+        const floor = 20;
+        const top = floor - height(c.frames);
+        const mover = pacer(4, 68 - width(c.frames), kind === "ember" ? 2 : 1);
+        stages.push(() => {
+          const x = stage.getContext("2d");
+          x.fillStyle = BACKDROP;
+          x.fillRect(0, 0, 72, 28);
+          girders(x, floor, 0, 72);
+          if (kind === "gear") {
+            pace(mover);
+            blit(x, gearFrame(c.frames, mover.x, mover.left), mover.x, top);
+          } else if (kind === "ember") {
+            pace(mover);
+            blit(x, emberFrame(c.frames), mover.x, top);
+          } else {
+            blit(x, boltFrame(c.frames), 36 - width(c.frames) / 2, top);
+          }
+        });
+        el.append(h, tag, p, stage, frameSheet(c.frames, 4));
+        el.addEventListener("click", () => {
+          picks[kind] = c.id;
+          render();
+        });
+        return el;
+      }
+
+      document.getElementById("gears").append(...DATA.gears.map((c) => card("gear", c)));
+      document.getElementById("embers").append(...DATA.embers.map((c) => card("ember", c)));
+      document.getElementById("bolts").append(...DATA.bolts.map((c) => card("bolt", c)));
+
+      // A slice of a floor at the game's scale: the Gnome on the top girder
+      // throwing gears that roll right, drop to the middle girder, roll left
+      // and drop off; an ember pacing the middle girder; the monkey walking the
+      // bottom girder past a bolt. Gears drop off the left end of the middle girder.
+      const together = document.getElementById("together");
+      const TOP = 40;
+      const MID = 72;
+      const LOW = 104;
+      const ember = pacer(120, 200, 2);
+      const monkey = pacer(48, 150);
+      let gear = null;
+      let throwing = 0;
+      // The monkey's walk: frame += 0.2 a tick, cycle 0,1,0,2 over the sheet's columns.
+      const walk = () => [0, 1, 0, 2][Math.floor(t / 5) % 4];
+      stages.push(() => {
+        const x = together.getContext("2d");
+        const pick = (kind) => KINDS[kind].find((c) => c.id === picks[kind]).frames;
+        const gf = pick("gear");
+        const ef = pick("ember");
+        const bf = pick("bolt");
+        x.fillStyle = BACKDROP;
+        x.fillRect(0, 0, 224, 112);
+        girders(x, TOP, 0, 96);
+        girders(x, MID, 24, 224);
+        girders(x, LOW, 40, 224);
+
+        if (gear === null && t % 150 === 0) {
+          throwing = 30;
+          gear = { x: 30, y: TOP - height(gf), vy: 0, floor: TOP, left: false };
+        }
+        if (gear) {
+          // Roll along the floor; off its end, fall to the next one.
+          const onTop = gear.floor === TOP && gear.x < 96;
+          const onMid = gear.floor === MID && gear.x > 24 - width(gf) / 2;
+          if (onTop || onMid) {
+            gear.x += gear.left ? -1 : 1;
+            gear.y = gear.floor - height(gf);
+          } else {
+            gear.vy = Math.min(gear.vy + 0.25, 3);
+            gear.y += gear.vy;
+            const next = gear.floor === TOP ? MID : 200;
+            if (gear.y >= next - height(gf)) {
+              gear.floor = next;
+              gear.vy = 0;
+              gear.left = true;
+            }
+            if (gear.y > 112) gear = null;
+          }
+          if (gear) blit(x, gearFrame(gf, gear.x, gear.left), gear.x, gear.y);
+        }
+        const g = DATA.gnome[throwing > 0 ? 1 : 0];
+        throwing = Math.max(0, throwing - 1);
+        blit(x, g, 2, TOP - 32);
+
+        pace(ember);
+        blit(x, emberFrame(ef), ember.x, MID - height(ef));
+        blit(x, boltFrame(bf), 184, LOW - height(bf));
+        pace(monkey);
+        blit(x, DATA.monkey[walk()], monkey.x, LOW - 16, 1, monkey.left);
+      });
+
+      function line() {
+        return `gear=${picks.gear} ember=${picks.ember} bolt=${picks.bolt}`;
+      }
+      function render() {
+        document.querySelectorAll(".card").forEach((el) => {
+          const on = picks[el.dataset.kind] === el.dataset.id;
+          el.classList.toggle("picked", on);
+          el.querySelector(".pick").textContent = on ? "picked" : "click to pick";
+        });
+        document.getElementById("picks").textContent = line();
+      }
+      document.getElementById("copy").onclick = () => {
+        const out = document.getElementById("picks");
+        const select = () => getSelection()?.selectAllChildren(out);
+        navigator.clipboard ? navigator.clipboard.writeText(line()).catch(select) : select();
+      };
+      document.getElementById("proposed").onclick = () => {
+        Object.assign(picks, PROPOSED);
+        render();
+      };
+      together.style.width = "448px";
+
+      function tick() {
+        t++;
+        stages.forEach((s) => s());
+        requestAnimationFrame(tick);
+      }
+      render();
+      tick();
+    </script>
+  </body>
+</html>
