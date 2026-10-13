@@ -2,30 +2,54 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import { gnomeIdle, gnomeThrow, monkeyClimb, monkeyJump, monkeyWalk } from "../src/brass-monkey/art.ts";
+import {
+  gnomeArmsDown,
+  gnomeArmsUp,
+  gnomeBody,
+  monkeyClimb,
+  monkeyHead,
+  monkeyJump,
+  monkeyOtherStep,
+  monkeyStand,
+  monkeyStep,
+} from "../src/brass-monkey/art.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, empty, flipX, toRows } from "./pixel-art.ts";
-import { brassMonkeyArtFiles, brassMonkeyImagesDir, gnomeFrames, monkeyFrames } from "./gen-brass-monkey-art.ts";
+import {
+  brassMonkeyArtFiles,
+  brassMonkeyImagesDir,
+  gnomeFrames,
+  monkeyFills,
+  monkeyFrames,
+} from "./gen-brass-monkey-art.ts";
 
 describe("Brass Monkey art source", () => {
-  test("the monkey's frames are 16×16 fills: three walking, one jumping, one climbing", () => {
-    expect(monkeyWalk.length).toBe(3);
-    monkeyWalk.forEach((rows, i) => {
-      checkRows(`walk ${i}`, rows, { w: 16, h: 16 });
-    });
-    checkRows("jump", monkeyJump, { w: 16, h: 16 });
+  test("the monkey is a 16×10 head over 16×6 bodies (16×5 for the steps, drawn 1 px lower), and a 16×16 climb", () => {
+    checkRows("head", monkeyHead, { w: 16, h: 10 });
+    checkRows("stand", monkeyStand, { w: 16, h: 6 });
+    checkRows("step", monkeyStep, { w: 16, h: 5 });
+    checkRows("other step", monkeyOtherStep, { w: 16, h: 5 });
+    checkRows("jump", monkeyJump, { w: 16, h: 6 });
     checkRows("climb", monkeyClimb, { w: 16, h: 16 });
   });
 
-  test("the Gnome's frames are the left halves of 32×32", () => {
-    checkRows("gnome idle", gnomeIdle, { w: 16, h: 32 });
-    checkRows("gnome throw", gnomeThrow, { w: 16, h: 32 });
+  test("the Gnome is the left half of a 32×32 body, with arm parts that fit inside it", () => {
+    checkRows("gnome body", gnomeBody, { w: 16, h: 32 });
+    for (const [name, arms] of [
+      ["arms down", gnomeArmsDown],
+      ["arms up", gnomeArmsUp],
+    ] as const) {
+      checkRows(name, arms.rows);
+      expect(arms.x + (arms.rows[0]?.length ?? 0)).toBeLessThanOrEqual(16);
+      expect(arms.y + arms.rows.length).toBeLessThanOrEqual(32);
+    }
   });
 
-  test("fills leave the outline's border blank at the top and sides", () => {
-    for (const rows of [...monkeyWalk, monkeyJump, monkeyClimb, gnomeIdle, gnomeThrow]) {
+  test("every monkey fill leaves a blank border on all four sides, so its outline is whole", () => {
+    for (const rows of monkeyFills()) {
       expect(rows[0]).toMatch(/^\.+$/u);
-      for (const row of rows) expect(row[0]).toBe(empty);
+      expect(rows.at(-1)).toMatch(/^\.+$/u);
+      for (const row of rows) expect([row[0], row.at(-1)]).toEqual([empty, empty]);
     }
   });
 });

@@ -2,29 +2,58 @@
 //
 //   bun run art      # also writes src/assets/images/brass-monkey/*.png
 //
-// Each source frame is a fill; every frame here gets a 1 px black outline.
-// monkey.png is one row of 16×16 frames: walk 1-3, jump, climb and climb
-// mirrored. gnome.png is one row of 32×32 frames, each mirrored from its left
-// half: idle, throw. gen-brass-monkey-art.test.ts fails when the committed PNGs
+// Each frame is built from the source's parts and gets a 1 px black outline.
+// monkey.png is one row of 16×16 frames: walk 1-3 (the head over each body,
+// 1 px lower on a step), jump, climb and climb mirrored. gnome.png is one row
+// of 32×32 frames, the body with each arm part, mirrored from its left half:
+// idle, throw. gen-brass-monkey-art.test.ts fails when the committed PNGs
 // drift.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import { gnomeIdle, gnomeThrow, monkeyClimb, monkeyJump, monkeyWalk } from "../src/brass-monkey/art.ts";
+import {
+  gnomeArmsDown,
+  gnomeArmsUp,
+  gnomeBody,
+  monkeyClimb,
+  monkeyHead,
+  monkeyJump,
+  monkeyOtherStep,
+  monkeyStand,
+  monkeyStep,
+  type Part,
+} from "../src/brass-monkey/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, flipX, mirrorX, outline, paint, type Rows } from "./pixel-art.ts";
+import { blank, empty, flipX, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
 
-/** The monkey's sheet frames, outlined, in sheet order. */
-export function monkeyFrames(): string[][] {
-  const climb = outline(monkeyClimb);
-  return [...monkeyWalk.map((rows) => outline(rows)), outline(monkeyJump), climb, flipX(climb)];
+const blankRow = empty.repeat(16);
+
+/** The monkey's fills before outlining, in sheet order. */
+export function monkeyFills(): Rows[] {
+  return [
+    [...monkeyHead, ...monkeyStand],
+    [blankRow, ...monkeyHead, ...monkeyStep],
+    [blankRow, ...monkeyHead, ...monkeyOtherStep],
+    [...monkeyHead, ...monkeyJump],
+    monkeyClimb,
+  ];
 }
 
+/** The monkey's sheet frames, outlined: walk 1-3, jump, climb and its mirror. */
+export function monkeyFrames(): Rows[] {
+  const frames = monkeyFills().map((rows) => outline(rows));
+  const climb = frames[4];
+  if (climb === undefined) throw new Error("the monkey has no climbing frame");
+  return [...frames, flipX(climb)];
+}
+
+const withArms = (arms: Part): string[] => overlay(gnomeBody, arms.rows, arms.x, arms.y);
+
 /** The Gnome's sheet frames, mirrored and outlined: idle, throw. */
-export function gnomeFrames(): string[][] {
-  return [gnomeIdle, gnomeThrow].map((half) => outline(mirrorX(half)));
+export function gnomeFrames(): Rows[] {
+  return [gnomeArmsDown, gnomeArmsUp].map((arms) => outline(mirrorX(withArms(arms))));
 }
 
 /** `frames` side by side, each `size` square. */
