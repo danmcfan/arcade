@@ -5,6 +5,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
+import { ticketsFor } from "../game/payout.ts";
 import { flowerDrops, flowerTicks, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { deathRoundDelayTicks } from "./update.ts";
@@ -489,6 +490,20 @@ describe("clearing a level", () => {
     s.items = s.items.map(() => null);
     step(s, 2 + levelClearTicks);
     expect([s.snapshot().state, s.snapshot().level]).toEqual(["START", 3]);
+  });
+});
+
+describe("game over pays out", () => {
+  test("a run that clears level 1 and loses every life on level 2 ends with gameOver() and its score in tickets", () => {
+    const s = cleared(); // score 1234
+    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    expect([s.snapshot().state, s.level]).toEqual(["PLAY", 2]);
+    while (!s.gameOver()) {
+      if (s.snapshot().state === "PLAY") onPlayer(s, enemy(s, 0));
+      step(s);
+    }
+    expect([s.lives, s.score(), s.snapshot().state]).toEqual([0, 1234, "GAMEOVER"]);
+    expect(ticketsFor(s.score(), false)).toBe(12);
   });
 });
 

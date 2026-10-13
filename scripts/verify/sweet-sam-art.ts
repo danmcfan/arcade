@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import type { InputScript, InputStep } from "../../src/game/script.ts";
+import type { InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
@@ -24,6 +24,7 @@ import { decodeDataUrl, isRecord } from "../browser.ts";
 import { planCaptures } from "../capture-frames.ts";
 import { isWax, sweetSamArtFiles, sweetSamImagesDir } from "../gen-sweet-sam-art.ts";
 import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
+import { loadFixture, replayLive, runSteps, skipTo } from "../fixture-replay.ts";
 
 let checks = 0;
 
@@ -42,14 +43,14 @@ const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
-/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace). */
+/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace; 7930 is on level 2 since #47). */
 const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
   { tick: 382, name: "2-honey-pot-eaten", shows: "a honey pot eaten: the bees out of the home fall asleep" },
   { tick: 387, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
   { tick: 1239, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
   { tick: 4879, name: "5-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
-  { tick: 7977, name: "6-waking-flash", shows: "sleepy bees flashing awake" },
+  { tick: 7930, name: "6-waking-flash", shows: "sleepy bees flashing awake" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -217,25 +218,14 @@ function plan(): { tick: number; steps: InputStep[] }[] {
   return planCaptures({ ...script, captureTicks: stops.map((s) => s.tick) });
 }
 
-function runSteps(v: Verify, steps: InputStep[]): void {
-  const chunk: InputScript = { ...script, steps, captureTicks: [] };
-  v.page.eval(`window.__arcade.runScript(${JSON.stringify(chunk)}); "ok"`);
-}
-
-function load(v: Verify): void {
-  v.page.eval(
-    `(() => { const a = window.__arcade; a.pause(); a.seed(${script.seed}); a.load("game", { software: "sweetSam" }); return "ok"; })()`,
-  );
-}
-
 function play(v: Verify): void {
   v.openHook("scene=game");
-  load(v);
+  loadFixture(v, script);
   const steps = plan();
   stops.forEach((stop, i) => {
     const part = steps[i];
     if (part === undefined) throw new Error(`no steps to tick ${stop.tick}`);
-    runSteps(v, part.steps);
+    runSteps(v, script, part.steps);
     const s = checkStop(v, stop.name, stop.shows);
     if (stop.tick === 1) {
       check(
@@ -256,7 +246,7 @@ function play(v: Verify): void {
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
     if (stop.tick === 4879)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick === 7977)
+    if (stop.tick === 7930)
       check(
         s.enemies.some((e) => e.flash),
         "a sleepy bee flashes awake",
@@ -277,54 +267,22 @@ function sheets(v: Verify): void {
   }
 }
 
-/** Replay `ticks` ticks of the fixture a few at a time, so the video runs at about game speed. */
-function replayLive(v: Verify, from: number, to: number): void {
-  const inputs = planCaptures({ ...script, captureTicks: [from, to] })[1]?.steps ?? [];
-  // Re-chunk into 6-tick pieces, each followed by its 100 ms of wall-clock.
-  let pending: InputStep[] = [];
-  let ticks = 0;
-  const flush = (): void => {
-    if (pending.length === 0) return;
-    runSteps(v, pending);
-    v.wait(ticks * 16);
-    pending = [];
-    ticks = 0;
-  };
-  for (const step of inputs) {
-    let left = step.ticks;
-    while (left > 0) {
-      const n = Math.min(left, 6 - ticks);
-      pending.push({ ...step, ticks: n });
-      ticks += n;
-      left -= n;
-      if (ticks === 6) flush();
-    }
-  }
-  flush();
-}
-
-/** Jump straight to `tick` (no video time spent). */
-function skipTo(v: Verify, from: number, tick: number): void {
-  const part = planCaptures({ ...script, captureTicks: [from, tick] })[1];
-  if (part !== undefined) runSteps(v, part.steps);
-}
-
 function video(v: Verify): void {
   console.log("video:");
   v.record(
     "replay",
     () => {
-      load(v);
-      runSteps(v, plan()[0]?.steps ?? []);
+      loadFixture(v, script);
+      runSteps(v, script, plan()[0]?.steps ?? []);
       v.wait(600);
       // The start, READY!, the first honey pot, a sleepy bee eaten, more honey.
-      replayLive(v, 1, 1300);
+      replayLive(v, script, 1, 1300);
       // A life lost.
-      skipTo(v, 1300, 4800);
-      replayLive(v, 4800, 4960);
+      skipTo(v, script, 1300, 4800);
+      replayLive(v, script, 4800, 4960);
       // Sleepy bees flashing awake.
-      skipTo(v, 4960, 7900);
-      replayLive(v, 7900, 8040);
+      skipTo(v, script, 4960, 7850);
+      replayLive(v, script, 7850, 7990);
       v.wait(500);
     },
     { scene: "game" },
