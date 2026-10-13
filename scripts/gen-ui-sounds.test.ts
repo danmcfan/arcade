@@ -1,7 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import { arpeggio, attractLoops, bass, hubSong, melody, type Note } from "../src/ui/sounds.ts";
+import {
+  arpeggio,
+  attractLoops,
+  bass,
+  hubSong,
+  melody,
+  sweetSamTunes,
+  tuneSeconds,
+  type Note,
+} from "../src/ui/sounds.ts";
 import {
   attractBrassMonkeyPath,
   attractFireflyPath,
@@ -28,6 +37,7 @@ import {
   renderTitle,
   screenOnPath,
   selectPath,
+  sweetSamSoundFiles,
   sparkPath,
   stagePath,
   ticketPath,
@@ -44,6 +54,12 @@ describe("UI sound source", () => {
 
   test("every attract loop is four bars of eighths", () => {
     for (const loop of Object.values(attractLoops)) expect(length(loop.notes)).toBe(32);
+  });
+
+  test("Sweet Sam's start, lost life and level clear each fit inside their 2 s wait", () => {
+    for (const t of [sweetSamTunes.start, sweetSamTunes.death, sweetSamTunes.clear]) {
+      expect(tuneSeconds(t)).toBeLessThanOrEqual(2);
+    }
   });
 
   test("the title music's voices are the same length, so the loop lines up", () => {
@@ -64,6 +80,7 @@ describe("committed WAVs match src/ui/sounds.ts (run `bun run sounds` after edit
     ["select.wav", selectPath, renderSelect],
     ["ticket.wav", ticketPath, renderTicket],
     ["deny.wav", denyPath, renderDeny],
+    ...sweetSamSoundFiles.map(([file, renderFile]) => [basename(file), file, renderFile] as const),
     ["spark.wav", sparkPath, renderSpark],
     ["hit.wav", hitPath, renderHit],
     ["life-lost.wav", lifeLostPath, renderLifeLost],

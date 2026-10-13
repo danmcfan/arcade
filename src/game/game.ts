@@ -10,18 +10,16 @@ import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.t
 import {
   imageArcade,
   attractSounds,
-  soundDeath,
   soundDeny,
   soundHit,
   soundHub,
   soundLifeLost,
   soundMove,
-  soundPower,
   soundSelect,
   soundSpark,
   soundStage,
-  soundStart,
   soundTicket,
+  sweetSamSounds,
 } from "../engine/assets.ts";
 import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
@@ -64,9 +62,7 @@ export interface Progress {
 
 /** The minigames' sounds: paused with the minigame pause menu. */
 const minigameSounds: readonly Sound[] = [
-  soundStart,
-  soundPower,
-  soundDeath,
+  ...Object.values(sweetSamSounds),
   soundSpark,
   soundHit,
   soundLifeLost,

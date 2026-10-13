@@ -9,3 +9,4 @@ parityTest("sweet-sam-fuzz-3");
 parityTest("sweet-sam-fuzz-4");
 parityTest("sweet-sam-clear");
 parityTest("sweet-sam-modes");
+parityTest("sweet-sam-levels");

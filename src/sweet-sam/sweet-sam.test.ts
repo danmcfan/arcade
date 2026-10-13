@@ -115,6 +115,25 @@ function run(seed: number, ticks: number): Tick[] {
 
 const trace = run(8, 6000);
 
+/** Snapshot keys added after the Go capture (#47: levels, the bonus flower, the death animation). */
+const keysSinceGo = ["level", "levelBannerTicks", "mazeFlash", "flower", "flowerPopup", "deathFrame"] as const;
+
+/** Sounds by their Go names; the ones Go never had (#47) are dropped. */
+const goSoundNames: Partial<Record<string, string>> = { sweetStart: "start", sweetBee: "power", sweetDeath: "death" };
+
+/** A tick as the Go reference recorded it: without the keys and sounds added since (ADR 0004). */
+function goView(t: Tick | undefined): unknown {
+  if (t === undefined) return undefined;
+  const sw: Record<string, unknown> = { ...t.sw };
+  for (const k of keysSinceGo) delete sw[k];
+  const sounds = t.sounds.flatMap((e) => {
+    const [action, name] = e.split(":");
+    const goName = goSoundNames[name ?? ""];
+    return goName === undefined ? [] : [`${action}:${goName}`];
+  });
+  return { tick: t.tick, rng: t.rng, sounds, sw };
+}
+
 describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", () => {
   test("state transitions happen on the same ticks with the same rng state", () => {
     const trans: [number, string, number][] = [];
@@ -130,8 +149,7 @@ describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", (
 
   test("full snapshots match at the first death, the bee-eaten pause and game over", () => {
     for (const [tick, want] of Object.entries(reference.snaps)) {
-      const got = trace[Number(tick) - 1];
-      expect({ tick: got?.tick, rng: got?.rng, sounds: got?.sounds, sw: got?.sw }).toEqual<unknown>({
+      expect(goView(trace[Number(tick) - 1])).toEqual<unknown>({
         tick: Number(tick),
         ...want,
       });
@@ -172,6 +190,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "pelletAnimTick",
         "joystick",
         "dials",
+        ...keysSinceGo,
       ].toSorted(),
     );
     expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);

@@ -2,14 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { addSoundListener } from "../engine/audio.ts";
-import { blueFramesDuration, framesPerSecond } from "./constants.ts";
+import { blueFramesDuration } from "./constants.ts";
+import { levelValues } from "./levels.ts";
 import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";
 import {
   sweetSamAdvantages,
   honeyJarExtraLives,
   noAdvantages,
   runningShoesPlayerVelocity,
-  sleepyBeesBlueFrames,
+  sleepyBeesFactor,
   startingLives,
 } from "./advantages.ts";
 import { createSweetSam } from "./index.ts";
@@ -50,27 +51,27 @@ function eatPowerPellet(s: SweetSamSoftware): number {
 }
 
 describe("sweetSamAdvantages", () => {
-  test("with no prizes, the original game: 3 lives, speed 1.0, 10 s of scared bees", () => {
+  test("with no prizes, the original game: 3 lives, speed 1.0, each level's sleepy time as it is", () => {
     expect(sweetSamAdvantages([])).toEqual(noAdvantages);
-    expect(noAdvantages).toEqual({ lives: 3, playerVelocity: 1.0, blueFrames: 600 });
+    expect(noAdvantages).toEqual({ lives: 3, playerVelocity: 1.0, sleepyFactor: 1 });
     expect([startingLives, velocityPlayerNormal, blueFramesDuration]).toEqual([3, 1.0, 600]);
   });
 
   test("each prize changes only its own value", () => {
     expect(sweetSamAdvantages(["honeyJar"])).toEqual({ ...noAdvantages, lives: 4 });
     expect(sweetSamAdvantages(["runningShoes"])).toEqual({ ...noAdvantages, playerVelocity: 1.125 });
-    expect(sweetSamAdvantages(["sleepyBees"])).toEqual({ ...noAdvantages, blueFrames: 900 });
+    expect(sweetSamAdvantages(["sleepyBees"])).toEqual({ ...noAdvantages, sleepyFactor: 1.5 });
     expect(sweetSamAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual({
       lives: 4,
       playerVelocity: 1.125,
-      blueFrames: 900,
+      sleepyFactor: 1.5,
     });
   });
 
-  test("the effect sizes are small: one life, the power-pellet speed, 5 more seconds", () => {
+  test("the effect sizes are small: one life, the power-pellet speed, half as much sleepy time again", () => {
     expect(honeyJarExtraLives).toBe(1);
     expect(runningShoesPlayerVelocity).toBe(velocityPlayerPower);
-    expect(sleepyBeesBlueFrames).toBe(framesPerSecond * 15);
+    expect(sleepyBeesFactor).toBe(1.5);
   });
 });
 
@@ -109,8 +110,18 @@ describe("Sweet Sam with prizes", () => {
     expect(s.player.velocity).toBe(velocityPlayerPower);
   });
 
-  test("sleepy bees: power pellets scare the bees for 900 ticks", () => {
+  test("sleepy bees: smoke pots make the bees sleepy for 900 ticks (15 s) on level 1", () => {
     const s = playing(["sleepyBees"]);
     expect(eatPowerPellet(s)).toBe(900);
+  });
+
+  test("sleepy bees: 1.5 times a later level's sleepy time", () => {
+    const plain = playing([]);
+    plain.level = 3;
+    const sleepy = playing(["sleepyBees"]);
+    sleepy.level = 3;
+    expect(levelValues(3).sleepyFrames).toBe(480);
+    expect(eatPowerPellet(plain)).toBe(480);
+    expect(eatPowerPellet(sleepy)).toBe(720);
   });
 });

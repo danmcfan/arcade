@@ -8,9 +8,14 @@ export type SoundName =
   | "attractBrassMonkey"
   | "attractSweet"
   | "attractFirefly"
-  | "start"
-  | "power"
-  | "death"
+  | "sweetStart"
+  | "sweetChompHigh"
+  | "sweetChompLow"
+  | "sweetSmoke"
+  | "sweetBee"
+  | "sweetFlower"
+  | "sweetDeath"
+  | "sweetClear"
   | "spark"
   | "hit"
   | "lifeLost"
@@ -158,4 +163,10 @@ export function installAudioUnlock(list: readonly Sound[], target: UnlockTarget 
   };
   target.addEventListener("keydown", unlock, { capture: true });
   target.addEventListener("pointerdown", unlock, { capture: true });
+}
+
+/** Play `sound` from its start. */
+export function playSound(sound: Sound): void {
+  sound.rewind();
+  sound.play();
 }

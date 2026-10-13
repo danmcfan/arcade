@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { soundPower, soundStart } from "../engine/assets.ts";
+import { sweetSamSounds } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
@@ -70,8 +70,8 @@ function fakes(): Fakes {
   const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     let sw: FakeSoftware;
     if (name === "sweetSam") {
-      soundStart.rewind();
-      soundStart.play();
+      sweetSamSounds.start.rewind();
+      sweetSamSounds.start.play();
       sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"), prizes);
     } else if (name === "firefly") {
       sw = new FakeSoftware(name, highScore, makeSolid(224, 288, "#000"), prizes);
@@ -188,7 +188,7 @@ describe("createGame(software): tick 1 is a hub tick", () => {
 
     game.step(input({ left: true }));
     let s = snap(game);
-    expect(s.sounds).toEqual(["rewind:start", "play:start"]);
+    expect(s.sounds).toEqual(["rewind:sweetStart", "play:sweetStart"]);
     expect(s.software).toBe("sweetSam");
     expect(s.arcade.player.x).toBe(79); // the hub consumed tick 1's input
     expect(built[0]?.updates).toEqual([]);
@@ -275,7 +275,13 @@ describe("entering and leaving software", () => {
     enterSweetSam(game);
     const s = snap(game);
     expect(s.software).toBe("sweetSam");
-    expect(s.sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "rewind:start", "play:start", "pause:hub"]);
+    expect(s.sounds).toEqual([
+      "pause:attractSweet",
+      "rewind:attractSweet",
+      "rewind:sweetStart",
+      "play:sweetStart",
+      "pause:hub",
+    ]);
     expect(built[0]?.updates).toEqual([]);
     game.step(input({ left: true }));
     expect(built[0]?.updates).toEqual([input({ left: true })]);
@@ -387,9 +393,14 @@ function heard(game: Game, fn: () => void): string[] {
 }
 
 const minigameSoundPauses: SoundEvent[] = [
-  "pause:start",
-  "pause:power",
-  "pause:death",
+  "pause:sweetStart",
+  "pause:sweetChompHigh",
+  "pause:sweetChompLow",
+  "pause:sweetSmoke",
+  "pause:sweetBee",
+  "pause:sweetFlower",
+  "pause:sweetDeath",
+  "pause:sweetClear",
   "pause:spark",
   "pause:hit",
   "pause:lifeLost",
@@ -472,16 +483,16 @@ describe("minigame pause menu", () => {
     enterSweetSam(game);
     const fakeElement = { paused: false };
     if (!standsInForAudio(fakeElement)) throw new Error("fake element lacks paused");
-    soundPower.element = fakeElement;
+    sweetSamSounds.bee.element = fakeElement;
     try {
       tap(game, "escape");
       expect(
         heard(game, () => {
           tap(game, "escape");
         }),
-      ).toEqual(["rewind:select", "play:select", "play:power"]);
+      ).toEqual(["rewind:select", "play:select", "play:sweetBee"]);
     } finally {
-      soundPower.element = null;
+      sweetSamSounds.bee.element = null;
     }
   });
 
@@ -922,7 +933,7 @@ describe("dispose", () => {
   test("stops recording sounds", () => {
     const { game } = newGame();
     game.dispose();
-    soundStart.play();
+    sweetSamSounds.start.play();
     game.step(input());
     expect(snap(game).sounds).toEqual([]);
   });

@@ -218,16 +218,17 @@ export const hubSong: Song = {
   hats: 0.03,
 };
 
-/**
- * What a cabinet plays, quietly, while the player faces it: a few bleeps of
- * its game and a long rest, looped. `eighth` is in seconds.
- */
-export interface Attract {
+/** A short single-voice tune: its notes, the length of an eighth in seconds, and its wave. */
+export interface Tune {
   notes: readonly Note[];
   eighth: number;
   wave: "square" | "triangle";
 }
 
+/**
+ * What a cabinet plays, quietly, while the player faces it: a few bleeps of
+ * its game and a long rest, looped.
+ */
 export const attractLoops = {
   /** Brass Monkey: climbing the girders. */
   brassMonkey: {
@@ -277,7 +278,7 @@ export const attractLoops = {
     eighth: 0.1,
     wave: "triangle",
   },
-} as const satisfies Record<string, Attract>;
+} as const satisfies Record<string, Tune>;
 
 /** A cabinet screen switching on: a low thunk (eighths of `thunkEighth` s), then the tube's whine rising (Hz). */
 export interface ScreenOnSound {
@@ -297,6 +298,112 @@ export const screenOn: ScreenOnSound = {
   whineTo: 5000,
   whineGain: 0.03,
 };
+
+/**
+ * Sweet Sam's sounds (#47), each played once. The start jingle fits inside
+ * READY (2 s), the lost life inside the death wait (2 s) and the level clear
+ * inside its flash (2 s). The chomp alternates its two notes, one per honey
+ * drop.
+ */
+export const sweetSamTunes = {
+  /** A round starts: a bouncy bear's march up to honey. */
+  start: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [76, 1],
+      [74, 1],
+      [77, 1],
+      [81, 1],
+      [77, 1],
+      [76, 1],
+      [79, 1],
+      [84, 2],
+      [83, 1],
+      [79, 1],
+      [84, 2],
+    ],
+    eighth: 0.11,
+    wave: "square",
+  },
+  /** A honey drop eaten, the first of the pair. */
+  chompHigh: { notes: [[67, 1]], eighth: 0.045, wave: "triangle" },
+  /** A honey drop eaten, the second of the pair. */
+  chompLow: { notes: [[60, 1]], eighth: 0.045, wave: "triangle" },
+  /** A smoke pot: a falling puff. */
+  smoke: {
+    notes: [
+      [84, 1],
+      [79, 1],
+      [76, 1],
+      [72, 1],
+      [67, 2],
+    ],
+    eighth: 0.04,
+    wave: "square",
+  },
+  /** A sleepy bee eaten: a quick climb. */
+  bee: {
+    notes: [
+      [72, 1],
+      [79, 1],
+      [84, 1],
+      [91, 2],
+    ],
+    eighth: 0.045,
+    wave: "square",
+  },
+  /** The bonus flower: a sparkle. */
+  flower: {
+    notes: [
+      [84, 1],
+      [88, 1],
+      [91, 1],
+      [96, 1],
+      [91, 1],
+      [96, 3],
+    ],
+    eighth: 0.05,
+    wave: "square",
+  },
+  /** A life lost: a slow slide down, then a bump. */
+  death: {
+    notes: [
+      [76, 2],
+      [75, 2],
+      [74, 2],
+      [73, 2],
+      [72, 2],
+      [71, 2],
+      [70, 2],
+      [69, 2],
+      [null, 1],
+      [57, 1],
+      [52, 3],
+    ],
+    eighth: 0.075,
+    wave: "square",
+  },
+  /** A level cleared: a fanfare. */
+  clear: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [84, 3],
+      [79, 1],
+      [84, 5],
+    ],
+    eighth: 0.1,
+    wave: "square",
+  },
+} as const satisfies Record<string, Tune>;
+
+/** Seconds a tune lasts. */
+export function tuneSeconds(t: Tune): number {
+  return t.notes.reduce((sum, [, len]) => sum + len, 0) * t.eighth;
+}
 
 /** Brass Monkey's sound effects (#39), one WAV each: monkey-<name>.wav. */
 export const brassMonkeyJingles = {

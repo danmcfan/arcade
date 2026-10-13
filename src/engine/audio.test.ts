@@ -96,7 +96,7 @@ describe("Sound (D4: web.go semantics)", () => {
   });
 
   test("a rejected play() promise does not surface as an unhandled rejection", async () => {
-    const s = new Sound("start", "start.wav", false);
+    const s = new Sound("sweetStart", "sweet-sam-start.wav", false);
     s.element = asElement(new FakeAudio(true));
     s.ready = true;
     expect(
@@ -137,7 +137,7 @@ describe("loadSounds (D5: never awaited)", () => {
   });
 
   test("is a no-op with no Audio constructor (bun test has no DOM)", () => {
-    const s = new Sound("power", "power.wav", false);
+    const s = new Sound("sweetBee", "sweet-sam-bee.wav", false);
     expect(() => {
       loadSounds([s]);
     }).not.toThrow();

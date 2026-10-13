@@ -12,6 +12,7 @@ import {
   beeOrder,
   dazedFace,
   dialDigitsArt,
+  flowerLeft,
   honeyDropArt,
   honeyDropShadow,
   honeyPotArt,
@@ -51,6 +52,7 @@ import {
   isWax,
   mazeLetter,
   mazeTileAt,
+  flowerRows,
   sweetSamArtFiles,
   sweetSamImagesDir,
 } from "./gen-sweet-sam-art.ts";
@@ -103,6 +105,11 @@ describe("Sweet Sam art source", () => {
 
   test("a bee sheet keeps the Go layout: 6 rows (flying, sleepy, waking; right then left) of 4 beats", () => {
     expect(beeFrames("teal").map((r) => r.length)).toEqual([4, 4, 4, 4, 4, 4]);
+  });
+
+  test("the bonus flower is half a 16×16 sprite, mirrored and outlined", () => {
+    checkRows("flower left half", flowerLeft, { w: 8, h: 16 });
+    checkRows("flower", flowerRows(), { w: 16, h: 16 });
   });
 
   test("the honey drop and honey pot fit their 8×12 cells on every bob", () => {

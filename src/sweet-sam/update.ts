@@ -3,8 +3,9 @@
 import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
+import { levelValues, modeScatter, type Mode } from "./levels.ts";
 import { cabinetJoystickFrame } from "../ui/cabinet.ts";
-import { tickBonusEatPopups } from "./bonusEat.ts";
+import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {
   dirAxis,
@@ -26,26 +27,15 @@ export const distanceThreshold = 0.5;
 export const startTicks = framesPerSecond * 2;
 export const deathRoundDelayTicks = framesPerSecond * 2;
 
-/** Go `type mode int`; the snapshot carries the raw int. */
-export type Mode = 0 | 1;
-export const modeScatter: Mode = 0;
-export const modeChase: Mode = 1;
+/** Ticks each of the bear's death frames shows; the last (the puddle) holds until the wait ends. */
+export const deathFrameTicks = 24;
+/** The bear's death frames: dazed, sinking, flat, puddle (bear.png's last row). */
+export const deathFrameCount = 4;
 
-export interface ModeConfig {
-  readonly mode: Mode;
-  readonly ticks: number;
+/** The death frame `elapsed` ticks into the death wait. */
+export function deathFrameAt(elapsed: number): number {
+  return Math.min(deathFrameCount - 1, Math.trunc(elapsed / deathFrameTicks));
 }
-
-export const modeSequence: readonly ModeConfig[] = [
-  { mode: modeScatter, ticks: framesPerSecond * 7 },
-  { mode: modeChase, ticks: framesPerSecond * 20 },
-  { mode: modeScatter, ticks: framesPerSecond * 7 },
-  { mode: modeChase, ticks: framesPerSecond * 20 },
-  { mode: modeScatter, ticks: framesPerSecond * 5 },
-  { mode: modeChase, ticks: framesPerSecond * 20 },
-  { mode: modeScatter, ticks: framesPerSecond * 5 },
-  { mode: modeChase, ticks: -1 },
-];
 
 /**
  * Go `Update`. The order is part of the spec: joystick,
@@ -58,6 +48,7 @@ export function update(s: SweetSamSoftware, i: Input): void {
   s.particles.update();
   s.stateMachine.update(i);
   tickBonusEatPopups(s);
+  tickFlowerPopup(s);
   syncAndTickScoreRollingDials(s);
   syncAndTickHighScoreRollingDials(s);
 }
@@ -280,13 +271,14 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
  */
 export function restartRound(s: SweetSamSoftware): void {
   s.player = newPlayer();
-  s.enemies = newEnemies();
+  s.enemies = newEnemies(levelValues(s.level).dotMinimums);
 
   s.modeIndex = 0;
   s.modeTicks = 0;
 
   s.scaredEatAwardNext = 0;
   s.bonusEatPopups = [];
+  s.flowerTicks = 0;
 }
 
 /** Leaves `reverseDirection`, `velocity` and `frame` alone (D11). */

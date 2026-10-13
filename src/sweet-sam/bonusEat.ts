@@ -13,6 +13,15 @@ export const bonusEatIndicatorTicks = 45;
 
 export const scaredBeeEatPoints: readonly number[] = [200, 400, 800, 1600];
 
+/** Ticks the points for an eaten bonus flower stay on screen (#47). */
+export const flowerPopupTicks = 120;
+
+/** The points for an eaten bonus flower, shown in the pixel font where it stood. */
+export interface FlowerPopup {
+  points: number;
+  ticks: number;
+}
+
 /** A transient "200 / 400 / …" above an eaten bee. A Go value type. */
 export interface BonusEatPopup {
   x: number;
@@ -59,6 +68,13 @@ export function tickBonusEatPopups(s: SweetSamSoftware): void {
     }
   }
   s.bonusEatPopups = dst;
+}
+
+/** Counts the eaten flower's points down; runs every tick, like the sleepy-bee points. */
+export function tickFlowerPopup(s: SweetSamSoftware): void {
+  if (s.flowerPopup === null) return;
+  s.flowerPopup.ticks--;
+  if (s.flowerPopup.ticks <= 0) s.flowerPopup = null;
 }
 
 export function anyBeeInScaredMode(s: SweetSamSoftware): boolean {

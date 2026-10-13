@@ -23,7 +23,7 @@ test('createScene("game", { software: "sweetSam" }): START sounds land in tick 1
   try {
     scene.step({ ...NO_INPUT });
     const s = gameSnapshot(scene.snapshot());
-    expect(s.sounds).toEqual(["rewind:start", "play:start"]);
+    expect(s.sounds).toEqual(["rewind:sweetStart", "play:sweetStart"]);
     expect(s.software).toBe("sweetSam");
     expect(scene.layout()).toEqual([336, 428]);
     scene.step({ ...NO_INPUT, shiftP: true });
@@ -57,9 +57,14 @@ for (const [name, size] of real) {
       expect(s.sounds).toEqual([
         "rewind:select",
         "play:select",
-        "pause:start",
-        "pause:power",
-        "pause:death",
+        "pause:sweetStart",
+        "pause:sweetChompHigh",
+        "pause:sweetChompLow",
+        "pause:sweetSmoke",
+        "pause:sweetBee",
+        "pause:sweetFlower",
+        "pause:sweetDeath",
+        "pause:sweetClear",
         "pause:spark",
         "pause:hit",
         "pause:lifeLost",

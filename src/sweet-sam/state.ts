@@ -1,7 +1,8 @@
 // Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
 import type { Input } from "../engine/input.ts";
-import { soundDeath, soundPower, soundStart } from "../engine/assets.ts";
+import { sweetSamSounds } from "../engine/assets.ts";
+import { playSound } from "../engine/audio.ts";
 import type { SweetSamStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
 import {
@@ -28,7 +29,6 @@ import {
   tunnelLeftX,
   tunnelRightX,
   tunnelRowY,
-  velocityEnemyNormal,
   velocityEnemyPower,
   velocityEnemyTunnel,
   velocityPlayerPower,
@@ -39,7 +39,6 @@ import {
   deathRoundDelayTicks,
   distanceThreshold,
   findTarget,
-  modeSequence,
   resetEnemy,
   restartRound,
   startTicks,
@@ -49,6 +48,7 @@ import {
   updatePosition,
   winner,
 } from "./update.ts";
+import { itemsEaten, updateFlower } from "./flower.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
 export type StateID = SweetSamStateId;
@@ -59,6 +59,14 @@ export const stateIDPause: StateID = "PAUSE";
 export const stateIDDeathWait: StateID = "DEATHWAIT";
 export const stateIDFinalDeathWait: StateID = "FINALDEATHWAIT";
 export const stateIDGameOver: StateID = "GAMEOVER";
+export const stateIDLevelClear: StateID = "LEVELCLEAR";
+
+/** Ticks everything stops while the maze flashes after a level is cleared. */
+export const levelClearTicks = framesPerSecond * 2;
+/** Ticks the maze shows each colour while it flashes. */
+export const levelClearFlashTicks = 12;
+/** START ticks "LEVEL n" shows before READY on every level after the first. */
+export const levelBannerTicks = framesPerSecond;
 
 /**
  * How many START-state frames each visible or hidden slice lasts during
@@ -137,11 +145,14 @@ export class StartState implements State {
 
     this.s.player.hidden = respawnBlinkHiddenForElapsed(0);
 
-    soundStart.rewind();
-    soundStart.play();
+    playSound(sweetSamSounds.start);
   }
 
   update(_i: Input): StateID {
+    if (this.s.levelBannerTicks > 0) {
+      this.s.levelBannerTicks--;
+      return stateIDStart;
+    }
     if (this.s.startTicks > 0) {
       if (this.respawnBlinkRemaining > 0) {
         const elapsed = startTicks - this.respawnBlinkRemaining;
@@ -178,10 +189,11 @@ export class PlayState implements State {
   update(i: Input): StateID {
     const s = this.s;
     if (s.modeTicks === 0) {
-      const modeConfig = modeSequence[s.modeIndex];
+      const modes = s.values().modeSequence;
+      const modeConfig = modes[s.modeIndex];
       if (modeConfig === undefined) {
         // Go: index out of range panic. Unreachable: the last mode never ends (ticks -1).
-        throw new Error(`runtime error: index out of range [${s.modeIndex}] with length ${modeSequence.length}`);
+        throw new Error(`runtime error: index out of range [${s.modeIndex}] with length ${modes.length}`);
       }
       s.modeCurrent = modeConfig.mode;
       s.modeTicks = modeConfig.ticks;
@@ -197,14 +209,13 @@ export class PlayState implements State {
     }
 
     if (winner(s)) {
-      s.items = newItems();
-      restartRound(s);
-      return stateIDStart;
+      return stateIDLevelClear;
     }
 
     s.player.velocity = s.advantages.playerVelocity;
+    const { beeVelocity } = s.values();
     for (const e of s.enemies) {
-      e.velocity = velocityEnemyNormal;
+      e.velocity = beeVelocity;
       if (e.blueFrames > 0) {
         s.player.velocity = velocityPlayerPower;
         e.velocity = velocityEnemyPower;
@@ -230,8 +241,7 @@ export class PlayState implements State {
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
       if (e.blueFrames > 0) {
-        soundPower.rewind();
-        soundPower.play();
+        playSound(sweetSamSounds.bee);
 
         s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
         s.particles.spawnBurst(e.x, e.y, particleColorCyan, particleBurstBeeEatenCount);
@@ -251,8 +261,7 @@ export class PlayState implements State {
         return stateIDPause;
       }
 
-      soundDeath.rewind();
-      soundDeath.play();
+      playSound(sweetSamSounds.death);
 
       s.particles.spawnBurst(s.player.x, s.player.y, particleColorRed, particleBurstPlayerEatenCount);
 
@@ -281,14 +290,21 @@ export class PlayState implements State {
         continue;
       }
 
+      s.items[idx] = null;
+
       if (item.isPellet()) {
         s.scoreValue += 10;
+        // The chomp alternates its two notes, one per honey drop.
+        playSound(itemsEaten(s) % 2 === 1 ? sweetSamSounds.chompHigh : sweetSamSounds.chompLow);
       }
 
       if (item.isPower()) {
         s.scoreValue += 50;
+        playSound(sweetSamSounds.smoke);
 
         s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
+
+        const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
         for (const e of s.enemies) {
           if (e.home) {
@@ -298,7 +314,7 @@ export class PlayState implements State {
           e.reverseDirection = true;
           e.reverseTile = pointToTile(e.x, e.y);
 
-          e.blueFrames = s.advantages.blueFrames;
+          e.blueFrames = sleepyFrames;
           e.flashFrames = 0;
           e.flash = false;
         }
@@ -310,9 +326,10 @@ export class PlayState implements State {
         }
       }
 
-      s.items[idx] = null;
       break;
     }
+
+    updateFlower(s);
 
     resetScaredEatAwardIfNobodyScared(s);
 
@@ -391,6 +408,39 @@ export class FinalDeathWaitState implements State {
       return stateIDFinalDeathWait;
     }
     return stateIDGameOver;
+  }
+
+  onExit(): void {}
+}
+
+/**
+ * After the last honey drop: everything stops while the maze flashes, then
+ * the next level starts with the maze refilled and everyone back home.
+ */
+export class LevelClearState implements State {
+  private readonly s: SweetSamSoftware;
+
+  constructor(s: SweetSamSoftware) {
+    this.s = s;
+  }
+
+  onEnter(): void {
+    this.s.pauseTicks = levelClearTicks;
+    playSound(sweetSamSounds.clear);
+  }
+
+  update(_i: Input): StateID {
+    const s = this.s;
+    if (s.pauseTicks > 0) {
+      s.pauseTicks--;
+      return stateIDLevelClear;
+    }
+    s.level++;
+    s.items = newItems();
+    s.flowersShown = 0;
+    restartRound(s);
+    s.levelBannerTicks = levelBannerTicks;
+    return stateIDStart;
   }
 
   onExit(): void {}

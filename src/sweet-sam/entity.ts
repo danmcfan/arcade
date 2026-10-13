@@ -162,12 +162,22 @@ export function newPlayer(): Entity {
   return e;
 }
 
-export function newEnemies(): Entity[] {
+/** The honey drops (and smoke pots) each bee in the home waits for before it leaves. */
+export interface DotMinimums {
+  pink: number;
+  teal: number;
+  orange: number;
+}
+
+/** Go's counts: level 1's. */
+export const goDotMinimums: Readonly<DotMinimums> = { pink: 0, teal: 30, orange: 60 };
+
+export function newEnemies(dots: Readonly<DotMinimums> = goDotMinimums): Entity[] {
   return [
     newEnemy(14, 14.5, "RIGHT", targetTopLeft, "red", false, 0),
-    newEnemy(14, 17.5, "LEFT", targetTopRight, "pink", true, 0),
-    newEnemy(12, 17.5, "RIGHT", targetBottomLeft, "teal", true, 30),
-    newEnemy(16, 17.5, "LEFT", targetBottomRight, "orange", true, 60),
+    newEnemy(14, 17.5, "LEFT", targetTopRight, "pink", true, dots.pink),
+    newEnemy(12, 17.5, "RIGHT", targetBottomLeft, "teal", true, dots.teal),
+    newEnemy(16, 17.5, "LEFT", targetBottomRight, "orange", true, dots.orange),
   ];
 }
 
