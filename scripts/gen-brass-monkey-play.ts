@@ -13,6 +13,7 @@
 // the bot. The verify check (scripts/verify/brass-monkey.ts) replays it too.
 
 import { writeFileSync } from "node:fs";
+import { hazardPoints, startLives } from "../src/brass-monkey/tuning.ts";
 import { NO_INPUT, type Input } from "../src/engine/input.ts";
 import * as rng from "../src/engine/rng.ts";
 import { createScene } from "../src/game/registry.ts";
@@ -102,7 +103,7 @@ export function play(seed: number, fromHub = false): Played {
   for (const i of inputs) scene.step(i);
   let leg = 0;
   let floor = 0;
-  let lives = 3;
+  let lives = startLives;
   let score = 0;
   let jumped = false;
   let prevSpace = false;
@@ -120,8 +121,8 @@ export function play(seed: number, fromHub = false): Played {
   try {
     for (let tick = 0; tick < 20_000; tick++) {
       const m = snapshotOf(scene);
-      if (m === null || m.phase === "over") return result(false, 3);
-      if (m.phase === "escape") return result(true, 3 - m.lives);
+      if (m === null || m.phase === "over") return result(false, startLives);
+      if (m.phase === "escape") return result(true, startLives - m.lives);
       if (m.floor !== floor || m.lives !== lives) leg = 0;
       floor = m.floor;
       lives = m.lives;
@@ -136,13 +137,13 @@ export function play(seed: number, fromHub = false): Played {
       inputs.push(i);
       scene.step(i);
       const after = snapshotOf(scene);
-      if (after !== null && after.score - score === 100 && after.phase === "play") jumped = true;
+      if (after !== null && after.score - score === hazardPoints && after.phase === "play") jumped = true;
       score = after?.score ?? score;
     }
   } finally {
     scene.dispose?.();
   }
-  return { inputs, escaped: false, livesLost: 3, jumped };
+  return { inputs, escaped: false, livesLost: startLives, jumped };
 }
 
 /** Inputs as steps: runs of the same input. */

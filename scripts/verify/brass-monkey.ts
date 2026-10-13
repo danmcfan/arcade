@@ -13,6 +13,7 @@ import * as rng from "../../src/engine/rng.ts";
 import { createScene } from "../../src/game/registry.ts";
 import type { BrassMonkeySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import type { InputScript } from "../../src/game/script.ts";
+import { boltPoints, hazardPoints } from "../../src/brass-monkey/tuning.ts";
 import { play } from "../gen-brass-monkey-play.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
 
@@ -46,8 +47,12 @@ function moments(): [name: string, tick: number][] {
       const t = k + 1;
       if (m !== null && prev !== null) {
         if (m.footing === "climb" && m.y < prev.y && m.y < 236) mark("1-climb", t);
-        if (m.score - prev.score === 100) mark("2-jumped-gear", t);
-        if (m.score - prev.score === 300) mark("3-bolt", t);
+        if (
+          m.score - prev.score === hazardPoints &&
+          m.hazards.some((h) => h.kind === "gear" && Math.abs(h.x - m.x) < 8)
+        )
+          mark("2-jumped-gear", t);
+        if (m.score - prev.score === boltPoints) mark("3-bolt", t);
         if (m.phase === "dying" && prev.phase === "play") mark("4-life-lost", t + 20);
         if (m.phase === "clear") mark("5-floor-finished", t + 10);
         if (m.floor === 1 && m.phase === "play") mark("6-conveyor-floor", t + 200);
