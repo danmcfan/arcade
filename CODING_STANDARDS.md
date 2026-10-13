@@ -13,7 +13,9 @@ Read at review time (`/code-review`, Standards axis). These rules are judgement 
 ## Look, sound and feel
 
 - **Everything is pixel art at logical resolution.** No `fillText`, web fonts, CSS-drawn UI, anti-aliased shapes or smooth scaling in the game. Text goes through `src/ui/text.ts` (ADR 0006).
-- **Generated assets change at their source.** Font, logo and sound changes edit `src/ui/glyphs.ts` / `src/ui/sounds.ts` and commit the regenerated PNG/WAV in the same change. Watch for a hand-edited generated file.
+- **Generated assets change at their source.** Art and sound changes edit their source (`docs/agents/pixel-art.md` lists the art sources; sounds are `src/ui/sounds.ts`) and commit the regenerated PNG/WAV in the same change. Art rows use the `sweetie` letters from `src/ui/sweetie16.ts`, not a palette of their own (the font's `#` glyph rows are the exception). Watch for a hand-edited generated file.
+- **Replaced art is at least as good as before.** A PR that redraws existing art shows the `bun run pixel before` sheet. Judge it: the new art keeps what made the old art work (silhouette, outline, detail at the same size), or the PR says why it gives that up. Art that throws away hand-made art and redraws it from blank, when the issue only asked for a change, is a finding.
+- **Derived pixels come from helpers.** Mirrored halves, outlines, flipped frames and colour variants come from `scripts/pixel-art.ts` (`mirrorX`, `outline`, `flipX`, `recolour`), not hand-typed copies of rows that can drift apart.
 - **Controls are shown as key caps.** Any on-screen control hint uses the key-cap style of the intro and Controls panel (`drawKey` in `src/ui/text.ts`), with the same labels everywhere.
 - **Destructive choices confirm, safe option first.** Anything that deletes progress (New game over a save) asks first, with No selected by default. A menu offers only the choices that are possible right now: Continue is hidden, not greyed out, when there is no save.
 - **Player-facing names come from the glossary.** Use Sweet Sam, Firefly, Brass Monkey, token and ticket in on-screen text and docs. Code names (`hive`, `brassMonkey`) stay in code.

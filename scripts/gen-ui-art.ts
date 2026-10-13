@@ -38,14 +38,15 @@ import {
   titleRows,
 } from "../src/ui/glyphs.ts";
 import { newMachines } from "../src/arcade/machine.ts";
-import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
-import { hubPalette, roomRows } from "../src/ui/hubArt.ts";
-import { playerPalette, playerSheetRows } from "../src/ui/playerArt.ts";
-import { prizeArt, prizePalette, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
+import { counterArt } from "../src/ui/counterArt.ts";
+import { roomRows } from "../src/ui/hubArt.ts";
+import { playerSheetRows } from "../src/ui/playerArt.ts";
+import { prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
 import type { PrizeId } from "../src/arcade/prizes.ts";
-import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
+import { iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
+import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, paint, plot, type Palette, type Rows } from "./pixel-art.ts";
+import { blank, paint, plot, toPng } from "./pixel-art.ts";
 
 export function renderFont(): PNG {
   const png = blank(fontSheetWidth, fontSheetHeight);
@@ -85,28 +86,21 @@ export function renderLogo(): PNG {
 export function renderIcons(): PNG {
   const png = blank(iconSheetWidth, iconSheetHeight);
   for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
-    paint(png, rows, iconPalette, iconRects[name].x, 0);
+    paint(png, rows, sweetie, iconRects[name].x, 0);
   }
-  return png;
-}
-
-/** Rows of palette letters (`.` is blank) as an image. */
-function renderRows(rows: Rows, palette: Palette): PNG {
-  const png = blank(rows[0]!.length, rows.length);
-  paint(png, rows, palette);
   return png;
 }
 
 export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
   for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
-    paint(png, rows, prizePalette, prizeRects[id].x, 0);
+    paint(png, rows, sweetie, prizeRects[id].x, 0);
   }
   return png;
 }
 
 export function renderCounter(): PNG {
-  return renderRows(counterArt, counterPalette);
+  return toPng(counterArt);
 }
 
 /** The hub room, its cabinets where the hub's machines stand. */
@@ -118,11 +112,11 @@ export function hubRoomRows(): string[] {
 }
 
 export function renderRoom(): PNG {
-  return renderRows(hubRoomRows(), hubPalette);
+  return toPng(hubRoomRows());
 }
 
 export function renderPlayer(): PNG {
-  return renderRows(playerSheetRows(), playerPalette);
+  return toPng(playerSheetRows());
 }
 
 /** Title cards letter their name on rows 5..19; nothing else sits above row 21. */

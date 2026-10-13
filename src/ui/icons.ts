@@ -1,15 +1,8 @@
 // Pixel-art source for the HUD icons: a token coin and a ticket. Each icon is
-// rows of palette letters (`.` is blank). scripts/gen-ui-art.ts packs them
-// left to right, 1 px apart, into src/assets/images/icons.png; the runtime
-// reads each icon's place in the sheet from here (src/ui/hud.ts).
-
-/** Sweetie 16 colours, keyed by the letter the icon rows use. */
-export const iconPalette: Readonly<Record<string, string>> = {
-  w: "#f4f4f4",
-  y: "#ffcd75",
-  o: "#ef7d57",
-  r: "#b13e53",
-};
+// rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is
+// blank). scripts/gen-ui-art.ts packs them left to right, 1 px apart, into
+// src/assets/images/icons.png; the runtime reads each icon's place in the
+// sheet from here (src/ui/hud.ts).
 
 export const icons = {
   token: [

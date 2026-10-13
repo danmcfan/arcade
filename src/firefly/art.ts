@@ -1,32 +1,11 @@
 // Pixel-art source for Firefly (ADR 0006): the firefly, its spark, the Moth,
 // Wasp and Owl, the hit effect and the night background. Every sprite is rows
-// of palette letters (`.` is blank). scripts/gen-firefly-art.ts writes them to
-// src/assets/images/firefly/ (`bun run art`), and gen-firefly-art.test.ts
-// fails when the committed PNGs drift from this file.
+// of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is blank).
+// scripts/gen-firefly-art.ts writes them to src/assets/images/firefly/
+// (`bun run art`), and gen-firefly-art.test.ts fails when the committed PNGs
+// drift from this file.
 
-import type { Sweetie16 } from "../ui/sweetie16.ts";
-
-/** Sweetie 16, keyed by the letter the rows use. */
-export const fireflyPalette = {
-  k: "#1a1c2c",
-  p: "#5d275d",
-  r: "#b13e53",
-  o: "#ef7d57",
-  y: "#ffcd75",
-  g: "#a7f070",
-  G: "#38b764",
-  t: "#257179",
-  n: "#29366f",
-  b: "#3b5dc9",
-  B: "#41a6f6",
-  c: "#73eff7",
-  w: "#f4f4f4",
-  l: "#94b0c2",
-  m: "#566c86",
-  d: "#333c57",
-} as const satisfies Record<string, Sweetie16>;
-
-export type FireflyColor = keyof typeof fireflyPalette;
+import type { SweetieLetter } from "../ui/sweetie16.ts";
 
 /**
  * Enemy sheets hold one frame per 15° of heading, clockwise from up: row
@@ -256,7 +235,7 @@ export const backgroundHeight = 288;
  * The sky from the top down: each stop is a row and its colour. Rows between
  * two stops blend from one colour to the next with a 4×4 ordered dither.
  */
-export const skyStops: readonly { y: number; color: FireflyColor }[] = [
+export const skyStops: readonly { y: number; color: SweetieLetter }[] = [
   { y: 0, color: "k" },
   { y: 200, color: "k" },
   { y: 248, color: "n" },

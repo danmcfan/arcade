@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
-import { glyphHeight, glyphs, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
+import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
 import { counterRect } from "../src/arcade/prizeCounter.ts";
-import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
-import { iconPalette, icons } from "../src/ui/icons.ts";
-import { cabinetArt, hubPalette, roomHeight, roomWidth } from "../src/ui/hubArt.ts";
-import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { playerFrameHeight, playerFrames, playerFramesFor, playerFrameWidth, playerPalette, playerSheetRows, sheetOrder } from "../src/ui/playerArt.ts";
+import { counterArt } from "../src/ui/counterArt.ts";
+import { icons } from "../src/ui/icons.ts";
+import { cabinetArt, roomHeight, roomWidth } from "../src/ui/hubArt.ts";
+import { playerFrameHeight, playerFrames, playerFramesFor, playerFrameWidth, playerSheetRows, sheetOrder } from "../src/ui/playerArt.ts";
 import { newPlayer } from "../src/arcade/entity.ts";
 import { images } from "../src/engine/assets.ts";
-import { prizeArt, prizePalette } from "../src/ui/prizeArt.ts";
+import { prizeArt } from "../src/ui/prizeArt.ts";
+import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import {
   counterPath,
@@ -31,15 +31,11 @@ import {
   roomPath,
   titleCardPath,
 } from "./gen-ui-art.ts";
+import { checkRows } from "./pixel-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
-    for (const [ch, rows] of Object.entries(glyphs)) {
-      expect({ ch, rows: rows.length }).toEqual({ ch, rows: glyphHeight });
-      for (const row of rows) {
-        expect({ ch, row, ok: /^[#.]+$/.test(row) && row.length === rows[0]!.length }).toEqual({ ch, row, ok: true });
-      }
-    }
+    for (const [ch, rows] of Object.entries(glyphs)) checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
   });
 
   test("every logo letter is 14x15", () => {
@@ -52,62 +48,36 @@ describe("UI art source", () => {
     }
   });
 
-  test("every icon is rows of one width, in palette letters and .", () => {
-    const allowed = new RegExp(`^[.${Object.keys(iconPalette).join("")}]+$`);
-    for (const [name, rows] of Object.entries(icons)) {
-      for (const row of rows) {
-        expect({ name, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ name, row, ok: true });
-      }
-    }
+  test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
+    for (const [name, rows] of Object.entries(icons)) checkRows(name, rows);
   });
 
-  test("the prize counter is the size of its collision rect, in palette letters and .", () => {
-    expect([counterArt[0]!.length, counterArt.length]).toEqual([counterRect.w, counterRect.h]);
-    const allowed = new RegExp(`^[.${Object.keys(counterPalette).join("")}]+$`);
-    for (const row of counterArt) expect({ row, ok: allowed.test(row) && row.length === counterRect.w }).toEqual({ row, ok: true });
+  test("the prize counter is the size of its collision rect, in Sweetie 16 letters and .", () => {
+    checkRows("counter", counterArt, { w: counterRect.w, h: counterRect.h });
   });
 
-  test("the hub room is the hub image's size, in palette letters", () => {
-    const rows = hubRoomRows();
-    expect([rows[0]!.length, rows.length]).toEqual([roomWidth, roomHeight]);
+  test("the hub room is the hub image's size, in Sweetie 16 letters", () => {
     expect([roomWidth, roomHeight]).toEqual([images.arcade.width, images.arcade.height]);
-    const allowed = new RegExp(`^[${Object.keys(hubPalette).join("")}]+$`);
-    for (const row of rows) expect({ row, ok: allowed.test(row) && row.length === roomWidth }).toEqual({ row, ok: true });
-    for (const row of cabinetArt) expect({ row, ok: /^[.k1234S]+$/.test(row) && row.length === cabinetArt[0]!.length }).toEqual({ row, ok: true });
+    checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
+    // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
+    checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
   });
 
-  test("every player frame is the player's 16x24 box, in palette letters and .", () => {
+  test("every player frame is the player's 16x24 box, in Sweetie 16 letters and .", () => {
     const p = newPlayer();
     expect([playerFrameWidth, playerFrameHeight, playerFrames]).toEqual([p.width, p.height, p.frameTotal]);
     // Sheet rows follow the player's frameDirection.
     expect(sheetOrder.map((d) => p.frameDirection[d])).toEqual([0, 1, 2, 3]);
-    const allowed = new RegExp(`^[.${Object.keys(playerPalette).join("")}]+$`);
     for (const dir of sheetOrder) {
-      for (const [i, frame] of playerFramesFor(dir).entries()) {
-        expect({ dir, i, rows: frame.length }).toEqual({ dir, i, rows: playerFrameHeight });
-        for (const row of frame) expect({ dir, i, row, ok: allowed.test(row) && row.length === playerFrameWidth }).toEqual({ dir, i, row, ok: true });
-      }
+      for (const [i, frame] of playerFramesFor(dir).entries()) checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
     }
     const sheet = playerSheetRows();
     expect([sheet[0]!.length, sheet.length]).toEqual([images.player.width, images.player.height]);
   });
 
-  test("the generated art uses Sweetie 16 colours only", () => {
-    for (const [name, palette] of Object.entries({ hubPalette, playerPalette, counterPalette, iconPalette, prizePalette })) {
-      for (const [letter, colour] of Object.entries(palette)) {
-        expect({ name, letter, colour, sweetie16: (sweetie16 as readonly string[]).includes(colour) }).toEqual({ name, letter, colour, sweetie16: true });
-      }
-    }
-  });
-
-  test("every prize decoration is rows of one width, in palette letters and ., and every prize has one", () => {
+  test("every prize decoration is rows of one width, in Sweetie 16 letters and ., and every prize has one", () => {
     expect(Object.keys(prizeArt).sort()).toEqual(prizes.map((p) => p.id).sort());
-    const allowed = new RegExp(`^[.${Object.keys(prizePalette).join("")}]+$`);
-    for (const [id, rows] of Object.entries(prizeArt)) {
-      for (const row of rows) {
-        expect({ id, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ id, row, ok: true });
-      }
-    }
+    for (const [id, rows] of Object.entries(prizeArt)) checkRows(id, rows);
   });
 
   test("every title letter is 11x15 (the space only sets a width)", () => {

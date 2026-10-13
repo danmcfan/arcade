@@ -1,5 +1,6 @@
-// Pixel-art source for the player's sprite sheet (ADR 0006): rows of palette
-// letters (`.` is blank). scripts/gen-ui-art.ts writes `playerSheetRows()` to
+// Pixel-art source for the player's sprite sheet (ADR 0006): rows of Sweetie
+// 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is blank).
+// scripts/gen-ui-art.ts writes `playerSheetRows()` to
 // src/assets/images/player.png.
 //
 // The player is the original Go sprite (spiky black hair with purple
@@ -11,19 +12,6 @@
 // lower than the stand.
 
 import type { Direction } from "../engine/input.ts";
-
-/** Sweetie 16 colours, keyed by the letter the rows use. */
-export const playerPalette: Readonly<Record<string, string>> = {
-  k: "#1a1c2c",
-  p: "#5d275d",
-  o: "#ef7d57",
-  y: "#ffcd75",
-  t: "#257179",
-  b: "#3b5dc9",
-  B: "#41a6f6",
-  c: "#73eff7",
-  w: "#f4f4f4",
-};
 
 export const playerFrameWidth = 16;
 export const playerFrameHeight = 24;

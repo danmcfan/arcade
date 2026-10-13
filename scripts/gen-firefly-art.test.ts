@@ -6,7 +6,6 @@ import {
   backgroundHeight,
   backgroundWidth,
   fireflyArt,
-  fireflyPalette,
   grassTile,
   hitQuarters,
   mothArt,
@@ -21,42 +20,23 @@ import {
 } from "../src/firefly/art.ts";
 import { frameAngle } from "../src/firefly/game.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
+import { checkRows, colours } from "./pixel-art.ts";
 import { fireflyArtFiles, fireflyImagesDir, mirrorQuarter, rotate, rotationSheet, scale2x, skyColor } from "./gen-firefly-art.ts";
-
-const letters = Object.keys(fireflyPalette).join("");
-const inPalette = new RegExp(`^[.${letters}]+$`);
 
 function size(rows: readonly string[]): [number, number] {
   return [rows[0]!.length, rows.length];
 }
 
-function expectRows(name: string, rows: readonly string[], w: number, h: number): void {
-  expect({ name, size: [rows.length, rows[0]?.length] }).toEqual({ name, size: [h, w] });
-  for (const row of rows) expect({ name, row, ok: inPalette.test(row) && row.length === w }).toEqual({ name, row, ok: true });
-}
-
-/** Every colour in `png` as #rrggbb, with "transparent" for alpha 0. */
-function colours(png: PNG): Set<string> {
-  const seen = new Set<string>();
-  for (let i = 0; i < png.data.length; i += 4) {
-    const a = png.data[i + 3]!;
-    if (a === 0) seen.add("transparent");
-    else if (a !== 255) seen.add(`alpha ${a}`);
-    else seen.add(`#${[0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("")}`);
-  }
-  return seen;
-}
-
 describe("Firefly art source", () => {
-  test("the firefly is 16×16, the spark 8×8, in palette letters and .", () => {
-    expectRows("firefly", fireflyArt, 16, 16);
-    expectRows("spark", sparkArt, 8, 8);
+  test("the firefly is 16×16, the spark 8×8, in Sweetie 16 letters and .", () => {
+    checkRows("firefly", fireflyArt, { w: 16, h: 16 });
+    checkRows("spark", sparkArt, { w: 8, h: 8 });
   });
 
   test("the Moth and Wasp are 16×16 and the Owl is larger, 32×32", () => {
-    expectRows("moth", mothArt, 16, 16);
-    expectRows("wasp", waspArt, 16, 16);
-    expectRows("owl", owlArt, 32, 32);
+    checkRows("moth", mothArt, { w: 16, h: 16 });
+    checkRows("wasp", waspArt, { w: 16, h: 16 });
+    checkRows("owl", owlArt, { w: 32, h: 32 });
   });
 
   test("enemies keep inside the circle their frame turns in, so no rotation clips them", () => {
@@ -74,20 +54,16 @@ describe("Firefly art source", () => {
 
   test("the hit effect is 5 quarters of 16×16", () => {
     expect(hitQuarters.length).toBe(5);
-    hitQuarters.forEach((q, i) => expectRows(`hit ${i}`, q, 16, 16));
+    hitQuarters.forEach((q, i) => checkRows(`hit ${i}`, q, { w: 16, h: 16 }));
   });
 
   test("stars sit in the sky and the grass tile repeats evenly across the width", () => {
-    for (const [kind, rows] of Object.entries(starArt)) expectRows(kind, rows, rows[0].length, rows.length);
+    for (const [kind, rows] of Object.entries(starArt)) checkRows(kind, rows);
     for (const [x, y] of stars) {
       expect(x >= 0 && x < backgroundWidth && y >= 0 && y < backgroundHeight - grassTile.length).toBe(true);
     }
-    expectRows("grass", grassTile, grassTile[0]!.length, grassTile.length);
+    checkRows("grass", grassTile);
     expect(backgroundWidth % grassTile[0]!.length).toBe(0);
-  });
-
-  test("every palette colour is Sweetie 16", () => {
-    for (const css of Object.values(fireflyPalette)) expect(sweetie16 as readonly string[]).toContain(css);
   });
 });
 
@@ -148,7 +124,7 @@ describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` aft
 
     test(`${file} is only Sweetie 16 colours`, () => {
       const allowed = new Set<string>([...sweetie16, "transparent"]);
-      for (const c of colours(render())) expect({ file, colour: c, ok: allowed.has(c) }).toEqual({ file, colour: c, ok: true });
+      for (const c of colours(render()).keys()) expect({ file, colour: c, ok: allowed.has(c) }).toEqual({ file, colour: c, ok: true });
     });
   }
 

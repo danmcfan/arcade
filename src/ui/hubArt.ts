@@ -1,5 +1,6 @@
 // Pixel-art source for the hub room (ADR 0006): the walls, the floor and the
-// three cabinets, as rows of palette letters (`.` is blank).
+// three cabinets, as rows of Sweetie 16 letters (`sweetie` in
+// src/ui/sweetie16.ts, `.` is blank).
 // scripts/gen-ui-art.ts writes `roomRows()` to src/assets/images/arcade.png.
 //
 // The room is an arcade at night: a dark wall lit by a cyan neon tube along
@@ -9,24 +10,6 @@
 // empty for prizes (#22).
 
 import type { ArcadeTitle } from "../game/snapshot.ts";
-
-/** Sweetie 16 colours, keyed by the letter the rows use. */
-export const hubPalette: Readonly<Record<string, string>> = {
-  k: "#1a1c2c",
-  p: "#5d275d",
-  r: "#b13e53",
-  o: "#ef7d57",
-  y: "#ffcd75",
-  G: "#a7f070",
-  g: "#38b764",
-  t: "#257179",
-  n: "#29366f",
-  b: "#3b5dc9",
-  B: "#41a6f6",
-  c: "#73eff7",
-  w: "#f4f4f4",
-  d: "#333c57",
-};
 
 /** Size of the room image (the hub's logical size less the 16-px margin). */
 export const roomWidth = 160;
@@ -93,9 +76,9 @@ export const cabinetArt: readonly string[] = [
   ".kkkkkkkkkkkkkk.",
 ];
 
-/** Each cabinet's colours (palette letters for `1` to `4`): the colours of its minigame. */
+/** Each cabinet's colours (Sweetie 16 letters for `1` to `4`): the colours of its minigame. */
 export const cabinetColours: Readonly<Record<ArcadeTitle, readonly [lit: string, trim: string, body: string, side: string]>> = {
-  brassMonkey: ["G", "g", "t", "n"],
+  brassMonkey: ["g", "G", "t", "n"],
   sweet: ["y", "o", "r", "p"],
   firefly: ["c", "B", "b", "n"],
 };
@@ -103,11 +86,11 @@ export const cabinetColours: Readonly<Record<ArcadeTitle, readonly [lit: string,
 /** What each screen shows, 8x5 (the `S` block): a glimpse of its game. */
 export const cabinetScreens: Readonly<Record<ArcadeTitle, readonly string[]>> = {
   // A brass block on a girder.
-  brassMonkey: ["nnnnnnnn", "nnnnnnyn", "nnynnnnn", "nyyyngGg", "ggggnnnn"],
+  brassMonkey: ["nnnnnnnn", "nnnnnnyn", "nnynnnnn", "nyyynGgG", "GGGGnnnn"],
   // A bee by a honey drop.
   sweet: ["nnnnnnnn", "nwnnyynn", "nnnyooyn", "nnnyooyn", "nnnnyynn"],
   // Fireflies over the grass at night.
-  firefly: ["knnnnknn", "nnGnnnnn", "nnnnnnyn", "nGnnknnn", "tttttttt"],
+  firefly: ["knnnnknn", "nngnnnnn", "nnnnnnyn", "ngnnknnn", "tttttttt"],
 };
 
 /** A cabinet's rows in its own colours, with its screen. */

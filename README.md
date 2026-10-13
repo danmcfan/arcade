@@ -30,6 +30,7 @@ bun run preview      # serve dist/
 bun run check        # typecheck + test + build, as CI does (also run by the pre-push hook)
 bun run verify       # browser checks with screenshots and video (see below)
 bun run art          # rebuild the generated pixel art (UI, prize decorations, hub room and player from src/ui/, cabinets from art/, Firefly from src/firefly/art.ts)
+bun run pixel        # look at art: rows, colours, show, before, place (docs/agents/pixel-art.md)
 bun run sounds       # rebuild the title music and menu sounds from src/ui/sounds.ts
 ```
 
