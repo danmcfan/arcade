@@ -97,7 +97,7 @@ const candidates = {
 const hub = readFileSync(join(root, "src/assets/images/arcade.png")).toString("base64");
 const data = { palette: sweetie, candidates, sweetSam: prizeArt, hub: `data:image/png;base64,${hub}` };
 
-const html = readFileSync(join(dir, "viewer.html"), "utf8").replace("/*DATA*/null", JSON.stringify(data));
+const html = readFileSync(join(dir, "viewer.html"), "utf8").replace("/*DATA*/ null", JSON.stringify(data));
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, "index.html"), html);
 console.log(join(out, "index.html"));
