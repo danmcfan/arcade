@@ -41,6 +41,7 @@ When the change touches art that already exists as a PNG, hand-made or not, **im
 | `flipX`, `flipY`                      | Left-facing frames from right-facing ones                         |
 | `recolour(rows, { r: "b" })`          | Colour variants, such as one cabinet per minigame                 |
 | `overlay(rows, part, x, y)`           | A sprite built from parts (a head, then headphones on it)         |
+| `glint(rows, x, y)`                   | A glint frame: a white + over the sprite's colours, e.g. the bolt |
 | `checkRows(name, rows, { w, h })`     | Size and letters; the error names the row and column              |
 | `toPng`, `toRows`, `scale`, `colours` | Rows to PNG and back, upscale, colour count                       |
 

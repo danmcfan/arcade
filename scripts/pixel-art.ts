@@ -6,7 +6,7 @@
 //   rows), scale, colours.
 // - Rows: checkRows (size and letters, naming the bad row and column), and
 //   the derivations that save drawing pixels by hand: outline, mirrorX/Y,
-//   flipX/Y, recolour, overlay.
+//   flipX/Y, recolour, overlay, glint.
 
 import { PNG } from "pngjs";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -210,6 +210,21 @@ export function recolour(rows: Rows, map: Readonly<Record<string, string>>): str
     row
       .split("")
       .map((px) => map[px] ?? px)
+      .join(""),
+  );
+}
+
+/**
+ * A glint on a sprite: a + of `letter` centred on (x, y), painted only over
+ * the sprite's colours, so it never spills onto a blank or the outline (drawn
+ * in `outlineLetter`, as `outline` does).
+ */
+export function glint(rows: Rows, x: number, y: number, letter = "w", outlineLetter = "k"): string[] {
+  const lit = (X: number, Y: number): boolean => (X === x && Math.abs(Y - y) <= 1) || (Y === y && Math.abs(X - x) <= 1);
+  return rows.map((row, Y) =>
+    row
+      .split("")
+      .map((px, X) => (px !== empty && px !== outlineLetter && lit(X, Y) ? letter : px))
       .join(""),
   );
 }

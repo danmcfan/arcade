@@ -17,7 +17,8 @@ import { PNG } from "pngjs";
 import {
   bolt,
   boltGlints,
-  ember,
+  emberFlame,
+  emberTips,
   gear,
   gnomeArmsDown,
   gnomeArmsUp,
@@ -32,7 +33,7 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, empty, flipX, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
+import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
 
@@ -67,22 +68,15 @@ export function gearFrames(): Rows[] {
   return gear.map((rows) => outline(rows));
 }
 
-/** The ember's sheet frames, outlined: two flickers, then both mirrored so it sways. */
-export function emberFrames(): Rows[] {
-  const frames = ember.map((rows) => outline(rows));
-  return [...frames, ...frames.map((rows) => flipX(rows))];
+/** The ember's fills before outlining: the flame with each tip. */
+export function emberFills(): Rows[] {
+  return emberTips.map((tip) => overlay(emberFlame, tip.rows, tip.x, tip.y));
 }
 
-/** `rows` with a white + centred on (gx, gy), painted only over the sprite's colours (not its outline). */
-function glint(rows: Rows, gx: number, gy: number): string[] {
-  const lit = (x: number, y: number): boolean =>
-    (x === gx && Math.abs(y - gy) <= 1) || (y === gy && Math.abs(x - gx) <= 1);
-  return rows.map((row, y) =>
-    row
-      .split("")
-      .map((px, x) => (px !== empty && px !== "k" && lit(x, y) ? "w" : px))
-      .join(""),
-  );
+/** The ember's sheet frames, outlined: two flickers, then both mirrored so it sways. */
+export function emberFrames(): Rows[] {
+  const frames = emberFills().map((rows) => outline(rows));
+  return [...frames, ...frames.map((rows) => flipX(rows))];
 }
 
 /** The bolt's sheet frames, outlined: at rest, then one frame for each step of the glint. */
@@ -91,10 +85,11 @@ export function boltFrames(): Rows[] {
   return [rest, ...boltGlints.map(([x, y]) => glint(rest, x, y))];
 }
 
-/** `frames` side by side, each the size of the first. */
+/** `frames` side by side; they must all be one size. */
 function sheet(frames: readonly Rows[]): PNG {
   const w = frames[0]?.[0]?.length ?? 0;
   const h = frames[0]?.length ?? 0;
+  for (const rows of frames) checkRows("sheet frame", rows, { w, h });
   const png = blank(w * frames.length, h);
   frames.forEach((rows, i) => {
     paint(png, rows, sweetie, i * w, 0);

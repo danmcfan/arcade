@@ -209,38 +209,28 @@ export const gear: readonly (readonly string[])[] = [
 
 /**
  * The ember: a hazard that wanders the girders and climbs ladders. A living
- * flame with two eyes, 12×12. Two flicker frames, the tip of the flame moving
- * left; the sheet adds their mirror images so it sways. Not used until #39.
+ * flame with two eyes, 12×12, drawn without the tip of the flame; each
+ * flicker frame adds one of the tips below. Not used until #39.
  */
-export const ember: readonly (readonly string[])[] = [
-  [
-    "............",
-    "............",
-    "......y.....",
-    ".....yyo....",
-    "....yyyyo...",
-    "...yywyyyo..",
-    "...ykyykyo..",
-    "...ykyykyr..",
-    "...yyyyyor..",
-    "....oyyorr..",
-    ".....rrr....",
-    "............",
-  ],
-  [
-    "............",
-    "............",
-    ".....y......",
-    ".....yyo....",
-    "....yyyyo...",
-    "...yywyyyo..",
-    "...ykyykyo..",
-    "...ykyykyr..",
-    "...yyyyyor..",
-    "....oyyorr..",
-    ".....rrr....",
-    "............",
-  ],
+export const emberFlame: readonly string[] = [
+  "............",
+  "............",
+  "............",
+  ".....yyo....",
+  "....yyyyo...",
+  "...yywyyyo..",
+  "...ykyykyo..",
+  "...ykyykyr..",
+  "...yyyyyor..",
+  "....oyyorr..",
+  ".....rrr....",
+  "............",
+];
+
+/** The two flicker frames' tips: upright, then leaning left. The sheet adds their mirror images so the flame sways. */
+export const emberTips: readonly Part[] = [
+  { x: 6, y: 2, rows: ["y"] },
+  { x: 5, y: 2, rows: ["y"] },
 ];
 
 /**
