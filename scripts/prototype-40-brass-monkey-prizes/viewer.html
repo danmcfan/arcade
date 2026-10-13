@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brass Monkey Prizes</title>
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --fg: #f4f4f4;
+        --dim: #94b0c2;
+        --line: #333c57;
+        --accent: #ffcd75;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 18px 0 6px;
+        color: var(--accent);
+      }
+      p {
+        color: var(--dim);
+        margin: 0 0 12px;
+      }
+      .wrap {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      canvas {
+        image-rendering: pixelated;
+        border: 1px solid var(--line);
+        max-width: 100%;
+      }
+      .knobs {
+        flex: 1 1 320px;
+      }
+      .knob {
+        margin: 6px 0;
+      }
+      .knob b {
+        display: inline-block;
+        min-width: 130px;
+        font-weight: 500;
+      }
+      .knob button {
+        background: #333c57;
+        color: var(--fg);
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 3px 8px;
+        margin: 2px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .knob button.on {
+        border-color: var(--accent);
+        background: #566c86;
+      }
+      .knob small {
+        color: var(--dim);
+      }
+      .bar button {
+        background: var(--accent);
+        color: #1a1c2c;
+        border: 0;
+        border-radius: 4px;
+        padding: 6px 12px;
+        margin-right: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      code {
+        display: block;
+        margin-top: 8px;
+        color: var(--dim);
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Brass Monkey prizes (#40)</h1>
+      <p>
+        Oil can, Spring boots and Pocket watch by the Brass Monkey cabinet (hub x 48..63). Every option is <b>new</b>;
+        the Sweet Sam prizes are shown for scale. Pick, then press Copy my picks and paste the line back.
+      </p>
+      <div class="bar">
+        <button data-preset="a">Preset A (issue scope)</button><button data-preset="b">Preset B</button
+        ><button id="copy">Copy my picks</button><code id="picks"></code>
+      </div>
+      <div class="wrap">
+        <div>
+          <h2>Hub scene (3x)</h2>
+          <canvas id="scene"></canvas>
+          <h2>Sheets (4x)</h2>
+          <canvas id="sheet"></canvas>
+        </div>
+        <div class="knobs" id="knobs"></div>
+      </div>
+    </main>
+    <script>
+      const D = /*DATA*/ null;
+      const P = D.palette;
+      const knobs = {
+        oilShape: { label: "Oil can shape", opts: { goose: "gooseneck (new)", squat: "squat (new)" } },
+        oilColour: { label: "Oil can colour", opts: { grey: "steel (new)", brass: "brass (new)", red: "red (new)" } },
+        oilPlace: {
+          label: "Oil can place",
+          opts: {
+            floorLeft: "floor, left of cabinet",
+            wallLeft: "wall, left of cabinet",
+            wallAbove: "wall, above cabinet",
+          },
+        },
+        bootShape: { label: "Spring boots", opts: { short: "short coil (new)", tall: "tall coil (new)" } },
+        bootColour: { label: "Boot colour", opts: { o: "tan (new)", r: "red (new)", b: "blue (new)" } },
+        springColour: { label: "Spring colour", opts: { steel: "steel (new)", brass: "brass (new)" } },
+        bootPlace: {
+          label: "Boots place",
+          opts: {
+            floorFarLeft: "floor, far left",
+            floorLeft: "floor, left of cabinet",
+            wallLeft: "wall, left of cabinet",
+          },
+        },
+        watchShape: { label: "Pocket watch", opts: { hanging: "hanging on a chain (new)", open: "lid open (new)" } },
+        watchCase: { label: "Watch case", opts: { gold: "gold (new)", silver: "silver (new)" } },
+        watchPlace: {
+          label: "Watch place",
+          opts: { wallAbove: "wall, above cabinet", wallLeft: "wall, left of cabinet" },
+        },
+        sweetSam: { label: "Sweet Sam prizes", opts: { show: "show (for scale)", hide: "hide" } },
+      };
+      const presets = {
+        a: {
+          oilShape: "goose",
+          oilColour: "grey",
+          oilPlace: "floorLeft",
+          bootShape: "short",
+          bootColour: "o",
+          springColour: "steel",
+          bootPlace: "floorFarLeft",
+          watchShape: "hanging",
+          watchCase: "gold",
+          watchPlace: "wallAbove",
+          sweetSam: "show",
+        },
+        b: {
+          oilShape: "squat",
+          oilColour: "brass",
+          oilPlace: "wallLeft",
+          bootShape: "tall",
+          bootColour: "r",
+          springColour: "brass",
+          bootPlace: "floorLeft",
+          watchShape: "open",
+          watchCase: "silver",
+          watchPlace: "wallAbove",
+          sweetSam: "show",
+        },
+      };
+      let s = { ...presets.a };
+
+      function recolour(rows, map) {
+        return rows.map((r) => [...r].map((c) => map[c] || c).join(""));
+      }
+      function art() {
+        const metal = { grey: {}, brass: { l: "y", m: "o", w: "w" }, red: { l: "r", m: "p", w: "o" } };
+        const oil = recolour(
+          s.oilShape === "goose" ? D.candidates.oilCanGoose : D.candidates.oilCanSquat,
+          metal[s.oilColour],
+        );
+        const spring = s.springColour === "brass" ? { l: "y" } : {};
+        const boots = recolour(s.bootShape === "short" ? D.candidates.springBoot : D.candidates.springBootTall, {
+          o: s.bootColour,
+          ...spring,
+        });
+        const watch = recolour(
+          s.watchShape === "hanging" ? D.candidates.watchHanging : D.candidates.watchOpen,
+          s.watchCase === "silver" ? { y: "l" } : {},
+        );
+        return { oilCan: oil, springBoots: boots, pocketWatch: watch };
+      }
+      // Places in hub coordinates: floor bottom at y 64, cabinet x 48..63, wall above it ends at y 40.
+      function place(rows, where, slot) {
+        const w = rows[0].length,
+          h = rows.length;
+        switch (where) {
+          case "floorLeft":
+            return [47 - w, 64 - h];
+          case "floorFarLeft":
+            return [36 - w, 64 - h];
+          case "wallLeft":
+            return [slot === 0 ? 36 : 24, 30];
+          default:
+            return [48 + Math.floor((16 - w) / 2) + (slot === 0 ? -6 : 0), 39 - h];
+        }
+      }
+      function draw(ctx, rows, x, y, k) {
+        rows.forEach((r, j) =>
+          [...r].forEach((c, i) => {
+            if (c !== ".") {
+              ctx.fillStyle = P[c];
+              ctx.fillRect((x + i) * k, (y + j) * k, k, k);
+            }
+          }),
+        );
+      }
+      const hub = new Image();
+      hub.src = D.hub;
+      function render() {
+        const a = art();
+        const sc = document.getElementById("scene"),
+          k = 3;
+        sc.width = 160 * k;
+        sc.height = 144 * k;
+        const c = sc.getContext("2d");
+        c.imageSmoothingEnabled = false;
+        c.drawImage(hub, 0, 0, 160 * k, 144 * k);
+        if (s.sweetSam === "show") {
+          draw(c, D.sweetSam.honeyJar, 65, 55, k);
+          draw(c, D.sweetSam.runningShoes, 87, 58, k);
+          draw(c, D.sweetSam.sleepyBees, 74, 28, k);
+        }
+        let [x, y] = place(a.oilCan, s.oilPlace, 0);
+        draw(c, a.oilCan, x, y, k);
+        [x, y] = place(a.springBoots, s.bootPlace, 1);
+        draw(c, a.springBoots, x, y, k);
+        [x, y] = place(a.pocketWatch, s.watchPlace, s.oilPlace === "wallAbove" ? 1 : 0);
+        draw(c, a.pocketWatch, x, y, k);
+        const sh = document.getElementById("sheet"),
+          k2 = 4;
+        const all = Object.values(D.candidates);
+        sh.width = (all.reduce((w, r) => w + r[0].length + 2, 0) + 2) * k2;
+        sh.height = 16 * k2;
+        const d = sh.getContext("2d");
+        d.fillStyle = "#333c57";
+        d.fillRect(0, 0, sh.width, sh.height);
+        let ox = 2;
+        const picked = [a.oilCan, a.springBoots, a.pocketWatch];
+        for (const r of picked) {
+          draw(d, r, ox, 2, k2);
+          ox += r[0].length + 3;
+        }
+        document.getElementById("picks").textContent = JSON.stringify(s);
+      }
+      function buildKnobs() {
+        const el = document.getElementById("knobs");
+        el.innerHTML = "";
+        for (const [key, kn] of Object.entries(knobs)) {
+          const row = document.createElement("div");
+          row.className = "knob";
+          row.innerHTML = `<b>${kn.label}</b>`;
+          for (const [v, lab] of Object.entries(kn.opts)) {
+            const b = document.createElement("button");
+            b.textContent = lab;
+            if (s[key] === v) b.className = "on";
+            b.onclick = () => {
+              s[key] = v;
+              buildKnobs();
+              render();
+            };
+            row.appendChild(b);
+          }
+          el.appendChild(row);
+        }
+      }
+      document.querySelectorAll("[data-preset]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            s = { ...presets[b.dataset.preset] };
+            buildKnobs();
+            render();
+          }),
+      );
+      document.getElementById("copy").onclick = () => navigator.clipboard.writeText(JSON.stringify(s)).catch(() => {});
+      hub.onload = () => {
+        buildKnobs();
+        render();
+      };
+    </script>
+  </body>
+</html>
