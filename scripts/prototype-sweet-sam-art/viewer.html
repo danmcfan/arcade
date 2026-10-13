@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sweet Sam Sprites</title>
+    <!-- PROTOTYPE (throwaway, #46 / PR #59). render.ts inlines the art where DATA is. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #232740;
+        --line: #333c57;
+        --fg: #f4f4f4;
+        --muted: #94b0c2;
+        --accent: #ffcd75;
+        --accent-ink: #1a1c2c;
+        --display: "Silkscreen", ui-monospace, monospace;
+        --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+      }
+      body {
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding: 24px 16px 48px;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+        align-items: start;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      header {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 6px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 28px;
+        margin: 0;
+        color: var(--accent);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 75ch;
+      }
+      .stage {
+        position: sticky;
+        top: 16px;
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+      canvas {
+        image-rendering: pixelated;
+        display: block;
+        background: #1a1c2c;
+        border: 2px solid var(--line);
+        border-radius: 4px;
+        max-width: 100%;
+      }
+      #scene {
+        width: 100%;
+      }
+      .sheets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: start;
+      }
+      .sheets figure {
+        margin: 0;
+        display: grid;
+        gap: 6px;
+      }
+      .sheets figcaption {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+      }
+      .bar output {
+        flex: 1 1 260px;
+        min-width: 0;
+        font-size: 13px;
+        color: var(--muted);
+        font-family: ui-monospace, monospace;
+        word-break: break-word;
+      }
+      button {
+        font-family: var(--display);
+        font-size: 12px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid var(--line);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--fg);
+        outline-offset: 2px;
+      }
+      .controls {
+        display: grid;
+        gap: 22px;
+        min-width: 0;
+      }
+      section.group {
+        display: grid;
+        gap: 10px;
+      }
+      .row {
+        display: grid;
+        gap: 4px;
+      }
+      .row > span {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .seg {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .seg label {
+        position: relative;
+      }
+      .seg input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .seg label span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        background: var(--panel);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .seg label:hover span {
+        border-color: var(--muted);
+      }
+      .seg input:checked + span {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .seg input:focus-visible + span {
+        outline: 2px solid var(--fg);
+        outline-offset: 2px;
+      }
+      .sw {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        border: 1px solid #0006;
+      }
+      .tag {
+        font-size: 10px;
+        font-family: var(--display);
+        color: var(--muted);
+      }
+      .presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Sweet Sam Sprites</h1>
+        <p>
+          Steer the character and item art for #46. Each toggle is tagged <b>Go</b> (the original game) or
+          <b>#59</b> (the PR). Start from a preset, change what you like, then <b>Copy my picks</b> and paste them back
+          to Claude. The maze is out of scope here.
+        </p>
+      </header>
+
+      <div class="stage">
+        <div>
+          <h2>In play</h2>
+          <canvas id="scene" width="224" height="72" aria-label="Animated scene with the chosen art"></canvas>
+        </div>
+        <div class="bar">
+          <span class="seg" id="mode"></span>
+        </div>
+        <div class="sheets">
+          <figure>
+            <canvas id="bearSheet"></canvas>
+            <figcaption>Bear: down, up, left, right (and death)</figcaption>
+          </figure>
+          <figure>
+            <canvas id="beeSheet"></canvas>
+            <figcaption>Bees: chasing, scared, flashing</figcaption>
+          </figure>
+          <figure>
+            <canvas id="itemSheet"></canvas>
+            <figcaption>Dot, power item, bonus</figcaption>
+          </figure>
+        </div>
+        <div class="bar">
+          <output id="summary" aria-live="polite"></output>
+          <button id="copy" type="button">Copy my picks</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <section class="group">
+          <h2>Presets</h2>
+          <div class="presets" id="presets"></div>
+        </section>
+        <div id="groups" class="controls"></div>
+      </div>
+    </div>
+
+    <script>
+      const DATA = /*DATA*/ null;
+      const S = DATA.sweetie;
+      const names = {
+        k: "black",
+        p: "purple",
+        r: "red",
+        o: "orange",
+        y: "yellow",
+        g: "lime",
+        G: "green",
+        t: "teal",
+        n: "navy",
+        b: "blue",
+        B: "sky",
+        c: "cyan",
+        w: "white",
+        l: "light grey",
+        m: "grey",
+        d: "dark grey",
+      };
+
+      // Every knob: [id, label, options]; an option is [value, label, tag?, swatch?].
+      const GROUPS = [
+        [
+          "Bear",
+          [
+            [
+              "bearBody",
+              "Body",
+              [
+                ["p", "Purple", "Go", "p"],
+                ["r", "Red", "#59", "r"],
+                ["o", "Orange", "", "o"],
+                ["b", "Blue", "", "b"],
+              ],
+            ],
+            [
+              "bearBelly",
+              "Belly and ears",
+              [
+                ["r", "Red", "Go", "r"],
+                ["o", "Orange", "#59", "o"],
+                ["y", "Yellow", "", "y"],
+                ["w", "White", "", "w"],
+              ],
+            ],
+            [
+              "bearDeath",
+              "Death frames",
+              [
+                ["off", "None", "Go"],
+                ["on", "Dazed → puddle", "#59"],
+              ],
+            ],
+          ],
+        ],
+        [
+          "Bees",
+          [
+            [
+              "beeColours",
+              "Colours",
+              [
+                ["one", "All the same", "Go"],
+                ["four", "Four colours", "#59"],
+              ],
+            ],
+            [
+              "beeBody",
+              "Body (all the same)",
+              [
+                ["y", "Yellow", "Go", "y"],
+                ["o", "Orange", "", "o"],
+              ],
+            ],
+            [
+              "beeWings",
+              "Wings",
+              [
+                ["w", "White", "Go", "w"],
+                ["c", "Cyan", "", "c"],
+                ["l", "Grey", "", "l"],
+              ],
+            ],
+            [
+              "beeEyeWhite",
+              "Eye",
+              [
+                ["off", "Pupil only", "Go"],
+                ["on", "White + pupil", "#59"],
+              ],
+            ],
+            [
+              "beeScared",
+              "Scared look",
+              [
+                ["goBlue", "Blue", "Go", "B"],
+                ["blueShut", "Blue, eyes shut", "", "B"],
+                ["sleepy", "Grey, eyes shut", "#59", "m"],
+              ],
+            ],
+            [
+              "beeFlash",
+              "Flashing look",
+              [
+                ["goWhite", "White, blue wings", "Go", "w"],
+                ["waking", "Pale, eyes wide", "#59", "w"],
+              ],
+            ],
+          ],
+        ],
+        [
+          "Dot",
+          [
+            [
+              "dot",
+              "Look",
+              [
+                ["goWhite", "White square", "Go", "w"],
+                ["honey", "Honey with glint", "#59", "y"],
+                ["honeyFlat", "Plain honey", "", "y"],
+                ["honeyDrop", "Drop shape", "", "o"],
+              ],
+            ],
+            [
+              "shadow",
+              "Shadow (dot and power item)",
+              [
+                ["k", "Black", "Go", "k"],
+                ["d", "Dark grey", "#59", "d"],
+                ["none", "None", ""],
+              ],
+            ],
+          ],
+        ],
+        [
+          "Power item",
+          [
+            [
+              "power",
+              "Look",
+              [
+                ["goWhite", "White disc", "Go", "w"],
+                ["glob", "Honey glob", "", "y"],
+                ["pot", "Honey pot", "", "o"],
+                ["smoker", "Smoke pot", "#59", "l"],
+              ],
+            ],
+          ],
+        ],
+        [
+          "Bonus",
+          [
+            [
+              "bonus",
+              "Bonus item",
+              [
+                ["none", "None", "Go"],
+                ["daisy", "Daisy", "#59"],
+              ],
+            ],
+          ],
+        ],
+      ];
+      const PRESETS = {
+        "Go original": {
+          bearBody: "p",
+          bearBelly: "r",
+          bearDeath: "off",
+          beeColours: "one",
+          beeBody: "y",
+          beeWings: "w",
+          beeEyeWhite: "off",
+          beeScared: "goBlue",
+          beeFlash: "goWhite",
+          dot: "goWhite",
+          shadow: "k",
+          power: "goWhite",
+          bonus: "none",
+        },
+        "PR #59": {
+          bearBody: "r",
+          bearBelly: "o",
+          bearDeath: "on",
+          beeColours: "four",
+          beeBody: "y",
+          beeWings: "w",
+          beeEyeWhite: "on",
+          beeScared: "sleepy",
+          beeFlash: "waking",
+          dot: "honey",
+          shadow: "d",
+          power: "smoker",
+          bonus: "daisy",
+        },
+        "Go + honey": {
+          bearBody: "p",
+          bearBelly: "r",
+          bearDeath: "off",
+          beeColours: "one",
+          beeBody: "y",
+          beeWings: "w",
+          beeEyeWhite: "off",
+          beeScared: "goBlue",
+          beeFlash: "goWhite",
+          dot: "honey",
+          shadow: "k",
+          power: "glob",
+          bonus: "none",
+        },
+      };
+      const pick = { ...PRESETS["Go original"] };
+      try {
+        Object.assign(pick, JSON.parse(localStorage.getItem("sweetSamArtPick") || "{}"));
+      } catch {}
+      let mode = "auto";
+
+      // ---- controls ----
+      const groupsEl = document.getElementById("groups");
+      for (const [title, knobs] of GROUPS) {
+        const sec = document.createElement("section");
+        sec.className = "group";
+        sec.innerHTML = `<h2>${title}</h2>`;
+        for (const [id, label, opts] of knobs) {
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `<span>${label}</span><div class="seg" role="radiogroup" aria-label="${title}: ${label}"></div>`;
+          const seg = row.querySelector(".seg");
+          for (const [value, text, tag, sw] of opts) {
+            const l = document.createElement("label");
+            l.innerHTML = `<input type="radio" name="${id}" value="${value}"><span>${sw ? `<i class="sw" style="background:${S[sw]}"></i>` : ""}${text}${tag ? ` <em class="tag">${tag}</em>` : ""}</span>`;
+            l.querySelector("input").addEventListener("change", () => {
+              pick[id] = value;
+              sync();
+            });
+            seg.append(l);
+          }
+          sec.append(row);
+        }
+        groupsEl.append(sec);
+      }
+      const presetsEl = document.getElementById("presets");
+      for (const name of Object.keys(PRESETS)) {
+        const b = document.createElement("button");
+        b.className = "ghost";
+        b.type = "button";
+        b.textContent = name;
+        b.onclick = () => {
+          Object.assign(pick, PRESETS[name]);
+          sync();
+        };
+        presetsEl.append(b);
+      }
+      const modeEl = document.getElementById("mode");
+      for (const [v, t] of [
+        ["auto", "Cycle"],
+        ["chase", "Chasing"],
+        ["scared", "Scared"],
+        ["flash", "Flashing"],
+      ]) {
+        const l = document.createElement("label");
+        l.innerHTML = `<input type="radio" name="mode" value="${v}" ${v === mode ? "checked" : ""}><span>${t}</span>`;
+        l.querySelector("input").addEventListener("change", () => {
+          mode = v;
+        });
+        modeEl.append(l);
+      }
+      function sync() {
+        for (const [id, v] of Object.entries(pick)) {
+          const el = document.querySelector(`input[name="${id}"][value="${v}"]`);
+          if (el) el.checked = true;
+        }
+        try {
+          localStorage.setItem("sweetSamArtPick", JSON.stringify(pick));
+        } catch {}
+        const parts = [];
+        for (const [, knobs] of GROUPS)
+          for (const [id, label, opts] of knobs) {
+            const o = opts.find((o) => o[0] === pick[id]);
+            parts.push(`${id}=${pick[id]}${o && o[2] ? ` (${o[2]})` : ""}`);
+          }
+        document.getElementById("summary").textContent = parts.join(", ");
+        drawSheets();
+      }
+      document.getElementById("copy").onclick = async () => {
+        const text = "Sweet Sam art picks: " + JSON.stringify(pick);
+        try {
+          await navigator.clipboard.writeText(text);
+          document.getElementById("copy").textContent = "Copied";
+        } catch {
+          prompt("Copy this:", text);
+        }
+        setTimeout(() => (document.getElementById("copy").textContent = "Copy my picks"), 1200);
+      };
+
+      // ---- art ----
+      const flipX = (rows) => rows.map((r) => [...r].reverse().join(""));
+      function draw(ctx, rows, x, y, map = {}) {
+        rows.forEach((row, j) =>
+          [...row].forEach((ch, i) => {
+            if (ch === ".") return;
+            const letter = map[ch] ?? ch;
+            if (letter === "." || !S[letter]) return;
+            ctx.fillStyle = S[letter];
+            ctx.fillRect(x + i, y + j, 1, 1);
+          }),
+        );
+      }
+      function overlay(rows, part, x, y) {
+        const out = rows.map((r) => [...r]);
+        part.forEach((row, j) =>
+          [...row].forEach((ch, i) => {
+            if (ch !== ".") out[y + j][x + i] = ch;
+          }),
+        );
+        return out.map((r) => r.join(""));
+      }
+
+      const bearMap = () => ({ 1: pick.bearBody, 2: pick.bearBelly });
+      // Frame `f` (0..3) of the walk, facing down/up/left/right.
+      function bearFrame(dir, f) {
+        const i = DATA.walkCycle[f];
+        if (dir === "right") return flipX(DATA.walk.left[i]);
+        if (dir === "left") return DATA.walk.left[i];
+        const frames = DATA.walk[dir];
+        return i === 2 ? flipX(frames[1]) : frames[i];
+      }
+      function bearDeathFrames() {
+        const [x, y] = DATA.dazedFaceAt;
+        return [overlay(DATA.walk.down[0], DATA.dazedFace, x, y), ...DATA.death];
+      }
+
+      const fourBodies = ["y", "o", "c", "g"];
+      // A bee's frame: `n` which bee, `look` chase/scared/flash, `beat` 0..3, facing right unless `left`.
+      function beeFrame(n, look, beat, left) {
+        let rows = DATA.flight[beat % 2];
+        const [ex, ey] = DATA.beeEye;
+        let body = pick.beeColours === "four" ? fourBodies[n] : pick.beeBody;
+        let wings = pick.beeWings;
+        let eye = pick.beeEyeWhite === "on" ? "w" : null;
+        let lids = null;
+        if (look === "scared") {
+          if (pick.beeScared === "goBlue") {
+            body = "B";
+            wings = "w";
+            eye = null;
+          }
+          if (pick.beeScared === "blueShut") {
+            body = "B";
+            wings = "w";
+            lids = "shut";
+          }
+          if (pick.beeScared === "sleepy") {
+            body = "m";
+            wings = "l";
+            lids = "shut";
+          }
+        }
+        if (look === "flash") {
+          if (pick.beeFlash === "goWhite") {
+            body = "w";
+            wings = "B";
+            eye = null;
+          }
+          if (pick.beeFlash === "waking") {
+            body = "w";
+            wings = "l";
+            lids = "wide";
+          }
+        }
+        if (lids === "shut") rows = overlay(rows, [".1", "kk"], ex - 1, ey - 1);
+        if (lids === "wide") rows = overlay(rows, ["k", "k"], ex, ey - 1);
+        if (left) rows = flipX(rows);
+        return { rows, map: { 1: body, 2: wings, 3: eye ?? body }, bob: beat >= 2 ? 1 : 0 };
+      }
+      function drawBee(ctx, n, look, beat, left, x, y) {
+        const b = beeFrame(n, look, beat, left);
+        draw(ctx, b.rows, x, y - b.bob, b.map);
+      }
+
+      // Items: 8×12 cells, bobbing 0,1,2,1 off a shadow.
+      const bobs = [0, 1, 2, 1];
+      function disc() {
+        return DATA.goEnergizer;
+      }
+      function dotArt() {
+        switch (pick.dot) {
+          case "goWhite":
+            return ["ww", "ww"];
+          case "honey":
+            return ["yw", "oy"];
+          case "honeyFlat":
+            return ["yy", "yy"];
+          case "honeyDrop":
+            return [".y.", "ywy", "yoy", ".o."];
+        }
+      }
+      function powerArt(frame) {
+        switch (pick.power) {
+          case "goWhite":
+            return { rows: disc() };
+          case "glob": {
+            const d = disc();
+            const rows = d.map((r, y) =>
+              [...r]
+                .map((c, x) => {
+                  if (c === ".") return ".";
+                  if (x === 1 && y === 1) return "w";
+                  const right = d[y][x + 1] ?? ".",
+                    below = d[y + 1]?.[x] ?? ".";
+                  return right === "." || below === "." ? "o" : "y";
+                })
+                .join(""),
+            );
+            return { rows };
+          }
+          case "pot":
+            return { rows: [".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."], top: [".y....", "......"] };
+          case "smoker":
+            return { rows: DATA.smokePot, top: DATA.smokePotSmoke[frame] };
+        }
+      }
+      function drawItem(ctx, kind, frame, x, y) {
+        const lift = bobs[frame];
+        const art = kind === "dot" ? { rows: dotArt() } : powerArt(frame);
+        const w = art.rows[0].length,
+          h = art.rows.length;
+        const bottom = kind === "dot" ? 6 : 8,
+          shadowY = kind === "dot" ? 8 : 10,
+          shadowW = kind === "dot" ? 2 : 4;
+        if (pick.shadow !== "none") {
+          ctx.fillStyle = S[pick.shadow];
+          ctx.fillRect(x + (8 - shadowW) / 2, y + shadowY, shadowW, 1);
+        }
+        const ax = x + Math.floor((8 - w) / 2),
+          ay = y + bottom - h + 1 - lift;
+        if (art.top && kind !== "dot") draw(ctx, art.top, ax, ay - 2);
+        draw(ctx, art.rows, ax, ay);
+      }
+
+      // ---- sheets ----
+      const SCALE = 4;
+      function sheet(id, w, h, paint) {
+        const c = document.getElementById(id);
+        c.width = w;
+        c.height = h;
+        c.style.width = w * SCALE + "px";
+        const ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, w, h);
+        paint(ctx);
+      }
+      function drawSheets() {
+        const deathRow = pick.bearDeath === "on";
+        sheet("bearSheet", 64, deathRow ? 80 : 64, (ctx) => {
+          ["down", "up", "left", "right"].forEach((d, r) => {
+            for (let f = 0; f < 4; f++) draw(ctx, bearFrame(d, f), f * 16, r * 16, bearMap());
+          });
+          if (deathRow) bearDeathFrames().forEach((rows, f) => draw(ctx, rows, f * 16, 64, bearMap()));
+        });
+        const bees = pick.beeColours === "four" ? 4 : 1;
+        sheet("beeSheet", 64 * bees, 48, (ctx) => {
+          for (let n = 0; n < bees; n++)
+            ["chase", "scared", "flash"].forEach((look, r) => {
+              for (let beat = 0; beat < 4; beat++) drawBee(ctx, n, look, beat, false, n * 64 + beat * 16, r * 16 + 1);
+            });
+        });
+        const hasBonus = pick.bonus !== "none";
+        sheet("itemSheet", 32, hasBonus ? 40 : 24, (ctx) => {
+          for (let f = 0; f < 4; f++) {
+            drawItem(ctx, "dot", f, f * 8, 0);
+            drawItem(ctx, "power", f, f * 8, 12);
+          }
+          if (hasBonus) draw(ctx, DATA.flower, 8, 24);
+        });
+      }
+
+      // ---- scene: the bear walks a row of dots, four bees patrol above ----
+      const scene = document.getElementById("scene");
+      scene.style.aspectRatio = `${scene.width} / ${scene.height}`;
+      const sctx = scene.getContext("2d");
+      let t = 0;
+      function frameScene() {
+        t++;
+        const W = scene.width;
+        sctx.fillStyle = S.k;
+        sctx.fillRect(0, 0, W, scene.height);
+        const tick = Math.floor(t / 8);
+        const look = mode !== "auto" ? mode : ["chase", "scared", "flash"][Math.floor(t / 240) % 3];
+        // Bees.
+        for (let n = 0; n < 4; n++) {
+          const phase = (t * 0.6 + n * 60) % (2 * (W - 24));
+          const left = phase > W - 24;
+          const x = left ? 2 * (W - 24) - phase : phase;
+          drawBee(
+            sctx,
+            n,
+            look === "flash" && Math.floor(t / 16) % 2 ? "scared" : look,
+            tick % 4,
+            left,
+            Math.round(x) + 4,
+            6,
+          );
+        }
+        // Dots, a power item at each end, and the bonus in the middle.
+        const bearX = ((t * 0.5) % (W + 32)) - 16;
+        for (let cx = 8; cx < W - 8; cx += 8) {
+          if (cx + 4 < bearX + 8) continue; // eaten
+          const power = cx === 8 || cx === W - 16;
+          const mid = cx === W / 2 - 8 && pick.bonus !== "none";
+          if (mid) {
+            draw(sctx, DATA.flower, cx - 4, 40);
+            continue;
+          }
+          if (cx === W / 2) continue;
+          drawItem(sctx, power ? "power" : "dot", tick % 4, cx, 42);
+        }
+        draw(sctx, bearFrame("right", tick % 4), Math.round(bearX), 40, bearMap());
+        requestAnimationFrame(frameScene);
+      }
+      sync();
+      requestAnimationFrame(frameScene);
+    </script>
+  </body>
+</html>
