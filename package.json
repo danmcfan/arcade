@@ -9,7 +9,7 @@
     "preview": "bunx serve dist",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "art": "bun scripts/gen-ui-art.ts && bun scripts/gen-cabinets.ts && bun scripts/gen-firefly-art.ts && bun scripts/gen-brass-monkey-art.ts",
+    "art": "bun scripts/gen-ui-art.ts && bun scripts/gen-cabinets.ts && bun scripts/gen-firefly-art.ts && bun scripts/gen-brass-monkey-art.ts && bun scripts/gen-sweet-sam-art.ts",
     "sounds": "bun scripts/gen-ui-sounds.ts",
     "frames": "bun scripts/capture-frames.ts",
     "frames:report": "bun scripts/frame-report.ts",
