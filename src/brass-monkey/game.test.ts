@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageCabinetBrassMonkey, imageGnome, imageMonkey, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGirderFloor, imageGnome, imageMonkey } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { DrawOpts } from "../engine/surface.ts";
@@ -14,10 +14,10 @@ const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
 const snap = (g: ReturnType<typeof createBrassMonkey>): BrassMonkeySnapshot => brassMonkeySnapshot(g.snapshot());
 
 describe("BrassMonkeySoftware", () => {
-  test("is the brassMonkey software on the workshop background, never over, scoreless", () => {
+  test("is the brassMonkey software on the girder floor, never over, scoreless", () => {
     const g = createBrassMonkey();
     expect(g.name).toBe("brassMonkey");
-    expect(g.background()).toBe(imageWorkshop);
+    expect(g.background()).toBe(imageGirderFloor);
     expect(g.gameOver()).toBe(false);
     expect(g.score()).toBe(0);
   });
@@ -134,7 +134,7 @@ function drawCalls(g: ReturnType<typeof createBrassMonkey>): DrawCall[] {
 const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 
 describe("brassMonkey draw", () => {
-  test("cabinet, 16 px workshop-dark bands above and below, workshop centred in the screen, the Gnome, then the monkey", () => {
+  test("cabinet, 16 px black bands above and below, the girder floor centred in the screen, the Gnome, then the monkey", () => {
     const g = createBrassMonkey();
     const { calls, fills, order } = record(g);
     expect(order).toEqual(["draw", "fill", "fill", "draw", "draw", "draw"]);
@@ -142,10 +142,10 @@ describe("brassMonkey draw", () => {
     expect(cabinet?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
     expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
     expect(fills).toEqual([
-      [56, 56, 224, 16, "#040c06"],
-      [56, 328, 224, 16, "#040c06"],
+      [56, 56, 224, 16, "#1a1c2c"],
+      [56, 328, 224, 16, "#1a1c2c"],
     ]);
-    expect(bg).toEqual({ sprite: imageWorkshop, x: 56, y: 72, opts: undefined });
+    expect(bg).toEqual({ sprite: imageGirderFloor, x: 56, y: 72, opts: undefined });
     expect(gnome?.sprite.asset).toBe(imageGnome.asset);
     expect(monkey?.sprite).toEqual({ asset: imageMonkey.asset, sx: 0, sy: 0, w: 16, h: 16 });
     expect(monkey?.x).toBe(16 + 56 - 8);

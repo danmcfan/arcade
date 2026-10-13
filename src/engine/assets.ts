@@ -14,7 +14,6 @@ import sweetUrl from "../assets/images/sweet.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
-import workshopUrl from "../assets/images/workshop.png";
 import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
@@ -43,6 +42,12 @@ import gnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import gearUrl from "../assets/images/brass-monkey/gear.png";
 import emberUrl from "../assets/images/brass-monkey/ember.png";
 import boltUrl from "../assets/images/brass-monkey/bolt.png";
+import girderUrl from "../assets/images/brass-monkey/girder.png";
+import ladderUrl from "../assets/images/brass-monkey/ladder.png";
+import conveyorUrl from "../assets/images/brass-monkey/conveyor.png";
+import doorUrl from "../assets/images/brass-monkey/door.png";
+import wallUrl from "../assets/images/brass-monkey/wall.png";
+import girderFloorUrl from "../assets/images/brass-monkey/girder-floor.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -94,7 +99,6 @@ export const images = {
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
   cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
   cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 1680, 428),
-  workshop: asset(workshopUrl, 224, 256),
 
   // Title screen, menus, HUD, the hub's prize counter and prize decorations;
   // generated from src/ui/glyphs.ts, src/ui/icons.ts, src/ui/counterArt.ts and
@@ -118,8 +122,6 @@ export const imageTitleSweet: Sprite = whole(images.sweet);
 export const imageCabinet: Sprite = whole(images.cabinet);
 export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
 export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
-
-export const imageWorkshop: Sprite = whole(images.workshop);
 
 export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
@@ -183,9 +185,10 @@ export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
 
 /**
- * Brass Monkey's characters and items (src/assets/images/brass-monkey/),
- * generated from src/brass-monkey/art.ts by `bun run art`. The game draws the
- * gear, the ember and the bolt from #39.
+ * Brass Monkey's characters, items and floors (src/assets/images/brass-monkey/),
+ * generated from src/brass-monkey/art.ts and floors.ts by `bun run art`. The
+ * game draws the girder floor, the monkey and the Gnome; the gear, the ember,
+ * the bolt and the floor tiles are drawn from #39.
  */
 export const brassMonkeyImages = {
   monkey: asset(monkeyUrl, 96, 16),
@@ -196,12 +199,22 @@ export const brassMonkeyImages = {
   ember: asset(emberUrl, 48, 12),
   /** At rest, then three glint frames, each 10×14. */
   bolt: asset(boltUrl, 40, 14),
+  girder: asset(girderUrl, 8, 8),
+  /** Row `y % 4` is drawn at height y. */
+  ladder: asset(ladderUrl, 8, 4),
+  /** The left end, middle and right end, 4 frames each, 8×8. */
+  conveyor: asset(conveyorUrl, 96, 8),
+  door: asset(doorUrl, 16, 24),
+  wall: asset(wallUrl, 32, 32),
+  /** The girder floor: the wall, girders, ladders and exit door, laid out by src/brass-monkey/floors.ts. */
+  girderFloor: asset(girderFloorUrl, 224, 256),
 } as const;
 
 /** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */
 export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 /** The Gnome's sheet: idle, throw, each 32×32. */
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
+export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
