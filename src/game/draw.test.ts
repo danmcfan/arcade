@@ -237,10 +237,10 @@ describe("use prompt", () => {
     expect(promptAt(game)).toEqual(capText(centred(72, 16), 40 - keyHeight - 2));
   });
 
-  test("on the front of the prize counter while facing it", () => {
+  test("above the player's head while they stand on the prize counter facing it", () => {
     const game = newGame();
-    for (let t = 0; t < 2; t++) game.step(input({ down: true })); // tick 2, y 94
-    expect(promptAt(game)).toEqual(capText(centred(60, 40), 106 + 14 - keyHeight));
+    for (let t = 0; t < 2; t++) game.step(input({ down: true })); // tick 2, (80, 94): the player's top is y 82
+    expect(promptAt(game)).toEqual(capText(80 - keyWidth("SPACE") / 2, 82 - keyHeight - 2));
   });
 
   test("hidden while the prize counter menu or the hub pause menu covers the hub", () => {

@@ -2,9 +2,10 @@
 // (`bun run verify hub`). Part 1 drives the `?debug` test hook in the hub
 // (`?scene=game`): the player on each colour of the floor, then the SPACE key
 // cap above each cabinet while facing it (with its title art), gone when the
-// player turns away, bobbing, over the prize counter while facing it, and
-// Space at a cabinet starting that cabinet. The key cap is found in the
-// frame by its edge colour, which nothing else in the hub uses. Part 2
+// player turns away, bobbing, above the prize counter (or above the player
+// standing on it) while facing it, and Space at a cabinet starting that
+// cabinet. The key cap is found in the frame by its edge colour, which
+// nothing else in the hub uses. Part 2
 // records a walk past every cabinet to the counter in real time. Files go to
 // out/verify/hub/.
 
@@ -67,8 +68,16 @@ const capWidth = keyWidth(usePromptLabel);
 const bob = (v: Verify) => Math.trunc(game(v).tick / usePromptBobTicks) % 2;
 /** Where the key cap goes above a cabinet whose rect starts at `x` (16 wide, top at y 40). */
 const aboveCabinet = (v: Verify, x: number) => ({ x: x + Math.trunc((16 - capWidth) / 2), y: 40 - keyHeight - 2 - bob(v), w: capWidth });
-/** On the front of the prize counter (60, 106, 40, 14), below its countertop. */
-const overCounter = (v: Verify) => ({ x: 60 + Math.trunc((40 - capWidth) / 2), y: 106 + 14 - keyHeight - bob(v), w: capWidth });
+/** Just above the prize counter (60, 106, 40, 14), as seen from either side of it. */
+const aboveCounter = (v: Verify) => ({ x: 60 + Math.trunc((40 - capWidth) / 2), y: 106 - keyHeight - 2 - bob(v), w: capWidth });
+/** Above the head of the player (16 x 24) standing on the counter, centred on them. */
+const abovePlayer = (v: Verify) => {
+  const p = game(v).arcade.player;
+  return { x: p.x - capWidth / 2, y: p.y - 12 - keyHeight - 2 - bob(v), w: capWidth };
+};
+/** The key cap leaves every pixel of the prize counter's art in view. */
+const clearOfCounter = (cap: { x: number; y: number; w: number } | null) =>
+  cap !== null && (cap.y + keyHeight <= 106 || cap.x + cap.w <= 60 || cap.x >= 100);
 
 function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -121,7 +130,8 @@ function counter(v: Verify): void {
   console.log("the use prompt at the prize counter:");
   v.step(40, { down: true }); // (104, 94): above the counter's right end
   check(game(v).arcade.player.y === 94, "walking down stops on the counter", game(v).arcade.player);
-  check(same(keyCap(v), overCounter(v)), "facing it: the key cap on the counter", keyCap(v));
+  check(same(keyCap(v), abovePlayer(v)), "facing it from on top: the key cap above the player's head", keyCap(v));
+  check(clearOfCounter(keyCap(v)), "and clear of the counter's art", keyCap(v));
   v.frame("6-prompt-prize-counter");
 
   v.step(1, { up: true });
@@ -129,7 +139,8 @@ function counter(v: Verify): void {
   v.step(40, { right: true }); // x 128: beside the counter
   v.step(20, { down: true }); // y 108, against the bottom wall
   v.step(30, { left: true }); // stops at the counter's right side
-  check(same(keyCap(v), overCounter(v)), "facing it from the side: the key cap on the counter", keyCap(v));
+  check(same(keyCap(v), aboveCounter(v)), "facing it from the side: the key cap above the counter", keyCap(v));
+  check(clearOfCounter(keyCap(v)), "and clear of the counter's art", keyCap(v));
   v.frame("7-prompt-prize-counter-side");
 
   v.tap("space");

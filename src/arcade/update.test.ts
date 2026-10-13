@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
+import { checkCollision } from "./collision.ts";
 import { counterRect } from "./prizeCounter.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update, useTarget } from "./update.ts";
@@ -326,9 +327,30 @@ describe("use prompt", () => {
     }
   });
 
-  test("shows facing and touching the prize counter from above and from either side, on the counter", () => {
+  test("from either side of the prize counter, above the counter", () => {
     const r = counterRect;
-    const want = { x: r.x + Math.trunc((r.w - keyWidth("SPACE")) / 2), y: r.y + r.h - keyHeight };
+    const want = { x: r.x + Math.trunc((r.w - keyWidth("SPACE")) / 2), y: r.y - keyHeight - 2 };
+    for (const [x, y, dir] of [
+      [52, 108, "RIGHT"],
+      [108, 108, "LEFT"],
+    ] as const) {
+      const s = at(x, y, dir);
+      expect(useTarget(s)).toBe("counter");
+      expect(usePrompt(s, 0)).toEqual(want);
+    }
+  });
+
+  test("standing on top of the prize counter, above the player's head and centred on them", () => {
+    for (const x of [80, 53, 107]) {
+      const s = at(x, 94, "DOWN");
+      expect(useTarget(s)).toBe("counter");
+      // The player's rect is 16 x 24 centred on (x, 94): its top is y 82.
+      expect(usePrompt(s, 0)).toEqual({ x: x - keyWidth("SPACE") / 2, y: 82 - keyHeight - 2 });
+    }
+  });
+
+  test("never covers the prize counter or the player", () => {
+    const capRect = (p: { x: number; y: number }) => ({ x: p.x, y: p.y, w: keyWidth("SPACE"), h: keyHeight });
     for (const [x, y, dir] of [
       [80, 94, "DOWN"],
       [53, 94, "DOWN"],
@@ -337,8 +359,22 @@ describe("use prompt", () => {
       [108, 108, "LEFT"],
     ] as const) {
       const s = at(x, y, dir);
+      const cap = capRect(usePrompt(s, 0)!);
+      const player = { x: x - 8, y: y - 12, w: 16, h: 24 };
+      expect(checkCollision(cap, counterRect)).toBe(false);
+      expect(checkCollision(cap, player)).toBe(false);
+    }
+  });
+
+  test("above the player's head, it stays over the floor (24..136) when the player is near a side wall", () => {
+    for (const [counterX, playerX, want] of [
+      [24, 30, 24],
+      [96, 130, 136 - keyWidth("SPACE")],
+    ] as const) {
+      const s = at(playerX, 94, "DOWN");
+      s.counter = { ...counterRect, x: counterX };
       expect(useTarget(s)).toBe("counter");
-      expect(usePrompt(s, 0)).toEqual(want);
+      expect(usePrompt(s, 0)!.x).toBe(want);
     }
   });
 

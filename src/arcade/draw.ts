@@ -6,7 +6,7 @@ import type { Surface } from "../engine/surface.ts";
 import { drawKey, keyHeight, keyWidth } from "../ui/text.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { titleImages } from "./machine.ts";
-import type { State } from "./state.ts";
+import { tileSize, type State } from "./state.ts";
 import { useTarget } from "./update.ts";
 
 export interface HubDrawOptions {
@@ -50,24 +50,32 @@ export function draw(screen: Surface, s: State, buffer: number, debugMode: boole
 export const usePromptLabel = "SPACE";
 /** Ticks the use prompt spends at each height of its bob. */
 export const usePromptBobTicks = 20;
-/** Gap between the prompt and the top of the cabinet it floats over. */
-const cabinetGap = 2;
+/** Gap between the prompt and the top of the thing it floats over. */
+const promptGap = 2;
+/** The floor's left and right edges (inside the side walls, `newWalls`). */
+const floorLeft = 3 * tileSize;
+const floorRight = 17 * tileSize;
 
 /**
  * Where the use prompt's key cap goes (top-left, hub-image coordinates), or
- * null when Space would use nothing (`useTarget`). It floats just above a
- * cabinet, or on the front of the prize counter below its countertop (the
- * player stands right above the counter), and bobs up 1 px every other
- * `usePromptBobTicks` ticks.
+ * null when Space would use nothing (`useTarget`). It floats just above the
+ * cabinet or the prize counter, so it never hides what it points at. A player
+ * standing on top of the counter, facing down, covers the space above it, so
+ * there it floats above the player's head instead, centred on them and kept
+ * over the floor. It bobs up 1 px every other `usePromptBobTicks` ticks.
  */
 export function usePrompt(s: State, tick: number): { x: number; y: number } | null {
   const target = useTarget(s);
   if (target === null) return null;
   const bob = Math.trunc(tick / usePromptBobTicks) % 2;
+  const w = keyWidth(usePromptLabel);
+  const p = s.player;
+  if (target === "counter" && p.direction === "DOWN") {
+    const x = Math.min(Math.max(Math.trunc(p.x - w / 2), floorLeft), floorRight - w);
+    return { x, y: p.y - p.height / 2 - keyHeight - promptGap - bob };
+  }
   const r = target === "counter" ? s.counter : target.rect;
-  const x = r.x + Math.trunc((r.w - keyWidth(usePromptLabel)) / 2);
-  const y = target === "counter" ? r.y + r.h - keyHeight : r.y - keyHeight - cabinetGap;
-  return { x, y: y - bob };
+  return { x: r.x + Math.trunc((r.w - w) / 2), y: r.y - keyHeight - promptGap - bob };
 }
 
 /** Go `img.SubImage(image.Rect(int(x), int(y), int(x+w), int(y+h)))`. */
