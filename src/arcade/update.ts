@@ -5,17 +5,23 @@ import { direction, moving, type Direction, type Input } from "../engine/input.t
 import { soundMelody } from "../engine/assets.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
-import { findMachine, type Machine } from "./machine.ts";
+import { findMachine } from "./machine.ts";
 import { blocked, type RunKind, type State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
   applyInput(s, i);
   updatePlayer(s);
 
-  const target = useTarget(s);
-  const machine = target !== null && target !== "counter" ? target : null;
+  const newRect: Rect = {
+    x: s.player.x - s.player.width / 2,
+    y: s.player.y - s.player.height / 2,
+    w: s.player.width,
+    h: s.player.height,
+  };
+  const machine = findMachine(newRect, s.machines);
+  const ok = machine !== null;
 
-  if (machine !== null) {
+  if (ok && s.player.direction === "UP") {
     if (!s.melodyPlaying) {
       s.imageTitle = machine.title;
       s.melodyPlaying = true;
@@ -30,7 +36,7 @@ export function update(s: State, i: Input): void {
     }
   }
 
-  if (machine !== null && i.space) {
+  if (ok && s.player.direction === "UP" && i.space) {
     // Go leaves imageTitle set here; only melodyPlaying is cleared (D11).
     s.melodyPlaying = false;
     soundMelody.pause();
@@ -40,24 +46,9 @@ export function update(s: State, i: Input): void {
     s.loadedSoftware = machine.newSoftware(s.highScore, s.prizes);
   }
 
-  if (target === "counter" && i.space) {
+  if (i.space && facing(s.player, s.counter)) {
     s.counterOpened = true;
   }
-}
-
-/**
- * What Space would use where the player stands: the cabinet they touch while
- * facing up, the prize counter they face and touch, or nothing. The hub's
- * Space and its use prompt both ask this, so they always agree. The counter
- * stands far below the cabinets, so the player never touches both.
- */
-export function useTarget(s: State): Machine | "counter" | null {
-  const p = s.player;
-  const rect: Rect = { x: p.x - p.width / 2, y: p.y - p.height / 2, w: p.width, h: p.height };
-  const machine = findMachine(rect, s.machines);
-  if (machine !== null && p.direction === "UP") return machine;
-  if (facing(p, s.counter)) return "counter";
-  return null;
 }
 
 /** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */

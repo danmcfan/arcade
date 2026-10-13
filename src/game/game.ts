@@ -327,11 +327,7 @@ export class Game implements Scene {
     this.payout = null;
   }
 
-  /**
-   * `hubPaused`: the hub pause menu covers the hub (the title scene draws it
-   * over the game), so the use prompt hides.
-   */
-  draw(screen: Surface, hubPaused = false): void {
+  draw(screen: Surface): void {
     if (this.software !== null) {
       let margin = buffer;
       if (isFixedViewport(this.software)) {
@@ -358,7 +354,7 @@ export class Game implements Scene {
       return;
     }
 
-    drawArcade(screen, this.arcade, buffer, this.debugMode, { tick: this.tick, covered: hubPaused || this.menu !== null });
+    drawArcade(screen, this.arcade, buffer, this.debugMode);
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
     drawHud(screen, this.arcade.tokens, this.arcade.tickets, hubWidth);

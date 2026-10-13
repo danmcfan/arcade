@@ -1,18 +1,13 @@
-// The redrawn hub and the use prompt (#17) in a real browser
-// (`bun run verify hub`). Part 1 drives the `?debug` test hook in the hub
-// (`?scene=game`): the player on the arcade carpet, then the SPACE key
-// cap above each cabinet while facing it (with its title art), gone when the
-// player turns away, bobbing, above the prize counter (or above the player
-// standing on it) while facing it, and Space at a cabinet starting that
-// cabinet. The key cap is found in the frame by its edge colour, which
-// nothing else in the hub uses. Part 2
-// records a walk past every cabinet to the counter in real time. Files go to
-// out/verify/hub/.
+// The redrawn hub (#17) in a real browser (`bun run verify hub`). Part 1
+// drives the `?debug` test hook in the hub (`?scene=game`): the player on the
+// arcade carpet, each cabinet's title while facing it (with no key cap drawn
+// over the hub), the prize counter, and Space at a cabinet starting that
+// cabinet. A key cap would show in the frame as its edge colour, which none
+// of the hub art uses. Part 2 records a walk past every cabinet to the
+// counter in real time. Files go to out/verify/hub/.
 
 import { PNG } from "pngjs";
-import { usePromptBobTicks, usePromptLabel } from "../../src/arcade/draw.ts";
 import type { GameSnapshot } from "../../src/game/snapshot.ts";
-import { keyHeight, keyWidth } from "../../src/ui/text.ts";
 import { decodeDataUrl } from "../browser.ts";
 import { verify, type Verify } from "../harness.ts";
 
@@ -26,7 +21,7 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 /** The hub image sits 16 px in from the canvas edge. */
 const margin = 16;
-/** The key cap's edge colour (`drawKey`). */
+/** A key cap's edge colour (`drawKey`). */
 const keyEdge = "#566c86";
 
 function canvas(v: Verify): PNG {
@@ -38,19 +33,13 @@ function pixel(png: PNG, x: number, y: number): string {
   return `#${[0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Top-left and width (hub-image coordinates) of the key-cap edge pixels on the canvas, or null if there are none. */
-function keyCap(v: Verify): { x: number; y: number; w: number } | null {
+/** Whether any key-cap edge pixel is on the canvas. */
+function keyCapShown(v: Verify): boolean {
   const png = canvas(v);
-  let [x0, y0, x1] = [Infinity, Infinity, -Infinity];
   for (let y = 0; y < png.height; y++) {
-    for (let x = 0; x < png.width; x++) {
-      if (pixel(png, x, y) !== keyEdge) continue;
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-    }
+    for (let x = 0; x < png.width; x++) if (pixel(png, x, y) === keyEdge) return true;
   }
-  return x0 === Infinity ? null : { x: x0 - margin, y: y0 - margin, w: x1 - x0 + 1 };
+  return false;
 }
 
 /** The floor colour beside the player's feet. */
@@ -69,26 +58,6 @@ function game(v: Verify): GameSnapshot {
   return v.snapshot<GameSnapshot>();
 }
 
-const capWidth = keyWidth(usePromptLabel);
-/** 1 while the prompt is at the top of its bob. */
-const bob = (v: Verify) => Math.trunc(game(v).tick / usePromptBobTicks) % 2;
-/** Where the key cap goes above a cabinet whose rect starts at `x` (16 wide, top at y 40). */
-const aboveCabinet = (v: Verify, x: number) => ({ x: x + Math.trunc((16 - capWidth) / 2), y: 40 - keyHeight - 2 - bob(v), w: capWidth });
-/** Just above the prize counter (60, 106, 40, 14), as seen from either side of it. */
-const aboveCounter = (v: Verify) => ({ x: 60 + Math.trunc((40 - capWidth) / 2), y: 106 - keyHeight - 2 - bob(v), w: capWidth });
-/** Above the head of the player (16 x 24) standing on the counter, centred on them. */
-const abovePlayer = (v: Verify) => {
-  const p = game(v).arcade.player;
-  return { x: p.x - capWidth / 2, y: p.y - 12 - keyHeight - 2 - bob(v), w: capWidth };
-};
-/** The key cap leaves every pixel of the prize counter's art in view. */
-const clearOfCounter = (cap: { x: number; y: number; w: number } | null) =>
-  cap !== null && (cap.y + keyHeight <= 106 || cap.x + cap.w <= 60 || cap.x >= 100);
-
-function same(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
 function floorAndPlayer(v: Verify): void {
   console.log("the room and the player on the carpet:");
   v.openHook("scene=game");
@@ -97,71 +66,54 @@ function floorAndPlayer(v: Verify): void {
   check(floorUnderFeet(v) === "#29366f", "the player stands on the navy carpet", floorUnderFeet(v));
   check(playerPixel(v, 5, 5) === "#73eff7", "in the new sprite: the cyan headphone band across the hair", playerPixel(v, 5, 5));
   check(pixel(canvas(v), 80 + margin, 26 + margin) === "#73eff7", "the neon tube runs along the top of the wall", pixel(canvas(v), 80 + margin, 26 + margin));
-  check(keyCap(v) === null, "no use prompt at the start position", keyCap(v));
   v.frame("1-player-on-carpet");
 
   v.step(32, { left: true });
-  check(keyCap(v) === null, "32 px left on the carpet: still no use prompt", keyCap(v));
   v.frame("2-player-walking-left");
   v.step(32, { right: true });
 }
 
 function cabinets(v: Verify): void {
-  console.log("the use prompt at each cabinet:");
+  console.log("each cabinet's title, and no key cap:");
   v.step(31, { up: true }); // (80, 61): at the Sweet Sam cabinet
   check(game(v).arcade.title === "sweet", "facing up at the middle cabinet shows the Sweet Sam title", game(v).arcade.title);
-  check(same(keyCap(v), aboveCabinet(v, 72)), "and a SPACE key cap above that cabinet", keyCap(v));
-  v.frame("3-prompt-sweet-sam");
+  check(!keyCapShown(v), "with no key cap over the hub");
+  v.frame("3-at-sweet-sam");
 
   v.step(1, { down: true });
-  check(keyCap(v) === null && game(v).arcade.title === null, "turning round hides the prompt (and the title)", keyCap(v));
+  check(game(v).arcade.title === null, "turning round hides the title", game(v).arcade.title);
 
   v.step(24, { left: true }); // x 56
-  check(keyCap(v) === null, "facing left below the Brass Monkey cabinet: no prompt", keyCap(v));
   v.step(2, { up: true });
-  check(same(keyCap(v), aboveCabinet(v, 48)), "facing up at it: the key cap above the Brass Monkey cabinet", keyCap(v));
-  v.frame("4-prompt-brass-monkey");
+  check(game(v).arcade.title === "brassMonkey", "facing up at the left cabinet shows the Brass Monkey title", game(v).arcade.title);
+  check(!keyCapShown(v), "with no key cap over the hub");
+  v.frame("4-at-brass-monkey");
 
   v.step(48, { right: true }); // x 104
   v.step(1, { up: true });
-  check(same(keyCap(v), aboveCabinet(v, 96)), "facing up at the Firefly cabinet: the key cap above it", keyCap(v));
-  v.frame("5-prompt-firefly");
-
-  const before = keyCap(v)!;
-  v.step(usePromptBobTicks);
-  const after = keyCap(v)!;
-  check(Math.abs(after.y - before.y) === 1 && after.x === before.x, `it bobs 1 px every ${usePromptBobTicks} ticks`, [before, after]);
+  check(game(v).arcade.title === "firefly", "facing up at the right cabinet shows the Firefly title", game(v).arcade.title);
+  check(!keyCapShown(v), "with no key cap over the hub");
+  v.frame("5-at-firefly");
 }
 
 function counter(v: Verify): void {
-  console.log("the use prompt at the prize counter:");
-  v.step(40, { down: true }); // (104, 94): above the counter's right end
+  console.log("the prize counter:");
+  v.step(40, { down: true }); // (104, 94): on top of the counter's right end
   check(game(v).arcade.player.y === 94, "walking down stops on the counter", game(v).arcade.player);
-  check(same(keyCap(v), abovePlayer(v)), "facing it from on top: the key cap above the player's head", keyCap(v));
-  check(clearOfCounter(keyCap(v)), "and clear of the counter's art", keyCap(v));
-  v.frame("6-prompt-prize-counter");
-
-  v.step(1, { up: true });
-  check(keyCap(v) === null, "facing away from it: no prompt", keyCap(v));
-  v.step(40, { right: true }); // x 128: beside the counter
-  v.step(20, { down: true }); // y 108, against the bottom wall
-  v.step(30, { left: true }); // stops at the counter's right side
-  check(same(keyCap(v), aboveCounter(v)), "facing it from the side: the key cap above the counter", keyCap(v));
-  check(clearOfCounter(keyCap(v)), "and clear of the counter's art", keyCap(v));
-  v.frame("7-prompt-prize-counter-side");
+  check(!keyCapShown(v), "facing it: no key cap over the hub");
+  v.frame("6-at-prize-counter");
 
   v.tap("space");
-  check(game(v).menu === "prizeCounter", "and Space opens the prize counter menu", game(v).menu);
-  v.frame("8-prize-counter-menu");
+  check(game(v).menu === "prizeCounter", "Space opens the prize counter menu", game(v).menu);
+  v.frame("7-prize-counter-menu");
 }
 
 function spaceUsesTheCabinet(v: Verify): void {
-  console.log("Space at a prompted cabinet starts it:");
+  console.log("Space at a cabinet starts it:");
   v.openHook("scene=game");
   v.step(31, { up: true });
-  check(keyCap(v) !== null, "the prompt shows at Sweet Sam");
   v.step(1, { up: true, space: true });
-  check(game(v).software === "hive", "Space starts Sweet Sam", game(v).software);
+  check(game(v).software === "hive", "Space at the Sweet Sam cabinet starts Sweet Sam", game(v).software);
 }
 
 function video(v: Verify): void {
@@ -169,10 +121,10 @@ function video(v: Verify): void {
   v.record(
     "walk",
     () => {
-      v.wait(1000); // the room, the player idle on the floor
-      v.key("ArrowUp", 600); // to the Sweet Sam cabinet: title and prompt
+      v.wait(1000); // the room, the player idle on the carpet
+      v.key("ArrowUp", 600); // to the Sweet Sam cabinet: its title
       v.wait(1500);
-      v.key("ArrowDown", 150); // turn away: both go
+      v.key("ArrowDown", 150); // turn away: the title goes
       v.wait(500);
       v.key("ArrowLeft", 420); // below Brass Monkey
       v.key("ArrowUp", 150);
