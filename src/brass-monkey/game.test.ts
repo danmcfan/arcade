@@ -1,194 +1,182 @@
-import { describe, expect, test } from "bun:test";
-import { imageCabinetBrassMonkey, imageGirderFloor, imageGnome, imageMonkey } from "../engine/assets.ts";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+  imageCabinetBrassMonkey,
+  imageConveyorFloor,
+  imageGirderFloor,
+  imageGnome,
+  imageMonkey,
+  imageWall,
+} from "../engine/assets.ts";
+import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { DrawOpts } from "../engine/surface.ts";
-import { defined } from "../engine/defined.testutil.ts";
+import * as rng from "../engine/rng.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
-import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
+import { Game } from "../game/game.ts";
+import { ticketsFor } from "../game/payout.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
+import { BrassMonkeySoftware } from "./game.ts";
 import { createBrassMonkey } from "./index.ts";
+import * as t from "./tuning.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
-const snap = (g: ReturnType<typeof createBrassMonkey>): BrassMonkeySnapshot => brassMonkeySnapshot(g.snapshot());
 
-describe("BrassMonkeySoftware", () => {
-  test("is the brassMonkey software on the girder floor, never over, scoreless", () => {
-    const g = createBrassMonkey();
-    expect(g.name).toBe("brassMonkey");
-    expect(g.background()).toBe(imageGirderFloor);
-    expect(g.gameOver()).toBe(false);
-    expect(g.score()).toBe(0);
-  });
-
-  test("starts idle at (16, 240) facing right", () => {
-    const g = createBrassMonkey();
-    g.update(NO_INPUT);
-    expect(snap(g)).toEqual({ x: 16, y: 240, frame: 0, left: false, moving: false, joystick: 0 });
-  });
-
-  test("walking moves 1 px per tick and advances the frame by 0.2", () => {
-    const g = createBrassMonkey();
-    g.update(held({ right: true }));
-    expect(snap(g)).toEqual({ x: 17, y: 240, frame: 0.2, left: false, moving: true, joystick: 4 });
-    g.update(held({ left: true }));
-    expect(snap(g)).toMatchObject({ x: 16, left: true, moving: true });
-    expect(snap(g).frame).toBeCloseTo(0.4, 12);
-  });
-
-  test("the frame wraps to 0 once it reaches 4", () => {
-    const g = createBrassMonkey();
-    const frames: number[] = [];
-    for (let t = 0; t < 30; t++) {
-      g.update(held({ right: true }));
-      frames.push(snap(g).frame);
-    }
-    expect(Math.max(...frames)).toBeLessThan(4);
-    expect(frames.slice(15).some((f) => f === 0)).toBe(true);
-  });
-
-  test("letting go resets the frame and stops", () => {
-    const g = createBrassMonkey();
-    g.update(held({ right: true }));
-    g.update(held({ right: true }));
-    g.update(NO_INPUT);
-    expect(snap(g)).toEqual({ x: 18, y: 240, frame: 0, left: false, moving: false, joystick: 0 });
-  });
-
-  test("Up or Down alone walks in the current facing (direction priority masks Left/Right)", () => {
-    const g = createBrassMonkey();
-    g.update(held({ left: true }));
-    g.update(held({ up: true, right: true }));
-    expect(snap(g)).toMatchObject({ x: 14, left: true, moving: true });
-  });
-
-  test("x is clamped to [6, 108]", () => {
-    const g = createBrassMonkey();
-    for (let t = 0; t < 30; t++) g.update(held({ left: true }));
-    expect(snap(g).x).toBe(6);
-    for (let t = 0; t < 200; t++) g.update(held({ right: true }));
-    expect(snap(g).x).toBe(108);
-  });
-});
-
-describe("cabinet", () => {
-  test("is a FixedViewport the size of the cabinet", () => {
-    const g = createBrassMonkey();
-    expect(isFixedViewport(g)).toBe(true);
-    if (isFixedViewport(g)) expect(g.fixedViewportSize()).toEqual([336, 428]);
-  });
-
-  test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
-    const g = createBrassMonkey();
-    expect(snap(g).joystick).toBe(0);
-    const frames = [
-      held({}),
-      held({ up: true }),
-      held({ down: true }),
-      held({ left: true }),
-      held({ right: true }),
-    ].map((i) => {
-      g.update(i);
-      return snap(g).joystick;
-    });
-    expect(frames).toEqual([0, 1, 2, 3, 4]);
-  });
-});
+/** A run with no hazards coming. */
+function quiet(highScore = 0): BrassMonkeySoftware {
+  const g = new BrassMonkeySoftware(highScore);
+  g.run.gearTimer = Infinity;
+  g.run.emberTimer = Infinity;
+  return g;
+}
 
 interface DrawCall {
   sprite: Sprite;
   x: number;
   y: number;
-  opts: DrawOpts | undefined;
 }
 
-type Fill = [x: number, y: number, w: number, h: number, css: string];
-
-/** Brass Monkey is a FixedViewport: drawn with buffer 0. Returns sprite draws and, separately, fills. */
-function record(
-  g: ReturnType<typeof createBrassMonkey>,
-  buffer = 0,
-): { calls: DrawCall[]; fills: Fill[]; order: string[] } {
+function record(g: BrassMonkeySoftware): { calls: DrawCall[]; fills: number } {
   const calls: DrawCall[] = [];
-  const fills: Fill[] = [];
-  const order: string[] = [];
-  const fake = stubSurface({
-    draw: (sprite, x, y, opts) => {
-      calls.push({ sprite, x, y, opts });
-      order.push("draw");
-    },
-    fillRect: (x, y, w, h, css) => {
-      fills.push([x, y, w, h, css]);
-      order.push("fill");
-    },
-  });
-  g.draw(fake, buffer);
-  return { calls, fills, order };
+  let fills = 0;
+  g.draw(
+    stubSurface({
+      draw: (sprite, x, y) => {
+        calls.push({ sprite, x, y });
+      },
+      fillRect: () => {
+        fills++;
+      },
+    }),
+    0,
+  );
+  return { calls, fills };
 }
 
-function drawCalls(g: ReturnType<typeof createBrassMonkey>): DrawCall[] {
-  return record(g).calls;
-}
+const unsubscribe: (() => void)[] = [];
+afterEach(() => {
+  for (const u of unsubscribe.splice(0)) u();
+});
 
-const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
-
-describe("brassMonkey draw", () => {
-  test("cabinet, 16 px black bands above and below, the girder floor centred in the screen, the Gnome, then the monkey", () => {
+describe("BrassMonkeySoftware", () => {
+  test("is the brassMonkey software in its cabinet", () => {
     const g = createBrassMonkey();
-    const { calls, fills, order } = record(g);
-    expect(order).toEqual(["draw", "fill", "fill", "draw", "draw", "draw"]);
-    const [cabinet, bg, gnome, monkey] = calls;
-    expect(cabinet?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
-    expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
-    expect(fills).toEqual([
-      [56, 56, 224, 16, "#1a1c2c"],
-      [56, 328, 224, 16, "#1a1c2c"],
-    ]);
-    expect(bg).toEqual({ sprite: imageGirderFloor, x: 56, y: 72, opts: undefined });
-    expect(gnome?.sprite.asset).toBe(imageGnome.asset);
-    expect(monkey?.sprite).toEqual({ asset: imageMonkey.asset, sx: 0, sy: 0, w: 16, h: 16 });
-    expect(monkey?.x).toBe(16 + 56 - 8);
-    expect(monkey?.y).toBe(240 + 72 - 8);
-    expect(monkey?.opts?.flipX ?? false).toBe(false);
+    expect(g.name).toBe("brassMonkey");
+    expect(isFixedViewport(g) && g.fixedViewportSize()).toEqual([336, 428]);
   });
 
-  test("the Gnome stands still on the top girder in its idle frame", () => {
-    const g = createBrassMonkey();
-    const idle = { sprite: { asset: imageGnome.asset, sx: 0, sy: 0, w: 32, h: 32 }, x: 24 + 56, y: 52 + 72 };
-    for (let t = 0; t < 10; t++) {
-      g.update(held({ right: true }));
-      const gnome = drawCalls(g)[2];
-      expect(gnome && { sprite: gnome.sprite, x: gnome.x, y: gnome.y }).toEqual(idle);
-    }
+  test("score() and gameOver() are the run's", () => {
+    const g = quiet();
+    g.run.score = 700;
+    expect([g.score(), g.gameOver()]).toEqual([700, false]);
+    g.run.phase = "over";
+    expect(g.gameOver()).toBe(true);
   });
 
-  test("the cabinet shows the joystick frame of the last input", () => {
-    const g = createBrassMonkey();
-    g.update(held({ down: true }));
-    expect(rect(defined(drawCalls(g)[0]).sprite)).toEqual([2 * 336, 0, 336, 428]);
+  test("the high score starts from the hub's and follows the score past it", () => {
+    const g = quiet(500);
+    g.update(NO_INPUT);
+    expect(brassMonkeySnapshot(g.snapshot()).highScore).toBe(500);
+    g.run.score = 800;
+    g.update(NO_INPUT);
+    expect(brassMonkeySnapshot(g.snapshot()).highScore).toBe(800);
   });
 
-  test("frames 0,1,2,3 map to sheet columns 0,1,0,2", () => {
-    const g = createBrassMonkey();
-    const columns: number[] = [];
-    let lastFrame = -1;
-    for (let t = 0; t < 20; t++) {
-      g.update(held({ right: true }));
-      const frame = Math.trunc(snap(g).frame);
-      if (frame !== lastFrame) {
-        columns.push((drawCalls(g)[3]?.sprite.sx ?? -16) / 16);
-        lastFrame = frame;
+  test("the background is the floor being played", () => {
+    const g = quiet();
+    expect(g.background()).toBe(imageGirderFloor);
+    g.run.floor = 1;
+    expect(g.background()).toBe(imageConveyorFloor);
+  });
+
+  test("plays the run's sounds", () => {
+    const events: SoundEvent[] = [];
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    const g = quiet();
+    g.update(held({ space: true }));
+    expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
+  });
+
+  test("the snapshot holds the monkey, the floor, lives, score, bonus and the joystick", () => {
+    const g = quiet();
+    g.update(held({ right: true }));
+    expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({
+      phase: "play",
+      floor: 0,
+      loop: 0,
+      lives: 3,
+      score: 0,
+      bonus: 5000,
+      x: 17,
+      y: 248,
+      footing: "ground",
+      moving: true,
+      hazards: [],
+      bolts: [false, false, false, false],
+      joystick: 4,
+    });
+  });
+});
+
+describe("draw", () => {
+  test("fills the screen: a band of wall for the scores, then the floor under it, no black bands", () => {
+    const g = quiet();
+    const { calls, fills } = record(g);
+    expect(fills).toBe(0);
+    expect(calls[0]?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
+    const walls = calls.filter((c) => c.sprite === imageWall);
+    expect(walls.map((c) => [c.x, c.y])).toEqual([0, 32, 64, 96, 128, 160, 192].map((x) => [56 + x, 56]));
+    expect(calls.find((c) => c.sprite === imageGirderFloor)).toMatchObject({ x: 56, y: 88 });
+  });
+
+  test("the Gnome raises its arms just before it sends a hazard", () => {
+    const g = quiet();
+    const gnome = (): number => record(g).calls.find((c) => c.sprite.asset === imageGnome.asset)?.sprite.sx ?? -1;
+    expect(gnome()).toBe(0);
+    g.run.gearTimer = t.throwTicks;
+    expect(gnome()).toBe(32);
+  });
+
+  test("the monkey stands on its girder; jumping shows the jump frame", () => {
+    const g = quiet();
+    const monkey = (): DrawCall | undefined =>
+      record(g).calls.find((c) => c.sprite.asset === imageMonkey.asset && c.sprite.h === 16 && c.y > 100);
+    expect(monkey()).toMatchObject({ x: 56 + 16 - 8, y: 88 + 248 - 16 });
+    g.update(held({ space: true }));
+    expect(monkey()?.sprite.sx).toBe(3 * 16);
+  });
+
+  test("the escaped scene draws daylight", () => {
+    const g = quiet();
+    g.run.phase = "escape";
+    g.run.phaseTicks = t.escapeTicks;
+    expect(record(g).fills).toBeGreaterThan(0);
+  });
+});
+
+describe("in the arcade", () => {
+  test("a run played to game over opens the payout, which pays its score in tickets", () => {
+    rng.seed(3);
+    const game = new Game(null);
+    try {
+      const step = (n: number, i: Partial<Input> = {}): void => {
+        for (let k = 0; k < n; k++) game.step(held(i));
+      };
+      // Walk to the Brass Monkey cabinet and put in a token.
+      step(31, { up: true });
+      step(24, { left: true });
+      game.step(held({ up: true, space: true }));
+      expect(game.snapshot()).toMatchObject({ software: "brassMonkey" });
+      // Jump on the spot, over and over, until the last life is gone.
+      for (let n = 0; n < 2000 && game.snapshot().menu !== "payout"; n++) {
+        step(1, { space: true });
+        step(33);
       }
+      const { payout } = game.snapshot();
+      expect(payout?.score).toBeGreaterThan(0);
+      expect(payout?.total).toBe(ticketsFor(payout?.score ?? 0, false));
+    } finally {
+      game.dispose();
     }
-    expect(columns).toEqual([0, 1, 0, 2, 0]);
-  });
-
-  test("facing left draws flipped", () => {
-    const g = createBrassMonkey();
-    g.update(held({ left: true }));
-    const monkey = drawCalls(g)[3];
-    expect(monkey?.opts?.flipX).toBe(true);
-    expect(monkey?.x).toBe(15 + 56 - 8);
   });
 });

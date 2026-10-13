@@ -1,0 +1,191 @@
+// Firefly as a Galaga-style game (#34) in a real browser (`bun run verify firefly`).
+// Part 1 starts a paid run from the hub through the `?debug` test hook and
+// plays it with a simple bot (Space held, dodging, steering under the nearest
+// enemy once the first formation is complete) until the payout: the STAGE 1 text, the enemies flying in to the formation,
+// a dive dropping shots, an Owl hurt by its first spark and killed by its
+// second, a lost life, the next stage, and game over opening the payout,
+// which pays the score in tickets. Part 2 writes the new sprite sheets (the
+// hurt Owl and the enemy shot) scaled up. Part 3 records Firefly played with
+// the keyboard. Files go to out/verify/firefly/.
+
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { PNG } from "pngjs";
+import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
+import type { Input } from "../../src/engine/input.ts";
+import { ticketsFor } from "../../src/game/payout.ts";
+import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
+import { evalJson, isStringArray, isTitleSnapshot, upscale, verify, type Verify } from "../harness.ts";
+
+let checks = 0;
+
+function check(ok: boolean, what: string, got?: unknown): void {
+  checks++;
+  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
+  console.log(`  ok  ${what}`);
+}
+
+/** The Game inside the title scene. */
+function game(v: Verify): GameSnapshot {
+  const g = v.snapshot(isTitleSnapshot).game;
+  if (g === null) throw new Error("no game running");
+  return g;
+}
+
+function firefly(g: GameSnapshot): FireflySnapshot | null {
+  return g.software === "firefly" && g.sw !== null && "stageTick" in g.sw ? g.sw : null;
+}
+
+/** The bot: Space held, dodging shots and divers close above, else steering under the nearest enemy. */
+function botInput(s: FireflySnapshot): Partial<Input> {
+  const px = s.player.x;
+  const threat = [
+    ...s.shots.filter((x) => x.y > s.player.y - 60),
+    ...s.enemies.filter((e) => e.state === "diving" && e.deadFrames === 0 && e.y > s.player.y - 70),
+  ].find((x) => Math.abs(x.x - px) < 14);
+  if (threat !== undefined) return threat.x > px ? { space: true, left: true } : { space: true, right: true };
+  const targets = s.enemies.filter((e) => e.deadFrames === 0 && e.state !== "waiting" && e.y < 230);
+  const target = targets.toSorted((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px))[0];
+  if (target === undefined || Math.abs(target.x - px) <= 2) return { space: true };
+  return target.x > px ? { space: true, right: true } : { space: true, left: true };
+}
+
+function playToPayout(v: Verify): void {
+  console.log("a paid run, from the hub to the payout:");
+  v.openHook();
+  v.page.eval("localStorage.clear()");
+  v.openHook();
+  v.page.eval(`window.__arcade.seed(10); "ok"`);
+  v.tap("space"); // New game -> intro
+  v.tap("space"); // intro -> hub
+  v.step(31, { up: true });
+  v.step(24, { right: true });
+  v.step(1, { up: true, space: true });
+  let g = game(v);
+  check(g.software === "firefly" && g.run === "paid", "Space at the Firefly cabinet starts a paid run", g.run);
+
+  const seen = new Set<string>();
+  const shoot = (name: string, what: string): void => {
+    if (seen.has(name)) return;
+    seen.add(name);
+    check(true, what);
+    v.frame(name, 2);
+  };
+  let hurtOwl: { row: number; col: number } | null = null;
+  let lastScore = 0;
+  let lives = 3;
+
+  for (let t = 0; t < 30_000; t++) {
+    g = game(v);
+    if (g.menu === "payout") break;
+    const s = firefly(g);
+    if (s === null) throw new Error(`left Firefly without a payout: ${g.software}`);
+    lastScore = s.score;
+
+    if (s.stage === 1 && s.stageTick === 40) shoot("1-stage-1", "STAGE 1 shows while the enemies wait");
+    if (
+      s.enemies.length === 40 &&
+      s.enemies.filter((e) => e.state === "formation").length >= 36 &&
+      s.enemies.every((e) => e.state === "formation" || e.state === "joining")
+    )
+      shoot("2-formation", `all 40 enemies flew in to the formation (stage ${s.stage})`);
+    if (s.shots.length > 0 && s.enemies.some((e) => e.state === "diving"))
+      shoot("3-dive-shots", "a diving enemy drops shots at the firefly");
+    const hurt = s.enemies.find((e) => e.kind === "owl" && e.hp === 1 && e.deadFrames === 0);
+    if (hurt !== undefined && hurtOwl === null) {
+      hurtOwl = { row: hurt.row, col: hurt.col };
+      shoot("4-owl-hurt", "an Owl's first spark leaves it hurt (blue), not dead");
+    }
+    if (hurtOwl !== null && !seen.has("5-owl-killed")) {
+      const { row, col } = hurtOwl;
+      const owl = s.enemies.find((e) => e.row === row && e.col === col);
+      if (owl === undefined || owl.deadFrames > 0) shoot("5-owl-killed", "its second spark kills the hurt Owl");
+    }
+    if (s.lives < lives) {
+      lives = s.lives;
+      if (s.lives === 2) {
+        v.step(20);
+        shoot("6-life-lost", "an enemy or a shot costs a life: the firefly bursts");
+        continue;
+      }
+    }
+    if (s.stage === 2 && s.stageTick === 40) shoot("7-stage-2", "the next stage starts when every enemy is dead");
+    if (s.over) shoot("8-game-over", "the last life ends the run");
+
+    // Hold fire until the first formation is complete; after stage 2 opens,
+    // stop shooting so the run ends.
+    const idle = (s.stage === 1 && !seen.has("2-formation")) || (s.stage >= 2 && s.stageTick > 200);
+    v.step(2, idle ? {} : botInput(s));
+  }
+
+  g = game(v);
+  for (const name of [
+    "1-stage-1",
+    "2-formation",
+    "3-dive-shots",
+    "4-owl-hurt",
+    "5-owl-killed",
+    "6-life-lost",
+    "7-stage-2",
+  ])
+    check(seen.has(name), `saw ${name}`);
+  check(g.menu === "payout", "game over opens the payout", g.menu);
+  check(
+    g.payout?.score === lastScore && g.payout.total === ticketsFor(lastScore, false) && lastScore > 0,
+    `the payout turns the score (${lastScore}) into ${ticketsFor(lastScore, false)} tickets`,
+    g.payout,
+  );
+  v.frame("9-payout", 2);
+  v.tap("space");
+  v.step(1);
+  v.frame("10-payout-counted", 2);
+}
+
+function sheets(v: Verify): void {
+  console.log("new sprite sheets:");
+  for (const { file, render } of fireflyArtFiles.filter((f) =>
+    ["owl.png", "owl-hurt.png", "shot.png"].includes(f.file),
+  )) {
+    const png = PNG.sync.write(render());
+    writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, 8));
+    check(Buffer.compare(readFileSync(join(fireflyImagesDir, file)), png) === 0, `${file} is the committed file (8x)`);
+  }
+}
+
+function video(v: Verify): void {
+  console.log("video:");
+  v.record(
+    "playing",
+    () => {
+      v.page.eval(`window.__arcade.load("game", { software: "firefly" }); "ok"`);
+      v.wait(2500);
+      v.hold("Space", () => {
+        for (let i = 0; i < 4; i++) {
+          v.key("ArrowLeft", 900);
+          v.wait(1200);
+          v.key("ArrowRight", 1800);
+          v.wait(1200);
+          v.key("ArrowLeft", 900);
+          v.wait(1500);
+        }
+      });
+      v.wait(1000);
+    },
+    { scene: "game" },
+  );
+  const sounds = evalJson(v.page, "JSON.stringify(window.__arcade.sounds())", isStringArray);
+  check(
+    ["play:stage", "play:spark", "play:hit"].every((e) => sounds.includes(e)),
+    "the recording played Firefly: the stage fanfare, sparks and hits",
+    sounds.filter((e) => e.startsWith("play:")),
+  );
+  v.screenshot("playing-screenshot");
+}
+
+await verify("firefly", (v) => {
+  playToPayout(v);
+  sheets(v);
+  video(v);
+  v.assertNoErrors();
+  console.log(`\n${checks} checks passed.`);
+});

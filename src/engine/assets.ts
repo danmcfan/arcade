@@ -37,6 +37,8 @@ import sparkUrl from "../assets/images/firefly/spark.png";
 import mothUrl from "../assets/images/firefly/moth.png";
 import waspUrl from "../assets/images/firefly/wasp.png";
 import owlUrl from "../assets/images/firefly/owl.png";
+import owlHurtUrl from "../assets/images/firefly/owl-hurt.png";
+import shotUrl from "../assets/images/firefly/shot.png";
 import hitUrl from "../assets/images/firefly/hit.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import monkeyUrl from "../assets/images/brass-monkey/monkey.png";
@@ -50,6 +52,7 @@ import conveyorUrl from "../assets/images/brass-monkey/conveyor.png";
 import doorUrl from "../assets/images/brass-monkey/door.png";
 import wallUrl from "../assets/images/brass-monkey/wall.png";
 import girderFloorUrl from "../assets/images/brass-monkey/girder-floor.png";
+import conveyorFloorUrl from "../assets/images/brass-monkey/conveyor-floor.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -78,13 +81,21 @@ import sweetBeeUrl from "../assets/sounds/sweet-sam-bee.wav";
 import sweetFlowerUrl from "../assets/sounds/sweet-sam-flower.wav";
 import sweetDeathUrl from "../assets/sounds/sweet-sam-death.wav";
 import sweetClearUrl from "../assets/sounds/sweet-sam-clear.wav";
-import laserUrl from "../assets/sounds/laser.wav";
-import boomUrl from "../assets/sounds/boom.wav";
+import sparkSoundUrl from "../assets/sounds/spark.wav";
+import hitSoundUrl from "../assets/sounds/hit.wav";
+import lifeLostUrl from "../assets/sounds/life-lost.wav";
+import stageUrl from "../assets/sounds/stage.wav";
 import titleMusicUrl from "../assets/sounds/title.wav";
 import moveUrl from "../assets/sounds/move.wav";
 import selectUrl from "../assets/sounds/select.wav";
 import ticketUrl from "../assets/sounds/ticket.wav";
 import denyUrl from "../assets/sounds/deny.wav";
+import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
+import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
+import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
+import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
+import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
+import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
 
 function asset(url: string, width: number, height: number): ImageAsset {
   return { url, width, height, image: null };
@@ -181,6 +192,8 @@ export const fireflyImages = {
   moth: asset(mothUrl, 96, 64),
   wasp: asset(waspUrl, 96, 64),
   owl: asset(owlUrl, 192, 128),
+  owlHurt: asset(owlHurtUrl, 192, 128),
+  shot: asset(shotUrl, 4, 8),
   hit: asset(hitUrl, 160, 32),
   background: asset(fireflyBackgroundUrl, 224, 288),
 } as const;
@@ -189,18 +202,19 @@ export const fireflyImages = {
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
-/** @public Firefly art not drawn yet; kept with its siblings. */
 export const imageWasp: Sprite = whole(fireflyImages.wasp);
-/** @public Firefly art not drawn yet; kept with its siblings. */
 export const imageOwl: Sprite = whole(fireflyImages.owl);
+/** The Owl after its first hit. */
+export const imageOwlHurt: Sprite = whole(fireflyImages.owlHurt);
+/** An enemy shot. */
+export const imageShot: Sprite = whole(fireflyImages.shot);
 export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
 
 /**
  * Brass Monkey's characters, items and floors (src/assets/images/brass-monkey/),
  * generated from src/brass-monkey/art.ts and floors.ts by `bun run art`. The
- * game draws the girder floor, the monkey and the Gnome; the gear, the ember,
- * the bolt and the floor tiles are drawn from #39.
+ * game draws all of them (#39).
  */
 export const brassMonkeyImages = {
   monkey: asset(monkeyUrl, 96, 16),
@@ -220,6 +234,8 @@ export const brassMonkeyImages = {
   wall: asset(wallUrl, 32, 32),
   /** The girder floor: the wall, girders, ladders and exit door, laid out by src/brass-monkey/floors.ts. */
   girderFloor: asset(girderFloorUrl, 224, 256),
+  /** The conveyor floor, its conveyors in their first frame. */
+  conveyorFloor: asset(conveyorFloorUrl, 224, 256),
 } as const;
 
 /** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */
@@ -227,6 +243,17 @@ export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 /** The Gnome's sheet: idle, throw, each 32×32. */
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
+export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
+/** Two turns, each 12×12. */
+export const imageGear: Sprite = whole(brassMonkeyImages.gear);
+/** Two flickers and their mirrors, each 12×12. */
+export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
+/** At rest, then three glint frames, each 10×14. */
+export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
+/** The left end, middle and right end, 4 frames each, 8×8. */
+export const imageConveyor: Sprite = whole(brassMonkeyImages.conveyor);
+export const imageDoor: Sprite = whole(brassMonkeyImages.door);
+export const imageWall: Sprite = whole(brassMonkeyImages.wall);
 
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
@@ -269,9 +296,9 @@ export const allImages: readonly ImageAsset[] = [
 
 /**
  * The hub's song, screen sound and the cabinets' attract loops, the
- * minigame sounds (Sweet Sam's, then Firefly's from the Go game), then the
- * title scene's music and menu and payout sounds. All but Firefly's are
- * generated by scripts/gen-ui-sounds.ts. The songs and attract loops loop; the hub's play
+ * minigame sounds (Sweet Sam's, then Firefly's), then the title scene's music
+ * and menu and payout sounds, then Brass Monkey's. All are generated by
+ * scripts/gen-ui-sounds.ts. The songs and attract loops loop; the hub's play
  * quietly, under everything else.
  */
 export const sounds = {
@@ -288,13 +315,31 @@ export const sounds = {
   sweetFlower: new Sound("sweetFlower", sweetFlowerUrl, false),
   sweetDeath: new Sound("sweetDeath", sweetDeathUrl, false),
   sweetClear: new Sound("sweetClear", sweetClearUrl, false),
-  laser: new Sound("laser", laserUrl, false),
-  boom: new Sound("boom", boomUrl, false),
+  spark: new Sound("spark", sparkSoundUrl, false),
+  hit: new Sound("hit", hitSoundUrl, false),
+  lifeLost: new Sound("lifeLost", lifeLostUrl, false),
+  stage: new Sound("stage", stageUrl, false),
   title: new Sound("title", titleMusicUrl, true),
   move: new Sound("move", moveUrl, false),
   select: new Sound("select", selectUrl, false),
   ticket: new Sound("ticket", ticketUrl, false),
   deny: new Sound("deny", denyUrl, false),
+  monkeyJump: new Sound("monkeyJump", monkeyJumpUrl, false),
+  monkeyBolt: new Sound("monkeyBolt", monkeyBoltUrl, false),
+  monkeyHazard: new Sound("monkeyHazard", monkeyHazardUrl, false),
+  monkeyDeath: new Sound("monkeyDeath", monkeyDeathUrl, false),
+  monkeyFloor: new Sound("monkeyFloor", monkeyFloorUrl, false),
+  monkeyEscape: new Sound("monkeyEscape", monkeyEscapeUrl, false),
+} as const;
+
+/** Brass Monkey's sound effects (generated by scripts/gen-ui-sounds.ts), by the run's name for each. */
+export const brassMonkeySounds = {
+  jump: sounds.monkeyJump,
+  bolt: sounds.monkeyBolt,
+  hazard: sounds.monkeyHazard,
+  death: sounds.monkeyDeath,
+  floor: sounds.monkeyFloor,
+  escape: sounds.monkeyEscape,
 } as const;
 
 export const soundHub: Sound = sounds.hub;
@@ -310,8 +355,10 @@ export const sweetSamSounds = {
   death: sounds.sweetDeath,
   clear: sounds.sweetClear,
 } as const;
-export const soundLaser: Sound = sounds.laser;
-export const soundBoom: Sound = sounds.boom;
+export const soundSpark: Sound = sounds.spark;
+export const soundHit: Sound = sounds.hit;
+export const soundLifeLost: Sound = sounds.lifeLost;
+export const soundStage: Sound = sounds.stage;
 export const soundTitleMusic: Sound = sounds.title;
 export const soundMove: Sound = sounds.move;
 export const soundSelect: Sound = sounds.select;

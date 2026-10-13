@@ -1,0 +1,102 @@
+// Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
+// effects), enemy shots, sparks, the firefly (or its death effect), the
+// score and spare lives, and "STAGE n" while a stage opens.
+
+import {
+  imageCabinetFirefly,
+  imageFirefly,
+  imageFireflyBackground,
+  imageHit,
+  imageMoth,
+  imageOwl,
+  imageOwlHurt,
+  imageShot,
+  imageSpark,
+  imageWasp,
+} from "../engine/assets.ts";
+import { sub, type Sprite } from "../engine/image.ts";
+import type { Surface } from "../engine/surface.ts";
+import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
+import { drawText, drawTextCentered } from "../ui/text.ts";
+import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
+import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
+
+const ox = cabinetInsetLeft;
+const oy = cabinetInsetTop;
+
+/** Each enemy kind's rotation sheet and frame size. */
+const enemySheets: Readonly<Record<EnemyKind, { sheet: Sprite; size: number }>> = {
+  moth: { sheet: imageMoth, size: 16 },
+  wasp: { sheet: imageWasp, size: 16 },
+  owl: { sheet: imageOwl, size: 32 },
+};
+
+/** Frames of the hit effect, each `hitFrameTicks` long. */
+const hitFrameTicks = 15;
+const hitFrameSize = 32;
+
+/** The hit effect frame for `deadFrames` ticks left, centred on (x, y); nothing once it has played. */
+function drawHit(screen: Surface, deadFrames: number, x: number, y: number): void {
+  const col = Math.trunc((hitEffectTicks - deadFrames) / hitFrameTicks);
+  if (col >= 5) return;
+  const frame = sub(imageHit, col * hitFrameSize, 0, (col + 1) * hitFrameSize, hitFrameSize);
+  screen.draw(frame, ox + x - hitFrameSize / 2, oy + y - hitFrameSize / 2);
+}
+
+function drawEnemy(screen: Surface, e: Enemy): void {
+  if (e.state === "waiting") return;
+  if (e.deadFrames > 0) {
+    drawHit(screen, e.deadFrames, e.x, e.y);
+    return;
+  }
+  const { sheet, size } = enemySheets[e.kind];
+  const image = e.kind === "owl" && e.hp === 1 ? imageOwlHurt : sheet;
+  const [row, col] = frameAngle(angle({ x: e.dx, y: e.dy }));
+  const frame = sub(image, col * size, row * size, (col + 1) * size, (row + 1) * size);
+  screen.draw(frame, ox + e.x - size / 2, oy + e.y - size / 2);
+}
+
+/** Spare lives: fireflies along the top right, clear of the firefly in play. */
+function drawLives(screen: Surface, spare: number): void {
+  for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + fieldWidth - 18 * (i + 1), oy + 2);
+}
+
+/** What drawing needs of the game (`FireflySoftware`). */
+export interface FireflyView {
+  cabinetJoystickFrame: number;
+  stage: number;
+  stageTick: number;
+  lives: number;
+  player: Vec;
+  respawn: number;
+  sparks: readonly Spark[];
+  enemies: readonly Enemy[];
+  shots: readonly Shot[];
+  score(): number;
+}
+
+export function drawFirefly(screen: Surface, f: FireflyView): void {
+  drawCabinet(screen, f.cabinetJoystickFrame, imageCabinetFirefly);
+  screen.draw(imageFireflyBackground, ox, oy);
+
+  for (const e of f.enemies) drawEnemy(screen, e);
+  for (const s of f.shots) screen.draw(imageShot, ox + s.x - 2, oy + s.y - 4);
+  for (const s of f.sparks) screen.draw(imageSpark, ox + s.x - 4, oy + s.y - 4);
+
+  if (f.respawn === 0) {
+    screen.draw(imageFirefly, ox + f.player.x - 8, oy + f.player.y - 8);
+  } else {
+    // The firefly bursts like a hit enemy, over the first part of the pause.
+    drawHit(screen, Math.max(0, hitEffectTicks - (respawnTicks - f.respawn)), f.player.x, f.player.y);
+  }
+
+  drawText(screen, `${f.score()}`, ox + 4, oy + 4);
+  drawLives(screen, Math.max(0, f.lives - 1));
+
+  if (f.stageTick <= stageIntroTicks) {
+    drawTextCentered(screen, `STAGE ${f.stage}`, ox + fieldWidth / 2, oy + 150, "yellow");
+  }
+  if (f.lives === 0) {
+    drawTextCentered(screen, "GAME OVER", ox + fieldWidth / 2, oy + 150, "orange");
+  }
+}

@@ -1,4 +1,4 @@
-// Parity: the firefly minigame against the Go trace.
+// Parity: Firefly against its trace, recorded from the TypeScript game (#34).
 import { parityTest } from "./harness.ts";
 
-parityTest("firefly-play");
+parityTest("firefly-stages");

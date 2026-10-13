@@ -259,39 +259,67 @@ export interface SweetSamSnapshot {
 // ---------------------------------------------------------------------------
 // firefly (internal/firefly)
 
-export interface FireflyBulletSnapshot {
-  /** `entity.Position.x`. */
+/** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
+export type FireflyEnemyKind = "moth" | "wasp" | "owl";
+
+/**
+ * Where an enemy is in its life: waiting to fly in, on its entry curve,
+ * flying straight to its slot, in the formation, or diving at the firefly.
+ */
+export type FireflyEnemyState = "waiting" | "entering" | "joining" | "formation" | "diving";
+
+export interface FireflyEnemySnapshot {
+  kind: FireflyEnemyKind;
+  /** Its formation slot: row (0 at the top) and column. */
+  row: number;
+  col: number;
+  state: FireflyEnemyState;
   x: number;
-  /** `entity.Position.y`. */
   y: number;
+  /** Its last move, which the sprite faces. */
+  dx: number;
+  dy: number;
+  /** Spark hits it can still take (an Owl at 1 is hurt). */
+  hp: number;
+  /** Ticks left of its hit effect once killed, else 0. */
+  deadFrames: number;
+  /** It dove and is not back in the formation yet: a kill scores the diving points. */
+  outOfFormation: boolean;
 }
 
-export interface FireflyBugSnapshot {
-  /** Which bezier the bug follows: "L" = `leftBezierConfig`, "R" = `rightBezierConfig`. */
-  pattern: "L" | "R";
-  /** `entity.Position.x`. */
+export interface FireflyShotSnapshot {
   x: number;
-  /** `entity.Position.y`. */
   y: number;
-  /** `entity.Direction.x`. */
   dx: number;
-  /** `entity.Direction.y`. */
   dy: number;
-  /** `entity.Duration` (float64; negative until spawned). */
-  duration: number;
-  /** `entity.DeadFrames`. */
-  deadFrames: number;
 }
 
 export interface FireflySnapshot {
-  /** `FireFlySoftware.player.Position`. */
+  /** The stage being played (1 is the first). */
+  stage: number;
+  /** Ticks since the stage started; "STAGE n" shows for the first `stageIntroTicks`. */
+  stageTick: number;
+  /** Lives left, the firefly in play included. */
+  lives: number;
+  score: number;
+  /** The run is over: `gameOver()`. */
+  over: boolean;
+  /** The firefly's centre. */
   player: { x: number; y: number };
-  /** `FireFlySoftware.fireDelay`. */
+  /** Ticks until the firefly comes back (or the run ends) after losing a life; 0 while it is in play. */
+  respawn: number;
+  /** Ticks until the firefly can shoot again. */
   fireDelay: number;
-  /** `FireFlySoftware.bullets` in slice order. */
-  bullets: FireflyBulletSnapshot[];
-  /** `FireFlySoftware.bugs` in slice order. */
-  bugs: FireflyBugSnapshot[];
+  /** Sparks in flight: their centres. */
+  sparks: { x: number; y: number }[];
+  /** Every enemy of the stage still alive or showing its hit effect, in formation order. */
+  enemies: FireflyEnemySnapshot[];
+  /** Enemy shots in flight: centre and velocity. */
+  shots: FireflyShotSnapshot[];
+  /** Ticks until the next dive may start. */
+  diveTimer: number;
+  /** The formation's x offset this tick. */
+  sway: number;
   /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }
@@ -299,18 +327,41 @@ export interface FireflySnapshot {
 // ---------------------------------------------------------------------------
 // brassMonkey (the Go port's Brass Monkey package)
 
-export interface BrassMonkeySnapshot {
-  /** `player.Position.X`. */
+/** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
+export interface BrassMonkeyHazardSnapshot {
+  kind: "gear" | "ember";
   x: number;
-  /** `player.Position.Y`. */
   y: number;
-  /** `player.Frame` (float64). */
+  dir: -1 | 1;
+  footing: "ground" | "air" | "climb";
+}
+
+/** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
+export interface BrassMonkeySnapshot {
+  phase: "play" | "dying" | "clear" | "escape" | "over";
+  phaseTicks: number;
+  /** 0 the girder floor, 1 the conveyor floor. */
+  floor: number;
+  /** Escapes so far: each loop is harder. */
+  loop: number;
+  lives: number;
+  score: number;
+  highScore: number;
+  bonus: number;
+  x: number;
+  y: number;
+  footing: "ground" | "air" | "climb";
+  vy: number;
+  /** The walk cycle (0 up to 4), or the climb (0 up to 2). */
   frame: number;
-  /** `player.Left`. */
   left: boolean;
-  /** `player.Moving`. */
   moving: boolean;
-  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
+  hazards: BrassMonkeyHazardSnapshot[];
+  /** Whether each of the floor's bolts has been collected. */
+  bolts: boolean[];
+  gearTimer: number;
+  emberTimer: number;
+  /** The cabinet's joystick frame (like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }
 

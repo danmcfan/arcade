@@ -25,7 +25,7 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, glint, outline, toRows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, toRows, type Rows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
@@ -36,6 +36,7 @@ import {
   emberFrames,
   gearFrames,
   girderFloorRows,
+  conveyorFloorRows,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
@@ -156,6 +157,23 @@ describe("generated frames", () => {
     expect(rows[248]?.slice(0, 112)).toBe("o".repeat(112));
     expect(rows[249]?.slice(0, 112)).toBe("r".repeat(112));
     expect(rows[247]?.slice(0, 112)).not.toContain("o");
+  });
+
+  test("the conveyor floor is 224×256 with each conveyor drawn from the conveyor's first frames: rounded ends, slats between", () => {
+    const rows = conveyorFloorRows();
+    checkRows("conveyor floor", rows, { w: 224, h: 256 });
+    const [left = [], , , , middle = [], , , , right = []] = conveyorFrames();
+    // The tile's drawn pixels, the wall where it is blank.
+    const onWall = (tile: Rows, x: number): string[] =>
+      tile.map((row, dy) => Array.from(row, (c, dx) => (c === empty ? (rows[128 + dy]?.[x + dx] ?? "") : c)).join(""));
+    // The top conveyor runs x 16-223 at y 128.
+    const at = (x: number): string[] => rows.slice(128, 136).map((r) => r.slice(x, x + 8));
+    expect(at(16)).toEqual(onWall(left, 16));
+    expect(at(104)).toEqual(onWall(middle, 104));
+    expect(at(216)).toEqual(onWall(right, 216));
+    expect(at(16)[0]?.[0]).not.toBe("o");
+    // A plain girder is not a conveyor.
+    expect(rows[248]?.slice(0, 224)).toBe("o".repeat(224));
   });
 
   test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {
