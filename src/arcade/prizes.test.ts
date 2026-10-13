@@ -12,36 +12,46 @@ import {
   prizes,
   runningShoesPrice,
   sleepyBeesPrice,
+  lanternPrice,
+  glowStickPrice,
+  wingsPrice,
 } from "./prizes.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
 
 describe("prize catalogue", () => {
-  test("three Sweet Sam prizes: honey jar 25, running shoes 50, sleepy bees 100 tickets", () => {
+  test("three Sweet Sam prizes then three Firefly prizes, each 25, 50 and 100 tickets", () => {
     expect(prizes.map((p) => [p.id, p.name, p.price, p.software])).toEqual([
       ["honeyJar", "HONEY JAR", 25, "sweetSam"],
       ["runningShoes", "RUNNING SHOES", 50, "sweetSam"],
       ["sleepyBees", "SLEEPY BEES", 100, "sweetSam"],
+      ["lantern", "LANTERN", 25, "firefly"],
+      ["glowStick", "GLOW STICK", 50, "firefly"],
+      ["wings", "WINGS", 100, "firefly"],
     ]);
     expect([honeyJarPrice, runningShoesPrice, sleepyBeesPrice]).toEqual([25, 50, 100]);
+    expect([lanternPrice, glowStickPrice, wingsPrice]).toEqual([25, 50, 100]);
   });
 
-  test("each decoration is the size of its art and sits beside the Sweet Sam cabinet, clear of the cabinets and the counter", () => {
+  const cabinetOf = { sweetSam: "sweet", firefly: "firefly", brassMonkey: "brassMonkey" } as const;
+
+  test("each decoration is the size of its art and sits beside its minigame's cabinet, clear of the other cabinets and the counter", () => {
     const machines = newMachines(() => fakeSoftware());
-    const sweet = defined(machines.find((m) => m.title === "sweet")).rect;
     for (const p of prizes) {
+      const own = cabinetOf[p.software];
+      const cabinet = defined(machines.find((m) => m.title === own)).rect;
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
-      // Within a cabinet's width of the Sweet Sam cabinet, nearer it than any other.
+      // Within a cabinet's width of its cabinet, nearer it than any other.
       const centre = r.x + r.w / 2;
       const dist = (m: { x: number; w: number }): number => Math.abs(m.x + m.w / 2 - centre);
       expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({
         id: p.id,
-        nearest: "sweet",
+        nearest: own,
       });
-      expect({ id: p.id, near: dist(sweet) <= 16 }).toEqual({ id: p.id, near: true });
+      expect({ id: p.id, near: dist(cabinet) <= 16 }).toEqual({ id: p.id, near: true });
       for (const m of machines) {
-        if (m.title === "sweet") continue;
+        if (m.title === own) continue;
         expect({ id: p.id, over: m.title, hit: checkCollision(r, m.rect) }).toEqual({
           id: p.id,
           over: m.title,
@@ -70,6 +80,7 @@ describe("prize catalogue", () => {
 
   test("owned prizes are kept once each, in catalogue order", () => {
     expect(inCatalogueOrder(["sleepyBees", "honeyJar", "sleepyBees"])).toEqual(["honeyJar", "sleepyBees"]);
+    expect(inCatalogueOrder(["wings", "honeyJar", "lantern", "wings"])).toEqual(["honeyJar", "lantern", "wings"]);
   });
 });
 
@@ -98,6 +109,13 @@ describe("buyPrize", () => {
   });
 
   test("prizeOffers lists every prize's offer in catalogue order", () => {
-    expect(prizeOffers({ tickets: 60, prizes: ["honeyJar"] })).toEqual(["owned", "buy", "short"]);
+    expect(prizeOffers({ tickets: 60, prizes: ["honeyJar", "glowStick"] })).toEqual([
+      "owned",
+      "buy",
+      "short",
+      "buy",
+      "owned",
+      "short",
+    ]);
   });
 });

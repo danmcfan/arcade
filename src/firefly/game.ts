@@ -3,6 +3,7 @@
 // dive at the firefly, dropping shots. Headless and on ticks (ADR 0002, ADR
 // 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
+import { noAdvantages, type FireflyAdvantages } from "./advantages.ts";
 import { soundHit, soundLifeLost, soundSpark, soundStage } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
 import type { Input } from "../engine/input.ts";
@@ -30,8 +31,6 @@ import {
   firstShotDelay,
   formation,
   hitEffectTicks,
-  maxSparks,
-  playerSpeed,
   points,
   respawnTicks,
   shotMaxDrift,
@@ -40,7 +39,6 @@ import {
   sparkCooldown,
   sparkSpeed,
   stageIntroTicks,
-  startLives,
   swayOffset,
 } from "./rules.ts";
 
@@ -129,12 +127,20 @@ function play(s: Sound): void {
 export class FireflySoftware implements FixedViewport {
   readonly name = "firefly" as const;
 
+  /** What the player's prizes change in this run (./advantages.ts). */
+  readonly advantages: Readonly<FireflyAdvantages>;
+
+  constructor(advantages: Readonly<FireflyAdvantages> = noAdvantages) {
+    this.advantages = advantages;
+    this.lives = advantages.lives;
+  }
+
   /** The bezel's joystick frame for the last input (no gameplay effect). */
   cabinetJoystickFrame = 0;
 
   stage = 1;
   stageTick = 0;
-  lives = startLives;
+  lives: number;
   points = 0;
   over = false;
   player: Vec = { ...playerStart };
@@ -173,11 +179,11 @@ export class FireflySoftware implements FixedViewport {
   }
 
   private movePlayer(i: Input): void {
-    if (i.left && !i.right) this.player.x -= playerSpeed;
-    if (i.right && !i.left) this.player.x += playerSpeed;
+    if (i.left && !i.right) this.player.x -= this.advantages.playerSpeed;
+    if (i.right && !i.left) this.player.x += this.advantages.playerSpeed;
     this.player.x = Math.max(playerHalfWidth, Math.min(fieldWidth - playerHalfWidth, this.player.x));
 
-    if (i.space && this.fireDelay === 0 && this.sparks.length < maxSparks) {
+    if (i.space && this.fireDelay === 0 && this.sparks.length < this.advantages.maxSparks) {
       this.sparks.push({ x: this.player.x, y: this.player.y - 10 });
       this.fireDelay = sparkCooldown;
       play(soundSpark);
@@ -435,7 +441,7 @@ export class FireflySoftware implements FixedViewport {
   }
 }
 
-/** A new run. */
-export function newFireflySoftware(): FireflySoftware {
-  return new FireflySoftware();
+/** A new run, with the advantages of the player's prizes (none by default). */
+export function newFireflySoftware(advantages: Readonly<FireflyAdvantages> = noAdvantages): FireflySoftware {
+  return new FireflySoftware(advantages);
 }

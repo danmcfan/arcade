@@ -125,7 +125,7 @@ export const images = {
   logo: asset(logoUrl, 100, 17),
   icons: asset(iconsUrl, 23, 9),
   counter: asset(counterUrl, 40, 14),
-  prizes: asset(prizesUrl, 31, 11),
+  prizes: asset(prizesUrl, 57, 11),
 } as const;
 
 // Go `assets.ImageX` package variables, as whole-image sprites.

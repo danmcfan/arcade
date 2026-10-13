@@ -37,6 +37,33 @@ export const prizeArt = {
     "kooooooooook",
     "kkkkkkkkkkkk",
   ],
+  /** A brass storm lantern on a wall bracket, its flame lit: hangs on the wall right of the Firefly cabinet. */
+  lantern: [
+    "kk......",
+    "kmmmk...",
+    "kk..k...",
+    "...kk...",
+    "..k..k..",
+    ".kkkkkk.",
+    "kmyyyymk",
+    "kygwwgyk",
+    "kygwwgyk",
+    "kmyyyymk",
+    ".kkkkkk.",
+  ],
+  /** A cyan glow stick on a hook: hangs on the wall left of the Firefly cabinet. */
+  glowStick: [".k.", "k.k", ".k.", "kck", "kwk", "kck", "kck", "kck", "kck", ".k."],
+  /** A pair of firefly wings mounted bare: hangs on the wall above the Firefly cabinet. */
+  wings: [
+    ".kk......kk.",
+    "kcBk....kBck",
+    "kccBk..kBcck",
+    ".kccBkkBcck.",
+    "..kcckkcck..",
+    "...kkyykk...",
+    "....kyyk....",
+    ".....kk.....",
+  ],
 } as const satisfies Record<PrizeId, readonly string[]>;
 
 /** Gap between decorations in the sheet. */
