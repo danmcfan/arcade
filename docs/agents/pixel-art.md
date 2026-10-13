@@ -1,6 +1,15 @@
 # Pixel art
 
-Every image in the game is pixel art, and ADR 0006 has it generated from source in the repo; some PNGs are still hand-made. Read this before you draw, redraw or spec art: where the source lives, how to draw less of it, how to look at it, and the bar it has to clear.
+Every image in the game is pixel art, and ADR 0006 has it generated from source in the repo; some PNGs are still hand-made. Read this before you draw, redraw or spec art: how the owner steers it, where the source lives, how to draw less of it, how to look at it, and the bar it has to clear.
+
+## Steer it first
+
+Every art change, new or redrawn, starts with a **playground**: a local HTML page that draws the candidate art with a toggle for each choice. The owner steers the art direction there; the PR comes after.
+
+1. **Build it**: `scripts/prototype-<slug>.ts` inlines the rows (the current source, any imported originals, the new options) into `scripts/prototype-<slug>/viewer.html` and writes `out/prototype-<slug>/index.html`. The script sits at the top of `scripts/` so knip counts it as an entry. Open the page and publish it as an artifact so the owner can reach it anywhere. `prototype/46-sweet-sam-art` is a worked example.
+2. **One knob per decision**: a colour, a shape, a look, whether a piece exists at all. Tag each option with where it came from (original, current, new) and give presets for the art as it is and as proposed. Show the sprites animated in a small scene and as sheets at 4×, and a **Copy my picks** button that copies the knob values as one line.
+3. **Scope the knobs to the issue.** Anything beyond what the issue asks becomes an option, so the owner opts into it; the presets default to the issue's scope.
+4. **Iterate** on the owner's feedback until they paste back their picks. That paste is the brief: commit the playground to a `prototype/<issue>-<slug>` branch, draw the picks into the real source, and name the picks in the PR.
 
 ## Source
 
@@ -54,5 +63,5 @@ In the running game, the verify check shows the art (`docs/agents/visual-verific
 ## The bar
 
 - **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the verify check's screenshots, so the owner judges the change at a glance.
-- **Options for a new look.** When an issue leaves the look open (a redesign, a new character), draw two or three options as a prototype (`/prototype`) and build the one the owner picks.
-- **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and asks for options when the look is open. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.
+- **The owner's picks.** The art matches the picks pasted back from the playground (Steer it first), and nothing more.
+- **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the playground should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.
