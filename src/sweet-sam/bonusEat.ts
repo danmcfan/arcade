@@ -1,7 +1,9 @@
 // Port of the Go Sweet Sam minigame's bonus_eat.go (docs/port-notes.md gives its old Go name).
 
+import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
-import { drawTextCentered } from "../ui/text.ts";
+import { imagePoints } from "../engine/assets.ts";
+import { pointsFrameSize } from "./art.ts";
 import { tileSize } from "./entity.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -30,13 +32,11 @@ function clampFrameIdx(frameIdx: number): number {
   return frameIdx;
 }
 
-/** The points a popup shows: 200, 400, 800 or 1600. */
-export function bonusEatPoints(frameIdx: number): number {
-  return scaredBeeEatPoints[clampFrameIdx(frameIdx)] ?? 0;
+/** Go `image.Rect(x0, 0, x0+16, 16)` as `[x0, y0, x1, y1]`: the popup's frame of points.png. */
+export function bonusEatFrameRect(frameIdx: number): [number, number, number, number] {
+  const x0 = clampFrameIdx(frameIdx) * pointsFrameSize;
+  return [x0, 0, x0 + pointsFrameSize, pointsFrameSize];
 }
-
-/** How far above the bee the points' top row is: a tile's gap, then rows 4..10 of Go's 16 px popup. */
-const popupRise = tileSize + 12;
 
 export function spawnBonusEatIndicator(s: SweetSamSoftware, worldX: number, worldY: number, frameIdx: number): void {
   s.bonusEatPopups.push({
@@ -79,7 +79,9 @@ export function resetScaredEatAwardIfNobodyScared(s: SweetSamSoftware): void {
 
 export function drawBonusEatIndicators(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   for (const p of s.bonusEatPopups) {
-    // Centred on the bee, in the pixel font, where Go's popup sprite drew its digits.
-    drawTextCentered(screen, String(bonusEatPoints(p.frameIdx)), p.x + bufX, p.y + bufY - popupRise);
+    const [x0, y0, x1, y1] = bonusEatFrameRect(p.frameIdx);
+    const frame = sub(imagePoints, x0, y0, x1, y1);
+    // Centred on the bee; one tile gap above the bee, the frame flush above that gap.
+    screen.draw(frame, p.x + bufX - pointsFrameSize / 2, p.y + bufY - tileSize - pointsFrameSize);
   }
 }

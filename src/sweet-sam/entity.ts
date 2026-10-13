@@ -4,7 +4,7 @@ import { opposite, type Axis, type Direction } from "../engine/input.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { PremulColor } from "../engine/surface.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
-import { imageBear, imageBees, imageHoneyDrop, imageSmokePot } from "../engine/assets.ts";
+import { imageBear, imageBees, imageHoneyDrop, imageHoneyPot } from "../engine/assets.ts";
 import { beeOrder, itemCellHeight, itemCellWidth } from "./art.ts";
 
 export const tileSize = 8;
@@ -96,7 +96,7 @@ export class Entity {
   kind: SweetSamEnemyKind | null = null;
   /** Debug drawing only. */
   color: PremulColor | null = null;
-  /** Go `e.Sprite == assets.ImageFood`: a honey drop or a smoke pot. */
+  /** Go `e.Sprite == assets.ImageFood`: a honey drop or a honey pot. */
   isFood = false;
 
   frame = 0;
@@ -126,7 +126,7 @@ export class Entity {
   /** Hidden skips drawing only; gameplay states own when this is toggled. */
   hidden = false;
 
-  /** A smoke pot rather than a honey drop. */
+  /** A honey pot rather than a honey drop. */
   powerPellet = false;
 
   target: Tile = { x: 0, y: 0 };
@@ -296,7 +296,7 @@ function newPellet(tx: number, ty: number): Entity {
 
 function newPower(tx: number, ty: number): Entity {
   const e = newPellet(tx, ty);
-  e.sprite = imageSmokePot;
+  e.sprite = imageHoneyPot;
   e.powerPellet = true;
   return e;
 }

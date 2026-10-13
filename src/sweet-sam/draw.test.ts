@@ -4,7 +4,6 @@ import type { Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { particleColorCyan } from "./particle.ts";
-import { textWidth } from "../ui/text.ts";
 
 type Op = [string, ...unknown[]];
 
@@ -55,42 +54,13 @@ function name(o: Op | undefined): string {
   return `${o?.[0]}:${String(o?.[1])}`;
 }
 
-/** Glyph draws from the pixel font: their x and y, one per letter. */
-function glyphs(ops: Op[]): [unknown, unknown][] {
-  return ops.filter((o) => name(o) === "draw:font.png").map((o) => [o[6], o[7]]);
-}
-
-/** Where `drawText` puts each letter of `text` drawn from x. */
-function letterXs(text: string, x: number): number[] {
-  const xs: number[] = [];
-  let at = x;
-  for (const ch of text) {
-    xs.push(at);
-    at += textWidth(ch) + 1;
-  }
-  return xs;
-}
-
-/** The x `drawTextCentered` starts `text` at, centred on maze x `cx` (the maze is drawn at 56). */
-function centred(text: string, cx: number): number {
-  return cx + 56 - Math.trunc(textWidth(text) / 2);
-}
-
 describe("SweetSamSoftware.draw", () => {
-  test("fresh game: cabinet, maze, labels, score dials, lives, READY, food, bees (player hidden)", () => {
+  test("fresh game: cabinet, maze (labels baked in), score dials, lives, READY, food, bees (player hidden)", () => {
     const s = new SweetSamSoftware(0);
     const ops = render(s);
     expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 336, 428, 0, 0]);
     expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 56, 56]);
-    // "1UP" and "HIGH SCORE" in the pixel font, centred on x 37 and 112 of the maze, on its top row.
-    const labels = ops.slice(2, 2 + "1UPHIGH SCORE".length);
-    expect(glyphs(labels)).toEqual(
-      [...letterXs("1UP", centred("1UP", 37)), ...letterXs("HIGH SCORE", centred("HIGH SCORE", 112))].map((x) => [
-        x,
-        56,
-      ]),
-    );
-    const rest = ops.slice(2 + labels.length);
+    const rest = ops.slice(2);
     // Only the last two digits of a zero score draw; one 8×8 scratch cell is reused.
     expect(rest.slice(0, 4)).toEqual([
       ["drawSurface", "cell0", 96, 64],
@@ -105,17 +75,16 @@ describe("SweetSamSoftware.draw", () => {
       ["draw", "bear.png", 0, 0, 16, 16, 72, 329],
       ["draw", "bear.png", 0, 0, 16, 16, 88, 329],
     ]);
-    // READY! letters ride a sine wave, 2·sin(tick·0.14 + i·1.05), here at tick 0
-    // (not rounded here: the Surface snaps), centred on the maze.
-    const ready = glyphs(rest.slice(6, 12));
-    const readyX = 112 + 56 - Math.trunc(textWidth("READY!") / 2);
-    expect(ready.map(([x]) => x)).toEqual(letterXs("READY!", readyX));
-    expect(ready.map(([, y]) => y)).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(i * 1.05)));
+    // READY! glyphs ride a sine wave, 2·sin(tick·0.14 + i·1.05), here at tick 0
+    // (not rounded here: the Surface snaps).
+    const ready = rest.slice(6, 12);
+    expect(ready.map((o) => [o[1], o[2], o[6]])).toEqual([0, 8, 16, 24, 32, 40].map((x) => ["ready.png", x, 144 + x]));
+    expect(ready.map((o) => o[7])).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(i * 1.05)));
     const food = rest.slice(12, 12 + 244);
     expect(food.filter((o) => name(o) === "draw:honey-drop.png").length).toBe(240);
-    expect(food.filter((o) => name(o) === "draw:smoke-pot.png").length).toBe(4);
+    expect(food.filter((o) => name(o) === "draw:honey-pot.png").length).toBe(4);
     expect(food[0]).toEqual(["draw", "honey-drop.png", 0, 0, 8, 12, 64, 86]);
-    expect(food[243]).toEqual(["draw", "smoke-pot.png", 0, 0, 8, 12, 264, 262]);
+    expect(food[243]).toEqual(["draw", "honey-pot.png", 0, 0, 8, 12, 264, 262]);
     // One sheet per bee in bees.png (red, pink, teal, orange, 96 px apart), each facing its way.
     // red bee: RIGHT row 0, at (112-8+56, 116-8+56)
     expect(rest.slice(12 + 244)).toEqual([
@@ -154,10 +123,7 @@ describe("SweetSamSoftware.draw", () => {
     const ops = render(s);
     expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 336, 428, 0, 0]);
     expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 57.25, 55.5]);
-    // The labels shake with the maze.
-    const labels = ops.slice(2, 15);
-    expect(labels.every((o) => name(o) === "draw:font.png" && o[7] === 55.5)).toBe(true);
-    const rest = ops.slice(15);
+    const rest = ops.slice(2);
     // score/high dials are rounded with goRound before drawing
     expect(rest.slice(0, 4).map((o) => [o[2], o[3]])).toEqual([
       [97, 64],
@@ -170,12 +136,10 @@ describe("SweetSamSoftware.draw", () => {
     // red sleepy + UP: row 1+2 = 3; pink waking + LEFT: row 1+2+2 = 5, in pink's sheet (96 down)
     expect(rest[5]?.slice(1, 6)).toEqual(["bees.png", 0, 48, 16, 16]);
     expect(rest[6]?.slice(1, 6)).toEqual(["bees.png", 0, 96 + 80, 16, 16]);
-    // popup: "800" in the pixel font, centred on the bee, its top 20 px above it
-    const popup = rest.slice(9, 12);
-    const popupX = 100 + 57.25 - Math.trunc(textWidth("800") / 2);
-    expect(glyphs(popup)).toEqual(letterXs("800", popupX).map((x) => [x, 120 + 55.5 - 20]));
+    // popup: frame 2 of points.png, centred, one tile above the bee
+    expect(rest[9]).toEqual(["draw", "points.png", 32, 0, 16, 16, 100 + 57.25 - 8, 120 + 55.5 - 8 - 16]);
     // particle: premultiplied fill, a = trunc(7/40*255) = trunc(44.625) = 44
-    expect(rest[12]).toEqual([
+    expect(rest[10]).toEqual([
       "fillPremul",
       p.x - 1.5 + 57.25,
       p.y - 1.5 + 55.5,
@@ -183,7 +147,7 @@ describe("SweetSamSoftware.draw", () => {
       3,
       { r: 0x73, g: 0xef, b: 0xf7, a: 44 },
     ]);
-    expect(rest.length).toBe(13);
+    expect(rest.length).toBe(11);
   });
 
   test("rolling digit: old glyph scrolls up, new glyph rises from below inside the cell", () => {

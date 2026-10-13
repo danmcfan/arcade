@@ -10,19 +10,24 @@ import {
   beeEye,
   beeFlight,
   beeOrder,
-  bonusFlowerArt,
   dazedFace,
+  dialDigitsArt,
   honeyDropArt,
   honeyDropShadow,
+  honeyPotArt,
+  honeyPotShadow,
+  honeyPotTop,
   honeycomb,
   itemBob,
   mazeHeight,
   mazeTiles,
   mazeWidth,
-  smokePotArt,
-  smokePotShadow,
-  smokePotSmoke,
-  smokePotTop,
+  pointsArt,
+  pointsFrameSize,
+  pointsTop,
+  readyArt,
+  scoreLabelsArt,
+  scoreLabelsX,
   walkCycle,
 } from "../src/sweet-sam/art.ts";
 import {
@@ -63,7 +68,6 @@ describe("Sweet Sam art source", () => {
       checkRows(`bee ${i}`, f, { w: 16, h: 16 });
     });
     checkRows("dazed face", dazedFace, { w: 12, h: 2 });
-    checkRows("bonus flower", bonusFlowerArt, { w: 16, h: 16 });
   });
 
   test("the bear sheet keeps the Go layout, 4 facings of 4 walk frames, and adds 4 death frames below", () => {
@@ -79,9 +83,9 @@ describe("Sweet Sam art source", () => {
     expect(liftRows(["ab", "cd", "ef"], 1)).toEqual(["cd", "ef", ".."]);
   });
 
-  test("each bee eye's pupil is dark with its white above it, and the 4 beats bob", () => {
+  test("each bee eye's pupil is dark in the body, and the 4 beats bob", () => {
     const [x, y] = beeEye;
-    for (const rows of beeFlight) expect([rows[y]?.[x], rows[y - 1]?.[x]]).toEqual(["k", "w"]);
+    for (const rows of beeFlight) expect([rows[y]?.[x], rows[y - 1]?.[x]]).toEqual(["k", "y"]);
     expect(beeBeats.map((b) => b.bob)).toEqual([0, 0, 1, 1]);
   });
 
@@ -101,18 +105,13 @@ describe("Sweet Sam art source", () => {
     expect(beeFrames("teal").map((r) => r.length)).toEqual([4, 4, 4, 4, 4, 4]);
   });
 
-  test("the honey drop and smoke pot fit their 8×12 cells on every bob, smoke included", () => {
+  test("the honey drop and honey pot fit their 8×12 cells on every bob", () => {
     checkRows("honey drop", honeyDropArt, { w: 2, h: 2 });
     checkRows("honey drop shadow", honeyDropShadow, { w: 2, h: 1 });
-    checkRows("smoke pot", smokePotArt, { w: 6, h: 5 });
-    checkRows("smoke pot shadow", smokePotShadow, { w: 4, h: 1 });
-    smokePotSmoke.forEach((s, i) => {
-      checkRows(`smoke ${i}`, s, { w: 6 });
-    });
+    checkRows("honey pot", honeyPotArt, { w: 6, h: 7 });
+    checkRows("honey pot shadow", honeyPotShadow, { w: 4, h: 1 });
     expect(itemBob.length).toBe(4);
-    expect(smokePotSmoke.length).toBe(4);
-    const highest = Math.max(...itemBob);
-    expect(smokePotTop - highest - (smokePotSmoke[0]?.length ?? 0)).toBeGreaterThanOrEqual(0);
+    expect(honeyPotTop - Math.max(...itemBob)).toBeGreaterThanOrEqual(0);
   });
 
   test("the maze map is 28×36 tiles and the honeycomb tiles evenly", () => {
@@ -120,6 +119,16 @@ describe("Sweet Sam art source", () => {
     expect(mazeTiles.length * tileSize).toBe(mazeHeight);
     expect((mazeTiles[0]?.length ?? 0) * tileSize).toBe(mazeWidth);
     checkRows("honeycomb", honeycomb, { w: 8, h: 4 });
+  });
+
+  test("the text: labels in the maze's blank top row, READY! and the digits in 8×8 cells, points in 16×16 frames", () => {
+    checkRows("score labels", scoreLabelsArt, { w: 126, h: 7 });
+    expect(scoreLabelsX + 126).toBeLessThanOrEqual(mazeWidth);
+    expect(mazeTiles[0]?.trim()).toBe("");
+    checkRows("ready", readyArt, { w: 6 * 8, h: 8 });
+    checkRows("dial digits", dialDigitsArt, { w: 10 * 8, h: 8 });
+    checkRows("points", pointsArt, { w: 4 * pointsFrameSize, h: 7 });
+    expect(pointsTop + pointsArt.length).toBeLessThanOrEqual(pointsFrameSize);
   });
 });
 
@@ -150,7 +159,7 @@ describe("the maze art matches the game's maze", () => {
     }
   });
 
-  test("every honey drop and smoke pot sits on an open corridor", () => {
+  test("every honey drop and honey pot sits on an open corridor", () => {
     for (const item of newItems()) {
       if (item === null) continue;
       const [tx, ty] = tileOf(item);
