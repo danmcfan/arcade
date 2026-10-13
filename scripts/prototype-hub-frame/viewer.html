@@ -51,6 +51,7 @@
   p.lede {
     color: var(--muted);
     margin: 0 0 16px;
+    max-width: 75ch;
   }
   .layout {
     display: flex;
@@ -74,6 +75,7 @@
   }
   .panel {
     flex: 0 1 380px;
+    min-width: 0;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -146,11 +148,13 @@
   }
 </style>
 <main>
-  <h1>Hub frame: extend the room to 160×144 (#72)</h1>
+  <h1>Hub frame: wall to the ceiling, HUD in the frame (#72, round 2)</h1>
   <p class="lede">
-    The real hub (arcade.png, cabinets, counter, prizes) with the 24 px black border filled in. Collisions, cabinets,
-    counter and prize spots stay where they are; only pixels the player can't walk on change. Pick a preset, tweak the
-    knobs, then press <b>Copy my picks</b>.
+    The real hub with your round-1 picks (tall room, carpet to the sides and bottom). The wall now runs up to the top
+    edge. The tokens and tickets counts move from the margin into a 10 px sign bar at the top of the frame, where the
+    wall meets the ceiling. The bar replaces the neon tube there. The wall prizes from PRs #73 (Firefly) and #74 (Brass
+    Monkey) hang where those PRs put them, and dashed boxes mark free wall space. Cabinets, collisions and the prize
+    counter art are unchanged; the counter menu (a mock here) opens below the bar.
   </p>
   <div class="layout">
     <div class="stage">
@@ -169,61 +173,100 @@
   const W = 160,
     H = 144,
     F = { x0: 24, x1: 136, y0: 24, y1: 120 },
-    FLOOR_Y = 56;
+    FLOOR_Y = 56,
+    SKIRT_Y = 53;
+  const BAR_H = 10; // the HUD bar, y 0..9, then a 1 px shadow line
 
   const knobs = {
     top: {
       label: "Top edge (y 0..23)",
-      opts: {
-        black: "black border [current]",
-        wall: "taller wall [new]",
-        lamps: "taller wall + lamps over cabinets [new]",
-        cap: "wall-top cap [new]",
-      },
+      opts: { black: "black border [current]", wall: "wall to the ceiling [round-1 pick]" },
     },
     sides: {
-      label: "Left / right edges (x 0..23, 136..159)",
-      opts: { black: "black border [current]", carpet: "wall + carpet run to edge [new]", cap: "wall-top cap [new]" },
+      label: "Left / right edges",
+      opts: { black: "black border [current]", carpet: "wall + carpet run to edge [round-1 pick]" },
     },
     bottom: {
       label: "Bottom edge (y 120..143)",
-      opts: { black: "black border [current]", carpet: "carpet runs to edge [new]", cap: "wall-top cap [new]" },
+      opts: { black: "black border [current]", carpet: "carpet runs to edge [round-1 pick]" },
     },
-    capWidth: {
-      label: "Cap thickness",
-      opts: { 16: "16 px (8 px wall/carpet inside) [new]", 24: "24 px (whole border) [new]" },
+    hud: {
+      label: "HUD bar (tokens and tickets)",
+      opts: {
+        margin: "in the margin, outside the frame [current]",
+        led: "LED marquee [new]",
+        neon: "neon sign [new]",
+        dark: "plain dark band [new]",
+      },
     },
-    capTone: {
-      label: "Cap colour",
-      opts: { grey: "grey m/l [new]", purple: "purple p/r (skirting) [new]", dark: "dark d/m [new]" },
+    neon: {
+      label: "Neon tube (when the HUD is in the margin)",
+      opts: {
+        trim: "stays at y 24 [current place]",
+        ceiling: "at the ceiling, y 0 [new]",
+        both: "at the ceiling + a dim trim at y 24 [new]",
+      },
     },
-    corners: { label: "Cap corners", opts: { square: "square [new]", post: "posts [new]" } },
+    wallTone: { label: "Wall colour", opts: { dark: "dark grey d [current]", navy: "navy n [new]" } },
+    treatment: {
+      label: "Wall treatment",
+      opts: {
+        none: "plain [current]",
+        posters: "arcade posters [new]",
+        stripe: "racing stripe [new]",
+        diamonds: "diamond pattern [new]",
+      },
+    },
+    tokens: { label: "Sample tokens", opts: { 3: "3", 0: "0 (FREE PLAY)" } },
+    tickets: { label: "Sample tickets", opts: { 12: "12", 1250: "1250" } },
+    menu: { label: "Prize counter menu (mock)", opts: { closed: "closed", open: "open" } },
+    slots: { label: "Show free prize space", opts: { on: "on", off: "off" } },
+    inFlight: { label: "Prizes from #73 / #74", opts: { on: "on", off: "off" } },
     collisions: { label: "Show collision walls", opts: { off: "off", on: "on" } },
     player: { label: "Walking player", opts: { on: "on", off: "off" } },
+  };
+  const picksBase = {
+    top: "wall",
+    sides: "carpet",
+    bottom: "carpet",
+    hud: "led",
+    neon: "ceiling",
+    wallTone: "dark",
+    treatment: "none",
   };
   const presets = [
     {
       name: "Current",
-      note: "as it is: black border",
-      v: { top: "black", sides: "black", bottom: "black", capWidth: "16", capTone: "grey", corners: "square" },
+      note: "black border, HUD in the margin",
+      v: { ...picksBase, top: "black", sides: "black", bottom: "black", hud: "margin", neon: "trim" },
+    },
+    { name: "Your picks · plain", note: "LED bar at the top, plain wall", v: { ...picksBase } },
+    {
+      name: "1 · Posters",
+      note: "neon sign bar, an arcade poster per game in the corners",
+      v: { ...picksBase, hud: "neon", treatment: "posters" },
     },
     {
-      name: "A · Tall room",
-      note: "wall to the top, carpet to the sides and bottom",
-      v: { top: "wall", sides: "carpet", bottom: "carpet", capWidth: "16", capTone: "grey", corners: "square" },
+      name: "2 · Racing stripe",
+      note: "LED bar, a sunset stripe right across",
+      v: { ...picksBase, treatment: "stripe" },
     },
     {
-      name: "B · Walled box",
-      note: "grey wall-top caps all round, posts at corners",
-      v: { top: "cap", sides: "cap", bottom: "cap", capWidth: "16", capTone: "grey", corners: "post" },
-    },
-    {
-      name: "C · Lamps + ledge",
-      note: "lamps above, open sides, purple ledge below",
-      v: { top: "lamps", sides: "carpet", bottom: "cap", capWidth: "16", capTone: "purple", corners: "square" },
+      name: "3 · Diamonds",
+      note: "plain dark band, faint diamond wallpaper",
+      v: { ...picksBase, hud: "dark", treatment: "diamonds" },
     },
   ];
-  let state = { ...presets[1].v, collisions: "off", player: "on" };
+  let state = {
+    ...presets[1].v,
+    tokens: "3",
+    tickets: "1250",
+    menu: "closed",
+    slots: "on",
+    inFlight: "on",
+    collisions: "off",
+    player: "on",
+  };
 
   const pal = D.palette;
   const room = D.room;
@@ -232,10 +275,138 @@
   function carpet(x, y) {
     if (y === FLOOR_Y) return "k";
     const t = px(F.x0 + mod(x - F.x0, 16), FLOOR_Y + mod(y - FLOOR_Y, 16));
-    return t === "k" ? "n" : t; // tile row 0 is the shadow row in the room: plain navy elsewhere
+    return t === "k" ? "n" : t;
   }
-  const wallFace = (y) => px(30, y); // a clear column of the wall: neon, wall, skirting
-  const tones = { grey: ["m", "l"], purple: ["p", "r"], dark: ["d", "m"] };
+  const tube = [0, 1, 2, 3, 4].map((i) => px(30, 24 + i)); // k B c B n
+  const dimTube = ["k", "b", "B", "b", "n"];
+  const cabinets = [48, 72, 96];
+  const onCabinet = (x, y) => y >= 40 && cabinets.some((cx) => x >= cx && x < cx + 16);
+  const barOn = (v) => v.hud !== "margin" && v.top !== "black";
+  /** Where free wall space starts below the ceiling. */
+  const wallTopFree = (v) => (barOn(v) ? BAR_H + 3 : v.neon === "trim" ? 7 : 7);
+
+  function wallAt(v, y) {
+    const plain = v.wallTone === "navy" ? "n" : "d";
+    if (v.top === "black" && y < 24) return "k";
+    const ceilingTube = !barOn(v) && v.neon !== "trim";
+    const trim =
+      v.top === "black" || (!barOn(v) && v.neon === "trim") ? tube : !barOn(v) && v.neon === "both" ? dimTube : null;
+    if (ceilingTube && y < 5) return tube[y];
+    if (trim && y >= 24 && y < 29) return trim[y - 24];
+    return plain;
+  }
+
+  const freeSlots = (v) => {
+    const y = wallTopFree(v),
+      h = 22 - y + 4;
+    return [
+      [26, y, 20, h],
+      [52, y, 20, h],
+      [88, y, 20, h],
+      [114, y, 20, h],
+      [122, 30, 12, 20],
+    ];
+  };
+
+  const posters = [
+    { x: 3, y: 0, ground: "n", trim: "G", art: ["..yy..", ".yooy.", "GGGGGG", "......", "g....g", "gggggg"] },
+    { x: 3, y: 31, ground: "p", trim: "o", art: [".yy...", "yooy..", "yooy.w", ".yy.ww", "......", "rrrrrr"] },
+    { x: 143, y: 0, ground: "k", trim: "B", art: ["g.....", "...y..", ".g....", "....g.", "..y...", "tttttt"] },
+    { x: 143, y: 31, ground: "d", trim: "r", art: ["wwwwww", "w.ww.w", "wwwwww", "......", "yy..cc", "yy..cc"] },
+  ];
+
+  // ---- text and icons, as src/ui/text.ts draws them ----
+  const inkLetter = { white: "w", yellow: "y", orange: "o", blue: "l", grey: "m", dark: "k" };
+  function textWidth(s) {
+    const cs = Array.from(s.toUpperCase()).filter((c) => D.glyphs[c]);
+    return cs.reduce((w, c) => w + D.glyphs[c][0].length, 0) + Math.max(0, cs.length - 1);
+  }
+  function drawText(g, s, x, y, ink) {
+    let cx = x;
+    for (const c of s.toUpperCase()) {
+      const rows = D.glyphs[c];
+      if (!rows) continue;
+      rows.forEach((row, dy) =>
+        Array.from(row).forEach((p, dx) => {
+          if (p === "#" && g[y + dy] && cx + dx < W) g[y + dy][cx + dx] = inkLetter[ink];
+        }),
+      );
+      cx += rows[0].length + 1;
+    }
+  }
+
+  function drawBar(g, v) {
+    const look = v.hud;
+    for (let y = 0; y <= BAR_H; y++)
+      for (let x = 0; x < W; x++) {
+        let c;
+        if (y === BAR_H)
+          c = "k"; // shadow under the bar
+        else if (look === "led") c = y === 0 || y === BAR_H - 1 ? "m" : (x + y) % 2 === 0 ? "d" : "k";
+        else if (look === "neon") c = y === 0 ? "B" : y === BAR_H - 1 ? "c" : y === BAR_H - 2 ? "B" : "n";
+        else c = y === BAR_H - 1 ? "d" : "k";
+        g[y][x] = c;
+      }
+    if (look === "led")
+      for (let x = 0; x < W; x += 2) {
+        g[0][x] = "l";
+        g[BAR_H - 1][x] = "l";
+      } // marquee bulbs
+    // counts: coin + tokens on the left, ticket + tickets on the right
+    const inset = 4,
+      gap = 3,
+      ty = 1;
+    const tokens = +v.tokens,
+      tickets = v.tickets;
+    blit(g, D.icons.token, inset, 0);
+    const label = tokens > 0 ? String(tokens) : "FREE PLAY";
+    drawText(g, label, inset + 9 + gap, ty, tokens > 0 ? "yellow" : "orange");
+    const tw = textWidth(tickets);
+    const tx = W - inset - tw;
+    drawText(g, tickets, tx, ty, "yellow");
+    blit(g, D.icons.ticket, tx - gap - 13, 0);
+  }
+
+  const darker = {
+    w: "l",
+    l: "m",
+    m: "d",
+    d: "k",
+    y: "o",
+    o: "r",
+    r: "p",
+    p: "k",
+    c: "B",
+    B: "b",
+    b: "n",
+    n: "k",
+    g: "G",
+    G: "t",
+    t: "n",
+    k: "k",
+  };
+  function drawMenu(g, v) {
+    const top = barOn(v) ? BAR_H + 2 : 0;
+    for (let y = top; y < H; y++) for (let x = 0; x < W; x++) g[y][x] = darker[darker[g[y][x]]];
+    const x0 = 24,
+      x1 = 136,
+      y0 = top + 4,
+      y1 = y0 + 66;
+    for (let y = y0; y < y1; y++)
+      for (let x = x0; x < x1; x++) {
+        const e = x === x0 || y === y0 || x === x1 - 1 || y === y1 - 1;
+        const e2 = x === x0 + 1 || y === y0 + 1 || x === x1 - 2 || y === y1 - 2;
+        g[y][x] = e ? "k" : e2 ? "m" : "k";
+      }
+    const centre = (s, y, ink) => drawText(g, s, 80 - Math.trunc(textWidth(s) / 2), y, ink);
+    centre("PRIZE COUNTER", y0 + 6, "yellow");
+    drawText(g, "TOKEN", x0 + 14, y0 + 20, "white");
+    drawText(g, "5", x1 - 8 - textWidth("5"), y0 + 20, "yellow");
+    drawText(g, "HONEY JAR", x0 + 14, y0 + 32, "white");
+    drawText(g, "10", x1 - 8 - textWidth("10"), y0 + 32, "yellow");
+    drawText(g, "BACK", x0 + 14, y0 + 44, "white");
+    drawText(g, ">", x0 + 6, y0 + 20, "yellow");
+  }
 
   function build(v) {
     const g = room.map((r) => Array.from(r));
@@ -243,78 +414,59 @@
     const side = (x) => x < F.x0 || x >= F.x1;
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
-        if (inside(x, y)) continue;
-        let c = "k";
-        if (y < F.y0) {
-          if (v.top !== "black" && !(side(x) && v.sides === "black")) c = "d";
+        const sideBlack = side(x) && v.sides === "black";
+        if (y < SKIRT_Y) {
+          if (onCabinet(x, y)) continue;
+          if (sideBlack) {
+            if (!inside(x, y)) g[y][x] = "k";
+            continue;
+          }
+          g[y][x] = wallAt(v, y);
+        } else if (inside(x, y)) {
+          continue;
         } else if (y < F.y1) {
-          if (v.sides !== "black") c = y < FLOOR_Y ? wallFace(y) : carpet(x, y);
+          g[y][x] = sideBlack ? "k" : y < FLOOR_Y ? px(30, y) : carpet(x, y);
         } else {
-          if (v.bottom !== "black" && !(side(x) && v.sides === "black")) c = carpet(x, y);
+          g[y][x] = v.bottom !== "black" && !sideBlack ? carpet(x, y) : "k";
         }
-        g[y][x] = c;
       }
-    if (v.top === "lamps") {
-      const lamp = ["...mm...", "...mm...", "..kkkk..", ".kprrpk.", "kppppppk", "kkkkkkkk", "..yyyy..", "...oo..."];
-      for (const cx of [56, 80, 104]) {
-        for (let y = 0; y < 10; y++) {
-          g[y][cx - 1] = "m";
-          g[y][cx] = "m";
-        }
-        lamp.forEach((row, dy) =>
+    const free = wallTopFree(v);
+    const wallPx = (x, y) =>
+      y < SKIRT_Y &&
+      y >= free &&
+      !onCabinet(x, y) &&
+      !(side(x) && v.sides === "black") &&
+      !(v.top === "black" && y < 24);
+    if (v.treatment === "stripe") {
+      const y0 = v.top === "black" ? 30 : free;
+      ["p", "r", "o", "y"].forEach((c, i) => {
+        for (let x = 0; x < W; x++) if (wallPx(x, y0 + i)) g[y0 + i][x] = c;
+      });
+      for (let x = 0; x < W; x++) if (wallPx(x, y0 + 5)) g[y0 + 5][x] = "p";
+    }
+    if (v.treatment === "diamonds") {
+      const base = v.wallTone === "navy" ? "n" : "d",
+        ink = v.wallTone === "navy" ? "d" : "n";
+      for (let y = 0; y < SKIRT_Y; y++)
+        for (let x = 0; x < W; x++)
+          if (wallPx(x, y) && g[y][x] === base && (mod(x + y, 12) === 0 || mod(x - y, 12) === 0)) g[y][x] = ink;
+    }
+    if (v.treatment === "posters" && v.sides !== "black") {
+      for (const p of posters) {
+        const py = p.y === 0 ? Math.max(free, 9) : p.y;
+        for (let y = 0; y < 14; y++)
+          for (let x = 0; x < 12; x++) {
+            const edge = x === 0 || y === 0 || x === 11 || y === 13;
+            const rim = x === 1 || y === 1 || x === 10 || y === 12;
+            g[py + y][p.x + x] = edge ? "k" : rim ? p.trim : p.ground;
+          }
+        p.art.forEach((row, dy) =>
           Array.from(row).forEach((c, dx) => {
-            if (c !== ".") g[10 + dy][cx - 4 + dx] = c;
+            if (c !== ".") g[py + 4 + dy][p.x + 3 + dx] = c;
           }),
         );
-        // light pooling down the wall, dithered
-        for (let y = 18; y < 24; y++)
-          for (let x = cx - 8; x < cx + 8; x++) {
-            const r = Math.abs(x - cx + 0.5) / (2 + (y - 18) * 1.2);
-            if (r < 1 && (x + y) % 2 === 0 && g[y][x] === "d") g[y][x] = "m";
-          }
+        for (const dx of [3, 4, 6, 7, 8]) g[py + 2][p.x + dx] = "w";
       }
-    }
-    const cw = +v.capWidth;
-    const [cap, rim] = tones[v.capTone];
-    const capAt = (x, y) =>
-      (v.top === "cap" && y < cw && !(side(x) && v.sides === "black")) ||
-      (v.sides === "cap" && (x < cw || x >= W - cw)) ||
-      (v.bottom === "cap" && y >= H - cw && !(side(x) && v.sides === "black"));
-    const caps = [];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (capAt(x, y)) caps.push([x, y]);
-    const isCap = new Set(caps.map(([x, y]) => x + "," + y));
-    const has = (x, y) => isCap.has(x + "," + y);
-    for (const [x, y] of caps) {
-      const edge =
-        (!has(x + 1, y) && x + 1 < W) ||
-        (!has(x - 1, y) && x > 0) ||
-        (!has(x, y + 1) && y + 1 < H) ||
-        (!has(x, y - 1) && y > 0);
-      g[y][x] = edge ? rim : cap;
-    }
-    // 1 px shadow where the cap meets the room
-    for (const [x, y] of caps)
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]) {
-        const nx = x + dx,
-          ny = y + dy;
-        if (nx >= 0 && nx < W && ny >= 0 && ny < H && !has(nx, ny) && !inside(nx, ny)) g[ny][nx] = "k";
-      }
-    if (v.corners === "post") {
-      const s = cw;
-      const corners = [];
-      if (v.top === "cap" && v.sides === "cap") corners.push([0, 0], [W - s, 0]);
-      if (v.bottom === "cap" && v.sides === "cap") corners.push([0, H - s], [W - s, H - s]);
-      for (const [ox, oy] of corners)
-        for (let y = 0; y < s; y++)
-          for (let x = 0; x < s; x++) {
-            const e = x === 0 || y === 0 || x === s - 1 || y === s - 1;
-            g[oy + y][ox + x] = e ? "k" : x === 1 || y === 1 ? "w" : x === s - 2 || y === s - 2 ? cap : rim;
-          }
     }
     return g;
   }
@@ -349,6 +501,7 @@
     const g = build(v);
     blit(g, D.counter.rows, D.counter.x, D.counter.y);
     for (const p of D.prizes) blit(g, p.rows, p.x, p.y);
+    if (state.inFlight === "on" || t === undefined) for (const p of D.inFlight) blit(g, p.rows, p.x, p.y);
     if (t !== undefined && state.player === "on") {
       const span = 136 - 24 - 16,
         step = Math.floor(t / 60) % (span * 2);
@@ -356,6 +509,9 @@
       const x = 24 + (step < span ? step : span * 2 - step);
       blit(g, D.walk[dir][Math.floor(t / 150) % 4], x, 68);
     }
+    const counts = { tokens: v.tokens ?? state.tokens, tickets: v.tickets ?? state.tickets };
+    if (barOn(v)) drawBar(g, { ...v, ...counts });
+    if (t !== undefined && state.menu === "open") drawMenu(g, v);
     return g;
   }
 
@@ -366,9 +522,17 @@
     [0, 120, 160, 24],
   ];
   function overlay(ctx) {
-    if (state.collisions !== "on") return;
-    ctx.fillStyle = "rgba(239,125,87,0.35)";
-    for (const [x, y, w, h] of walls) ctx.fillRect(x, y, w, h);
+    if (state.collisions === "on") {
+      ctx.fillStyle = "rgba(239,125,87,0.35)";
+      for (const [x, y, w, h] of walls) ctx.fillRect(x, y, w, h);
+    }
+    if (state.slots === "on" && state.top !== "black" && state.menu !== "open") {
+      ctx.strokeStyle = "rgba(244,244,244,0.75)";
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([1, 1]);
+      for (const [x, y, w, h] of freeSlots(state)) ctx.strokeRect(x + 0.25, y + 0.25, w - 0.5, h - 0.5);
+      ctx.setLineDash([]);
+    }
   }
 
   const big = document.getElementById("big");
@@ -402,7 +566,7 @@
     }
     document.getElementById("picks").textContent = picks();
   }
-  const pickKeys = ["top", "sides", "bottom", "capWidth", "capTone", "corners"];
+  const pickKeys = ["top", "sides", "bottom", "hud", "neon", "wallTone", "treatment"];
   const picks = () => JSON.stringify(Object.fromEntries(pickKeys.map((k) => [k, state[k]])));
   document.getElementById("copy").onclick = async () => {
     try {
