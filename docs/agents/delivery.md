@@ -6,7 +6,7 @@ Every change ships as a pull request that the repo owner reviews and merges on G
 
 1. **Branch** from an up-to-date `main`: `git switch -c <issue-number>-<slug>` (e.g. `16-tokens-hud`), or a short slug when there is no issue.
 2. **Build it.** Commit as you go, with messages in the style of `git log` (`Title: hide Continue until a save exists`).
-3. **Gate**: `bun run check` passes (typecheck, tests, build).
+3. **Gate**: `bun run check` passes (typecheck, lint, format, unused code, tests, build; `docs/agents/quality-gate.md`).
 4. **Verify** any user-visible change with a verify check, and keep its screenshots and video (`docs/agents/visual-verification.md`).
 5. **Push** the branch and **open the PR**, attaching the evidence:
 

@@ -1,0 +1,159 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "import", "oxc", "promise"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error"
+  },
+  "ignorePatterns": ["dist/**", "out/**", "tmp/**", "art/**", "test/fixtures/**", ".claude/**"],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": true,
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-check": false
+      }
+    ],
+    "typescript/strict-boolean-expressions": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/explicit-function-return-type": "error",
+    "typescript/explicit-module-boundary-types": "error",
+    "typescript/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "never"
+      }
+    ],
+    "typescript/no-non-null-assertion": "error",
+    "typescript/prefer-readonly": "error",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/promise-function-async": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "eslint/eqeqeq": ["error", "always"],
+    "eslint/no-console": "error",
+    "eslint/no-param-reassign": "error",
+    "eslint/complexity": ["error", 10],
+    "eslint/max-depth": ["error", 3],
+    "eslint/max-lines-per-function": ["error", 60],
+    "import/no-cycle": "error",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "eslint/no-inline-comments": "off",
+    "eslint/sort-vars": "off",
+    "eslint/no-underscore-dangle": "off",
+    "import/max-dependencies": "off",
+    "eslint/max-classes-per-file": "off",
+    "eslint/max-lines": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.ts"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "name": "window",
+            "message": "Game modules are headless (ADR 0003): inject browser access."
+          },
+          {
+            "name": "document",
+            "message": "Game modules are headless (ADR 0003): inject browser access."
+          },
+          {
+            "name": "localStorage",
+            "message": "Game modules are headless (ADR 0003): go through SaveStore."
+          },
+          {
+            "name": "Image",
+            "message": "Game modules are headless (ADR 0003): load assets in src/engine/assets.ts."
+          },
+          {
+            "name": "Audio",
+            "message": "Game modules are headless (ADR 0003): play sound through src/engine/audio.ts."
+          },
+          {
+            "name": "setTimeout",
+            "message": "Time is in ticks (ADR 0002)."
+          },
+          {
+            "name": "setInterval",
+            "message": "Time is in ticks (ADR 0002)."
+          },
+          {
+            "name": "requestAnimationFrame",
+            "message": "Only src/engine/loop.ts drives frames (ADR 0002)."
+          },
+          {
+            "name": "performance",
+            "message": "Time is in ticks (ADR 0002)."
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          {
+            "object": "Math",
+            "property": "random",
+            "message": "Randomness goes through src/engine/rng.ts, or replays break."
+          },
+          {
+            "object": "Date",
+            "property": "now",
+            "message": "Time is in ticks (ADR 0002)."
+          },
+          {
+            "property": "fillText",
+            "message": "Text is pixel art: draw it with src/ui/text.ts (ADR 0006)."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/main.ts",
+        "src/engine/loop.ts",
+        "src/engine/testhook.ts",
+        "src/engine/keyboard.ts",
+        "src/engine/audio.ts",
+        "src/engine/surface.ts",
+        "src/engine/assets.ts",
+        "src/title/save.ts",
+        "src/lab/wave/overlay.ts",
+        "src/**/*.test.ts",
+        "src/**/*.testutil.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-globals": "off",
+        "eslint/no-restricted-properties": [
+          "error",
+          {
+            "object": "Math",
+            "property": "random",
+            "message": "Randomness goes through src/engine/rng.ts, or replays break."
+          },
+          {
+            "property": "fillText",
+            "message": "Text is pixel art: draw it with src/ui/text.ts (ADR 0006)."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["scripts/**/*.ts"],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.testutil.ts", "test/**/*.ts"],
+      "rules": {
+        "eslint/max-lines-per-function": "off"
+      }
+    }
+  ]
+}
