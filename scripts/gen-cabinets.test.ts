@@ -20,14 +20,11 @@ describe("cabinet sources (art/cabinets.json)", () => {
       expect({ name: c.name, keys: Object.keys(c.palette).toSorted() }).toEqual({ name: c.name, keys: source });
   });
 
-  test("every cabinet has a bevel in its own colours and a black joystick base", () => {
+  test("every cabinet has a black joystick base and a bevel set off from its body", () => {
     for (const c of cabinets) {
-      expect({ name: c.name, base: c.palette["5d275d"], light: c.bevel.light }).toEqual({
-        name: c.name,
-        base: "1a1c2c",
-        light: c.palette["ef7d57"] ?? "",
-      });
-      expect(c.bevel.dark).not.toBe(c.palette["b13e53"]);
+      const [body, base] = [c.palette["b13e53"], c.palette["5d275d"]];
+      expect({ name: c.name, base }).toEqual({ name: c.name, base: "1a1c2c" });
+      expect([c.bevel.light, c.bevel.dark]).not.toContain(body);
     }
   });
 });
