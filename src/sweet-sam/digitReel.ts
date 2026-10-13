@@ -1,5 +1,6 @@
-// Port of the Sweet Sam half of the Go port's digit_reel.go: Sweet Sam's score and
-// high score dials. The reel itself is shared (src/ui/digitReel.ts).
+// Port of half of the Go Sweet Sam minigame's digit_reel.go (docs/port-notes.md
+// gives its old Go name): Sweet Sam's score and high score dials. The reel
+// itself is shared (src/ui/digitReel.ts).
 
 import { digits6, syncAndTick } from "../ui/digitReel.ts";
 import type { SweetSamSoftware } from "./software.ts";

@@ -1,5 +1,6 @@
-// Port of the Go port's Sweet Sam draw.go. Draw paths only: nothing here mutates game
-// state (fact 2), and all DOM work (offscreen surfaces) happens lazily here (D12).
+// Port of the Go Sweet Sam minigame's draw.go (docs/port-notes.md gives its old
+// Go name). Draw paths only: nothing here mutates game state (fact 2), and all
+// DOM work (offscreen surfaces) happens lazily here (D12).
 
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
@@ -31,7 +32,7 @@ export interface DrawCache {
   digitDialScratch: Surface | null;
 }
 
-/** Go `SweetSamSoftware.Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
+/** Go `Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
 export function draw(s: SweetSamSoftware, screen: Surface): void {
   drawCabinet(screen, s.cabinetJoystickFrame, imageCabinet);
 

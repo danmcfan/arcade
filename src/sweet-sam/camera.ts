@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam camera.go.
+// Port of the Go Sweet Sam minigame's camera.go (docs/port-notes.md gives its old Go name).
 
 import * as rng from "../engine/rng.ts";
 

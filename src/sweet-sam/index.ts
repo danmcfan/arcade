@@ -1,4 +1,4 @@
-// Entry module for the Sweet Sam port (T5 owns src/sweet-sam/**). src/game/registry.ts
+// Entry module for the Sweet Sam port (ported in T5). src/game/registry.ts
 // imports `createSweetSam`.
 
 import type { FixedViewport } from "../game/software.ts";
@@ -7,7 +7,7 @@ import { sweetSamAdvantages } from "./advantages.ts";
 import { SweetSamSoftware } from "./software.ts";
 
 /**
- * The Go Sweet Sam constructor. Returns a `FixedViewport` (336×428
+ * Go's Sweet Sam constructor, which takes the hub high score. Returns a `FixedViewport` (336×428
  * cabinet bezel, drawn with `buffer` 0); `name` is "sweetSam". Constructing it
  * enters START, which plays "rewind:start" then "play:start". `prizes` are
  * the player's owned prizes; those for Sweet Sam change how the run starts

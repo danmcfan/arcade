@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam update.go.
+// Port of the Go Sweet Sam minigame's update.go (docs/port-notes.md gives its old Go name).
 
 import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
@@ -48,7 +48,7 @@ export const modeSequence: readonly ModeConfig[] = [
 ];
 
 /**
- * Go `SweetSamSoftware.Update`. The order is part of the spec: joystick,
+ * Go `Update`. The order is part of the spec: joystick,
  * pelletAnimTick, camera (rand), particles, state machine, popups, dials.
  */
 export function update(s: SweetSamSoftware, i: Input): void {
@@ -275,7 +275,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
 }
 
 /**
- * Go `SweetSamSoftware.restartRound`. Leaves camera, particles, items and
+ * Go `restartRound`. Leaves camera, particles, items and
  * `modeCurrent` alone (D11).
  */
 export function restartRound(s: SweetSamSoftware): void {

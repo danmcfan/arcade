@@ -18,7 +18,7 @@ function recordingFactory(): {
 }
 
 describe("newMachines", () => {
-  test("three cabinets left to right: brassMonkey, sweet (sweetSam), firefly", () => {
+  test("three cabinets left to right: brassMonkey, sweet (Sweet Sam), firefly", () => {
     const { factory } = recordingFactory();
     const ms = newMachines(factory);
     expect(ms.map((m) => [m.rect, m.title])).toEqual([

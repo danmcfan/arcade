@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam entity.go.
+// Port of the Go Sweet Sam minigame's entity.go (docs/port-notes.md gives its old Go name).
 
 import { opposite, type Axis, type Direction } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";

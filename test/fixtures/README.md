@@ -256,7 +256,7 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # Sweet Sam / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
 ```
 
 Traces are byte-for-byte reproducible (deterministic gzip header). The Go

@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam bonus_eat.go.
+// Port of the Go Sweet Sam minigame's bonus_eat.go (docs/port-notes.md gives its old Go name).
 
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";

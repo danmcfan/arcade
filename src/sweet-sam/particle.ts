@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam particle.go.
+// Port of the Go Sweet Sam minigame's particle.go (docs/port-notes.md gives its old Go name).
 
 import * as rng from "../engine/rng.ts";
 import type { PremulColor, Surface } from "../engine/surface.ts";

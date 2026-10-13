@@ -113,7 +113,7 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # Sweet Sam / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
 ```
 
 Copy the regenerated `test/fixtures/` back onto the current branch. If you change gameplay on purpose, the affected traces have to be updated with it, and there is no longer a Go reference to capture them from.

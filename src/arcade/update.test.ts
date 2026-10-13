@@ -146,7 +146,7 @@ describe("walking", () => {
   });
 });
 
-/** Walk from spawn to beneath the sweet (sweetSam) cabinet, facing up. */
+/** Walk from spawn to beneath the Sweet Sam cabinet, facing up. */
 function walkToSweet(s: State): void {
   run(s, 31, { up: true }); // y 92 → 61; the player rect reaches the cabinet at y < 68
 }

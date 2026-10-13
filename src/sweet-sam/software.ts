@@ -1,4 +1,5 @@
-// Port of the Go port's Sweet Sam software.go (constants live in ./constants.ts).
+// Port of the Go Sweet Sam minigame's software.go (docs/port-notes.md gives its
+// old Go name). Its constants live in ./constants.ts.
 
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
@@ -57,7 +58,7 @@ export class SweetSamSoftware implements FixedViewport {
   startTicks = 0;
 
   lives = 0;
-  /** Go `SweetSamSoftware.score` (renamed: `score()` is the Software method). */
+  /** Go `score` (renamed: `score()` is the Software method). */
   scoreValue = 0;
   highScore: number;
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */

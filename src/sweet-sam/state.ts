@@ -1,4 +1,4 @@
-// Port of the Go port's Sweet Sam state.go.
+// Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
 import type { Input } from "../engine/input.ts";
 import { soundDeath, soundPower, soundStart } from "../engine/assets.ts";
