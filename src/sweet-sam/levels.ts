@@ -45,7 +45,11 @@ export interface LevelValues {
   flowerPoints: number;
 }
 
-/** Four scatters and the three chases between them, in seconds; the last chase never ends. */
+/**
+ * Four scatters and the three chases between them, in seconds; the last
+ * chase never ends. As in Pac-Man, the first scatter stays 7 s on every
+ * level: the later scatters shorten and the chases lengthen.
+ */
 function modes(
   scatter: readonly [number, number, number, number],
   chase: readonly [number, number, number],
@@ -61,6 +65,11 @@ function modes(
 // it on the next tick, so a bee neither misses a turn nor turns twice.
 // levels.test.ts and corners.test.ts check every value against the maze.
 
+// Tuned with scripts/sweet-sam-bot.ts (#47): with a fifth of a second's
+// reaction time, a good run (the top quarter of 200 seeds) scores about what
+// it did when every level was level 1; the bonus flower makes up for most of
+// what the harder levels take.
+
 /** Levels 1 to `levelCap`, in order. */
 const levels: readonly LevelValues[] = [
   {
@@ -68,35 +77,35 @@ const levels: readonly LevelValues[] = [
     sleepyFrames: blueFramesDuration,
     modeSequence,
     dotMinimums: goDotMinimums,
-    flowerPoints: 100,
+    flowerPoints: 300,
+  },
+  {
+    beeVelocity: 0.953125,
+    sleepyFrames: framesPerSecond * 9,
+    modeSequence: modes([7, 6, 5, 4], [20, 21, 22]),
+    dotMinimums: { pink: 0, teal: 25, orange: 50 },
+    flowerPoints: 500,
   },
   {
     beeVelocity: 0.96875,
     sleepyFrames: framesPerSecond * 8,
-    modeSequence: modes([6, 6, 4, 4], [22, 22, 22]),
-    dotMinimums: { pink: 0, teal: 20, orange: 45 },
-    flowerPoints: 300,
+    modeSequence: modes([7, 6, 4, 3], [21, 22, 24]),
+    dotMinimums: { pink: 0, teal: 20, orange: 40 },
+    flowerPoints: 700,
   },
   {
-    beeVelocity: 0.96875,
+    beeVelocity: 0.984375,
     sleepyFrames: framesPerSecond * 7,
-    modeSequence: modes([5, 5, 4, 3], [24, 24, 24]),
-    dotMinimums: { pink: 0, teal: 10, orange: 30 },
-    flowerPoints: 500,
+    modeSequence: modes([7, 5, 4, 2], [21, 23, 26]),
+    dotMinimums: { pink: 0, teal: 15, orange: 30 },
+    flowerPoints: 1000,
   },
   {
     beeVelocity: 1,
     sleepyFrames: framesPerSecond * 6,
-    modeSequence: modes([4, 4, 3, 2], [26, 26, 26]),
-    dotMinimums: { pink: 0, teal: 0, orange: 20 },
-    flowerPoints: 700,
-  },
-  {
-    beeVelocity: 1,
-    sleepyFrames: framesPerSecond * 5,
-    modeSequence: modes([3, 3, 2, 1], [28, 28, 28]),
-    dotMinimums: { pink: 0, teal: 0, orange: 10 },
-    flowerPoints: 1000,
+    modeSequence: modes([7, 5, 3, 1], [22, 24, 28]),
+    dotMinimums: { pink: 0, teal: 10, orange: 20 },
+    flowerPoints: 2000,
   },
 ];
 

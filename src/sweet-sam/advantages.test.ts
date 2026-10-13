@@ -120,8 +120,8 @@ describe("Sweet Sam with prizes", () => {
     plain.level = 3;
     const sleepy = playing(["sleepyBees"]);
     sleepy.level = 3;
-    expect(levelValues(3).sleepyFrames).toBe(420);
-    expect(eatPowerPellet(plain)).toBe(420);
-    expect(eatPowerPellet(sleepy)).toBe(630);
+    expect(levelValues(3).sleepyFrames).toBe(480);
+    expect(eatPowerPellet(plain)).toBe(480);
+    expect(eatPowerPellet(sleepy)).toBe(720);
   });
 });

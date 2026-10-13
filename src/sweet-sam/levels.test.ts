@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { levelCap, levelValues, sleepyFramesMinimum } from "./levels.ts";
 
+/** Ticks of `mode` on `level`, leaving out the chase that never ends. */
+function total(level: number, mode: number): number {
+  return levelValues(level)
+    .modeSequence.filter((m) => m.mode === mode && m.ticks > 0)
+    .reduce((t, m) => t + m.ticks, 0);
+}
+
 describe("levelValues", () => {
   test("level 1 is the Go game: bee speed, sleepy time, modes and when bees leave home", () => {
     const l1 = levelValues(1);
@@ -40,11 +47,10 @@ describe("levelValues", () => {
     expect(levelValues(2).beeVelocity).toBeGreaterThan(levelValues(1).beeVelocity);
   });
 
-  test("scatter gets shorter and chase longer by level 2", () => {
-    const [s1, c1] = levelValues(1).modeSequence;
-    const [s2, c2] = levelValues(2).modeSequence;
-    expect(s2?.ticks).toBeLessThan(s1?.ticks ?? 0);
-    expect(c2?.ticks).toBeGreaterThan(c1?.ticks ?? 0);
+  test("in all, scatter gets shorter and chase longer on level 2, but the first scatter stays 7 s", () => {
+    expect(total(2, 0)).toBeLessThan(total(1, 0));
+    expect(total(2, 1)).toBeGreaterThan(total(1, 1));
+    for (let level = 1; level <= levelCap; level++) expect(levelValues(level).modeSequence[0]?.ticks).toBe(420);
   });
 
   test("stops changing at the cap", () => {
