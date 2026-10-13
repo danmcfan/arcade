@@ -13,14 +13,16 @@ export type DebugPrinter = (screen: Surface, text: string, x: number, y: number)
 export class Panel {
   private enabled = true;
 
-  constructor(
-    /** X position where the panel starts (relative; unused by `draw`, as in Go). */
-    private readonly x: number,
     /** Y position where the panel starts. */
-    private readonly y: number,
-    private readonly panelWidth: number,
-    private readonly print: DebugPrinter = debugPrint,
-  ) {}
+  private readonly y: number;
+  private readonly panelWidth: number;
+  private readonly print: DebugPrinter;
+
+  constructor(y: number, panelWidth: number, print: DebugPrinter = debugPrint) {
+    this.y = y;
+    this.panelWidth = panelWidth;
+    this.print = print;
+  }
 
   /** Panel width (for layout calculations). */
   width(): number {
@@ -59,7 +61,7 @@ export class Panel {
   }
 }
 
-/** Go `debug.NewDebugPanel(x, y, width)`; `print` defaults to `debugPrint`. */
-export function newDebugPanel(x: number, y: number, width: number, print: DebugPrinter = debugPrint): Panel {
-  return new Panel(x, y, width, print);
+/** Go `debug.NewDebugPanel(x, y, width)`; `print` defaults to `debugPrint`. `x` is unused, as in Go. */
+export function newDebugPanel(_x: number, y: number, width: number, print: DebugPrinter = debugPrint): Panel {
+  return new Panel(y, width, print);
 }

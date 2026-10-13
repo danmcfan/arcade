@@ -43,7 +43,11 @@ export class FakeContext {
   private m: M = [...IDENTITY];
   private stack: Array<{ m: M; alpha: number; composite: string; fill: string; smoothing: boolean }> = [];
 
-  constructor(readonly canvas: FakeCanvas) {}
+  readonly canvas: FakeCanvas;
+
+  constructor(canvas: FakeCanvas) {
+    this.canvas = canvas;
+  }
 
   /** What assigning canvas.width/height does to a real context. */
   resetState(): void {

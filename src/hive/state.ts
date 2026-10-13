@@ -110,7 +110,11 @@ export class StartState implements State {
   /** Counts down START frames while the player blink-in plays. */
   respawnBlinkRemaining = 0;
 
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.startTicks = startTicks;
@@ -146,7 +150,11 @@ export class StartState implements State {
 
 /** Active during normal gameplay. */
 export class PlayState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.player.hidden = false;
@@ -301,7 +309,11 @@ export class PlayState implements State {
 
 /** Active during a short pause (e.g., when an enemy is eaten). */
 export class PauseState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = framesPerSecond * 1;
@@ -320,7 +332,11 @@ export class PauseState implements State {
 
 /** Holds the maze as-is after a death so the round does not restart immediately. */
 export class DeathWaitState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = deathRoundDelayTicks;
@@ -343,7 +359,11 @@ export class DeathWaitState implements State {
  * Play — then game over for the host.
  */
 export class FinalDeathWaitState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = deathRoundDelayTicks;

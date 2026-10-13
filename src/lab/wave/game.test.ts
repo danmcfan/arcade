@@ -95,10 +95,13 @@ test("a full snapshot adds cells[x][y] as plain copies", () => {
 class RecordingSurface {
   readonly draws: { sx: number; solid: boolean; x: number; y: number }[] = [];
   readonly blits: { src: unknown; x: number; y: number }[] = [];
-  constructor(
-    readonly width: number,
-    readonly height: number,
-  ) {}
+  readonly width: number;
+  readonly height: number;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
   draw(s: Sprite, x: number, y: number): void {
     this.draws.push({ sx: s.sx, solid: s.asset.solid !== undefined, x, y });
   }

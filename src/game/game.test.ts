@@ -15,12 +15,17 @@ class FakeSoftware implements Software {
   draws: [Surface, number][] = [];
   over = false;
   points = 0;
-  constructor(
-    readonly name: SoftwareName,
-    readonly highScore: number,
-    private readonly bg: Sprite,
-    readonly prizes: readonly PrizeId[] = [],
-  ) {}
+  readonly name: SoftwareName;
+  readonly highScore: number;
+  private readonly bg: Sprite;
+  readonly prizes: readonly PrizeId[];
+
+  constructor(name: SoftwareName, highScore: number, bg: Sprite, prizes: readonly PrizeId[] = []) {
+    this.name = name;
+    this.highScore = highScore;
+    this.bg = bg;
+    this.prizes = prizes;
+  }
   background(): Sprite {
     return this.bg;
   }

@@ -40,7 +40,7 @@ function goldenSequences(raw: unknown): Array<{ seed: number; values: number[] }
   }
   if (raw !== null && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
-    const table = (obj.seeds ?? obj) as Record<string, unknown>;
+    const table = (obj["seeds"] ?? obj) as Record<string, unknown>;
     return Object.entries(table).map(([seed, values]) => ({ seed: Number(seed), values: asNumbers(values) }));
   }
   throw new Error("rng.json: unrecognized shape");

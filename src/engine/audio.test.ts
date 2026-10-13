@@ -10,7 +10,11 @@ class FakeAudio {
   paused = true;
   currentTime = 5;
   private readonly listeners = new Map<string, () => void>();
-  constructor(private readonly reject = true) {}
+  private readonly reject: boolean;
+
+  constructor(reject: boolean = true) {
+    this.reject = reject;
+  }
   play(): Promise<void> {
     this.calls.push("play");
     return this.reject ? Promise.reject(new DOMException("blocked", "NotAllowedError")) : Promise.resolve();

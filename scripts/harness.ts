@@ -53,8 +53,8 @@ function freePort(): number {
  * one on a free port that `stop()` (or process exit) kills.
  */
 export async function startServer(): Promise<Server> {
-  if (process.env.ARCADE_PORT) {
-    const url = `http://localhost:${process.env.ARCADE_PORT}`;
+  if (process.env["ARCADE_PORT"]) {
+    const url = `http://localhost:${process.env["ARCADE_PORT"]}`;
     if (await reachable(url)) return { url, stop() {} };
   }
   const port = freePort();

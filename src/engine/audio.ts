@@ -35,11 +35,15 @@ export class Sound {
   element: HTMLAudioElement | null = null;
   ready = false;
 
-  constructor(
-    readonly name: SoundName,
-    readonly url: string,
-    readonly loop: boolean,
-  ) {}
+  readonly name: SoundName;
+  readonly url: string;
+  readonly loop: boolean;
+
+  constructor(name: SoundName, url: string, loop: boolean) {
+    this.name = name;
+    this.url = url;
+    this.loop = loop;
+  }
 
   /** True while the browser is actually playing it (never without a DOM). */
   get playing(): boolean {

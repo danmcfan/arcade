@@ -38,7 +38,7 @@ describe("generated cabinets", () => {
 
     test(`${c.name}: marquee is regenerated, not the hand-drawn Sweet Sam one's`, () => {
       const out = renderCabinet(c);
-      const letter = c.palette.ffcd75!;
+      const letter = c.palette["ffcd75"]!;
       let lit = 0;
       for (let i = 0; i < 54 * 1680 * 4; i += 4) if (hexAt(out, i) === letter) lit++;
       expect(lit).toBeGreaterThan(0);

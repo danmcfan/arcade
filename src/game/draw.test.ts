@@ -97,7 +97,11 @@ class FakeSoftware implements Software {
   margins: number[] = [];
   over = false;
   points = 0;
-  constructor(readonly name: SoftwareName) {}
+  readonly name: SoftwareName;
+
+  constructor(name: SoftwareName) {
+    this.name = name;
+  }
   background(): Sprite {
     return makeSolid(224, 256, "#000");
   }

@@ -49,7 +49,7 @@ export function lumberjackTrees(snapshot: unknown): LumberjackTreeSnapshot[] {
       typeof t === "object" &&
       t !== null &&
       TREE_NUMBERS.every((k) => typeof (t as Record<string, unknown>)[k] === "number") &&
-      typeof (t as Record<string, unknown>).shakeRight === "boolean";
+      typeof (t as Record<string, unknown>)["shakeRight"] === "boolean";
     if (!ok) throw new Error(`not a lumberjack snapshot: bad trees[${i}]`);
   }
   return trees as LumberjackTreeSnapshot[];

@@ -52,8 +52,9 @@ export function opposite(d: Direction): Direction {
       return "RIGHT";
     case "RIGHT":
       return "LEFT";
+    default:
+      throw new Error(`invalid direction: ${String(d)}`);
   }
-  throw new Error(`invalid direction: ${String(d)}`);
 }
 
 export function axis(d: Direction): Axis {

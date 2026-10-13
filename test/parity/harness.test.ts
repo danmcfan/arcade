@@ -82,7 +82,11 @@ class CountingScene implements Scene {
   ticks = 0;
   lefts = 0;
   fullCalls: number[] = [];
-  constructor(readonly seedAtBirth: number) {}
+  readonly seedAtBirth: number;
+
+  constructor(seedAtBirth: number) {
+    this.seedAtBirth = seedAtBirth;
+  }
   step(i: Input): void {
     this.ticks++;
     if (i.left) this.lefts++;

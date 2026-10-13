@@ -37,15 +37,16 @@ export class Payout {
   readonly ticketReels: DigitReels = newDigitReels();
   private timer = 0;
 
-  constructor(
-    score: number,
-    readonly freePlay: boolean,
-  ) {
+  readonly freePlay: boolean;
+
+  constructor(score: number, freePlay: boolean) {
+    this.freePlay = freePlay;
     this.score = score;
     this.total = ticketsFor(score, freePlay);
     this.counting = !freePlay;
     bootReels(this.scoreReels, score);
     bootReels(this.ticketReels, 0);
+  
   }
 
   /** One tick; `space` is a Space press this tick. Returns true when a ticket was paid (play its sound). */

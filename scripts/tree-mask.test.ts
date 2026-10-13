@@ -37,6 +37,8 @@ describe("treeTopEdgeMasks", () => {
       const [x = 0, y = 0] = key.split(",").map(Number);
       expect(x).toBeGreaterThanOrEqual(96 + 10 - 3);
       expect(x).toBeLessThanOrEqual(96 + 30 + 3);
+      expect(y).toBeGreaterThanOrEqual(32 + 10 - 3);
+      expect(y).toBeLessThanOrEqual(32 + 30 + 3);
     }
     // The left edge column near the vertical middle is masked.
     const leftEdge = [...m].filter((k) => k.endsWith(",52")).map((k) => Number(k.split(",")[0]));

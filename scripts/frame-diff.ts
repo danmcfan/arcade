@@ -71,7 +71,7 @@ export function diffImages(
 export function diffFiles(
   expectedPath: string,
   actualPath: string,
-  opts: { masks?: readonly Mask[]; out?: string } = {},
+  opts: { masks?: readonly Mask[]; out?: string | undefined } = {},
 ): FrameDiffResult {
   const expected = PNG.sync.read(readFileSync(expectedPath));
   const actual = PNG.sync.read(readFileSync(actualPath));

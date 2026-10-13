@@ -11,11 +11,15 @@ import type { SceneSnapshot } from "../game/snapshot.ts";
 class FakeScene implements Scene {
   inputs: Input[] = [];
   disposed = false;
-  constructor(
-    readonly name: SceneName,
-    readonly opts: SceneOptions,
-    readonly bornWithRng: number,
-  ) {}
+  readonly name: SceneName;
+  readonly opts: SceneOptions;
+  readonly bornWithRng: number;
+
+  constructor(name: SceneName, opts: SceneOptions, bornWithRng: number) {
+    this.name = name;
+    this.opts = opts;
+    this.bornWithRng = bornWithRng;
+  }
   step(i: Input): void {
     this.inputs.push(i);
   }
@@ -25,7 +29,7 @@ class FakeScene implements Scene {
   }
   snapshot(opts?: { full?: boolean }): SceneSnapshot {
     const snap: Record<string, unknown> = { tick: this.inputs.length, rng: rng.state() };
-    if (opts?.full) snap.full = true;
+    if (opts?.full) snap["full"] = true;
     return snap as unknown as SceneSnapshot;
   }
   dispose(): void {

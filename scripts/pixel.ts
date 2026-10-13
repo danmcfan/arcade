@@ -215,9 +215,9 @@ async function main(argv: string[]): Promise<void> {
     else args.push(a);
   }
   const [command, ...specs] = args;
-  const k = opts.scale === undefined ? undefined : Number(opts.scale);
-  if (k !== undefined && !(Number.isInteger(k) && k > 0)) throw new Error(`--scale ${opts.scale} is not a whole number above 0`);
-  const out = (name: string): string => resolve(opts.out ?? join(outDir, `${name}.png`));
+  const k = opts["scale"] === undefined ? undefined : Number(opts["scale"]);
+  if (k !== undefined && !(Number.isInteger(k) && k > 0)) throw new Error(`--scale ${opts["scale"]} is not a whole number above 0`);
+  const out = (name: string): string => resolve(opts["out"] ?? join(outDir, `${name}.png`));
   if (specs.length === 0) usage();
 
   switch (command) {
@@ -249,7 +249,7 @@ async function main(argv: string[]): Promise<void> {
       return;
     }
     case "before": {
-      const rev = opts.ref ?? "origin/main";
+      const rev = opts["ref"] ?? "origin/main";
       if (Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0) {
         throw new Error(`--ref ${rev} is not a commit`);
       }

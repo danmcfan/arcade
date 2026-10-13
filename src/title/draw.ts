@@ -77,7 +77,7 @@ function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
 }
 
-const logoLetterWidth = logoLetters.A![0]!.length;
+const logoLetterWidth = logoLetters["A"]![0]!.length;
 /** Ticks between the starts of two rainbow sweeps across the logo. */
 const sweepPeriod = 180;
 /** Ticks the sweep takes to cross the logo; it starts off the left edge. */
