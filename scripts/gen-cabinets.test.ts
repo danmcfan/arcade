@@ -3,14 +3,14 @@ import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { cabinetPath, cabinets, colours, renderCabinet, sourceCabinet } from "./gen-cabinets.ts";
 
-const hexAt = (png: PNG, i: number) =>
-  [0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("");
+const hexAt = (png: PNG, i: number) => [0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("");
 
 describe("cabinet sources (art/cabinets.json)", () => {
   test("each palette maps every colour of the Sweet Sam cabinet", () => {
     const source = colours(sourceCabinet());
     expect(source.sort()).toEqual(["1a1c2c", "5d275d", "b13e53", "ef7d57", "ffcd75"]);
-    for (const c of cabinets) expect({ name: c.name, keys: Object.keys(c.palette).sort() }).toEqual({ name: c.name, keys: source });
+    for (const c of cabinets)
+      expect({ name: c.name, keys: Object.keys(c.palette).sort() }).toEqual({ name: c.name, keys: source });
   });
 });
 
@@ -38,7 +38,7 @@ describe("generated cabinets", () => {
 
     test(`${c.name}: marquee is regenerated, not the hand-drawn Sweet Sam one's`, () => {
       const out = renderCabinet(c);
-      const letter = c.palette.ffcd75!;
+      const letter = c.palette["ffcd75"]!;
       let lit = 0;
       for (let i = 0; i < 54 * 1680 * 4; i += 4) if (hexAt(out, i) === letter) lit++;
       expect(lit).toBeGreaterThan(0);

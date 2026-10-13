@@ -15,12 +15,17 @@ class FakeSoftware implements Software {
   draws: [Surface, number][] = [];
   over = false;
   points = 0;
-  constructor(
-    readonly name: SoftwareName,
-    readonly highScore: number,
-    private readonly bg: Sprite,
-    readonly prizes: readonly PrizeId[] = [],
-  ) {}
+  readonly name: SoftwareName;
+  readonly highScore: number;
+  private readonly bg: Sprite;
+  readonly prizes: readonly PrizeId[];
+
+  constructor(name: SoftwareName, highScore: number, bg: Sprite, prizes: readonly PrizeId[] = []) {
+    this.name = name;
+    this.highScore = highScore;
+    this.bg = bg;
+    this.prizes = prizes;
+  }
   background(): Sprite {
     return this.bg;
   }
@@ -638,7 +643,13 @@ describe("prize counter", () => {
     expect(snap(game)).toMatchObject({ software: "hive", run: "paid" });
     expect(built[0]!.prizes).toEqual(["honeyJar"]);
 
-    const free = newGame(null, { highScore: 0, tokens: 0, tickets: 0, prizes: ["sleepyBees"], player: { x: 80, y: 92, dir: "UP" } });
+    const free = newGame(null, {
+      highScore: 0,
+      tokens: 0,
+      tickets: 0,
+      prizes: ["sleepyBees"],
+      player: { x: 80, y: 92, dir: "UP" },
+    });
     enterHive(free.game);
     expect(snap(free.game).run).toBe("free");
     expect(free.built[0]!.prizes).toEqual(["sleepyBees"]);
@@ -694,13 +705,22 @@ describe("progress", () => {
     const { game } = newGame();
     enterHive(game);
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 0 });
-    const restored = new Game(null, { createSoftware: fakes().factory, restore: { highScore: 9, tokens: 2, tickets: 31, prizes: [], player: { x: 80, y: 92, dir: "UP" } } });
+    const restored = new Game(null, {
+      createSoftware: fakes().factory,
+      restore: { highScore: 9, tokens: 2, tickets: 31, prizes: [], player: { x: 80, y: 92, dir: "UP" } },
+    });
     games.push(restored);
     expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
   });
 
   test("carries owned prizes, and restore brings them back in catalogue order", () => {
-    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, prizes: ["sleepyBees", "honeyJar"], player: { x: 80, y: 92, dir: "UP" } });
+    const { game } = newGame(null, {
+      highScore: 0,
+      tokens: 5,
+      tickets: 0,
+      prizes: ["sleepyBees", "honeyJar"],
+      player: { x: 80, y: 92, dir: "UP" },
+    });
     expect(game.progress().prizes).toEqual(["honeyJar", "sleepyBees"]);
     expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees"]);
   });
@@ -717,7 +737,13 @@ describe("progress", () => {
   });
 
   test("a saved position inside the prize counter keeps the start position", () => {
-    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 100, dir: "LEFT" } });
+    const { game } = newGame(null, {
+      highScore: 0,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 80, y: 100, dir: "LEFT" },
+    });
     expect(snap(game).arcade.player).toMatchObject({ x: 80, y: 92, dir: "LEFT" });
   });
 });

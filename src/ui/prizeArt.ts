@@ -21,14 +21,7 @@ export const prizeArt = {
     ".kkkkkk.",
   ],
   /** A red running shoe with a white sole: stands on the floor right of the Sweet Sam cabinet. */
-  runningShoes: [
-    ".kkkk....",
-    "krwrrk...",
-    "krwrrkkk.",
-    "krrrrrrrk",
-    "kwwwwwwwk",
-    ".kkkkkkk.",
-  ],
+  runningShoes: [".kkkk....", "krwrrk...", "krwrrkkk.", "krrrrrrrk", "kwwwwwwwk", ".kkkkkkk."],
   /** A framed picture of a bee asleep under a "z": hangs on the wall above the Sweet Sam cabinet. */
   sleepyBees: [
     "kkkkkkkkkkkk",

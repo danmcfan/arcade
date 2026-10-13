@@ -29,7 +29,9 @@ function game(v: Verify): GameSnapshot {
 }
 
 function stored(v: Verify): { v: number; tokens: number; tickets: number } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<typeof stored>;
+  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
+    typeof stored
+  >;
 }
 
 /** From the hub start position: walk up to the Sweet Sam cabinet and press Space. */
@@ -47,19 +49,31 @@ function pauseMenu(v: Verify): void {
   v.tap("space"); // New game -> intro
   v.tap("space"); // intro -> hub
   let g = game(v);
-  check(g.software === null && g.arcade.tokens === 5 && g.arcade.tickets === 0, "a New game shows 5 tokens and 0 tickets in the hub", g.arcade);
+  check(
+    g.software === null && g.arcade.tokens === 5 && g.arcade.tickets === 0,
+    "a New game shows 5 tokens and 0 tickets in the hub",
+    g.arcade,
+  );
   v.frame("1-hub-new-game");
 
   startSweetSam(v);
   g = game(v);
-  check(g.software === "hive" && g.run === "paid" && g.arcade.tokens === 4, "starting Sweet Sam spends exactly 1 token", g.arcade);
+  check(
+    g.software === "hive" && g.run === "paid" && g.arcade.tokens === 4,
+    "starting Sweet Sam spends exactly 1 token",
+    g.arcade,
+  );
   check(stored(v)?.v === 3 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 3)", stored(v));
   v.step(150, { left: true });
 
   v.tap("escape");
   const t = v.snapshot<TitleSnapshot>();
   g = game(v);
-  check(t.phase === "playing" && g.menu === "paused" && g.cursor === 0, "Esc in Sweet Sam opens the minigame pause menu (not the hub pause menu)", { phase: t.phase, menu: g.menu });
+  check(
+    t.phase === "playing" && g.menu === "paused" && g.cursor === 0,
+    "Esc in Sweet Sam opens the minigame pause menu (not the hub pause menu)",
+    { phase: t.phase, menu: g.menu },
+  );
   v.frame("2-minigame-pause");
   const frozen = JSON.stringify(g.sw);
   v.step(60, { left: true });
@@ -90,7 +104,11 @@ function pauseMenu(v: Verify): void {
   v.tap("space");
   g = game(v);
   check(g.software === null && g.menu === null && g.payout === null, "Quit game returns to the hub with no payout", g);
-  check(g.arcade.tokens === 4 && g.arcade.tickets === 0, "after Quit game the token stays spent and no tickets are paid", g.arcade);
+  check(
+    g.arcade.tokens === 4 && g.arcade.tickets === 0,
+    "after Quit game the token stays spent and no tickets are paid",
+    g.arcade,
+  );
   check(stored(v)?.tokens === 4 && stored(v)?.tickets === 0, "Quit game saves");
   v.frame("5-hub-after-quit");
   v.tap("escape");
@@ -112,7 +130,9 @@ function highscoreScript(tick: number): InputScript {
 }
 
 function loadHighscore(v: Verify, tick: number): void {
-  v.page.eval(`(() => { const a = window.__arcade; a.pause(); a.seed(21); a.load("game"); a.runScript(${JSON.stringify(highscoreScript(tick))}); return "ok"; })()`);
+  v.page.eval(
+    `(() => { const a = window.__arcade; a.pause(); a.seed(21); a.load("game"); a.runScript(${JSON.stringify(highscoreScript(tick))}); return "ok"; })()`,
+  );
 }
 
 function payout(v: Verify): void {
@@ -120,28 +140,51 @@ function payout(v: Verify): void {
   v.openHook("scene=game");
   loadHighscore(v, 2870);
   let g = v.snapshot<GameSnapshot>();
-  check(g.software === "hive" && g.menu === null && g.arcade.tokens === 4 && g.arcade.tickets === 0, "one tick before the run ends: a paid Sweet Sam run", g.arcade);
+  check(
+    g.software === "hive" && g.menu === null && g.arcade.tokens === 4 && g.arcade.tickets === 0,
+    "one tick before the run ends: a paid Sweet Sam run",
+    g.arcade,
+  );
   v.step(1, { up: true });
   g = v.snapshot<GameSnapshot>();
   check(g.menu === "payout" && g.software === "hive", "game over opens the payout over the last frame", g.menu);
   check(g.arcade.highScore === 560, "the high score is updated", g.arcade.highScore);
-  check(g.payout?.score === 560 && g.payout.tickets === 0 && g.payout.total === 5 && g.payout.counting, "the payout starts at 560 points and 0 tickets, 5 to pay", g.payout);
+  check(
+    g.payout?.score === 560 && g.payout.tickets === 0 && g.payout.total === 5 && g.payout.counting,
+    "the payout starts at 560 points and 0 tickets, 5 to pay",
+    g.payout,
+  );
   v.frame("6-payout-open");
   v.step(25);
   g = v.snapshot<GameSnapshot>();
-  check(g.payout?.score === 460 && g.payout.tickets === 1, "the score spins down by 100 as the tickets spin up by 1", g.payout);
+  check(
+    g.payout?.score === 460 && g.payout.tickets === 1,
+    "the score spins down by 100 as the tickets spin up by 1",
+    g.payout,
+  );
   v.frame("7-payout-mid-spin");
   v.page.eval("window.__arcade.sounds()");
   v.step(20);
-  check(JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")).includes("play:ticket"), "each ticket plays the ticket sound");
+  check(
+    JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")).includes("play:ticket"),
+    "each ticket plays the ticket sound",
+  );
   v.tap("space");
   g = v.snapshot<GameSnapshot>();
-  check(g.menu === "payout" && g.payout?.score === 0 && g.payout.tickets === 5 && !g.payout.counting, "Space skips to the totals", g.payout);
+  check(
+    g.menu === "payout" && g.payout?.score === 0 && g.payout.tickets === 5 && !g.payout.counting,
+    "Space skips to the totals",
+    g.payout,
+  );
   v.frame("8-payout-totals");
   v.tap("space");
   g = v.snapshot<GameSnapshot>();
   check(g.software === null && g.menu === null, "Space again returns to the hub");
-  check(g.arcade.tickets === 5 && g.arcade.tokens === 4, "the hub shows the new ticket total (560 points: 5 tickets)", g.arcade);
+  check(
+    g.arcade.tickets === 5 && g.arcade.tokens === 4,
+    "the hub shows the new ticket total (560 points: 5 tickets)",
+    g.arcade,
+  );
   v.frame("9-hub-tickets");
 }
 
@@ -153,7 +196,11 @@ function upgradeV1(v: Verify): void {
   v.openHook();
   v.tap("space"); // Continue
   const g = game(v);
-  check(g.arcade.highScore === 300 && g.arcade.player.x === 60 && g.arcade.player.dir === "LEFT", "Continue from a v: 1 save keeps its high score and position", g.arcade);
+  check(
+    g.arcade.highScore === 300 && g.arcade.player.x === 60 && g.arcade.player.dir === "LEFT",
+    "Continue from a v: 1 save keeps its high score and position",
+    g.arcade,
+  );
   check(g.arcade.tokens === 5 && g.arcade.tickets === 0, "and adds 5 tokens and 0 tickets", g.arcade);
   check(stored(v)?.v === 3, "the save is rewritten as v: 3", stored(v));
 }
@@ -170,11 +217,19 @@ function freePlay(v: Verify): void {
   v.frame("10-hub-free-play");
   startSweetSam(v);
   g = game(v);
-  check(g.software === "hive" && g.run === "free" && g.arcade.tokens === 0, "with 0 tokens Sweet Sam still starts, as free play", g);
+  check(
+    g.software === "hive" && g.run === "free" && g.arcade.tokens === 0,
+    "with 0 tokens Sweet Sam still starts, as free play",
+    g,
+  );
   // Stand still and let the bees end the run.
   for (let n = 0; n < 100 && game(v).menu !== "payout"; n++) v.step(60);
   g = game(v);
-  check(g.menu === "payout" && g.payout?.freePlay === true && g.payout.total === 0, "the free play ends in a payout that pays nothing", g.payout);
+  check(
+    g.menu === "payout" && g.payout?.freePlay === true && g.payout.total === 0,
+    "the free play ends in a payout that pays nothing",
+    g.payout,
+  );
   check(g.arcade.tickets === 7, "free play adds no tickets", g.arcade);
   v.frame("11-payout-free-play");
   v.tap("space");
@@ -198,7 +253,11 @@ function recordPayout(v: Verify): void {
     { scene: "game" },
   );
   const g = v.snapshot<GameSnapshot>();
-  check(g.software === null && g.arcade.tickets === 5, "the recording ran the payout to the hub with 5 tickets", g.arcade);
+  check(
+    g.software === null && g.arcade.tickets === 5,
+    "the recording ran the payout to the hub with 5 tickets",
+    g.arcade,
+  );
 }
 
 await verify("economy", (v) => {

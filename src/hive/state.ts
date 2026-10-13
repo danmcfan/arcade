@@ -4,9 +4,24 @@ import type { Input } from "../engine/input.ts";
 import { soundDeath, soundPower, soundStart } from "../engine/assets.ts";
 import type { HiveStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
-import { cameraShakeEnemyEatIntensity, cameraShakeEnemyEatTicks, cameraShakePowerPelletIntensity, cameraShakePowerPelletTicks } from "./camera.ts";
-import { particleBurstBeeEatenCount, particleBurstPlayerEatenCount, particleColorRed, particleColorTeal } from "./particle.ts";
-import { bonusEatFrameCount, resetScaredEatAwardIfNobodyScared, scaredBeeEatPoints, spawnBonusEatIndicator } from "./bonusEat.ts";
+import {
+  cameraShakeEnemyEatIntensity,
+  cameraShakeEnemyEatTicks,
+  cameraShakePowerPelletIntensity,
+  cameraShakePowerPelletTicks,
+} from "./camera.ts";
+import {
+  particleBurstBeeEatenCount,
+  particleBurstPlayerEatenCount,
+  particleColorRed,
+  particleColorTeal,
+} from "./particle.ts";
+import {
+  bonusEatFrameCount,
+  resetScaredEatAwardIfNobodyScared,
+  scaredBeeEatPoints,
+  spawnBonusEatIndicator,
+} from "./bonusEat.ts";
 import {
   newItems,
   pointToTile,
@@ -110,7 +125,11 @@ export class StartState implements State {
   /** Counts down START frames while the player blink-in plays. */
   respawnBlinkRemaining = 0;
 
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.startTicks = startTicks;
@@ -146,7 +165,11 @@ export class StartState implements State {
 
 /** Active during normal gameplay. */
 export class PlayState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.player.hidden = false;
@@ -301,7 +324,11 @@ export class PlayState implements State {
 
 /** Active during a short pause (e.g., when an enemy is eaten). */
 export class PauseState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = framesPerSecond * 1;
@@ -320,7 +347,11 @@ export class PauseState implements State {
 
 /** Holds the maze as-is after a death so the round does not restart immediately. */
 export class DeathWaitState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = deathRoundDelayTicks;
@@ -343,7 +374,11 @@ export class DeathWaitState implements State {
  * Play — then game over for the host.
  */
 export class FinalDeathWaitState implements State {
-  constructor(private readonly s: HiveSoftware) {}
+  private readonly s: HiveSoftware;
+
+  constructor(s: HiveSoftware) {
+    this.s = s;
+  }
 
   onEnter(): void {
     this.s.pauseTicks = deathRoundDelayTicks;

@@ -31,7 +31,14 @@ import { blocked, newState, type RunKind, type State } from "../arcade/state.ts"
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./registry.ts";
-import { closeItemIndex, firstPrizeIndex, minigamePauseMenu, prizeCounterItems, quitGameIndex, tokenItemIndex } from "./menus.ts";
+import {
+  closeItemIndex,
+  firstPrizeIndex,
+  minigamePauseMenu,
+  prizeCounterItems,
+  quitGameIndex,
+  tokenItemIndex,
+} from "./menus.ts";
 import { drawHud } from "../ui/hud.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
@@ -123,7 +130,12 @@ export class Game implements Scene {
     this.arcade.tickets = p.tickets;
     this.arcade.prizes = inCatalogueOrder(p.prizes);
     player.direction = p.player.dir;
-    const rect = { x: p.player.x - player.width / 2, y: p.player.y - player.height / 2, w: player.width, h: player.height };
+    const rect = {
+      x: p.player.x - player.width / 2,
+      y: p.player.y - player.height / 2,
+      w: player.width,
+      h: player.height,
+    };
     const inside = rect.x >= 0 && rect.y >= 0 && rect.x + rect.w <= imageArcade.w && rect.y + rect.h <= imageArcade.h;
     if (inside && !blocked(this.arcade, rect)) {
       player.x = p.player.x;
@@ -139,7 +151,13 @@ export class Game implements Scene {
   progress(): Progress {
     const a = this.arcade;
     const p = a.player;
-    return { highScore: a.highScore, tokens: a.tokens, tickets: a.tickets, prizes: [...a.prizes], player: { x: p.x, y: p.y, dir: p.direction } };
+    return {
+      highScore: a.highScore,
+      tokens: a.tokens,
+      tickets: a.tickets,
+      prizes: [...a.prizes],
+      player: { x: p.x, y: p.y, dir: p.direction },
+    };
   }
 
   /** Silence the hub melody while a menu covers the game. */

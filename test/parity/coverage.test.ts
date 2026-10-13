@@ -18,7 +18,9 @@ function fixtureScenarios(): string[] {
 /** `parityTest("x")` calls in each parity test file, as `[file, scenario]`. */
 function registrations(): [string, string][] {
   const out: [string, string][] = [];
-  for (const file of readdirSync(parityDir).filter((f) => f.endsWith(".test.ts")).sort()) {
+  for (const file of readdirSync(parityDir)
+    .filter((f) => f.endsWith(".test.ts"))
+    .sort()) {
     const src = readFileSync(`${parityDir}${file}`, "utf8");
     for (const m of src.matchAll(/^\s*parityTest\(\s*"([^"]+)"\s*\)/gm)) out.push([file, m[1] as string]);
   }
@@ -29,14 +31,17 @@ test("every fixture scenario is registered by exactly one parity test", () => {
   const counts = new Map<string, string[]>();
   for (const [file, name] of registrations()) counts.set(name, [...(counts.get(name) ?? []), file]);
   const unregistered = fixtureScenarios().filter((s) => !counts.has(s));
-  const duplicated = [...counts].filter(([, files]) => files.length > 1).map(([s, files]) => `${s} (${files.join(", ")})`);
+  const duplicated = [...counts]
+    .filter(([, files]) => files.length > 1)
+    .map(([s, files]) => `${s} (${files.join(", ")})`);
   expect(unregistered).toEqual([]);
   expect(duplicated).toEqual([]);
 });
 
 test("every registered parity scenario has an input script and a trace", () => {
-  const missing = registrations()
-    .flatMap(([file, name]) => [inputPath(name), tracePath(name)].filter((p) => !existsSync(p)).map((p) => `${file}: ${p}`));
+  const missing = registrations().flatMap(([file, name]) =>
+    [inputPath(name), tracePath(name)].filter((p) => !existsSync(p)).map((p) => `${file}: ${p}`),
+  );
   expect(missing).toEqual([]);
 });
 

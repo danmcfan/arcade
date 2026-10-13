@@ -49,7 +49,7 @@ export function lumberjackTrees(snapshot: unknown): LumberjackTreeSnapshot[] {
       typeof t === "object" &&
       t !== null &&
       TREE_NUMBERS.every((k) => typeof (t as Record<string, unknown>)[k] === "number") &&
-      typeof (t as Record<string, unknown>).shakeRight === "boolean";
+      typeof (t as Record<string, unknown>)["shakeRight"] === "boolean";
     if (!ok) throw new Error(`not a lumberjack snapshot: bad trees[${i}]`);
   }
   return trees as LumberjackTreeSnapshot[];
@@ -101,8 +101,7 @@ export function treeTopEdgeMasks(
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const c = texel(x + 0.5, y + 0.5);
-        const edge =
-          texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
+        const edge = texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
         const key = y * width + x;
         if (edge && !seen.has(key)) {
           seen.add(key);

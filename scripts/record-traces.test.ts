@@ -10,8 +10,17 @@ describe("encodeTrace", () => {
     const dir = mkdtempSync(join(tmpdir(), "traces-"));
     try {
       const path = join(dir, "t.jsonl.gz");
-      writeFileSync(path, encodeTrace([{ tick: 1, a: [1, 2] }, { tick: 2, a: [] }]));
-      expect(readTrace(path)).toEqual([{ tick: 1, a: [1, 2] }, { tick: 2, a: [] }]);
+      writeFileSync(
+        path,
+        encodeTrace([
+          { tick: 1, a: [1, 2] },
+          { tick: 2, a: [] },
+        ]),
+      );
+      expect(readTrace(path)).toEqual([
+        { tick: 1, a: [1, 2] },
+        { tick: 2, a: [] },
+      ]);
       expect(new TextDecoder().decode(Bun.gunzipSync(encodeTrace([{ tick: 1 }])))).toBe('{"tick":1}\n');
     } finally {
       rmSync(dir, { recursive: true, force: true });

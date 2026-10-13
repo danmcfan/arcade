@@ -60,7 +60,11 @@ const sourcePalette = { ...sweetie, "#": sweetie.w };
 
 /** `file` as committed at `rev`, or undefined when it is not there. */
 function gitShow(rev: string, file: string): Buffer | undefined {
-  const r = Bun.spawnSync(["git", "show", `${rev}:${relative(repoRoot, resolve(file))}`], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
+  const r = Bun.spawnSync(["git", "show", `${rev}:${relative(repoRoot, resolve(file))}`], {
+    cwd: repoRoot,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   return r.exitCode === 0 ? Buffer.from(r.stdout) : undefined;
 }
 
@@ -93,9 +97,14 @@ export async function load(spec: string, rev?: string): Promise<Panel[]> {
         throw new Error(`${file}'s ${name} has no entry "${key}"`);
       }
     }
-    if (isRows(value)) return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
-    const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v] as const) : Object.entries((value ?? {}) as object);
-    const panels = entries.filter(([, v]) => isRows(v)).map(([k, v]) => ({ label: `${name} ${k}`, png: toPng(v as Rows, sourcePalette) }));
+    if (isRows(value))
+      return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
+    const entries = Array.isArray(value)
+      ? value.map((v, i) => [String(i), v] as const)
+      : Object.entries((value ?? {}) as object);
+    const panels = entries
+      .filter(([, v]) => isRows(v))
+      .map(([k, v]) => ({ label: `${name} ${k}`, png: toPng(v as Rows, sourcePalette) }));
     if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
     return panels;
   }
@@ -127,7 +136,10 @@ const checker = ["#8c8c8c", "#a0a0a0"];
 /** `text` in the game font, white, at 2x. */
 function label(text: string): PNG {
   const chars = [...text.toUpperCase()].map((ch) => glyphs[ch] ?? glyphs["?"]!);
-  const png = blank(chars.reduce((w, rows) => w + rows[0]!.length + 1, 0), glyphHeight);
+  const png = blank(
+    chars.reduce((w, rows) => w + rows[0]!.length + 1, 0),
+    glyphHeight,
+  );
   let x = 0;
   for (const rows of chars) {
     paint(png, rows, { "#": labelColour }, x, 0);
@@ -179,7 +191,8 @@ export function sheet(panels: readonly Panel[], k?: number): PNG {
     stamp(out, tile.label, x, y);
     const top = y + labelH;
     for (let py = 0; py < tile.png.height; py++) {
-      for (let px = 0; px < tile.png.width; px++) plot(out, x + px, top + py, checker[(Math.trunc(px / 8) + Math.trunc(py / 8)) % 2]!);
+      for (let px = 0; px < tile.png.width; px++)
+        plot(out, x + px, top + py, checker[(Math.trunc(px / 8) + Math.trunc(py / 8)) % 2]!);
     }
     stamp(out, tile.png, x, top);
   }
@@ -215,9 +228,10 @@ async function main(argv: string[]): Promise<void> {
     else args.push(a);
   }
   const [command, ...specs] = args;
-  const k = opts.scale === undefined ? undefined : Number(opts.scale);
-  if (k !== undefined && !(Number.isInteger(k) && k > 0)) throw new Error(`--scale ${opts.scale} is not a whole number above 0`);
-  const out = (name: string): string => resolve(opts.out ?? join(outDir, `${name}.png`));
+  const k = opts["scale"] === undefined ? undefined : Number(opts["scale"]);
+  if (k !== undefined && !(Number.isInteger(k) && k > 0))
+    throw new Error(`--scale ${opts["scale"]} is not a whole number above 0`);
+  const out = (name: string): string => resolve(opts["out"] ?? join(outDir, `${name}.png`));
   if (specs.length === 0) usage();
 
   switch (command) {
@@ -236,7 +250,9 @@ async function main(argv: string[]): Promise<void> {
         for (const { label, png } of await load(spec)) {
           console.log(`${label} (${png.width}x${png.height})`);
           for (const [c, n] of [...colours(png)].sort((a, b) => b[1] - a[1])) {
-            console.log(`  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`);
+            console.log(
+              `  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`,
+            );
           }
         }
       }
@@ -249,8 +265,10 @@ async function main(argv: string[]): Promise<void> {
       return;
     }
     case "before": {
-      const rev = opts.ref ?? "origin/main";
-      if (Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0) {
+      const rev = opts["ref"] ?? "origin/main";
+      if (
+        Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0
+      ) {
         throw new Error(`--ref ${rev} is not a commit`);
       }
       const panels: Panel[] = [];

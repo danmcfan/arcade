@@ -29,7 +29,13 @@ export function drawIcon(screen: Surface, name: IconName, x: number, y: number):
 /** Draw the counts across a hub `width` px wide. */
 export function drawHud(screen: Surface, tokens: number, tickets: number, width: number): void {
   drawIcon(screen, "token", hudInset, iconTop);
-  drawText(screen, tokensLabel(tokens), hudInset + iconRects.token.w + iconGap, hudTop, tokens > 0 ? "yellow" : "orange");
+  drawText(
+    screen,
+    tokensLabel(tokens),
+    hudInset + iconRects.token.w + iconGap,
+    hudTop,
+    tokens > 0 ? "yellow" : "orange",
+  );
 
   const t = `${tickets}`;
   const tx = width - hudInset - textWidth(t);

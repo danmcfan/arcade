@@ -1,6 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { sweetie, sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, flipX, flipY, mirrorX, mirrorY, outline, overlay, recolour, scale, toPng, toRows } from "./pixel-art.ts";
+import {
+  checkRows,
+  colours,
+  flipX,
+  flipY,
+  mirrorX,
+  mirrorY,
+  outline,
+  overlay,
+  recolour,
+  scale,
+  toPng,
+  toRows,
+} from "./pixel-art.ts";
 
 describe("sweetie", () => {
   test("gives 16 different colours one letter each", () => {
@@ -31,7 +44,14 @@ describe("PNGs and rows", () => {
   });
 
   test("colours counts each colour and transparent", () => {
-    expect(colours(toPng(rows))).toEqual(new Map([[sweetie.k, 1], ["transparent", 1], [sweetie.r, 1], [sweetie.y, 3]]));
+    expect(colours(toPng(rows))).toEqual(
+      new Map([
+        [sweetie.k, 1],
+        ["transparent", 1],
+        [sweetie.r, 1],
+        [sweetie.y, 3],
+      ]),
+    );
   });
 });
 

@@ -35,7 +35,9 @@ function hive(v: Verify): HiveSnapshot {
 }
 
 function stored(v: Verify): { v: number; tickets: number; prizes: PrizeId[] } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<typeof stored>;
+  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
+    typeof stored
+  >;
 }
 
 function sounds(v: Verify): string[] {
@@ -65,7 +67,11 @@ function startSweetSam(v: Verify): void {
 function buyHoneyJar(v: Verify): void {
   console.log("buy the honey jar (title scene, 60 tickets, no prizes):");
   continueWith(v, 60, []);
-  check(game(v).arcade.prizes === undefined && game(v).arcade.tickets === 60, "Continue restores 60 tickets and no prizes", game(v).arcade);
+  check(
+    game(v).arcade.prizes === undefined && game(v).arcade.tickets === 60,
+    "Continue restores 60 tickets and no prizes",
+    game(v).arcade,
+  );
   v.frame("1-hub-no-prizes");
 
   v.step(4, { down: true });
@@ -78,18 +84,34 @@ function buyHoneyJar(v: Verify): void {
   sounds(v);
   v.tap("space");
   let a = game(v).arcade;
-  check(a.tickets === 35 && JSON.stringify(a.prizes) === '["honeyJar"]', "Space buys the honey jar for 25 tickets: 35 left, honey jar owned", a);
+  check(
+    a.tickets === 35 && JSON.stringify(a.prizes) === '["honeyJar"]',
+    "Space buys the honey jar for 25 tickets: 35 left, honey jar owned",
+    a,
+  );
   check(sounds(v).includes("play:select"), "the purchase chirps");
   const s = stored(v);
-  check(s?.v === 3 && s.tickets === 35 && JSON.stringify(s.prizes) === '["honeyJar"]', "the purchase is saved at once, as a v3 save", s);
+  check(
+    s?.v === 3 && s.tickets === 35 && JSON.stringify(s.prizes) === '["honeyJar"]',
+    "the purchase is saved at once, as a v3 save",
+    s,
+  );
   v.frame("3-menu-honey-jar-owned");
 
   v.tap("space");
   a = game(v).arcade;
-  check(a.tickets === 35 && sounds(v).includes("play:deny"), "Space on the owned honey jar plays the no sound and takes nothing", a);
+  check(
+    a.tickets === 35 && sounds(v).includes("play:deny"),
+    "Space on the owned honey jar plays the no sound and takes nothing",
+    a,
+  );
   v.tap("down");
   v.tap("space");
-  check(game(v).arcade.tickets === 35 && sounds(v).includes("play:deny"), "running shoes (50) can't be bought with 35 tickets", game(v).arcade);
+  check(
+    game(v).arcade.tickets === 35 && sounds(v).includes("play:deny"),
+    "running shoes (50) can't be bought with 35 tickets",
+    game(v).arcade,
+  );
 
   v.tap("escape");
   check(game(v).menu === null, "Esc closes the menu", game(v).menu);
@@ -105,7 +127,11 @@ function buyHoneyJar(v: Verify): void {
 function allPrizes(v: Verify): void {
   console.log("all three prizes (title scene):");
   continueWith(v, 0, ["honeyJar", "runningShoes", "sleepyBees"]);
-  check(JSON.stringify(game(v).arcade.prizes) === '["honeyJar","runningShoes","sleepyBees"]', "Continue restores all three prizes", game(v).arcade.prizes);
+  check(
+    JSON.stringify(game(v).arcade.prizes) === '["honeyJar","runningShoes","sleepyBees"]',
+    "Continue restores all three prizes",
+    game(v).arcade.prizes,
+  );
   v.step(4, { up: true });
   v.frame("6-hub-all-prizes");
 
@@ -115,7 +141,11 @@ function allPrizes(v: Verify): void {
   v.step(24, { left: true });
   v.step(48, { right: true });
   const p = game(v).arcade.player;
-  check(p.x === 104 && p.y === y, "the player walks past the jar and the shoe along the cabinets (decorations are not solid)", p);
+  check(
+    p.x === 104 && p.y === y,
+    "the player walks past the jar and the shoe along the cabinets (decorations are not solid)",
+    p,
+  );
   v.frame("7-hub-walk-over-decorations");
   v.step(24, { left: true });
 
@@ -123,7 +153,11 @@ function allPrizes(v: Verify): void {
   v.step(1);
   check(hive(v).lives === 4, "Sweet Sam starts with 4 lives", hive(v).lives);
   v.step(125);
-  check(hive(v).state === "PLAY" && hive(v).player.velocity === 1.125, "the bear runs at 1.125 px a tick with the running shoes", hive(v).player);
+  check(
+    hive(v).state === "PLAY" && hive(v).player.velocity === 1.125,
+    "the bear runs at 1.125 px a tick with the running shoes",
+    hive(v).player,
+  );
   v.frame("8-sweet-sam-all-prizes");
 }
 
@@ -152,7 +186,11 @@ function videos(v: Verify): void {
   console.log("video:");
   v.record("buy-honey-jar", () => buyAndPlay(v), { storage: { [saveKey]: save(60, []) } });
   const g = game(v);
-  check(JSON.stringify(g.arcade.prizes) === '["honeyJar"]' && g.arcade.tickets === 35, "the video bought the honey jar", g.arcade);
+  check(
+    JSON.stringify(g.arcade.prizes) === '["honeyJar"]' && g.arcade.tickets === 35,
+    "the video bought the honey jar",
+    g.arcade,
+  );
   check(g.software === "hive" && (g.sw as HiveSnapshot).lives === 4, "and started Sweet Sam with 4 lives", g.software);
 }
 

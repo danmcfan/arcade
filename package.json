@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks && git config blame.ignoreRevsFile .git-blame-ignore-revs",
     "dev": "bun --hot --port=${ARCADE_PORT:-3000} ./index.html",
     "build": "bun build ./index.html --outdir dist --minify",
     "preview": "bunx serve dist",
@@ -16,13 +16,16 @@
     "traces": "bun scripts/record-traces.ts",
     "verify": "bun scripts/verify.ts",
     "pixel": "bun scripts/pixel.ts",
-    "check": "bun run typecheck && bun test && bun run build"
+    "check": "bun run typecheck && bun run format:check && bun test && bun run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
     "@types/pngjs": "6.0.5",
     "pixelmatch": "7.2.0",
     "pngjs": "7.0.0",
+    "prettier": "3.9.10",
     "typescript": "7.0.2"
   }
 }

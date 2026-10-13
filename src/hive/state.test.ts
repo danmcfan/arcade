@@ -78,8 +78,18 @@ describe("construction", () => {
   });
 
   test("the high score boots clamped to 0..999999", () => {
-    expect(new HiveSoftware(5_000_000).snapshot().dials.slice(6).map((d) => d[0])).toEqual([9, 9, 9, 9, 9, 9]);
-    expect(new HiveSoftware(-4).snapshot().dials.slice(6).map((d) => d[0])).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(
+      new HiveSoftware(5_000_000)
+        .snapshot()
+        .dials.slice(6)
+        .map((d) => d[0]),
+    ).toEqual([9, 9, 9, 9, 9, 9]);
+    expect(
+      new HiveSoftware(-4)
+        .snapshot()
+        .dials.slice(6)
+        .map((d) => d[0]),
+    ).toEqual([0, 0, 0, 0, 0, 0]);
   });
 });
 

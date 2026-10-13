@@ -77,7 +77,15 @@ function shown(frame: PNG, p: Placed): number {
 function placements(s: FireflySnapshot): { player: Placed; sparks: Placed[]; moths: Placed[]; hits: Placed[] } {
   const ox = cabinetInsetLeft;
   const oy = cabinetInsetTop;
-  const player = { src: firefly, sx: 0, sy: 0, w: 16, h: 16, x: snap(s.player.x + ox - 8), y: snap(s.player.y + oy - 8) };
+  const player = {
+    src: firefly,
+    sx: 0,
+    sy: 0,
+    w: 16,
+    h: 16,
+    x: snap(s.player.x + ox - 8),
+    y: snap(s.player.y + oy - 8),
+  };
   const sparks = s.bullets.map((b) => ({ src: spark, sx: 0, sy: 0, w: 8, h: 8, x: snap(b.x + ox), y: snap(b.y + oy) }));
   const moths: Placed[] = [];
   const hits: Placed[] = [];
@@ -85,7 +93,8 @@ function placements(s: FireflySnapshot): { player: Placed; sparks: Placed[]; mot
     if (b.x <= 0 || b.x >= 224 || b.y <= 0 || b.y >= 288) continue;
     if (b.deadFrames > 0) {
       const col = 5 - Math.trunc(b.deadFrames / 15);
-      if (col < 5) hits.push({ src: hit, sx: col * 32, sy: 0, w: 32, h: 32, x: snap(b.x + ox - 16), y: snap(b.y + oy - 16) });
+      if (col < 5)
+        hits.push({ src: hit, sx: col * 32, sy: 0, w: 32, h: 32, x: snap(b.x + ox - 16), y: snap(b.y + oy - 16) });
       continue;
     }
     const [row, col] = frameAngle(angle({ x: b.dx, y: b.dy }));
@@ -111,7 +120,11 @@ function backgroundMisses(frame: PNG, boxes: Placed[]): number {
 /** At least `share` of each sprite's pixels show (later sprites may overlap earlier ones). */
 function checkSprites(frame: PNG, what: string, placed: Placed[], share = 0.9): void {
   const worst = placed.map((p) => shown(frame, p));
-  check(worst.every((w) => w >= share), `${placed.length} ${what} drawn from the generated sheet`, worst.map((w) => w.toFixed(2)));
+  check(
+    worst.every((w) => w >= share),
+    `${placed.length} ${what} drawn from the generated sheet`,
+    worst.map((w) => w.toFixed(2)),
+  );
 }
 
 function checkFrame(v: Verify, name: string, want: { sparks: boolean; moths: number; hit: boolean }): void {
@@ -119,7 +132,10 @@ function checkFrame(v: Verify, name: string, want: { sparks: boolean; moths: num
   const frame = canvas(v);
   const p = placements(s);
   console.log(`${name} (tick ${v.snapshot<GameSnapshot>().tick}):`);
-  check(backgroundMisses(frame, [p.player, ...p.sparks, ...p.moths, ...p.hits]) === 0, "everywhere else the playfield is the night background (sky, stars, grass)");
+  check(
+    backgroundMisses(frame, [p.player, ...p.sparks, ...p.moths, ...p.hits]) === 0,
+    "everywhere else the playfield is the night background (sky, stars, grass)",
+  );
   check(shown(frame, p.player) === 1, "the firefly is drawn exactly", s.player);
   if (want.sparks) {
     check(p.sparks.length > 0, "sparks are in flight", s.bullets.length);
@@ -130,7 +146,11 @@ function checkFrame(v: Verify, name: string, want: { sparks: boolean; moths: num
     checkSprites(frame, "Moths", p.moths);
   }
   if (want.hit) {
-    check(p.hits.length > 0, "a Moth was hit", s.bugs.map((b) => b.deadFrames));
+    check(
+      p.hits.length > 0,
+      "a Moth was hit",
+      s.bugs.map((b) => b.deadFrames),
+    );
     checkSprites(frame, "hit effects", p.hits, 0.8);
   }
   v.frame(name, 2);
@@ -157,7 +177,10 @@ function sheets(v: Verify): void {
     const png = PNG.sync.write(render());
     const scale = file === "background.png" ? 2 : 8;
     writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, scale));
-    check(Buffer.compare(readFileSync(join(fireflyImagesDir, file)), png) === 0, `${file} is the committed file (written ${scale}x)`);
+    check(
+      Buffer.compare(readFileSync(join(fireflyImagesDir, file)), png) === 0,
+      `${file} is the committed file (written ${scale}x)`,
+    );
   }
 }
 
@@ -182,7 +205,11 @@ function video(v: Verify): void {
     { scene: "game" },
   );
   const sounds = JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")) as string[];
-  check(fireflySnapshot(v).bugs.length > 0 && sounds.includes("play:laser") && sounds.includes("play:boom"), "the recording played Firefly: sparks fired and a Moth hit", sounds.filter((e) => e.startsWith("play:")));
+  check(
+    fireflySnapshot(v).bugs.length > 0 && sounds.includes("play:laser") && sounds.includes("play:boom"),
+    "the recording played Firefly: sparks fired and a Moth hit",
+    sounds.filter((e) => e.startsWith("play:")),
+  );
   v.screenshot("playing-screenshot");
 }
 

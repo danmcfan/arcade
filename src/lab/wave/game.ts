@@ -88,9 +88,7 @@ export class Wave implements Scene {
 
   /** Go `StepInterval()`: grid steps per tick, integer division. */
   stepInterval(): number {
-    return Math.trunc(
-      (this.activeGridSize * this.activeGridSize) / (framesPerSecond * this.activeSeconds),
-    );
+    return Math.trunc((this.activeGridSize * this.activeGridSize) / (framesPerSecond * this.activeSeconds));
   }
 
   /**

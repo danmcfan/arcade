@@ -44,7 +44,15 @@ export function drawText(screen: Surface, text: string, x: number, y: number, in
  * first of them at `y`: a glyph cut off at the top or bottom, for the
  * payout's rolling digits.
  */
-export function drawGlyphRows(screen: Surface, ch: string, x: number, y: number, from: number, to: number, ink: Ink = "white"): void {
+export function drawGlyphRows(
+  screen: Surface,
+  ch: string,
+  x: number,
+  y: number,
+  from: number,
+  to: number,
+  ink: Ink = "white",
+): void {
   const i = index.get(ch.toUpperCase());
   const top = Math.max(0, from);
   const bottom = Math.min(glyphHeight, to);

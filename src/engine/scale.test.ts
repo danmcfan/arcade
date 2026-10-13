@@ -15,7 +15,12 @@ describe("fitScale (D1: integer scale in device pixels)", () => {
     // 856 device rows, and rounding up to 684.8125 makes a half-pixel-centred canvas 857 rows tall.
     // The 855-row hive seen in T11 came from CDP device-metrics emulation, which snaps to whole CSS px.
     expect(fitScale(336, 428, 1280, 800, 1.25)).toEqual({ scale: 2, integer: true, cssWidth: 537.6, cssHeight: 684.8 });
-    expect(fitScale(512, 288, 1280, 800, 1.25)).toEqual({ scale: 3, integer: true, cssWidth: 1228.8, cssHeight: 691.2 });
+    expect(fitScale(512, 288, 1280, 800, 1.25)).toEqual({
+      scale: 3,
+      integer: true,
+      cssWidth: 1228.8,
+      cssHeight: 691.2,
+    });
   });
 
   test("dpr 2", () => {

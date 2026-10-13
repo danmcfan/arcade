@@ -1,7 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { arpeggio, bass, melody, type Note } from "../src/ui/sounds.ts";
-import { denyPath, movePath, renderDeny, renderMove, renderSelect, renderTicket, renderTitle, selectPath, ticketPath, titlePath } from "./gen-ui-sounds.ts";
+import {
+  denyPath,
+  movePath,
+  renderDeny,
+  renderMove,
+  renderSelect,
+  renderTicket,
+  renderTitle,
+  selectPath,
+  ticketPath,
+  titlePath,
+} from "./gen-ui-sounds.ts";
 
 const length = (notes: readonly Note[]) => notes.reduce((t, [, len]) => t + len, 0);
 

@@ -9,7 +9,19 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { arpeggio, bass, blipEighth, denyBuzz, eighthsPerMinute, melody, moveBlip, sampleRate, selectChirp, ticketDing, type Note } from "../src/ui/sounds.ts";
+import {
+  arpeggio,
+  bass,
+  blipEighth,
+  denyBuzz,
+  eighthsPerMinute,
+  melody,
+  moveBlip,
+  sampleRate,
+  selectChirp,
+  ticketDing,
+  type Note,
+} from "../src/ui/sounds.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
 type Wave = (phase: number) => number;
@@ -25,7 +37,14 @@ function hz(midi: number): number {
 }
 
 /** Add `notes` into `out`: a fast attack, a decay to `sustain`, and a short release so nothing clicks. */
-function voice(out: Float64Array, notes: readonly Note[], eighth: number, wave: Wave, gain: number, sustain: number): void {
+function voice(
+  out: Float64Array,
+  notes: readonly Note[],
+  eighth: number,
+  wave: Wave,
+  gain: number,
+  sustain: number,
+): void {
   let start = 0;
   for (const [midi, len] of notes) {
     const n = Math.round(len * eighth * sampleRate);

@@ -43,23 +43,23 @@ function count(v: unknown): v is number {
 export function parseSave(raw: unknown): SaveData | null {
   if (raw === null || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if ((o.v !== 1 && o.v !== 2 && o.v !== 3) || !finite(o.highScore) || o.highScore < 0) return null;
-  const p = o.player as Record<string, unknown> | null | undefined;
+  if ((o["v"] !== 1 && o["v"] !== 2 && o["v"] !== 3) || !finite(o["highScore"]) || o["highScore"] < 0) return null;
+  const p = o["player"] as Record<string, unknown> | null | undefined;
   if (p === null || typeof p !== "object") return null;
-  if (!finite(p.x) || !finite(p.y) || !DIRECTIONS.includes(p.dir as Direction)) return null;
-  const tokens = o.v === 1 ? v1Upgrade.tokens : o.tokens;
-  const tickets = o.v === 1 ? v1Upgrade.tickets : o.tickets;
+  if (!finite(p["x"]) || !finite(p["y"]) || !DIRECTIONS.includes(p["dir"] as Direction)) return null;
+  const tokens = o["v"] === 1 ? v1Upgrade.tokens : o["tokens"];
+  const tickets = o["v"] === 1 ? v1Upgrade.tickets : o["tickets"];
   if (!count(tokens) || !count(tickets)) return null;
   // v1 and v2 saves own no prizes.
-  const prizes = o.v === 3 ? o.prizes : [];
+  const prizes = o["v"] === 3 ? o["prizes"] : [];
   if (!Array.isArray(prizes) || !prizes.every(isPrizeId)) return null;
   return {
     v: 3,
-    highScore: o.highScore,
+    highScore: o["highScore"],
     tokens,
     tickets,
     prizes: inCatalogueOrder(prizes),
-    player: { x: p.x, y: p.y, dir: p.dir as Direction },
+    player: { x: p["x"], y: p["y"], dir: p["dir"] as Direction },
   };
 }
 

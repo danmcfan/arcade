@@ -6,7 +6,14 @@ import { counterRect } from "../src/arcade/prizeCounter.ts";
 import { counterArt } from "../src/ui/counterArt.ts";
 import { icons } from "../src/ui/icons.ts";
 import { cabinetArt, roomHeight, roomWidth } from "../src/ui/hubArt.ts";
-import { playerFrameHeight, playerFrames, playerFramesFor, playerFrameWidth, playerSheetRows, sheetOrder } from "../src/ui/playerArt.ts";
+import {
+  playerFrameHeight,
+  playerFrames,
+  playerFramesFor,
+  playerFrameWidth,
+  playerSheetRows,
+  sheetOrder,
+} from "../src/ui/playerArt.ts";
 import { newPlayer } from "../src/arcade/entity.ts";
 import { images } from "../src/engine/assets.ts";
 import { prizeArt } from "../src/ui/prizeArt.ts";
@@ -35,7 +42,8 @@ import { checkRows } from "./pixel-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
-    for (const [ch, rows] of Object.entries(glyphs)) checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
+    for (const [ch, rows] of Object.entries(glyphs))
+      checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
   });
 
   test("every logo letter is 14x15", () => {
@@ -69,7 +77,8 @@ describe("UI art source", () => {
     // Sheet rows follow the player's frameDirection.
     expect(sheetOrder.map((d) => p.frameDirection[d])).toEqual([0, 1, 2, 3]);
     for (const dir of sheetOrder) {
-      for (const [i, frame] of playerFramesFor(dir).entries()) checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
+      for (const [i, frame] of playerFramesFor(dir).entries())
+        checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
     }
     const sheet = playerSheetRows();
     expect([sheet[0]!.length, sheet.length]).toEqual([images.player.width, images.player.height]);
@@ -101,7 +110,11 @@ describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, prizeA
     ["arcade.png", roomPath, renderRoom],
     ["player.png", playerPath, renderPlayer],
     ["prizes.png", prizesPath, renderPrizes],
-    ...titleCards.map((card): [string, string, () => PNG] => [card.file, titleCardPath(card.file), () => renderTitleCard(card)]),
+    ...titleCards.map((card): [string, string, () => PNG] => [
+      card.file,
+      titleCardPath(card.file),
+      () => renderTitleCard(card),
+    ]),
   ];
   for (const [name, path, render] of pngs) {
     test(name, () => {

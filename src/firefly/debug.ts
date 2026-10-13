@@ -32,7 +32,14 @@ export function drawBezierDebug(
     const t = i / steps;
     const currentPoint = patternFunc(t);
 
-    drawLine(screen, prevPoint.x + origin.x, prevPoint.y + origin.y, currentPoint.x + origin.x, currentPoint.y + origin.y, colorCurve);
+    drawLine(
+      screen,
+      prevPoint.x + origin.x,
+      prevPoint.y + origin.y,
+      currentPoint.x + origin.x,
+      currentPoint.y + origin.y,
+      colorCurve,
+    );
 
     prevPoint = currentPoint;
   }

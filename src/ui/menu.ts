@@ -91,7 +91,13 @@ export function controlsHeight(rows: number): number {
 }
 
 /** A controls table with its keys from `left`, its labels from `labelX` and its top edge at `top`. */
-export function drawControls(screen: Surface, rows: readonly ControlRow[], left: number, labelX: number, top: number): void {
+export function drawControls(
+  screen: Surface,
+  rows: readonly ControlRow[],
+  left: number,
+  labelX: number,
+  top: number,
+): void {
   rows.forEach((row, r) => {
     const y = top + r * controlsRowHeight;
     let x = left;

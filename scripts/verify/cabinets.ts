@@ -56,7 +56,11 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   if (w.sideways) v.step(24, w.sideways);
   v.step(32, { up: true });
   let s = v.snapshot<GameSnapshot>();
-  check(s.software === null && s.arcade.title === (w.name === "hive" ? "sweet" : w.name), `facing its hub cabinet shows the ${w.label} title`, s.arcade.title);
+  check(
+    s.software === null && s.arcade.title === (w.name === "hive" ? "sweet" : w.name),
+    `facing its hub cabinet shows the ${w.label} title`,
+    s.arcade.title,
+  );
   const hub = canvas(v);
 
   v.step(1, { up: true, space: true });
@@ -72,7 +76,10 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   }
   v.step(1);
   const cabinet = canvas(v);
-  check(cabinet.width === 336 && cabinet.height === 428, `${w.label} draws a 336x428 cabinet`, [cabinet.width, cabinet.height]);
+  check(cabinet.width === 336 && cabinet.height === 428, `${w.label} draws a 336x428 cabinet`, [
+    cabinet.width,
+    cabinet.height,
+  ]);
 
   // Esc opens the minigame pause menu; Quit game is its third item.
   v.tap("escape");
@@ -110,7 +117,8 @@ function sideBySide(shots: Shot[], path: string): void {
 
 function recordWalk(v: Verify): void {
   console.log("video:");
-  const software = () => (JSON.parse(v.page.eval("JSON.stringify(window.__arcade.snapshot())")) as GameSnapshot).software;
+  const software = () =>
+    (JSON.parse(v.page.eval("JSON.stringify(window.__arcade.snapshot())")) as GameSnapshot).software;
   const seen: (SoftwareName | null)[] = [];
   // Esc opens the minigame pause menu; Quit game is its third item.
   const quitGame = () => {

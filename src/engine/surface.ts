@@ -91,7 +91,14 @@ function rotatedTransform(
   ty -= rot.pivotY;
   const sin = Math.sin(rot.angle);
   const cos = Math.cos(rot.angle);
-  [a, b, tx, c, d, ty] = [cos * a - sin * c, cos * b - sin * d, cos * tx - sin * ty, sin * a + cos * c, sin * b + cos * d, sin * tx + cos * ty];
+  [a, b, tx, c, d, ty] = [
+    cos * a - sin * c,
+    cos * b - sin * d,
+    cos * tx - sin * ty,
+    sin * a + cos * c,
+    sin * b + cos * d,
+    sin * tx + cos * ty,
+  ];
   tx += rot.pivotX + x;
   ty += rot.pivotY + y;
   const f = Math.fround;

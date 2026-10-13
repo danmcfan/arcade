@@ -19,7 +19,9 @@ function check(ok: boolean, what: string, got?: unknown): void {
 }
 
 function stored(v: Verify): { highScore: number; player: { x: number; y: number; dir: string } } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<typeof stored>;
+  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
+    typeof stored
+  >;
 }
 
 function hookChecks(v: Verify): void {
@@ -29,7 +31,11 @@ function hookChecks(v: Verify): void {
   v.openHook();
 
   let s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "menu" && s.items.join() === "NEW GAME" && s.cursor === 0 && !s.canContinue, "opens on the title menu with only New game, selected", s);
+  check(
+    s.phase === "menu" && s.items.join() === "NEW GAME" && s.cursor === 0 && !s.canContinue,
+    "opens on the title menu with only New game, selected",
+    s,
+  );
   v.frame("1-menu-new");
   v.tap("up");
   check(v.snapshot<TitleSnapshot>().cursor === 0, "Up stays on New game");
@@ -47,7 +53,11 @@ function hookChecks(v: Verify): void {
   v.step(20, { left: true });
   v.tap("escape");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "paused" && s.items.join() === "RESUME,CONTROLS,QUIT TO MENU", "Esc in the hub opens the pause menu", s);
+  check(
+    s.phase === "paused" && s.items.join() === "RESUME,CONTROLS,QUIT TO MENU",
+    "Esc in the hub opens the pause menu",
+    s,
+  );
   v.frame("3-pause");
   const tick = s.game?.tick;
   v.step(20, { left: true });
@@ -64,19 +74,35 @@ function hookChecks(v: Verify): void {
   v.tap("down");
   v.tap("space");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "menu" && s.canContinue && s.cursor === 0, "Quit to menu returns to the title with Continue selected", s);
-  check(stored(v)?.player.x === 60 && stored(v)?.player.dir === "LEFT", "Quit to menu saves the player position", stored(v));
+  check(
+    s.phase === "menu" && s.canContinue && s.cursor === 0,
+    "Quit to menu returns to the title with Continue selected",
+    s,
+  );
+  check(
+    stored(v)?.player.x === 60 && stored(v)?.player.dir === "LEFT",
+    "Quit to menu saves the player position",
+    stored(v),
+  );
   v.frame("5-menu-continue");
 
   // New game over a save asks first; No keeps the save.
   v.tap("down");
   v.tap("space");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "confirm" && s.items.join() === "NO,YES" && s.cursor === 0, "New game with a save asks to confirm, No selected", s);
+  check(
+    s.phase === "confirm" && s.items.join() === "NO,YES" && s.cursor === 0,
+    "New game with a save asks to confirm, No selected",
+    s,
+  );
   v.frame("5b-confirm");
   v.tap("space");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "menu" && s.cursor === 1 && stored(v)?.player.x === 60, "No returns to the menu and keeps the save", s);
+  check(
+    s.phase === "menu" && s.cursor === 1 && stored(v)?.player.x === 60,
+    "No returns to the menu and keeps the save",
+    s,
+  );
   v.tap("up");
 
   // Reload: the save must come back from localStorage.
@@ -85,7 +111,11 @@ function hookChecks(v: Verify): void {
   check(s.phase === "menu" && s.canContinue && s.cursor === 0, "after a reload, Continue is available and selected", s);
   v.tap("space");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "playing" && s.game?.arcade.player.x === 60 && s.game.arcade.player.dir === "LEFT", "Continue restores the position", s.game?.arcade.player);
+  check(
+    s.phase === "playing" && s.game?.arcade.player.x === 60 && s.game.arcade.player.dir === "LEFT",
+    "Continue restores the position",
+    s.game?.arcade.player,
+  );
 
   // Closing the tab saves too.
   v.step(10, { right: true });
@@ -101,7 +131,11 @@ function hookChecks(v: Verify): void {
   v.frame("6-hive");
   v.tap("escape");
   s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "playing" && s.game?.menu === "paused", "Esc in a minigame opens the minigame pause menu, not the hub pause menu", s.phase);
+  check(
+    s.phase === "playing" && s.game?.menu === "paused",
+    "Esc in a minigame opens the minigame pause menu, not the hub pause menu",
+    s.phase,
+  );
   v.tap("down");
   v.tap("down");
   v.tap("space");
@@ -116,7 +150,10 @@ function keyboardChecks(v: Verify): void {
   v.open();
   v.page.eval("localStorage.clear()");
   v.open();
-  check(v.page.eval("String(window.__arcade === undefined)") === "true", "the test hook is not installed without ?debug");
+  check(
+    v.page.eval("String(window.__arcade === undefined)") === "true",
+    "the test hook is not installed without ?debug",
+  );
   v.screenshot("7-live-menu");
   v.key("Space");
   v.screenshot("8-live-intro");
@@ -129,14 +166,21 @@ function keyboardChecks(v: Verify): void {
   v.key("ArrowUp");
   v.key("Space");
   const saved = stored(v);
-  check(saved !== null && saved.player.x < 80 && saved.player.dir === "LEFT", "Esc, Up, Space quits to the menu and saves the walk left", saved);
+  check(
+    saved !== null && saved.player.x < 80 && saved.player.dir === "LEFT",
+    "Esc, Up, Space quits to the menu and saves the walk left",
+    saved,
+  );
   v.screenshot("10-live-menu-continue");
   v.key("ArrowDown");
   v.key("Space");
   v.screenshot("11-live-confirm");
   v.key("ArrowDown");
   v.key("Space");
-  check(JSON.stringify(stored(v)) === JSON.stringify(saved), "Down, Space, Down, Space (Yes) opens the intro; the save stays until play starts");
+  check(
+    JSON.stringify(stored(v)) === JSON.stringify(saved),
+    "Down, Space, Down, Space (Yes) opens the intro; the save stays until play starts",
+  );
   v.key("Space");
   check(stored(v)?.player.x === 80, "Space on the intro starts a new game over the old save", stored(v));
 }

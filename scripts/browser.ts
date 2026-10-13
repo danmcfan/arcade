@@ -24,9 +24,9 @@ export function browser(session: string): Browser {
       const pick = (v: unknown): unknown => {
         if (v !== null && typeof v === "object") {
           const o = v as Record<string, unknown>;
-          if (o.success === false) throw new Error(`eval failed: ${JSON.stringify(o.error ?? o)}`);
-          if ("data" in o) return pick(o.data);
-          if ("result" in o) return o.result;
+          if (o["success"] === false) throw new Error(`eval failed: ${JSON.stringify(o["error"] ?? o)}`);
+          if ("data" in o) return pick(o["data"]);
+          if ("result" in o) return o["result"];
         }
         return v;
       };

@@ -44,9 +44,33 @@ function decoration(id: PrizeId): Sprite {
  * wall above it.
  */
 export const prizes: readonly Prize[] = [
-  { id: "honeyJar", name: "HONEY JAR", price: honeyJarPrice, software: "hive", sprite: decoration("honeyJar"), x: 65, y: 55 },
-  { id: "runningShoes", name: "RUNNING SHOES", price: runningShoesPrice, software: "hive", sprite: decoration("runningShoes"), x: 87, y: 58 },
-  { id: "sleepyBees", name: "SLEEPY BEES", price: sleepyBeesPrice, software: "hive", sprite: decoration("sleepyBees"), x: 74, y: 28 },
+  {
+    id: "honeyJar",
+    name: "HONEY JAR",
+    price: honeyJarPrice,
+    software: "hive",
+    sprite: decoration("honeyJar"),
+    x: 65,
+    y: 55,
+  },
+  {
+    id: "runningShoes",
+    name: "RUNNING SHOES",
+    price: runningShoesPrice,
+    software: "hive",
+    sprite: decoration("runningShoes"),
+    x: 87,
+    y: 58,
+  },
+  {
+    id: "sleepyBees",
+    name: "SLEEPY BEES",
+    price: sleepyBeesPrice,
+    software: "hive",
+    sprite: decoration("sleepyBees"),
+    x: 74,
+    y: 28,
+  },
 ];
 
 const prizeIds: readonly string[] = prizes.map((p) => p.id);

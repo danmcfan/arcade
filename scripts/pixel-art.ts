@@ -82,7 +82,14 @@ export function toPng(rows: Rows, palette: Palette = sweetie): PNG {
  * for transparent. Throws on a colour the palette lacks or a half-transparent
  * pixel, naming where it is.
  */
-export function toRows(png: PNG, palette: Palette = sweetie, x = 0, y = 0, w = png.width - x, h = png.height - y): string[] {
+export function toRows(
+  png: PNG,
+  palette: Palette = sweetie,
+  x = 0,
+  y = 0,
+  w = png.width - x,
+  h = png.height - y,
+): string[] {
   const letterOf = letters(palette);
   const rows: string[] = [];
   for (let Y = y; Y < y + h; Y++) {
@@ -132,9 +139,15 @@ export function colours(png: PNG): Map<string, number> {
  * given, and only `palette`'s letters and `.`. The error names the art, the
  * row and the column, so a typo shows before anything renders.
  */
-export function checkRows(name: string, rows: Rows, size: { w?: number; h?: number } = {}, palette: Palette = sweetie): void {
+export function checkRows(
+  name: string,
+  rows: Rows,
+  size: { w?: number; h?: number } = {},
+  palette: Palette = sweetie,
+): void {
   const w = size.w ?? rows[0]?.length ?? 0;
-  if (size.h !== undefined && rows.length !== size.h) throw new Error(`${name} has ${rows.length} rows, want ${size.h}`);
+  if (size.h !== undefined && rows.length !== size.h)
+    throw new Error(`${name} has ${rows.length} rows, want ${size.h}`);
   rows.forEach((row, y) => {
     if (row.length !== w) throw new Error(`${name} row ${y} is ${row.length} wide, want ${w}: "${row}"`);
     const x = [...row].findIndex((px) => px !== empty && palette[px] === undefined);
@@ -150,7 +163,9 @@ export function outline(rows: Rows, letter = "k"): string[] {
   const drawn = (x: number, y: number): boolean => (rows[y]?.[x] ?? empty) !== empty;
   return rows.map((row, y) =>
     [...row]
-      .map((px, x) => (px === empty && (drawn(x - 1, y) || drawn(x + 1, y) || drawn(x, y - 1) || drawn(x, y + 1)) ? letter : px))
+      .map((px, x) =>
+        px === empty && (drawn(x - 1, y) || drawn(x + 1, y) || drawn(x, y - 1) || drawn(x, y + 1)) ? letter : px,
+      )
       .join(""),
   );
 }

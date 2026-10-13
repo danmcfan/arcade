@@ -9,11 +9,15 @@ type Op = [string, ...unknown[]];
 
 class Recorder {
   readonly ops: Op[] = [];
-  constructor(
-    readonly width: number,
-    readonly height: number,
-    readonly label: string,
-  ) {}
+  readonly width: number;
+  readonly height: number;
+  readonly label: string;
+
+  constructor(width: number, height: number, label: string) {
+    this.width = width;
+    this.height = height;
+    this.label = label;
+  }
   clear(): void {
     this.ops.push(["clear"]);
   }

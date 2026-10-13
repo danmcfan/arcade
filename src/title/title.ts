@@ -193,7 +193,10 @@ export class Title implements Scene {
     // A cabinet start spent a token, a minigame just ended (after its payout,
     // or Quit game), the prize counter menu opened or closed, or tokens,
     // tickets or prizes changed (a purchase, a payout): save.
-    const changed = before.tokens !== after.tokens || before.tickets !== after.tickets || before.prizes.length !== after.prizes.length;
+    const changed =
+      before.tokens !== after.tokens ||
+      before.tickets !== after.tickets ||
+      before.prizes.length !== after.prizes.length;
     if (wasInHub !== game.inHub() || changed) this.persist();
   }
 

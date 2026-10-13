@@ -149,7 +149,8 @@ export function renderBackground(): PNG {
     paint(png, rows, sweetie, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
   }
   const tileW = grassTile[0]!.length;
-  for (let ox = 0; ox < backgroundWidth; ox += tileW) paint(png, grassTile, sweetie, ox, backgroundHeight - grassTile.length);
+  for (let ox = 0; ox < backgroundWidth; ox += tileW)
+    paint(png, grassTile, sweetie, ox, backgroundHeight - grassTile.length);
   return png;
 }
 

@@ -6,8 +6,7 @@ import { counterRect } from "./prizeCounter.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update } from "./update.ts";
 
-const fakeFactory = (name: SoftwareName, highScore: number): Software =>
-  ({ name, highScore }) as unknown as Software;
+const fakeFactory = (name: SoftwareName, highScore: number): Software => ({ name, highScore }) as unknown as Software;
 
 function input(keys: Partial<Input> = {}): Input {
   return { ...NO_INPUT, ...keys };

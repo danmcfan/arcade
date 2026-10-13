@@ -384,7 +384,8 @@ export function titleRows(text: string): string[] {
     const letter = titleLetters[ch];
     if (letter === undefined) throw new Error(`title text: no letter for ${JSON.stringify(ch)}`);
     const w = letter[0]!.length;
-    for (let y = 0; y < 15; y++) rows[y] = (rows[y] ?? "") + (i > 0 ? ".".repeat(titleGap) : "") + (letter[y] ?? ".".repeat(w));
+    for (let y = 0; y < 15; y++)
+      rows[y] = (rows[y] ?? "") + (i > 0 ? ".".repeat(titleGap) : "") + (letter[y] ?? ".".repeat(w));
   }
   return rows;
 }

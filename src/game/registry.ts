@@ -20,7 +20,9 @@ import type { Scene, SceneName, Software, SoftwareName, WaveOptions } from "./so
  * They also take the player's owned prizes (#22); each minigame applies its
  * own (only hive has prizes so far).
  */
-export const softwareFactories: Readonly<Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>> = {
+export const softwareFactories: Readonly<
+  Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>
+> = {
   hive: (highScore, prizes) => createHive(highScore, prizes),
   firefly: () => createFirefly(),
   brassMonkey: () => createBrassMonkey(),
@@ -32,9 +34,9 @@ export function createSoftware(name: SoftwareName, highScore: number, prizes: re
 
 export interface SceneOptions {
   /** `game` only: start as `game.New(<software>)`; omit to start in the hub. */
-  software?: SoftwareName;
+  software?: SoftwareName | undefined;
   /** `wave` only: pending slider values (defaults 128 and 5). */
-  wave?: Partial<WaveOptions>;
+  wave?: Partial<WaveOptions> | undefined;
   /** `title` only: where the save lives; default: in memory. */
   store?: SaveStore;
 }

@@ -14,7 +14,11 @@ export class Runtime {
   private readonly listeners: ReplaceListener[] = [];
 
   /** `create` is normally `createScene` from src/game/registry.ts. */
-  constructor(private readonly create: SceneFactory) {}
+  private readonly create: SceneFactory;
+
+  constructor(create: SceneFactory) {
+    this.create = create;
+  }
 
   get scene(): Scene {
     if (this.current === null) throw new Error("Runtime: no scene loaded");

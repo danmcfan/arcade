@@ -112,7 +112,13 @@ export class BrassMonkeySoftware implements FixedViewport {
     drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetBrassMonkey);
 
     screen.fillRect(cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldWidth, bandHeight, bandColour);
-    screen.fillRect(cabinetInsetLeft, cabinetInsetTop + bandHeight + height, cabinetPlayfieldWidth, bandHeight, bandColour);
+    screen.fillRect(
+      cabinetInsetLeft,
+      cabinetInsetTop + bandHeight + height,
+      cabinetPlayfieldWidth,
+      bandHeight,
+      bandColour,
+    );
 
     const origin = draw.newVector(cabinetInsetLeft, cabinetInsetTop + bandHeight);
     drawBackground(screen, this.background(), origin);

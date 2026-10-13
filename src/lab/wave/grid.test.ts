@@ -60,7 +60,12 @@ test("the first step draws x, y, then the pattern, and constrains the four neigh
     expect(g.entropyBuckets[0]).toEqual([{ x, y }]);
 
     const expected = v === 1 ? [1, 2] : v === 3 ? [2, 3] : [1, 2, 3];
-    for (const [nx, ny] of [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]] as const) {
+    for (const [nx, ny] of [
+      [x, y - 1],
+      [x + 1, y],
+      [x, y + 1],
+      [x - 1, y],
+    ] as const) {
       if (nx < 0 || ny < 0 || nx >= 5 || ny >= 5) continue;
       expect(g.cell(nx, ny).possible).toEqual(expected);
       expect(g.entropy[nx]?.[ny]).toBe(expected.length);
@@ -127,7 +132,10 @@ test("after a full collapse, water never touches grass (over many seeds)", () =>
     for (let x = 0; x < 24; x++) {
       for (let y = 0; y < 24; y++) {
         const v = g.cell(x, y).possible[0];
-        for (const [nx, ny] of [[x + 1, y], [x, y + 1]] as const) {
+        for (const [nx, ny] of [
+          [x + 1, y],
+          [x, y + 1],
+        ] as const) {
           if (nx >= 24 || ny >= 24) continue;
           const n = g.cell(nx, ny).possible[0];
           expect([v, n].sort()).not.toEqual([1, 3]);
