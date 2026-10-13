@@ -1,12 +1,13 @@
 // Port of the Go Brass Monkey minigame's game.go (docs/port-notes.md gives its old Go name).
 
 import * as draw from "../draw/draw.ts";
-import { imageCabinetBrassMonkey, imageGnome, imageMonkey, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGirderFloor, imageGnome, imageMonkey } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { direction, moving, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
+import { sweetie } from "../ui/sweetie16.ts";
 import {
   cabinetHeight,
   cabinetInsetLeft,
@@ -20,12 +21,12 @@ import {
 
 const height = 256.0;
 
-/** The 224x256 workshop sits centred in the cabinet's 224x288 screen, with a band this tall above and below. */
+/** The 224x256 girder floor sits centred in the cabinet's 224x288 screen, with a band this tall above and below. */
 const bandHeight = (cabinetPlayfieldHeight - height) / 2;
-/** The workshop's darkest colour, filling the bands. */
-const bandColour = "#040c06";
+/** The wall's black, filling the bands. */
+const bandColour = sweetie.k;
 
-/** The Gnome's idle frame, top-left at (24, 52) in the workshop: standing on the top girder (y 84). */
+/** The Gnome's idle frame, top-left at (24, 52) on the girder floor: standing on the top girder (y 84). */
 const gnomeIdle = sub(imageGnome, 0, 0, 32, 32);
 const gnomeX = 24;
 const gnomeY = 52;
@@ -64,7 +65,7 @@ export class BrassMonkeySoftware implements FixedViewport {
   private cabinetJoystickFrame = 0;
 
   background(): Sprite {
-    return imageWorkshop;
+    return imageGirderFloor;
   }
 
   update(i: Input): void {
@@ -112,7 +113,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     return [cabinetWidth, cabinetHeight];
   }
 
-  /** A `FixedViewport`: `buffer` is 0; the workshop is centred vertically in the cabinet's screen. */
+  /** A `FixedViewport`: `buffer` is 0; the girder floor is centred vertically in the cabinet's screen. */
   draw(screen: Surface, _buffer: number): void {
     drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetBrassMonkey);
 

@@ -1,11 +1,13 @@
-// Brass Monkey's characters and items (#38) in a real browser (`bun run verify brass-monkey-art`).
+// Brass Monkey's characters, items and floors (#38) in a real browser (`bun run verify brass-monkey-art`).
 // Part 1 drives the `?debug` test hook: the monkey walks right, turns and
 // walks left, and at each stop the canvas is checked pixel by pixel against
-// the generated sheets: the monkey's frame for its walk step (flipped when it
-// faces left) and the Gnome's idle frame on the top girder. Part 2 writes
-// every generated sheet scaled up, the frames the game does not draw yet
-// included (jump, climb, the Gnome's throw, the gear, the ember and the bolt,
-// #39). Part 3 records Brass Monkey played with the keyboard. Files go to
+// the generated art: the girder floor everywhere the sprites leave it
+// showing, the black bands above and below it, the monkey's frame for its
+// walk step (flipped when it faces left) and the Gnome's idle frame on the top
+// girder. Part 2 writes every generated sheet scaled up, the art the game does
+// not draw yet included (jump, climb, the Gnome's throw, the gear, the ember,
+// the bolt and the floor tiles, the conveyor's frames among them, #39). Part 3
+// records Brass Monkey played with the keyboard. Files go to
 // out/verify/brass-monkey-art/.
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -13,6 +15,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 import type { BrassMonkeySnapshot } from "../../src/game/snapshot.ts";
 import { snap } from "../../src/engine/surface.ts";
+import { sweetie } from "../../src/ui/sweetie16.ts";
 import { cabinetInsetLeft, cabinetInsetTop } from "../../src/ui/cabinet.ts";
 import { decodeDataUrl, isRecord } from "../browser.ts";
 import { brassMonkeyArtFiles, brassMonkeyImagesDir } from "../gen-brass-monkey-art.ts";
@@ -29,8 +32,9 @@ function check(ok: boolean, what: string, got?: unknown): void {
 const sheet = (file: string): PNG => PNG.sync.read(readFileSync(join(brassMonkeyImagesDir, file)));
 const monkey = sheet("monkey.png");
 const gnome = sheet("gnome.png");
+const girderFloor = sheet("girder-floor.png");
 
-/** The workshop's top-left on the canvas: centred in the cabinet screen, under a 16 px band. */
+/** The girder floor's top-left on the canvas: centred in the cabinet screen, under a 16 px band. */
 const originX = cabinetInsetLeft;
 const originY = cabinetInsetTop + 16;
 
@@ -67,16 +71,60 @@ function drawnExactly(frame: PNG, src: PNG, col: number, size: number, x: number
   return true;
 }
 
+/** A box on the girder floor, in its own pixels. */
+interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Where the Gnome's idle frame stands on the girder floor (`gnomeX`, `gnomeY` in game.ts). */
+const gnomeBox: Box = { x: 24, y: 52, w: 32, h: 32 };
+
+const inside = (b: Box, x: number, y: number): boolean => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
+
+/** Whether the girder floor is on the canvas pixel for pixel, but for the boxes the sprites stand in. */
+function floorDrawn(frame: PNG, sprites: readonly Box[]): boolean {
+  for (let y = 0; y < girderFloor.height; y++) {
+    for (let x = 0; x < girderFloor.width; x++) {
+      if (sprites.some((b) => inside(b, x, y))) continue;
+      if (px(frame, originX + x, originY + y) !== px(girderFloor, x, y)) return false;
+    }
+  }
+  return true;
+}
+
+/** Whether the 16 px bands above and below the girder floor are Sweetie 16 black. */
+function bandsBlack(frame: PNG): boolean {
+  const black = Number.parseInt(`${sweetie.k.slice(1)}ff`, 16);
+  for (const top of [originY - 16, originY + girderFloor.height]) {
+    for (let y = top; y < top + 16; y++) {
+      for (let x = originX; x < originX + girderFloor.width; x++) if (px(frame, x, y) !== black) return false;
+    }
+  }
+  return true;
+}
+
 function checkFrame(v: Verify, name: string): void {
   const s = brassMonkeySnapshot(v);
   const frame = canvas(v);
   const column = [0, 1, 0, 2][Math.trunc(s.frame)] ?? 0;
   console.log(`${name} (x ${s.x}, frame ${s.frame.toFixed(1)}, ${s.left ? "left" : "right"}):`);
+  const monkeyBox = { x: snap(originX + s.x - 8) - originX, y: snap(originY + s.y - 8) - originY, w: 16, h: 16 };
+  check(
+    floorDrawn(frame, [monkeyBox, gnomeBox]),
+    "the girder floor is drawn pixel for pixel round the monkey and the Gnome",
+  );
+  check(bandsBlack(frame), "the bands above and below it are Sweetie 16 black");
   check(
     drawnExactly(frame, monkey, column, 16, snap(originX + s.x - 8), snap(originY + s.y - 8), s.left),
     `the monkey is walk frame ${column + 1}${s.left ? ", flipped to face left" : ""}`,
   );
-  check(drawnExactly(frame, gnome, 0, 32, originX + 24, originY + 52), "the Gnome stands idle on the top girder");
+  check(
+    drawnExactly(frame, gnome, 0, 32, originX + gnomeBox.x, originY + gnomeBox.y),
+    "the Gnome stands idle on the top girder",
+  );
   v.frame(name, 2);
 }
 
@@ -96,11 +144,14 @@ function play(v: Verify): void {
 function sheets(v: Verify): void {
   console.log("sprite sheets:");
   for (const { file, render } of brassMonkeyArtFiles) {
-    const png = PNG.sync.write(render());
-    writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, 8));
+    const image = render();
+    const png = PNG.sync.write(image);
+    // A whole screen, such as the girder floor, needs only 2x to be seen.
+    const k = image.width > 128 ? 2 : 8;
+    writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, k));
     check(
       Buffer.compare(readFileSync(join(brassMonkeyImagesDir, file)), png) === 0,
-      `${file} is the committed file (written 8x)`,
+      `${file} is the committed file (written ${k}x)`,
     );
   }
 }
