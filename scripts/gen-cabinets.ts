@@ -7,8 +7,8 @@
 // and the hub title art to letter its marquee with). Each strip is
 // art/cabinet.png with every colour swapped through the palette, and the
 // hand-drawn "SWEET SAM" marquee replaced by the title art's top line of
-// lettering at 2x with a one-pixel (2 px) drop shadow. A cabinet with a
-// `bevel` also gets a lit and a shaded edge (`bevelColour`). Recolouring later
+// lettering at 2x with a one-pixel (2 px) drop shadow. Each cabinet's
+// `bevel` gives it a lit and a shaded edge (`bevelColour`). Recolouring later
 // (#18, #19) means editing cabinets.json or the title art and rerunning.
 // gen-cabinets.test.ts fails when the committed PNGs drift from the sources.
 
@@ -26,8 +26,8 @@ export interface CabinetSource {
   title: string;
   /** Source colour (hex, no #) → replacement, for every colour in cabinet.png. */
   palette: Record<string, string>;
-  /** Optional bevelled edges on the body: the lit and shaded colours (hex, no #). */
-  bevel?: Bevel;
+  /** Bevelled edges on the body: the lit and shaded colours (hex, no #). */
+  bevel: Bevel;
 }
 
 export interface Bevel {
@@ -53,7 +53,7 @@ function isCabinetSource(v: unknown): v is CabinetSource {
     typeof v["title"] === "string" &&
     isRecord(v["palette"]) &&
     Object.values(v["palette"]).every((to) => typeof to === "string") &&
-    (v["bevel"] === undefined || isBevel(v["bevel"]))
+    isBevel(v["bevel"])
   );
 }
 
@@ -179,7 +179,7 @@ export function renderCabinet(c: CabinetSource): PNG {
       let hex = hexAt(png, i);
       // Sweet Sam's lettering comes off the marquee.
       if (y < marqueeHeight && (hex === letterColour || hex === shadowColour)) hex = bodyColour;
-      const bevel = hex === bodyColour && c.bevel !== undefined ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
+      const bevel = hex === bodyColour ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
       setHex(png, x, y, bevel ?? map(hex));
     }
   }
