@@ -24,11 +24,13 @@ describe("the girder floor", () => {
       expect({ ladder: name(l), on: topsAt(l.x).includes(l.bottom + 1) }).toEqual({ ladder: name(l), on: true });
   });
 
-  test("every ladder but the two tall ones behind the Gnome hangs from a girder: its top row is just under it", () => {
-    const tall = girderFloor.ladders.filter((l) => l.top === 32).map((l) => l.x);
-    expect(tall).toEqual([64, 80]);
-    for (const l of girderFloor.ladders.filter((ladder) => ladder.top !== 32))
+  test("every ladder hangs from a girder: its top row is just under it (the two tall ones under their caps)", () => {
+    for (const l of girderFloor.ladders)
       expect({ ladder: name(l), under: topsAt(l.x).includes(l.top - 8) }).toEqual({ ladder: name(l), under: true });
+  });
+
+  test("the floor is 224×256", () => {
+    expect([girderFloor.width, girderFloor.height]).toEqual([224, 256]);
   });
 
   test("a broken ladder's gap is inside it", () => {

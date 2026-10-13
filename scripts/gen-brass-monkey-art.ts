@@ -96,11 +96,11 @@ export function boltFrames(): Rows[] {
   return [rest, ...boltGlints.map(([x, y]) => glint(rest, x, y))];
 }
 
-/** `row` (one period) laid along 8 px, moved `shift` px right. */
-function slide(row: string, shift: number): string {
+/** `row` (one period) laid along `w` px, moved `shift` px right. */
+function slide(row: string, w: number, shift: number): string {
   const n = row.length;
   let out = "";
-  for (let x = 0; x < 8; x++) out += row[(((x - shift) % n) + n) % n] ?? empty;
+  for (let x = 0; x < w; x++) out += row[(((x - shift) % n) + n) % n] ?? empty;
   return out;
 }
 
@@ -117,7 +117,9 @@ function corner(rows: Rows, x: number): string[] {
  * belt's top corner.
  */
 export function conveyorFrames(): Rows[] {
-  const frames = [0, 1, 2, 3].map((f) => conveyorSlats.map((row) => slide(row, f)).concat(girder.slice(2)));
+  const frames = [0, 1, 2, 3].map((f) =>
+    conveyorSlats.map((row) => slide(row, girder[0]?.length ?? 0, f)).concat(girder.slice(2)),
+  );
   return [...frames.map((rows) => corner(rows, 0)), ...frames, ...frames.map((rows) => corner(rows, 7))];
 }
 
@@ -128,24 +130,24 @@ export function doorFrame(): Rows {
 
 /** `floor` drawn from the tiles: the wall, then the ladders, the girders and the exit door. */
 function floorRows(floor: Floor): Rows {
-  const w = 224;
-  const h = 256;
-  let rows: Rows = Array.from({ length: h }, (_, y) =>
-    Array.from({ length: w }, (_px, x) => wallPanel[y % 32]?.[x % 32] ?? empty).join(""),
+  const tile = wallPanel.length;
+  let rows: Rows = Array.from({ length: floor.height }, (_, y) =>
+    Array.from({ length: floor.width }, (_px, x) => wallPanel[y % tile]?.[x % tile] ?? empty).join(""),
   );
-  for (const l of floor.ladders) {
-    for (let y = l.top; y <= l.bottom; y++) {
-      if (l.gap && y >= l.gap[0] && y <= l.gap[1]) continue;
-      rows = overlay(rows, [ladder[y % 4] ?? ""], l.x, y);
+  for (const piece of floor.ladders) {
+    for (let y = piece.top; y <= piece.bottom; y++) {
+      if (piece.gap && y >= piece.gap[0] && y <= piece.gap[1]) continue;
+      rows = overlay(rows, [ladder[y % ladder.length] ?? ""], piece.x, y);
     }
   }
+  const step = girder[0]?.length ?? 0;
   for (const g of floor.girders) {
-    for (let x = g.x0; x < g.x1; x += 8) rows = overlay(rows, girder, x, girderTop(g, x));
+    for (let x = g.x0; x < g.x1; x += step) rows = overlay(rows, girder, x, girderTop(g, x));
   }
   return overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
 }
 
-/** The girder floor, 224×256. */
+/** The girder floor. */
 export function girderFloorRows(): Rows {
   return floorRows(girderFloor);
 }

@@ -25,8 +25,13 @@ export interface Ladder {
   gap?: readonly [number, number];
 }
 
-/** Where a floor's pieces stand; `door` is the exit door's foot, its left edge at x and its bottom row at y - 1. */
+/**
+ * A floor, `width` by `height` px, and where its pieces stand; `door` is the
+ * exit door's foot, its left edge at x and its bottom row at y - 1.
+ */
 export interface Floor {
+  width: number;
+  height: number;
   girders: readonly Girder[];
   ladders: readonly Ladder[];
   door: { x: number; y: number };
@@ -41,10 +46,12 @@ export function girderTop(g: Girder, x: number): number {
  * The girder floor, imported from the old workshop.png (picked in the #38
  * playground: T1): six sloped girders, the top platform with the exit door on
  * it, and the old workshop's ladders, broken ones and the two tall ladders
- * behind the Gnome included. The bottom girder is flat where the monkey walks
- * (x 0-111, y 248).
+ * behind the Gnome (each capped by a girder) included. The bottom girder is
+ * flat where the monkey walks (x 0-111, y 248).
  */
 export const girderFloor: Floor = {
+  width: 224,
+  height: 256,
   girders: [
     { x0: 0, x1: 112, y: 248, drop: 0 },
     { x0: 112, x1: 224, y: 247, drop: -1 },
@@ -56,6 +63,9 @@ export const girderFloor: Floor = {
     { x0: 144, x1: 208, y: 85, drop: 1 },
     // The top platform.
     { x0: 88, x1: 136, y: 56, drop: 0 },
+    // The caps on the two tall ladders.
+    { x0: 64, x1: 72, y: 24, drop: 0 },
+    { x0: 80, x1: 88, y: 24, drop: 0 },
   ],
   ladders: [
     { x: 32, top: 128, bottom: 143 },

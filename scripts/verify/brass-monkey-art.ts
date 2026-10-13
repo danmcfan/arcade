@@ -79,6 +79,9 @@ interface Box {
   h: number;
 }
 
+/** Where the Gnome's idle frame stands on the girder floor (`gnomeX`, `gnomeY` in game.ts). */
+const gnomeBox: Box = { x: 24, y: 52, w: 32, h: 32 };
+
 const inside = (b: Box, x: number, y: number): boolean => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
 
 /** Whether the girder floor is on the canvas pixel for pixel, but for the boxes the sprites stand in. */
@@ -110,7 +113,7 @@ function checkFrame(v: Verify, name: string): void {
   console.log(`${name} (x ${s.x}, frame ${s.frame.toFixed(1)}, ${s.left ? "left" : "right"}):`);
   const monkeyBox = { x: snap(originX + s.x - 8) - originX, y: snap(originY + s.y - 8) - originY, w: 16, h: 16 };
   check(
-    floorDrawn(frame, [monkeyBox, { x: 24, y: 52, w: 32, h: 32 }]),
+    floorDrawn(frame, [monkeyBox, gnomeBox]),
     "the girder floor is drawn pixel for pixel round the monkey and the Gnome",
   );
   check(bandsBlack(frame), "the bands above and below it are Sweetie 16 black");
@@ -118,7 +121,10 @@ function checkFrame(v: Verify, name: string): void {
     drawnExactly(frame, monkey, column, 16, snap(originX + s.x - 8), snap(originY + s.y - 8), s.left),
     `the monkey is walk frame ${column + 1}${s.left ? ", flipped to face left" : ""}`,
   );
-  check(drawnExactly(frame, gnome, 0, 32, originX + 24, originY + 52), "the Gnome stands idle on the top girder");
+  check(
+    drawnExactly(frame, gnome, 0, 32, originX + gnomeBox.x, originY + gnomeBox.y),
+    "the Gnome stands idle on the top girder",
+  );
   v.frame(name, 2);
 }
 
@@ -138,9 +144,10 @@ function play(v: Verify): void {
 function sheets(v: Verify): void {
   console.log("sprite sheets:");
   for (const { file, render } of brassMonkeyArtFiles) {
-    const png = PNG.sync.write(render());
-    // The girder floor is a whole screen: 2x is enough to see it.
-    const k = file === "girder-floor.png" ? 2 : 8;
+    const image = render();
+    const png = PNG.sync.write(image);
+    // A whole screen, such as the girder floor, needs only 2x to be seen.
+    const k = image.width > 128 ? 2 : 8;
     writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, k));
     check(
       Buffer.compare(readFileSync(join(brassMonkeyImagesDir, file)), png) === 0,
