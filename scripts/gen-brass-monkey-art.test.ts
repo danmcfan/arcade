@@ -5,28 +5,37 @@ import { PNG } from "pngjs";
 import {
   bolt,
   boltGlints,
+  conveyorSlats,
+  door,
   emberFlame,
   emberTips,
   gear,
   gnomeArmsDown,
   gnomeArmsUp,
+  girder,
   gnomeBody,
+  ladder,
   monkeyClimb,
   monkeyHead,
   monkeyJump,
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
+  wallPanel,
 } from "../src/brass-monkey/art.ts";
+import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, empty, flipX, glint, outline, toRows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
   brassMonkeyImagesDir,
+  conveyorFrames,
+  doorFrame,
   emberFills,
   emberFrames,
   gearFrames,
+  girderFloorRows,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
@@ -60,6 +69,14 @@ describe("Brass Monkey art source", () => {
     checkRows("bolt", bolt, { w: 10, h: 14 });
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
+  });
+
+  test("the floor tiles are an 8×8 girder, an 8×4 ladder, 2 rows of conveyor slats 4 wide, a 16×24 door and a 32×32 wall", () => {
+    checkRows("girder", girder, { w: 8, h: 8 });
+    checkRows("ladder", ladder, { w: 8, h: 4 });
+    checkRows("conveyor slats", conveyorSlats, { w: 4, h: 2 });
+    checkRows("door", door, { w: 16, h: 24 });
+    checkRows("wall panel", wallPanel, { w: 32, h: 32 });
   });
 
   test("every bolt glint lands on the bolt", () => {
@@ -99,6 +116,46 @@ describe("generated frames", () => {
     const [rest, ...glints] = boltFrames();
     expect(rest).toEqual(outline(bolt));
     expect(glints).toEqual(boltGlints.map(([x, y]) => glint(outline(bolt), x, y)));
+  });
+
+  test("the conveyor is the girder with a belt of slats for its top two rows, moving 1 px right a frame", () => {
+    const frames = conveyorFrames();
+    expect(frames.length).toBe(12);
+    const beam = ["pppppppp", "popppopp", "pppppppp", "rrrrrrrr", "pppppppp", "........"];
+    // Left end, middle and right end, 4 frames each; the ends round the belt's top corner.
+    expect(frames[0]).toEqual([".oopooop", "rrrprrrp", ...beam]);
+    expect(frames[4]).toEqual(["ooopooop", "rrrprrrp", ...beam]);
+    expect(frames[5]).toEqual(["pooopooo", "prrrprrr", ...beam]);
+    expect(frames[8]).toEqual(["ooopooo.", "rrrprrrp", ...beam]);
+    expect(frames[11]).toEqual(["oopooop.", "rrprrrpr", ...beam]);
+  });
+
+  test("the door is outlined in black down to its foot, with no outline under it", () => {
+    const rows = doorFrame();
+    expect(rows).toEqual(outline(door));
+    expect(rows.length).toBe(24);
+    expect(rows.at(-1)).toBe("kddddddddddddddk");
+  });
+
+  test("the girder floor is 224×256: the wall, the ladders, the girders and the exit door", () => {
+    const rows = girderFloorRows();
+    checkRows("girder floor", rows, { w: 224, h: 256 });
+    // The wall panel shows where nothing stands, e.g. the top-left corner.
+    expect(rows.slice(0, 4).map((r) => r.slice(0, 4))).toEqual(wallPanel.slice(0, 4).map((r) => r.slice(0, 4)));
+    // Every drawn pixel of the door is on the floor, standing on the top platform.
+    const { x, y } = girderFloor.door;
+    doorFrame().forEach((row, dy) => {
+      for (let dx = 0; dx < row.length; dx++) {
+        if (row[dx] !== empty) expect(rows[y - 24 + dy]?.[x + dx]).toBe(row[dx]);
+      }
+    });
+  });
+
+  test("the monkey's path is a flat girder: x 0-111 at y 248, as in the old workshop", () => {
+    const rows = girderFloorRows();
+    expect(rows[248]?.slice(0, 112)).toBe("o".repeat(112));
+    expect(rows[249]?.slice(0, 112)).toBe("r".repeat(112));
+    expect(rows[247]?.slice(0, 112)).not.toContain("o");
   });
 
   test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {

@@ -1,12 +1,15 @@
-// Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, and
-// the items (the gear and ember hazards and the bolt), as fills in rows of
-// Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is blank). Frames
-// are built from shared parts (a head over a body, a body with arms) so a part
-// is drawn once. scripts/gen-brass-monkey-art.ts builds each frame, draws its
-// 1 px black outline in the blank border and writes them to
-// src/assets/images/brass-monkey/ (`bun run art`); gen-brass-monkey-art.test.ts
-// fails when the committed PNGs drift from this file. Picked in the #38
-// playgrounds (branch prototype/38-brass-monkey-art).
+// Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, the
+// items (the gear and ember hazards and the bolt) and the floor tiles (the
+// girder, the ladder, the conveyor's slats, the exit door and the wall), as
+// fills in rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.`
+// is blank). Frames are built from shared parts (a head over a body, a body
+// with arms) so a part is drawn once. scripts/gen-brass-monkey-art.ts builds
+// each frame, draws a 1 px black outline in the blank border round every
+// character, item and the door (not the other tiles), lays out the girder
+// floor (floors.ts) and writes them to src/assets/images/brass-monkey/ (`bun
+// run art`); gen-brass-monkey-art.test.ts fails when the committed PNGs drift
+// from this file. Picked in the #38 playgrounds (branch
+// prototype/38-brass-monkey-art).
 
 /**
  * The monkey: a polished brass robot chimp seen from the side, facing right,
@@ -260,4 +263,102 @@ export const boltGlints: readonly (readonly [number, number])[] = [
   [2, 3],
   [4, 2],
   [6, 3],
+];
+
+/**
+ * The girder: a red I-beam seen side on, 8×8, tiled along each floor (a
+ * sloped girder steps 1 px every 16 px). Lit top flange, a darker web with a
+ * rivet every 4 px, the bottom flange and its shadow; the last row is blank.
+ */
+export const girder: readonly string[] = [
+  "oooooooo",
+  "rrrrrrrr",
+  "pppppppp",
+  "popppopp",
+  "pppppppp",
+  "rrrrrrrr",
+  "pppppppp",
+  "........",
+];
+
+/**
+ * The ladder: 8 wide, steel rails 2 px thick, lit on the left and shaded on
+ * the right. Row `y % 4` is drawn at height y, so every rung (row 1) lines up
+ * across the floor.
+ */
+export const ladder: readonly string[] = ["wl....lm", "wllllllm", "wl....lm", "wl....lm"];
+
+/**
+ * The conveyor's belt: one period of its two rows of slats, in the girder's
+ * colours. A conveyor is the girder with these for its top two rows; the
+ * generator moves them 1 px a frame and rounds the belt's top corner at each end.
+ */
+export const conveyorSlats: readonly string[] = ["ooop", "rrrp"];
+
+/**
+ * The exit door: a panelled steel door in a dark frame with a brass handle
+ * and a green lamp above, 16×24. Its foot is the bottom row, on the floor; the
+ * generator outlines the rest in black.
+ */
+export const door: readonly string[] = [
+  "................",
+  "......gggg......",
+  "......gGGg......",
+  "................",
+  ".dddddddddddddd.",
+  ".dmmmmmmmmmmmmd.",
+  ".dmwllllllllmmd.",
+  ".dmlwllllllllmd.",
+  ".dmllllllllllmd.",
+  ".dmmmmmmmmmmmmd.",
+  ".dmlllllllllmmd.",
+  ".dmllllllllllmd.",
+  ".dmllllllllllmd.",
+  ".dmllllllllyymd.",
+  ".dmllllllllyomd.",
+  ".dmllllllllllmd.",
+  ".dmmmmmmmmmmmmd.",
+  ".dmlllllllllmmd.",
+  ".dmllllllllllmd.",
+  ".dmllllllllllmd.",
+  ".dmllllllllllmd.",
+  ".dmllllllllllmd.",
+  ".dmmmmmmmmmmmmd.",
+  ".dddddddddddddd.",
+];
+
+/** The wall behind every floor: a riveted steel panel, 32×32, its seams and rivets in dark grey on black. */
+export const wallPanel: readonly string[] = [
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkdkkkkkkkkkkkkkkkkkkkkkkkdkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkdkkkkkkkkkkkkkkkkkkkkkkkdkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
+  "dddddddddddddddddddddddddddddddd",
 ];
