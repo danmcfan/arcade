@@ -1,7 +1,7 @@
 // Port of the Go Brass Monkey minigame's game.go (docs/port-notes.md gives its old Go name).
 
 import * as draw from "../draw/draw.ts";
-import { imageCabinetBrassMonkey, imageGnome, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGnome, imageMonkey, imageWorkshop } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { direction, moving, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -25,6 +25,11 @@ const bandHeight = (cabinetPlayfieldHeight - height) / 2;
 /** The workshop's darkest colour, filling the bands. */
 const bandColour = "#040c06";
 
+/** The Gnome's idle frame, top-left at (24, 52) in the workshop: standing on the top girder (y 84). */
+const gnomeIdle = sub(imageGnome, 0, 0, 32, 32);
+const gnomeX = 24;
+const gnomeY = 52;
+
 /** Go `entity`. */
 interface Entity {
   image: Sprite;
@@ -39,7 +44,7 @@ interface Entity {
 
 function newPlayer(): Entity {
   return {
-    image: imageGnome,
+    image: imageMonkey,
     position: draw.newVector(16, height - 16),
     width: 16,
     height: 16,
@@ -122,6 +127,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
     const origin = draw.newVector(cabinetInsetLeft, cabinetInsetTop + bandHeight);
     drawBackground(screen, this.background(), origin);
+    screen.draw(gnomeIdle, origin.x + gnomeX, origin.y + gnomeY);
 
     drawPlayer(screen, this.player, origin);
   }
