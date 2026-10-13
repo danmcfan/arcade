@@ -113,9 +113,9 @@ describe("SweetSamSoftware.draw", () => {
     expect(ready.map(([, y]) => y)).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(i * 1.05)));
     const food = rest.slice(12, 12 + 244);
     expect(food.filter((o) => name(o) === "draw:honey-drop.png").length).toBe(240);
-    expect(food.filter((o) => name(o) === "draw:smoke-pot.png").length).toBe(4);
+    expect(food.filter((o) => name(o) === "draw:honey-pot.png").length).toBe(4);
     expect(food[0]).toEqual(["draw", "honey-drop.png", 0, 0, 8, 12, 64, 86]);
-    expect(food[243]).toEqual(["draw", "smoke-pot.png", 0, 0, 8, 12, 264, 262]);
+    expect(food[243]).toEqual(["draw", "honey-pot.png", 0, 0, 8, 12, 264, 262]);
     // One sheet per bee in bees.png (red, pink, teal, orange, 96 px apart), each facing its way.
     // red bee: RIGHT row 0, at (112-8+56, 116-8+56)
     expect(rest.slice(12 + 244)).toEqual([

@@ -8,7 +8,7 @@
 // cycle, one row per facing (down, up, left, right; right mirrors left), then
 // the death frames. bees.png is the four bees, one 64×96 sheet each in
 // `beeOrder`: flying right, flying left, then sleepy and waking, each right
-// then left. honey-drop.png and smoke-pot.png are 4 bobbing frames of 8×12.
+// then left. honey-drop.png and honey-pot.png are 4 bobbing frames of 8×12.
 // digits.png is the score dials' 0 to 9 in the pixel font.
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift.
 
@@ -23,7 +23,6 @@ import {
   beeEye,
   beeFlight,
   beeOrder,
-  bonusFlowerArt,
   corridorMargin,
   dazedFace,
   dazedFaceAt,
@@ -36,6 +35,10 @@ import {
   honeyDropShadow,
   honeyDropShadowTop,
   honeyDropTop,
+  honeyPotArt,
+  honeyPotShadow,
+  honeyPotShadowTop,
+  honeyPotTop,
   honeycomb,
   itemBob,
   itemCellHeight,
@@ -45,11 +48,6 @@ import {
   mazeTiles,
   mazeWidth,
   sleepyLook,
-  smokePotArt,
-  smokePotShadow,
-  smokePotShadowTop,
-  smokePotSmoke,
-  smokePotTop,
   wakingLook,
   walkCycle,
   waxRim,
@@ -58,7 +56,7 @@ import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { glyphs } from "../src/ui/glyphs.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, flipX, overlay, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
+import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
 
 const tile = 8;
 
@@ -169,7 +167,7 @@ export function beeFrame(kind: SweetSamEnemyKind, beat: number, look: "awake" | 
     const colours = look === "sleepy" ? sleepyLook : wakingLook;
     const [ex, ey] = beeEye;
     out = recolour(rows, { y: colours.body, w: colours.wings });
-    // Sleepy: the eye shut, no white and a lid across the pupil. Waking: the eye wide, all pupil.
+    // Sleepy: the eye shut, a lid across the pupil. Waking: the eye wide, the pupil twice as tall.
     out =
       look === "sleepy"
         ? overlay(out, [`.${colours.body}`, "kk"], ex - 1, ey - 1)
@@ -191,8 +189,8 @@ export function beeFrames(kind: SweetSamEnemyKind): Rows[][] {
   return rows;
 }
 
-/** 4 bobbing 8×12 frames of a honey drop or smoke pot: the art lifted by `itemBob`, its shadow staying put. */
-function itemSheet(art: Rows, top: number, shadow: Rows, shadowTop: number, above?: readonly Rows[]): PNG {
+/** 4 bobbing 8×12 frames of a honey drop or honey pot: the art lifted by `itemBob`, its shadow staying put. */
+function itemSheet(art: Rows, top: number, shadow: Rows, shadowTop: number): PNG {
   const png = blank(itemCellWidth * itemBob.length, itemCellHeight);
   itemBob.forEach((bob, i) => {
     const ox = i * itemCellWidth;
@@ -200,15 +198,12 @@ function itemSheet(art: Rows, top: number, shadow: Rows, shadowTop: number, abov
     const sx = (itemCellWidth - (shadow[0]?.length ?? 0)) / 2;
     paint(png, shadow, sweetie, ox + sx, shadowTop);
     paint(png, art, sweetie, ox + cx, top - bob);
-    const smoke = above?.[i];
-    if (smoke !== undefined) paint(png, smoke, sweetie, ox + cx, top - bob - smoke.length);
   });
   return png;
 }
 
 export const renderHoneyDrop = (): PNG => itemSheet(honeyDropArt, honeyDropTop, honeyDropShadow, honeyDropShadowTop);
-export const renderSmokePot = (): PNG =>
-  itemSheet(smokePotArt, smokePotTop, smokePotShadow, smokePotShadowTop, smokePotSmoke);
+export const renderHoneyPot = (): PNG => itemSheet(honeyPotArt, honeyPotTop, honeyPotShadow, honeyPotShadowTop);
 
 /** digits.png: the font's 0 to 9 side by side, each centred in a `dialCell` square. */
 export function renderDigits(): PNG {
@@ -230,8 +225,7 @@ export const sweetSamArtFiles: readonly { file: string; render: () => PNG }[] = 
   { file: "bear.png", render: () => sheet(bearFrames()) },
   { file: "bees.png", render: () => sheet(beeOrder.flatMap((kind) => beeFrames(kind))) },
   { file: "honey-drop.png", render: renderHoneyDrop },
-  { file: "smoke-pot.png", render: renderSmokePot },
-  { file: "bonus-flower.png", render: () => toPng(bonusFlowerArt) },
+  { file: "honey-pot.png", render: renderHoneyPot },
   { file: "digits.png", render: renderDigits },
 ];
 

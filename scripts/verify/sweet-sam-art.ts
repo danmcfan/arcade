@@ -2,12 +2,12 @@
 // (`bun run verify sweet-sam-art`). Part 1 replays the sweet-sam-clear
 // fixture (seed 11, a bot clearing the maze) through the `?debug` test hook
 // and stops where the art matters: the start (the bear, the four bees, honey
-// drops, smoke pots, READY!), a smoke pot eaten, a sleepy bee eaten with its
+// drops, honey pots, READY!), a honey pot eaten, a sleepy bee eaten with its
 // points, sleepy bees, a lost life and the waking flash. At each stop it
 // checks the bear and every bee on the canvas against the generated sheets,
 // in the frame the game picks for them, and that the wax shows wherever no
 // sprite is. Part 2 writes every generated sheet scaled up, the bear's death
-// frames and the bonus flower included (#47 uses them). Part 3 records the
+// frames included (#47 uses them). Part 3 records the
 // same replay as a video. Files go to out/verify/sweet-sam-art/.
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -44,8 +44,8 @@ const script = loadScript(inputPath("sweet-sam-clear"));
 
 /** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace). */
 const stops = [
-  { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, smoke pots and READY!" },
-  { tick: 382, name: "2-smoke-pot-eaten", shows: "a smoke pot eaten: the bees out of the home fall asleep" },
+  { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
+  { tick: 382, name: "2-honey-pot-eaten", shows: "a honey pot eaten: the bees out of the home fall asleep" },
   { tick: 387, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
   { tick: 1239, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
   { tick: 4879, name: "5-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
@@ -227,11 +227,11 @@ function play(v: Verify): void {
         new Set(s.enemies.map((e) => e.kind)).size === 4 && s.enemies.every((e) => e.blue === 0),
         "four bees, awake",
       );
-      check(s.items === 244, "every honey drop and smoke pot is out", s.items);
+      check(s.items === 244, "every honey drop and honey pot is out", s.items);
     }
     if (stop.tick === 382) {
       const out = s.enemies.filter((e) => !e.home);
-      check(out.length > 0 && out.every((e) => e.blue > 0), "a smoke pot eaten: every bee out of the home is sleepy");
+      check(out.length > 0 && out.every((e) => e.blue > 0), "a honey pot eaten: every bee out of the home is sleepy");
     }
     if (stop.tick === 387) {
       check(s.popups.length === 1 && s.popups[0]?.frameIdx === 0, "a sleepy bee eaten: 200 points float above it");
@@ -302,7 +302,7 @@ function video(v: Verify): void {
       load(v);
       runSteps(v, plan()[0]?.steps ?? []);
       v.wait(600);
-      // The start, READY!, the first smoke pot, a sleepy bee eaten, more honey.
+      // The start, READY!, the first honey pot, a sleepy bee eaten, more honey.
       replayLive(v, 1, 1300);
       // A life lost.
       skipTo(v, 1300, 4800);

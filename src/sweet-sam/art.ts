@@ -1,12 +1,12 @@
 // Pixel-art source for Sweet Sam (ADR 0006): the maze, the bear, the four
-// bees and their sleepy and waking looks, the honey drop, the smoke pot and
-// the bonus flower. Every sprite is rows of Sweetie 16 letters (`sweetie` in
+// bees and their sleepy and waking looks, the honey drop and the honey pot.
+// Every sprite is rows of Sweetie 16 letters (`sweetie` in
 // src/ui/sweetie16.ts, `.` is blank). scripts/gen-sweet-sam-art.ts writes them
 // to src/assets/images/sweet-sam/ (`bun run art`), and
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift from this file.
 //
-// The bear, bees, honey drop and smoke pot were imported from the Go game's PNGs with their
-// shapes kept; only the colours moved into Sweetie 16.
+// The bear, bees and honey drop were imported from the Go game's PNGs with
+// their shapes kept; only the colours moved into Sweetie 16.
 
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import type { SweetieLetter } from "../ui/sweetie16.ts";
@@ -227,7 +227,7 @@ export const bearDeath: readonly (readonly string[])[] = [
 
 /**
  * A bee flying right, wings up and wings down. `y` is the body (each bee
- * recolours it), `w` the wings and the white of the eye; facing left is this
+ * recolours it), `w` the wings; facing left is this
  * mirrored. Its 4 wing beats are these two, then these two again lifted by
  * `beeBob`.
  */
@@ -238,7 +238,7 @@ export const beeFlight: readonly (readonly string[])[] = [
     ".........k...k..",
     "..kkk.kk..kkk...",
     ".kwwwkwwkkyyyk..",
-    ".kwwwkwwkyywyk..",
+    ".kwwwkwwkyyyyk..",
     "..kwwkkkkyykyk..",
     "...kkkyykyyyyyk.",
     "..kyykyykyyyyyk.",
@@ -256,7 +256,7 @@ export const beeFlight: readonly (readonly string[])[] = [
     ".........k...k..",
     "..........kkk...",
     "...kk.kkkkyyyk..",
-    "..kwwkwwkyywyk..",
+    "..kwwkwwkyyyyk..",
     "..kwwkkkkyykyk..",
     "...kkkyykyyyyyk.",
     "..kyykyykyyyyyk.",
@@ -279,8 +279,8 @@ export const beeBeats: readonly { frame: number; bob: number }[] = [
 ];
 
 /**
- * The bee's eye in `beeFlight`: the pupil, with the white of the eye the
- * pixel above it. The sleepy look closes the eye, the waking look opens it wide.
+ * The bee's eye in `beeFlight`: the pupil, a dark pixel in the body, as in
+ * the Go bee. The sleepy look shuts it, the waking look opens it wide.
  */
 export const beeEye: readonly [number, number] = [11, 6];
 
@@ -305,56 +305,25 @@ export const sleepyLook = { body: "m", wings: "l" } as const;
 /** A sleepy bee about to wake: pale, eyes wide open. Alternates with the sleepy look. */
 export const wakingLook = { body: "w", wings: "l" } as const;
 
-/** Honey drop and smoke pot cells: 8×12, 4 frames, as in the Go game. */
+/** Honey drop and honey pot cells: 8×12, 4 frames, as in the Go game. */
 export const itemCellWidth = 8;
 export const itemCellHeight = 12;
 
-/** How far each of the 4 frames lifts a honey drop or smoke pot off its shadow (it bobs). */
+/** How far each of the 4 frames lifts a honey drop or honey pot off its shadow (it bobs). */
 export const itemBob: readonly number[] = [0, 1, 2, 1];
 
-/** A honey drop, 2×2: amber with a glint. */
-export const honeyDropArt: readonly string[] = ["yw", "oy"];
+/** A honey drop, 2×2, plain honey: the Go dot's size and place. */
+export const honeyDropArt: readonly string[] = ["yy", "yy"];
 /** Its top row in the cell before bobbing, and its shadow. */
 export const honeyDropTop = 5;
 export const honeyDropShadow: readonly string[] = ["dd"];
 export const honeyDropShadowTop = 8;
 
-/**
- * A smoke pot, 6×5: a beekeeper's smoker with embers glowing through it.
- * The smoke above it changes every frame (`smokePotSmoke`).
- */
-export const smokePotArt: readonly string[] = ["..mm..", ".llll.", "lwllll", "loroom", ".mmmm."];
-export const smokePotTop = 4;
-export const smokePotShadow: readonly string[] = ["dddd"];
-export const smokePotShadowTop = 10;
-
-/** The smoke rising from the pot, 6×2, one per frame, drawn just above it. */
-export const smokePotSmoke: readonly (readonly string[])[] = [
-  ["....l.", "...w.."],
-  ["...l..", "....w."],
-  ["..l...", "...w.."],
-  ["...l..", "..w..."],
-];
-
-/** The bonus flower, 16×16: a daisy on a stem. Not in the maze yet (#47). */
-export const bonusFlowerArt: readonly string[] = [
-  "................",
-  "......w..w......",
-  "....w.wwww.w....",
-  "...wwwwwwwwww...",
-  "..wwwwyyyywwww..",
-  "..wwwyooooywww..",
-  "...wwyooooyww...",
-  "..wwwwyyyywwww..",
-  "...wwwwwwwwww...",
-  "....w.wGGw.w....",
-  "..gg...GG...gg..",
-  ".gggg..GG..gggg.",
-  "..gggg.GG.gggg..",
-  "....gggGGggg....",
-  ".......GG.......",
-  "................",
-];
+/** A honey pot, 6×7: a jar of honey with a red lid and a glint, a drop of honey in the air above it. */
+export const honeyPotArt: readonly string[] = [".y....", "......", ".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."];
+export const honeyPotTop = 2;
+export const honeyPotShadow: readonly string[] = ["dddd"];
+export const honeyPotShadowTop = 10;
 
 /** The maze image, the size of the playfield. */
 export const mazeWidth = 224;

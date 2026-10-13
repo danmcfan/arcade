@@ -27,8 +27,7 @@ import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
 import bearUrl from "../assets/images/sweet-sam/bear.png";
 import beesUrl from "../assets/images/sweet-sam/bees.png";
 import honeyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
-import smokePotUrl from "../assets/images/sweet-sam/smoke-pot.png";
-import bonusFlowerUrl from "../assets/images/sweet-sam/bonus-flower.png";
+import honeyPotUrl from "../assets/images/sweet-sam/honey-pot.png";
 import digitsUrl from "../assets/images/sweet-sam/digits.png";
 
 import fireflySpriteUrl from "../assets/images/firefly/firefly.png";
@@ -127,7 +126,7 @@ export const imagePrizes: Sprite = whole(images.prizes);
 /**
  * Sweet Sam's sprites (src/assets/images/sweet-sam/), generated from
  * src/sweet-sam/art.ts by `bun run art`. Sprite frames are 16×16; bees.png
- * is one 64×96 sheet per bee (`beeOrder`), and the honey drop and smoke pot
+ * is one 64×96 sheet per bee (`beeOrder`), and the honey drop and honey pot
  * are 4 frames of 8×12.
  */
 export const sweetSamImages = {
@@ -135,8 +134,7 @@ export const sweetSamImages = {
   bear: asset(bearUrl, 64, 80),
   bees: asset(beesUrl, 64, 384),
   honeyDrop: asset(honeyDropUrl, 32, 12),
-  smokePot: asset(smokePotUrl, 32, 12),
-  bonusFlower: asset(bonusFlowerUrl, 16, 16),
+  honeyPot: asset(honeyPotUrl, 32, 12),
   digits: asset(digitsUrl, 80, 8),
 } as const;
 
@@ -144,9 +142,7 @@ export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);
-export const imageSmokePot: Sprite = whole(sweetSamImages.smokePot);
-/** @public Sweet Sam art the maze does not show yet (#47); kept with its siblings. */
-export const imageBonusFlower: Sprite = whole(sweetSamImages.bonusFlower);
+export const imageHoneyPot: Sprite = whole(sweetSamImages.honeyPot);
 /** Sweet Sam's score dial digits, 0 to 9, 8×8 each, in the pixel font. */
 export const imageDigits: Sprite = whole(sweetSamImages.digits);
 
