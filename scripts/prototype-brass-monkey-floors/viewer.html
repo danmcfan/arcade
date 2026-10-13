@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brass Monkey Floors</title>
+    <!-- PROTOTYPE (throwaway, #38 phase 1). prototype-brass-monkey-floors.ts inlines the art where DATA is. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #232740;
+        --line: #333c57;
+        --fg: #f4f4f4;
+        --muted: #94b0c2;
+        --accent: #ffcd75;
+        --accent-ink: #1a1c2c;
+        --display: "Silkscreen", ui-monospace, monospace;
+        --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+      }
+      body {
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding: 24px 16px 48px;
+      }
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+      }
+      header {
+        display: grid;
+        gap: 6px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 28px;
+        margin: 0;
+        color: var(--accent);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 80ch;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      .bar output {
+        flex: 1 1 260px;
+        font-family: ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--fg);
+      }
+      .scenes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .scenes figure {
+        margin: 0;
+        display: grid;
+        gap: 6px;
+      }
+      .scenes figcaption {
+        font-size: 13px;
+        color: var(--muted);
+        max-width: 448px;
+      }
+      .scene {
+        width: 448px;
+        max-width: 100%;
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+      }
+      .card {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        cursor: pointer;
+      }
+      .card.picked {
+        border-color: var(--accent);
+      }
+      .card h3 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 15px;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .card .pick {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .card.picked .pick {
+        color: var(--accent);
+      }
+      .card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      canvas {
+        image-rendering: pixelated;
+        display: block;
+        max-width: 100%;
+        border-radius: 3px;
+      }
+      .sheets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: end;
+      }
+      .sheets figure {
+        margin: 0;
+        display: grid;
+        gap: 4px;
+        justify-items: start;
+      }
+      .sheets figcaption {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      button {
+        font-family: var(--display);
+        font-size: 12px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .tag {
+        font-family: var(--body);
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0 5px;
+        justify-self: start;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Brass Monkey floors</h1>
+        <p>
+          The floor art: the wall behind, the <b>girders</b> and <b>ladders</b> of the girder floor, the
+          <b>conveyor</b> belts of the conveyor floor, and the <b>exit door</b>. The girder floor keeps the old
+          workshop's layout (imported girder for girder); its green art, the bonus box and "1UP HIGH SCORE 2UP" go.
+          Click a card to pick one of each; the scenes play your picks at 2× and the sheets show them at 4×. Then press
+          <b>Copy my picks</b> and paste the line back, with any notes.
+        </p>
+      </header>
+      <div class="bar">
+        <button id="as-is">As is</button>
+        <button id="proposed">Proposed</button>
+        <button id="copy">Copy my picks</button>
+        <output id="picks"></output>
+      </div>
+      <section>
+        <h2>Your picks, 2×</h2>
+        <div class="scenes">
+          <figure>
+            <canvas class="scene" id="girder-floor" width="224" height="256"></canvas>
+            <figcaption>
+              The girder floor as it plays after this issue: the monkey walks the bottom girder, the Gnome stands at the
+              top. Nothing else moves until #39.
+            </figcaption>
+          </figure>
+          <figure>
+            <canvas class="scene" id="conveyor-floor" width="224" height="256"></canvas>
+            <figcaption>
+              A <b>sample</b> conveyor floor, only to judge the belts in place (#39 lays out the real one), with the
+              gear, ember and bolt picked earlier.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+      <section>
+        <h2>Sheets, 4×</h2>
+        <div class="sheets" id="sheets"></div>
+      </section>
+      <section>
+        <h2>Top of the girder floor</h2>
+        <div class="grid" id="top"></div>
+      </section>
+      <section>
+        <h2>Girder shape</h2>
+        <div class="grid" id="girder"></div>
+      </section>
+      <section>
+        <h2>Girder colour</h2>
+        <div class="grid" id="colour"></div>
+      </section>
+      <section>
+        <h2>Ladder shape</h2>
+        <div class="grid" id="ladder"></div>
+      </section>
+      <section>
+        <h2>Ladder colour</h2>
+        <div class="grid" id="ladderColour"></div>
+      </section>
+      <section>
+        <h2>Conveyor</h2>
+        <div class="grid" id="conveyor"></div>
+      </section>
+      <section>
+        <h2>Exit door</h2>
+        <div class="grid" id="door"></div>
+      </section>
+      <section>
+        <h2>Wall</h2>
+        <div class="grid" id="wall"></div>
+      </section>
+    </main>
+    <script>
+      const DATA = /*DATA*/ null;
+      const S = DATA.sweetie;
+      // Knob: [section id, options, key in the picks line].
+      const KNOBS = {
+        top: DATA.tops,
+        girder: DATA.girderShapes,
+        colour: DATA.girderColours,
+        ladder: DATA.ladderShapes,
+        ladderColour: DATA.ladderColours,
+        conveyor: DATA.conveyors,
+        door: DATA.doors,
+        wall: DATA.backdrops,
+      };
+      const AS_IS = {
+        top: "T1",
+        girder: "S1",
+        colour: "green",
+        ladder: "L1",
+        ladderColour: "white",
+        conveyor: "C1",
+        door: "D1",
+        wall: "K1",
+      };
+      const PROPOSED = {
+        top: "T2",
+        girder: "S1",
+        colour: "red",
+        ladder: "L1",
+        ladderColour: "cyan",
+        conveyor: "C2",
+        door: "D4",
+        wall: "K2",
+      };
+      const picks = { ...PROPOSED };
+      const option = (knob, id = picks[knob]) => KNOBS[knob].find((o) => o.id === id);
+
+      const recolour = (rows, map) => rows.map((r) => [...r].map((c) => map[c] ?? c).join(""));
+      function blit(ctx, rows, x, y, k = 1, flip = false) {
+        const w = rows[0].length;
+        rows.forEach((row, j) => {
+          for (let i = 0; i < w; i++) {
+            const ch = row[flip ? w - 1 - i : i];
+            if (ch === ".") continue;
+            ctx.fillStyle = S[ch];
+            ctx.fillRect(Math.round(x) + i * k, Math.round(y) + j * k, k, k);
+          }
+        });
+      }
+      function canvas(w, h, k) {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.style.width = `${w * k}px`;
+        return c;
+      }
+
+      // The art for a set of picks (the current ones unless overridden).
+      function art(over = {}) {
+        const p = { ...picks, ...over };
+        const girder = recolour(option("girder", p.girder).rows, option("colour", p.colour).map);
+        const ladder = recolour(option("ladder", p.ladder).rows, option("ladderColour", p.ladderColour).map);
+        const c = option("conveyor", p.conveyor);
+        // C3's girder part (#) is the picked girder's rows 2-7; the frames of
+        // C1 and C2 (digits) are in the girder's colour.
+        const colour = option("colour", p.colour).map;
+        const fill = (f) =>
+          recolour(
+            f.map((r, j) => (r.includes("#") ? girder[j] : r)),
+            colour,
+          );
+        const conveyor = { left: c.left.map(fill), middle: c.middle.map(fill), right: c.right.map(fill) };
+        return {
+          girder,
+          ladder,
+          conveyor,
+          door: option("door", p.door).rows,
+          wall: option("wall", p.wall).tile,
+          top: option("top", p.top),
+        };
+      }
+
+      function wall(ctx, a, w, h) {
+        const tile = a.wall;
+        const tw = tile[0].length;
+        const th = tile.length;
+        for (let y = 0; y < h; y += th) for (let x = 0; x < w; x += tw) blit(ctx, tile, x, y);
+      }
+      function ladder(ctx, a, l) {
+        for (let y = l.top; y <= l.bottom; y++) blit(ctx, [a.ladder[y % 4]], l.x, y);
+      }
+      function girders(ctx, a, columns) {
+        for (const [x, y] of columns) blit(ctx, a.girder, x, y);
+      }
+      function door(ctx, a, [x, floor]) {
+        blit(ctx, a.door, x, floor - a.door.length);
+      }
+      // A belt from x0 to x1 (exclusive) with its top at y; `frame` is the shared belt clock.
+      function belt(ctx, a, x0, x1, y, right, frame) {
+        const f = right ? frame % 4 : (4 - (frame % 4)) % 4;
+        blit(ctx, a.conveyor.left[f], x0, y);
+        for (let x = x0 + 8; x < x1 - 8; x += 8) blit(ctx, a.conveyor.middle[f], x, y);
+        blit(ctx, a.conveyor.right[f], x1 - 8, y);
+      }
+
+      const stages = [];
+      let t = 0;
+      // The monkey's walk: frame += 0.2 a tick, cycle 0,1,0,2 over the sheet's columns.
+      const walk = () => [0, 1, 0, 2][Math.floor(t / 5) % 4];
+      function pacer(a, b, every = 1) {
+        return { x: a, a, b, left: false, every };
+      }
+      function pace(p) {
+        if (t % p.every) return;
+        p.x += p.left ? -1 : 1;
+        if (p.x >= p.b) p.left = true;
+        if (p.x <= p.a) p.left = false;
+      }
+      // A belt moves 1 px every 2 ticks.
+      const beltFrame = () => Math.floor(t / 2);
+
+      // The girder floor as the game draws it after this issue: the Gnome's
+      // idle frame top-left at (24, 52), the monkey walking the bottom girder
+      // with its centre between x 6 and 108 at y 240.
+      const girderFloor = document.getElementById("girder-floor");
+      const monkey = pacer(6, 108);
+      function drawGirderFloor(ctx, a) {
+        wall(ctx, a, 224, 256);
+        a.top.ladders.forEach((l) => ladder(ctx, a, l));
+        a.top.girders.forEach((g) => girders(ctx, a, g));
+        door(ctx, a, a.top.door);
+        blit(ctx, DATA.gnome[0], 24, 52);
+      }
+      stages.push(() => {
+        const ctx = girderFloor.getContext("2d");
+        drawGirderFloor(ctx, art());
+        pace(monkey);
+        blit(ctx, DATA.monkey[walk()], monkey.x - 8, 232, 1, monkey.left);
+      });
+
+      // The sample conveyor floor.
+      const conveyorFloor = document.getElementById("conveyor-floor");
+      const C = DATA.conveyorSample;
+      const gear = pacer(18, 90);
+      const ember = pacer(130, 200, 2);
+      const walker = pacer(40, 180);
+      stages.push(() => {
+        const ctx = conveyorFloor.getContext("2d");
+        const a = art();
+        wall(ctx, a, 224, 256);
+        C.ladders.forEach((l) => ladder(ctx, a, l));
+        C.girders.forEach((g) => girders(ctx, a, g));
+        C.belts.forEach(([x0, x1, y, right]) => belt(ctx, a, x0, x1, y, right, beltFrame()));
+        door(ctx, a, C.door);
+        const throwing = t % 180 < 30;
+        blit(ctx, DATA.gnome[throwing ? 1 : 0], 24, 52);
+        pace(gear);
+        const gi = Math.floor(gear.x / 4) % DATA.gear.length;
+        blit(ctx, DATA.gear[gear.left ? (DATA.gear.length - gi) % DATA.gear.length : gi], gear.x, 208 - 12);
+        pace(ember);
+        blit(ctx, DATA.ember[Math.floor(t / 8) % DATA.ember.length], ember.x, 168 - 12);
+        const g = Math.floor((t % 120) / 5);
+        blit(ctx, DATA.bolt[g >= 1 && g < DATA.bolt.length ? g : 0], 60, 128 - 14);
+        pace(walker);
+        blit(ctx, DATA.monkey[walk()], walker.x, 232, 1, walker.left);
+      });
+
+      // Cards: each one previews its option with the other picks.
+      function preview(knob, o) {
+        const over = { [knob]: o.id };
+        if (knob === "top") {
+          const c = canvas(224, 256, 1);
+          stages.push(() => drawGirderFloor(c.getContext("2d"), art(over)));
+          return c;
+        }
+        if (knob === "conveyor") {
+          const c = canvas(64, 24, 4);
+          stages.push(() => {
+            const ctx = c.getContext("2d");
+            const a = art(over);
+            wall(ctx, a, 64, 24);
+            belt(ctx, a, 4, 60, 8, true, beltFrame());
+          });
+          return c;
+        }
+        if (knob === "door") {
+          const c = canvas(40, 40, 4);
+          stages.push(() => {
+            const ctx = c.getContext("2d");
+            const a = art(over);
+            wall(ctx, a, 40, 40);
+            girders(
+              ctx,
+              a,
+              [0, 8, 16, 24, 32].map((x) => [x, 32]),
+            );
+            door(ctx, a, [12, 32]);
+          });
+          return c;
+        }
+        if (knob === "ladder" || knob === "ladderColour") {
+          const c = canvas(48, 40, 4);
+          stages.push(() => {
+            const ctx = c.getContext("2d");
+            const a = art(over);
+            wall(ctx, a, 48, 40);
+            ladder(ctx, a, { x: 20, top: 8, bottom: 31 });
+            girders(
+              ctx,
+              a,
+              [0, 8, 16, 24, 32, 40].map((x) => [x, 0]),
+            );
+            girders(
+              ctx,
+              a,
+              [0, 8, 16, 24, 32, 40].map((x) => [x, 32]),
+            );
+          });
+          return c;
+        }
+        // Wall and girders: a sloped run of girders with a ladder.
+        const c = canvas(64, 40, 4);
+        stages.push(() => {
+          const ctx = c.getContext("2d");
+          const a = art(over);
+          wall(ctx, a, 64, 40);
+          ladder(ctx, a, { x: 40, top: 14, bottom: 29 });
+          girders(
+            ctx,
+            a,
+            [0, 8, 16, 24, 32, 40, 48, 56].map((x) => [x, 6 + Math.floor(x / 16)]),
+          );
+          girders(
+            ctx,
+            a,
+            [0, 8, 16, 24, 32, 40, 48, 56].map((x) => [x, 30]),
+          );
+        });
+        return c;
+      }
+      function card(knob, o) {
+        const el = document.createElement("article");
+        el.className = "card";
+        el.dataset.knob = knob;
+        el.dataset.id = o.id;
+        const h = document.createElement("h3");
+        h.innerHTML = `<span>${o.id} · ${o.name}</span><span class="pick"></span>`;
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = o.tag;
+        const p = document.createElement("p");
+        p.textContent = o.note;
+        el.append(h, tag, p, preview(knob, o));
+        el.addEventListener("click", () => {
+          picks[knob] = o.id;
+          render();
+        });
+        return el;
+      }
+      for (const [knob, options] of Object.entries(KNOBS)) {
+        document.getElementById(knob).append(...options.map((o) => card(knob, o)));
+      }
+
+      // Sheets of the picks at 4×: every tile and every frame. Every option
+      // of a part is the same size, so a sheet's size is fixed.
+      function sheet(label, get, gap = 2) {
+        const first = get(art());
+        const w = first.reduce((s, f) => s + f[0].length + gap, gap);
+        const h = Math.max(...first.map((f) => f.length)) + gap * 2;
+        const c = canvas(w, h, 4);
+        const fig = document.createElement("figure");
+        const cap = document.createElement("figcaption");
+        cap.textContent = label;
+        fig.append(c, cap);
+        stages.push(() => {
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = S.k;
+          ctx.fillRect(0, 0, w, h);
+          let x = gap;
+          for (const f of get(art())) {
+            blit(ctx, f, x, gap);
+            x += f[0].length + gap;
+          }
+        });
+        return fig;
+      }
+      document.getElementById("sheets").append(
+        sheet("girder", (a) => [a.girder]),
+        sheet("ladder, 4 rungs", (a) => [Array.from({ length: 16 }, (_, y) => a.ladder[y % 4])]),
+        sheet("conveyor: left, middle, right × 4 frames", (a) =>
+          [0, 1, 2, 3].flatMap((f) => [a.conveyor.left[f], a.conveyor.middle[f], a.conveyor.right[f]]),
+        ),
+        sheet("exit door", (a) => [a.door]),
+      );
+
+      function line() {
+        return Object.keys(KNOBS)
+          .map((k) => `${k}=${picks[k]}`)
+          .join(" ");
+      }
+      function render() {
+        document.querySelectorAll(".card").forEach((el) => {
+          const on = picks[el.dataset.knob] === el.dataset.id;
+          el.classList.toggle("picked", on);
+          el.querySelector(".pick").textContent = on ? "picked" : "click to pick";
+        });
+        document.getElementById("picks").textContent = line();
+      }
+      document.getElementById("copy").onclick = () => {
+        const out = document.getElementById("picks");
+        const select = () => getSelection()?.selectAllChildren(out);
+        navigator.clipboard ? navigator.clipboard.writeText(line()).catch(select) : select();
+      };
+      document.getElementById("proposed").onclick = () => {
+        Object.assign(picks, PROPOSED);
+        render();
+      };
+      document.getElementById("as-is").onclick = () => {
+        Object.assign(picks, AS_IS);
+        render();
+      };
+
+      function tick() {
+        t++;
+        stages.forEach((s) => s());
+        requestAnimationFrame(tick);
+      }
+      render();
+      tick();
+    </script>
+  </body>
+</html>
