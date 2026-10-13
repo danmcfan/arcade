@@ -35,12 +35,13 @@ import {
   titleCards,
   titleRows,
 } from "../src/ui/glyphs.ts";
-import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
-import { prizeArt, prizePalette, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
+import { counterArt } from "../src/ui/counterArt.ts";
+import { prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
 import type { PrizeId } from "../src/arcade/prizes.ts";
-import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
+import { iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
+import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, paint, plot } from "./pixel-art.ts";
+import { blank, paint, plot, toPng } from "./pixel-art.ts";
 
 export function renderFont(): PNG {
   const png = blank(fontSheetWidth, fontSheetHeight);
@@ -80,21 +81,19 @@ export function renderLogo(): PNG {
 export function renderIcons(): PNG {
   const png = blank(iconSheetWidth, iconSheetHeight);
   for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
-    paint(png, rows, iconPalette, iconRects[name].x, 0);
+    paint(png, rows, sweetie, iconRects[name].x, 0);
   }
   return png;
 }
 
 export function renderCounter(): PNG {
-  const png = blank(counterArt[0]!.length, counterArt.length);
-  paint(png, counterArt, counterPalette);
-  return png;
+  return toPng(counterArt);
 }
 
 export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
   for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
-    paint(png, rows, prizePalette, prizeRects[id].x, 0);
+    paint(png, rows, sweetie, prizeRects[id].x, 0);
   }
   return png;
 }

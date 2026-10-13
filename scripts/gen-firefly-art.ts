@@ -18,7 +18,6 @@ import {
   backgroundHeight,
   backgroundWidth,
   fireflyArt,
-  fireflyPalette,
   grassTile,
   hitQuarters,
   mothArt,
@@ -31,10 +30,10 @@ import {
   starArt,
   stars,
   waspArt,
-  type FireflyColor,
 } from "../src/firefly/art.ts";
+import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, paint, plot, type Rows } from "./pixel-art.ts";
+import { blank, mirrorX, mirrorY, paint, plot, toPng, type Rows } from "./pixel-art.ts";
 
 const empty = ".";
 
@@ -97,14 +96,7 @@ export function rotate(rows: Rows, degrees: number): string[] {
 
 /** A 16×16 (or any size) quarter mirrored into the full frame: the quarter is the top-left. */
 export function mirrorQuarter(quarter: Rows): string[] {
-  const top = quarter.map((row) => row + [...row].reverse().join(""));
-  return [...top, ...[...top].reverse()];
-}
-
-function single(rows: Rows): PNG {
-  const png = blank(rows[0]!.length, rows.length);
-  paint(png, rows, fireflyPalette);
-  return png;
+  return mirrorY(mirrorX(quarter));
 }
 
 /** One frame per heading: row r, column c is the source turned (r × 90 + c × 15)°. */
@@ -114,7 +106,7 @@ export function rotationSheet(rows: Rows): PNG {
   const png = blank(w * rotationColumns, h * rotationRows);
   for (let r = 0; r < rotationRows; r++) {
     for (let c = 0; c < rotationColumns; c++) {
-      paint(png, rotate(rows, r * 90 + c * rotationStep), fireflyPalette, c * w, r * h);
+      paint(png, rotate(rows, r * 90 + c * rotationStep), sweetie, c * w, r * h);
     }
   }
   return png;
@@ -124,7 +116,7 @@ export function renderHit(): PNG {
   const frames = hitQuarters.map(mirrorQuarter);
   const size = frames[0]!.length;
   const png = blank(size * frames.length, size);
-  frames.forEach((rows, i) => paint(png, rows, fireflyPalette, i * size, 0));
+  frames.forEach((rows, i) => paint(png, rows, sweetie, i * size, 0));
   return png;
 }
 
@@ -137,7 +129,7 @@ const bayer = [
 ];
 
 /** The sky colour at (x, y): the stop above, or the next one where the dither says so. */
-export function skyColor(x: number, y: number): FireflyColor {
+export function skyColor(x: number, y: number): SweetieLetter {
   for (let i = skyStops.length - 1; i >= 0; i--) {
     const stop = skyStops[i]!;
     if (y < stop.y) continue;
@@ -152,14 +144,14 @@ export function skyColor(x: number, y: number): FireflyColor {
 export function renderBackground(): PNG {
   const png = blank(backgroundWidth, backgroundHeight);
   for (let y = 0; y < backgroundHeight; y++) {
-    for (let x = 0; x < backgroundWidth; x++) plot(png, x, y, fireflyPalette[skyColor(x, y)]);
+    for (let x = 0; x < backgroundWidth; x++) plot(png, x, y, sweetie[skyColor(x, y)]);
   }
   for (const [x, y, kind] of stars) {
     const rows = starArt[kind];
-    paint(png, rows, fireflyPalette, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
+    paint(png, rows, sweetie, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
   }
   const tileW = grassTile[0]!.length;
-  for (let ox = 0; ox < backgroundWidth; ox += tileW) paint(png, grassTile, fireflyPalette, ox, backgroundHeight - grassTile.length);
+  for (let ox = 0; ox < backgroundWidth; ox += tileW) paint(png, grassTile, sweetie, ox, backgroundHeight - grassTile.length);
   return png;
 }
 
@@ -167,8 +159,8 @@ export const fireflyImagesDir = join(repoRoot, "src/assets/images/firefly");
 
 /** Every generated Firefly image: its file in src/assets/images/firefly and how to draw it. */
 export const fireflyArtFiles: readonly { file: string; render: () => PNG }[] = [
-  { file: "firefly.png", render: () => single(fireflyArt) },
-  { file: "spark.png", render: () => single(sparkArt) },
+  { file: "firefly.png", render: () => toPng(fireflyArt) },
+  { file: "spark.png", render: () => toPng(sparkArt) },
   { file: "moth.png", render: () => rotationSheet(mothArt) },
   { file: "wasp.png", render: () => rotationSheet(waspArt) },
   { file: "owl.png", render: () => rotationSheet(owlArt) },

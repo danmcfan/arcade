@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
 import { counterRect } from "../src/arcade/prizeCounter.ts";
-import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
-import { iconPalette, icons } from "../src/ui/icons.ts";
-import { prizeArt, prizePalette } from "../src/ui/prizeArt.ts";
+import { counterArt } from "../src/ui/counterArt.ts";
+import { icons } from "../src/ui/icons.ts";
+import { prizeArt } from "../src/ui/prizeArt.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import {
   counterPath,
@@ -21,6 +21,7 @@ import {
   renderTitleCard,
   titleCardPath,
 } from "./gen-ui-art.ts";
+import { checkRows } from "./pixel-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
@@ -42,29 +43,17 @@ describe("UI art source", () => {
     }
   });
 
-  test("every icon is rows of one width, in palette letters and .", () => {
-    const allowed = new RegExp(`^[.${Object.keys(iconPalette).join("")}]+$`);
-    for (const [name, rows] of Object.entries(icons)) {
-      for (const row of rows) {
-        expect({ name, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ name, row, ok: true });
-      }
-    }
+  test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
+    for (const [name, rows] of Object.entries(icons)) checkRows(name, rows);
   });
 
-  test("the prize counter is the size of its collision rect, in palette letters and .", () => {
-    expect([counterArt[0]!.length, counterArt.length]).toEqual([counterRect.w, counterRect.h]);
-    const allowed = new RegExp(`^[.${Object.keys(counterPalette).join("")}]+$`);
-    for (const row of counterArt) expect({ row, ok: allowed.test(row) && row.length === counterRect.w }).toEqual({ row, ok: true });
+  test("the prize counter is the size of its collision rect, in Sweetie 16 letters and .", () => {
+    checkRows("counter", counterArt, { w: counterRect.w, h: counterRect.h });
   });
 
-  test("every prize decoration is rows of one width, in palette letters and ., and every prize has one", () => {
+  test("every prize decoration is rows of one width, in Sweetie 16 letters and ., and every prize has one", () => {
     expect(Object.keys(prizeArt).sort()).toEqual(prizes.map((p) => p.id).sort());
-    const allowed = new RegExp(`^[.${Object.keys(prizePalette).join("")}]+$`);
-    for (const [id, rows] of Object.entries(prizeArt)) {
-      for (const row of rows) {
-        expect({ id, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ id, row, ok: true });
-      }
-    }
+    for (const [id, rows] of Object.entries(prizeArt)) checkRows(id, rows);
   });
 
   test("every title letter is 11x15 (the space only sets a width)", () => {

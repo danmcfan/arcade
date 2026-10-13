@@ -1,21 +1,11 @@
 // Pixel-art source for the prize decorations in the hub (ADR 0006): what an
 // owned prize looks like, standing by the cabinet of the minigame it helps.
-// Rows of palette letters (`.` is blank). scripts/gen-ui-art.ts packs them
-// left to right, 1 px apart, into src/assets/images/prizes.png; the runtime
-// reads each decoration's place in the sheet from here (src/arcade/prizes.ts).
+// Rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is
+// blank). scripts/gen-ui-art.ts packs them left to right, 1 px apart, into
+// src/assets/images/prizes.png; the runtime reads each decoration's place in
+// the sheet from here (src/arcade/prizes.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
-
-/** Sweetie 16 colours, keyed by the letter the rows use. */
-export const prizePalette: Readonly<Record<string, string>> = {
-  k: "#1a1c2c",
-  y: "#ffcd75",
-  o: "#ef7d57",
-  r: "#b13e53",
-  n: "#29366f",
-  l: "#94b0c2",
-  w: "#f4f4f4",
-};
 
 export const prizeArt = {
   /** A jar of honey with a red lid: stands on the floor left of the Sweet Sam cabinet. */
