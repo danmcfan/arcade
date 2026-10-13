@@ -54,6 +54,7 @@ Keep the check in the repo and in the PR, so the next change to that screen can 
 ## Look at the results
 
 - Read the PNGs directly. `frame()` output is already upscaled, so it is legible.
+- For a sprite or sheet on its own, before/after sheets or a sprite placed in the room, use `bun run pixel` (`docs/agents/pixel-art.md`).
 - To review a video without reading every frame, make one contact sheet and read that:
 
   ```sh

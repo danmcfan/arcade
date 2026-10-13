@@ -22,6 +22,10 @@ Every change ships as a PR from its own branch; the owner reviews and merges on 
 
 Verify any change a player can see or hear with a verify check (`bun run verify <name>`, `scripts/harness.ts`), and attach its screenshots and video to the PR. How to write one and the browser gotchas: `docs/agents/visual-verification.md`.
 
+## Pixel art
+
+Drawing, redrawing or specifying art: import existing art before redrawing, derive pixels with the helpers, and look with `bun run pixel`. Sources, helpers and the quality bar: `docs/agents/pixel-art.md`.
+
 ## Review
 
 `CODING_STANDARDS.md` holds the rules for the Standards axis of `/code-review`.
