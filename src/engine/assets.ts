@@ -148,7 +148,9 @@ export const fireflyImages = {
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
+/** @public Firefly art not drawn yet; kept with its siblings. */
 export const imageWasp: Sprite = whole(fireflyImages.wasp);
+/** @public Firefly art not drawn yet; kept with its siblings. */
 export const imageOwl: Sprite = whole(fireflyImages.owl);
 export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);

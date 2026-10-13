@@ -2,6 +2,8 @@
 // tracks the current transform and records each paint as a device-space
 // operation, so tests assert on where pixels land, not on call sequences.
 
+import { Surface } from "./surface.ts";
+
 export interface PaintOp {
   op: "drawImage" | "fillRect" | "clearRect";
   /** Device-space axis-aligned bounds of the painted rect. */
@@ -95,7 +97,7 @@ export class FakeContext {
     this.m = mul(this.m, [c, s, -s, c, 0, 0]);
   }
 
-  private bounds(x: number, y: number, w: number, h: number) {
+  private bounds(x: number, y: number, w: number, h: number): { x: number; y: number; w: number; h: number } {
     const pts = [
       [x, y],
       [x + w, y],
@@ -177,8 +179,30 @@ export class FakeCanvas {
   }
 }
 
+/**
+ * Lets a FakeCanvas stand in for the DOM canvas the Surface expects. It checks
+ * the members the Surface uses; the rest of HTMLCanvasElement is not faked.
+ */
+function standsInForCanvas(c: FakeCanvas | HTMLCanvasElement): c is HTMLCanvasElement {
+  return typeof c.getContext === "function" && typeof c.width === "number" && typeof c.height === "number";
+}
+
+/** `c`, typed as the DOM canvas the Surface expects. */
+export function canvasElement(c: FakeCanvas): HTMLCanvasElement {
+  if (!standsInForCanvas(c)) throw new Error("FakeCanvas lacks the canvas members Surface uses");
+  return c;
+}
+
 /** Typed as the DOM canvas the Surface expects. */
 export function fakeCanvas(width?: number, height?: number): { canvas: HTMLCanvasElement; ctx: FakeContext } {
   const c = new FakeCanvas(width, height);
-  return { canvas: c as unknown as HTMLCanvasElement, ctx: c.ctx };
+  return { canvas: canvasElement(c), ctx: c.ctx };
+}
+
+/**
+ * A lazy offscreen Surface with some methods replaced, for tests that record
+ * calls. Methods left alone need a canvas factory (see `setCanvasFactory`).
+ */
+export function stubSurface<K extends keyof Surface>(overrides: Pick<Surface, K>, w = 0, h = 0): Surface {
+  return Object.assign(Surface.offscreen(w, h), overrides);
 }

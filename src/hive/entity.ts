@@ -15,7 +15,7 @@ export const tileHeight = 36;
 export const pelletAtlasCellW = 8;
 export const pelletAtlasCellH = 12;
 export const pelletAtlasSmallRowY = 0;
-export const pelletAtlasPowerRowY = pelletAtlasCellH;
+export const pelletAtlasPowerRowY = pelletAtlasSmallRowY + pelletAtlasCellH;
 export const pelletAnimHoldTicks = 15;
 export const pelletAnimFrameCount = 4;
 
@@ -199,71 +199,69 @@ function newEnemy(
 
 /** Item slots are nullable: an eaten item becomes null and keeps its slot. */
 export function newItems(): (Entity | null)[] {
-  const food: Entity[] = [];
+  return [
+    // Rows of pellets
+    ...newPelletRow(1, 12, 1),
+    ...newPelletRow(15, 26, 1),
+    ...newPelletRow(1, 26, 5),
+    ...newPelletRow(1, 6, 8),
+    ...newPelletRow(9, 12, 8),
+    ...newPelletRow(15, 18, 8),
+    ...newPelletRow(21, 26, 8),
+    ...newPelletRow(1, 12, 20),
+    ...newPelletRow(15, 26, 20),
+    ...newPelletRow(6, 12, 23),
+    ...newPelletRow(15, 21, 23),
+    ...newPelletRow(1, 6, 26),
+    ...newPelletRow(9, 12, 26),
+    ...newPelletRow(15, 18, 26),
+    ...newPelletRow(21, 26, 26),
+    ...newPelletRow(1, 26, 29),
 
-  // Rows of pellets
-  food.push(...newPelletRow(1, 12, 1));
-  food.push(...newPelletRow(15, 26, 1));
-  food.push(...newPelletRow(1, 26, 5));
-  food.push(...newPelletRow(1, 6, 8));
-  food.push(...newPelletRow(9, 12, 8));
-  food.push(...newPelletRow(15, 18, 8));
-  food.push(...newPelletRow(21, 26, 8));
-  food.push(...newPelletRow(1, 12, 20));
-  food.push(...newPelletRow(15, 26, 20));
-  food.push(...newPelletRow(6, 12, 23));
-  food.push(...newPelletRow(15, 21, 23));
-  food.push(...newPelletRow(1, 6, 26));
-  food.push(...newPelletRow(9, 12, 26));
-  food.push(...newPelletRow(15, 18, 26));
-  food.push(...newPelletRow(21, 26, 26));
-  food.push(...newPelletRow(1, 26, 29));
+    // Columns of pellets
+    ...newPelletColumn(9, 19, 6),
+    ...newPelletColumn(9, 19, 21),
+    ...newPelletColumn(2, 4, 6),
+    ...newPelletColumn(2, 4, 12),
+    ...newPelletColumn(2, 4, 15),
+    ...newPelletColumn(2, 4, 21),
+    ...newPelletColumn(6, 7, 1),
+    ...newPelletColumn(6, 7, 6),
+    ...newPelletColumn(6, 7, 9),
+    ...newPelletColumn(6, 7, 18),
+    ...newPelletColumn(6, 7, 21),
+    ...newPelletColumn(6, 7, 26),
+    ...newPelletColumn(21, 22, 1),
+    ...newPelletColumn(21, 22, 6),
+    ...newPelletColumn(21, 22, 12),
+    ...newPelletColumn(21, 22, 15),
+    ...newPelletColumn(21, 22, 21),
+    ...newPelletColumn(21, 22, 26),
+    ...newPelletColumn(23, 25, 3),
+    ...newPelletColumn(23, 25, 24),
+    ...newPelletColumn(24, 25, 6),
+    ...newPelletColumn(24, 25, 9),
+    ...newPelletColumn(24, 25, 18),
+    ...newPelletColumn(24, 25, 21),
+    ...newPelletColumn(27, 28, 1),
+    ...newPelletColumn(27, 28, 12),
+    ...newPelletColumn(27, 28, 15),
+    ...newPelletColumn(27, 28, 26),
 
-  // Columns of pellets
-  food.push(...newPelletColumn(9, 19, 6));
-  food.push(...newPelletColumn(9, 19, 21));
-  food.push(...newPelletColumn(2, 4, 6));
-  food.push(...newPelletColumn(2, 4, 12));
-  food.push(...newPelletColumn(2, 4, 15));
-  food.push(...newPelletColumn(2, 4, 21));
-  food.push(...newPelletColumn(6, 7, 1));
-  food.push(...newPelletColumn(6, 7, 6));
-  food.push(...newPelletColumn(6, 7, 9));
-  food.push(...newPelletColumn(6, 7, 18));
-  food.push(...newPelletColumn(6, 7, 21));
-  food.push(...newPelletColumn(6, 7, 26));
-  food.push(...newPelletColumn(21, 22, 1));
-  food.push(...newPelletColumn(21, 22, 6));
-  food.push(...newPelletColumn(21, 22, 12));
-  food.push(...newPelletColumn(21, 22, 15));
-  food.push(...newPelletColumn(21, 22, 21));
-  food.push(...newPelletColumn(21, 22, 26));
-  food.push(...newPelletColumn(23, 25, 3));
-  food.push(...newPelletColumn(23, 25, 24));
-  food.push(...newPelletColumn(24, 25, 6));
-  food.push(...newPelletColumn(24, 25, 9));
-  food.push(...newPelletColumn(24, 25, 18));
-  food.push(...newPelletColumn(24, 25, 21));
-  food.push(...newPelletColumn(27, 28, 1));
-  food.push(...newPelletColumn(27, 28, 12));
-  food.push(...newPelletColumn(27, 28, 15));
-  food.push(...newPelletColumn(27, 28, 26));
+    // Individual pellets
+    newPellet(1, 2),
+    newPellet(1, 4),
+    newPellet(26, 2),
+    newPellet(26, 4),
+    newPellet(2, 23),
+    newPellet(25, 23),
 
-  // Individual pellets
-  food.push(newPellet(1, 2));
-  food.push(newPellet(1, 4));
-  food.push(newPellet(26, 2));
-  food.push(newPellet(26, 4));
-  food.push(newPellet(2, 23));
-  food.push(newPellet(25, 23));
-
-  // Power pellets
-  food.push(newPower(1, 3));
-  food.push(newPower(26, 3));
-  food.push(newPower(1, 23));
-  food.push(newPower(26, 23));
-
-  return food;
+    // Power pellets
+    newPower(1, 3),
+    newPower(26, 3),
+    newPower(1, 23),
+    newPower(26, 23),
+  ];
 }
 
 function newPelletRow(txa: number, txb: number, ty: number): Entity[] {

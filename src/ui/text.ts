@@ -14,12 +14,12 @@ const index = new Map(charset.map((ch, i) => [ch, i]));
 
 /** Characters `drawText` can draw; anything else draws as nothing. */
 export function canDraw(text: string): boolean {
-  return [...text.toUpperCase()].every((ch) => index.has(ch));
+  return Array.from(text.toUpperCase()).every((ch) => index.has(ch));
 }
 
 /** Width in pixels: glyph widths plus a 1-px gap between glyphs. */
 export function textWidth(text: string): number {
-  const chars = [...text.toUpperCase()].filter((ch) => index.has(ch));
+  const chars = Array.from(text.toUpperCase()).filter((ch) => index.has(ch));
   if (chars.length === 0) return 0;
   return chars.reduce((w, ch) => w + glyphWidth(ch), 0) + chars.length - 1;
 }

@@ -51,5 +51,10 @@ export const closeItemIndex = firstPrizeIndex + prizes.length;
 
 /** The prize counter menu: the token, each prize (`offers` in catalogue order), then CLOSE. */
 export function prizeCounterItems(offer: TokenOffer, offers: readonly PrizeOffer[]): readonly string[] {
-  return [tokenItemLabels[offer], ...prizes.map((p, i) => prizeItemLabel(p, offers[i]!)), closeItem];
+  const prizeItems = prizes.map((p, i) => {
+    const prizeOffer = offers[i];
+    if (prizeOffer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
+    return prizeItemLabel(p, prizeOffer);
+  });
+  return [tokenItemLabels[offer], ...prizeItems, closeItem];
 }

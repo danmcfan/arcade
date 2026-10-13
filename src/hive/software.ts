@@ -32,8 +32,6 @@ import { modeScatter, restartRound, update, type Mode } from "./update.ts";
 import { draw, type DrawCache } from "./draw.ts";
 import { noAdvantages, type HiveAdvantages } from "./advantages.ts";
 
-export { framesPerSecond, blueFramesDuration } from "./constants.ts";
-
 export class HiveSoftware implements FixedViewport {
   readonly name = "hive";
 
@@ -98,7 +96,9 @@ export class HiveSoftware implements FixedViewport {
     this.items = newItems();
 
     const z = digits6(0);
-    this.scoreDial.forEach((r, i) => r.boot(z[i] ?? 0));
+    this.scoreDial.forEach((r, i) => {
+      r.boot(z[i] ?? 0);
+    });
     let hc = highscore;
     if (hc < 0) {
       hc = 0;
@@ -107,7 +107,9 @@ export class HiveSoftware implements FixedViewport {
       hc = 999_999;
     }
     const hd = digits6(hc);
-    this.highScoreDial.forEach((r, i) => r.boot(hd[i] ?? 0));
+    this.highScoreDial.forEach((r, i) => {
+      r.boot(hd[i] ?? 0);
+    });
 
     restartRound(this);
 
@@ -153,7 +155,6 @@ export class HiveSoftware implements FixedViewport {
       if (it !== null) present.push(idx);
     });
     const p = this.player;
-    const dial = (r: DigitReel): HiveDialSnapshot => [r.settledDigit, r.active, r.from, r.to, r.t];
     return {
       state,
       player: { x: p.x, y: p.y, dir: realDir(p.direction), frame: p.frame, hidden: p.hidden, velocity: p.velocity },
@@ -197,6 +198,10 @@ export class HiveSoftware implements FixedViewport {
       dials: [...this.scoreDial.map(dial), ...this.highScoreDial.map(dial)],
     };
   }
+}
+
+function dial(r: DigitReel): HiveDialSnapshot {
+  return [r.settledDigit, r.active, r.from, r.to, r.t];
 }
 
 function realDir<T extends string>(d: T | ""): T {

@@ -40,7 +40,9 @@ export interface FrameRow {
 }
 
 function snapshotAt(scenario: string, tick: number): unknown {
-  const snap = readTrace(tracePath(scenario)).find((s) => (s as { tick?: unknown } | null)?.tick === tick);
+  const snap = readTrace(tracePath(scenario)).find(
+    (s) => typeof s === "object" && s !== null && "tick" in s && s.tick === tick,
+  );
   if (snap === undefined) throw new Error(`${scenario}: no trace line for tick ${tick}`);
   return snap;
 }
@@ -100,6 +102,11 @@ export function compareFrame(scenario: string, tick: number): FrameRow {
   };
 }
 
+/** `n` as a table cell, blank for a negative (not measured) count. */
+function opt(n: number): string {
+  return n < 0 ? "" : String(n);
+}
+
 export function renderReport(rows: readonly FrameRow[]): string {
   const zero = rows.filter((r) => r.diffPixels === 0).length;
   const lines = [
@@ -113,7 +120,6 @@ export function renderReport(rows: readonly FrameRow[]): string {
   ];
   for (const r of rows) {
     const diff = r.diffPixels < 0 ? `n/a (${r.note})` : String(r.diffPixels);
-    const opt = (n: number) => (n < 0 ? "" : String(n));
     lines.push(
       `| ${r.scenario} | ${r.tick} | ${r.width}x${r.height} | ${diff} | ${r.maskedPixels || ""} | ${opt(r.unmaskedDiffPixels)} | ${opt(r.exactDiffPixels)} | ${r.diffPath} |`,
     );
@@ -129,11 +135,11 @@ export function renderReport(rows: readonly FrameRow[]): string {
 
 if (import.meta.main) {
   const rows: FrameRow[] = [];
-  for (const scenario of readdirSync(goldenDir).sort()) {
+  for (const scenario of readdirSync(goldenDir).toSorted()) {
     const ticks = readdirSync(join(goldenDir, scenario))
       .filter((f) => f.endsWith(".png"))
       .map((f) => Number(f.slice(0, -4)))
-      .sort((a, b) => a - b);
+      .toSorted((a, b) => a - b);
     for (const tick of ticks) rows.push(compareFrame(scenario, tick));
   }
   mkdirSync(join(repoRoot, "out"), { recursive: true });

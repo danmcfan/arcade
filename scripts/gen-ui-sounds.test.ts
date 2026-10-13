@@ -14,7 +14,7 @@ import {
   titlePath,
 } from "./gen-ui-sounds.ts";
 
-const length = (notes: readonly Note[]) => notes.reduce((t, [, len]) => t + len, 0);
+const length = (notes: readonly Note[]): number => notes.reduce((t, [, len]) => t + len, 0);
 
 describe("UI sound source", () => {
   test("the title music's voices are the same length, so the loop lines up", () => {

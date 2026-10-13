@@ -22,12 +22,13 @@ The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no frame
 Requires Bun 1.4.2.
 
 ```sh
-bun install          # dev dependencies only (TypeScript, pngjs, pixelmatch)
+bun install          # dev dependencies only (TypeScript, Prettier, pngjs, pixelmatch)
 bun run dev          # dev server with hot reload on http://localhost:3000 (ARCADE_PORT=3005 bun run dev for another port)
 bun test             # unit tests and the parity suite
 bun run build        # production bundle in dist/
 bun run preview      # serve dist/
-bun run check        # typecheck + test + build, as CI does (also run by the pre-push hook)
+bun run check        # typecheck + format check + test + build, as CI does (also run by the pre-push hook)
+bun run format       # rewrite files in Prettier style (bun run format:check only reports)
 bun run verify       # browser checks with screenshots and video (see below)
 bun run art          # rebuild the generated pixel art (UI, prize decorations, hub room and player from src/ui/, cabinets from art/, Firefly from src/firefly/art.ts)
 bun run pixel        # look at art: rows, colours, show, before, place (docs/agents/pixel-art.md)

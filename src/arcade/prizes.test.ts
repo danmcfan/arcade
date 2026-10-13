@@ -13,7 +13,8 @@ import {
   runningShoesPrice,
   sleepyBeesPrice,
 } from "./prizes.ts";
-import type { Software } from "../game/software.ts";
+import { defined } from "../engine/defined.testutil.ts";
+import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
 
 describe("prize catalogue", () => {
@@ -27,13 +28,13 @@ describe("prize catalogue", () => {
   });
 
   test("each decoration is the size of its art and sits beside the Sweet Sam cabinet, clear of the cabinets and the counter", () => {
-    const machines = newMachines(() => ({}) as Software);
-    const sweet = machines.find((m) => m.title === "sweet")!.rect;
+    const machines = newMachines(() => fakeSoftware());
+    const sweet = defined(machines.find((m) => m.title === "sweet")).rect;
     for (const p of prizes) {
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
       // Within a cabinet's width of the Sweet Sam cabinet, nearer it than any other.
       const centre = r.x + r.w / 2;
-      const dist = (m: { x: number; w: number }) => Math.abs(m.x + m.w / 2 - centre);
+      const dist = (m: { x: number; w: number }): number => Math.abs(m.x + m.w / 2 - centre);
       expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({
         id: p.id,
         nearest: "sweet",
@@ -52,7 +53,7 @@ describe("prize catalogue", () => {
   });
 
   test("decorations do not block movement: owning every prize changes nothing that is solid", () => {
-    const s = newState(null, () => ({}) as Software);
+    const s = newState(null, () => fakeSoftware());
     s.prizes = prizes.map((p) => p.id);
     for (const p of prizes) {
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
@@ -83,7 +84,7 @@ describe("buyPrize", () => {
   });
 
   test("an owned prize can't be bought again", () => {
-    const after = buyPrize({ tickets: 60, prizes: [] }, "honeyJar")!;
+    const after = defined(buyPrize({ tickets: 60, prizes: [] }, "honeyJar"));
     expect(after).toEqual({ tickets: 35, prizes: ["honeyJar"] });
     expect(buyPrize(after, "honeyJar")).toBeNull();
     expect(prizeOffer(after, "honeyJar")).toBe("owned");

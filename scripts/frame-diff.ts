@@ -72,7 +72,7 @@ export function diffFiles(
   const expected = PNG.sync.read(readFileSync(expectedPath));
   const actual = PNG.sync.read(readFileSync(actualPath));
   const { diff, ...result } = diffImages(expected, actual, opts.masks);
-  if (opts.out) {
+  if (opts.out !== undefined && opts.out !== "") {
     mkdirSync(dirname(opts.out), { recursive: true });
     writeFileSync(opts.out, PNG.sync.write(diff));
   }
@@ -98,7 +98,9 @@ if (import.meta.main) {
       );
     }
     const r = diffFiles(expected, actual, { masks, out });
-    console.log(`${r.diffPixels} differing pixels (${r.width}x${r.height})${out ? `; diff: ${out}` : ""}`);
+    console.log(
+      `${r.diffPixels} differing pixels (${r.width}x${r.height})${out !== undefined && out !== "" ? `; diff: ${out}` : ""}`,
+    );
     process.exit(r.diffPixels === 0 ? 0 : 1);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);

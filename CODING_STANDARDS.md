@@ -1,6 +1,6 @@
 # Coding standards
 
-Read at review time (`/code-review`, Standards axis). These rules are judgement calls that no linter catches; `bun run check` already covers types, tests and the build. Each rule names the ADR behind it, where there is one. Terms follow `GLOSSARY.md`.
+Read at review time (`/code-review`, Standards axis). These rules are judgement calls that no linter catches; `bun run check` already covers types, lint, formatting, unused code, tests and the build (`docs/agents/quality-gate.md`). Each rule names the ADR behind it, where there is one. Terms follow `GLOSSARY.md`.
 
 ## Game logic
 

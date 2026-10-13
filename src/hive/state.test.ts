@@ -11,9 +11,13 @@ let unsubscribe = (): void => {};
 beforeEach(() => {
   rng.seed(1);
   sounds = [];
-  unsubscribe = addSoundListener((e) => sounds.push(e));
+  unsubscribe = addSoundListener((e) => {
+    sounds.push(e);
+  });
 });
-afterEach(() => unsubscribe());
+afterEach(() => {
+  unsubscribe();
+});
 
 function step(s: HiveSoftware, n = 1, i: Input = NO_INPUT): void {
   for (let k = 0; k < n; k++) s.update(i);
@@ -73,8 +77,9 @@ describe("construction", () => {
 
   test("construction draws no random numbers", () => {
     rng.seed(77);
-    new HiveSoftware(0);
+    const s = new HiveSoftware(0);
     expect(rng.state()).toBe(77);
+    expect(s.snapshot().state).toBe("START");
   });
 
   test("the high score boots clamped to 0..999999", () => {
@@ -102,7 +107,7 @@ describe("START", () => {
       hidden.push(s.player.hidden);
       expect(s.snapshot().state).toBe("START");
     }
-    expect(hidden.slice(0, 15).every((h) => h)).toBe(true);
+    expect(hidden.slice(0, 15).every(Boolean)).toBe(true);
     expect(hidden.slice(15, 30).every((h) => !h)).toBe(true);
     expect([s.startTicks, s.startState.respawnBlinkRemaining]).toEqual([0, 0]);
     step(s);

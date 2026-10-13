@@ -7,27 +7,25 @@ import { particleColorTeal } from "./particle.ts";
 
 type Op = [string, ...unknown[]];
 
-class Recorder {
+/** A real Surface (never backed by a canvas) that records each paint instead. */
+class Recorder extends Surface {
   readonly ops: Op[] = [];
-  readonly width: number;
-  readonly height: number;
   readonly label: string;
 
   constructor(width: number, height: number, label: string) {
-    this.width = width;
-    this.height = height;
+    super(null, width, height);
     this.label = label;
   }
-  clear(): void {
+  override clear(): void {
     this.ops.push(["clear"]);
   }
-  draw(s: Sprite, x: number, y: number): void {
+  override draw(s: Sprite, x: number, y: number): void {
     this.ops.push(["draw", s.asset.url.split("/").pop(), s.sx, s.sy, s.w, s.h, x, y]);
   }
-  drawSurface(src: Surface, x: number, y: number): void {
-    this.ops.push(["drawSurface", (src as unknown as Recorder).label, x, y]);
+  override drawSurface(src: Surface, x: number, y: number): void {
+    this.ops.push(["drawSurface", src instanceof Recorder ? src.label : "unrecorded", x, y]);
   }
-  fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
+  override fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
     this.ops.push(["fillPremul", x, y, w, h, c]);
   }
 }
@@ -38,7 +36,7 @@ beforeAll(() => {
   Surface.offscreen = (w: number, h: number): Surface => {
     const r = new Recorder(w, h, `cell${cells.length}`);
     cells.push(r);
-    return r as unknown as Surface;
+    return r;
   };
 });
 afterAll(() => {
@@ -47,15 +45,19 @@ afterAll(() => {
 
 function render(s: HiveSoftware): Op[] {
   const screen = new Recorder(336, 428, "screen");
-  s.draw(screen as unknown as Surface, 0);
+  s.draw(screen, 0);
   return screen.ops;
+}
+
+/** "op:first-arg", e.g. "draw:food.png". */
+function name(o: Op | undefined): string {
+  return `${o?.[0]}:${String(o?.[1])}`;
 }
 
 describe("HiveSoftware.draw", () => {
   test("fresh game: cabinet, maze, score dials, lives, READY, food, bees (player hidden)", () => {
     const s = new HiveSoftware(0);
     const ops = render(s);
-    const name = (o: Op | undefined): string => `${o?.[0]}:${String(o?.[1])}`;
     expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 336, 428, 0, 0]);
     expect(ops[1]).toEqual(["draw", "hive.png", 0, 0, 224, 288, 56, 56]);
     // Only the last two digits of a zero score draw; one 8×8 scratch cell is reused.
@@ -72,15 +74,21 @@ describe("HiveSoftware.draw", () => {
       ["draw", "bear.png", 0, 0, 16, 16, 72, 329],
       ["draw", "bear.png", 0, 0, 16, 16, 88, 329],
     ]);
-    // READY! glyphs ride a sine wave (not rounded here: the Surface snaps).
+    // READY! glyphs ride a sine wave, 2·sin(tick·0.14 + i·1.05), here at tick 0
+    // (not rounded here: the Surface snaps).
     const ready = ops.slice(8, 14);
     expect(ready.map((o) => [o[1], o[2], o[6]])).toEqual([0, 8, 16, 24, 32, 40].map((x) => ["ready.png", x, 144 + x]));
-    expect(ready.map((o) => o[7])).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(0 * 0.14 + i * 1.05)));
+    expect(ready.map((o) => o[7])).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(i * 1.05)));
     const food = ops.slice(14, 14 + 244);
     expect(food.every((o) => name(o) === "draw:food.png")).toBe(true);
     expect(food[0]).toEqual(["draw", "food.png", 0, 0, 8, 12, 64, 86]);
     expect(food[243]).toEqual(["draw", "food.png", 0, 12, 8, 12, 264, 262]);
-    expect(ops.slice(258).map(name)).toEqual(["draw:bee.png", "draw:bee.png", "draw:bee.png", "draw:bee.png"]);
+    expect(ops.slice(258).map((o) => name(o))).toEqual([
+      "draw:bee.png",
+      "draw:bee.png",
+      "draw:bee.png",
+      "draw:bee.png",
+    ]);
     // red bee: RIGHT row 0, at (112-8+56, 116-8+56)
     expect(ops[258]).toEqual(["draw", "bee.png", 0, 0, 16, 16, 160, 164]);
   });
@@ -143,7 +151,6 @@ describe("HiveSoftware.draw", () => {
     const s = new HiveSoftware(0);
     s.scoreValue = 10;
     const reel = s.scoreDial[4];
-    if (!reel) throw new Error("reel");
     reel.syncTarget(1);
     reel.stepFrame(); // t = 1/18
     render(s);

@@ -118,11 +118,11 @@ export function updateBlue(e: Entity): void {
   if (e.blueFrames > 0) {
     e.blueFrames--;
     if (e.blueFrames <= framesPerSecond * 2) {
-      if (e.flashFrames !== 0) {
-        e.flashFrames--;
-      } else {
+      if (e.flashFrames === 0) {
         e.flash = !e.flash;
         e.flashFrames = 5;
+      } else {
+        e.flashFrames--;
       }
     }
   } else {
@@ -176,6 +176,8 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
       case "RIGHT":
         e.x += e.velocity;
         break;
+      case "":
+        break;
     }
   }
 
@@ -212,8 +214,11 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
   }
 
   if (e.blueFrames > 0) {
-    // Index is in range: intn(n) < n.
-    e.direction = validDirections[rng.intn(validDirections.length)] as Direction;
+    const picked = validDirections[rng.intn(validDirections.length)];
+    if (picked === undefined) {
+      throw new Error("hive: rng.intn returned an index out of range");
+    }
+    e.direction = picked;
     e.x = corner.x;
     e.y = corner.y;
     return;
@@ -288,8 +293,11 @@ export function restartRound(s: HiveSoftware): void {
 export function resetEnemy(e: Entity): void {
   e.x = tileSize * 14;
   e.y = tileSize * 17.5;
-  // intn(2) is 0 or 1, so the lookup is defined.
-  e.direction = (["LEFT", "RIGHT"] as const)[rng.intn(2)] as Direction;
+  const dir = (["LEFT", "RIGHT"] as const)[rng.intn(2)];
+  if (dir === undefined) {
+    throw new Error("hive: rng.intn(2) returned an index out of range");
+  }
+  e.direction = dir;
   e.blueFrames = 0;
   e.flashFrames = 0;
   e.flash = false;
@@ -334,6 +342,8 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
         case "RIGHT":
           tilePlayer.x += 4;
           break;
+        case "":
+          break;
       }
       return tilePlayer;
     case "teal": {
@@ -357,6 +367,8 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
         case "RIGHT":
           tilePlayer.x += 2;
           break;
+        case "":
+          break;
       }
 
       const dx = tilePlayer.x - tileRed.x;
@@ -374,6 +386,8 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
       }
       return tilePlayer;
     }
+    case null:
+      break;
   }
 
   throw new Error(`unknown color: ${String(e.kind)}`);

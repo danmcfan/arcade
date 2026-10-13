@@ -8,8 +8,6 @@ import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
 import { counterRect } from "./prizeCounter.ts";
 import type { PrizeId } from "./prizes.ts";
 
-export const tileSize = 8;
-
 /** Tokens a New game starts with. */
 export const startingTokens = 5;
 
@@ -54,9 +52,7 @@ export class State {
   }
 
   debugInfo(): string[] {
-    const lines: string[] = [];
-    lines.push(`Player: (${formatFloat0(this.player.x)},${formatFloat0(this.player.y)})`);
-    return lines;
+    return [`Player: (${formatFloat0(this.player.x)},${formatFloat0(this.player.y)})`];
   }
 }
 

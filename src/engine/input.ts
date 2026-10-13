@@ -28,6 +28,13 @@ export const NO_INPUT: Readonly<Input> = Object.freeze({
   shiftP: false,
 });
 
+function isInputKey(k: string): k is keyof Input {
+  return k in NO_INPUT;
+}
+
+/** Every `Input` key, read off `NO_INPUT` (which the compiler holds to `Input`), so it can't drift. */
+const INPUT_KEYS: readonly (keyof Input)[] = Object.keys(NO_INPUT).filter((k) => isInputKey(k));
+
 export function moving(i: Input): boolean {
   return i.up || i.down || i.left || i.right;
 }
@@ -94,8 +101,14 @@ export class MenuKeys {
 
   /** Feed this tick's raw input; call once per tick. */
   read(i: Input): { edges: MenuEdges; anyPressed: boolean } {
-    const edges = Object.fromEntries(MENU_KEYS.map((k) => [k, i[k] && !this.prev[k]])) as MenuEdges;
-    const anyPressed = (Object.keys(i) as (keyof Input)[]).some((k) => i[k] && !this.prev[k]);
+    const pressed = (k: keyof Input): boolean => i[k] && !this.prev[k];
+    const edges: MenuEdges = {
+      up: pressed("up"),
+      down: pressed("down"),
+      space: pressed("space"),
+      escape: pressed("escape"),
+    };
+    const anyPressed = INPUT_KEYS.some((k) => pressed(k));
     this.prev = i;
     return { edges, anyPressed };
   }
@@ -103,7 +116,7 @@ export class MenuKeys {
   /** Hide the keys held in `i` (default: the last input read) until each is released. */
   maskHeld(i: Input = this.prev): void {
     this.masked.clear();
-    for (const k of Object.keys(i) as (keyof Input)[]) if (i[k]) this.masked.add(k);
+    for (const k of INPUT_KEYS) if (i[k]) this.masked.add(k);
   }
 
   /** `i` with the hidden keys released; a key that is up is no longer hidden. */

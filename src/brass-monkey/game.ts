@@ -54,7 +54,7 @@ function newPlayer(): Entity {
 export class BrassMonkeySoftware implements FixedViewport {
   readonly name = "brassMonkey" as const;
 
-  private player: Entity = newPlayer();
+  private readonly player: Entity = newPlayer();
   /** The bezel's joystick frame for the last input (no gameplay effect). */
   private cabinetJoystickFrame = 0;
 

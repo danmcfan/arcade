@@ -42,11 +42,29 @@ import { counterArt } from "../src/ui/counterArt.ts";
 import { roomRows } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
 import { prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
-import type { PrizeId } from "../src/arcade/prizes.ts";
-import { iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
+import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { blank, paint, plot, toPng } from "./pixel-art.ts";
+
+function own<T extends object>(o: T, key: PropertyKey): key is keyof T {
+  return Object.hasOwn(o, key);
+}
+
+/** Plots every `#` of `rows` at (ox, oy), each row in `colour(y)`. */
+function plotLit(png: PNG, rows: readonly string[], ox: number, oy: number, colour: (y: number) => string): void {
+  rows.forEach((row, y) => {
+    row.split("").forEach((px, x) => {
+      if (px === "#") plot(png, ox + x, oy + y, colour(y));
+    });
+  });
+}
+
+function glyphRows<K extends string>(table: Partial<Record<K, readonly string[]>>, ch: K): readonly string[] {
+  const rows = table[ch];
+  if (rows === undefined) throw new Error(`no glyph for ${JSON.stringify(ch)}`);
+  return rows;
+}
 
 export function renderFont(): PNG {
   const png = blank(fontSheetWidth, fontSheetHeight);
@@ -54,11 +72,7 @@ export function renderFont(): PNG {
     charset.forEach((ch, i) => {
       const ox = (i % sheetColumns) * cell;
       const oy = (band * bandRows + Math.trunc(i / sheetColumns)) * cell;
-      glyphs[ch]!.forEach((row, y) => {
-        [...row].forEach((px, x) => {
-          if (px === "#") plot(png, ox + x, oy + y, inks[ink]);
-        });
-      });
+      plotLit(png, glyphRows(glyphs, ch), ox, oy, () => inks[ink]);
     });
   });
   return png;
@@ -69,23 +83,24 @@ export function renderLogo(): PNG {
   const letter = (dx: number, dy: number, color: (y: number) => string): void => {
     let ox = 0;
     for (const ch of logoWord) {
-      const rows = logoLetters[ch]!;
-      rows.forEach((row, y) => {
-        [...row].forEach((px, x) => {
-          if (px === "#") plot(png, ox + x + dx, y + dy, color(y));
-        });
-      });
-      ox += rows[0]!.length + logoGap;
+      const rows = glyphRows(logoLetters, ch);
+      plotLit(png, rows, ox + dx, dy, color);
+      ox += (rows[0]?.length ?? 0) + logoGap;
     }
   };
   letter(logoShadow[0], logoShadow[1], () => logoShadowColor);
-  letter(0, 0, (y) => logoBands.find((b) => y < b.until)!.color);
+  letter(0, 0, (y) => {
+    const band = logoBands.find((b) => y < b.until);
+    if (band === undefined) throw new Error(`logo row ${y} is below every colour band`);
+    return band.color;
+  });
   return png;
 }
 
 export function renderIcons(): PNG {
   const png = blank(iconSheetWidth, iconSheetHeight);
-  for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
+  for (const [name, rows] of Object.entries(icons)) {
+    if (!own(iconRects, name)) throw new Error(`icon ${name} has no sheet rect`);
     paint(png, rows, sweetie, iconRects[name].x, 0);
   }
   return png;
@@ -93,7 +108,8 @@ export function renderIcons(): PNG {
 
 export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
-  for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
+  for (const [id, rows] of Object.entries(prizeArt)) {
+    if (!own(prizeRects, id)) throw new Error(`prize ${id} has no sheet rect`);
     paint(png, rows, sweetie, prizeRects[id].x, 0);
   }
   return png;
@@ -131,12 +147,8 @@ export function renderTitleCard(card: (typeof titleCards)[number]): PNG {
   const png = PNG.sync.read(readFileSync(titleCardPath(card.file)));
   png.data.fill(0, 0, titleClearRows * png.width * 4);
   const rows = titleRows(card.text);
-  const left = Math.trunc((png.width - rows[0]!.length) / 2);
-  rows.forEach((row, y) => {
-    [...row].forEach((px, x) => {
-      if (px === "#") plot(png, left + x, titleTop + y, card.color);
-    });
-  });
+  const left = Math.trunc((png.width - (rows[0]?.length ?? 0)) / 2);
+  plotLit(png, rows, left, titleTop, () => card.color);
   return png;
 }
 

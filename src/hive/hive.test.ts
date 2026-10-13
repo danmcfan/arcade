@@ -78,9 +78,25 @@ function makeGenerator(seed: number): (s: HiveSoftware) => Input {
   };
 }
 
+/** Shallow shape check for a JSON round-tripped trace entry. */
+function isTick(v: unknown): v is Tick {
+  if (typeof v !== "object" || v === null) return false;
+  if (!("tick" in v) || !("rng" in v) || !("sounds" in v) || !("sw" in v)) return false;
+  return typeof v.tick === "number" && typeof v.rng === "number" && Array.isArray(v.sounds) && typeof v.sw === "object";
+}
+
+/** JSON round trip: what the parity harness compares. */
+function roundTrip(t: Tick): Tick {
+  const back: unknown = JSON.parse(JSON.stringify(t));
+  if (!isTick(back)) throw new Error(`tick ${t.tick} did not survive a JSON round trip`);
+  return back;
+}
+
 function run(seed: number, ticks: number): Tick[] {
   const sounds: SoundEvent[] = [];
-  const off = addSoundListener((e) => sounds.push(e));
+  const off = addSoundListener((e) => {
+    sounds.push(e);
+  });
   try {
     rng.seed(seed);
     const s = createHive(seed * 100);
@@ -89,8 +105,7 @@ function run(seed: number, ticks: number): Tick[] {
     const out: Tick[] = [];
     for (let t = 1; t <= ticks; t++) {
       s.update(next(s));
-      // JSON round trip: what the parity harness compares.
-      out.push(JSON.parse(JSON.stringify({ tick: t, rng: rng.state(), sounds: sounds.splice(0), sw: s.snapshot() })));
+      out.push(roundTrip({ tick: t, rng: rng.state(), sounds: sounds.splice(0), sw: s.snapshot() }));
     }
     return out;
   } finally {
@@ -110,13 +125,13 @@ describe("hive self-check against the Go reference (seed 8, 6000 ticks)", () => 
         prev = t.sw.state;
       }
     }
-    expect(trans).toEqual(reference.trans as [number, string, number][]);
+    expect(trans).toEqual<unknown>(reference.trans);
   });
 
   test("full snapshots match at the first death, the bee-eaten pause and game over", () => {
     for (const [tick, want] of Object.entries(reference.snaps)) {
       const got = trace[Number(tick) - 1];
-      expect<unknown>({ tick: got?.tick, rng: got?.rng, sounds: got?.sounds, sw: got?.sw }).toEqual({
+      expect({ tick: got?.tick, rng: got?.rng, sounds: got?.sounds, sw: got?.sw }).toEqual<unknown>({
         tick: Number(tick),
         ...want,
       });
@@ -134,7 +149,7 @@ describe("hive self-check against the Go reference (seed 8, 6000 ticks)", () => 
 describe("hive invariants over a scripted run", () => {
   test("snapshot has exactly the §4.3 hive keys", () => {
     const sw = trace[0]?.sw;
-    expect(Object.keys(sw ?? {}).sort()).toEqual(
+    expect(Object.keys(sw ?? {}).toSorted()).toEqual(
       [
         "state",
         "player",
@@ -157,10 +172,10 @@ describe("hive invariants over a scripted run", () => {
         "pelletAnimTick",
         "joystick",
         "dials",
-      ].sort(),
+      ].toSorted(),
     );
-    expect(Object.keys(sw?.player ?? {}).sort()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);
-    expect(Object.keys(sw?.enemies[0] ?? {}).sort()).toEqual(
+    expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);
+    expect(Object.keys(sw?.enemies[0] ?? {}).toSorted()).toEqual(
       [
         "kind",
         "x",
@@ -175,7 +190,7 @@ describe("hive invariants over a scripted run", () => {
         "dotMin",
         "reverse",
         "reverseTile",
-      ].sort(),
+      ].toSorted(),
     );
     expect(sw?.dials.length).toBe(12);
   });

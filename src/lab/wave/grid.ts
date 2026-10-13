@@ -79,8 +79,8 @@ export class Grid {
       const cells: Cell[] = [];
       for (let y = 0; y < height; y++) cells.push({ possible: [], collapsed: false });
       this.cells.push(cells);
-      this.entropy.push(new Array<number>(height).fill(0));
-      this.bucketIndex.push(new Array<number>(height).fill(0));
+      this.entropy.push(Array.from({ length: height }, () => 0));
+      this.bucketIndex.push(Array.from({ length: height }, () => 0));
     }
     this.reset();
   }

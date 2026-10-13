@@ -33,7 +33,7 @@ export interface FixedViewport extends Software {
 
 /** Go's `s.(software.FixedViewport)` type assertion. */
 export function isFixedViewport(s: Software): s is FixedViewport {
-  return typeof (s as Partial<FixedViewport>).fixedViewportSize === "function";
+  return "fixedViewportSize" in s && typeof s.fixedViewportSize === "function";
 }
 
 export type SceneName = "title" | "game" | "wave" | "lumberjack";

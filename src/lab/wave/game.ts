@@ -139,7 +139,7 @@ export class Wave implements Scene {
         for (let y = 0; y < g.height; y++) {
           const i = x * g.height + y;
           const cell = col[y];
-          if (canvas.painted[i] || cell === undefined || !cell.collapsed || cell.possible.length !== 1) {
+          if ((canvas.painted[i] ?? 0) !== 0 || cell === undefined || !cell.collapsed || cell.possible.length !== 1) {
             continue;
           }
           const tile = tiles[cell.possible[0] ?? 0];
@@ -183,7 +183,7 @@ export class Wave implements Scene {
       width: this.grid.width,
       cellsHash: cellsHash(this.grid),
     };
-    if (opts?.full) {
+    if (opts?.full === true) {
       s.cells = this.grid.cells.map((col) =>
         col.map((c) => ({ possible: c.possible.slice(), collapsed: c.collapsed })),
       );

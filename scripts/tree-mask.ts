@@ -34,25 +34,36 @@ export function treeTopTexels(sheet: { width: number; data: Uint8Array }): Texel
   };
 }
 
-const TREE_NUMBERS = ["x", "y", "theta", "health"] as const;
+/** The fields of a lumberjack tree snapshot that `treeTopEdgeMasks` reads. */
+export type TreeTop = Pick<LumberjackTreeSnapshot, "x" | "y" | "theta" | "health" | "shakeRight">;
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isTreeTop(t: unknown): t is TreeTop {
+  return (
+    isRecord(t) &&
+    typeof t["x"] === "number" &&
+    typeof t["y"] === "number" &&
+    typeof t["theta"] === "number" &&
+    typeof t["health"] === "number" &&
+    typeof t["shakeRight"] === "boolean"
+  );
+}
 
 /**
  * The `trees` of a lumberjack trace snapshot (parsed JSON), checking the
  * fields `treeTopEdgeMasks` reads; throws if the snapshot is not
  * lumberjack-shaped.
  */
-export function lumberjackTrees(snapshot: unknown): LumberjackTreeSnapshot[] {
-  const trees = (snapshot as { trees?: unknown } | null)?.trees;
+export function lumberjackTrees(snapshot: unknown): TreeTop[] {
+  const trees = isRecord(snapshot) ? snapshot["trees"] : undefined;
   if (!Array.isArray(trees)) throw new Error("not a lumberjack snapshot: no trees array");
-  for (const [i, t] of trees.entries()) {
-    const ok =
-      typeof t === "object" &&
-      t !== null &&
-      TREE_NUMBERS.every((k) => typeof (t as Record<string, unknown>)[k] === "number") &&
-      typeof (t as Record<string, unknown>)["shakeRight"] === "boolean";
-    if (!ok) throw new Error(`not a lumberjack snapshot: bad trees[${i}]`);
-  }
-  return trees as LumberjackTreeSnapshot[];
+  return trees.map((t: unknown, i) => {
+    if (!isTreeTop(t)) throw new Error(`not a lumberjack snapshot: bad trees[${i}]`);
+    return t;
+  });
 }
 
 /**
@@ -61,7 +72,7 @@ export function lumberjackTrees(snapshot: unknown): LumberjackTreeSnapshot[] {
  * (health ≤ 0, not drawn) get no mask.
  */
 export function treeTopEdgeMasks(
-  trees: readonly LumberjackTreeSnapshot[],
+  trees: readonly TreeTop[],
   opaque: TexelOpaque,
   width: number,
   height: number,

@@ -23,9 +23,11 @@ describe("looksTouchFirst", () => {
   });
 });
 
-describe("readPointer", () => {
-  const media = (matching: string[]) => (q: string) => ({ matches: matching.includes(q) });
+function media(matching: string[]): (q: string) => { matches: boolean } {
+  return (q) => ({ matches: matching.includes(q) });
+}
 
+describe("readPointer", () => {
   test("coarse with no hover is true", () => {
     expect(readPointer(media(["(pointer: coarse) and (hover: none)"]))).toBe(true);
   });

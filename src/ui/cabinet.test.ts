@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { imageCabinet } from "../engine/assets.ts";
 import { whole, type Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
-import type { Surface } from "../engine/surface.ts";
+import { Surface } from "../engine/surface.ts";
 import {
   cabinetHeight,
   cabinetInsetBottom,
@@ -42,17 +42,34 @@ interface DrawCall {
 }
 
 function drawCalls(frame: number, sprite: Sprite): DrawCall[] {
-  const calls: DrawCall[] = [];
-  const fake: Pick<Surface, "draw"> = {
-    draw: (s, x, y) => {
-      calls.push({ sprite: s, x, y });
-    },
-  };
-  drawCabinet(fake as Surface, frame, sprite);
-  return calls;
+  const screen = new DrawRecorder();
+  drawCabinet(screen, frame, sprite);
+  return screen.calls;
 }
 
-const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
+/** A canvas-less Surface that records `draw`, the only method drawCabinet uses. */
+class DrawRecorder extends Surface {
+  readonly calls: DrawCall[] = [];
+
+  constructor() {
+    super(null, 0, 0);
+  }
+
+  override draw(sprite: Sprite, x: number, y: number): void {
+    this.calls.push({ sprite, x, y });
+  }
+}
+
+/** The sprite of the first draw call. */
+function firstSprite(calls: readonly DrawCall[]): Sprite {
+  const call = calls[0];
+  if (!call) throw new Error("nothing was drawn");
+  return call.sprite;
+}
+
+function rect(s: Sprite): number[] {
+  return [s.sx, s.sy, s.w, s.h];
+}
 
 describe("drawCabinet", () => {
   test("draws the joystick frame of the given strip at 0,0", () => {
@@ -64,8 +81,8 @@ describe("drawCabinet", () => {
   });
 
   test("frames are clamped to 0..4", () => {
-    expect(rect(drawCalls(-1, imageCabinet)[0]!.sprite)).toEqual([0, 0, 336, 428]);
-    expect(rect(drawCalls(9, imageCabinet)[0]!.sprite)).toEqual([1344, 0, 336, 428]);
+    expect(rect(firstSprite(drawCalls(-1, imageCabinet)))).toEqual([0, 0, 336, 428]);
+    expect(rect(firstSprite(drawCalls(9, imageCabinet)))).toEqual([1344, 0, 336, 428]);
   });
 
   test("honours the sprite it is given", () => {

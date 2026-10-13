@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { fnv1a32, fnv1a32Bytes, goRound } from "./gomath.ts";
 
-const bytes = (s: string) => new TextEncoder().encode(s);
+const bytes = (s: string): Uint8Array => new TextEncoder().encode(s);
 
 describe("FNV-1a 32-bit", () => {
   test("matches the published test vectors", () => {

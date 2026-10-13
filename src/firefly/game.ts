@@ -125,18 +125,19 @@ export const durationStep = 1.0 / (FRAMES_PER_SECOND * 3);
 function newBugs(): Entity[] {
   // Runtime float64 arithmetic in Go (durationStep is a typed variable there),
   // evaluated left to right: ((-durationStep) * 60) * k. The first of each
-  // side is -0, which is not < 0, so it starts flying on the first update.
+  // side is -0 (((-durationStep) * 60) * 0), which is not < 0, so it starts
+  // flying on the first update.
   const leftPatternFunc = newBezierPatternFunc(leftBezierConfig);
   const rightPatternFunc = newBezierPatternFunc(rightBezierConfig);
 
   return [
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0, durationStep),
+    newBug(leftPatternFunc, "L", -0, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.8, durationStep),
 
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0, durationStep),
+    newBug(rightPatternFunc, "R", -0, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
@@ -167,18 +168,16 @@ export class FireflySoftware implements FixedViewport {
       this.bugs = newBugs();
     }
 
-    if (i.space) {
-      if (this.fireDelay <= 0) {
-        this.bullets.push({
-          ...newEntity(imageSpark),
-          position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
-          direction: { x: 0, y: -5.0 },
-        });
-        this.fireDelay = 20;
+    if (i.space && this.fireDelay <= 0) {
+      this.bullets.push({
+        ...newEntity(imageSpark),
+        position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
+        direction: { x: 0, y: -5.0 },
+      });
+      this.fireDelay = 20;
 
-        soundLaser.rewind();
-        soundLaser.play();
-      }
+      soundLaser.rewind();
+      soundLaser.play();
     }
 
     if (this.fireDelay > 0) {
@@ -193,6 +192,10 @@ export class FireflySoftware implements FixedViewport {
         break;
       case "RIGHT":
         newPosition = add(newPosition, this.player.direction);
+        break;
+      case "UP":
+      case "DOWN":
+      case "":
         break;
     }
     newPosition = { ...newPosition };
@@ -390,19 +393,19 @@ export function collide(a: Vec, b: Vec): boolean {
 export const radToDeg = 57.29577951308232;
 
 /** Sprite-sheet row (per 90°) and column (per 15°) for an angle in degrees. */
-export function frameAngle(angle: number): [row: number, col: number] {
-  const row = Math.trunc(angle / 90);
-  const col = Math.trunc((angle % 90) / 15);
+export function frameAngle(degrees: number): [row: number, col: number] {
+  const row = Math.trunc(degrees / 90);
+  const col = Math.trunc((degrees % 90) / 15);
   return [row, col];
 }
 
 /** Heading in degrees clockwise from up, in [0, 360). Draw-only (fact 3). */
-export function angle(direction: Vec): number {
-  if (direction.x === 0 && direction.y === 0) {
+export function angle(heading: Vec): number {
+  if (heading.x === 0 && heading.y === 0) {
     return 0;
   }
 
-  let a = Math.atan2(direction.y, direction.x) * radToDeg;
+  let a = Math.atan2(heading.y, heading.x) * radToDeg;
   a += 90;
 
   if (a < 0) {

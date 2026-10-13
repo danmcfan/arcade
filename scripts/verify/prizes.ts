@@ -8,10 +8,11 @@
 // and longer power pellets. Part 3 records the honey jar purchase and the run
 // it helps. Files go to out/verify/prizes/.
 
-import type { GameSnapshot, HiveSnapshot, TitleSnapshot } from "../../src/game/snapshot.ts";
-import type { PrizeId } from "../../src/arcade/prizes.ts";
+import type { GameSnapshot, HiveSnapshot } from "../../src/game/snapshot.ts";
+import { isPrizeId, type PrizeId } from "../../src/arcade/prizes.ts";
 import { saveKey } from "../../src/title/save.ts";
-import { verify, type Verify } from "../harness.ts";
+import { isRecord } from "../browser.ts";
+import { evalJson, isStringArray, isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -23,25 +24,36 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 /** The Game inside the title scene. */
 function game(v: Verify): GameSnapshot {
-  const g = v.snapshot<TitleSnapshot>().game;
+  const g = v.snapshot(isTitleSnapshot).game;
   if (g === null) throw new Error("no game running");
   return g;
 }
 
 function hive(v: Verify): HiveSnapshot {
   const g = game(v);
-  if (g.software !== "hive" || g.sw === null) throw new Error(`not in Sweet Sam: ${g.software}`);
-  return g.sw as HiveSnapshot;
+  if (g.software !== "hive" || !isHiveSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
+  return g.sw;
 }
 
-function stored(v: Verify): { v: number; tickets: number; prizes: PrizeId[] } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
-    typeof stored
-  >;
+type Stored = { v: number; tickets: number; prizes: PrizeId[] } | null;
+
+function isStored(x: unknown): x is Stored {
+  if (x === null) return true;
+  if (!isRecord(x) || typeof x["v"] !== "number" || typeof x["tickets"] !== "number") return false;
+  const prizes = x["prizes"];
+  return Array.isArray(prizes) && prizes.every((p) => isPrizeId(p));
+}
+
+function isHiveSnapshot(x: unknown): x is HiveSnapshot {
+  return isRecord(x) && typeof x["lives"] === "number" && Array.isArray(x["enemies"]) && isRecord(x["player"]);
+}
+
+function stored(v: Verify): Stored {
+  return evalJson(v.page, `localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`, isStored);
 }
 
 function sounds(v: Verify): string[] {
-  return JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")) as string[];
+  return evalJson(v.page, "JSON.stringify(window.__arcade.sounds())", isStringArray);
 }
 
 /** A v3 save at the hub start position (80, 92), facing down. */
@@ -184,14 +196,24 @@ function buyAndPlay(v: Verify): void {
 
 function videos(v: Verify): void {
   console.log("video:");
-  v.record("buy-honey-jar", () => buyAndPlay(v), { storage: { [saveKey]: save(60, []) } });
+  v.record(
+    "buy-honey-jar",
+    () => {
+      buyAndPlay(v);
+    },
+    { storage: { [saveKey]: save(60, []) } },
+  );
   const g = game(v);
   check(
     JSON.stringify(g.arcade.prizes) === '["honeyJar"]' && g.arcade.tickets === 35,
     "the video bought the honey jar",
     g.arcade,
   );
-  check(g.software === "hive" && (g.sw as HiveSnapshot).lives === 4, "and started Sweet Sam with 4 lives", g.software);
+  check(
+    g.software === "hive" && isHiveSnapshot(g.sw) && g.sw.lives === 4,
+    "and started Sweet Sam with 4 lives",
+    g.software,
+  );
 }
 
 await verify("prizes", (v) => {

@@ -56,11 +56,16 @@ function voice(
       for (let i = 0; i < n && start + i < out.length; i++) {
         let env = i < attack ? i / attack : Math.max(sustain, 1 - ((1 - sustain) * (i - attack)) / decay);
         if (i > n - release) env *= (n - i) / release;
-        out[start + i]! += wave((f * i) / sampleRate) * env * gain;
+        mix(out, start + i, wave((f * i) / sampleRate) * env * gain);
       }
     }
     start += n;
   }
+}
+
+/** Adds `v` to sample `i`, which is inside `out`. */
+function mix(out: Float64Array, i: number, v: number): void {
+  out[i] = (out[i] ?? 0) + v;
 }
 
 /** A short burst of noise on every off-beat eighth. */
@@ -71,7 +76,7 @@ function hats(out: Float64Array, eighth: number, gain: number): void {
   for (let s = n; s < out.length; s += 2 * n) {
     for (let i = 0; i < len && s + i < out.length; i++) {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      out[s + i]! += ((seed / 0x7fffffff) * 2 - 1) * (1 - i / len) * gain;
+      mix(out, s + i, ((seed / 0x7fffffff) * 2 - 1) * (1 - i / len) * gain);
     }
   }
 }
@@ -95,7 +100,9 @@ export function wav(samples: Float64Array): Buffer {
   b.writeUInt16LE(8, 34); // bits per sample
   b.write("data", 36);
   b.writeUInt32LE(samples.length, 40);
-  samples.forEach((s, i) => b.writeUInt8(Math.round(128 + 127 * Math.max(-1, Math.min(1, s))), 44 + i));
+  samples.forEach((s, i) => {
+    b.writeUInt8(Math.round(128 + 127 * Math.max(-1, Math.min(1, s))), 44 + i);
+  });
   return b;
 }
 

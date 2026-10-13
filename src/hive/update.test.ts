@@ -31,6 +31,20 @@ function bee(kind: "red" | "pink" | "teal" | "orange" = "red"): Entity {
   return e;
 }
 
+/** The i-th entity, or a thrown error naming it. */
+function nth(list: readonly Entity[], i: number): Entity {
+  const e = list[i];
+  if (e === undefined) throw new Error(`no entity ${i}`);
+  return e;
+}
+
+// Corner (6, 5) allows all four directions; its tile is (6, 8).
+function atCross(dir: Direction): Entity {
+  const e = at(bee(), 6, 5);
+  e.direction = dir;
+  return e;
+}
+
 describe("modeSequence", () => {
   test("scatter/chase durations end in an endless chase", () => {
     expect(modeSequence.map((m) => [m.mode, m.ticks])).toEqual([
@@ -62,11 +76,11 @@ describe("findTarget", () => {
   });
 
   test("chase: red targets the player's tile", () => {
-    expect(findTarget(enemies[0] as Entity, enemies, player, modeChase)).toEqual({ x: 14, y: 26 });
+    expect(findTarget(nth(enemies, 0), enemies, player, modeChase)).toEqual({ x: 14, y: 26 });
   });
 
   test("chase: pink targets 4 tiles ahead of the player", () => {
-    const pink = enemies[1] as Entity;
+    const pink = nth(enemies, 1);
     const cases: [Direction, Tile][] = [
       ["UP", { x: 14, y: 22 }],
       ["DOWN", { x: 14, y: 30 }],
@@ -81,7 +95,7 @@ describe("findTarget", () => {
   });
 
   test("chase: teal doubles the vector from red to 2 tiles ahead of the player", () => {
-    const teal = enemies[2] as Entity;
+    const teal = nth(enemies, 2);
     // ahead = (12, 26); red = (14, 14); target = ahead + (ahead - red) = (10, 38)
     expect(findTarget(teal, enemies, player, modeChase)).toEqual({ x: 10, y: 38 });
     const up = newPlayer();
@@ -98,7 +112,7 @@ describe("findTarget", () => {
   });
 
   test("scatter returns a copy of the bee's target", () => {
-    const red = enemies[0] as Entity;
+    const red = nth(enemies, 0);
     const t = findTarget(red, enemies, player, modeScatter);
     t.x = 99;
     expect(red.target).toEqual({ x: 2, y: 0 });
@@ -106,13 +120,6 @@ describe("findTarget", () => {
 });
 
 describe("updateDirection", () => {
-  // Corner (6, 5) allows all four directions; its tile is (6, 8).
-  function atCross(dir: Direction): Entity {
-    const e = at(bee(), 6, 5);
-    e.direction = dir;
-    return e;
-  }
-
   test("all-equal distances resolve Up first", () => {
     const e = atCross("RIGHT");
     updateDirection(e, corners, { x: 6, y: 8 });
@@ -190,7 +197,10 @@ describe("updateDirection", () => {
     e.blueFrames = 100;
     updateDirection(e, corners, { x: 6, y: 8 });
     // corner (6,5) is [UP, DOWN, LEFT, RIGHT]; LEFT removed
-    expect(e.direction).toBe((["UP", "DOWN", "RIGHT"] as const)[pick] as Direction);
+    const allowed: Direction[] = ["UP", "DOWN", "RIGHT"];
+    const want = allowed[pick];
+    if (want === undefined) throw new Error(`intn(3) gave ${pick}`);
+    expect(e.direction).toBe(want);
     rng.seed(4);
     rng.float();
     const afterOne = rng.state();
@@ -210,7 +220,9 @@ describe("updateDirection", () => {
     e.x = 4;
     e.y = 4;
     e.direction = "RIGHT";
-    expect(() => updateDirection(e, [c], { x: 0, y: 0 })).toThrow("no valid directions for enemy at (4, 4)");
+    expect(() => {
+      updateDirection(e, [c], { x: 0, y: 0 });
+    }).toThrow("no valid directions for enemy at (4, 4)");
   });
 });
 
@@ -277,7 +289,7 @@ describe("updatePosition", () => {
   });
 
   test("home bees centre on x=112 then rise to y=116 at 0.5px, then leave home", () => {
-    const e = newEnemies()[2] as Entity; // teal at (96, 140)
+    const e = nth(newEnemies(), 2); // teal at (96, 140)
     e.dotMinimum = 0;
     updatePosition(e, corners);
     expect([e.x, e.y, e.home]).toEqual([96.5, 140, true]);

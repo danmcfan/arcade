@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
+import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import { counterRect } from "./prizeCounter.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update } from "./update.ts";
 
-const fakeFactory = (name: SoftwareName, highScore: number): Software => ({ name, highScore }) as unknown as Software;
+/** The high score each fake was constructed with. */
+const highScores = new WeakMap<Software, number>();
+function fakeFactory(name: SoftwareName, highScore: number): Software {
+  const sw = fakeSoftware(name);
+  highScores.set(sw, highScore);
+  return sw;
+}
 
 function input(keys: Partial<Input> = {}): Input {
   return { ...NO_INPUT, ...keys };
@@ -20,9 +27,13 @@ let sounds: SoundEvent[] = [];
 let unsubscribe: () => void = () => {};
 beforeEach(() => {
   sounds = [];
-  unsubscribe = addSoundListener((e) => sounds.push(e));
+  unsubscribe = addSoundListener((e) => {
+    sounds.push(e);
+  });
 });
-afterEach(() => unsubscribe());
+afterEach(() => {
+  unsubscribe();
+});
 
 describe("newState", () => {
   test("player spawns at (80, 92) facing down, idle, frame 0; no title, no melody", () => {
@@ -135,12 +146,12 @@ describe("walking", () => {
   });
 });
 
-describe("melody and title", () => {
-  /** Walk from spawn to beneath the sweet (hive) cabinet, facing up. */
-  function walkToSweet(s: State): void {
-    run(s, 31, { up: true }); // y 92 → 61; the player rect reaches the cabinet at y < 68
-  }
+/** Walk from spawn to beneath the sweet (hive) cabinet, facing up. */
+function walkToSweet(s: State): void {
+  run(s, 31, { up: true }); // y 92 → 61; the player rect reaches the cabinet at y < 68
+}
 
+describe("melody and title", () => {
   test("facing up at a cabinet starts the melody once and shows its title", () => {
     const s = newState(null, fakeFactory);
     run(s, 24, { up: true }); // y = 68: not yet at the cabinet
@@ -188,7 +199,7 @@ describe("entering a machine", () => {
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
     expect(s.loadedSoftware?.name).toBe("hive");
-    expect((s.loadedSoftware as unknown as { highScore: number }).highScore).toBe(777);
+    expect(s.loadedSoftware === null ? undefined : highScores.get(s.loadedSoftware)).toBe(777);
     expect(s.melodyPlaying).toBe(false);
     expect(sounds).toEqual(["pause:melody", "rewind:melody"]);
   });
@@ -220,7 +231,7 @@ describe("entering a machine", () => {
   test("software construction sounds come after the melody stop", () => {
     const s = newState(null, (name) => {
       sounds.push("play:start");
-      return { name } as Software;
+      return fakeSoftware(name);
     });
     run(s, 31, { up: true });
     sounds.length = 0;

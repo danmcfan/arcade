@@ -65,7 +65,9 @@ export function mountWaveOverlay(parent: HTMLElement, model: WaveOverlayModel): 
       value.textContent = `${label}: ${get()}`;
     });
     // Hand the keyboard back to the game (Space applies the settings).
-    input.addEventListener("change", () => input.blur());
+    input.addEventListener("change", () => {
+      input.blur();
+    });
     row.append(value, input);
     root.append(row);
   };
@@ -75,7 +77,9 @@ export function mountWaveOverlay(parent: HTMLElement, model: WaveOverlayModel): 
     256,
     64,
     () => model.gridSize,
-    (v) => (model.gridSize = v),
+    (v) => {
+      model.gridSize = v;
+    },
   );
   slider(
     "seconds",
@@ -83,7 +87,9 @@ export function mountWaveOverlay(parent: HTMLElement, model: WaveOverlayModel): 
     30,
     1,
     () => model.seconds,
-    (v) => (model.seconds = v),
+    (v) => {
+      model.seconds = v;
+    },
   );
 
   const fps = doc.createElement("div");

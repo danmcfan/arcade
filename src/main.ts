@@ -24,7 +24,7 @@ const SCENES: readonly SceneName[] = ["title", "game", "wave", "lumberjack"];
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
-  const canvas = document.getElementById("screen");
+  const canvas = document.querySelector("#screen");
   if (!(canvas instanceof HTMLCanvasElement)) throw new Error("main: missing <canvas id=screen>");
   const screen = new Surface(canvas);
 
@@ -46,7 +46,14 @@ async function main(): Promise<void> {
   })
     ? "up"
     : null;
-  if (notice) window.addEventListener("keydown", () => (notice = "dismissed"), { once: true });
+  if (notice)
+    window.addEventListener(
+      "keydown",
+      () => {
+        notice = "dismissed";
+      },
+      { once: true },
+    );
 
   // The title scene keeps its save in localStorage, also when the test hook loads it.
   const store = localStorageStore();
@@ -57,7 +64,7 @@ async function main(): Promise<void> {
     unmountOverlay = next.mountOverlay?.(document.body) ?? null;
   });
 
-  // A factory error propagates out of main() and is logged by the catch below.
+  // A factory error propagates out of main() and the page's top-level await.
   const requested = params.get("scene");
   runtime.load(SCENES.find((s) => s === requested) ?? "title");
 
@@ -110,12 +117,14 @@ async function main(): Promise<void> {
       runtime,
       draw,
       frame: () => screen.toPNGDataURL(),
-      pause: () => loop.pause(),
-      resume: () => loop.resume(),
+      pause: () => {
+        loop.pause();
+      },
+      resume: () => {
+        loop.resume();
+      },
     });
   }
 }
 
-main().catch((err: unknown) => {
-  console.error(err);
-});
+await main();

@@ -25,7 +25,7 @@ import { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 
 /** Phases the title music plays in: everything before the Game starts. */
-const MUSIC_PHASES: readonly TitlePhase[] = ["menu", "confirm", "intro"];
+const MUSIC_PHASES: ReadonlySet<string> = new Set<TitlePhase>(["menu", "confirm", "intro"]);
 
 export interface TitleDeps {
   /** Where the save lives; default: an in-memory store. */
@@ -57,7 +57,7 @@ export class Title implements Scene {
 
   constructor(deps: TitleDeps = {}) {
     this.store = deps.store ?? memoryStore();
-    this.createGame = deps.createGame ?? ((restore) => new Game(null, restore ? { restore } : {}));
+    this.createGame = deps.createGame ?? ((restore): Game => new Game(null, restore ? { restore } : {}));
     this.saved = this.store.load();
   }
 
@@ -148,7 +148,7 @@ export class Title implements Scene {
    * may still be loading. Stop it once play starts.
    */
   private updateMusic(anyPressed: boolean): void {
-    const wanted = MUSIC_PHASES.includes(this.phase);
+    const wanted = MUSIC_PHASES.has(this.phase);
     if (wanted && (!this.musicOn || (anyPressed && !soundTitleMusic.playing))) {
       this.musicOn = true;
       soundTitleMusic.play();
@@ -178,7 +178,7 @@ export class Title implements Scene {
   }
 
   private stepGame(i: Input, escapePressed: boolean): void {
-    const game = this.game!;
+    const game = this.hostedGame();
     if (game.inHub() && escapePressed) {
       soundSelect.blip();
       game.pauseAudio();
@@ -204,15 +204,22 @@ export class Title implements Scene {
     this.phase = "playing";
     this.cursor = 0;
     this.keys.maskHeld(i);
-    this.game!.resumeAudio();
+    this.hostedGame().resumeAudio();
   }
 
   private quitToMenu(): void {
     this.persist();
-    this.game!.stopAudio();
-    this.game!.dispose();
+    const game = this.hostedGame();
+    game.stopAudio();
+    game.dispose();
     this.game = null;
     this.show("menu", 0);
+  }
+
+  /** The hosted Game; only called in phases that have one. */
+  hostedGame(): Game {
+    if (this.game === null) throw new Error(`title: no Game in phase "${this.phase}"`);
+    return this.game;
   }
 
   persist(): void {

@@ -74,6 +74,11 @@ describe("KeyTracker (D3: input is read per tick)", () => {
   });
 });
 
+/** A cancelable key event (bun has no KeyboardEvent); `defaultPrevented` records `preventDefault()`. */
+function keyEvent(code: string, key = ""): Event & { code: string; key: string } {
+  return Object.assign(new Event("keydown", { cancelable: true }), { code, key });
+}
+
 describe("installKeyboard", () => {
   class FakeTarget {
     readonly listeners = new Map<string, (e: Event) => void>();
@@ -83,19 +88,9 @@ describe("installKeyboard", () => {
     removeEventListener(type: string): void {
       this.listeners.delete(type);
     }
-    fire(type: string, e: object): void {
-      this.listeners.get(type)?.(e as Event);
+    fire(type: string, e: Event): void {
+      this.listeners.get(type)?.(e);
     }
-  }
-
-  function keyEvent(code: string) {
-    return {
-      code,
-      prevented: false,
-      preventDefault() {
-        this.prevented = true;
-      },
-    };
   }
 
   test("routes keydown/keyup codes into the tracker and clears on blur", () => {
@@ -108,7 +103,7 @@ describe("installKeyboard", () => {
     win.fire("keyup", keyEvent("KeyA"));
     expect(keys.sample().pressed.has("KeyA")).toBe(false);
     win.fire("keydown", keyEvent("KeyD"));
-    win.fire("blur", {});
+    win.fire("blur", new Event("blur"));
     expect(keys.sample().pressed.size).toBe(0);
     remove();
     expect(win.listeners.size).toBe(0);
@@ -119,9 +114,16 @@ describe("installKeyboard", () => {
     const win = new FakeTarget();
     const keys = new KeyTracker();
     installKeyboard(keys, win, new FakeTarget(), () => false);
-    for (const key of ["ArrowRight", " ", "Shift", "P", "w", "Escape"]) win.fire("keydown", { ...keyEvent(""), key });
-    expect([...keys.sample().pressed].sort()).toEqual(["ArrowRight", "Escape", "KeyP", "KeyW", "ShiftLeft", "Space"]);
-    win.fire("keyup", { ...keyEvent(""), key: "ArrowRight" });
+    for (const key of ["ArrowRight", " ", "Shift", "P", "w", "Escape"]) win.fire("keydown", keyEvent("", key));
+    expect([...keys.sample().pressed].toSorted()).toEqual([
+      "ArrowRight",
+      "Escape",
+      "KeyP",
+      "KeyW",
+      "ShiftLeft",
+      "Space",
+    ]);
+    win.fire("keyup", keyEvent("", "ArrowRight"));
     expect(keys.sample().pressed.has("ArrowRight")).toBe(false);
   });
 
@@ -133,12 +135,14 @@ describe("installKeyboard", () => {
     installKeyboard(keys, win, doc, () => hidden);
     win.fire("keydown", keyEvent("KeyD"));
     hidden = true;
-    doc.fire("visibilitychange", {});
+    doc.fire("visibilitychange", new Event("visibilitychange"));
     expect(keys.sample().pressed.size).toBe(0);
   });
 
   test("prevents page scrolling for arrows and Space only", () => {
-    expect(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].every(shouldPreventDefault)).toBe(true);
+    expect(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].every((c) => shouldPreventDefault(c))).toBe(
+      true,
+    );
     expect(shouldPreventDefault("KeyW")).toBe(false);
     expect(shouldPreventDefault("Escape")).toBe(false);
 
@@ -148,7 +152,7 @@ describe("installKeyboard", () => {
     const w = keyEvent("KeyW");
     win.fire("keydown", space);
     win.fire("keydown", w);
-    expect(space.prevented).toBe(true);
-    expect(w.prevented).toBe(false);
+    expect(space.defaultPrevented).toBe(true);
+    expect(w.defaultPrevented).toBe(false);
   });
 });

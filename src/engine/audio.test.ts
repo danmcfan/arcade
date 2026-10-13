@@ -15,9 +15,10 @@ class FakeAudio {
   constructor(reject: boolean = true) {
     this.reject = reject;
   }
-  play(): Promise<void> {
+  async play(): Promise<void> {
     this.calls.push("play");
-    return this.reject ? Promise.reject(new DOMException("blocked", "NotAllowedError")) : Promise.resolve();
+    await Promise.resolve();
+    if (this.reject) throw new DOMException("blocked", "NotAllowedError");
   }
   pause(): void {
     this.calls.push("pause");
@@ -30,18 +31,28 @@ class FakeAudio {
   }
 }
 
-const asElement = (a: FakeAudio) => a as unknown as HTMLAudioElement;
+/** Lets a FakeAudio stand in for the DOM element; it checks the members Sound uses. */
+function standsInForAudio(a: FakeAudio | HTMLAudioElement): a is HTMLAudioElement {
+  return typeof a.play === "function" && typeof a.pause === "function" && typeof a.addEventListener === "function";
+}
+
+function asElement(a: FakeAudio): HTMLAudioElement {
+  if (!standsInForAudio(a)) throw new Error("FakeAudio lacks the members Sound uses");
+  return a;
+}
 
 /** Count unhandled promise rejections while `fn` runs and settles. */
 async function unhandledDuring(fn: () => void): Promise<number> {
   let count = 0;
-  const onRejection = () => {
+  const onRejection = (): void => {
     count++;
   };
   process.on("unhandledRejection", onRejection);
   try {
     fn();
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => {
+      setTimeout(r, 10);
+    });
   } finally {
     process.off("unhandledRejection", onRejection);
   }
@@ -57,7 +68,9 @@ afterEach(() => {
 describe("Sound (D4: web.go semantics)", () => {
   test("calls are recorded but ignored until ready", () => {
     const events: SoundEvent[] = [];
-    unsubscribe = addSoundListener((e) => events.push(e));
+    unsubscribe = addSoundListener((e) => {
+      events.push(e);
+    });
     const fake = new FakeAudio();
     const s = new Sound("laser", "laser.wav", false);
     s.element = asElement(fake);
@@ -85,7 +98,11 @@ describe("Sound (D4: web.go semantics)", () => {
     const s = new Sound("start", "start.wav", false);
     s.element = asElement(new FakeAudio(true));
     s.ready = true;
-    expect(await unhandledDuring(() => s.play())).toBe(0);
+    expect(
+      await unhandledDuring(() => {
+        s.play();
+      }),
+    ).toBe(0);
   });
 
   test("without a DOM a Sound is a recorder only and never throws", () => {
@@ -120,7 +137,9 @@ describe("loadSounds (D5: never awaited)", () => {
 
   test("is a no-op with no Audio constructor (bun test has no DOM)", () => {
     const s = new Sound("power", "power.wav", false);
-    expect(() => loadSounds([s])).not.toThrow();
+    expect(() => {
+      loadSounds([s]);
+    }).not.toThrow();
     expect(s.element).toBeNull();
   });
 });
@@ -167,7 +186,9 @@ describe("installAudioUnlock", () => {
 describe("Sound.blip", () => {
   test("rewinds, then plays", () => {
     const events: SoundEvent[] = [];
-    const off = addSoundListener((e) => events.push(e));
+    const off = addSoundListener((e) => {
+      events.push(e);
+    });
     new Sound("move", "move.wav", false).blip();
     off();
     expect(events).toEqual(["rewind:move", "play:move"]);

@@ -3,6 +3,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
+import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { FireflySoftware, angle, collide, durationStep, frameAngle, radToDeg } from "./game.ts";
 import { createFirefly } from "./index.ts";
@@ -69,7 +70,7 @@ describe("FireflySoftware", () => {
   test("first idle tick: player parked bottom centre, two leaders spawn at p0, the rest wait at (0,0)", () => {
     const f = createFirefly();
     f.update(NO_INPUT);
-    const s = f.snapshot() as FireflySnapshot;
+    const s = fireflySnapshot(f.snapshot());
     expect(s.player).toEqual({ x: 112, y: 264 });
     expect(s.fireDelay).toBe(0);
     expect(s.bullets).toEqual([]);
@@ -100,7 +101,7 @@ describe("cabinet", () => {
 
   test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
     const f = createFirefly();
-    expect((f.snapshot() as FireflySnapshot).joystick).toBe(0);
+    expect(fireflySnapshot(f.snapshot()).joystick).toBe(0);
     const frames = [
       held({}),
       held({ up: true }),
@@ -109,7 +110,7 @@ describe("cabinet", () => {
       held({ right: true }),
     ].map((i) => {
       f.update(i);
-      return (f.snapshot() as FireflySnapshot).joystick;
+      return fireflySnapshot(f.snapshot()).joystick;
     });
     expect(frames).toEqual([0, 1, 2, 3, 4]);
   });
@@ -133,7 +134,9 @@ function snap(f: FireflySoftware): FireflySnapshot {
 
 function recordSounds(): { events: SoundEvent[]; stop: () => void } {
   const events: SoundEvent[] = [];
-  const stop = addSoundListener((e) => events.push(e));
+  const stop = addSoundListener((e) => {
+    events.push(e);
+  });
   return { events, stop };
 }
 

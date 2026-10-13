@@ -2,11 +2,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { debugFont } from "./assets.ts";
-import { fakeCanvas } from "./fakeCanvas.testutil.ts";
+import { FakeCanvas, canvasElement, fakeCanvas, type PaintOp } from "./fakeCanvas.testutil.ts";
 import { Surface } from "./surface.ts";
 import { debugPrint } from "./text.ts";
 
-const pixels = { tag: "font" } as unknown as CanvasImageSource;
+/** The decoded font: any canvas image source will do, the tests only check it is passed through. */
+const pixels = canvasElement(new FakeCanvas(1, 1));
 beforeAll(() => {
   debugFont.image = pixels;
 });
@@ -14,7 +15,7 @@ afterAll(() => {
   debugFont.image = null;
 });
 
-function print(text: string, x: number, y: number) {
+function print(text: string, x: number, y: number): { src: PaintOp["src"]; x: number; y: number }[] {
   const { canvas, ctx } = fakeCanvas(200, 100);
   debugPrint(new Surface(canvas), text, x, y);
   return ctx.ops.map((o) => ({ src: o.src, x: o.x, y: o.y }));

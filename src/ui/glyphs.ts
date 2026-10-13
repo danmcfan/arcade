@@ -90,7 +90,7 @@ export const inks = {
   dark: "#1a1c2c",
 } as const;
 export type Ink = keyof typeof inks;
-export const inkOrder: readonly Ink[] = Object.keys(inks) as Ink[];
+export const inkOrder: readonly Ink[] = Object.keys(inks).filter((k): k is Ink => k in inks);
 
 /** Rows of glyphs per ink band. */
 export const bandRows = Math.ceil(charset.length / sheetColumns);
@@ -380,10 +380,12 @@ export const titleCards: readonly { file: string; text: string; color: string }[
 /** `text` in `titleLetters` as rows of `#` and `.`. */
 export function titleRows(text: string): string[] {
   const rows: string[] = [];
-  for (const [i, ch] of [...text].entries()) {
+  for (const [i, ch] of Array.from(text).entries()) {
     const letter = titleLetters[ch];
     if (letter === undefined) throw new Error(`title text: no letter for ${JSON.stringify(ch)}`);
-    const w = letter[0]!.length;
+    const top = letter[0];
+    if (top === undefined) throw new Error(`title text: letter ${JSON.stringify(ch)} has no rows`);
+    const w = top.length;
     for (let y = 0; y < 15; y++)
       rows[y] = (rows[y] ?? "") + (i > 0 ? ".".repeat(titleGap) : "") + (letter[y] ?? ".".repeat(w));
   }

@@ -1,5 +1,26 @@
 import { describe, expect, test } from "bun:test";
-import { MenuKeys, NO_INPUT, axis, direction, moving, opposite, readInput, type Input } from "./input.ts";
+import {
+  MenuKeys,
+  NO_INPUT,
+  axis,
+  direction,
+  moving,
+  opposite,
+  readInput,
+  type Direction,
+  type Input,
+} from "./input.ts";
+
+/** Lets a test hand an out-of-range string to a function typed for `Direction`, as untyped callers could. */
+/** Lets a test pass a deliberately invalid direction, to check the runtime guard. */
+function isAnyDirection(_s: string): _s is Direction {
+  return true;
+}
+
+function unchecked(s: string): Direction {
+  if (!isAnyDirection(s)) throw new Error("unreachable");
+  return s;
+}
 
 const held = (over: Partial<Input>): Input => ({ ...NO_INPUT, ...over });
 
@@ -40,7 +61,7 @@ describe("direction helpers", () => {
     expect(opposite("LEFT")).toBe("RIGHT");
     expect(axis("DOWN")).toBe("VERTICAL");
     expect(axis("RIGHT")).toBe("HORIZONTAL");
-    expect(() => opposite("" as never)).toThrow("invalid direction: ");
+    expect(() => opposite(unchecked(""))).toThrow("invalid direction: ");
   });
 });
 

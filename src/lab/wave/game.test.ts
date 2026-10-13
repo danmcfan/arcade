@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../../engine/input.ts";
 import * as rng from "../../engine/rng.ts";
 import type { Sprite } from "../../engine/image.ts";
-import type { Surface } from "../../engine/surface.ts";
+import { Surface } from "../../engine/surface.ts";
 import type { WaveOptions } from "../../game/software.ts";
 import type { WaveSnapshot } from "../../game/snapshot.ts";
 import { Wave } from "./game.ts";
@@ -11,7 +11,8 @@ import { createWave } from "./index.ts";
 const SPACE: Input = { ...NO_INPUT, space: true };
 
 function snap(scene: ReturnType<typeof createWave>, full = false): WaveSnapshot {
-  return scene.snapshot({ full }) as WaveSnapshot;
+  if (!(scene instanceof Wave)) throw new Error("createWave did not return a Wave");
+  return scene.snapshot({ full });
 }
 
 test("defaults: 128² grid, 2048² layout, 54 steps per tick", () => {
@@ -96,20 +97,17 @@ test("a full snapshot adds cells[x][y] as plain copies", () => {
 });
 
 /** Records draw calls; stands in for the canvas-backed engine Surface. */
-class RecordingSurface {
+class RecordingSurface extends Surface {
   readonly draws: { sx: number; solid: boolean; x: number; y: number }[] = [];
   readonly blits: { src: unknown; x: number; y: number }[] = [];
-  readonly width: number;
-  readonly height: number;
 
   constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
+    super(null, width, height);
   }
-  draw(s: Sprite, x: number, y: number): void {
+  override draw(s: Sprite, x: number, y: number): void {
     this.draws.push({ sx: s.sx, solid: s.asset.solid !== undefined, x, y });
   }
-  drawSurface(src: unknown, x: number, y: number): void {
+  override drawSurface(src: Surface, x: number, y: number): void {
     this.blits.push({ src, x, y });
   }
 }
@@ -117,12 +115,23 @@ class RecordingSurface {
 function recordingWave(opts: Partial<WaveOptions>): { wave: Wave; made: RecordingSurface[] } {
   const made: RecordingSurface[] = [];
   const wave = new Wave(opts);
-  wave.createOffscreen = (w, h) => {
+  wave.createOffscreen = (w, h): Surface => {
     const s = new RecordingSurface(w, h);
     made.push(s);
-    return s as unknown as Surface;
+    return s;
   };
   return { wave, made };
+}
+
+/** Each draw is the cell's tile (grass/sand/water = sx 0/16/32 of three.png) at x*16, y*16. */
+function expectDrawsAreCellTiles(wave: Wave, off: RecordingSurface): void {
+  const cells = wave.snapshot({ full: true }).cells ?? [];
+  for (const d of off.draws) {
+    const cell = cells[d.x / 16]?.[d.y / 16];
+    expect(cell?.collapsed).toBe(true);
+    expect(d.solid).toBe(false);
+    expect(d.sx).toBe(((cell?.possible[0] ?? 0) - 1) * 16);
+  }
 }
 
 test("draw paints only newly collapsed cells into a persistent offscreen surface, then blits it", () => {
@@ -131,29 +140,23 @@ test("draw paints only newly collapsed cells into a persistent offscreen surface
   const screen = new RecordingSurface(2048, 2048);
   wave.step(SPACE); // 64², 13 steps per tick
   wave.step(NO_INPUT);
-  wave.draw(screen as unknown as Surface);
+  wave.draw(screen);
 
   expect(made.length).toBe(1);
-  const off = made[0] as RecordingSurface;
+  const off = made[0];
+  if (!off) throw new Error("no offscreen surface was made");
   expect([off.width, off.height]).toEqual([1024, 1024]);
   expect(off.draws.length).toBe(13);
   expect(screen.blits).toEqual([{ src: off, x: 0, y: 0 }]);
 
-  // Each draw is the cell's tile (grass/sand/water = sx 0/16/32 of three.png) at x*16, y*16.
-  const cells = wave.snapshot({ full: true }).cells ?? [];
-  for (const d of off.draws) {
-    const cell = cells[d.x / 16]?.[d.y / 16];
-    expect(cell?.collapsed).toBe(true);
-    expect(d.solid).toBe(false);
-    expect(d.sx).toBe(((cell?.possible[0] ?? 0) - 1) * 16);
-  }
+  expectDrawsAreCellTiles(wave, off);
 
   // Nothing new collapsed: nothing redrawn.
-  wave.draw(screen as unknown as Surface);
+  wave.draw(screen);
   expect(off.draws.length).toBe(13);
 
   wave.step(NO_INPUT);
-  wave.draw(screen as unknown as Surface);
+  wave.draw(screen);
   expect(off.draws.length).toBe(26);
   expect(new Set(off.draws.map((d) => `${d.x},${d.y}`)).size).toBe(26);
 
@@ -161,7 +164,7 @@ test("draw paints only newly collapsed cells into a persistent offscreen surface
   wave.gridSize = 128;
   wave.step(NO_INPUT);
   wave.step(SPACE);
-  wave.draw(screen as unknown as Surface);
+  wave.draw(screen);
   expect(made.length).toBe(2);
   expect([made[1]?.width, made[1]?.height]).toEqual([2048, 2048]);
   expect(made[1]?.draws.length).toBe(0);

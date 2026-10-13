@@ -271,7 +271,8 @@ const right: Facing = {
   ],
 };
 
-const mirror = (rows: readonly string[]): string[] => rows.map((r) => [...r].reverse().join(""));
+const mirror = (rows: readonly string[]): string[] =>
+  rows.map((r) => Array.from(r, (_, i) => r.charAt(r.length - 1 - i)).join(""));
 
 const left: Facing = {
   stand: mirror(right.stand),
@@ -287,13 +288,15 @@ const facings: Readonly<Record<Direction, Facing>> = { UP: up, DOWN: down, LEFT:
 /** The 4 frames of one facing, left to right: stand, step, stand, other step. */
 export function playerFramesFor(dir: Direction): string[][] {
   const f = facings[dir];
-  return [f.stand, f.step, f.stand, f.otherStep].map((rows) => [...rows]);
+  return [f.stand, f.step, f.stand, f.otherStep].map((rows) => rows.slice());
 }
 
 /** The whole sheet: `playerFrames` frames across, one row of frames per direction in `sheetOrder`. */
 export function playerSheetRows(): string[] {
   return sheetOrder.flatMap((dir) => {
     const frames = playerFramesFor(dir);
-    return frames[0]!.map((_, y) => frames.map((f) => f[y]).join(""));
+    const first = frames[0];
+    if (first === undefined) throw new Error(`player sheet: no frames for ${dir}`);
+    return first.map((_, y) => frames.map((f) => f[y]).join(""));
   });
 }

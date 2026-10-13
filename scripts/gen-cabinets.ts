@@ -29,9 +29,33 @@ export interface CabinetSource {
 
 const imagesDir = join(repoRoot, "src/assets/images");
 
-export const cabinets: CabinetSource[] = (
-  JSON.parse(readFileSync(join(repoRoot, "art/cabinets.json"), "utf8")) as { cabinets: CabinetSource[] }
-).cabinets;
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isCabinetSource(v: unknown): v is CabinetSource {
+  return (
+    isRecord(v) &&
+    typeof v["name"] === "string" &&
+    typeof v["file"] === "string" &&
+    typeof v["title"] === "string" &&
+    isRecord(v["palette"]) &&
+    Object.values(v["palette"]).every((to) => typeof to === "string")
+  );
+}
+
+function parseCabinets(json: unknown): CabinetSource[] {
+  if (!isRecord(json) || !Array.isArray(json["cabinets"])) throw new Error("art/cabinets.json: no cabinets array");
+  const list: unknown[] = json["cabinets"];
+  return list.map((c, i) => {
+    if (!isCabinetSource(c)) throw new Error(`art/cabinets.json: cabinet ${i} is malformed`);
+    return c;
+  });
+}
+
+export const cabinets: CabinetSource[] = parseCabinets(
+  JSON.parse(readFileSync(join(repoRoot, "art/cabinets.json"), "utf8")),
+);
 
 export const frameWidth = 336;
 /** Rows 0..53 are the marquee; the screen starts at row 54. */
@@ -54,8 +78,20 @@ export function sourceCabinet(): PNG {
   return PNG.sync.read(readFileSync(join(repoRoot, "art/cabinet.png")));
 }
 
-function hexAt(png: PNG, i: number): string {
-  return [0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("");
+function byteAt(png: PNG, i: number): number {
+  const b = png.data[i];
+  if (b === undefined) throw new Error(`byte ${i} is outside the ${png.width}x${png.height} image`);
+  return b;
+}
+
+export function hexAt(png: PNG, i: number): string {
+  return [0, 1, 2]
+    .map((j) =>
+      byteAt(png, i + j)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("");
 }
 
 function setHex(png: PNG, x: number, y: number, hex: string): void {
@@ -70,7 +106,7 @@ function setHex(png: PNG, x: number, y: number, hex: string): void {
 /** Distinct opaque colours, as hex. */
 export function colours(png: PNG): string[] {
   const out = new Set<string>();
-  for (let i = 0; i < png.data.length; i += 4) if (png.data[i + 3]! > 0) out.add(hexAt(png, i));
+  for (let i = 0; i < png.data.length; i += 4) if (byteAt(png, i + 3) > 0) out.add(hexAt(png, i));
   return [...out];
 }
 
@@ -83,7 +119,7 @@ interface Lettering {
 /** The opaque pixels of the title art's top line of lettering, cropped to their bounds. */
 function titleLettering(file: string): Lettering {
   const png = PNG.sync.read(readFileSync(join(imagesDir, file)));
-  const lit = (x: number, y: number) => png.data[(y * png.width + x) * 4 + 3]! > 0;
+  const lit = (x: number, y: number): boolean => byteAt(png, (y * png.width + x) * 4 + 3) > 0;
   let [x0, y0, x1, y1] = [png.width, titleRows, -1, -1];
   for (let y = 0; y < titleRows; y++) {
     for (let x = 0; x < png.width; x++) {
@@ -97,7 +133,7 @@ function titleLettering(file: string): Lettering {
 
 export function renderCabinet(c: CabinetSource): PNG {
   const png = sourceCabinet();
-  const map = (hex: string) => {
+  const map = (hex: string): string => {
     const to = c.palette[hex];
     if (to === undefined) throw new Error(`${c.name}: palette has no entry for ${hex}`);
     return to;

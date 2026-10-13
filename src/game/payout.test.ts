@@ -74,7 +74,7 @@ describe("Payout: a paid run", () => {
     const p = new Payout(60, false);
     for (let t = 0; t < ticksPerTicket; t++) p.step(false);
     expect(p.counting).toBe(true);
-    expect(p.scoreReels[4]!.active).toBe(true);
+    expect(p.scoreReels[4].active).toBe(true);
     for (let t = 0; t < digitReelDurationFrames; t++) p.step(false);
     expect(p.counting).toBe(false);
   });
@@ -82,10 +82,10 @@ describe("Payout: a paid run", () => {
   test("the reels spin towards the shown values", () => {
     const p = new Payout(1420, false);
     for (let t = 0; t < ticksPerTicket; t++) p.step(false);
-    expect(p.scoreReels[3]!.active).toBe(true);
-    expect([p.scoreReels[3]!.from, p.scoreReels[3]!.to]).toEqual([4, 3]);
-    expect(p.ticketReels[5]!.active).toBe(true);
-    expect([p.ticketReels[5]!.from, p.ticketReels[5]!.to]).toEqual([0, 1]);
+    expect(p.scoreReels[3].active).toBe(true);
+    expect([p.scoreReels[3].from, p.scoreReels[3].to]).toEqual([4, 3]);
+    expect(p.ticketReels[5].active).toBe(true);
+    expect([p.ticketReels[5].from, p.ticketReels[5].to]).toEqual([0, 1]);
   });
 
   test("Space during the count jumps to the totals, reels settled; Space again closes", () => {

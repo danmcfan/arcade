@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { checkCollision, checkCollisions, newWalls } from "./collision.ts";
+import { checkCollision, checkCollisions, newWalls, type Rect } from "./collision.ts";
 
 describe("newWalls", () => {
   test("four walls in tile units (tileSize 8), as collision.go", () => {
@@ -39,9 +39,12 @@ describe("checkCollision (strict AABB overlap)", () => {
   }
 });
 
+// Player rect is 16x24 centred on (x, y).
+function playerAt(x: number, y: number): Rect {
+  return { x: x - 8, y: y - 12, w: 16, h: 24 };
+}
+
 describe("checkCollisions against the hub walls", () => {
-  // Player rect is 16x24 centred on (x, y).
-  const playerAt = (x: number, y: number) => ({ x: x - 8, y: y - 12, w: 16, h: 24 });
   const walls = newWalls();
   const cases: [string, number, number, boolean][] = [
     ["spawn point (80, 92)", 80, 92, false],

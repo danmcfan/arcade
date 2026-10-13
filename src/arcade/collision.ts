@@ -1,6 +1,7 @@
 // Port of internal/arcade/collision.go.
 
-import { tileSize } from "./state.ts";
+/** Edge of one hub tile, in pixels. */
+export const tileSize = 8;
 
 /** Go `rect` is a value type: copy it (`{ ...r }`) wherever Go copies. */
 export interface Rect {

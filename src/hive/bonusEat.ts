@@ -8,8 +8,7 @@ import type { HiveSoftware } from "./software.ts";
 
 export const bonusEatSpriteSize = 16;
 export const bonusEatFrameCount = 4;
-export const bonusEatIndicatorTTLSecs = 0.75;
-/** `int(bonusEatIndicatorTTLSecs * float64(framesPerSecond))`, a Go constant expression (fact 3). */
+/** Go `int(bonusEatIndicatorTTLSecs * float64(framesPerSecond))` with a 0.75 s TTL, a constant expression (fact 3). */
 export const bonusEatIndicatorTicks = 45;
 
 export const scaredBeeEatPoints: readonly number[] = [200, 400, 800, 1600];
@@ -22,26 +21,30 @@ export interface BonusEatPopup {
   ticksRemain: number;
 }
 
-/** Go `image.Rect(x0, 0, x0+16, 16)` as `[x0, y0, x1, y1]`. */
-export function bonusEatFrameRect(frameIdx: number): [number, number, number, number] {
+/** Clamps a popup frame index into `[0, bonusEatFrameCount)`, as Go does inline. */
+function clampFrameIdx(frameIdx: number): number {
   if (frameIdx < 0) {
-    frameIdx = 0;
+    return 0;
   }
   if (frameIdx >= bonusEatFrameCount) {
-    frameIdx = bonusEatFrameCount - 1;
+    return bonusEatFrameCount - 1;
   }
-  const x0 = frameIdx * bonusEatSpriteSize;
+  return frameIdx;
+}
+
+/** Go `image.Rect(x0, 0, x0+16, 16)` as `[x0, y0, x1, y1]`. */
+export function bonusEatFrameRect(frameIdx: number): [number, number, number, number] {
+  const x0 = clampFrameIdx(frameIdx) * bonusEatSpriteSize;
   return [x0, 0, x0 + bonusEatSpriteSize, bonusEatSpriteSize];
 }
 
 export function spawnBonusEatIndicator(s: HiveSoftware, worldX: number, worldY: number, frameIdx: number): void {
-  if (frameIdx < 0) {
-    frameIdx = 0;
-  }
-  if (frameIdx >= bonusEatFrameCount) {
-    frameIdx = bonusEatFrameCount - 1;
-  }
-  s.bonusEatPopups.push({ x: worldX, y: worldY, frameIdx, ticksRemain: bonusEatIndicatorTicks });
+  s.bonusEatPopups.push({
+    x: worldX,
+    y: worldY,
+    frameIdx: clampFrameIdx(frameIdx),
+    ticksRemain: bonusEatIndicatorTicks,
+  });
 }
 
 export function tickBonusEatPopups(s: HiveSoftware): void {

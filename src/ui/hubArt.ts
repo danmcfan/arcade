@@ -101,11 +101,11 @@ export function cabinetRows(title: ArcadeTitle): string[] {
   const screen = cabinetScreens[title];
   const screenTop = cabinetArt.findIndex((row) => row.includes("S"));
   return cabinetArt.map((row, y) =>
-    [...row]
+    Array.from(row)
       .map((px, x) => {
-        if (px === "S") return screen[y - screenTop]![x - row.indexOf("S")]!;
+        if (px === "S") return at(at(screen, y - screenTop, "screen row"), x - row.indexOf("S"), "screen pixel");
         const n = "1234".indexOf(px);
-        return n < 0 ? px : colours[n]!;
+        return n < 0 ? px : at(colours, n, "cabinet colour");
       })
       .join(""),
   );
@@ -126,10 +126,11 @@ export function roomRows(cabinets: readonly CabinetPlace[]): string[] {
     grid.push(row);
   }
   for (const c of cabinets) {
-    const left = c.rect.x + Math.trunc((c.rect.w - cabinetArt[0]!.length) / 2);
+    const left = c.rect.x + Math.trunc((c.rect.w - at(cabinetArt, 0, "cabinet row").length) / 2);
     cabinetRows(c.title).forEach((row, dy) => {
-      [...row].forEach((px, dx) => {
-        if (px !== ".") grid[c.rect.y + dy]![left + dx] = px;
+      const gridRow = at(grid, c.rect.y + dy, "room row");
+      Array.from(row).forEach((px, dx) => {
+        if (px !== ".") gridRow[left + dx] = px;
       });
     });
   }
@@ -139,11 +140,18 @@ export function roomRows(cabinets: readonly CabinetPlace[]): string[] {
 function roomPixel(x: number, y: number): string {
   const f = floorRect;
   if (x < f.x || x >= f.x + f.w || y < wallTop || y >= f.y + f.h) return "k";
-  if (y < wallTop + neonTube.length) return neonTube[y - wallTop]!;
-  if (y >= f.y - skirting.length && y < f.y) return skirting[y - (f.y - skirting.length)]!;
+  if (y < wallTop + neonTube.length) return at(neonTube, y - wallTop, "neon row");
+  if (y >= f.y - skirting.length && y < f.y) return at(skirting, y - (f.y - skirting.length), "skirting row");
   if (y < f.y) return "d";
   // The wall's shadow, then the carpet.
   if (y === f.y) return "k";
-  const px = carpetTile[(y - f.y) % 16]![(x - f.x) % 16]!;
+  const px = at(at(carpetTile, (y - f.y) % 16, "carpet row"), (x - f.x) % 16, "carpet pixel");
   return px === "." ? "n" : px;
+}
+
+/** `xs[i]`, throwing if the art is shorter than its layout expects. */
+function at<T>(xs: ArrayLike<T>, i: number, what: string): T {
+  const v = xs[i];
+  if (v === undefined) throw new Error(`hub art: no ${what} at ${i}`);
+  return v;
 }

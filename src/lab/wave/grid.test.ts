@@ -138,7 +138,7 @@ test("after a full collapse, water never touches grass (over many seeds)", () =>
         ] as const) {
           if (nx >= 24 || ny >= 24) continue;
           const n = g.cell(nx, ny).possible[0];
-          expect([v, n].sort()).not.toEqual([1, 3]);
+          expect(new Set([v, n])).not.toEqual(new Set([1, 3]));
         }
       }
     }

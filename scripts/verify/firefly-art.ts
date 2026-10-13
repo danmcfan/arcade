@@ -11,13 +11,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
+import type { FireflySnapshot } from "../../src/game/snapshot.ts";
 import { angle, frameAngle } from "../../src/firefly/game.ts";
 import { snap } from "../../src/engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop } from "../../src/ui/cabinet.ts";
-import { decodeDataUrl } from "../browser.ts";
+import { decodeDataUrl, isRecord } from "../browser.ts";
 import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
-import { upscale, verify, type Verify } from "../harness.ts";
+import { evalJson, isGameSnapshot, isStringArray, upscale, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -39,10 +39,14 @@ function canvas(v: Verify): PNG {
   return PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
 }
 
+function isFireflySnapshot(x: unknown): x is FireflySnapshot {
+  return isRecord(x) && isRecord(x["player"]) && Array.isArray(x["bullets"]) && Array.isArray(x["bugs"]);
+}
+
 function fireflySnapshot(v: Verify): FireflySnapshot {
-  const g = v.snapshot<GameSnapshot>();
-  if (g.software !== "firefly" || g.sw === null) throw new Error(`not in Firefly: ${g.software}`);
-  return g.sw as FireflySnapshot;
+  const g = v.snapshot(isGameSnapshot);
+  if (g.software !== "firefly" || !isFireflySnapshot(g.sw)) throw new Error(`not in Firefly: ${g.software}`);
+  return g.sw;
 }
 
 /** A sprite-sized piece of `src` drawn at canvas (x, y). */
@@ -131,7 +135,7 @@ function checkFrame(v: Verify, name: string, want: { sparks: boolean; moths: num
   const s = fireflySnapshot(v);
   const frame = canvas(v);
   const p = placements(s);
-  console.log(`${name} (tick ${v.snapshot<GameSnapshot>().tick}):`);
+  console.log(`${name} (tick ${v.snapshot(isGameSnapshot).tick}):`);
   check(
     backgroundMisses(frame, [p.player, ...p.sparks, ...p.moths, ...p.hits]) === 0,
     "everywhere else the playfield is the night background (sky, stars, grass)",
@@ -204,7 +208,7 @@ function video(v: Verify): void {
     },
     { scene: "game" },
   );
-  const sounds = JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")) as string[];
+  const sounds = evalJson(v.page, "JSON.stringify(window.__arcade.sounds())", isStringArray);
   check(
     fireflySnapshot(v).bugs.length > 0 && sounds.includes("play:laser") && sounds.includes("play:boom"),
     "the recording played Firefly: sparks fired and a Moth hit",

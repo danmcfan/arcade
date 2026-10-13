@@ -10,12 +10,12 @@ import type { Scene, SoftwareName } from "./software.ts";
  *
  * With a name, the Game subscribes to sound events (`addSoundListener`) FIRST
  * and only then builds the software with `createSoftware(name, 0)` from
- * ./registry.ts, so construction sounds land in tick 1's `sounds` (see
+ * ./softwareFactories.ts, so construction sounds land in tick 1's `sounds` (see
  * `GameSnapshot.sounds`). As in Go, the software is handed to the hub as
  * `LoadedSoftware`: tick 1 is a hub tick and the software runs from tick 2.
  *
- * ./registry.ts imports this module and the Game imports the registry back.
- * That cycle is fine as long as neither calls the other at module top level.
+ * The Game imports `createSoftware` from ./softwareFactories.ts, not
+ * ./registry.ts, so there is no import cycle through this module.
  */
 export function createGame(initialSoftware?: SoftwareName): Scene {
   return new Game(initialSoftware ?? null);

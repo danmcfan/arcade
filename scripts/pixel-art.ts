@@ -25,9 +25,22 @@ function hex(css: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+/** The byte at offset `i` of `png`'s data; throws past the end. */
+function byteAt(png: PNG, i: number): number {
+  const v = png.data[i];
+  if (v === undefined) throw new Error(`byte ${i} is outside the ${png.width}x${png.height} PNG`);
+  return v;
+}
+
 /** The pixel at byte offset `i` as #rrggbb. */
 function cssAt(png: PNG, i: number): string {
-  return `#${[0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("")}`;
+  return `#${[0, 1, 2]
+    .map((j) =>
+      byteAt(png, i + j)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }
 
 /** Each of `palette`'s colours (#rrggbb, lower case) mapped back to its letter. */
@@ -58,7 +71,7 @@ export function blank(width: number, height: number): PNG {
  */
 export function paint(png: PNG, rows: Rows, palette: Palette, ox = 0, oy = 0): void {
   rows.forEach((row, y) => {
-    [...row].forEach((px, x) => {
+    row.split("").forEach((px, x) => {
       if (px === empty) return;
       const X = ox + x;
       const Y = oy + y;
@@ -96,7 +109,7 @@ export function toRows(
     let row = "";
     for (let X = x; X < x + w; X++) {
       const i = (Y * png.width + X) * 4;
-      const a = png.data[i + 3]!;
+      const a = byteAt(png, i + 3);
       if (a === 0) {
         row += empty;
         continue;
@@ -127,7 +140,7 @@ export function scale(png: PNG, k: number): PNG {
 export function colours(png: PNG): Map<string, number> {
   const seen = new Map<string, number>();
   for (let i = 0; i < png.data.length; i += 4) {
-    const a = png.data[i + 3]!;
+    const a = byteAt(png, i + 3);
     const key = a === 0 ? "transparent" : a === 255 ? cssAt(png, i) : `alpha ${a}`;
     seen.set(key, (seen.get(key) ?? 0) + 1);
   }
@@ -150,7 +163,7 @@ export function checkRows(
     throw new Error(`${name} has ${rows.length} rows, want ${size.h}`);
   rows.forEach((row, y) => {
     if (row.length !== w) throw new Error(`${name} row ${y} is ${row.length} wide, want ${w}: "${row}"`);
-    const x = [...row].findIndex((px) => px !== empty && palette[px] === undefined);
+    const x = row.split("").findIndex((px) => px !== empty && palette[px] === undefined);
     if (x >= 0) throw new Error(`${name} row ${y} column ${x} is "${row[x]}", not a palette letter: "${row}"`);
   });
 }
@@ -162,7 +175,8 @@ export function checkRows(
 export function outline(rows: Rows, letter = "k"): string[] {
   const drawn = (x: number, y: number): boolean => (rows[y]?.[x] ?? empty) !== empty;
   return rows.map((row, y) =>
-    [...row]
+    row
+      .split("")
       .map((px, x) =>
         px === empty && (drawn(x - 1, y) || drawn(x + 1, y) || drawn(x, y - 1) || drawn(x, y + 1)) ? letter : px,
       )
@@ -172,17 +186,17 @@ export function outline(rows: Rows, letter = "k"): string[] {
 
 /** Left to right reversed. */
 export function flipX(rows: Rows): string[] {
-  return rows.map((row) => [...row].reverse().join(""));
+  return rows.map((row) => row.split("").toReversed().join(""));
 }
 
 /** Top to bottom reversed. */
 export function flipY(rows: Rows): string[] {
-  return [...rows].reverse();
+  return rows.toReversed();
 }
 
 /** The left half drawn, the right half its mirror: twice as wide. */
 export function mirrorX(left: Rows): string[] {
-  return left.map((row) => row + [...row].reverse().join(""));
+  return left.map((row) => row + row.split("").toReversed().join(""));
 }
 
 /** The top half drawn, the bottom half its mirror: twice as high. */
@@ -192,7 +206,12 @@ export function mirrorY(top: Rows): string[] {
 
 /** `rows` with each letter in `map` swapped for its value, e.g. `{ r: "b" }` for a blue copy of a red sprite. */
 export function recolour(rows: Rows, map: Readonly<Record<string, string>>): string[] {
-  return rows.map((row) => [...row].map((px) => map[px] ?? px).join(""));
+  return rows.map((row) =>
+    row
+      .split("")
+      .map((px) => map[px] ?? px)
+      .join(""),
+  );
 }
 
 /**
@@ -208,6 +227,9 @@ export function overlay(rows: Rows, part: Rows, x: number, y: number): string[] 
   return rows.map((row, Y) => {
     const p = part[Y - y];
     if (p === undefined) return row;
-    return [...row].map((px, X) => (X >= x && X < x + pw && p[X - x] !== empty ? p[X - x]! : px)).join("");
+    return row
+      .split("")
+      .map((px, X) => (X >= x && X < x + pw && (p[X - x] ?? empty) !== empty ? (p[X - x] ?? px) : px))
+      .join("");
   });
 }

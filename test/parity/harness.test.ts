@@ -9,7 +9,7 @@ import * as rng from "../../src/engine/rng.ts";
 import type { Input } from "../../src/engine/input.ts";
 import type { InputScript } from "../../src/game/script.ts";
 import type { Scene } from "../../src/game/software.ts";
-import type { SceneSnapshot } from "../../src/game/snapshot.ts";
+import type { TitleSnapshot } from "../../src/game/snapshot.ts";
 import { compareTrace, diff, formatMismatch, readTrace, replay, type SceneFactory } from "./harness.ts";
 
 describe("diff", () => {
@@ -76,6 +76,17 @@ describe("readTrace", () => {
   });
 });
 
+/**
+ * The fake scene's snapshot: a well-typed TitleSnapshot carrying the extra
+ * `lefts` field the tests diff on. Traces are built with it too, so the
+ * filler fields always match.
+ */
+type CountingSnapshot = TitleSnapshot & { lefts: number };
+
+function countingSnapshot(tick: number, rngState: number, lefts: number): CountingSnapshot {
+  return { tick, rng: rngState, lefts, phase: "menu", items: [], cursor: 0, canContinue: false, game: null };
+}
+
 /** A scene whose snapshot is its tick count, the rng state and the inputs seen. */
 class CountingScene implements Scene {
   readonly name = "lumberjack" as const;
@@ -97,9 +108,9 @@ class CountingScene implements Scene {
   layout(): [number, number] {
     return [1, 1];
   }
-  snapshot(opts?: { full?: boolean }): SceneSnapshot {
-    if (opts?.full) this.fullCalls.push(this.ticks);
-    return { tick: this.ticks, rng: this.seedAtBirth, lefts: this.lefts } as unknown as SceneSnapshot;
+  snapshot(opts?: { full?: boolean }): CountingSnapshot {
+    if (opts?.full === true) this.fullCalls.push(this.ticks);
+    return countingSnapshot(this.ticks, this.seedAtBirth, this.lefts);
   }
 }
 
@@ -116,21 +127,19 @@ const script: InputScript = {
 
 describe("replay", () => {
   test("seeds the rng before building the scene, steps each tick and snapshots after each step (full on the last)", () => {
-    let scene: CountingScene | null = null;
+    const scenes: CountingScene[] = [];
     const create: SceneFactory = (name, opts) => {
       expect(name).toBe("lumberjack");
       expect(opts).toEqual({ software: undefined, wave: undefined });
-      scene = new CountingScene(rng.state());
+      const scene = new CountingScene(rng.state());
+      scenes.push(scene);
       return scene;
     };
     rng.seed(1);
     const snaps = replay(script, create);
-    expect(snaps).toEqual([
-      { tick: 1, rng: 77, lefts: 1 },
-      { tick: 2, rng: 77, lefts: 2 },
-      { tick: 3, rng: 77, lefts: 2 },
-    ] as unknown as SceneSnapshot[]);
-    expect((scene as CountingScene | null)?.fullCalls).toEqual([3]);
+    expect(snaps).toEqual([countingSnapshot(1, 77, 1), countingSnapshot(2, 77, 2), countingSnapshot(3, 77, 2)]);
+    expect(scenes).toHaveLength(1);
+    expect(scenes[0]?.fullCalls).toEqual([3]);
   });
 
   test("passes software and wave options through to the scene factory", () => {
@@ -148,29 +157,21 @@ describe("replay", () => {
   });
 });
 
-describe("compareTrace", () => {
-  const create: SceneFactory = () => new CountingScene(rng.state());
+const countingFactory: SceneFactory = () => new CountingScene(rng.state());
 
+describe("compareTrace", () => {
   test("null when every tick matches", () => {
-    const trace = [
-      { tick: 1, rng: 77, lefts: 1 },
-      { tick: 2, rng: 77, lefts: 2 },
-      { tick: 3, rng: 77, lefts: 2 },
-    ];
-    expect(compareTrace(script, trace, create)).toBeNull();
+    const trace = [countingSnapshot(1, 77, 1), countingSnapshot(2, 77, 2), countingSnapshot(3, 77, 2)];
+    expect(compareTrace(script, trace, countingFactory)).toBeNull();
   });
 
   test("reports the first diverging tick (1-based) and field", () => {
-    const trace = [
-      { tick: 1, rng: 77, lefts: 1 },
-      { tick: 2, rng: 77, lefts: 3 },
-      { tick: 3, rng: 0, lefts: 2 },
-    ];
-    expect(compareTrace(script, trace, create)).toEqual({ tick: 2, path: "lefts", expected: 3, actual: 2 });
+    const trace = [countingSnapshot(1, 77, 1), countingSnapshot(2, 77, 3), countingSnapshot(3, 0, 2)];
+    expect(compareTrace(script, trace, countingFactory)).toEqual({ tick: 2, path: "lefts", expected: 3, actual: 2 });
   });
 
   test("a trace whose length differs from the script's tick count is a mismatch", () => {
-    expect(compareTrace(script, [{ tick: 1, rng: 77, lefts: 1 }], create)).toEqual({
+    expect(compareTrace(script, [countingSnapshot(1, 77, 1)], countingFactory)).toEqual({
       tick: 0,
       path: "(trace length)",
       expected: 1,

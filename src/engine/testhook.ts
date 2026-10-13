@@ -65,12 +65,18 @@ export interface TestHookHost {
 /** Build the hook object (DOM-free; `installTestHook` puts it on `window`). */
 export function createTestHook(host: TestHookHost): ArcadeTestHook {
   let recorded: SoundEvent[] = [];
-  addSoundListener((e) => recorded.push(e));
+  addSoundListener((e) => {
+    recorded.push(e);
+  });
   const { runtime } = host;
 
   return {
-    pause: () => host.pause(),
-    resume: () => host.resume(),
+    pause: () => {
+      host.pause();
+    },
+    resume: () => {
+      host.resume();
+    },
     step(n, input) {
       // Same expansion as a script step: `shiftP` only on the first tick.
       for (const i of expandSteps([{ ticks: n, input: input ?? {} }])) runtime.step(i);
@@ -80,8 +86,12 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
       for (const i of expandSteps(script.steps)) runtime.step(i);
       host.draw();
     },
-    seed: (n) => rng.seed(n),
-    load: (scene, opts) => runtime.load(scene, opts ?? {}),
+    seed: (n) => {
+      rng.seed(n);
+    },
+    load: (scene, opts) => {
+      runtime.load(scene, opts ?? {});
+    },
     tick: () => runtime.ticks,
     snapshot: (opts) => runtime.scene.snapshot(opts),
     frame() {

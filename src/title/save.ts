@@ -5,7 +5,7 @@
 
 import type { Direction } from "../engine/input.ts";
 import { startingTokens } from "../arcade/state.ts";
-import { inCatalogueOrder, isPrizeId } from "../arcade/prizes.ts";
+import { inCatalogueOrder, isPrizeId, type PrizeId } from "../arcade/prizes.ts";
 import type { Progress } from "../game/game.ts";
 
 export interface SaveData extends Progress {
@@ -29,37 +29,46 @@ export interface SaveStore {
   clear(): void;
 }
 
-const DIRECTIONS: readonly Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
+const DIRECTIONS: ReadonlySet<unknown> = new Set<Direction>(["UP", "DOWN", "LEFT", "RIGHT"]);
+
+function isDirection(v: unknown): v is Direction {
+  return DIRECTIONS.has(v);
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object";
+}
 
 function finite(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
 function count(v: unknown): v is number {
-  return Number.isSafeInteger(v) && (v as number) >= 0;
+  return typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 }
 
 /** Validate untrusted JSON (from storage) as a save; null if it is not one. */
 export function parseSave(raw: unknown): SaveData | null {
-  if (raw === null || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
+  if (!isRecord(raw)) return null;
+  const o = raw;
   if ((o["v"] !== 1 && o["v"] !== 2 && o["v"] !== 3) || !finite(o["highScore"]) || o["highScore"] < 0) return null;
-  const p = o["player"] as Record<string, unknown> | null | undefined;
-  if (p === null || typeof p !== "object") return null;
-  if (!finite(p["x"]) || !finite(p["y"]) || !DIRECTIONS.includes(p["dir"] as Direction)) return null;
+  const p = o["player"];
+  if (!isRecord(p)) return null;
+  const dir = p["dir"];
+  if (!finite(p["x"]) || !finite(p["y"]) || !isDirection(dir)) return null;
   const tokens = o["v"] === 1 ? v1Upgrade.tokens : o["tokens"];
   const tickets = o["v"] === 1 ? v1Upgrade.tickets : o["tickets"];
   if (!count(tokens) || !count(tickets)) return null;
   // v1 and v2 saves own no prizes.
   const prizes = o["v"] === 3 ? o["prizes"] : [];
-  if (!Array.isArray(prizes) || !prizes.every(isPrizeId)) return null;
+  if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
   return {
     v: 3,
     highScore: o["highScore"],
     tokens,
     tickets,
     prizes: inCatalogueOrder(prizes),
-    player: { x: p["x"], y: p["y"], dir: p["dir"] as Direction },
+    player: { x: p["x"], y: p["y"], dir },
   };
 }
 

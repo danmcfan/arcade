@@ -9,9 +9,8 @@ import type { Sprite } from "../engine/image.ts";
 import { imageTitleFirefly, imageTitleBrassMonkey, imageTitleSweet } from "../engine/assets.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
-import { checkCollision, type Rect } from "./collision.ts";
+import { checkCollision, tileSize, type Rect } from "./collision.ts";
 import type { PrizeId } from "./prizes.ts";
-import { tileSize } from "./state.ts";
 
 /** Builds a minigame for a run: the hub high score and the prizes the player owns. */
 export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
