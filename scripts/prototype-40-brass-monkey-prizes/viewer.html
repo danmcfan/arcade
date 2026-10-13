@@ -98,18 +98,16 @@
     <main>
       <h1>Brass Monkey prizes (#40)</h1>
       <p>
-        Oil can, Spring boots and Pocket watch by the Brass Monkey cabinet (hub x 48..63). Every option is <b>new</b>;
-        the Sweet Sam prizes are shown for scale. Pick, then press Copy my picks and paste the line back.
+        Oil can, Spring boots and Pocket watch hang on the wall around the Brass Monkey cabinet (hub x 48..63). Three
+        new designs per prize and two wall arrangements; the Sweet Sam prizes are drawn for context. Pick one per knob,
+        then press Copy my picks and paste the line back.
       </p>
-      <div class="bar">
-        <button data-preset="a">Preset A (issue scope)</button><button data-preset="b">Preset B</button
-        ><button id="copy">Copy my picks</button><code id="picks"></code>
-      </div>
+      <div class="bar"><button id="copy">Copy my picks</button><code id="picks"></code></div>
       <div class="wrap">
         <div>
           <h2>Hub scene (3x)</h2>
           <canvas id="scene"></canvas>
-          <h2>Sheets (4x)</h2>
+          <h2>All designs (4x)</h2>
           <canvas id="sheet"></canvas>
         </div>
         <div class="knobs" id="knobs"></div>
@@ -118,101 +116,9 @@
     <script>
       const D = /*DATA*/ null;
       const P = D.palette;
-      const knobs = {
-        oilShape: { label: "Oil can shape", opts: { goose: "gooseneck (new)", squat: "squat (new)" } },
-        oilColour: { label: "Oil can colour", opts: { grey: "steel (new)", brass: "brass (new)", red: "red (new)" } },
-        oilPlace: {
-          label: "Oil can place",
-          opts: {
-            floorLeft: "floor, left of cabinet",
-            wallLeft: "wall, left of cabinet",
-            wallAbove: "wall, above cabinet",
-          },
-        },
-        bootShape: { label: "Spring boots", opts: { short: "short coil (new)", tall: "tall coil (new)" } },
-        bootColour: { label: "Boot colour", opts: { o: "tan (new)", r: "red (new)", b: "blue (new)" } },
-        springColour: { label: "Spring colour", opts: { steel: "steel (new)", brass: "brass (new)" } },
-        bootPlace: {
-          label: "Boots place",
-          opts: {
-            floorFarLeft: "floor, far left",
-            floorLeft: "floor, left of cabinet",
-            wallLeft: "wall, left of cabinet",
-          },
-        },
-        watchShape: { label: "Pocket watch", opts: { hanging: "hanging on a chain (new)", open: "lid open (new)" } },
-        watchCase: { label: "Watch case", opts: { gold: "gold (new)", silver: "silver (new)" } },
-        watchPlace: {
-          label: "Watch place",
-          opts: { wallAbove: "wall, above cabinet", wallLeft: "wall, left of cabinet" },
-        },
-        sweetSam: { label: "Sweet Sam prizes", opts: { show: "show (for scale)", hide: "hide" } },
-      };
-      const presets = {
-        a: {
-          oilShape: "goose",
-          oilColour: "grey",
-          oilPlace: "floorLeft",
-          bootShape: "short",
-          bootColour: "o",
-          springColour: "steel",
-          bootPlace: "floorFarLeft",
-          watchShape: "hanging",
-          watchCase: "gold",
-          watchPlace: "wallAbove",
-          sweetSam: "show",
-        },
-        b: {
-          oilShape: "squat",
-          oilColour: "brass",
-          oilPlace: "wallLeft",
-          bootShape: "tall",
-          bootColour: "r",
-          springColour: "brass",
-          bootPlace: "floorLeft",
-          watchShape: "open",
-          watchCase: "silver",
-          watchPlace: "wallAbove",
-          sweetSam: "show",
-        },
-      };
-      let s = { ...presets.a };
-
-      function recolour(rows, map) {
-        return rows.map((r) => [...r].map((c) => map[c] || c).join(""));
-      }
-      function art() {
-        const metal = { grey: {}, brass: { l: "y", m: "o", w: "w" }, red: { l: "r", m: "p", w: "o" } };
-        const oil = recolour(
-          s.oilShape === "goose" ? D.candidates.oilCanGoose : D.candidates.oilCanSquat,
-          metal[s.oilColour],
-        );
-        const spring = s.springColour === "brass" ? { l: "y" } : {};
-        const boots = recolour(s.bootShape === "short" ? D.candidates.springBoot : D.candidates.springBootTall, {
-          o: s.bootColour,
-          ...spring,
-        });
-        const watch = recolour(
-          s.watchShape === "hanging" ? D.candidates.watchHanging : D.candidates.watchOpen,
-          s.watchCase === "silver" ? { y: "l" } : {},
-        );
-        return { oilCan: oil, springBoots: boots, pocketWatch: watch };
-      }
-      // Places in hub coordinates: floor bottom at y 64, cabinet x 48..63, wall above it ends at y 40.
-      function place(rows, where, slot) {
-        const w = rows[0].length,
-          h = rows.length;
-        switch (where) {
-          case "floorLeft":
-            return [47 - w, 64 - h];
-          case "floorFarLeft":
-            return [36 - w, 64 - h];
-          case "wallLeft":
-            return [slot === 0 ? 36 : 24, 30];
-          default:
-            return [48 + Math.floor((16 - w) / 2) + (slot === 0 ? -6 : 0), 39 - h];
-        }
-      }
+      const s = { oil: "O1", boots: "B1", watch: "W1", wall: "A1" };
+      const names = { oil: "Oil can", boots: "Spring boots", watch: "Pocket watch", wall: "Wall arrangement" };
+      const pick = (k) => D.options[k].find((o) => o.id === s[k]).rows;
       function draw(ctx, rows, x, y, k) {
         rows.forEach((r, j) =>
           [...r].forEach((c, i) => {
@@ -223,10 +129,14 @@
           }),
         );
       }
+      function spot(rows, at) {
+        const x = at.centre === undefined ? at.x : at.centre - Math.floor(rows[0].length / 2);
+        return [x, at.bottom - rows.length];
+      }
+      const line = () => `oil=${s.oil} boots=${s.boots} watch=${s.watch} wall=${s.wall}`;
       const hub = new Image();
       hub.src = D.hub;
       function render() {
-        const a = art();
         const sc = document.getElementById("scene"),
           k = 3;
         sc.width = 160 * k;
@@ -234,46 +144,43 @@
         const c = sc.getContext("2d");
         c.imageSmoothingEnabled = false;
         c.drawImage(hub, 0, 0, 160 * k, 144 * k);
-        if (s.sweetSam === "show") {
-          draw(c, D.sweetSam.honeyJar, 65, 55, k);
-          draw(c, D.sweetSam.runningShoes, 87, 58, k);
-          draw(c, D.sweetSam.sleepyBees, 74, 28, k);
+        for (const p of D.sweetSam) draw(c, p.rows, p.x, p.y, k);
+        const wall = D.arrangements.find((a) => a.id === s.wall);
+        for (const key of ["oil", "boots", "watch"]) {
+          const rows = pick(key);
+          const [x, y] = spot(rows, wall[key]);
+          draw(c, rows, x, y, k);
         }
-        let [x, y] = place(a.oilCan, s.oilPlace, 0);
-        draw(c, a.oilCan, x, y, k);
-        [x, y] = place(a.springBoots, s.bootPlace, 1);
-        draw(c, a.springBoots, x, y, k);
-        [x, y] = place(a.pocketWatch, s.watchPlace, s.oilPlace === "wallAbove" ? 1 : 0);
-        draw(c, a.pocketWatch, x, y, k);
         const sh = document.getElementById("sheet"),
           k2 = 4;
-        const all = Object.values(D.candidates);
-        sh.width = (all.reduce((w, r) => w + r[0].length + 2, 0) + 2) * k2;
-        sh.height = 16 * k2;
+        const all = [...D.options.oil, ...D.options.boots, ...D.options.watch];
+        sh.width = (all.reduce((w, o) => w + o.rows[0].length + 3, 0) + 2) * k2;
+        sh.height = 20 * k2;
         const d = sh.getContext("2d");
         d.fillStyle = "#333c57";
         d.fillRect(0, 0, sh.width, sh.height);
         let ox = 2;
-        const picked = [a.oilCan, a.springBoots, a.pocketWatch];
-        for (const r of picked) {
-          draw(d, r, ox, 2, k2);
-          ox += r[0].length + 3;
+        for (const o of all) {
+          draw(d, o.rows, ox, 2, k2);
+          ox += o.rows[0].length + 3;
         }
-        document.getElementById("picks").textContent = JSON.stringify(s);
+        document.getElementById("picks").textContent = line();
       }
       function buildKnobs() {
         const el = document.getElementById("knobs");
         el.innerHTML = "";
-        for (const [key, kn] of Object.entries(knobs)) {
+        const groups = { ...D.options, wall: D.arrangements };
+        for (const [key, opts] of Object.entries(groups)) {
           const row = document.createElement("div");
           row.className = "knob";
-          row.innerHTML = `<b>${kn.label}</b>`;
-          for (const [v, lab] of Object.entries(kn.opts)) {
+          row.innerHTML = `<b>${names[key]}</b>`;
+          for (const o of opts) {
             const b = document.createElement("button");
-            b.textContent = lab;
-            if (s[key] === v) b.className = "on";
+            b.textContent = o.label;
+            b.style.display = "block";
+            if (s[key] === o.id) b.className = "on";
             b.onclick = () => {
-              s[key] = v;
+              s[key] = o.id;
               buildKnobs();
               render();
             };
@@ -282,15 +189,7 @@
           el.appendChild(row);
         }
       }
-      document.querySelectorAll("[data-preset]").forEach(
-        (b) =>
-          (b.onclick = () => {
-            s = { ...presets[b.dataset.preset] };
-            buildKnobs();
-            render();
-          }),
-      );
-      document.getElementById("copy").onclick = () => navigator.clipboard.writeText(JSON.stringify(s)).catch(() => {});
+      document.getElementById("copy").onclick = () => navigator.clipboard.writeText(line()).catch(() => {});
       hub.onload = () => {
         buildKnobs();
         render();
