@@ -17,7 +17,8 @@ export type Rows = readonly string[];
 /** A palette: each letter the rows use mapped to its CSS hex colour. */
 export type Palette = Readonly<Record<string, string>>;
 
-const empty = ".";
+/** The letter for a blank pixel. */
+export const empty = ".";
 
 function hex(css: string): [number, number, number] {
   const n = Number.parseInt(css.slice(1), 16);
@@ -27,6 +28,11 @@ function hex(css: string): [number, number, number] {
 /** The pixel at byte offset `i` as #rrggbb. */
 function cssAt(png: PNG, i: number): string {
   return `#${[0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Each of `palette`'s colours (#rrggbb, lower case) mapped back to its letter. */
+export function letters(palette: Palette = sweetie): Map<string, string> {
+  return new Map(Object.entries(palette).map(([letter, css]) => [css.toLowerCase(), letter]));
 }
 
 /** Set (x, y) to the opaque CSS hex colour `css`. */
@@ -77,7 +83,7 @@ export function toPng(rows: Rows, palette: Palette = sweetie): PNG {
  * pixel, naming where it is.
  */
 export function toRows(png: PNG, palette: Palette = sweetie, x = 0, y = 0, w = png.width - x, h = png.height - y): string[] {
-  const letterOf = new Map(Object.entries(palette).map(([letter, css]) => [css.toLowerCase(), letter]));
+  const letterOf = letters(palette);
   const rows: string[] = [];
   for (let Y = y; Y < y + h; Y++) {
     let row = "";

@@ -1,10 +1,10 @@
 # Pixel art
 
-Every image in the game is pixel art generated from text source in the repo (ADR 0006). Read this before you draw, redraw or spec art: where the source lives, how to draw less of it, how to look at it, and the bar it has to clear.
+Every image in the game is pixel art, and ADR 0006 has it generated from source in the repo; some PNGs are still hand-made. Read this before you draw, redraw or spec art: where the source lives, how to draw less of it, how to look at it, and the bar it has to clear.
 
 ## Source
 
-Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one letter map, `sweetie` in `src/ui/sweetie16.ts`.
+Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one letter map, `sweetie` in `src/ui/sweetie16.ts`. The font is the exception: its glyphs are `#` rows drawn in an ink colour.
 
 | Art | Source | Generator |
 | --- | --- | --- |
@@ -42,8 +42,8 @@ Give each sprite its own export, so a change is an `Edit` of a short block of ro
 | Command | When |
 | --- | --- |
 | `pixel show <image>...` | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`. |
-| `pixel place <base> <image>@x,y...` | To judge a sprite where it stands, e.g. the player on the hub floor |
-| `pixel before <png>...` | For the PR: `origin/main`'s version beside yours, at one scale |
+| `pixel place <base> <image>@x,y...` | To judge a sprite where it stands, e.g. the player in the hub |
+| `pixel before <image>...` | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources |
 | `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour |
 
 An `<image>` is `path.png`, `path.png#x,y,w,h`, `path.ts:name` or `path.ts:name.key`. Run `bun run pixel` alone for the full usage.

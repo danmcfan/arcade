@@ -1,28 +1,7 @@
 // Sweetie 16 (by GrafxKid), the palette every piece of art in the game is drawn
 // in (ADR 0006). Art sources draw in rows of `sweetie`'s letters (`.` is
-// blank); this list lets a test check that generated art stays inside the
+// blank); `sweetie16` lets a test check that generated art stays inside the
 // palette.
-
-export const sweetie16 = [
-  "#1a1c2c",
-  "#5d275d",
-  "#b13e53",
-  "#ef7d57",
-  "#ffcd75",
-  "#a7f070",
-  "#38b764",
-  "#257179",
-  "#29366f",
-  "#3b5dc9",
-  "#41a6f6",
-  "#73eff7",
-  "#f4f4f4",
-  "#94b0c2",
-  "#566c86",
-  "#333c57",
-] as const;
-
-export type Sweetie16 = (typeof sweetie16)[number];
 
 /** The one letter every art source uses for each Sweetie 16 colour. */
 export const sweetie = {
@@ -42,6 +21,10 @@ export const sweetie = {
   l: "#94b0c2", // light grey
   m: "#566c86", // mid grey
   d: "#333c57", // dark grey
-} as const satisfies Record<string, Sweetie16>;
+} as const;
 
 export type SweetieLetter = keyof typeof sweetie;
+export type Sweetie16 = (typeof sweetie)[SweetieLetter];
+
+/** The 16 colours, in the palette's own order. */
+export const sweetie16: readonly Sweetie16[] = Object.values(sweetie);

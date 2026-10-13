@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
-import { glyphHeight, glyphs, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
+import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
 import { counterRect } from "../src/arcade/prizeCounter.ts";
 import { counterArt } from "../src/ui/counterArt.ts";
 import { icons } from "../src/ui/icons.ts";
@@ -25,12 +25,7 @@ import { checkRows } from "./pixel-art.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
-    for (const [ch, rows] of Object.entries(glyphs)) {
-      expect({ ch, rows: rows.length }).toEqual({ ch, rows: glyphHeight });
-      for (const row of rows) {
-        expect({ ch, row, ok: /^[#.]+$/.test(row) && row.length === rows[0]!.length }).toEqual({ ch, row, ok: true });
-      }
-    }
+    for (const [ch, rows] of Object.entries(glyphs)) checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
   });
 
   test("every logo letter is 14x15", () => {

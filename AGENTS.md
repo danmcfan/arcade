@@ -24,7 +24,7 @@ Verify any change a player can see or hear with a verify check (`bun run verify 
 
 ## Pixel art
 
-Drawing, redrawing or specifying art: import existing art before redrawing, derive pixels with the helpers, and look with `bun run pixel`. Sources, helpers and the quality bar: `docs/agents/pixel-art.md`.
+Drawing, redrawing or specifying art: `docs/agents/pixel-art.md` (sources, helpers, `bun run pixel`, the quality bar).
 
 ## Review
 

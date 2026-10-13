@@ -20,6 +20,20 @@ describe("load", () => {
     expect(toRows(panel!.png)).toEqual([...prizeArt.runningShoes]);
   });
 
+  test("name.key names a missing key", async () => {
+    await expect(load(`${prizeSource}:prizeArt.nope`)).rejects.toThrow('prizeArt has no entry "nope"');
+  });
+
+  test("glyph rows (# and .) draw in white", async () => {
+    const [panel] = await load(`${join(repoRoot, "src/ui/glyphs.ts")}:glyphs.A`);
+    expect(toRows(panel!.png)[0]).toBe(".wwww.");
+  });
+
+  test("with a rev, an art source is read as committed there", async () => {
+    const [panel] = await load(`${prizeSource}:prizeArt.honeyJar`, "HEAD");
+    expect(toRows(panel!.png)).toEqual([...prizeArt.honeyJar]);
+  });
+
   test("an export with no rows is an error", async () => {
     await expect(load(`${prizeSource}:prizeRects`)).rejects.toThrow('exports no rows named "prizeRects"');
   });

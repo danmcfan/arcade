@@ -2,30 +2,31 @@
 // scratch script. Sheets go to out/pixel/ (git ignores out/); read the PNG
 // it prints.
 //
-//   bun run pixel rows    <image>                     the image as Sweetie 16 letter rows
+//   bun run pixel rows    <image>...                  each image as Sweetie 16 letter rows
 //   bun run pixel colours <image>...                  each colour, its letter and pixel count
 //   bun run pixel show    <image>...                  one labelled sheet, scaled up
-//   bun run pixel before  <image>... [--ref <rev>]    <rev>'s version beside the working copy
+//   bun run pixel before  <image>... [--ref <rev>]    <rev>'s version beside the working copy (PNG or source)
 //   bun run pixel place   <base> <image>@x,y...       images drawn onto <base> at (x, y)
 //
 // An <image> is one of:
 //   path.png             the whole PNG
 //   path.png#x,y,w,h     one area of it, e.g. one frame of a sheet
 //   path.ts:name         rows exported by an art source, drawn without `bun run art`:
-//                        a list of rows, a list of lists, or a record of them (one image each)
+//                        a list of rows, a list of lists, or a record of them (one image each);
+//                        glyph rows (`#` and `.`) draw in white
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
 // Options: --scale N (default: fits each image to about 384 px, at most 8x),
 // --out <file.png> (show, before and place), --ref <rev> (before; default
 // origin/main).
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, colours, plot, scale, toPng, toRows, type Rows } from "./pixel-art.ts";
+import { blank, colours, letters, paint, plot, scale, toPng, toRows, type Rows } from "./pixel-art.ts";
 
 /** One image to show, with the label it gets on a sheet. */
 export interface Panel {
@@ -54,25 +55,55 @@ function isRows(v: unknown): v is Rows {
   return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
-/** The images an <image> argument names (see the header). */
-export async function load(spec: string): Promise<Panel[]> {
+/** Sweetie 16, plus `#` in white for the font's glyph rows. */
+const sourcePalette = { ...sweetie, "#": sweetie.w };
+
+/** `file` as committed at `rev`, or undefined when it is not there. */
+function gitShow(rev: string, file: string): Buffer | undefined {
+  const r = Bun.spawnSync(["git", "show", `${rev}:${relative(repoRoot, resolve(file))}`], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
+  return r.exitCode === 0 ? Buffer.from(r.stdout) : undefined;
+}
+
+/** The module at `file`, or its `rev` version (copied next to it for the import, then removed). */
+async function importAt(file: string, rev: string | undefined): Promise<Record<string, unknown> | undefined> {
+  if (rev === undefined) return (await import(resolve(file))) as Record<string, unknown>;
+  const source = gitShow(rev, file);
+  if (source === undefined) return undefined;
+  const copy = join(dirname(resolve(file)), `.pixel-${Date.now()}-${basename(file)}`);
+  writeFileSync(copy, source);
+  try {
+    return (await import(copy)) as Record<string, unknown>;
+  } finally {
+    rmSync(copy);
+  }
+}
+
+/** The images an <image> argument names (see the header), at `rev` when given; [] when it is not there. */
+export async function load(spec: string, rev?: string): Promise<Panel[]> {
   const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/.exec(spec);
   if (ts) {
     const [, file, name, key] = ts as unknown as [string, string, string, string | undefined];
-    const mod = (await import(resolve(file))) as Record<string, unknown>;
-    const value = key === undefined ? mod[name] : (mod[name] as Record<string, unknown> | undefined)?.[key];
-    if (isRows(value)) return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value) }];
+    const mod = await importAt(file, rev);
+    if (mod === undefined) return [];
+    let value = mod[name];
+    if (key !== undefined) {
+      value = (value as Record<string, unknown> | undefined)?.[key];
+      if (value === undefined) {
+        if (rev !== undefined) return [];
+        throw new Error(`${file}'s ${name} has no entry "${key}"`);
+      }
+    }
+    if (isRows(value)) return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
     const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v] as const) : Object.entries((value ?? {}) as object);
-    const panels = entries.filter(([, v]) => isRows(v)).map(([key, v]) => ({ label: `${name} ${key}`, png: toPng(v as Rows) }));
-    if (panels.length === 0) throw new Error(`${file} exports no rows named "${name}"`);
+    const panels = entries.filter(([, v]) => isRows(v)).map(([k, v]) => ({ label: `${name} ${k}`, png: toPng(v as Rows, sourcePalette) }));
+    if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
     return panels;
   }
   const [file, area] = spec.split("#") as [string, string | undefined];
-  return [{ label: basename(spec).replace("#", " "), png: area ? crop(readPng(file), ...parseArea(area)) : readPng(file) }];
-}
-
-function readPng(file: string): PNG {
-  return PNG.sync.read(readFileSync(file));
+  const bytes = rev === undefined ? readFileSync(file) : gitShow(rev, file);
+  if (bytes === undefined) return [];
+  const png = PNG.sync.read(bytes);
+  return [{ label: basename(spec).replace("#", " "), png: area ? crop(png, ...parseArea(area)) : png }];
 }
 
 async function loadOne(spec: string): Promise<PNG> {
@@ -93,25 +124,28 @@ const sheetColour = "#202020";
 const labelColour = "#f4f4f4";
 const checker = ["#8c8c8c", "#a0a0a0"];
 
-function labelWidth(text: string): number {
-  return [...text.toUpperCase()].reduce((w, ch) => w + ((glyphs[ch] ?? glyphs["?"]!)[0]!.length + 1) * labelScale, 0);
+/** `text` in the game font, white, at 2x. */
+function label(text: string): PNG {
+  const chars = [...text.toUpperCase()].map((ch) => glyphs[ch] ?? glyphs["?"]!);
+  const png = blank(chars.reduce((w, rows) => w + rows[0]!.length + 1, 0), glyphHeight);
+  let x = 0;
+  for (const rows of chars) {
+    paint(png, rows, { "#": labelColour }, x, 0);
+    x += rows[0]!.length + 1;
+  }
+  return scale(png, labelScale);
 }
 
-function drawLabel(png: PNG, text: string, ox: number, oy: number): void {
-  let x = ox;
-  for (const ch of text.toUpperCase()) {
-    const rows = glyphs[ch] ?? glyphs["?"]!;
-    rows.forEach((row, y) => {
-      [...row].forEach((px, dx) => {
-        if (px !== "#") return;
-        for (let i = 0; i < labelScale * labelScale; i++) {
-          const X = x + dx * labelScale + (i % labelScale);
-          const Y = oy + y * labelScale + Math.trunc(i / labelScale);
-          if (X < png.width && Y < png.height) plot(png, X, Y, labelColour);
-        }
-      });
-    });
-    x += (rows[0]!.length + 1) * labelScale;
+/** Copy `png`'s opaque pixels into `out` at (x, y); transparent pixels and those outside `out` are skipped. */
+function stamp(out: PNG, png: PNG, x: number, y: number): void {
+  for (let py = 0; py < png.height; py++) {
+    for (let px = 0; px < png.width; px++) {
+      const i = (py * png.width + px) * 4;
+      const X = x + px;
+      const Y = y + py;
+      if (png.data[i + 3] === 0 || X < 0 || Y < 0 || X >= out.width || Y >= out.height) continue;
+      png.data.copy(out.data, (Y * out.width + X) * 4, i, i + 4);
+    }
   }
 }
 
@@ -121,14 +155,14 @@ function drawLabel(png: PNG, text: string, ox: number, oy: number): void {
  */
 export function sheet(panels: readonly Panel[], k?: number): PNG {
   const labelH = glyphHeight * labelScale + 6;
-  const tiles = panels.map((p) => ({ label: p.label, png: scale(p.png, k ?? autoScale(p.png)) }));
+  const tiles = panels.map((p) => ({ label: label(p.label), png: scale(p.png, k ?? autoScale(p.png)) }));
   const placed: { x: number; y: number; tile: (typeof tiles)[number] }[] = [];
   let x = gap;
   let y = gap;
   let rowH = 0;
   let width = 0;
   for (const tile of tiles) {
-    const w = Math.max(tile.png.width, labelWidth(tile.label));
+    const w = Math.max(tile.png.width, tile.label.width);
     if (x > gap && x + w > maxSheetWidth) {
       x = gap;
       y += rowH + gap;
@@ -142,15 +176,12 @@ export function sheet(panels: readonly Panel[], k?: number): PNG {
   const out = blank(width, y + rowH + gap);
   for (let i = 0; i < out.width * out.height; i++) plot(out, i % out.width, Math.trunc(i / out.width), sheetColour);
   for (const { x, y, tile } of placed) {
-    drawLabel(out, tile.label, x, y);
+    stamp(out, tile.label, x, y);
     const top = y + labelH;
     for (let py = 0; py < tile.png.height; py++) {
-      for (let px = 0; px < tile.png.width; px++) {
-        const i = (py * tile.png.width + px) * 4;
-        if (tile.png.data[i + 3] === 0) plot(out, x + px, top + py, checker[(Math.trunc(px / 8) + Math.trunc(py / 8)) % 2]!);
-        else tile.png.data.copy(out.data, ((top + py) * out.width + x + px) * 4, i, i + 4);
-      }
+      for (let px = 0; px < tile.png.width; px++) plot(out, x + px, top + py, checker[(Math.trunc(px / 8) + Math.trunc(py / 8)) % 2]!);
     }
+    stamp(out, tile.png, x, top);
   }
   return out;
 }
@@ -159,28 +190,8 @@ export function sheet(panels: readonly Panel[], k?: number): PNG {
 export function place(base: PNG, items: readonly { png: PNG; x: number; y: number }[]): PNG {
   const out = blank(base.width, base.height);
   base.data.copy(out.data);
-  for (const { png, x, y } of items) {
-    for (let py = 0; py < png.height; py++) {
-      for (let px = 0; px < png.width; px++) {
-        const i = (py * png.width + px) * 4;
-        const X = x + px;
-        const Y = y + py;
-        if (png.data[i + 3] === 0 || X < 0 || Y < 0 || X >= out.width || Y >= out.height) continue;
-        png.data.copy(out.data, (Y * out.width + X) * 4, i, i + 4);
-      }
-    }
-  }
+  for (const { png, x, y } of items) stamp(out, png, x, y);
   return out;
-}
-
-/** The image at `rev`, from git, or undefined when it does not exist there. */
-function atRev(rev: string, spec: string): PNG | undefined {
-  const [file, area] = spec.split("#") as [string, string | undefined];
-  const path = relative(repoRoot, resolve(file));
-  const r = Bun.spawnSync(["git", "show", `${rev}:${path}`], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
-  if (r.exitCode !== 0) return undefined;
-  const png = PNG.sync.read(Buffer.from(r.stdout));
-  return area ? crop(png, ...parseArea(area)) : png;
 }
 
 function write(png: PNG, out: string): void {
@@ -205,43 +216,51 @@ async function main(argv: string[]): Promise<void> {
   }
   const [command, ...specs] = args;
   const k = opts.scale === undefined ? undefined : Number(opts.scale);
+  if (k !== undefined && !(Number.isInteger(k) && k > 0)) throw new Error(`--scale ${opts.scale} is not a whole number above 0`);
   const out = (name: string): string => resolve(opts.out ?? join(outDir, `${name}.png`));
   if (specs.length === 0) usage();
 
   switch (command) {
     case "rows": {
-      const png = await loadOne(specs[0]!);
-      console.log(`// ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
-      for (const row of toRows(png)) console.log(`"${row}",`);
+      for (const spec of specs) {
+        for (const { label, png } of await load(spec)) {
+          console.log(`// ${label}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
+          for (const row of toRows(png)) console.log(`"${row}",`);
+        }
+      }
       return;
     }
     case "colours": {
-      const letterOf = new Map(Object.entries(sweetie).map(([l, css]) => [css, l]));
+      const letterOf = letters();
       for (const spec of specs) {
         for (const { label, png } of await load(spec)) {
           console.log(`${label} (${png.width}x${png.height})`);
           for (const [c, n] of [...colours(png)].sort((a, b) => b[1] - a[1])) {
-            console.log(`  ${c.padEnd(11)} ${(letterOf.get(c as never) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`);
+            console.log(`  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`);
           }
         }
       }
       return;
     }
     case "show": {
-      const panels = (await Promise.all(specs.map(load))).flat();
+      const panels = (await Promise.all(specs.map((s) => load(s)))).flat();
       write(sheet(panels, k), out("show"));
       console.log(panels.map((p) => p.label).join(" | "));
       return;
     }
     case "before": {
       const rev = opts.ref ?? "origin/main";
+      if (Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0) {
+        throw new Error(`--ref ${rev} is not a commit`);
+      }
       const panels: Panel[] = [];
       for (const spec of specs) {
-        const name = basename(spec);
-        const before = atRev(rev, spec);
-        const after = (await load(spec))[0]!.png;
-        if (before) panels.push({ label: `before ${name}`, png: before });
-        panels.push({ label: `${before ? "after" : "new"} ${name}`, png: after });
+        const before = new Map((await load(spec, rev)).map((p) => [p.label, p.png]));
+        for (const after of await load(spec)) {
+          const old = before.get(after.label);
+          if (old) panels.push({ label: `before ${after.label}`, png: old });
+          panels.push({ label: `${old ? "after" : "new"} ${after.label}`, png: after.png });
+        }
       }
       write(sheet(panels, k ?? Math.min(...panels.map((p) => autoScale(p.png)))), out("before-after"));
       return;

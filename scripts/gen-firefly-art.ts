@@ -33,9 +33,7 @@ import {
 } from "../src/firefly/art.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, mirrorX, mirrorY, paint, plot, toPng, type Rows } from "./pixel-art.ts";
-
-const empty = ".";
+import { blank, empty, mirrorX, mirrorY, paint, plot, toPng, type Rows } from "./pixel-art.ts";
 
 function at(rows: Rows, x: number, y: number): string {
   return rows[y]?.[x] ?? empty;
