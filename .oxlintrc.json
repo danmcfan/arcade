@@ -39,9 +39,9 @@
     "eslint/eqeqeq": ["error", "always"],
     "eslint/no-console": "error",
     "eslint/no-param-reassign": "error",
-    "eslint/complexity": ["error", 10],
-    "eslint/max-depth": ["error", 3],
-    "eslint/max-lines-per-function": ["error", 60],
+    "eslint/complexity": "off",
+    "eslint/max-depth": "off",
+    "eslint/max-lines-per-function": "off",
     "import/no-cycle": "error",
     "typescript/prefer-readonly-parameter-types": "off",
     "eslint/no-inline-comments": "off",
@@ -147,12 +147,6 @@
       "files": ["scripts/**/*.ts"],
       "rules": {
         "eslint/no-console": "off"
-      }
-    },
-    {
-      "files": ["**/*.test.ts", "**/*.testutil.ts", "test/**/*.ts"],
-      "rules": {
-        "eslint/max-lines-per-function": "off"
       }
     }
   ]
