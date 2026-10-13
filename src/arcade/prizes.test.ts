@@ -34,11 +34,18 @@ describe("prize catalogue", () => {
       // Within a cabinet's width of the Sweet Sam cabinet, nearer it than any other.
       const centre = r.x + r.w / 2;
       const dist = (m: { x: number; w: number }) => Math.abs(m.x + m.w / 2 - centre);
-      expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({ id: p.id, nearest: "sweet" });
+      expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({
+        id: p.id,
+        nearest: "sweet",
+      });
       expect({ id: p.id, near: dist(sweet) <= 16 }).toEqual({ id: p.id, near: true });
       for (const m of machines) {
         if (m.title === "sweet") continue;
-        expect({ id: p.id, over: m.title, hit: checkCollision(r, m.rect) }).toEqual({ id: p.id, over: m.title, hit: false });
+        expect({ id: p.id, over: m.title, hit: checkCollision(r, m.rect) }).toEqual({
+          id: p.id,
+          over: m.title,
+          hit: false,
+        });
       }
       expect({ id: p.id, counter: checkCollision(r, counterRect) }).toEqual({ id: p.id, counter: false });
     }
@@ -68,7 +75,10 @@ describe("prize catalogue", () => {
 describe("buyPrize", () => {
   test("takes the prize's price once and adds it to the owned prizes", () => {
     expect(buyPrize({ tickets: 25, prizes: [] }, "honeyJar")).toEqual({ tickets: 0, prizes: ["honeyJar"] });
-    expect(buyPrize({ tickets: 130, prizes: ["sleepyBees"] }, "runningShoes")).toEqual({ tickets: 80, prizes: ["runningShoes", "sleepyBees"] });
+    expect(buyPrize({ tickets: 130, prizes: ["sleepyBees"] }, "runningShoes")).toEqual({
+      tickets: 80,
+      prizes: ["runningShoes", "sleepyBees"],
+    });
     expect(buyPrize({ tickets: 100, prizes: [] }, "sleepyBees")).toEqual({ tickets: 0, prizes: ["sleepyBees"] });
   });
 

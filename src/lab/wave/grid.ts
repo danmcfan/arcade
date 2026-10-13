@@ -21,10 +21,30 @@ export interface Cell {
  * Directions index `neighbors()` order: 0 up, 1 right, 2 down, 3 left.
  */
 export const constraints: readonly (readonly (readonly number[])[])[] = [
-  [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]],
-  [[1, 2], [1, 2], [1, 2], [1, 2]],
-  [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]],
-  [[2, 3], [2, 3], [2, 3], [2, 3]],
+  [
+    [1, 2, 3],
+    [1, 2, 3],
+    [1, 2, 3],
+    [1, 2, 3],
+  ],
+  [
+    [1, 2],
+    [1, 2],
+    [1, 2],
+    [1, 2],
+  ],
+  [
+    [1, 2, 3],
+    [1, 2, 3],
+    [1, 2, 3],
+    [1, 2, 3],
+  ],
+  [
+    [2, 3],
+    [2, 3],
+    [2, 3],
+    [2, 3],
+  ],
 ];
 
 /** Index a Go-style `[][]T` whose bounds the caller has already checked. */

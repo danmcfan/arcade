@@ -4,9 +4,24 @@ import type { Input } from "../engine/input.ts";
 import { soundDeath, soundPower, soundStart } from "../engine/assets.ts";
 import type { HiveStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
-import { cameraShakeEnemyEatIntensity, cameraShakeEnemyEatTicks, cameraShakePowerPelletIntensity, cameraShakePowerPelletTicks } from "./camera.ts";
-import { particleBurstBeeEatenCount, particleBurstPlayerEatenCount, particleColorRed, particleColorTeal } from "./particle.ts";
-import { bonusEatFrameCount, resetScaredEatAwardIfNobodyScared, scaredBeeEatPoints, spawnBonusEatIndicator } from "./bonusEat.ts";
+import {
+  cameraShakeEnemyEatIntensity,
+  cameraShakeEnemyEatTicks,
+  cameraShakePowerPelletIntensity,
+  cameraShakePowerPelletTicks,
+} from "./camera.ts";
+import {
+  particleBurstBeeEatenCount,
+  particleBurstPlayerEatenCount,
+  particleColorRed,
+  particleColorTeal,
+} from "./particle.ts";
+import {
+  bonusEatFrameCount,
+  resetScaredEatAwardIfNobodyScared,
+  scaredBeeEatPoints,
+  spawnBonusEatIndicator,
+} from "./bonusEat.ts";
 import {
   newItems,
   pointToTile,

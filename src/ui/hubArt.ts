@@ -77,7 +77,9 @@ export const cabinetArt: readonly string[] = [
 ];
 
 /** Each cabinet's colours (Sweetie 16 letters for `1` to `4`): the colours of its minigame. */
-export const cabinetColours: Readonly<Record<ArcadeTitle, readonly [lit: string, trim: string, body: string, side: string]>> = {
+export const cabinetColours: Readonly<
+  Record<ArcadeTitle, readonly [lit: string, trim: string, body: string, side: string]>
+> = {
   brassMonkey: ["g", "G", "t", "n"],
   sweet: ["y", "o", "r", "p"],
   firefly: ["c", "B", "b", "n"],

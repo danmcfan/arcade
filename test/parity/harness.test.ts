@@ -58,9 +58,9 @@ describe("diff", () => {
 
 describe("formatMismatch", () => {
   test("names the scenario, tick, field path and both values", () => {
-    expect(formatMismatch("hive-fuzz-1", { tick: 123, path: "sw.enemies[2].x", expected: 104.5, actual: 104.4375 })).toBe(
-      "hive-fuzz-1: first divergence at tick 123, field sw.enemies[2].x: expected 104.5, got 104.4375",
-    );
+    expect(
+      formatMismatch("hive-fuzz-1", { tick: 123, path: "sw.enemies[2].x", expected: 104.5, actual: 104.4375 }),
+    ).toBe("hive-fuzz-1: first divergence at tick 123, field sw.enemies[2].x: expected 104.5, got 104.4375");
     expect(formatMismatch("w", { tick: 1, path: "", expected: { a: 1 }, actual: undefined })).toBe(
       'w: first divergence at tick 1, field (root): expected {"a":1}, got undefined',
     );

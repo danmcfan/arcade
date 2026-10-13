@@ -85,7 +85,11 @@ test("a full snapshot adds cells[x][y] as plain copies", () => {
 
   // Mutating the snapshot does not reach the scene.
   for (const c of cells.flat()) c.possible.push(9);
-  expect(snap(wave, true).cells?.flat().some((c) => c.possible.includes(9))).toBe(false);
+  expect(
+    snap(wave, true)
+      .cells?.flat()
+      .some((c) => c.possible.includes(9)),
+  ).toBe(false);
 
   // JSON-round-trips exactly (the harness diffs parsed JSON).
   expect(JSON.parse(JSON.stringify(s))).toEqual(s);

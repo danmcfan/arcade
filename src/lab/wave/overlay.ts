@@ -69,8 +69,22 @@ export function mountWaveOverlay(parent: HTMLElement, model: WaveOverlayModel): 
     row.append(value, input);
     root.append(row);
   };
-  slider("grid", 64, 256, 64, () => model.gridSize, (v) => (model.gridSize = v));
-  slider("seconds", 1, 30, 1, () => model.seconds, (v) => (model.seconds = v));
+  slider(
+    "grid",
+    64,
+    256,
+    64,
+    () => model.gridSize,
+    (v) => (model.gridSize = v),
+  );
+  slider(
+    "seconds",
+    1,
+    30,
+    1,
+    () => model.seconds,
+    (v) => (model.seconds = v),
+  );
 
   const fps = doc.createElement("div");
   const tps = doc.createElement("div");

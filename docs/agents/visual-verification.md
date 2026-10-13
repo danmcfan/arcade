@@ -21,33 +21,38 @@ Copy the shape of `scripts/verify/title.ts`. Everything comes from `scripts/harn
 import { verify } from "../harness.ts";
 
 await verify("pause-menu", (v) => {
-  v.openHook("scene=game");            // ?debug: paused, only step() moves time
-  v.step(20, { left: true });          // 20 ticks holding left
+  v.openHook("scene=game"); // ?debug: paused, only step() moves time
+  v.step(20, { left: true }); // 20 ticks holding left
   v.tap("escape");
   if (v.snapshot<TitleSnapshot>().phase !== "paused") throw new Error("Esc did not pause");
-  v.frame("pause");                    // canvas at logical res, 4x nearest-neighbour
+  v.frame("pause"); // canvas at logical res, 4x nearest-neighbour
 
-  v.open();                            // real page, real rAF loop
-  v.key("Space");                      // real keydown, held long enough for a tick
-  v.screenshot("intro");               // what a person sees
+  v.open(); // real page, real rAF loop
+  v.key("Space"); // real keydown, held long enough for a tick
+  v.screenshot("intro"); // what a person sees
 
-  v.record("walkthrough", () => {      // mp4 for the PR
-    v.wait(800);
-    v.key("ArrowRight", 600);
-  }, { storage: { "arcade.save": "..." } });
+  v.record(
+    "walkthrough",
+    () => {
+      // mp4 for the PR
+      v.wait(800);
+      v.key("ArrowRight", 600);
+    },
+    { storage: { "arcade.save": "..." } },
+  );
 
-  v.assertNoErrors();                  // page errors / console errors
+  v.assertNoErrors(); // page errors / console errors
 });
 ```
 
-| Need | Use |
-| --- | --- |
-| Deterministic state checks | `openHook()`, `step()`, `tap()`, `snapshot()`. The contract is `ArcadeTestHook` in `src/engine/testhook.ts`. |
-| Exact pixels at game resolution | `frame(name, scale)` |
-| The page as a player sees it | `open()`, `key()`, `wait()`, `screenshot()`; `hold(code, play)` keeps one key down (Space while steering) |
-| Motion, animation, a flow | `record(name, play, { scene, storage })` writes `.mp4` (for the PR) and `.webm` |
-| A phone or tablet (touch, no hover) | `await phone()` before `open()`; `await recordPhone(name, play, opts)` for its video |
-| Anything else | `v.page.run(...)` / `v.page.eval(js)` (raw agent-browser) |
+| Need                                | Use                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Deterministic state checks          | `openHook()`, `step()`, `tap()`, `snapshot()`. The contract is `ArcadeTestHook` in `src/engine/testhook.ts`. |
+| Exact pixels at game resolution     | `frame(name, scale)`                                                                                         |
+| The page as a player sees it        | `open()`, `key()`, `wait()`, `screenshot()`; `hold(code, play)` keeps one key down (Space while steering)    |
+| Motion, animation, a flow           | `record(name, play, { scene, storage })` writes `.mp4` (for the PR) and `.webm`                              |
+| A phone or tablet (touch, no hover) | `await phone()` before `open()`; `await recordPhone(name, play, opts)` for its video                         |
+| Anything else                       | `v.page.run(...)` / `v.page.eval(js)` (raw agent-browser)                                                    |
 
 Keep the check in the repo and in the PR, so the next change to that screen can rerun it.
 

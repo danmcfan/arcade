@@ -28,7 +28,15 @@ describe("Surface.draw", () => {
     const { s, ctx } = screen();
     s.draw(sprite, 10.5, 3.51);
     expect(ctx.ops).toHaveLength(1);
-    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: pixels, src: [16, 0, 16, 16], x: 11, y: 4, w: 16, h: 16 });
+    expect(ctx.ops[0]).toMatchObject({
+      op: "drawImage",
+      source: pixels,
+      src: [16, 0, 16, 16],
+      x: 11,
+      y: 4,
+      w: 16,
+      h: 16,
+    });
     expect(ctx.ops[0]?.smoothing).toBe(false);
   });
 
@@ -110,7 +118,16 @@ describe("offscreen surfaces", () => {
     const off = Surface.offscreen(8, 8);
     off.fill("#ff0000");
     s.drawSurface(off, 2.5, 2.5, { alpha: 0.5 });
-    expect(ctx.ops[0]).toMatchObject({ op: "drawImage", source: made[0], src: [0, 0, 8, 8], x: 3, y: 3, w: 8, h: 8, alpha: 0.5 });
+    expect(ctx.ops[0]).toMatchObject({
+      op: "drawImage",
+      source: made[0],
+      src: [0, 0, 8, 8],
+      x: 3,
+      y: 3,
+      w: 8,
+      h: 8,
+      alpha: 0.5,
+    });
   });
 
   test("drawing a never-used offscreen surface is a no-op", () => {

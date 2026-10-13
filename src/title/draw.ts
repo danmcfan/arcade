@@ -6,7 +6,18 @@ import { imageArcade, imageLogo } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
-import { dim, dimColour, drawControls, drawControlsPanel, drawHints, drawMenuItems, drawPausePanel, moveControl, type ControlRow, type Hint } from "../ui/menu.ts";
+import {
+  dim,
+  dimColour,
+  drawControls,
+  drawControlsPanel,
+  drawHints,
+  drawMenuItems,
+  drawPausePanel,
+  moveControl,
+  type ControlRow,
+  type Hint,
+} from "../ui/menu.ts";
 import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
 import type { Title } from "./title.ts";
 
@@ -110,7 +121,8 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
     logoLetters[ch]!.forEach((row, ry) => {
       [...row].forEach((px, rx) => {
         const d = lead - (ox + rx + ry);
-        if (px === "#" && d >= 0 && d < band) screen.fillRect(x + rx, y + ry, 1, 1, sweepColours[Math.trunc(d / stripeWidth)]!);
+        if (px === "#" && d >= 0 && d < band)
+          screen.fillRect(x + rx, y + ry, 1, 1, sweepColours[Math.trunc(d / stripeWidth)]!);
       });
     });
   });
@@ -139,7 +151,9 @@ function drawConfirm(screen: Surface, t: Title): void {
   const x = centre - w / 2;
   const y = 40;
   drawPanel(screen, x, y, w, h);
-  confirmLines.forEach((line, i) => drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"));
+  confirmLines.forEach((line, i) =>
+    drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"),
+  );
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
   drawHints(screen, menuHints, hintsTop, centre);
 }

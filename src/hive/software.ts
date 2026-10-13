@@ -185,7 +185,12 @@ export class HiveSoftware implements FixedViewport {
       respawnBlinkRemaining: this.startState.respawnBlinkRemaining,
       scaredEatAwardNext: this.scaredEatAwardNext,
       popups: this.bonusEatPopups.map((b) => ({ x: b.x, y: b.y, frameIdx: b.frameIdx, ticks: b.ticksRemain })),
-      shake: [this.camera.shakeOffsetX, this.camera.shakeOffsetY, this.camera.shakeTicksRemaining, this.camera.shakeIntensity],
+      shake: [
+        this.camera.shakeOffsetX,
+        this.camera.shakeOffsetY,
+        this.camera.shakeTicksRemaining,
+        this.camera.shakeIntensity,
+      ],
       particlesActive: this.particles.activeCount(),
       pelletAnimTick: this.pelletAnimTick,
       joystick: this.cabinetJoystickFrame,

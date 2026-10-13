@@ -2,7 +2,8 @@
 // browser half; the recorder half below is the contract porters and parity
 // tests rely on, and it works with no DOM.
 
-export type SoundName = "melody" | "start" | "power" | "death" | "laser" | "boom" | "title" | "move" | "select" | "ticket" | "deny";
+export type SoundName =
+  "melody" | "start" | "power" | "death" | "laser" | "boom" | "title" | "move" | "select" | "ticket" | "deny";
 export type SoundAction = "play" | "pause" | "rewind";
 /** Recorded as `"<action>:<name>"`, e.g. `"rewind:laser"`, `"pause:melody"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;
@@ -91,10 +92,7 @@ function defaultAudio(): HTMLAudioElement | null {
  * web.go. A no-op where there is no `Audio` (bun test). `create` is a seam for
  * tests.
  */
-export function loadSounds(
-  list: readonly Sound[],
-  create: () => HTMLAudioElement | null = defaultAudio,
-): void {
+export function loadSounds(list: readonly Sound[], create: () => HTMLAudioElement | null = defaultAudio): void {
   for (const sound of list) {
     const el = create();
     if (el === null) return;

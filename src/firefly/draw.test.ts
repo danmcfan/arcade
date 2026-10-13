@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { imageCabinetFirefly, imageFirefly, imageFireflyBackground, imageHit, imageMoth, imageSpark } from "../engine/assets.ts";
+import {
+  imageCabinetFirefly,
+  imageFirefly,
+  imageFireflyBackground,
+  imageHit,
+  imageMoth,
+  imageSpark,
+} from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";

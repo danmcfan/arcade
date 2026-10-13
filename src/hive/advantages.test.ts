@@ -5,7 +5,14 @@ import { addSoundListener } from "../engine/audio.ts";
 import type { HiveSnapshot } from "../game/snapshot.ts";
 import { blueFramesDuration, framesPerSecond } from "./constants.ts";
 import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";
-import { hiveAdvantages, honeyJarExtraLives, noAdvantages, runningShoesPlayerVelocity, sleepyBeesBlueFrames, startingLives } from "./advantages.ts";
+import {
+  hiveAdvantages,
+  honeyJarExtraLives,
+  noAdvantages,
+  runningShoesPlayerVelocity,
+  sleepyBeesBlueFrames,
+  startingLives,
+} from "./advantages.ts";
 import { createHive } from "./index.ts";
 import { HiveSoftware } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
@@ -49,7 +56,11 @@ describe("hiveAdvantages", () => {
     expect(hiveAdvantages(["honeyJar"])).toEqual({ ...noAdvantages, lives: 4 });
     expect(hiveAdvantages(["runningShoes"])).toEqual({ ...noAdvantages, playerVelocity: 1.125 });
     expect(hiveAdvantages(["sleepyBees"])).toEqual({ ...noAdvantages, blueFrames: 900 });
-    expect(hiveAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual({ lives: 4, playerVelocity: 1.125, blueFrames: 900 });
+    expect(hiveAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual({
+      lives: 4,
+      playerVelocity: 1.125,
+      blueFrames: 900,
+    });
   });
 
   test("the effect sizes are small: one life, the power-pellet speed, 5 more seconds", () => {

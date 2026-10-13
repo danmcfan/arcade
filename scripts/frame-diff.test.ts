@@ -39,7 +39,9 @@ describe("diffImages (pixelmatch, threshold 0.1)", () => {
   });
 
   test("different sizes are an error, not a count", () => {
-    expect(() => diffImages(solid(4, 4, [0, 0, 0, 255]), solid(5, 4, [0, 0, 0, 255]))).toThrow("size mismatch: 4x4 vs 5x4");
+    expect(() => diffImages(solid(4, 4, [0, 0, 0, 255]), solid(5, 4, [0, 0, 0, 255]))).toThrow(
+      "size mismatch: 4x4 vs 5x4",
+    );
   });
 });
 

@@ -32,7 +32,8 @@ const rngFixture = new URL("../../test/fixtures/rng.json", import.meta.url).path
 
 function goldenSequences(raw: unknown): Array<{ seed: number; values: number[] }> {
   const asNumbers = (v: unknown): number[] => {
-    if (!Array.isArray(v) || !v.every((x) => typeof x === "number")) throw new Error("rng.json: values must be number[]");
+    if (!Array.isArray(v) || !v.every((x) => typeof x === "number"))
+      throw new Error("rng.json: values must be number[]");
     return v;
   };
   if (Array.isArray(raw)) {

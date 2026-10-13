@@ -21,13 +21,7 @@ const EPSILON = 1e-9;
  * (CSS px); CSS size = `k * logical / dpr`. If even `k = 1` does not fit,
  * fit to the viewport with a fractional downscale.
  */
-export function fitScale(
-  logicalW: number,
-  logicalH: number,
-  viewportW: number,
-  viewportH: number,
-  dpr: number,
-): Fit {
+export function fitScale(logicalW: number, logicalH: number, viewportW: number, viewportH: number, dpr: number): Fit {
   const k = Math.floor(Math.min((viewportW * dpr) / logicalW, (viewportH * dpr) / logicalH) + EPSILON);
   if (k >= 1) {
     return { scale: k, integer: true, cssWidth: (k * logicalW) / dpr, cssHeight: (k * logicalH) / dpr };

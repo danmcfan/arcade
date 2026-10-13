@@ -101,8 +101,7 @@ export function treeTopEdgeMasks(
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const c = texel(x + 0.5, y + 0.5);
-        const edge =
-          texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
+        const edge = texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
         const key = y * width + x;
         if (edge && !seen.has(key)) {
           seen.add(key);

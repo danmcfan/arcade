@@ -101,7 +101,13 @@ describe("cabinet", () => {
   test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
     const f = createFirefly();
     expect((f.snapshot() as FireflySnapshot).joystick).toBe(0);
-    const frames = [held({}), held({ up: true }), held({ down: true }), held({ left: true }), held({ right: true })].map((i) => {
+    const frames = [
+      held({}),
+      held({ up: true }),
+      held({ down: true }),
+      held({ left: true }),
+      held({ right: true }),
+    ].map((i) => {
       f.update(i);
       return (f.snapshot() as FireflySnapshot).joystick;
     });

@@ -66,7 +66,15 @@ function makeGenerator(seed: number): (s: HiveSoftware) => Input {
       cur = horiz ? [0, 0, dx < 0 ? 1 : 0, dx >= 0 ? 1 : 0] : [dy < 0 ? 1 : 0, dy >= 0 ? 1 : 0, 0, 0];
     }
     hold--;
-    return { up: cur[0] === 1, down: cur[1] === 1, left: cur[2] === 1, right: cur[3] === 1, space: false, escape: false, shiftP: false };
+    return {
+      up: cur[0] === 1,
+      down: cur[1] === 1,
+      left: cur[2] === 1,
+      right: cur[3] === 1,
+      space: false,
+      escape: false,
+      shiftP: false,
+    };
   };
 }
 
@@ -153,7 +161,21 @@ describe("hive invariants over a scripted run", () => {
     );
     expect(Object.keys(sw?.player ?? {}).sort()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);
     expect(Object.keys(sw?.enemies[0] ?? {}).sort()).toEqual(
-      ["kind", "x", "y", "dir", "frame", "velocity", "blue", "flashFrames", "flash", "home", "dotMin", "reverse", "reverseTile"].sort(),
+      [
+        "kind",
+        "x",
+        "y",
+        "dir",
+        "frame",
+        "velocity",
+        "blue",
+        "flashFrames",
+        "flash",
+        "home",
+        "dotMin",
+        "reverse",
+        "reverseTile",
+      ].sort(),
     );
     expect(sw?.dials.length).toBe(12);
   });

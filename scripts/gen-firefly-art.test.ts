@@ -21,7 +21,15 @@ import {
 import { frameAngle } from "../src/firefly/game.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours } from "./pixel-art.ts";
-import { fireflyArtFiles, fireflyImagesDir, mirrorQuarter, rotate, rotationSheet, scale2x, skyColor } from "./gen-firefly-art.ts";
+import {
+  fireflyArtFiles,
+  fireflyImagesDir,
+  mirrorQuarter,
+  rotate,
+  rotationSheet,
+  scale2x,
+  skyColor,
+} from "./gen-firefly-art.ts";
 
 function size(rows: readonly string[]): [number, number] {
   return [rows[0]!.length, rows.length];
@@ -40,7 +48,11 @@ describe("Firefly art source", () => {
   });
 
   test("enemies keep inside the circle their frame turns in, so no rotation clips them", () => {
-    for (const [name, rows] of [["moth", mothArt], ["wasp", waspArt], ["owl", owlArt]] as const) {
+    for (const [name, rows] of [
+      ["moth", mothArt],
+      ["wasp", waspArt],
+      ["owl", owlArt],
+    ] as const) {
       const [w, h] = size(rows);
       rows.forEach((row, y) => {
         [...row].forEach((px, x) => {
@@ -124,7 +136,8 @@ describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` aft
 
     test(`${file} is only Sweetie 16 colours`, () => {
       const allowed = new Set<string>([...sweetie16, "transparent"]);
-      for (const c of colours(render()).keys()) expect({ file, colour: c, ok: allowed.has(c) }).toEqual({ file, colour: c, ok: true });
+      for (const c of colours(render()).keys())
+        expect({ file, colour: c, ok: allowed.has(c) }).toEqual({ file, colour: c, ok: true });
     });
   }
 

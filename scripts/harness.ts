@@ -59,7 +59,11 @@ export async function startServer(): Promise<Server> {
   }
   const port = freePort();
   const url = `http://localhost:${port}`;
-  const proc = Bun.spawn(["bun", `--port=${port}`, "./index.html"], { cwd: repoRoot, stdout: "ignore", stderr: "pipe" });
+  const proc = Bun.spawn(["bun", `--port=${port}`, "./index.html"], {
+    cwd: repoRoot,
+    stdout: "ignore",
+    stderr: "pipe",
+  });
   const stop = () => proc.kill();
   process.on("exit", stop);
   for (let i = 0; i < 100; i++) {
@@ -186,7 +190,8 @@ async function emulateTouch(page: Browser): Promise<() => void> {
   const { targetInfos } = await send<{ targetInfos: { targetId: string; type: string }[] }>("Target.getTargets");
   let sessionId: string | null = null;
   for (const t of targetInfos.filter((t) => t.type === "page")) {
-    const s = (await send<{ sessionId: string }>("Target.attachToTarget", { targetId: t.targetId, flatten: true })).sessionId;
+    const s = (await send<{ sessionId: string }>("Target.attachToTarget", { targetId: t.targetId, flatten: true }))
+      .sessionId;
     const r = await send<{ result: { value?: unknown } }>("Runtime.evaluate", { expression: "window.__touchMark" }, s);
     if (r.result.value === mark) {
       sessionId = s;
@@ -230,7 +235,19 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     }
     // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
     const mp4 = file(n, "mp4");
-    const ff = Bun.spawnSync(["ffmpeg", "-y", "-loglevel", "error", "-i", webm, "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", mp4]);
+    const ff = Bun.spawnSync([
+      "ffmpeg",
+      "-y",
+      "-loglevel",
+      "error",
+      "-i",
+      webm,
+      "-pix_fmt",
+      "yuv420p",
+      "-vf",
+      "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+      mp4,
+    ]);
     if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${ff.stderr.toString()}`);
     return mp4;
   };
@@ -347,4 +364,3 @@ export async function verify(name: string, body: (v: Verify) => void | Promise<v
     server.stop();
   }
 }
-

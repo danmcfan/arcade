@@ -101,7 +101,10 @@ export class FakeContext {
       [x + w, y],
       [x, y + h],
       [x + w, y + h],
-    ].map(([px = 0, py = 0]) => [this.m[0] * px + this.m[2] * py + this.m[4], this.m[1] * px + this.m[3] * py + this.m[5]]);
+    ].map(([px = 0, py = 0]) => [
+      this.m[0] * px + this.m[2] * py + this.m[4],
+      this.m[1] * px + this.m[3] * py + this.m[5],
+    ]);
     const xs = pts.map((p) => p[0] ?? 0);
     const ys = pts.map((p) => p[1] ?? 0);
     const x0 = Math.min(...xs);

@@ -21,7 +21,16 @@ import {
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
-import { firstPrizeIndex, minigameControls, minigamePauseMenu, prizeCounterItems, prizeCounterTitle, quitGameIndex, quitGameNote, tokenItemIndex } from "./menus.ts";
+import {
+  firstPrizeIndex,
+  minigameControls,
+  minigamePauseMenu,
+  prizeCounterItems,
+  prizeCounterTitle,
+  quitGameIndex,
+  quitGameNote,
+  tokenItemIndex,
+} from "./menus.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
 import type { SoftwareName } from "./software.ts";
@@ -75,7 +84,12 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
     case "controls": {
       if (o.software === null) return;
       const rows = minigameControls[o.software];
-      drawControlsPanel(screen, rows, centre - controlsPanelWidth / 2, middle - Math.trunc(controlsPanelHeight(rows.length) / 2));
+      drawControlsPanel(
+        screen,
+        rows,
+        centre - controlsPanelWidth / 2,
+        middle - Math.trunc(controlsPanelHeight(rows.length) / 2),
+      );
       return;
     }
     case "payout":
@@ -92,7 +106,14 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
  * the prizes (each greyed out when it can't be bought, owned ones read
  * OWNED) and CLOSE.
  */
-function drawPrizeCounter(screen: Surface, w: Wallet & PrizeWallet, cursor: number, tick: number, centre: number, y: number): void {
+function drawPrizeCounter(
+  screen: Surface,
+  w: Wallet & PrizeWallet,
+  cursor: number,
+  tick: number,
+  centre: number,
+  y: number,
+): void {
   drawPanel(screen, centre - counterWidth / 2, y, counterWidth, counterHeight);
   drawTextCentered(screen, prizeCounterTitle, centre, y + 8, "yellow");
   const count = `${w.tickets}`;

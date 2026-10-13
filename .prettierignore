@@ -1,0 +1,7 @@
+dist/
+out/
+tmp/
+art/
+bun.lock
+.claude/
+test/fixtures/

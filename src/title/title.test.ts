@@ -54,14 +54,27 @@ function atCabinet(): SaveData {
   const s = g.snapshot();
   g.dispose();
   expect(s.arcade.title).toBe("sweet");
-  return { v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: s.arcade.player.x, y: s.arcade.player.y, dir: "UP" } };
+  return {
+    v: 3,
+    highScore: 0,
+    tokens: 5,
+    tickets: 0,
+    prizes: [],
+    player: { x: s.arcade.player.x, y: s.arcade.player.y, dir: "UP" },
+  };
 }
 
 describe("title menu", () => {
   test("without a save, only New game is listed and selected", () => {
     const t = new Title();
     expect(titleMenu).toEqual(["CONTINUE", "NEW GAME"]);
-    expect(t.snapshot()).toMatchObject({ phase: "menu", items: ["NEW GAME"], cursor: 0, canContinue: false, game: null });
+    expect(t.snapshot()).toMatchObject({
+      phase: "menu",
+      items: ["NEW GAME"],
+      cursor: 0,
+      canContinue: false,
+      game: null,
+    });
     tap(t, "down");
     expect(t.cursor).toBe(0);
     tap(t, "up");
@@ -98,7 +111,14 @@ describe("new game", () => {
   });
 
   test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
-    const save: SaveData = { v: 3, highScore: 900, tokens: 5, tickets: 0, prizes: [], player: { x: 50, y: 100, dir: "LEFT" } };
+    const save: SaveData = {
+      v: 3,
+      highScore: 900,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 50, y: 100, dir: "LEFT" },
+    };
     const store = memoryStore(save);
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
@@ -114,7 +134,14 @@ describe("new game", () => {
   });
 
   test("Yes, then Space on the intro, starts a fresh hub and replaces the old save", () => {
-    const store = spyStore({ v: 3, highScore: 900, tokens: 5, tickets: 0, prizes: [], player: { x: 50, y: 100, dir: "LEFT" } });
+    const store = spyStore({
+      v: 3,
+      highScore: 900,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 50, y: 100, dir: "LEFT" },
+    });
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
     tap(t, "space");
@@ -126,11 +153,25 @@ describe("new game", () => {
     const fresh = new Game(null).snapshot();
     expect(game(t).arcade).toEqual(fresh.arcade);
     expect(game(t).software).toBeNull();
-    expect(store.load()).toEqual({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+    expect(store.load()).toEqual({
+      v: 3,
+      highScore: 0,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 80, y: 92, dir: "DOWN" },
+    });
   });
 
   test("New game removes every prize", () => {
-    const store = memoryStore({ v: 3, highScore: 900, tokens: 0, tickets: 88, prizes: ["honeyJar", "runningShoes", "sleepyBees"], player: { x: 50, y: 100, dir: "LEFT" } });
+    const store = memoryStore({
+      v: 3,
+      highScore: 900,
+      tokens: 0,
+      tickets: 88,
+      prizes: ["honeyJar", "runningShoes", "sleepyBees"],
+      player: { x: 50, y: 100, dir: "LEFT" },
+    });
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
     tap(t, "space");
@@ -142,7 +183,14 @@ describe("new game", () => {
   });
 
   test("New game resets tokens and tickets", () => {
-    const store = memoryStore({ v: 3, highScore: 900, tokens: 0, tickets: 88, prizes: [], player: { x: 50, y: 100, dir: "LEFT" } });
+    const store = memoryStore({
+      v: 3,
+      highScore: 900,
+      tokens: 0,
+      tickets: 88,
+      prizes: [],
+      player: { x: 50, y: 100, dir: "LEFT" },
+    });
     const t = new Title({ store });
     tap(t, "down");
     tap(t, "space");
@@ -156,7 +204,16 @@ describe("new game", () => {
 
 describe("continue", () => {
   test("restores the player's position, facing and the high score", () => {
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 120, tokens: 5, tickets: 0, prizes: [], player: { x: 50, y: 100, dir: "LEFT" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 120,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 50, y: 100, dir: "LEFT" },
+      }),
+    });
     tap(t, "space");
     expect(t.phase).toBe("playing");
     expect(game(t).arcade.player).toMatchObject({ x: 50, y: 100, dir: "LEFT" });
@@ -175,8 +232,22 @@ describe("continue", () => {
   });
 
   test("a saved position in or beyond a wall falls back to the start position", () => {
-    for (const [x, y] of [[-500, -500], [10, 92], [80, 20], [80, 500]]) {
-      const t = new Title({ store: memoryStore({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: x!, y: y!, dir: "UP" } }) });
+    for (const [x, y] of [
+      [-500, -500],
+      [10, 92],
+      [80, 20],
+      [80, 500],
+    ]) {
+      const t = new Title({
+        store: memoryStore({
+          v: 3,
+          highScore: 0,
+          tokens: 5,
+          tickets: 0,
+          prizes: [],
+          player: { x: x!, y: y!, dir: "UP" },
+        }),
+      });
       tap(t, "space");
       expect(game(t).arcade.player).toMatchObject({ x: 80, y: 92, dir: "UP" });
     }
@@ -237,7 +308,16 @@ describe("pause menu", () => {
   });
 
   test("restores tokens and tickets", () => {
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 120, tokens: 2, tickets: 37, prizes: [], player: { x: 50, y: 100, dir: "LEFT" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 120,
+        tokens: 2,
+        tickets: 37,
+        prizes: [],
+        player: { x: 50, y: 100, dir: "LEFT" },
+      }),
+    });
     tap(t, "space");
     expect(game(t).arcade).toMatchObject({ highScore: 120, tokens: 2, tickets: 37 });
   });
@@ -330,7 +410,14 @@ describe("prize counter inside the title scene", () => {
     tap(t, "space");
     expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["honeyJar"] });
     expect(store.saves).toBe(saves + 1);
-    expect(store.load()).toEqual({ v: 3, highScore: 0, tokens: 3, tickets: 15, prizes: ["honeyJar"], player: { x: 80, y: 94, dir: "DOWN" } });
+    expect(store.load()).toEqual({
+      v: 3,
+      highScore: 0,
+      tokens: 3,
+      tickets: 15,
+      prizes: ["honeyJar"],
+      player: { x: 80, y: 94, dir: "DOWN" },
+    });
     t.dispose();
 
     const again = new Title({ store });
@@ -348,7 +435,14 @@ describe("prize counter inside the title scene", () => {
     expect(game(t).arcade).toMatchObject({ highScore: 40, tokens: 2, tickets: 30 });
     expect(game(t).arcade.prizes).toBeUndefined();
     t.persist();
-    expect(store.load()).toEqual({ v: 3, highScore: 40, tokens: 2, tickets: 30, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+    expect(store.load()).toEqual({
+      v: 3,
+      highScore: 40,
+      tokens: 2,
+      tickets: 30,
+      prizes: [],
+      player: { x: 80, y: 92, dir: "DOWN" },
+    });
     t.dispose();
   });
 });
@@ -367,7 +461,16 @@ describe("sounds", () => {
   }
 
   test("the title music starts on the first tick and plays through the New game check and intro", () => {
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 0,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
     expect(heard(() => t.step(NO_INPUT))).toEqual(["play:title"]);
     // Retried on key presses until the browser lets it play (never, without a DOM).
     expect(heard(() => tap(t, "down"))).toContain("play:title");
@@ -395,7 +498,16 @@ describe("sounds", () => {
   });
 
   test("moving the cursor blips; a choice or Back chirps; nothing else does", () => {
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 0,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
     t.step(NO_INPUT);
     const effects = (fn: () => void) => heard(fn).filter((e) => !e.endsWith(":title"));
     expect(effects(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
@@ -423,11 +535,23 @@ describe("sounds", () => {
 });
 
 describe("parseSave", () => {
-  const ok = { v: 3, highScore: 3, tokens: 4, tickets: 12, prizes: ["honeyJar", "sleepyBees"], player: { x: 1, y: 2, dir: "UP" } };
+  const ok = {
+    v: 3,
+    highScore: 3,
+    tokens: 4,
+    tickets: 12,
+    prizes: ["honeyJar", "sleepyBees"],
+    player: { x: 1, y: 2, dir: "UP" },
+  };
 
   test("accepts a v3 save with its owned prizes", () => {
     expect(parseSave(ok)).toEqual(ok as SaveData);
-    expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual({ ...ok, tokens: 0, tickets: 0, prizes: [] } as SaveData);
+    expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual({
+      ...ok,
+      tokens: 0,
+      tickets: 0,
+      prizes: [],
+    } as SaveData);
   });
 
   test("keeps owned prizes in catalogue order, once each", () => {
@@ -440,7 +564,14 @@ describe("parseSave", () => {
 
   test("upgrades a v2 save: same counts and position, and no prizes", () => {
     const v2 = { v: 2, highScore: 3, tokens: 4, tickets: 12, player: { x: 1, y: 2, dir: "UP" } };
-    expect(parseSave(v2)).toEqual({ v: 3, highScore: 3, tokens: 4, tickets: 12, prizes: [], player: { x: 1, y: 2, dir: "UP" } });
+    expect(parseSave(v2)).toEqual({
+      v: 3,
+      highScore: 3,
+      tokens: 4,
+      tickets: 12,
+      prizes: [],
+      player: { x: 1, y: 2, dir: "UP" },
+    });
     // A v2 save never had prizes: anything under that key is ignored.
     expect(parseSave({ ...v2, prizes: ["honeyJar"] })?.prizes).toEqual([]);
     expect(parseSave({ ...v2, tokens: -1 })).toBeNull();
@@ -448,7 +579,14 @@ describe("parseSave", () => {
 
   test("upgrades a v1 save: same high score and position, plus 5 tokens, 0 tickets and no prizes", () => {
     const v1 = { v: 1, highScore: 3, player: { x: 1, y: 2, dir: "UP" } };
-    expect(parseSave(v1)).toEqual({ v: 3, highScore: 3, tokens: 5, tickets: 0, prizes: [], player: { x: 1, y: 2, dir: "UP" } });
+    expect(parseSave(v1)).toEqual({
+      v: 3,
+      highScore: 3,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 1, y: 2, dir: "UP" },
+    });
     expect(parseSave({ ...v1, player: null })).toBeNull();
   });
 
@@ -549,7 +687,17 @@ function recordingSurface() {
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
     const hints = [...menuHints, ...backHints, ...panelHints];
-    const strings = [...titleMenu, ...confirmMenu, ...confirmLines, ...pauseMenu, ...introLines, ...controls.map((c) => c.label), ...hints.flatMap((h) => [...h.keys, h.label]), "GAMES WITHIN A GAME", "PRESS SPACE TO START"];
+    const strings = [
+      ...titleMenu,
+      ...confirmMenu,
+      ...confirmLines,
+      ...pauseMenu,
+      ...introLines,
+      ...controls.map((c) => c.label),
+      ...hints.flatMap((h) => [...h.keys, h.label]),
+      "GAMES WITHIN A GAME",
+      "PRESS SPACE TO START",
+    ];
     for (const s of strings) {
       expect({ s, ok: canDraw(s) }).toEqual({ s, ok: true });
       expect(textWidth(s)).toBeLessThanOrEqual(screenWidth - 8);
@@ -582,7 +730,16 @@ describe("drawing", () => {
   });
 
   test("the New game check draws its warning, No and Yes, and key hints", () => {
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 0,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
     tap(t, "down");
     tap(t, "space");
     const r = recordingSurface();
@@ -593,12 +750,30 @@ describe("drawing", () => {
   });
 
   test("with a save, the menu shows the saved high score (when there is one)", () => {
-    const zero = new Title({ store: memoryStore({ v: 3, highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "UP" } }) });
+    const zero = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 0,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
     const r0 = recordingSurface();
     zero.draw(r0.surface);
     expect(r0.text("orange")).toBe("");
 
-    const t = new Title({ store: memoryStore({ v: 3, highScore: 120, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "UP" } }) });
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 120,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
     const r = recordingSurface();
     t.draw(r.surface);
     expect(r.text("yellow")).toBe(">CONTINUE<");

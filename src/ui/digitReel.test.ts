@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { bootReels, DigitReel, digitReelDurationFrames, digits6, easeDialOut, newDigitReels, syncAndTick } from "./digitReel.ts";
+import {
+  bootReels,
+  DigitReel,
+  digitReelDurationFrames,
+  digits6,
+  easeDialOut,
+  newDigitReels,
+  syncAndTick,
+} from "./digitReel.ts";
 
 describe("digits6", () => {
   test("splits into six decimal columns, most significant first", () => {
@@ -99,6 +107,13 @@ describe("reel sets", () => {
     const reels = newDigitReels();
     syncAndTick(reels, digits6(99));
     bootReels(reels, 1420);
-    expect(reels.map((r) => [r.settledDigit, r.active])).toEqual([[0, false], [0, false], [1, false], [4, false], [2, false], [0, false]]);
+    expect(reels.map((r) => [r.settledDigit, r.active])).toEqual([
+      [0, false],
+      [0, false],
+      [1, false],
+      [4, false],
+      [2, false],
+      [0, false],
+    ]);
   });
 });

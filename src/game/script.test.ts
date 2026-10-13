@@ -7,11 +7,7 @@ test("expands steps into one Input per tick, defaulting missing keys to false", 
     { ticks: 2, input: { left: true } },
     { ticks: 1, input: {} },
   ]);
-  expect(ticks).toEqual([
-    { ...NO_INPUT, left: true },
-    { ...NO_INPUT, left: true },
-    { ...NO_INPUT },
-  ]);
+  expect(ticks).toEqual([{ ...NO_INPUT, left: true }, { ...NO_INPUT, left: true }, { ...NO_INPUT }]);
 });
 
 test("shiftP is just-pressed on the first tick of its step only", () => {

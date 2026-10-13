@@ -6,13 +6,13 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one letter map, `sweetie` in `src/ui/sweetie16.ts`. The font is the exception: its glyphs are `#` rows drawn in an ink colour.
 
-| Art | Source | Generator |
-| --- | --- | --- |
-| Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour) | `scripts/gen-ui-art.ts` |
-| Hub room and cabinets, player | `src/ui/hubArt.ts`, `playerArt.ts` | `scripts/gen-ui-art.ts` |
-| HUD icons, prize counter, prizes | `src/ui/icons.ts`, `counterArt.ts`, `prizeArt.ts` | `scripts/gen-ui-art.ts` |
-| Firefly sprites and sky | `src/firefly/art.ts` | `scripts/gen-firefly-art.ts` |
-| Cabinet strips | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts` |
+| Art                              | Source                                                                                       | Generator                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------- |
+| Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour)                                             | `scripts/gen-ui-art.ts`      |
+| Hub room and cabinets, player    | `src/ui/hubArt.ts`, `playerArt.ts`                                                           | `scripts/gen-ui-art.ts`      |
+| HUD icons, prize counter, prizes | `src/ui/icons.ts`, `counterArt.ts`, `prizeArt.ts`                                            | `scripts/gen-ui-art.ts`      |
+| Firefly sprites and sky          | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts` |
+| Cabinet strips                   | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`    |
 
 `bun run art` writes the PNGs. Commit the source and the PNGs together: the drift tests fail when they differ. A PNG in `src/assets/images` that no generator writes is hand-made; most came from the Go game.
 
@@ -24,15 +24,15 @@ When the change touches art that already exists as a PNG, hand-made or not, **im
 
 `scripts/pixel-art.ts` makes the pixels that follow from other pixels. Draw the part only a person can decide and **derive** the rest:
 
-| Helper | Use it for |
-| --- | --- |
-| `mirrorX`, `mirrorY` | A symmetric sprite: draw the left (or top) half |
-| `outline(rows, "k")` | The 1 px edge round the drawn pixels; leave a blank border for it |
-| `flipX`, `flipY` | Left-facing frames from right-facing ones |
-| `recolour(rows, { r: "b" })` | Colour variants, such as one cabinet per minigame |
-| `overlay(rows, part, x, y)` | A sprite built from parts (a head, then headphones on it) |
-| `checkRows(name, rows, { w, h })` | Size and letters; the error names the row and column |
-| `toPng`, `toRows`, `scale`, `colours` | Rows to PNG and back, upscale, colour count |
+| Helper                                | Use it for                                                        |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| `mirrorX`, `mirrorY`                  | A symmetric sprite: draw the left (or top) half                   |
+| `outline(rows, "k")`                  | The 1 px edge round the drawn pixels; leave a blank border for it |
+| `flipX`, `flipY`                      | Left-facing frames from right-facing ones                         |
+| `recolour(rows, { r: "b" })`          | Colour variants, such as one cabinet per minigame                 |
+| `overlay(rows, part, x, y)`           | A sprite built from parts (a head, then headphones on it)         |
+| `checkRows(name, rows, { w, h })`     | Size and letters; the error names the row and column              |
+| `toPng`, `toRows`, `scale`, `colours` | Rows to PNG and back, upscale, colour count                       |
 
 Give each sprite its own export, so a change is an `Edit` of a short block of rows. A rewrite of the whole art file costs more and risks the sprites you did not mean to change. Every export gets a `checkRows` call in its generator's test.
 
@@ -40,12 +40,12 @@ Give each sprite its own export, so a change is an `Edit` of a short block of ro
 
 `bun run pixel` writes a labelled sheet to `out/pixel/` and prints its path. Read that PNG.
 
-| Command | When |
-| --- | --- |
-| `pixel show <image>...` | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`. |
-| `pixel place <base> <image>@x,y...` | To judge a sprite where it stands, e.g. the player in the hub |
-| `pixel before <image>...` | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources |
-| `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour |
+| Command                                           | When                                                                                                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pixel show <image>...`                           | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`.            |
+| `pixel place <base> <image>@x,y...`               | To judge a sprite where it stands, e.g. the player in the hub                                               |
+| `pixel before <image>...`                         | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources |
+| `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour                                                                    |
 
 An `<image>` is `path.png`, `path.png#x,y,w,h`, `path.ts:name` or `path.ts:name.key`. Run `bun run pixel` alone for the full usage.
 

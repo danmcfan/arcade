@@ -34,7 +34,6 @@ export interface Mismatch extends Divergence {
   tick: number;
 }
 
-
 function kind(v: unknown): string {
   if (v === null) return "null";
   if (Array.isArray(v)) return "array";

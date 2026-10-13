@@ -51,11 +51,7 @@ function applyMasks(from: PNG, to: PNG, masks: readonly Mask[]): void {
 }
 
 /** Differing pixel count plus a diff image (red where pixels differ). */
-export function diffImages(
-  expected: PNG,
-  actual: PNG,
-  masks: readonly Mask[] = [],
-): FrameDiffResult & { diff: PNG } {
+export function diffImages(expected: PNG, actual: PNG, masks: readonly Mask[] = []): FrameDiffResult & { diff: PNG } {
   const { width, height } = expected;
   if (actual.width !== width || actual.height !== height) {
     throw new Error(`size mismatch: ${width}x${height} vs ${actual.width}x${actual.height}`);
@@ -97,7 +93,9 @@ if (import.meta.main) {
     }
     const [expected, actual] = files;
     if (expected === undefined || actual === undefined || files.length !== 2) {
-      throw new Error("usage: bun scripts/frame-diff.ts <expected.png> <actual.png> [--out diff.png] [--mask x,y,w,h]...");
+      throw new Error(
+        "usage: bun scripts/frame-diff.ts <expected.png> <actual.png> [--out diff.png] [--mask x,y,w,h]...",
+      );
     }
     const r = diffFiles(expected, actual, { masks, out });
     console.log(`${r.diffPixels} differing pixels (${r.width}x${r.height})${out ? `; diff: ${out}` : ""}`);

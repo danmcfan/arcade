@@ -79,7 +79,11 @@ function phoneChecks(v: Verify): void {
   v.wait(100);
   check(canvasSize(v) === "192x176", "a key press dismisses the notice", canvasSize(v));
   let s = v.snapshot<TitleSnapshot>();
-  check(s.phase === "menu" && s.tick > 0 && s.cursor === 0 && s.items.join() === "CONTINUE,NEW GAME", "the title menu runs, and the Down that dismissed the notice did not move the cursor", s);
+  check(
+    s.phase === "menu" && s.tick > 0 && s.cursor === 0 && s.items.join() === "CONTINUE,NEW GAME",
+    "the title menu runs, and the Down that dismissed the notice did not move the cursor",
+    s,
+  );
   v.screenshot("3-phone-title");
 
   openWithSave(v);
@@ -102,7 +106,10 @@ async function recordPhone(v: Verify): Promise<void> {
       check(touchFirst(v), "the recording is still an emulated phone");
       v.wait(1500);
       v.key("ArrowDown", 300);
-      check(v.snapshot<TitleSnapshot>().cursor === 0 && canvasSize(v) === "192x176", "in the video, Down dismisses the notice without moving the cursor");
+      check(
+        v.snapshot<TitleSnapshot>().cursor === 0 && canvasSize(v) === "192x176",
+        "in the video, Down dismisses the notice without moving the cursor",
+      );
       v.wait(1200);
       v.key("ArrowDown");
       v.wait(800);

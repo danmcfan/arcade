@@ -12,7 +12,11 @@ const spriteHeight = 64;
 
 const baseSpeed = 2.0;
 
-export const BaseSpritesheet = new Spritesheet("Player/Player_Base/Player_Base_animations.png", spriteWidth, spriteHeight);
+export const BaseSpritesheet = new Spritesheet(
+  "Player/Player_Base/Player_Base_animations.png",
+  spriteWidth,
+  spriteHeight,
+);
 export const HeadSpritesheet = new Spritesheet("Player/Head/Hair_1/Hair_1_Brown.png", spriteWidth, spriteHeight);
 export const ChestSpritesheet = new Spritesheet(
   "Player/Chest/Lumberjack_Shirt/Lumberjack_Shirt_1_Red.png",

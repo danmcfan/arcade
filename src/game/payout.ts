@@ -46,7 +46,6 @@ export class Payout {
     this.counting = !freePlay;
     bootReels(this.scoreReels, score);
     bootReels(this.ticketReels, 0);
-  
   }
 
   /** One tick; `space` is a Space press this tick. Returns true when a ticket was paid (play its sound). */

@@ -50,7 +50,12 @@ describe("MenuKeys", () => {
     expect(keys.read(held({ space: true })).edges).toEqual({ up: false, down: false, space: true, escape: false });
     expect(keys.read(held({ space: true })).edges.space).toBe(false);
     expect(keys.read(NO_INPUT).edges.space).toBe(false);
-    expect(keys.read(held({ escape: true, down: true })).edges).toEqual({ up: false, down: true, space: false, escape: true });
+    expect(keys.read(held({ escape: true, down: true })).edges).toEqual({
+      up: false,
+      down: true,
+      space: false,
+      escape: true,
+    });
   });
 
   test("anyPressed is true when any key goes down, menu key or not", () => {

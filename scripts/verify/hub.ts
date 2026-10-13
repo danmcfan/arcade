@@ -64,8 +64,16 @@ function floorAndPlayer(v: Verify): void {
   const p = game(v).arcade.player;
   check(p.x === 80 && p.y === 92 && p.dir === "DOWN", "the hub opens with the player at the start position", p);
   check(floorUnderFeet(v) === "#29366f", "the player stands on the navy carpet", floorUnderFeet(v));
-  check(playerPixel(v, 5, 5) === "#73eff7", "in the new sprite: the cyan headphone band across the hair", playerPixel(v, 5, 5));
-  check(pixel(canvas(v), 80 + margin, 26 + margin) === "#73eff7", "the neon tube runs along the top of the wall", pixel(canvas(v), 80 + margin, 26 + margin));
+  check(
+    playerPixel(v, 5, 5) === "#73eff7",
+    "in the new sprite: the cyan headphone band across the hair",
+    playerPixel(v, 5, 5),
+  );
+  check(
+    pixel(canvas(v), 80 + margin, 26 + margin) === "#73eff7",
+    "the neon tube runs along the top of the wall",
+    pixel(canvas(v), 80 + margin, 26 + margin),
+  );
   v.frame("1-player-on-carpet");
 
   v.step(32, { left: true });
@@ -76,7 +84,11 @@ function floorAndPlayer(v: Verify): void {
 function cabinets(v: Verify): void {
   console.log("each cabinet's title, and no key cap:");
   v.step(31, { up: true }); // (80, 61): at the Sweet Sam cabinet
-  check(game(v).arcade.title === "sweet", "facing up at the middle cabinet shows the Sweet Sam title", game(v).arcade.title);
+  check(
+    game(v).arcade.title === "sweet",
+    "facing up at the middle cabinet shows the Sweet Sam title",
+    game(v).arcade.title,
+  );
   check(!keyCapShown(v), "with no key cap over the hub");
   v.frame("3-at-sweet-sam");
 
@@ -85,13 +97,21 @@ function cabinets(v: Verify): void {
 
   v.step(24, { left: true }); // x 56
   v.step(2, { up: true });
-  check(game(v).arcade.title === "brassMonkey", "facing up at the left cabinet shows the Brass Monkey title", game(v).arcade.title);
+  check(
+    game(v).arcade.title === "brassMonkey",
+    "facing up at the left cabinet shows the Brass Monkey title",
+    game(v).arcade.title,
+  );
   check(!keyCapShown(v), "with no key cap over the hub");
   v.frame("4-at-brass-monkey");
 
   v.step(48, { right: true }); // x 104
   v.step(1, { up: true });
-  check(game(v).arcade.title === "firefly", "facing up at the right cabinet shows the Firefly title", game(v).arcade.title);
+  check(
+    game(v).arcade.title === "firefly",
+    "facing up at the right cabinet shows the Firefly title",
+    game(v).arcade.title,
+  );
   check(!keyCapShown(v), "with no key cap over the hub");
   v.frame("5-at-firefly");
 }

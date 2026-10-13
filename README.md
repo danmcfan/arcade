@@ -10,12 +10,12 @@ The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no frame
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| WASD / arrow keys | Move; choose in menus |
-| Space | Interact / action; confirm in menus |
-| Esc | Leave a minigame; in the hub, open the pause menu (Resume, Controls, Quit to menu) |
-| Shift+P | Toggle debug (hitboxes and a side panel in the hub) |
+| Key               | Action                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| WASD / arrow keys | Move; choose in menus                                                              |
+| Space             | Interact / action; confirm in menus                                                |
+| Esc               | Leave a minigame; in the hub, open the pause menu (Resume, Controls, Quit to menu) |
+| Shift+P           | Toggle debug (hitboxes and a side panel in the hub)                                |
 
 ## Running
 
@@ -61,20 +61,20 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 
 ## Layout
 
-| Path | What |
-| --- | --- |
-| `src/main.ts` | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop |
-| `src/engine/` | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook |
-| `src/game/` | Top-level loop (hub and active minigame), scene registry, snapshot types |
-| `src/title/` | Title scene: title menu, intro, pause menu, save (`SaveStore`) |
-| `src/ui/` | Pixel font and logo source, text and panel drawing |
-| `src/arcade/`, `src/hive/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames |
-| `src/lab/wave/`, `src/lab/lumberjack/` | Lab scenes |
-| `test/fixtures/` | Recorded input scripts, per-tick traces and golden frames (see below) |
-| `test/parity/` | Replays every fixture scenario and compares it tick by tick |
-| `scripts/` | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
-| `art/cabinet.ase` | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped) |
-| `docs/` | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`) |
+| Path                                                            | What                                                                                                     |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `src/main.ts`                                                   | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                                 |
+| `src/engine/`                                                   | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                                  |
+| `src/game/`                                                     | Top-level loop (hub and active minigame), scene registry, snapshot types                                 |
+| `src/title/`                                                    | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                           |
+| `src/ui/`                                                       | Pixel font and logo source, text and panel drawing                                                       |
+| `src/arcade/`, `src/hive/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                          |
+| `src/lab/wave/`, `src/lab/lumberjack/`                          | Lab scenes                                                                                               |
+| `test/fixtures/`                                                | Recorded input scripts, per-tick traces and golden frames (see below)                                    |
+| `test/parity/`                                                  | Replays every fixture scenario and compares it tick by tick                                              |
+| `scripts/`                                                      | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
+| `art/cabinet.ase`                                               | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)                     |
+| `docs/`                                                         | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                          |
 
 ## Parity fixtures
 

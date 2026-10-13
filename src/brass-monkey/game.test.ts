@@ -79,7 +79,13 @@ describe("cabinet", () => {
   test("the snapshot's joystick follows the input: neutral, up, down, left, right", () => {
     const g = createBrassMonkey();
     expect(snap(g).joystick).toBe(0);
-    const frames = [held({}), held({ up: true }), held({ down: true }), held({ left: true }), held({ right: true })].map((i) => {
+    const frames = [
+      held({}),
+      held({ up: true }),
+      held({ down: true }),
+      held({ left: true }),
+      held({ right: true }),
+    ].map((i) => {
       g.update(i);
       return snap(g).joystick;
     });
@@ -97,7 +103,10 @@ interface DrawCall {
 type Fill = [x: number, y: number, w: number, h: number, css: string];
 
 /** Brass Monkey is a FixedViewport: drawn with buffer 0. Returns sprite draws and, separately, fills. */
-function record(g: ReturnType<typeof createBrassMonkey>, buffer = 0): { calls: DrawCall[]; fills: Fill[]; order: string[] } {
+function record(
+  g: ReturnType<typeof createBrassMonkey>,
+  buffer = 0,
+): { calls: DrawCall[]; fills: Fill[]; order: string[] } {
   const calls: DrawCall[] = [];
   const fills: Fill[] = [];
   const order: string[] = [];

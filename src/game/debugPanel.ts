@@ -13,7 +13,7 @@ export type DebugPrinter = (screen: Surface, text: string, x: number, y: number)
 export class Panel {
   private enabled = true;
 
-    /** Y position where the panel starts. */
+  /** Y position where the panel starts. */
   private readonly y: number;
   private readonly panelWidth: number;
   private readonly print: DebugPrinter;

@@ -20,7 +20,9 @@ import type { Scene, SceneName, Software, SoftwareName, WaveOptions } from "./so
  * They also take the player's owned prizes (#22); each minigame applies its
  * own (only hive has prizes so far).
  */
-export const softwareFactories: Readonly<Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>> = {
+export const softwareFactories: Readonly<
+  Record<SoftwareName, (highScore: number, prizes: readonly PrizeId[]) => Software>
+> = {
   hive: (highScore, prizes) => createHive(highScore, prizes),
   firefly: () => createFirefly(),
   brassMonkey: () => createBrassMonkey(),

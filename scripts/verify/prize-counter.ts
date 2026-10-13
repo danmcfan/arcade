@@ -32,7 +32,9 @@ function wallet(v: Verify): { tokens: number; tickets: number } {
 }
 
 function stored(v: Verify): { tokens: number; tickets: number } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<typeof stored>;
+  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
+    typeof stored
+  >;
 }
 
 /** A save at the hub start position (80, 92), facing down. */
@@ -55,7 +57,11 @@ function sounds(v: Verify): string[] {
 function normalPrice(v: Verify): void {
   console.log("a token at the normal price (title scene, 2 tokens, 12 tickets):");
   continueWith(v, 2, 12);
-  check(game(v).menu === null && JSON.stringify(wallet(v)) === '{"tokens":2,"tickets":12}', "Continue restores 2 tokens and 12 tickets", wallet(v));
+  check(
+    game(v).menu === null && JSON.stringify(wallet(v)) === '{"tokens":2,"tickets":12}',
+    "Continue restores 2 tokens and 12 tickets",
+    wallet(v),
+  );
   v.frame("1-hub-counter");
 
   v.tap("space");
@@ -66,34 +72,58 @@ function normalPrice(v: Verify): void {
   v.step(30, { left: true });
   v.step(20, { down: true });
   v.step(30, { right: true });
-  check(game(v).arcade.player.x === 52, "walking right along the bottom wall stops at the counter's side", game(v).arcade.player);
+  check(
+    game(v).arcade.player.x === 52,
+    "walking right along the bottom wall stops at the counter's side",
+    game(v).arcade.player,
+  );
   v.step(10, { left: true }); // x 42
   v.step(20, { up: true }); // y 88
   v.step(38, { right: true }); // x 80
   v.step(10, { down: true }); // y 94
-  check(game(v).arcade.player.x === 80 && game(v).arcade.player.y === 94, "back above the counter, facing it", game(v).arcade.player);
+  check(
+    game(v).arcade.player.x === 80 && game(v).arcade.player.y === 94,
+    "back above the counter, facing it",
+    game(v).arcade.player,
+  );
 
   v.tap("space");
   let g = game(v);
-  check(g.menu === "prizeCounter" && g.cursor === 0 && g.software === null, "Space facing the counter opens the prize counter menu", g);
+  check(
+    g.menu === "prizeCounter" && g.cursor === 0 && g.software === null,
+    "Space facing the counter opens the prize counter menu",
+    g,
+  );
   v.frame("2-menu-normal-price");
 
   sounds(v);
   v.tap("space");
-  check(JSON.stringify(wallet(v)) === '{"tokens":3,"tickets":7}', "Space buys a token for 5 tickets: 3 tokens, 7 tickets", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":3,"tickets":7}',
+    "Space buys a token for 5 tickets: 3 tokens, 7 tickets",
+    wallet(v),
+  );
   check(sounds(v).includes("play:select"), "the purchase chirps");
   check(stored(v)?.tokens === 3 && stored(v)?.tickets === 7, "the purchase is saved at once", stored(v));
   v.frame("3-bought-normal-price");
 
   v.tap("escape");
   g = game(v);
-  check(g.menu === null && v.snapshot<TitleSnapshot>().phase === "playing", "Esc closes the menu (not the hub pause menu)", g.menu);
+  check(
+    g.menu === null && v.snapshot<TitleSnapshot>().phase === "playing",
+    "Esc closes the menu (not the hub pause menu)",
+    g.menu,
+  );
   v.tap("escape");
   check(v.snapshot<TitleSnapshot>().phase === "paused", "the next Esc opens the hub pause menu");
 
   v.openHook();
   v.tap("space"); // Continue
-  check(JSON.stringify(wallet(v)) === '{"tokens":3,"tickets":7}', "Continue after a reload shows 3 tokens and 7 tickets", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":3,"tickets":7}',
+    "Continue after a reload shows 3 tokens and 7 tickets",
+    wallet(v),
+  );
 }
 
 function lastChance(v: Verify): void {
@@ -104,12 +134,20 @@ function lastChance(v: Verify): void {
   check(game(v).menu === "prizeCounter", "the menu opens", game(v).menu);
   v.frame("4-menu-last-chance");
   v.tap("space");
-  check(JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}', "the last-chance token takes all 3 tickets: 1 token, 0 tickets", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}',
+    "the last-chance token takes all 3 tickets: 1 token, 0 tickets",
+    wallet(v),
+  );
   v.frame("5-bought-last-chance");
 
   sounds(v);
   v.tap("space");
-  check(JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}', "with a token and 0 tickets the next one can't be bought", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}',
+    "with a token and 0 tickets the next one can't be bought",
+    wallet(v),
+  );
   check(sounds(v).includes("play:deny"), "and Space on it plays the no sound");
   v.tap("up"); // wraps round to CLOSE, past the prizes (#22)
   v.tap("space");
@@ -139,9 +177,17 @@ function buyOnVideo(v: Verify): void {
 function videos(v: Verify): void {
   console.log("videos:");
   v.record("normal-price", () => buyOnVideo(v), { storage: { [saveKey]: save(2, 12) } });
-  check(JSON.stringify(wallet(v)) === '{"tokens":4,"tickets":2}', "the normal-price video bought two tokens: 4 tokens, 2 tickets", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":4,"tickets":2}',
+    "the normal-price video bought two tokens: 4 tokens, 2 tickets",
+    wallet(v),
+  );
   v.record("last-chance", () => buyOnVideo(v), { storage: { [saveKey]: save(0, 3) } });
-  check(JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}', "the last-chance video bought one token for all 3 tickets", wallet(v));
+  check(
+    JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}',
+    "the last-chance video bought one token for all 3 tickets",
+    wallet(v),
+  );
 }
 
 await verify("prize-counter", (v) => {
