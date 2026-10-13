@@ -18,9 +18,6 @@ export interface Input {
   shiftP: boolean;
 }
 
-/** Every `Input` key, in declaration order. */
-const INPUT_KEYS: readonly (keyof Input)[] = ["up", "down", "left", "right", "space", "escape", "shiftP"];
-
 export const NO_INPUT: Readonly<Input> = Object.freeze({
   up: false,
   down: false,
@@ -30,6 +27,13 @@ export const NO_INPUT: Readonly<Input> = Object.freeze({
   escape: false,
   shiftP: false,
 });
+
+function isInputKey(k: string): k is keyof Input {
+  return k in NO_INPUT;
+}
+
+/** Every `Input` key, read off `NO_INPUT` (which the compiler holds to `Input`), so it can't drift. */
+const INPUT_KEYS: readonly (keyof Input)[] = Object.keys(NO_INPUT).filter((k) => isInputKey(k));
 
 export function moving(i: Input): boolean {
   return i.up || i.down || i.left || i.right;

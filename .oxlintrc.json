@@ -92,6 +92,14 @@
           {
             "name": "performance",
             "message": "Time is in ticks (ADR 0002)."
+          },
+          {
+            "name": "Date",
+            "message": "Time is in ticks (ADR 0002)."
+          },
+          {
+            "name": "globalThis",
+            "message": "Game modules are headless (ADR 0003): inject browser access."
           }
         ],
         "eslint/no-restricted-properties": [
