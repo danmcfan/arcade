@@ -44,7 +44,7 @@ await verify("pause-menu", (v) => {
 | --- | --- |
 | Deterministic state checks | `openHook()`, `step()`, `tap()`, `snapshot()`. The contract is `ArcadeTestHook` in `src/engine/testhook.ts`. |
 | Exact pixels at game resolution | `frame(name, scale)` |
-| The page as a player sees it | `open()`, `key()`, `wait()`, `screenshot()` |
+| The page as a player sees it | `open()`, `key()`, `wait()`, `screenshot()`; `hold(code, play)` keeps one key down (Space while steering) |
 | Motion, animation, a flow | `record(name, play, { scene, storage })` writes `.mp4` (for the PR) and `.webm` |
 | A phone or tablet (touch, no hover) | `await phone()` before `open()`; `await recordPhone(name, play, opts)` for its video |
 | Anything else | `v.page.run(...)` / `v.page.eval(js)` (raw agent-browser) |

@@ -19,7 +19,7 @@ export const cabinetInsetBottom = 84;
 export const cabinetInsetLeft = 56;
 export const cabinetInsetRight = 56;
 
-/** The space inside the insets: 224x288, Sweet Sam's maze and Firefly's galaxy. */
+/** The space inside the insets: 224x288, Sweet Sam's maze and Firefly's night sky. */
 export const cabinetPlayfieldWidth = cabinetWidth - cabinetInsetLeft - cabinetInsetRight;
 export const cabinetPlayfieldHeight = cabinetHeight - cabinetInsetTop - cabinetInsetBottom;
 

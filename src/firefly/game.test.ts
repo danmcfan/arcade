@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import { imageGalaxy } from "../engine/assets.ts";
+import { imageFireflyBackground } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
 import { isFixedViewport } from "../game/software.ts";
@@ -58,10 +58,10 @@ describe("constants", () => {
 });
 
 describe("FireflySoftware", () => {
-  test("is the firefly software on the galaxy background, never over, scoreless", () => {
+  test("is the firefly software on the night background, never over, scoreless", () => {
     const f = createFirefly();
     expect(f.name).toBe("firefly");
-    expect(f.background()).toBe(imageGalaxy);
+    expect(f.background()).toBe(imageFireflyBackground);
     expect(f.gameOver()).toBe(false);
     expect(f.score()).toBe(0);
   });

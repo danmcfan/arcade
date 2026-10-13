@@ -1,7 +1,6 @@
 // Typed asset registry, mirroring internal/assets/assets.go plus the wave and
 // lumberjack images (D5, D12). Image sizes are hard-coded from the PNG headers
 // (checked by assets.test.ts) so code can read them with no DOM.
-// `shipExplosion.png` is not loaded by Go and is deliberately not imported.
 
 import { whole, type ImageAsset, type Sprite } from "./image.ts";
 import { Sound } from "./audio.ts";
@@ -21,11 +20,6 @@ import foodUrl from "../assets/images/food.png";
 import readyUrl from "../assets/images/ready.png";
 import digitsUrl from "../assets/images/digits.png";
 import bonusUrl from "../assets/images/bonus.png";
-import galaxyUrl from "../assets/images/galaxy.png";
-import shipUrl from "../assets/images/ship.png";
-import bulletUrl from "../assets/images/bullet.png";
-import bugUrl from "../assets/images/bug.png";
-import explosionUrl from "../assets/images/explosion.png";
 import workshopUrl from "../assets/images/workshop.png";
 import gnomeUrl from "../assets/images/gnome.png";
 import fontUrl from "../assets/images/font.png";
@@ -33,6 +27,14 @@ import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
 import counterUrl from "../assets/images/counter.png";
 import prizesUrl from "../assets/images/prizes.png";
+
+import fireflySpriteUrl from "../assets/images/firefly/firefly.png";
+import sparkUrl from "../assets/images/firefly/spark.png";
+import mothUrl from "../assets/images/firefly/moth.png";
+import waspUrl from "../assets/images/firefly/wasp.png";
+import owlUrl from "../assets/images/firefly/owl.png";
+import hitUrl from "../assets/images/firefly/hit.png";
+import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -84,12 +86,6 @@ export const images = {
   digits: asset(digitsUrl, 80, 8),
   bonus: asset(bonusUrl, 64, 16),
 
-  galaxy: asset(galaxyUrl, 224, 288),
-  ship: asset(shipUrl, 16, 16),
-  bullet: asset(bulletUrl, 8, 8),
-  bug: asset(bugUrl, 96, 64),
-  explosion: asset(explosionUrl, 160, 32),
-
   workshop: asset(workshopUrl, 224, 256),
   gnome: asset(gnomeUrl, 64, 64),
 
@@ -121,12 +117,6 @@ export const imageReady: Sprite = whole(images.ready);
 export const imageDigits: Sprite = whole(images.digits);
 export const imageBonus: Sprite = whole(images.bonus);
 
-export const imageGalaxy: Sprite = whole(images.galaxy);
-export const imageShip: Sprite = whole(images.ship);
-export const imageBullet: Sprite = whole(images.bullet);
-export const imageBug: Sprite = whole(images.bug);
-export const imageExplosion: Sprite = whole(images.explosion);
-
 export const imageWorkshop: Sprite = whole(images.workshop);
 export const imageGnome: Sprite = whole(images.gnome);
 
@@ -135,6 +125,30 @@ export const imageLogo: Sprite = whole(images.logo);
 export const imageIcons: Sprite = whole(images.icons);
 export const imageCounter: Sprite = whole(images.counter);
 export const imagePrizes: Sprite = whole(images.prizes);
+
+/**
+ * Firefly's sprites (src/assets/images/firefly/), generated from
+ * src/firefly/art.ts by `bun run art`. The Moth, Wasp and Owl are rotation
+ * sheets: 6 columns of 15° by 4 rows of 90°, clockwise from facing up.
+ */
+export const fireflyImages = {
+  firefly: asset(fireflySpriteUrl, 16, 16),
+  spark: asset(sparkUrl, 8, 8),
+  moth: asset(mothUrl, 96, 64),
+  wasp: asset(waspUrl, 96, 64),
+  owl: asset(owlUrl, 192, 128),
+  hit: asset(hitUrl, 160, 32),
+  background: asset(fireflyBackgroundUrl, 224, 288),
+} as const;
+
+/** The player in Firefly (not the hub title card, `imageTitleFirefly`). */
+export const imageFirefly: Sprite = whole(fireflyImages.firefly);
+export const imageSpark: Sprite = whole(fireflyImages.spark);
+export const imageMoth: Sprite = whole(fireflyImages.moth);
+export const imageWasp: Sprite = whole(fireflyImages.wasp);
+export const imageOwl: Sprite = whole(fireflyImages.owl);
+export const imageHit: Sprite = whole(fireflyImages.hit);
+export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
 
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
@@ -167,6 +181,7 @@ export type LumberjackImagePath = keyof typeof lumberjackImages;
 /** Every image to decode before the first tick (D5). */
 export const allImages: readonly ImageAsset[] = [
   ...Object.values(images),
+  ...Object.values(fireflyImages),
   waveThree,
   ...Object.values(lumberjackImages),
   debugFont,
