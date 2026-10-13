@@ -38,6 +38,9 @@ import hitUrl from "../assets/images/firefly/hit.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import monkeyUrl from "../assets/images/brass-monkey/monkey.png";
 import gnomeUrl from "../assets/images/brass-monkey/gnome.png";
+import gearUrl from "../assets/images/brass-monkey/gear.png";
+import emberUrl from "../assets/images/brass-monkey/ember.png";
+import boltUrl from "../assets/images/brass-monkey/bolt.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -164,12 +167,19 @@ export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
 
 /**
- * Brass Monkey's characters (src/assets/images/brass-monkey/), generated from
- * src/brass-monkey/art.ts by `bun run art`.
+ * Brass Monkey's characters and items (src/assets/images/brass-monkey/),
+ * generated from src/brass-monkey/art.ts by `bun run art`. The game draws the
+ * gear, the ember and the bolt from #39.
  */
 export const brassMonkeyImages = {
   monkey: asset(monkeyUrl, 96, 16),
   gnome: asset(gnomeUrl, 64, 32),
+  /** Two turns, each 12×12. */
+  gear: asset(gearUrl, 24, 12),
+  /** Two flickers and their mirrors, each 12×12. */
+  ember: asset(emberUrl, 48, 12),
+  /** At rest, then three glint frames, each 10×14. */
+  bolt: asset(boltUrl, 40, 14),
 } as const;
 
 /** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */

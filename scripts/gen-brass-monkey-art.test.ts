@@ -3,6 +3,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
+  bolt,
+  boltGlints,
+  ember,
+  gear,
   gnomeArmsDown,
   gnomeArmsUp,
   gnomeBody,
@@ -14,10 +18,13 @@ import {
   monkeyStep,
 } from "../src/brass-monkey/art.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, toRows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, outline, toRows } from "./pixel-art.ts";
 import {
+  boltFrames,
   brassMonkeyArtFiles,
   brassMonkeyImagesDir,
+  emberFrames,
+  gearFrames,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
@@ -45,8 +52,19 @@ describe("Brass Monkey art source", () => {
     }
   });
 
-  test("every monkey fill leaves a blank border on all four sides, so its outline is whole", () => {
-    for (const rows of monkeyFills()) {
+  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers) and a 10×14 bolt", () => {
+    for (const rows of gear) checkRows("gear", rows, { w: 12, h: 12 });
+    for (const rows of ember) checkRows("ember", rows, { w: 12, h: 12 });
+    checkRows("bolt", bolt, { w: 10, h: 14 });
+    expect([gear.length, ember.length]).toEqual([2, 2]);
+  });
+
+  test("every bolt glint lands on the bolt", () => {
+    for (const [x, y] of boltGlints) expect({ x, y, px: bolt[y]?.[x] }).not.toEqual({ x, y, px: empty });
+  });
+
+  test("every monkey and item fill leaves a blank border on all four sides, so its outline is whole", () => {
+    for (const rows of [...monkeyFills(), ...gear, ...ember, bolt]) {
       expect(rows[0]).toMatch(/^\.+$/u);
       expect(rows.at(-1)).toMatch(/^\.+$/u);
       for (const row of rows) expect([row[0], row.at(-1)]).toEqual([empty, empty]);
@@ -61,6 +79,34 @@ describe("generated frames", () => {
     expect(frames[5]).toEqual(flipX(frames[4] ?? []));
     // The outline is black, round every drawn pixel.
     expect(frames[0]?.[0]).toBe("......kkkk......");
+  });
+
+  test("the gear's frames are its two turns, outlined", () => {
+    const frames = gearFrames();
+    expect(frames).toEqual(gear.map((rows) => outline(rows)));
+  });
+
+  test("the ember flickers, then sways: frames 3 and 4 are 1 and 2 mirrored", () => {
+    const frames = emberFrames();
+    expect(frames.length).toBe(4);
+    expect(frames.slice(2)).toEqual(frames.slice(0, 2).map((rows) => flipX(rows)));
+  });
+
+  test("the bolt rests, then a glint runs over it: each glint frame differs from rest only in white, on the bolt", () => {
+    const [rest, ...glints] = boltFrames();
+    expect(rest).toEqual(outline(bolt));
+    expect(glints.length).toBe(boltGlints.length);
+    glints.forEach((rows, i) => {
+      const [gx = 0, gy = 0] = boltGlints[i] ?? [];
+      expect(rows[gy]?.[gx]).toBe("w");
+      rows.forEach((row, y) => {
+        row.split("").forEach((px, x) => {
+          const was = rest?.[y]?.[x] ?? empty;
+          if (px !== was)
+            expect({ x, y, px, onTheBolt: was !== empty && was !== "k" }).toEqual({ x, y, px: "w", onTheBolt: true });
+        });
+      });
+    });
   });
 
   test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {

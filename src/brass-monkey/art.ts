@@ -1,12 +1,12 @@
-// Pixel-art source for Brass Monkey's characters (ADR 0006): the monkey and
-// the Gnome, as fills in rows of Sweetie 16 letters (`sweetie` in
-// src/ui/sweetie16.ts, `.` is blank). Frames are built from shared parts (a
-// head over a body, a body with arms) so a part is drawn once.
-// scripts/gen-brass-monkey-art.ts builds each frame, draws its 1 px black
-// outline in the blank border and writes them to
+// Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, and
+// the items (the gear and ember hazards and the bolt), as fills in rows of
+// Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is blank). Frames
+// are built from shared parts (a head over a body, a body with arms) so a part
+// is drawn once. scripts/gen-brass-monkey-art.ts builds each frame, draws its
+// 1 px black outline in the blank border and writes them to
 // src/assets/images/brass-monkey/ (`bun run art`); gen-brass-monkey-art.test.ts
 // fails when the committed PNGs drift from this file. Picked in the #38
-// playground (branch prototype/38-brass-monkey-art).
+// playgrounds (branch prototype/38-brass-monkey-art).
 
 /**
  * The monkey: a polished brass robot chimp seen from the side, facing right,
@@ -169,3 +169,105 @@ export const gnomeArmsUp: Part = {
     "...nn.........",
   ],
 };
+
+/**
+ * The gear: a hazard the Gnome throws, rolling down the girders. A small steel
+ * gear, 12×12, with eight teeth and a square hub, lit from the top left like
+ * the gear the Gnome holds in its throw. Two frames, the second turned half a
+ * tooth; the game alternates them as it rolls. Not used until #39.
+ */
+export const gear: readonly (readonly string[])[] = [
+  [
+    "............",
+    ".....ww.....",
+    "..ww.ww.ll..",
+    "..wlwlllll..",
+    "...wlmmlm...",
+    ".wwlmkklldd.",
+    ".wwlmkklldd.",
+    "...llllld...",
+    "..llmlldld..",
+    "..ll.dd.dd..",
+    ".....dd.....",
+    "............",
+  ],
+  [
+    "............",
+    "...ww..ll...",
+    "...wlwwll...",
+    ".wwlllllllm.",
+    ".wlllmmlllm.",
+    "..wlmkklld..",
+    "..wlmkklld..",
+    ".llllllllld.",
+    ".lllllllldd.",
+    "...llddld...",
+    "...mm..dd...",
+    "............",
+  ],
+];
+
+/**
+ * The ember: a hazard that wanders the girders and climbs ladders. A living
+ * flame with two eyes, 12×12. Two flicker frames, the tip of the flame moving
+ * left; the sheet adds their mirror images so it sways. Not used until #39.
+ */
+export const ember: readonly (readonly string[])[] = [
+  [
+    "............",
+    "............",
+    "......y.....",
+    ".....yyo....",
+    "....yyyyo...",
+    "...yywyyyo..",
+    "...ykyykyo..",
+    "...ykyykyr..",
+    "...yyyyyor..",
+    "....oyyorr..",
+    ".....rrr....",
+    "............",
+  ],
+  [
+    "............",
+    "............",
+    ".....y......",
+    ".....yyo....",
+    "....yyyyo...",
+    "...yywyyyo..",
+    "...ykyykyo..",
+    "...ykyykyr..",
+    "...yyyyyor..",
+    "....oyyorr..",
+    ".....rrr....",
+    "............",
+  ],
+];
+
+/**
+ * The bolt: collected for points. A brass hex bolt standing on its threads,
+ * 10×14: a hex head with a lit face, a front face and a shaded face over a
+ * threaded shank. Not used until #39.
+ */
+export const bolt: readonly string[] = [
+  "..........",
+  "..wyyyyo..",
+  ".wwyyyyor.",
+  ".wwyyyyor.",
+  ".wwyyyyor.",
+  "..ooooor..",
+  "...wyyo...",
+  "...ooor...",
+  "...wyyo...",
+  "...ooor...",
+  "...wyyo...",
+  "...ooor...",
+  "....yo....",
+  "..........",
+];
+
+/** Where the glint that runs over the bolt's head is centred, frame by frame: a white + over the bolt's pixels. */
+export const boltGlints: readonly (readonly [number, number])[] = [
+  [2, 3],
+  [4, 2],
+  [6, 3],
+];
