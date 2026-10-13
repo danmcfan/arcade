@@ -11,5 +11,4 @@
 /scripts/lint-guards.ts    @danmcfan
 /.githooks/                @danmcfan
 /.github/                  @danmcfan
-/.claude/settings.json     @danmcfan
 /CODING_STANDARDS.md       @danmcfan
