@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { CameraSystem } from "./camera.ts";
 import { maxParticles, ParticleSystem, particleColorRed, particleColorCyan } from "./particle.ts";
-import { bonusEatIndicatorTicks, bonusEatPoints, scaredBeeEatPoints } from "./bonusEat.ts";
+import { bonusEatIndicatorTicks, bonusEatFrameRect, scaredBeeEatPoints } from "./bonusEat.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 
 describe("CameraSystem", () => {
@@ -109,7 +109,9 @@ describe("bonus eat", () => {
     expect(scaredBeeEatPoints).toEqual([200, 400, 800, 1600]);
   });
 
-  test("a popup shows its rung of the ladder, clamped to 0..3", () => {
-    expect([-1, 0, 1, 2, 3, 9].map((i) => bonusEatPoints(i))).toEqual([200, 200, 400, 800, 1600, 1600]);
+  test("a popup shows its rung of points.png, clamped to 0..3", () => {
+    expect(bonusEatFrameRect(-1)).toEqual([0, 0, 16, 16]);
+    expect(bonusEatFrameRect(2)).toEqual([32, 0, 48, 16]);
+    expect(bonusEatFrameRect(9)).toEqual([48, 0, 64, 16]);
   });
 });

@@ -4,12 +4,14 @@
 //
 // maze.png is `mazeTiles` drawn at 8 px a tile: honeycomb wax cut back 4 px
 // from every corridor (so corridors are 16 px wide), a darker rim where wax
-// meets the background, and the bee home's door bar. bear.png is the walk
+// meets the background, the bee home's door bar, and "1UP" and "HIGH SCORE"
+// on the top row. bear.png is the walk
 // cycle, one row per facing (down, up, left, right; right mirrors left), then
 // the death frames. bees.png is the four bees, one 64×96 sheet each in
 // `beeOrder`: flying right, flying left, then sleepy and waking, each right
 // then left. honey-drop.png and honey-pot.png are 4 bobbing frames of 8×12.
-// digits.png is the score dials' 0 to 9 in the pixel font.
+// ready.png is READY!, six 8×8 letters. digits.png is the score dials' 0 to
+// 9, 8×8 each. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift.
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -26,8 +28,7 @@ import {
   corridorMargin,
   dazedFace,
   dazedFaceAt,
-  dialCell,
-  dialDigitInk,
+  dialDigitsArt,
   doorBar,
   doorBarRows,
   frameSize,
@@ -47,13 +48,18 @@ import {
   mazeHeight,
   mazeTiles,
   mazeWidth,
+  pointsArt,
+  pointsFrameSize,
+  pointsTop,
+  readyArt,
+  scoreLabelsArt,
+  scoreLabelsX,
   sleepyLook,
   wakingLook,
   walkCycle,
   waxRim,
 } from "../src/sweet-sam/art.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
-import { glyphs } from "../src/ui/glyphs.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
@@ -94,8 +100,14 @@ export function isWax(x: number, y: number): boolean {
   return tileUnder(x, y) === "#" && !inCorridor(x, y);
 }
 
+function isLetter(c: string): c is SweetieLetter {
+  return c in sweetie;
+}
+
 /** The letter at pixel (x, y) of maze.png. */
 export function mazeLetter(x: number, y: number): SweetieLetter {
+  const label = scoreLabelsArt[y]?.[x - scoreLabelsX];
+  if (label !== undefined && isLetter(label)) return label;
   if (tileUnder(x, y) === "=" && doorBarRows.includes(y % tile) && !inCorridor(x, y)) return doorBar;
   if (!isWax(x, y)) return mazeBackground;
   const rim = !isWax(x - 1, y) || !isWax(x + 1, y) || !isWax(x, y - 1) || !isWax(x, y + 1);
@@ -205,15 +217,17 @@ function itemSheet(art: Rows, top: number, shadow: Rows, shadowTop: number): PNG
 export const renderHoneyDrop = (): PNG => itemSheet(honeyDropArt, honeyDropTop, honeyDropShadow, honeyDropShadowTop);
 export const renderHoneyPot = (): PNG => itemSheet(honeyPotArt, honeyPotTop, honeyPotShadow, honeyPotShadowTop);
 
-/** digits.png: the font's 0 to 9 side by side, each centred in a `dialCell` square. */
-export function renderDigits(): PNG {
-  const png = blank(dialCell * 10, dialCell);
-  for (let d = 0; d < 10; d++) {
-    const rows = glyphs[String(d)];
-    if (rows === undefined) throw new Error(`the font has no ${d}`);
-    const w = rows[0]?.length ?? 0;
-    paint(png, recolour(rows, { "#": dialDigitInk }), sweetie, d * dialCell + Math.floor((dialCell - w) / 2), 0);
-  }
+/** `rows` as a PNG of their own size. */
+function image(rows: Rows): PNG {
+  const png = blank(rows[0]?.length ?? 0, rows.length);
+  paint(png, rows, sweetie, 0, 0);
+  return png;
+}
+
+/** points.png: `pointsArt` `pointsTop` rows down a strip of 16×16 popup frames. */
+export function renderPoints(): PNG {
+  const png = blank(pointsArt[0]?.length ?? 0, pointsFrameSize);
+  paint(png, pointsArt, sweetie, 0, pointsTop);
   return png;
 }
 
@@ -226,7 +240,9 @@ export const sweetSamArtFiles: readonly { file: string; render: () => PNG }[] = 
   { file: "bees.png", render: () => sheet(beeOrder.flatMap((kind) => beeFrames(kind))) },
   { file: "honey-drop.png", render: renderHoneyDrop },
   { file: "honey-pot.png", render: renderHoneyPot },
-  { file: "digits.png", render: renderDigits },
+  { file: "ready.png", render: () => image(readyArt) },
+  { file: "digits.png", render: () => image(dialDigitsArt) },
+  { file: "points.png", render: renderPoints },
 ];
 
 if (import.meta.main) {

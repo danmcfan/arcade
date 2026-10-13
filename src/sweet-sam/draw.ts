@@ -4,14 +4,12 @@
 
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
-import { imageBear, imageCabinet, imageDigits } from "../engine/assets.ts";
+import { imageBear, imageCabinet, imageDigits, imageReady } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
-import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
-import { glyphWidth } from "../ui/glyphs.ts";
-import { frameSize, itemCellHeight, itemCellWidth, mazeWidth } from "./art.ts";
+import { frameSize, itemCellHeight, itemCellWidth } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
@@ -32,7 +30,6 @@ export function draw(s: SweetSamSoftware, screen: Surface): void {
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;
   drawBackground(s, screen, bufX, bufY);
-  drawLabels(screen, bufX, bufY);
   drawScore(s, screen, bufX, bufY);
   drawHighScore(s, screen, bufX, bufY);
   drawLives(s, screen, bufX, bufY);
@@ -49,16 +46,6 @@ export function draw(s: SweetSamSoftware, screen: Surface): void {
 
 function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   screen.draw(s.background(), bufX, bufY);
-}
-
-/** "1UP" and "HIGH SCORE" above the score dials, where the Go maze image had them. */
-export const scoreLabels: readonly { text: string; cx: number }[] = [
-  { text: "1UP", cx: 37 },
-  { text: "HIGH SCORE", cx: 112 },
-];
-
-function drawLabels(screen: Surface, bufX: number, bufY: number): void {
-  for (const { text, cx } of scoreLabels) drawTextCentered(screen, text, cx + bufX, bufY);
 }
 
 function drawScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
@@ -79,10 +66,8 @@ function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-/** Shown during START, centred over the bee home, each letter on a wave. */
-export const readyText = "READY!";
-/** The centre of the maze, which READY! is centred on. */
-const readyCentreX = mazeWidth / 2;
+/** ImageReady ("READY!") strips: 48×8 → six 8×8 glyphs. */
+export const readyGlyphWidth = 8;
 
 export const readyWaveAmpPx = 2.0;
 /** Sine advance per elapsed START frame. */
@@ -95,18 +80,27 @@ function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
     return;
   }
 
-  let x = readyCentreX - Math.trunc(textWidth(readyText) / 2) + bufX;
+  const img = imageReady;
+  const count = Math.trunc(img.w / readyGlyphWidth);
+  if (count <= 0) {
+    return;
+  }
+
+  const baseX = 8 * 11 + bufX;
   const baseY = 8 * 20 + bufY + 1;
 
   // startTicks counts down during START; more elapsed ⇒ larger phase progression.
   const intoReady = startTicks - s.startTicks;
 
-  Array.from(readyText).forEach((ch, i) => {
+  for (let i = 0; i < count; i++) {
+    const rx = i * readyGlyphWidth;
+    const glyph = sub(img, rx, 0, rx + readyGlyphWidth, img.h);
+
     // Traveling wave along the string (vertical offset only). No rounding; D13 snapping applies.
     const dy = readyWaveAmpPx * Math.sin(intoReady * readyWaveTimeRad + i * readyWaveGlyphPhaseRad);
-    drawText(screen, ch, x, baseY + dy, "yellow");
-    x += glyphWidth(ch) + 1;
-  });
+
+    screen.draw(glyph, baseX + rx, baseY + dy);
+  }
 }
 
 function drawItems(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {

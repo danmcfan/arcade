@@ -11,6 +11,7 @@ import {
   beeFlight,
   beeOrder,
   dazedFace,
+  dialDigitsArt,
   honeyDropArt,
   honeyDropShadow,
   honeyPotArt,
@@ -21,6 +22,12 @@ import {
   mazeHeight,
   mazeTiles,
   mazeWidth,
+  pointsArt,
+  pointsFrameSize,
+  pointsTop,
+  readyArt,
+  scoreLabelsArt,
+  scoreLabelsX,
   walkCycle,
 } from "../src/sweet-sam/art.ts";
 import {
@@ -112,6 +119,16 @@ describe("Sweet Sam art source", () => {
     expect(mazeTiles.length * tileSize).toBe(mazeHeight);
     expect((mazeTiles[0]?.length ?? 0) * tileSize).toBe(mazeWidth);
     checkRows("honeycomb", honeycomb, { w: 8, h: 4 });
+  });
+
+  test("the text: labels in the maze's blank top row, READY! and the digits in 8×8 cells, points in 16×16 frames", () => {
+    checkRows("score labels", scoreLabelsArt, { w: 126, h: 7 });
+    expect(scoreLabelsX + 126).toBeLessThanOrEqual(mazeWidth);
+    expect(mazeTiles[0]?.trim()).toBe("");
+    checkRows("ready", readyArt, { w: 6 * 8, h: 8 });
+    checkRows("dial digits", dialDigitsArt, { w: 10 * 8, h: 8 });
+    checkRows("points", pointsArt, { w: 4 * pointsFrameSize, h: 7 });
+    expect(pointsTop + pointsArt.length).toBeLessThanOrEqual(pointsFrameSize);
   });
 });
 

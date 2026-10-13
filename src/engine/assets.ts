@@ -28,7 +28,9 @@ import bearUrl from "../assets/images/sweet-sam/bear.png";
 import beesUrl from "../assets/images/sweet-sam/bees.png";
 import honeyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
 import honeyPotUrl from "../assets/images/sweet-sam/honey-pot.png";
+import readyUrl from "../assets/images/sweet-sam/ready.png";
 import digitsUrl from "../assets/images/sweet-sam/digits.png";
+import pointsUrl from "../assets/images/sweet-sam/points.png";
 
 import fireflySpriteUrl from "../assets/images/firefly/firefly.png";
 import sparkUrl from "../assets/images/firefly/spark.png";
@@ -126,8 +128,8 @@ export const imagePrizes: Sprite = whole(images.prizes);
 /**
  * Sweet Sam's sprites (src/assets/images/sweet-sam/), generated from
  * src/sweet-sam/art.ts by `bun run art`. Sprite frames are 16×16; bees.png
- * is one 64×96 sheet per bee (`beeOrder`), and the honey drop and honey pot
- * are 4 frames of 8×12.
+ * is one 64×96 sheet per bee (`beeOrder`), the honey drop and honey pot
+ * are 4 frames of 8×12, and the points are 4 popup frames of 16×16.
  */
 export const sweetSamImages = {
   maze: asset(sweetSamMazeUrl, 224, 288),
@@ -135,7 +137,9 @@ export const sweetSamImages = {
   bees: asset(beesUrl, 64, 384),
   honeyDrop: asset(honeyDropUrl, 32, 12),
   honeyPot: asset(honeyPotUrl, 32, 12),
+  ready: asset(readyUrl, 48, 8),
   digits: asset(digitsUrl, 80, 8),
+  points: asset(pointsUrl, 64, 16),
 } as const;
 
 export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
@@ -143,8 +147,12 @@ export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);
 export const imageHoneyPot: Sprite = whole(sweetSamImages.honeyPot);
-/** Sweet Sam's score dial digits, 0 to 9, 8×8 each, in the pixel font. */
+/** READY!, six 8×8 letters. */
+export const imageReady: Sprite = whole(sweetSamImages.ready);
+/** Sweet Sam's score dial digits, 0 to 9, 8×8 each. */
 export const imageDigits: Sprite = whole(sweetSamImages.digits);
+/** The points for eating a sleepy bee: 200, 400, 800, 1600. */
+export const imagePoints: Sprite = whole(sweetSamImages.points);
 
 /**
  * Firefly's sprites (src/assets/images/firefly/), generated from

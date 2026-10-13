@@ -1,12 +1,13 @@
 // Pixel-art source for Sweet Sam (ADR 0006): the maze, the bear, the four
-// bees and their sleepy and waking looks, the honey drop and the honey pot.
+// bees and their sleepy and waking looks, the honey drop, the honey pot, and
+// the text (the score labels, READY!, the score digits and the points).
 // Every sprite is rows of Sweetie 16 letters (`sweetie` in
 // src/ui/sweetie16.ts, `.` is blank). scripts/gen-sweet-sam-art.ts writes them
 // to src/assets/images/sweet-sam/ (`bun run art`), and
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift from this file.
 //
-// The bear, bees and honey drop were imported from the Go game's PNGs with
-// their shapes kept; only the colours moved into Sweetie 16.
+// The bear, bees, honey drop and text were imported from the Go game's PNGs
+// with their shapes kept; only the colours moved into Sweetie 16.
 
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import type { SweetieLetter } from "../ui/sweetie16.ts";
@@ -394,6 +395,59 @@ export const mazeBackground: SweetieLetter = "k";
 export const doorBar: SweetieLetter = "w";
 export const doorBarRows: readonly number[] = [5, 6];
 
-/** The score dials' digits: the pixel font's 0 to 9 (src/ui/glyphs.ts), centred in 8×8 cells, in this colour. */
-export const dialDigitInk: SweetieLetter = "w";
-export const dialCell = 8;
+/**
+ * "1UP" and "HIGH SCORE", baked into the maze's top row as the Go maze had
+ * them, in the Go game's thick lettering (imported from its maze image). Its
+ * left edge is at x `scoreLabelsX`.
+ */
+export const scoreLabelsArt: readonly string[] = [
+  "..ww...ww...ww.wwwwww..........................ww...ww..wwwwww...wwwww.ww...ww..........wwww.....wwww...wwwww..wwwwww...wwwwww",
+  ".www...ww...ww.ww...ww.........................ww...ww....ww....ww.....ww...ww.........ww..ww...ww..ww.ww...ww.ww...ww..ww....",
+  "..ww...ww...ww.ww...ww.........................ww...ww....ww...ww......ww...ww.........ww......ww......ww...ww.ww...ww..ww....",
+  "..ww...ww...ww.ww...ww.........................wwwwwww....ww...ww..www.wwwwwww..........wwwww..ww......ww...ww.ww..www..wwwww.",
+  "..ww...ww...ww.wwwwww..........................ww...ww....ww...ww...ww.ww...ww..............ww.ww......ww...ww.wwwww....ww....",
+  "..ww...ww...ww.ww..............................ww...ww....ww....ww..ww.ww...ww.........ww...ww..ww..ww.ww...ww.ww.www...ww....",
+  "wwwwww..wwwww..ww..............................ww...ww..wwwwww...wwwww.ww...ww..........wwwww....wwww...wwwww..ww..www..wwwwww",
+];
+export const scoreLabelsX = 26;
+
+/** READY!, six 8×8 letters that each ride the wave, imported from the Go game's ready.png. */
+export const readyArt: readonly string[] = [
+  ".yyyyyy...yyyyyy...yyy...yyyyy....yy..yy....yyy.",
+  ".yy...yy..yy......yy.yy..yy..yy...yy..yy....yyy.",
+  ".yy...yy..yy.....yy...yy.yy...yy..yy..yy...yyy..",
+  ".yy..yyy..yyyyy..yy...yy.yy...yy...yyyy....yy...",
+  ".yyyyy....yy.....yyyyyyy.yy...yy....yy.....y....",
+  ".yy.yyy...yy.....yy...yy.yy..yy.....yy..........",
+  ".yy..yyy..yyyyyy.yy...yy.yyyyy......yy....y.....",
+  "................................................",
+];
+
+/** The score dials' 0 to 9, 8×8 each, imported from the Go game's digits.png. */
+export const dialDigitsArt: readonly string[] = [
+  "...www......ww....wwwww...wwwwww....www..wwwwww....wwww..wwwwwww..wwww....wwwww.",
+  "..w..ww....www...ww...ww.....ww....wwww..ww.......ww.....ww...ww.ww...w..ww...ww",
+  ".ww...ww....ww.......www....ww....ww.ww..wwwwww..ww..........ww..www..w..ww...ww",
+  ".ww...ww....ww.....wwww....wwww..ww..ww.......ww.wwwwww.....ww....wwww....wwwwww",
+  ".ww...ww....ww....wwww........ww.wwwwwww......ww.ww...ww...ww....w..wwww......ww",
+  "..ww..w.....ww...www.....ww...ww.....ww..ww...ww.ww...ww...ww....w....ww.....ww.",
+  "...www....wwwwww.wwwwwww..wwwww......ww...wwwww...wwwww....ww.....wwwww...wwww..",
+  "................................................................................",
+];
+
+/**
+ * The points for eating a sleepy bee, 200, 400, 800 and 1600, side by side in
+ * 16 px cells: the Go game's bonus.png, its teal now white. They sit
+ * `pointsTop` rows down a 16×16 popup frame, as in Go.
+ */
+export const pointsArt: readonly string[] = [
+  "..ww...ww...ww......w..ww...ww....ww...ww...ww..w..ww...ww...ww.",
+  ".w..w.w..w.w..w....ww.w..w.w..w..w..w.w..w.w..w.w.w..w.w..w.w..w",
+  ".w..w.w..w.w..w...w.w.w..w.w..w..w..w.w..w.w..w.w.w....w..w.w..w",
+  "...w..w..w.w..w..w..w.w..w.w..w...ww..w..w.w..w.w.www..w..w.w..w",
+  "..w...w..w.w..w..wwww.w..w.w..w..w..w.w..w.w..w.w.w..w.w..w.w..w",
+  ".w....w..w.w..w.....w.w..w.w..w..w..w.w..w.w..w.w.w..w.w..w.w..w",
+  ".wwww..ww...ww......w..ww...ww....ww...ww...ww..w..ww...ww...ww.",
+];
+export const pointsTop = 4;
+export const pointsFrameSize = 16;

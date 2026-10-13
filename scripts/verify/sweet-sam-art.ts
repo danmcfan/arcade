@@ -5,8 +5,8 @@
 // drops, honey pots, READY!), a honey pot eaten, a sleepy bee eaten with its
 // points, sleepy bees, a lost life and the waking flash. At each stop it
 // checks the bear and every bee on the canvas against the generated sheets,
-// in the frame the game picks for them, and that the wax shows wherever no
-// sprite is. Part 2 writes every generated sheet scaled up, the bear's death
+// in the frame the game picks for them, that the wax shows wherever no
+// sprite is, and that "1UP" and "HIGH SCORE" show as maze.png has them. Part 2 writes every generated sheet scaled up, the bear's death
 // frames included (#47 uses them). Part 3 records the
 // same replay as a video. Files go to out/verify/sweet-sam-art/.
 
@@ -17,7 +17,7 @@ import type { InputScript, InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
-import { beeOrder, frameSize } from "../../src/sweet-sam/art.ts";
+import { beeOrder, frameSize, scoreLabelsArt, scoreLabelsX } from "../../src/sweet-sam/art.ts";
 import { cabinetInsetLeft, cabinetInsetTop } from "../../src/ui/cabinet.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { decodeDataUrl, isRecord } from "../browser.ts";
@@ -166,6 +166,20 @@ function waxMisses(frame: PNG, s: SweetSamSnapshot, boxes: Placed[]): number {
   return misses;
 }
 
+/** Pixels of "1UP" and "HIGH SCORE" (baked into maze.png) that differ on the canvas. */
+function labelMisses(frame: PNG, s: SweetSamSnapshot): number {
+  let misses = 0;
+  scoreLabelsArt.forEach((row, y) => {
+    Array.from(row).forEach((letter, i) => {
+      if (letter === ".") return;
+      const x = scoreLabelsX + i;
+      const [cx, cy] = [snap(x + cabinetInsetLeft + s.shake[0]), snap(y + cabinetInsetTop + s.shake[1])];
+      if (px(frame, cx, cy) !== px(maze, x, y)) misses++;
+    });
+  });
+  return misses;
+}
+
 function checkStop(v: Verify, name: string, shows: string): SweetSamSnapshot {
   const s = sweetSam(v);
   const frame = canvas(v);
@@ -193,6 +207,7 @@ function checkStop(v: Verify, name: string, shows: string): SweetSamSnapshot {
     ) === 0,
     "the honeycomb wax shows wherever no sprite is",
   );
+  check(labelMisses(frame, s) === 0, '"1UP" and "HIGH SCORE" show in the Go lettering');
   v.frame(name, 2);
   return s;
 }
