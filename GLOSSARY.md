@@ -25,8 +25,28 @@ A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `
 _Avoid_: level, mode, sub-game
 
 **Sweet Sam**:
-The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `hive`.
+The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `hive` until it is renamed.
 _Avoid_: hive (in player-facing text), bear game
+
+**Level**:
+One maze in Sweet Sam, played until the bear has eaten every honey drop. The next level is the same maze, harder.
+_Avoid_: round, stage, board
+
+**Honey drop**:
+One of the small dots along the Sweet Sam maze. The bear eats them all to clear the level.
+_Avoid_: pellet, dot, food
+
+**Smoke pot**:
+One of the four large items in the corners of the Sweet Sam maze. Eating one makes every bee sleepy for a while.
+_Avoid_: power pellet, energizer, power-up
+
+**Sleepy bee**:
+A bee after the bear eats a smoke pot: slow, harmless, and worth points if the bear eats it. The Sleepy bees prize keeps them sleepy longer.
+_Avoid_: scared bee, blue bee, frightened
+
+**Bonus flower**:
+An item that appears in the Sweet Sam maze twice per level for a short time, worth points if the bear eats it.
+_Avoid_: fruit, bonus item, pickup
 
 **Firefly**:
 The Galaga-style shooter: a firefly fighting off the insects and birds that try to eat it.
