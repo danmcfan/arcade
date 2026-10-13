@@ -11,6 +11,7 @@ import type { Software, SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { checkCollision, tileSize, type Rect } from "./collision.ts";
 import type { PrizeId } from "./prizes.ts";
+import { newScreen, type Screen } from "./screen.ts";
 
 /** Builds a minigame for a run: the hub high score and the prizes the player owns. */
 export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
@@ -27,6 +28,8 @@ export interface Machine {
   /** Go `imageTitle`, by name; the sprite is `titleImages[title]`. */
   title: ArcadeTitle;
   newSoftware: (highScore: number, prizes: readonly PrizeId[]) => Software;
+  /** Its screen: on while the player faces it. */
+  screen: Screen;
 }
 
 export function newMachines(factory: SoftwareFactory): Machine[] {
@@ -35,16 +38,19 @@ export function newMachines(factory: SoftwareFactory): Machine[] {
       rect: { x: tileSize * 6, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "brassMonkey",
       newSoftware: (highScore, prizes) => factory("brassMonkey", highScore, prizes),
+      screen: newScreen(),
     },
     {
       rect: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "sweet",
       newSoftware: (highScore, prizes) => factory("hive", highScore, prizes),
+      screen: newScreen(),
     },
     {
       rect: { x: tileSize * 12, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "firefly",
       newSoftware: (highScore, prizes) => factory("firefly", highScore, prizes),
+      screen: newScreen(),
     },
   ];
 }

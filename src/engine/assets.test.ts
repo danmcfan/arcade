@@ -52,15 +52,19 @@ describe("image registry (D12)", () => {
 });
 
 describe("sound registry", () => {
-  test("mirrors assets.go plus the title's sounds: the two tunes loop, effects don't", () => {
+  test("the hub's sounds, assets.go's minigame sounds and the title's: the songs and attract loops loop, effects don't", () => {
     expect(Object.keys(sounds).toSorted()).toEqual([
+      "attractBrassMonkey",
+      "attractFirefly",
+      "attractSweet",
       "boom",
       "death",
       "deny",
+      "hub",
       "laser",
-      "melody",
       "move",
       "power",
+      "screenOn",
       "select",
       "start",
       "ticket",
@@ -70,7 +74,7 @@ describe("sound registry", () => {
       Object.values(sounds)
         .filter((s) => s.loop)
         .map((s) => s.name),
-    ).toEqual(["melody", "title"]);
+    ).toEqual(["hub", "attractBrassMonkey", "attractSweet", "attractFirefly", "title"]);
   });
 });
 

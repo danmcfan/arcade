@@ -233,8 +233,26 @@ describe("hub draw", () => {
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[3]).toEqual(["draw", "sweet", 0, 0, 160, 144, 16, 16]);
-    expect(calls.length).toBe(4);
+    expect(calls[4]).toEqual(["draw", "sweet", 0, 0, 160, 144, 16, 16]);
+    expect(calls.length).toBe(5);
+  });
+
+  test("the faced cabinet's screen switches on over the room: its row of screens.png, a frame per step", () => {
+    const game = newGame();
+    for (let t = 0; t < 25; t++) game.step(input({ up: true }));
+    const screen = (): unknown[] | undefined => {
+      const { calls, surface } = recordingSurface();
+      game.draw(surface);
+      return calls.find((c) => c[1] === "screens");
+    };
+    // Sweet Sam is the second machine; its frame starts 6 px left of the cabinet (x 72, y 40), + the buffer.
+    expect(screen()).toEqual(["draw", "screens", 0, 36, 28, 36, 82, 56]);
+    for (let t = 0; t < 20; t++) game.step(input());
+    expect(screen()).toEqual(["draw", "screens", 7 * 28, 36, 28, 36, 82, 56]);
+    game.step(input({ down: true }));
+    expect(screen()?.[2]).toBe(8 * 28);
+    for (let t = 0; t < 10; t++) game.step(input());
+    expect(screen()).toBeUndefined();
   });
 
   test("debug mode adds the overlay rects and the side panel", () => {

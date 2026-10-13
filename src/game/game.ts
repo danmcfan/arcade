@@ -9,11 +9,12 @@
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import {
   imageArcade,
+  attractSounds,
   soundBoom,
   soundDeath,
   soundDeny,
+  soundHub,
   soundLaser,
-  soundMelody,
   soundMove,
   soundPower,
   soundSelect,
@@ -98,6 +99,8 @@ export class Game implements Scene {
   private readonly debugPanel: Panel;
 
   private tick = 0;
+  /** The hub song is playing: it loops, quietly, whenever no minigame is running. */
+  private hubSongOn = false;
   /** Sound events since the end of the previous tick. */
   private pendingSounds: SoundEvent[] = [];
   /** Sound events of the last completed tick (`GameSnapshot.sounds`). */
@@ -162,27 +165,49 @@ export class Game implements Scene {
     };
   }
 
-  /** Silence the hub melody while a menu covers the game. */
+  /** The faced cabinet's attract loop, while it plays. */
+  private attract(): Sound | null {
+    const a = this.arcade;
+    return a.melodyPlaying && a.imageTitle !== null ? attractSounds[a.imageTitle] : null;
+  }
+
+  /** Silence the hub song and the faced cabinet while a menu covers the game. */
   pauseAudio(): void {
-    if (this.arcade.melodyPlaying) soundMelody.pause();
+    if (this.hubSongOn) soundHub.pause();
+    this.attract()?.pause();
   }
 
   /** Undo `pauseAudio`. */
   resumeAudio(): void {
-    if (this.arcade.melodyPlaying) soundMelody.play();
+    if (this.hubSongOn) soundHub.play();
+    this.attract()?.play();
   }
 
-  /** Stop the hub melody for good (leaving the game). */
+  /** Stop the hub's sounds for good (leaving the game). */
   stopAudio(): void {
-    soundMelody.pause();
-    soundMelody.rewind();
+    this.hubSongOn = false;
+    soundHub.pause();
+    soundHub.rewind();
+    const attract = this.attract();
+    attract?.pause();
+    attract?.rewind();
   }
 
   step(i: Input): void {
     this.update(i);
+    this.updateHubSong();
     this.tick++;
     this.tickSounds = this.pendingSounds;
     this.pendingSounds = [];
+  }
+
+  /** Play the hub song in the hub (its menus too), pause it in a minigame, and pick up where it left off after. */
+  private updateHubSong(): void {
+    const want = this.software === null;
+    if (want === this.hubSongOn) return;
+    this.hubSongOn = want;
+    if (want) soundHub.play();
+    else soundHub.pause();
   }
 
   /** Go `Game.Update` with the input already read. */

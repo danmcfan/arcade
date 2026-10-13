@@ -1,7 +1,7 @@
-// Chiptune source for the title music and the menu sounds. Notes are MIDI
-// numbers (69 = A4), lengths are in eighth notes. scripts/gen-ui-sounds.ts
-// synthesises these into src/assets/sounds/title.wav, move.wav,
-// select.wav, ticket.wav and deny.wav; the runtime only plays the WAVs.
+// Chiptune source for the title music, the hub song, the cabinets' attract
+// loops and the menu sounds. Notes are MIDI numbers (69 = A4), lengths are in
+// eighth notes. scripts/gen-ui-sounds.ts synthesises these into the WAVs in
+// src/assets/sounds/; the runtime only plays the WAVs.
 
 /** Samples per second of every generated sound. */
 export const sampleRate = 22050;
@@ -74,3 +74,169 @@ export const denyBuzz: readonly Note[] = [
 ];
 /** Length of one eighth note in the menu sounds, in seconds. */
 export const blipEighth = 0.035;
+
+/** A song: three voices of equal length that loop, and the hi-hat's level. */
+export interface Song {
+  /** Tempo, in eighth notes per minute. */
+  eighthsPerMinute: number;
+  bass: readonly Note[];
+  arpeggio: readonly Note[];
+  melody: readonly Note[];
+  hats: number;
+}
+
+/** Each bar's chord broken into eighths, playing its notes in `pattern`'s order. */
+function broken(bars: readonly Chord[], pattern: readonly (0 | 1 | 2 | 3)[]): Note[] {
+  return bars.flatMap((chord) => pattern.map((i): Note => [chord[i], 1]));
+}
+
+/** Four notes of a chord, low to high. */
+type Chord = readonly [number, number, number, number];
+
+/** Dm7 – G7 – Cmaj7 – A7. */
+const loungeChords: readonly Chord[] = [
+  [62, 65, 69, 72],
+  [59, 62, 65, 67],
+  [60, 64, 67, 71],
+  [61, 64, 67, 69],
+];
+
+/** A walking bass: root, fifth, seventh, fifth in each bar. */
+const loungeBass: readonly Note[] = [
+  [38, 2],
+  [45, 2],
+  [48, 2],
+  [45, 2],
+  [43, 2],
+  [50, 2],
+  [53, 2],
+  [50, 2],
+  [36, 2],
+  [43, 2],
+  [47, 2],
+  [43, 2],
+  [45, 2],
+  [52, 2],
+  [55, 2],
+  [49, 2],
+];
+
+/**
+ * The hub song, "Neon Lounge": 104 bpm and laid back, a walking bass under a
+ * soft arpeggio and a lazy lead. It loops, quietly, the whole time the player
+ * is in the hub.
+ */
+export const hubSong: Song = {
+  eighthsPerMinute: 208,
+  bass: [...loungeBass, ...loungeBass],
+  arpeggio: broken([...loungeChords, ...loungeChords], [0, 1, 2, 3, 2, 1, 0, 1]),
+  melody: [
+    [69, 3],
+    [72, 1],
+    [74, 2],
+    [72, 2],
+    [71, 4],
+    [67, 2],
+    [65, 2],
+    [64, 2],
+    [67, 2],
+    [71, 3],
+    [72, 1],
+    [73, 6],
+    [null, 2],
+    [74, 3],
+    [72, 1],
+    [69, 2],
+    [65, 2],
+    [67, 2],
+    [71, 2],
+    [74, 2],
+    [77, 2],
+    [76, 4],
+    [74, 2],
+    [71, 2],
+    [69, 6],
+    [null, 2],
+  ],
+  hats: 0.03,
+};
+
+/**
+ * What a cabinet plays, quietly, while the player faces it: a few bleeps of
+ * its game and a long rest, looped. `eighth` is in seconds.
+ */
+export interface Attract {
+  notes: readonly Note[];
+  eighth: number;
+  wave: "square" | "triangle";
+}
+
+export const attractLoops = {
+  /** Brass Monkey: climbing the girders. */
+  brassMonkey: {
+    notes: [
+      [60, 1],
+      [64, 1],
+      [67, 1],
+      [72, 1],
+      [null, 4],
+      [67, 1],
+      [72, 1],
+      [76, 2],
+      [null, 20],
+    ],
+    eighth: 0.1,
+    wave: "square",
+  },
+  /** Sweet Sam: a bee's buzzing trill, then honey. */
+  sweet: {
+    notes: [
+      [76, 1],
+      [77, 1],
+      [76, 1],
+      [77, 1],
+      [76, 1],
+      [77, 1],
+      [null, 2],
+      [81, 2],
+      [79, 2],
+      [null, 20],
+    ],
+    eighth: 0.1,
+    wave: "square",
+  },
+  /** Firefly: sparks winking on in the dark. */
+  firefly: {
+    notes: [
+      [84, 1],
+      [null, 3],
+      [91, 1],
+      [null, 5],
+      [88, 1],
+      [null, 3],
+      [96, 1],
+      [null, 17],
+    ],
+    eighth: 0.1,
+    wave: "triangle",
+  },
+} as const satisfies Record<string, Attract>;
+
+/** A cabinet screen switching on: a low thunk (eighths of `thunkEighth` s), then the tube's whine rising (Hz). */
+export interface ScreenOnSound {
+  thunk: readonly Note[];
+  thunkEighth: number;
+  seconds: number;
+  whineFrom: number;
+  whineTo: number;
+  whineGain: number;
+}
+
+export const screenOn: ScreenOnSound = {
+  thunk: [[33, 1]],
+  thunkEighth: 0.05,
+  seconds: 0.35,
+  whineFrom: 2000,
+  whineTo: 5000,
+  whineGain: 0.03,
+};

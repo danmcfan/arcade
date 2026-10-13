@@ -6,6 +6,7 @@ class FakeAudio {
   calls: string[] = [];
   src = "";
   loop = false;
+  volume = 1;
   preload = "";
   paused = true;
   currentTime = 5;
@@ -106,7 +107,7 @@ describe("Sound (D4: web.go semantics)", () => {
   });
 
   test("without a DOM a Sound is a recorder only and never throws", () => {
-    const s = new Sound("melody", "melody.ogg", true);
+    const s = new Sound("hub", "hub.wav", true);
     expect(() => {
       s.play();
       s.pause();
@@ -118,20 +119,20 @@ describe("Sound (D4: web.go semantics)", () => {
 describe("loadSounds (D5: never awaited)", () => {
   test("creates one element per sound and sets ready on canplaythrough", () => {
     const made: FakeAudio[] = [];
-    const melody = new Sound("melody", "melody.ogg", true);
+    const hub = new Sound("hub", "hub.wav", true, 0.3);
     const laser = new Sound("laser", "laser.wav", false);
-    loadSounds([melody, laser], () => {
+    loadSounds([hub, laser], () => {
       const a = new FakeAudio();
       made.push(a);
       return asElement(a);
     });
-    expect(made.map((a) => [a.src, a.loop])).toEqual([
-      ["melody.ogg", true],
-      ["laser.wav", false],
+    expect(made.map((a) => [a.src, a.loop, a.volume])).toEqual([
+      ["hub.wav", true, 0.3],
+      ["laser.wav", false, 1],
     ]);
-    expect(melody.ready).toBe(false);
+    expect(hub.ready).toBe(false);
     made[0]?.fire("canplaythrough");
-    expect(melody.ready).toBe(true);
+    expect(hub.ready).toBe(true);
     expect(laser.ready).toBe(false);
   });
 
@@ -159,7 +160,7 @@ describe("installAudioUnlock", () => {
     const target = new FakeTarget();
     const a = new FakeAudio(true);
     const b = new FakeAudio(true);
-    const sa = new Sound("melody", "m.ogg", true);
+    const sa = new Sound("hub", "h.wav", true);
     const sb = new Sound("laser", "l.wav", false);
     sa.element = asElement(a);
     sb.element = asElement(b);
@@ -175,7 +176,7 @@ describe("installAudioUnlock", () => {
     const target = new FakeTarget();
     const playing = new FakeAudio(false);
     playing.paused = false;
-    const s = new Sound("melody", "m.ogg", true);
+    const s = new Sound("hub", "h.wav", true);
     s.element = asElement(playing);
     installAudioUnlock([s], target);
     target.listeners.get("pointerdown")?.();

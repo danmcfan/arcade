@@ -1,11 +1,14 @@
-// Port of internal/arcade/update.go, plus the token a cabinet start costs and
-// the prize counter (solid, opened with Space while facing it).
+// Port of internal/arcade/update.go, plus the token a cabinet start costs, the
+// prize counter (solid, opened with Space while facing it), and the cabinet
+// screens switching on while the player faces them. Go's hub melody is now
+// the faced cabinet's own attract loop.
 
 import { direction, type Direction, type Input } from "../engine/input.ts";
-import { soundMelody } from "../engine/assets.ts";
+import { attractSounds, soundScreenOn } from "../engine/assets.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
+import { updateScreen } from "./screen.ts";
 import { blocked, type RunKind, type State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
@@ -25,20 +28,17 @@ export function update(s: State, i: Input): void {
     if (!s.melodyPlaying) {
       s.imageTitle = machine.title;
       s.melodyPlaying = true;
-      soundMelody.play();
+      attractSounds[machine.title].play();
+      soundScreenOn.blip();
     }
   } else if (s.melodyPlaying) {
+    stopMelody(s);
     s.imageTitle = null;
-    s.melodyPlaying = false;
-    soundMelody.pause();
-    soundMelody.rewind();
   }
 
   if (ok && s.player.direction === "UP" && i.space) {
     // Go leaves imageTitle set here; only melodyPlaying is cleared (D11).
-    s.melodyPlaying = false;
-    soundMelody.pause();
-    soundMelody.rewind();
+    stopMelody(s);
 
     s.loadedRun = startRun(s);
     s.loadedSoftware = machine.newSoftware(s.highScore, s.prizes);
@@ -47,6 +47,16 @@ export function update(s: State, i: Input): void {
   if (i.space && facing(s.player, s.counter)) {
     s.counterOpened = true;
   }
+
+  for (const m of s.machines) updateScreen(m.screen, s.melodyPlaying && s.imageTitle === m.title);
+}
+
+/** Stop the playing cabinet's attract loop, from the top next time. */
+function stopMelody(s: State): void {
+  s.melodyPlaying = false;
+  if (s.imageTitle === null) return;
+  attractSounds[s.imageTitle].pause();
+  attractSounds[s.imageTitle].rewind();
 }
 
 /** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */

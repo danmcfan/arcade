@@ -16,6 +16,14 @@ _Avoid_: gamer, avatar, hero
 An arcade machine: one in the hub that the player steps up to, and the same machine's bezel framing the minigame while it is played.
 _Avoid_: machine (in prose), arcade box
 
+**Attract loop**:
+The few bars of its game a cabinet plays, quietly and on repeat, while the player faces it and its screen is on. In code, `attractSounds`; the hub's state still calls it `melodyPlaying`, after the Go melody it replaced.
+_Avoid_: melody (in prose), jingle
+
+**Hub song**:
+The music that loops, quietly, the whole time the player is in the hub, prize counter menu included; it pauses during a minigame.
+_Avoid_: hub melody, background music
+
 **Minigame**:
 A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
 _Avoid_: level, mode, sub-game
