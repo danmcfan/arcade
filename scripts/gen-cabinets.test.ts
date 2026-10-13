@@ -19,6 +19,17 @@ describe("cabinet sources (art/cabinets.json)", () => {
     for (const c of cabinets)
       expect({ name: c.name, keys: Object.keys(c.palette).toSorted() }).toEqual({ name: c.name, keys: source });
   });
+
+  test("every cabinet has a bevel in its own colours and a black joystick base", () => {
+    for (const c of cabinets) {
+      expect({ name: c.name, base: c.palette["5d275d"], light: c.bevel.light }).toEqual({
+        name: c.name,
+        base: "1a1c2c",
+        light: c.palette["ef7d57"] ?? "",
+      });
+      expect(c.bevel.dark).not.toBe(c.palette["b13e53"]);
+    }
+  });
 });
 
 describe("generated cabinets", () => {
@@ -30,8 +41,9 @@ describe("generated cabinets", () => {
       for (let i = 3; i < src.data.length; i += 4) {
         if (src.data[i] !== out.data[i]) throw new Error(`${c.name}: alpha differs at byte ${i}`);
       }
-      const bevel = c.bevel === undefined ? [] : [c.bevel.light, c.bevel.dark];
-      expect(colours(out).toSorted()).toEqual([...new Set([...Object.values(c.palette), ...bevel])].toSorted());
+      expect(colours(out).toSorted()).toEqual(
+        [...new Set([...Object.values(c.palette), c.bevel.light, c.bevel.dark])].toSorted(),
+      );
     });
 
     test(`${c.name}: the screen and joystick keep the Sweet Sam shape`, () => {
@@ -40,8 +52,7 @@ describe("generated cabinets", () => {
       // Below the marquee every pixel is the palette image of the source pixel, or the bevel on the body.
       for (let i = 54 * 1680 * 4; i < src.data.length; i += 4) {
         const [x, y] = [(i / 4) % 1680, Math.trunc(i / 4 / 1680)];
-        const bevel =
-          c.bevel !== undefined && hexAt(src, i) === "b13e53" ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
+        const bevel = hexAt(src, i) === "b13e53" ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
         const want = bevel ?? c.palette[hexAt(src, i)];
         if (hexAt(out, i) !== want) throw new Error(`${c.name}: pixel ${i / 4} is ${hexAt(out, i)}, want ${want}`);
       }
