@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
-import { allImages, fireflyImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
+import { allImages, brassMonkeyImages, fireflyImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
 import { defined } from "./defined.testutil.ts";
 import type { ImageAsset } from "./image.ts";
 
@@ -37,6 +37,13 @@ describe("image registry (D12)", () => {
       basename(String(f)),
     );
     expect(all.filter((f) => gone.has(f))).toEqual([]);
+  });
+
+  test("registers every Brass Monkey PNG, and the Go player sheet is gone", () => {
+    const registered = Object.values(brassMonkeyImages).map((a) => basename(a.url));
+    const onDisk = readdirSync(new URL("../assets/images/brass-monkey", import.meta.url));
+    expect(registered.toSorted()).toEqual(onDisk.toSorted());
+    expect(readdirSync(new URL("../assets/images", import.meta.url))).not.toContain("gnome.png");
   });
 
   test("registers the 9 lumberjack sheets by their Go paths", () => {

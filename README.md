@@ -1,6 +1,6 @@
 # Arcade
 
-Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **Sweet Sam** (a Pac-Man-like bear and bees), **Firefly** (a Galaga-like shooter) and **Brass Monkey** (a gnome in a workshop).
+Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside: **Sweet Sam** (a Pac-Man-like bear and bees), **Firefly** (a Galaga-like shooter) and **Brass Monkey** (a Donkey Kong-like brass robot monkey escaping a gnome's factory).
 
 The page opens on a title screen: **Continue** brings back the hub high score and where you were standing (saved in `localStorage` when you leave a minigame, quit to the menu, or close the tab). **New game** asks first when there is a save (starting one deletes it), then shows a short how-to-play screen and starts in the hub. Minigame progress is not saved.
 

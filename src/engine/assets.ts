@@ -22,7 +22,6 @@ import readyUrl from "../assets/images/ready.png";
 import digitsUrl from "../assets/images/digits.png";
 import bonusUrl from "../assets/images/bonus.png";
 import workshopUrl from "../assets/images/workshop.png";
-import gnomeUrl from "../assets/images/gnome.png";
 import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
@@ -37,6 +36,8 @@ import waspUrl from "../assets/images/firefly/wasp.png";
 import owlUrl from "../assets/images/firefly/owl.png";
 import hitUrl from "../assets/images/firefly/hit.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
+import monkeyUrl from "../assets/images/brass-monkey/monkey.png";
+import gnomeUrl from "../assets/images/brass-monkey/gnome.png";
 
 import waveThreeUrl from "../lab/wave/three.png";
 
@@ -97,7 +98,6 @@ export const images = {
   bonus: asset(bonusUrl, 64, 16),
 
   workshop: asset(workshopUrl, 224, 256),
-  gnome: asset(gnomeUrl, 64, 64),
 
   // Title screen, menus, HUD, the hub's prize counter and prize decorations;
   // generated from src/ui/glyphs.ts, src/ui/icons.ts, src/ui/counterArt.ts and
@@ -130,7 +130,6 @@ export const imageDigits: Sprite = whole(images.digits);
 export const imageBonus: Sprite = whole(images.bonus);
 
 export const imageWorkshop: Sprite = whole(images.workshop);
-export const imageGnome: Sprite = whole(images.gnome);
 
 export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
@@ -164,6 +163,20 @@ export const imageOwl: Sprite = whole(fireflyImages.owl);
 export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
 
+/**
+ * Brass Monkey's characters (src/assets/images/brass-monkey/), generated from
+ * src/brass-monkey/art.ts by `bun run art`.
+ */
+export const brassMonkeyImages = {
+  monkey: asset(monkeyUrl, 96, 16),
+  gnome: asset(gnomeUrl, 64, 32),
+} as const;
+
+/** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */
+export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
+/** The Gnome's sheet: idle, throw, each 32×32. */
+export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
+
 /** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
 export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
 
@@ -196,6 +209,7 @@ export type LumberjackImagePath = keyof typeof lumberjackImages;
 export const allImages: readonly ImageAsset[] = [
   ...Object.values(images),
   ...Object.values(fireflyImages),
+  ...Object.values(brassMonkeyImages),
   waveThree,
   ...Object.values(lumberjackImages),
   debugFont,

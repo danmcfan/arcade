@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageCabinetBrassMonkey, imageGnome, imageWorkshop } from "../engine/assets.ts";
+import { imageCabinetBrassMonkey, imageGnome, imageMonkey, imageWorkshop } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { DrawOpts } from "../engine/surface.ts";
@@ -134,11 +134,11 @@ function drawCalls(g: ReturnType<typeof createBrassMonkey>): DrawCall[] {
 const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 
 describe("brassMonkey draw", () => {
-  test("cabinet, 16 px workshop-dark bands above and below, workshop centred in the screen, then the gnome", () => {
+  test("cabinet, 16 px workshop-dark bands above and below, workshop centred in the screen, the Gnome, then the monkey", () => {
     const g = createBrassMonkey();
     const { calls, fills, order } = record(g);
-    expect(order).toEqual(["draw", "fill", "fill", "draw", "draw"]);
-    const [cabinet, bg, gnome] = calls;
+    expect(order).toEqual(["draw", "fill", "fill", "draw", "draw", "draw"]);
+    const [cabinet, bg, gnome, monkey] = calls;
     expect(cabinet?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
     expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
     expect(fills).toEqual([
@@ -146,10 +146,21 @@ describe("brassMonkey draw", () => {
       [56, 328, 224, 16, "#040c06"],
     ]);
     expect(bg).toEqual({ sprite: imageWorkshop, x: 56, y: 72, opts: undefined });
-    expect(gnome?.sprite).toEqual({ asset: imageGnome.asset, sx: 0, sy: 0, w: 16, h: 16 });
-    expect(gnome?.x).toBe(16 + 56 - 8);
-    expect(gnome?.y).toBe(240 + 72 - 8);
-    expect(gnome?.opts?.flipX ?? false).toBe(false);
+    expect(gnome?.sprite.asset).toBe(imageGnome.asset);
+    expect(monkey?.sprite).toEqual({ asset: imageMonkey.asset, sx: 0, sy: 0, w: 16, h: 16 });
+    expect(monkey?.x).toBe(16 + 56 - 8);
+    expect(monkey?.y).toBe(240 + 72 - 8);
+    expect(monkey?.opts?.flipX ?? false).toBe(false);
+  });
+
+  test("the Gnome stands still on the top girder in its idle frame", () => {
+    const g = createBrassMonkey();
+    const idle = { sprite: { asset: imageGnome.asset, sx: 0, sy: 0, w: 32, h: 32 }, x: 24 + 56, y: 52 + 72 };
+    for (let t = 0; t < 10; t++) {
+      g.update(held({ right: true }));
+      const gnome = drawCalls(g)[2];
+      expect(gnome && { sprite: gnome.sprite, x: gnome.x, y: gnome.y }).toEqual(idle);
+    }
   });
 
   test("the cabinet shows the joystick frame of the last input", () => {
@@ -166,7 +177,7 @@ describe("brassMonkey draw", () => {
       g.update(held({ right: true }));
       const frame = Math.trunc(snap(g).frame);
       if (frame !== lastFrame) {
-        columns.push((drawCalls(g)[2]?.sprite.sx ?? -16) / 16);
+        columns.push((drawCalls(g)[3]?.sprite.sx ?? -16) / 16);
         lastFrame = frame;
       }
     }
@@ -176,8 +187,8 @@ describe("brassMonkey draw", () => {
   test("facing left draws flipped", () => {
     const g = createBrassMonkey();
     g.update(held({ left: true }));
-    const gnome = drawCalls(g)[2];
-    expect(gnome?.opts?.flipX).toBe(true);
-    expect(gnome?.x).toBe(15 + 56 - 8);
+    const monkey = drawCalls(g)[3];
+    expect(monkey?.opts?.flipX).toBe(true);
+    expect(monkey?.x).toBe(15 + 56 - 8);
   });
 });
