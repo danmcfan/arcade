@@ -6,19 +6,40 @@
 // out/prototype-sweet-sam-art/index.html and prints its path.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { recolour } from "./pixel-art.ts";
-import {
-  bearDeath,
-  bearWalk,
-  beeEye,
-  beeFlight,
-  bonusFlowerArt,
-  dazedFace,
-  dazedFaceAt,
-  smokePotArt,
-  smokePotSmoke,
-  walkCycle,
-} from "../src/sweet-sam/art.ts";
+import { bearDeath, bearWalk, beeEye, beeFlight, dazedFace, dazedFaceAt, walkCycle } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
+
+// The #59 smoke pot and bonus flower, left out of art.ts by the owner's picks;
+// kept here so this playground still shows them.
+const smokePotArt: readonly string[] = ["..mm..", ".llll.", "lwllll", "loroom", ".mmmm."];
+
+/** The smoke rising from the pot, 6×2, one per frame, drawn just above it. */
+const smokePotSmoke: readonly (readonly string[])[] = [
+  ["....l.", "...w.."],
+  ["...l..", "....w."],
+  ["..l...", "...w.."],
+  ["...l..", "..w..."],
+];
+
+/** The bonus flower, 16×16: a daisy on a stem. Not in the maze yet (#47). */
+const bonusFlowerArt: readonly string[] = [
+  "................",
+  "......w..w......",
+  "....w.wwww.w....",
+  "...wwwwwwwwww...",
+  "..wwwwyyyywwww..",
+  "..wwwyooooywww..",
+  "...wwyooooyww...",
+  "..wwwwyyyywwww..",
+  "...wwwwwwwwww...",
+  "....w.wGGw.w....",
+  "..gg...GG...gg..",
+  ".gggg..GG..gggg.",
+  "..gggg.GG.gggg..",
+  "....gggGGggg....",
+  ".......GG.......",
+  "................",
+];
 
 const dir = "scripts/prototype-sweet-sam-art";
 const parsed: unknown = JSON.parse(readFileSync(`${dir}/go.json`, "utf8"));

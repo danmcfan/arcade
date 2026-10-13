@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sweet Sam Maze</title>
+    <!-- PROTOTYPE (throwaway, #46 / PR #59). prototype-sweet-sam-maze-ui.ts inlines the art where DATA is. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #232740;
+        --line: #333c57;
+        --fg: #f4f4f4;
+        --muted: #94b0c2;
+        --accent: #ffcd75;
+        --accent-ink: #1a1c2c;
+        --display: "Silkscreen", ui-monospace, monospace;
+        --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+      }
+      body {
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding: 24px 16px 48px;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+        align-items: start;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      header {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 6px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 28px;
+        margin: 0;
+        color: var(--accent);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 80ch;
+      }
+      .stage {
+        position: sticky;
+        top: 16px;
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+      canvas {
+        image-rendering: pixelated;
+        display: block;
+        background: #1a1c2c;
+        max-width: 100%;
+      }
+      #scene {
+        width: 100%;
+        max-width: 672px;
+        aspect-ratio: 336 / 428;
+      }
+      figure {
+        margin: 0;
+        display: grid;
+        gap: 6px;
+      }
+      figcaption {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+      }
+      .bar output {
+        flex: 1 1 260px;
+        min-width: 0;
+        font-size: 13px;
+        color: var(--muted);
+        font-family: ui-monospace, monospace;
+        word-break: break-word;
+      }
+      button {
+        font-family: var(--display);
+        font-size: 12px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid var(--line);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--fg);
+        outline-offset: 2px;
+      }
+      .controls {
+        display: grid;
+        gap: 22px;
+        min-width: 0;
+      }
+      section.group {
+        display: grid;
+        gap: 10px;
+      }
+      section.group > p,
+      .locked {
+        margin: -4px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .locked {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .row {
+        display: grid;
+        gap: 4px;
+      }
+      .row > span {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .seg {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .seg label {
+        position: relative;
+      }
+      .seg input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .seg label span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        background: var(--panel);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .seg label:hover span {
+        border-color: var(--muted);
+      }
+      .seg input:checked + span {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .seg input:focus-visible + span {
+        outline: 2px solid var(--fg);
+        outline-offset: 2px;
+      }
+      .sw {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        border: 1px solid #0006;
+      }
+      .tag {
+        font-size: 10px;
+        font-family: var(--display);
+        color: var(--muted);
+        font-style: normal;
+      }
+      .presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Sweet Sam Maze</h1>
+        <p>
+          The last of the text for #46. The maze and the cabinet are your picks and no longer change. Each toggle is
+          tagged <b>Go</b> (the original game), <b>#59</b> (the PR as it is) or <b>picked</b> (your last picks);
+          untagged options are new. Change what you like, then <b>Copy my picks</b> and paste them back to Claude.
+        </p>
+      </header>
+
+      <div class="stage">
+        <div>
+          <h2>In the cabinet</h2>
+          <canvas id="scene" width="336" height="428" aria-label="The Sweet Sam cabinet with the chosen text"></canvas>
+        </div>
+        <figure>
+          <canvas id="textSheet" width="260" height="40" style="width: 780px"></canvas>
+          <figcaption>Every piece of text at 3×: the labels and score, READY!, and the four points</figcaption>
+        </figure>
+        <div class="bar">
+          <output id="summary" aria-live="polite"></output>
+          <button id="copy" type="button">Copy my picks</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <section class="group">
+          <h2>Presets</h2>
+          <div class="presets" id="presets"></div>
+        </section>
+        <div id="groups" class="controls"></div>
+        <section class="group">
+          <h2>Locked in</h2>
+          <ul class="locked">
+            <li>Maze: #59's small honeycomb, red rim, square corners, black floor, white door.</li>
+            <li>Score digits: Go's, in white. READY!: Go's, in yellow, on its wave.</li>
+            <li>
+              Cabinet: red, yellow and orange marquee, bevelled edges, black joystick base, yellow ball. The hub cabinet
+              stays as it is.
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const DATA = /*DATA*/ null;
+      const S = DATA.sweetie;
+
+      // Every knob: [id, label, options]; an option is [value, label, tag?, swatch?].
+      const GROUPS = [
+        [
+          "Text",
+          'Go\'s thick lettering covers every character Sweet Sam draws: "1UP" and "HIGH SCORE" from the Go maze, the digits from the Go score, READY! from Go. Nothing new has to be drawn.',
+          [
+            [
+              "labels",
+              "1UP and HIGH SCORE",
+              [
+                ["go", "Go, thick", "Go"],
+                ["pixel", "Pixel font", "#59"],
+              ],
+            ],
+            [
+              "points",
+              "Points (200 to 1600)",
+              [
+                ["goThick", "Thick, the score's Go digits", ""],
+                ["goThin", "Go's own, thin", "Go"],
+                ["pixel", "Pixel font", "#59"],
+              ],
+            ],
+            [
+              "pointsInk",
+              "Points colour",
+              [
+                ["w", "White", "picked", "w"],
+                ["c", "Cyan", "Go", "c"],
+                ["y", "Yellow", "", "y"],
+              ],
+            ],
+          ],
+        ],
+      ];
+      const PRESETS = {
+        "Go, thick": { labels: "go", points: "goThick", pointsInk: "w" },
+        "Go as it was": { labels: "go", points: "goThin", pointsInk: "c" },
+        "PR #59": { labels: "pixel", points: "pixel", pointsInk: "w" },
+      };
+      const pick = { ...PRESETS["Go, thick"] };
+      try {
+        Object.assign(pick, JSON.parse(localStorage.getItem("sweetSamTextPick") || "{}"));
+      } catch {}
+
+      // ---- controls ----
+      const groupsEl = document.getElementById("groups");
+      for (const [title, note, knobs] of GROUPS) {
+        const sec = document.createElement("section");
+        sec.className = "group";
+        sec.innerHTML = `<h2>${title}</h2><p>${note}</p>`;
+        for (const [id, label, opts] of knobs) {
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `<span>${label}</span><div class="seg" role="radiogroup" aria-label="${title}: ${label}"></div>`;
+          const seg = row.querySelector(".seg");
+          for (const [value, text, tag, sw] of opts) {
+            const l = document.createElement("label");
+            l.innerHTML = `<input type="radio" name="${id}" value="${value}"><span>${sw ? `<i class="sw" style="background:${S[sw]}"></i>` : ""}${text}${tag ? ` <em class="tag">${tag}</em>` : ""}</span>`;
+            l.querySelector("input").addEventListener("change", () => {
+              pick[id] = value;
+              sync();
+            });
+            seg.append(l);
+          }
+          sec.append(row);
+        }
+        groupsEl.append(sec);
+      }
+      const presetsEl = document.getElementById("presets");
+      for (const name of Object.keys(PRESETS)) {
+        const b = document.createElement("button");
+        b.className = "ghost";
+        b.type = "button";
+        b.textContent = name;
+        b.onclick = () => {
+          Object.assign(pick, PRESETS[name]);
+          sync();
+        };
+        presetsEl.append(b);
+      }
+      function sync() {
+        for (const [id, v] of Object.entries(pick)) {
+          const el = document.querySelector(`input[name="${id}"][value="${v}"]`);
+          if (el) el.checked = true;
+        }
+        try {
+          localStorage.setItem("sweetSamTextPick", JSON.stringify(pick));
+        } catch {}
+        const parts = [];
+        for (const [, , knobs] of GROUPS)
+          for (const [id, , opts] of knobs) {
+            const o = opts.find((o) => o[0] === pick[id]);
+            parts.push(`${id}=${pick[id]}${o && o[2] ? ` (${o[2]})` : ""}`);
+          }
+        document.getElementById("summary").textContent = parts.join(", ");
+        drawSheet();
+      }
+      document.getElementById("copy").onclick = async () => {
+        const text = "Sweet Sam text picks: " + JSON.stringify(pick);
+        try {
+          await navigator.clipboard.writeText(text);
+          document.getElementById("copy").textContent = "Copied";
+        } catch {
+          prompt("Copy this:", text);
+        }
+        setTimeout(() => (document.getElementById("copy").textContent = "Copy my picks"), 1200);
+      };
+
+      // ---- drawing helpers ----
+      const rgb = {};
+      for (const [k, css] of Object.entries(S))
+        rgb[k] = [parseInt(css.slice(1, 3), 16), parseInt(css.slice(3, 5), 16), parseInt(css.slice(5, 7), 16)];
+      function draw(ctx, rows, x, y, map = {}) {
+        rows.forEach((row, j) =>
+          [...row].forEach((ch, i) => {
+            if (ch === ".") return;
+            const letter = map[ch] ?? ch;
+            if (!S[letter]) return;
+            ctx.fillStyle = S[letter];
+            ctx.fillRect(x + i, y + j, 1, 1);
+          }),
+        );
+      }
+      // A grid of letters into a canvas via ImageData.
+      function blit(ctx, grid, x0 = 0, y0 = 0) {
+        const h = grid.length,
+          w = grid[0].length;
+        const img = ctx.createImageData(w, h);
+        for (let y = 0; y < h; y++)
+          for (let x = 0; x < w; x++) {
+            const c = rgb[grid[y][x]];
+            if (!c) continue;
+            const i = (y * w + x) * 4;
+            img.data[i] = c[0];
+            img.data[i + 1] = c[1];
+            img.data[i + 2] = c[2];
+            img.data[i + 3] = 255;
+          }
+        const tmp = document.createElement("canvas");
+        tmp.width = w;
+        tmp.height = h;
+        tmp.getContext("2d").putImageData(img, 0, 0);
+        ctx.drawImage(tmp, x0, y0);
+      }
+      const ink = (rows) => rows.map((r) => r.replace(/[^.]/g, "1"));
+
+      // ---- the cabinet, as picked: red, bevelled, a black joystick base and yellow ball ----
+      const CW = 336,
+        CH = 428;
+      function cabinetGrid() {
+        return DATA.cabinet.map((src, y) =>
+          [...src].map((s, x) => {
+            if (s === "p") return "k";
+            if (s !== "r") return s;
+            if (x < 3 || y < 3) return "o";
+            if (x > CW - 4 || y > CH - 4) return "p";
+            if (x >= 51 && x <= 284 && y >= 51 && y <= 348) return x <= 53 || y <= 53 ? "p" : "o";
+            return "r";
+          }),
+        );
+      }
+
+      // ---- text ----
+      const glyphW = (ch) => DATA.glyphs[ch]?.[0]?.length ?? 0;
+      const textW = (t) => [...t].reduce((w, ch) => w + glyphW(ch), 0) + t.length - 1;
+      function text(ctx, t, x, y, letter) {
+        for (const ch of t) {
+          const g = DATA.glyphs[ch];
+          if (!g) continue;
+          draw(
+            ctx,
+            g.map((r) => r.replaceAll("#", "1")),
+            x,
+            y,
+            { 1: letter },
+          );
+          x += glyphW(ch) + 1;
+        }
+      }
+      const textCentred = (ctx, t, cx, y, letter) => text(ctx, t, cx - Math.trunc(textW(t) / 2), y, letter);
+      // Digit n of the Go score digits, 8×8.
+      const goDigit = (n) => ink(DATA.goDigits.map((r) => r.slice(n * 8, n * 8 + 8)));
+
+      function labels(ctx, ox, oy) {
+        if (pick.labels === "go") for (const w of DATA.goLabels) draw(ctx, ink(w.rows), ox + w.x, oy, { 1: "w" });
+        else {
+          textCentred(ctx, "1UP", ox + 37, oy, "w");
+          textCentred(ctx, "HIGH SCORE", ox + 112, oy, "w");
+        }
+      }
+      // Six 8 px Go digit cells from tile (tx, 1), leading zeros hidden but for the last two.
+      function score(ctx, value, tx, ox, oy) {
+        const digs = String(value).padStart(6, "0");
+        let lead = true;
+        for (let i = 0; i < 6; i++) {
+          if (digs[i] !== "0" || i >= 4) lead = false;
+          if (!lead) draw(ctx, goDigit(Number(digs[i])), ox + (tx + i) * 8, oy + 8, { 1: "w" });
+        }
+      }
+      function ready(ctx, ox, oy, t) {
+        const baseY = oy + 8 * 20 + 1;
+        const rows = ink(DATA.goReady);
+        const x0 = ox + 112 - rows[0].length / 2;
+        for (let i = 0; i < 6; i++) {
+          const dy = Math.round(2 * Math.sin(t * 0.14 + i * 1.05));
+          draw(
+            ctx,
+            rows.map((r) => r.slice(i * 8, i * 8 + 8)),
+            x0 + i * 8,
+            baseY + dy,
+            { 1: "y" },
+          );
+        }
+      }
+      // Points `i` (0..3 for 200..1600) centred on cx, its top at y.
+      function points(ctx, i, cx, y) {
+        const value = ["200", "400", "800", "1600"][i];
+        if (pick.points === "goThick")
+          [...value].forEach((d, j) =>
+            draw(ctx, goDigit(Number(d)), cx - value.length * 4 + j * 8, y, { 1: pick.pointsInk }),
+          );
+        else if (pick.points === "goThin")
+          // Go's 16×16 popup: its numbers sit on rows 4 to 10.
+          draw(ctx, ink(DATA.goBonus.map((r) => r.slice(i * 16, i * 16 + 16))), cx - 8, y - 4, { 1: pick.pointsInk });
+        else textCentred(ctx, value, cx, y, pick.pointsInk);
+      }
+
+      // ---- the scene ----
+      const scene = document.getElementById("scene");
+      const sctx = scene.getContext("2d");
+      const still = document.createElement("canvas");
+      still.width = CW;
+      still.height = CH;
+      {
+        const g = still.getContext("2d");
+        const ox = 56,
+          oy = 56;
+        blit(g, cabinetGrid());
+        blit(g, DATA.maze, ox, oy);
+        for (const it of DATA.items) {
+          if (Math.abs(it.x - 112) < 10 && Math.abs(it.y - 212) < 4) continue;
+          draw(g, it.pot ? DATA.pot : DATA.drop, ox + it.x - 4, oy + it.y - 6);
+        }
+        draw(g, DATA.bear, ox + 104, oy + 204);
+        draw(g, DATA.bees[0], ox + 104, oy + 108);
+        [1, 2, 3].forEach((n, i) => draw(g, DATA.bees[n], ox + 88 + i * 16, oy + 132));
+        for (let i = 0; i < 2; i++) draw(g, DATA.bear, ox + 8 * (2 + i * 2), oy + 8 * 34 + 1);
+      }
+      let t = 0;
+      function frame() {
+        t++;
+        const ox = 56,
+          oy = 56;
+        sctx.drawImage(still, 0, 0);
+        labels(sctx, ox, oy);
+        score(sctx, 2350, 1, ox, oy);
+        score(sctx, 10000, 11, ox, oy);
+        ready(sctx, ox, oy, t);
+        // A sleepy bee just eaten in the left corridor: its points.
+        points(sctx, Math.floor(t / 60) % 4, ox + 36, oy + 65);
+        requestAnimationFrame(frame);
+      }
+
+      // ---- every piece of text, on the black of the maze ----
+      function drawSheet() {
+        const c = document.getElementById("textSheet"),
+          g = c.getContext("2d");
+        g.fillStyle = S.k;
+        g.fillRect(0, 0, c.width, c.height);
+        labels(g, 4, 4);
+        score(g, 2350, 1, 4, 4);
+        score(g, 10000, 11, 4, 4);
+        ready(g, 8 - 112 + 24, 4 - 8 * 20 + 24, 0);
+        [0, 1, 2, 3].forEach((i) => points(g, i, 130 + i * 38, 26));
+      }
+
+      sync();
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
