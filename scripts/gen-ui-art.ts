@@ -40,26 +40,7 @@ import { prizeArt, prizePalette, prizeRects, prizeSheetHeight, prizeSheetWidth }
 import type { PrizeId } from "../src/arcade/prizes.ts";
 import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-
-function hex(css: string): [number, number, number] {
-  const n = Number.parseInt(css.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function plot(png: PNG, x: number, y: number, css: string): void {
-  const i = (y * png.width + x) * 4;
-  const [r, g, b] = hex(css);
-  png.data[i] = r;
-  png.data[i + 1] = g;
-  png.data[i + 2] = b;
-  png.data[i + 3] = 255;
-}
-
-function blank(width: number, height: number): PNG {
-  const png = new PNG({ width, height });
-  png.data.fill(0);
-  return png;
-}
+import { blank, paint, plot } from "./pixel-art.ts";
 
 export function renderFont(): PNG {
   const png = blank(fontSheetWidth, fontSheetHeight);
@@ -79,7 +60,7 @@ export function renderFont(): PNG {
 
 export function renderLogo(): PNG {
   const png = blank(logoWidth, logoHeight);
-  const paint = (dx: number, dy: number, color: (y: number) => string): void => {
+  const letter = (dx: number, dy: number, color: (y: number) => string): void => {
     let ox = 0;
     for (const ch of logoWord) {
       const rows = logoLetters[ch]!;
@@ -91,41 +72,29 @@ export function renderLogo(): PNG {
       ox += rows[0]!.length + logoGap;
     }
   };
-  paint(logoShadow[0], logoShadow[1], () => logoShadowColor);
-  paint(0, 0, (y) => logoBands.find((b) => y < b.until)!.color);
+  letter(logoShadow[0], logoShadow[1], () => logoShadowColor);
+  letter(0, 0, (y) => logoBands.find((b) => y < b.until)!.color);
   return png;
 }
 
 export function renderIcons(): PNG {
   const png = blank(iconSheetWidth, iconSheetHeight);
   for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
-    rows.forEach((row, y) => {
-      [...row].forEach((px, x) => {
-        if (px !== ".") plot(png, iconRects[name].x + x, y, iconPalette[px]!);
-      });
-    });
+    paint(png, rows, iconPalette, iconRects[name].x, 0);
   }
   return png;
 }
 
 export function renderCounter(): PNG {
   const png = blank(counterArt[0]!.length, counterArt.length);
-  counterArt.forEach((row, y) => {
-    [...row].forEach((px, x) => {
-      if (px !== ".") plot(png, x, y, counterPalette[px]!);
-    });
-  });
+  paint(png, counterArt, counterPalette);
   return png;
 }
 
 export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
   for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
-    rows.forEach((row, y) => {
-      [...row].forEach((px, x) => {
-        if (px !== ".") plot(png, prizeRects[id].x + x, y, prizePalette[px]!);
-      });
-    });
+    paint(png, rows, prizePalette, prizeRects[id].x, 0);
   }
   return png;
 }

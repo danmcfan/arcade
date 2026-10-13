@@ -108,7 +108,7 @@ What the capture ticks show:
 | `hive-modes` | 3358 flashing bees (unshaken) |
 | `hive-fuzz-*` | 1 |
 | `hive-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered hive (high score dials) · 3124 later in that hive · 3125 minigame pause menu · 3158 hub after Quit game |
-| `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 explosions mid-animation |
+| `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 hit effects mid-animation |
 | `gearhead-walk` | 191 facing left walking · 201 facing left idle |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
 | `wave-64-seed7` | 40 mid-run before Space (2048² canvas) · 199 50% collapsed · 357 100% collapsed |
@@ -223,6 +223,7 @@ Re-recorded from TypeScript so far:
 | `arcade-walk` | #21: the prize counter stands on the bottom wall and is solid. The walk along the bottom wall now stops at the counter, goes up round it and comes back down to the bottom wall (the 110-tick Right step became Right 24, Up 16, Right 80, Down 20), so every capture after tick 70 moved 30 ticks later (359, 390, 410, 432 became 389, 420, 440, 462). Trace and every frame re-recorded |
 | `hive-fuzz-1`..`3` | #21: after game over the random walk in the hub runs into the prize counter. Traces re-recorded; inputs and frames unchanged |
 | `arcade-enter-*` (hub frame after Quit game), `hive-clear` (9684), `hive-highscore` (2943, 3158) | #21: hub frames show the prize counter. Only those frames were re-recorded; they differ from the old ones only in the counter's 556 pixels. Traces unchanged |
+| `firefly-play` (every frame), `arcade-enter-firefly` (58, 358, 359, 381) | #33: Firefly's art is regenerated from `src/firefly/art.ts`: the firefly, sparks, Moths and hit effect on a night sky with grass. Only the frames that show the Firefly playfield were re-recorded, and they differ only inside it (x 56..279, y 56..343). Inputs and traces unchanged |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end
