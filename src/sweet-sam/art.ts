@@ -5,7 +5,7 @@
 // to src/assets/images/sweet-sam/ (`bun run art`), and
 // gen-sweet-sam-art.test.ts fails when the committed PNGs drift from this file.
 //
-// The bear, bees and food were imported from the Go game's PNGs with their
+// The bear, bees, honey drop and smoke pot were imported from the Go game's PNGs with their
 // shapes kept; only the colours moved into Sweetie 16.
 
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
@@ -15,9 +15,10 @@ import type { SweetieLetter } from "../ui/sweetie16.ts";
 export const frameSize = 16;
 
 /**
- * The bear walking, one list of frames per facing, standing frame first. The
- * walk cycle is stand, step, stand, other step (`walkCycle`). Facing right is
- * facing left mirrored.
+ * The bear walking, one list of frames per facing: standing, one step, the
+ * other step. Facing down or up, the other step is the first one mirrored, so
+ * only standing and one step are drawn. The walk cycle is stand, step, stand,
+ * other step (`walkCycle`). Facing right is facing left mirrored.
  */
 export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonly string[])[]>> = {
   down: [
@@ -57,24 +58,6 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "...krrk.........",
       "....kk..........",
     ],
-    [
-      "................",
-      "..kkk......kkk..",
-      "..kokkkkkkkkok..",
-      "..kkrrrrrrrrkk..",
-      "...krrrrrrrrk...",
-      "..krrrwrrwrrrk..",
-      "..krrrwkkwrrrk..",
-      "..krrrrrrrrrrk..",
-      "...krrrrrrrrkk..",
-      "....kkkkkkkkkrk.",
-      "...kkroooorrkrk.",
-      "..krrkoooorrkk..",
-      "..krrkrrrrrrk...",
-      "...kkkkkkkrrk...",
-      ".........krrk...",
-      "..........kk....",
-    ],
   ],
   up: [
     [
@@ -112,24 +95,6 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "...kkkkkkkrrk...",
       ".........krrk...",
       "..........kk....",
-    ],
-    [
-      "................",
-      "..kkk......kkk..",
-      "..krkkkkkkkkrk..",
-      "..kkrrrrrrrrkk..",
-      "...krrrrrrrrk...",
-      "..krrrrrrrrrrk..",
-      "..krrrrrrrrrrk..",
-      "..krrrrrrrrrrk..",
-      ".kkkrrrrrrrrk...",
-      ".krkkkkkkkkkk...",
-      "..kkrrrrrrrkk...",
-      "...krrrrrrkrrk..",
-      "...krrrrrrkrrk..",
-      "...krrkkkkkkk...",
-      "...krrk.........",
-      "....kk..........",
     ],
   ],
   left: [
@@ -194,28 +159,16 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
 export const walkCycle: readonly number[] = [0, 1, 0, 2];
 
 /**
- * The bear caught by a bee, one frame per beat: dazed, sinking, squashed flat,
- * then a puddle with stars. Drawn below the walk rows; not played yet (#47).
+ * The bear caught by a bee, one frame per beat: dazed (the standing bear with
+ * `dazedFace` over its eyes), then sinking, squashed flat, and a puddle with
+ * stars. Drawn below the walk rows; not played yet (#47).
  */
+export const dazedFace: readonly string[] = ["krrrrrrrrrrk", "krwwrkkrwwrk"];
+/** Where `dazedFace` goes on the standing bear. */
+export const dazedFaceAt: readonly [number, number] = [2, 4];
+
+/** The death frames after the dazed one. */
 export const bearDeath: readonly (readonly string[])[] = [
-  [
-    "..kkk......kkk..",
-    "..kokkkkkkkkok..",
-    "..kkrrrrrrrrkk..",
-    "...krrrrrrrrk...",
-    "..krrrrrrrrrrk..",
-    "..krwwrkkrwwrk..",
-    "..krrrrrrrrrrk..",
-    "...krrrrrrrrk...",
-    "....kkkkkkkk....",
-    "..kkrroooorrkk..",
-    ".krrkroooorkrrk.",
-    ".krrkroooorkrrk.",
-    "..kkrrrrrrrrkk..",
-    "...krrkkkkrrk...",
-    "....kk....kk....",
-    "................",
-  ],
   [
     "................",
     "................",
@@ -273,8 +226,10 @@ export const bearDeath: readonly (readonly string[])[] = [
 ];
 
 /**
- * A bee flying right, its 4 wing beats. `y` is the body (each bee recolours
- * it), `w` the wings and the white of the eye; facing left is this mirrored.
+ * A bee flying right, wings up and wings down. `y` is the body (each bee
+ * recolours it), `w` the wings and the white of the eye; facing left is this
+ * mirrored. Its 4 wing beats are these two, then these two again lifted by
+ * `beeBob`.
  */
 export const beeFlight: readonly (readonly string[])[] = [
   [
@@ -313,56 +268,27 @@ export const beeFlight: readonly (readonly string[])[] = [
     "..k..k..k.......",
     "................",
   ],
-  [
-    "........k...k...",
-    ".........k...k..",
-    "..kkk.kk..kkk...",
-    ".kwwwkwwkkyyyk..",
-    ".kwwwkwwkyywyk..",
-    "..kwwkkkkyykyk..",
-    "...kkkyykyyyyyk.",
-    "..kyykyykyyyyyk.",
-    ".kkyykkyykyyyk..",
-    "..kyyykkyykyk...",
-    "...kyyykkyyk....",
-    "....kkkkkkk.....",
-    "...k..k..k......",
-    "..k..k..k.......",
-    "................",
-    "................",
-  ],
-  [
-    "........k...k...",
-    ".........k...k..",
-    "..........kkk...",
-    "...kk.kkkkyyyk..",
-    "..kwwkwwkyywyk..",
-    "..kwwkkkkyykyk..",
-    "...kkkyykyyyyyk.",
-    "..kyykyykyyyyyk.",
-    ".kkyykkyykyyyk..",
-    "..kyyykkyykyk...",
-    "...kyyykkyyk....",
-    "....kkkkkkk.....",
-    "...k..k..k......",
-    "..k..k..k.......",
-    "................",
-    "................",
-  ],
+];
+
+/** Which `beeFlight` frame each of the 4 wing beats shows, and how far up it is lifted. */
+export const beeBeats: readonly { frame: number; bob: number }[] = [
+  { frame: 0, bob: 0 },
+  { frame: 1, bob: 0 },
+  { frame: 0, bob: 1 },
+  { frame: 1, bob: 1 },
 ];
 
 /**
- * Where each wing beat's eye is: the pupil, with the white of the eye the
+ * The bee's eye in `beeFlight`: the pupil, with the white of the eye the
  * pixel above it. The sleepy look closes the eye, the waking look opens it wide.
  */
-export const beeEyes: readonly (readonly [number, number])[] = [
-  [11, 6],
-  [11, 6],
-  [11, 5],
-  [11, 5],
-];
+export const beeEye: readonly [number, number] = [11, 6];
 
-/** Each bee's body colour, so the player can tell the four apart. */
+/**
+ * Each bee's body colour, so the player can tell the four apart. The keys are
+ * the bees' identities from the Go game (`SweetSamEnemyKind`, which the
+ * parity traces record), not their colours.
+ */
 export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
   red: "y",
   pink: "o",
@@ -379,12 +305,12 @@ export const sleepyLook = { body: "m", wings: "l" } as const;
 /** A sleepy bee about to wake: pale, eyes wide open. Alternates with the sleepy look. */
 export const wakingLook = { body: "w", wings: "l" } as const;
 
-/** Food cells: 8×12, 4 frames, as in the Go game. */
-export const foodCellWidth = 8;
-export const foodCellHeight = 12;
+/** Honey drop and smoke pot cells: 8×12, 4 frames, as in the Go game. */
+export const itemCellWidth = 8;
+export const itemCellHeight = 12;
 
-/** How far each of the 4 frames lifts the food off its shadow (it bobs). */
-export const foodBob: readonly number[] = [0, 1, 2, 1];
+/** How far each of the 4 frames lifts a honey drop or smoke pot off its shadow (it bobs). */
+export const itemBob: readonly number[] = [0, 1, 2, 1];
 
 /** A honey drop, 2×2: amber with a glint. */
 export const honeyDropArt: readonly string[] = ["yw", "oy"];

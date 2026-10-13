@@ -5,15 +5,12 @@ import { sub, type Sprite } from "../engine/image.ts";
 import type { PremulColor } from "../engine/surface.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import { imageBear, imageBees, imageHoneyDrop, imageSmokePot } from "../engine/assets.ts";
-import { beeOrder } from "./art.ts";
+import { beeOrder, itemCellHeight, itemCellWidth } from "./art.ts";
 
 export const tileSize = 8;
 export const tileWidth = 28;
 export const tileHeight = 36;
 
-// Honey drops (honey-drop.png) and smoke pots (smoke-pot.png): four 8×12 frames each (32×12).
-export const pelletAtlasCellW = 8;
-export const pelletAtlasCellH = 12;
 export const pelletAnimHoldTicks = 15;
 export const pelletAnimFrameCount = 4;
 
@@ -292,8 +289,8 @@ function newPellet(tx: number, ty: number): Entity {
   e.frameTotal = 1;
   e.x = 8 * tx + 4;
   e.y = 8 * (ty + 3) + 4;
-  e.width = pelletAtlasCellW;
-  e.height = pelletAtlasCellH;
+  e.width = itemCellWidth;
+  e.height = itemCellHeight;
   return e;
 }
 

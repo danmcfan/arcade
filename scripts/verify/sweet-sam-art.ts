@@ -17,7 +17,7 @@ import type { InputScript, InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
-import { beeOrder } from "../../src/sweet-sam/art.ts";
+import { beeOrder, frameSize } from "../../src/sweet-sam/art.ts";
 import { cabinetInsetLeft, cabinetInsetTop } from "../../src/ui/cabinet.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { decodeDataUrl, isRecord } from "../browser.ts";
@@ -37,6 +37,8 @@ const sheet = (file: string): PNG => PNG.sync.read(readFileSync(join(sweetSamIma
 const maze = sheet("maze.png");
 const bear = sheet("bear.png");
 const bees = sheet("bees.png");
+/** Each bee's sheet in bees.png, stacked in `beeOrder`. */
+const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
@@ -81,15 +83,15 @@ interface Placed {
 function covers(p: Placed, x: number, y: number): boolean {
   const fx = x - p.x;
   const fy = y - p.y;
-  return fx >= 0 && fx < 16 && fy >= 0 && fy < 16 && (px(p.src, p.sx + fx, p.sy + fy) & 255) !== 0;
+  return fx >= 0 && fx < frameSize && fy >= 0 && fy < frameSize && (px(p.src, p.sx + fx, p.sy + fy) & 255) !== 0;
 }
 
 /** Share of the frame's opaque pixels that show on the canvas exactly, leaving out those `above` covers. */
 function shown(frame: PNG, p: Placed, above: readonly Placed[]): number {
   let opaque = 0;
   let same = 0;
-  for (let y = 0; y < 16; y++) {
-    for (let x = 0; x < 16; x++) {
+  for (let y = 0; y < frameSize; y++) {
+    for (let x = 0; x < frameSize; x++) {
       const s = px(p.src, p.sx + x, p.sy + y);
       if ((s & 255) === 0 || above.some((a) => covers(a, p.x + x, p.y + y))) continue;
       opaque++;
@@ -115,15 +117,21 @@ function placeBee(s: SweetSamSnapshot, e: SweetSamEnemySnapshot): Placed {
   return {
     what: `${e.kind} bee (${look})`,
     src: bees,
-    sx: 16 * Math.trunc(e.frame),
-    sy: beeOrder.indexOf(e.kind) * 96 + 16 * row,
+    sx: frameSize * Math.trunc(e.frame),
+    sy: beeOrder.indexOf(e.kind) * beeSheetHeight + frameSize * row,
     ...at(s, e.x, e.y),
   };
 }
 
 function placeBear(s: SweetSamSnapshot): Placed {
   const p = s.player;
-  return { what: "bear", src: bear, sx: 16 * Math.trunc(p.frame), sy: 16 * bearRows[p.dir], ...at(s, p.x, p.y) };
+  return {
+    what: "bear",
+    src: bear,
+    sx: frameSize * Math.trunc(p.frame),
+    sy: frameSize * bearRows[p.dir],
+    ...at(s, p.x, p.y),
+  };
 }
 
 /** Where particle bursts are flying (maze coordinates): an eaten bee's popup, or the caught bear. */

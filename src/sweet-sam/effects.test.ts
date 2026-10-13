@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { CameraSystem } from "./camera.ts";
-import { maxParticles, ParticleSystem, particleColorRed, particleColorTeal } from "./particle.ts";
+import { maxParticles, ParticleSystem, particleColorRed, particleColorCyan } from "./particle.ts";
 import { bonusEatIndicatorTicks, bonusEatPoints, scaredBeeEatPoints } from "./bonusEat.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 
@@ -43,27 +43,23 @@ describe("CameraSystem", () => {
   });
 });
 
-/** A colour's RGB as CSS hex, as `sweetie` writes them. */
-function css(c: { r: number; g: number; b: number }): string {
-  return `#${[c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
-
 describe("ParticleSystem", () => {
   test("colors are Sweetie 16 cyan and red, opaque", () => {
-    expect([css(particleColorTeal), particleColorTeal.a]).toEqual([sweetie.c, 255]);
-    expect([css(particleColorRed), particleColorRed.a]).toEqual([sweetie.r, 255]);
+    expect(particleColorCyan).toEqual({ r: 0x73, g: 0xef, b: 0xf7, a: 255 }); // #73eff7
+    expect(particleColorRed).toEqual({ r: 0xb1, g: 0x3e, b: 0x53, a: 255 }); // #b13e53
+    expect([sweetie.c, sweetie.r]).toEqual(["#73eff7", "#b13e53"]);
   });
 
   test("a burst fills the first free slots, three random draws per particle", () => {
     rng.seed(3);
     const ps = new ParticleSystem();
-    ps.spawnBurst(10, 20, particleColorTeal, 25);
+    ps.spawnBurst(10, 20, particleColorCyan, 25);
     expect(ps.activeCount()).toBe(25);
     rng.seed(3);
     for (let i = 0; i < 25 * 3; i++) rng.float();
     const expected = rng.state();
     rng.seed(3);
-    new ParticleSystem().spawnBurst(10, 20, particleColorTeal, 25);
+    new ParticleSystem().spawnBurst(10, 20, particleColorCyan, 25);
     expect(rng.state()).toBe(expected);
   });
 

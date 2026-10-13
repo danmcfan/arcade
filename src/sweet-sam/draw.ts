@@ -11,17 +11,8 @@ import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
 import { glyphWidth } from "../ui/glyphs.ts";
-import { frameSize } from "./art.ts";
-import {
-  pelletAnimFrameCount,
-  pelletAnimHoldTicks,
-  pelletAtlasCellH,
-  pelletAtlasCellW,
-  pointToTile,
-  tileSize,
-  type Entity,
-  type Tile,
-} from "./entity.ts";
+import { frameSize, itemCellHeight, itemCellWidth, mazeWidth } from "./art.ts";
+import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -91,7 +82,7 @@ function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
 /** Shown during START, centred over the bee home, each letter on a wave. */
 export const readyText = "READY!";
 /** The centre of the maze, which READY! is centred on. */
-const readyCentreX = 112;
+const readyCentreX = mazeWidth / 2;
 
 export const readyWaveAmpPx = 2.0;
 /** Sine advance per elapsed START frame. */
@@ -139,8 +130,8 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
   }
 
   const frame = animFrame % pelletAnimFrameCount;
-  const sx = frame * pelletAtlasCellW;
-  const frameRect = sub(e.sprite, sx, 0, sx + pelletAtlasCellW, pelletAtlasCellH);
+  const sx = frame * itemCellWidth;
+  const frameRect = sub(e.sprite, sx, 0, sx + itemCellWidth, itemCellHeight);
 
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }

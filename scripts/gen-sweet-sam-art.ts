@@ -18,25 +18,28 @@ import { PNG } from "pngjs";
 import {
   bearDeath,
   bearWalk,
+  beeBeats,
   beeBodies,
-  beeEyes,
+  beeEye,
   beeFlight,
   beeOrder,
   bonusFlowerArt,
   corridorMargin,
+  dazedFace,
+  dazedFaceAt,
   dialCell,
   dialDigitInk,
   doorBar,
   doorBarRows,
-  foodBob,
-  foodCellHeight,
-  foodCellWidth,
   frameSize,
   honeyDropArt,
   honeyDropShadow,
   honeyDropShadowTop,
   honeyDropTop,
   honeycomb,
+  itemBob,
+  itemCellHeight,
+  itemCellWidth,
   mazeBackground,
   mazeHeight,
   mazeTiles,
@@ -124,48 +127,62 @@ function sheet(frames: readonly (readonly Rows[])[]): PNG {
   return png;
 }
 
+function frameOf(frames: readonly Rows[], i: number): Rows {
+  const f = frames[i];
+  if (f === undefined) throw new Error(`no frame ${i}`);
+  return f;
+}
+
+/** A facing's 4 walk frames. Facing down or up, the other step is the first step mirrored. */
 function walk(frames: readonly Rows[]): Rows[] {
-  return walkCycle.map((i) => {
-    const f = frames[i];
-    if (f === undefined) throw new Error(`no walk frame ${i}`);
-    return f;
-  });
+  const steps = frames.length === 2 ? [...frames, flipX(frameOf(frames, 1))] : frames;
+  return walkCycle.map((i) => frameOf(steps, i));
+}
+
+/** The standing bear, dazed: `dazedFace` over its eyes. */
+export function dazedBear(): string[] {
+  const [x, y] = dazedFaceAt;
+  return overlay(frameOf(bearWalk.down, 0), dazedFace, x, y);
 }
 
 /** Rows of bear.png: down, up, left, right, then dying. */
 export function bearFrames(): Rows[][] {
   const left = walk(bearWalk.left);
-  return [walk(bearWalk.down), walk(bearWalk.up), left, left.map((f) => flipX(f)), [...bearDeath]];
+  return [walk(bearWalk.down), walk(bearWalk.up), left, left.map((f) => flipX(f)), [dazedBear(), ...bearDeath]];
 }
 
-function setPixel(rows: Rows, x: number, y: number, letter: string): string[] {
-  return overlay(rows, [letter], x, y);
+/** `rows` moved up `n` rows, blank rows coming in at the bottom. */
+export function liftRows(rows: Rows, n: number): string[] {
+  const blankRow = ".".repeat(rows[0]?.length ?? 0);
+  return [...rows.slice(n), ...Array.from({ length: n }, () => blankRow)];
 }
 
 /** One wing beat of a bee in a look: its own colours, or sleepy (eyes shut), or waking (eyes wide). */
 export function beeFrame(kind: SweetSamEnemyKind, beat: number, look: "awake" | "sleepy" | "waking"): string[] {
-  const rows = beeFlight[beat];
-  const eye = beeEyes[beat];
-  if (rows === undefined || eye === undefined) throw new Error(`no bee wing beat ${beat}`);
-  const [ex, ey] = eye;
-  if (look === "awake") return recolour(rows, { y: beeBodies[kind] });
-  const colours = look === "sleepy" ? sleepyLook : wakingLook;
-  let out = recolour(rows, { y: colours.body, w: colours.wings });
-  if (look === "sleepy") {
-    // The eye shut: no white, a lid across where the pupil was.
-    out = setPixel(out, ex, ey - 1, colours.body);
-    out = setPixel(out, ex - 1, ey, "k");
+  const b = beeBeats[beat];
+  if (b === undefined) throw new Error(`no bee wing beat ${beat}`);
+  const rows = frameOf(beeFlight, b.frame);
+  let out: string[];
+  if (look === "awake") {
+    out = recolour(rows, { y: beeBodies[kind] });
   } else {
-    out = setPixel(out, ex, ey - 1, "k");
+    const colours = look === "sleepy" ? sleepyLook : wakingLook;
+    const [ex, ey] = beeEye;
+    out = recolour(rows, { y: colours.body, w: colours.wings });
+    // Sleepy: the eye shut, no white and a lid across the pupil. Waking: the eye wide, all pupil.
+    out =
+      look === "sleepy"
+        ? overlay(out, [`.${colours.body}`, "kk"], ex - 1, ey - 1)
+        : overlay(out, ["k", "k"], ex, ey - 1);
   }
-  return out;
+  return liftRows(out, b.bob);
 }
 
 /** One bee's 64×96 sheet rows: flying right, left, sleepy right, left, waking right, left. */
 export function beeFrames(kind: SweetSamEnemyKind): Rows[][] {
   const rows: Rows[][] = [];
   for (const look of ["awake", "sleepy", "waking"] as const) {
-    const right = beeFlight.map((_, beat) => beeFrame(kind, beat, look));
+    const right = beeBeats.map((_, beat) => beeFrame(kind, beat, look));
     rows.push(
       right,
       right.map((f) => flipX(f)),
@@ -174,13 +191,13 @@ export function beeFrames(kind: SweetSamEnemyKind): Rows[][] {
   return rows;
 }
 
-/** 4 bobbing food frames of 8×12: the art lifted by `foodBob`, its shadow staying put. */
-function foodSheet(art: Rows, top: number, shadow: Rows, shadowTop: number, above?: readonly Rows[]): PNG {
-  const png = blank(foodCellWidth * foodBob.length, foodCellHeight);
-  foodBob.forEach((bob, i) => {
-    const ox = i * foodCellWidth;
-    const cx = (foodCellWidth - (art[0]?.length ?? 0)) / 2;
-    const sx = (foodCellWidth - (shadow[0]?.length ?? 0)) / 2;
+/** 4 bobbing 8×12 frames of a honey drop or smoke pot: the art lifted by `itemBob`, its shadow staying put. */
+function itemSheet(art: Rows, top: number, shadow: Rows, shadowTop: number, above?: readonly Rows[]): PNG {
+  const png = blank(itemCellWidth * itemBob.length, itemCellHeight);
+  itemBob.forEach((bob, i) => {
+    const ox = i * itemCellWidth;
+    const cx = (itemCellWidth - (art[0]?.length ?? 0)) / 2;
+    const sx = (itemCellWidth - (shadow[0]?.length ?? 0)) / 2;
     paint(png, shadow, sweetie, ox + sx, shadowTop);
     paint(png, art, sweetie, ox + cx, top - bob);
     const smoke = above?.[i];
@@ -189,9 +206,9 @@ function foodSheet(art: Rows, top: number, shadow: Rows, shadowTop: number, abov
   return png;
 }
 
-export const renderHoneyDrop = (): PNG => foodSheet(honeyDropArt, honeyDropTop, honeyDropShadow, honeyDropShadowTop);
+export const renderHoneyDrop = (): PNG => itemSheet(honeyDropArt, honeyDropTop, honeyDropShadow, honeyDropShadowTop);
 export const renderSmokePot = (): PNG =>
-  foodSheet(smokePotArt, smokePotTop, smokePotShadow, smokePotShadowTop, smokePotSmoke);
+  itemSheet(smokePotArt, smokePotTop, smokePotShadow, smokePotShadowTop, smokePotSmoke);
 
 /** digits.png: the font's 0 to 9 side by side, each centred in a `dialCell` square. */
 export function renderDigits(): PNG {

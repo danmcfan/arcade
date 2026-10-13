@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
 import { SweetSamSoftware } from "./software.ts";
-import { particleColorTeal } from "./particle.ts";
+import { particleColorCyan } from "./particle.ts";
 import { textWidth } from "../ui/text.ts";
 
 type Op = [string, ...unknown[]];
@@ -145,7 +145,7 @@ describe("SweetSamSoftware.draw", () => {
     pink.blueFrames = 10;
     pink.flash = true;
     s.bonusEatPopups.push({ x: 100, y: 120, frameIdx: 2, ticksRemain: 10 });
-    s.particles.spawnBurst(50, 60, particleColorTeal, 1);
+    s.particles.spawnBurst(50, 60, particleColorCyan, 1);
     const p = s.particles.pool[0];
     if (!p) throw new Error("particle");
     p.lifeTicks = 7;

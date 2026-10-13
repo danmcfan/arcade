@@ -5,18 +5,22 @@ import { PNG } from "pngjs";
 import {
   bearDeath,
   bearWalk,
+  beeBeats,
   beeBodies,
-  beeEyes,
+  beeEye,
   beeFlight,
   beeOrder,
   bonusFlowerArt,
-  foodBob,
+  dazedFace,
   honeyDropArt,
+  honeyDropShadow,
   honeycomb,
+  itemBob,
   mazeHeight,
   mazeTiles,
   mazeWidth,
   smokePotArt,
+  smokePotShadow,
   smokePotSmoke,
   smokePotTop,
   walkCycle,
@@ -33,10 +37,12 @@ import {
   type Entity,
 } from "../src/sweet-sam/entity.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours } from "./pixel-art.ts";
+import { checkRows, colours, flipX } from "./pixel-art.ts";
 import {
   bearFrames,
+  dazedBear,
   beeFrame,
+  liftRows,
   beeFrames,
   isWax,
   mazeTileAt,
@@ -56,6 +62,7 @@ describe("Sweet Sam art source", () => {
     beeFlight.forEach((f, i) => {
       checkRows(`bee ${i}`, f, { w: 16, h: 16 });
     });
+    checkRows("dazed face", dazedFace, { w: 12, h: 2 });
     checkRows("bonus flower", bonusFlowerArt, { w: 16, h: 16 });
   });
 
@@ -65,13 +72,17 @@ describe("Sweet Sam art source", () => {
     expect(rows.map((r) => r.length)).toEqual([4, 4, 4, 4, 4]);
   });
 
-  test("each bee eye's pupil is dark with its white above it", () => {
-    beeFlight.forEach((rows, i) => {
-      const eye = beeEyes[i];
-      if (eye === undefined) throw new Error(`no eye for beat ${i}`);
-      const [x, y] = eye;
-      expect([rows[y]?.[x], rows[y - 1]?.[x]]).toEqual(["k", "w"]);
-    });
+  test("derived frames: down and up step with mirrored feet, the dazed bear is the standing one with a new face", () => {
+    const [down] = bearFrames();
+    expect(down?.[3]).toEqual(flipX(bearWalk.down[1] ?? []));
+    expect(dazedBear().filter((row, y) => row !== bearWalk.down[0]?.[y])).toHaveLength(2);
+    expect(liftRows(["ab", "cd", "ef"], 1)).toEqual(["cd", "ef", ".."]);
+  });
+
+  test("each bee eye's pupil is dark with its white above it, and the 4 beats bob", () => {
+    const [x, y] = beeEye;
+    for (const rows of beeFlight) expect([rows[y]?.[x], rows[y - 1]?.[x]]).toEqual(["k", "w"]);
+    expect(beeBeats.map((b) => b.bob)).toEqual([0, 0, 1, 1]);
   });
 
   test("the four bees look different, and sleepy and waking bees look different from all of them", () => {
@@ -91,14 +102,16 @@ describe("Sweet Sam art source", () => {
   });
 
   test("the honey drop and smoke pot fit their 8×12 cells on every bob, smoke included", () => {
-    checkRows("honey drop", honeyDropArt);
-    checkRows("smoke pot", smokePotArt, { w: 6 });
+    checkRows("honey drop", honeyDropArt, { w: 2, h: 2 });
+    checkRows("honey drop shadow", honeyDropShadow, { w: 2, h: 1 });
+    checkRows("smoke pot", smokePotArt, { w: 6, h: 5 });
+    checkRows("smoke pot shadow", smokePotShadow, { w: 4, h: 1 });
     smokePotSmoke.forEach((s, i) => {
       checkRows(`smoke ${i}`, s, { w: 6 });
     });
-    expect(foodBob.length).toBe(4);
+    expect(itemBob.length).toBe(4);
     expect(smokePotSmoke.length).toBe(4);
-    const highest = Math.max(...foodBob);
+    const highest = Math.max(...itemBob);
     expect(smokePotTop - highest - (smokePotSmoke[0]?.length ?? 0)).toBeGreaterThanOrEqual(0);
   });
 
