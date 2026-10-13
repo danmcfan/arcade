@@ -3,9 +3,23 @@
 // tests rely on, and it works with no DOM.
 
 export type SoundName =
-  "melody" | "start" | "power" | "death" | "laser" | "boom" | "title" | "move" | "select" | "ticket" | "deny";
+  | "hub"
+  | "screenOn"
+  | "attractBrassMonkey"
+  | "attractSweet"
+  | "attractFirefly"
+  | "start"
+  | "power"
+  | "death"
+  | "laser"
+  | "boom"
+  | "title"
+  | "move"
+  | "select"
+  | "ticket"
+  | "deny";
 export type SoundAction = "play" | "pause" | "rewind";
-/** Recorded as `"<action>:<name>"`, e.g. `"rewind:laser"`, `"pause:melody"`. */
+/** Recorded as `"<action>:<name>"`, e.g. `"rewind:laser"`, `"pause:hub"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;
 
 type Listener = (e: SoundEvent) => void;
@@ -39,11 +53,14 @@ export class Sound {
   readonly name: SoundName;
   readonly url: string;
   readonly loop: boolean;
+  /** 0 to 1: how loud the browser plays it. */
+  readonly volume: number;
 
-  constructor(name: SoundName, url: string, loop: boolean) {
+  constructor(name: SoundName, url: string, loop: boolean, volume = 1) {
     this.name = name;
     this.url = url;
     this.loop = loop;
+    this.volume = volume;
   }
 
   /** True while the browser is actually playing it (never without a DOM). */
@@ -98,6 +115,7 @@ export function loadSounds(list: readonly Sound[], create: () => HTMLAudioElemen
     if (el === null) return;
     el.preload = "auto";
     el.loop = sound.loop;
+    el.volume = sound.volume;
     el.addEventListener("canplaythrough", () => {
       sound.ready = true;
     });

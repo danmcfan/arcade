@@ -1,9 +1,10 @@
-// Synthesise the title music and menu sounds from src/ui/sounds.ts:
+// Synthesise the title music, the hub song, the cabinets' attract loops and
+// the menu sounds from src/ui/sounds.ts:
 //
-//   bun run sounds   # writes src/assets/sounds/title.wav, move.wav, select.wav, ticket.wav, deny.wav
+//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav
 //
-// Square-wave lead and arpeggio over a triangle bass, with a soft noise
-// hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
+// Songs are a square-wave lead and arpeggio over a triangle bass, with a soft
+// noise hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
 // gen-ui-sounds.test.ts fails when the committed WAVs no longer match the
 // source.
 
@@ -11,16 +12,21 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   arpeggio,
+  attractLoops,
   bass,
   blipEighth,
   denyBuzz,
   eighthsPerMinute,
+  hubSong,
   melody,
   moveBlip,
   sampleRate,
+  screenOn,
   selectChirp,
   ticketDing,
+  type Attract,
   type Note,
+  type Song,
 } from "../src/ui/sounds.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 
@@ -106,13 +112,40 @@ export function wav(samples: Float64Array): Buffer {
   return b;
 }
 
-export function renderTitle(): Buffer {
-  const eighth = 60 / eighthsPerMinute;
-  const out = new Float64Array(Math.round(eighths(melody) * eighth * sampleRate));
-  voice(out, bass, eighth, triangle, 0.3, 0.8);
-  voice(out, arpeggio, eighth, square(0.125), 0.07, 0.3);
-  voice(out, melody, eighth, square(0.25), 0.14, 0.6);
-  hats(out, eighth, 0.05);
+function renderSong(song: Song): Buffer {
+  const eighth = 60 / song.eighthsPerMinute;
+  const out = new Float64Array(Math.round(eighths(song.melody) * eighth * sampleRate));
+  voice(out, song.bass, eighth, triangle, 0.3, 0.8);
+  voice(out, song.arpeggio, eighth, square(0.125), 0.07, 0.3);
+  voice(out, song.melody, eighth, square(0.25), 0.14, 0.6);
+  hats(out, eighth, song.hats);
+  return wav(out);
+}
+
+export const renderTitle = (): Buffer => renderSong({ eighthsPerMinute, bass, arpeggio, melody, hats: 0.05 });
+export const renderHub = (): Buffer => renderSong(hubSong);
+
+function renderAttract(loop: Attract): Buffer {
+  const out = new Float64Array(Math.round(eighths(loop.notes) * loop.eighth * sampleRate));
+  if (loop.wave === "square") voice(out, loop.notes, loop.eighth, square(0.25), 0.2, 0.4);
+  else voice(out, loop.notes, loop.eighth, triangle, 0.3, 0.4);
+  return wav(out);
+}
+
+export const renderAttractBrassMonkey = (): Buffer => renderAttract(attractLoops.brassMonkey);
+export const renderAttractSweet = (): Buffer => renderAttract(attractLoops.sweet);
+export const renderAttractFirefly = (): Buffer => renderAttract(attractLoops.firefly);
+
+/** The thunk, then a sine whine sweeping up that swells in and dies away. */
+export function renderScreenOn(): Buffer {
+  const s = screenOn;
+  const out = new Float64Array(Math.round(s.seconds * sampleRate));
+  voice(out, s.thunk, s.thunkEighth, square(0.5), 0.25, 0.3);
+  for (let i = 0; i < out.length; i++) {
+    const p = i / out.length;
+    const f = s.whineFrom + (s.whineTo - s.whineFrom) * p;
+    mix(out, i, Math.sin((2 * Math.PI * f * i) / sampleRate) * s.whineGain * Math.min(1, p * 4) * (1 - p));
+  }
   return wav(out);
 }
 
@@ -129,6 +162,11 @@ export const renderDeny = (): Buffer => blip(denyBuzz);
 
 const dir = join(repoRoot, "src/assets/sounds");
 export const titlePath = join(dir, "title.wav");
+export const hubPath = join(dir, "hub.wav");
+export const screenOnPath = join(dir, "screen-on.wav");
+export const attractBrassMonkeyPath = join(dir, "attract-brass-monkey.wav");
+export const attractSweetPath = join(dir, "attract-sweet.wav");
+export const attractFireflyPath = join(dir, "attract-firefly.wav");
 export const movePath = join(dir, "move.wav");
 export const selectPath = join(dir, "select.wav");
 export const ticketPath = join(dir, "ticket.wav");
@@ -137,6 +175,11 @@ export const denyPath = join(dir, "deny.wav");
 if (import.meta.main) {
   for (const [path, render] of [
     [titlePath, renderTitle],
+    [hubPath, renderHub],
+    [screenOnPath, renderScreenOn],
+    [attractBrassMonkeyPath, renderAttractBrassMonkey],
+    [attractSweetPath, renderAttractSweet],
+    [attractFireflyPath, renderAttractFirefly],
     [movePath, renderMove],
     [selectPath, renderSelect],
     [ticketPath, renderTicket],

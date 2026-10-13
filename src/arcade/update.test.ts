@@ -160,10 +160,10 @@ describe("melody and title", () => {
     run(s, 1, { up: true }); // y = 67
     expect(s.melodyPlaying).toBe(true);
     expect(s.imageTitle).toBe("sweet");
-    expect(sounds).toEqual(["play:melody"]);
+    expect(sounds).toEqual(["play:attractSweet", "rewind:screenOn", "play:screenOn"]);
     run(s, 10, { up: true });
     run(s, 10); // idle, still facing up
-    expect(sounds).toEqual(["play:melody"]);
+    expect(sounds).toEqual(["play:attractSweet", "rewind:screenOn", "play:screenOn"]);
     expect(s.melodyPlaying).toBe(true);
   });
 
@@ -174,9 +174,9 @@ describe("melody and title", () => {
     run(s, 1, { left: true });
     expect(s.melodyPlaying).toBe(false);
     expect(s.imageTitle).toBeNull();
-    expect(sounds).toEqual(["pause:melody", "rewind:melody"]);
+    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
     run(s, 5, { left: true });
-    expect(sounds).toEqual(["pause:melody", "rewind:melody"]);
+    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
   });
 
   test("each cabinet shows its own title", () => {
@@ -201,7 +201,7 @@ describe("entering a machine", () => {
     expect(s.loadedSoftware?.name).toBe("hive");
     expect(s.loadedSoftware === null ? undefined : highScores.get(s.loadedSoftware)).toBe(777);
     expect(s.melodyPlaying).toBe(false);
-    expect(sounds).toEqual(["pause:melody", "rewind:melody"]);
+    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
   });
 
   test("Go quirk: the title is not cleared on entry (only melodyPlaying is)", () => {
@@ -215,7 +215,13 @@ describe("entering a machine", () => {
     const s = newState(null, fakeFactory);
     run(s, 24, { up: true });
     update(s, input({ up: true, space: true }));
-    expect(sounds).toEqual(["play:melody", "pause:melody", "rewind:melody"]);
+    expect(sounds).toEqual([
+      "play:attractSweet",
+      "rewind:screenOn",
+      "play:screenOn",
+      "pause:attractSweet",
+      "rewind:attractSweet",
+    ]);
     expect(s.loadedSoftware?.name).toBe("hive");
   });
 
@@ -236,7 +242,7 @@ describe("entering a machine", () => {
     run(s, 31, { up: true });
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
-    expect(sounds).toEqual(["pause:melody", "rewind:melody", "play:start"]);
+    expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "play:start"]);
   });
 });
 

@@ -5,7 +5,15 @@ import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from
 import { counterRect } from "../src/arcade/prizeCounter.ts";
 import { counterArt } from "../src/ui/counterArt.ts";
 import { icons } from "../src/ui/icons.ts";
-import { cabinetArt, roomHeight, roomWidth } from "../src/ui/hubArt.ts";
+import {
+  cabinetArt,
+  powerFrameHeight,
+  powerFrames,
+  powerFrameWidth,
+  roomHeight,
+  roomWidth,
+  screenGlass,
+} from "../src/ui/hubArt.ts";
 import {
   playerFrameHeight,
   playerFrames,
@@ -22,6 +30,7 @@ import { prizes } from "../src/arcade/prizes.ts";
 import {
   counterPath,
   fontPath,
+  hubPowerRows,
   hubRoomRows,
   iconsPath,
   logoPath,
@@ -34,8 +43,10 @@ import {
   renderPlayer,
   renderPrizes,
   renderRoom,
+  renderScreens,
   renderTitleCard,
   roomPath,
+  screensPath,
   titleCardPath,
 } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
@@ -69,6 +80,13 @@ describe("UI art source", () => {
     checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
     // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
     checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
+  });
+
+  test("screens.png is a row of power frames per cabinet, in Sweetie 16 letters and .", () => {
+    checkRows("screen glass", screenGlass, { w: 8, h: 5 });
+    const sheet = hubPowerRows();
+    checkRows("screens", sheet, { w: powerFrames.length * powerFrameWidth, h: 3 * powerFrameHeight });
+    expect([sheet[0]?.length, sheet.length]).toEqual([images.screens.width, images.screens.height]);
   });
 
   test("every player frame is the player's 16x24 box, in Sweetie 16 letters and .", () => {
@@ -108,6 +126,7 @@ describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, prizeA
     ["icons.png", iconsPath, renderIcons],
     ["counter.png", counterPath, renderCounter],
     ["arcade.png", roomPath, renderRoom],
+    ["screens.png", screensPath, renderScreens],
     ["player.png", playerPath, renderPlayer],
     ["prizes.png", prizesPath, renderPrizes],
     ...titleCards.map((card): [string, string, () => PNG] => [

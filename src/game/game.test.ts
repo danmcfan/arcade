@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { soundPower, soundStart } from "../engine/assets.ts";
-import type { SoundEvent } from "../engine/audio.ts";
+import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
@@ -138,7 +138,8 @@ describe("snapshot", () => {
       cursor: 0,
       payout: null,
       sw: null,
-      sounds: [],
+      // The hub song starts on the first tick in the hub.
+      sounds: ["play:hub"],
     });
   });
 
@@ -154,7 +155,7 @@ describe("snapshot", () => {
     run(game, 31, { up: true }); // reaches the hive cabinet on tick 25
     expect(snap(game).sounds).toEqual([]);
     game.step(input({ left: true }));
-    expect(snap(game).sounds).toEqual(["pause:melody", "rewind:melody"]);
+    expect(snap(game).sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
     game.step(input());
     expect(snap(game).sounds).toEqual([]);
   });
@@ -163,7 +164,7 @@ describe("snapshot", () => {
     const { game } = newGame();
     run(game, 25, { up: true });
     const s = snap(game);
-    expect(s.sounds).toEqual(["play:melody"]);
+    expect(s.sounds).toEqual(["play:attractSweet", "rewind:screenOn", "play:screenOn"]);
     expect(s.arcade.melodyPlaying).toBe(true);
     expect(s.arcade.title).toBe("sweet");
   });
@@ -204,13 +205,76 @@ describe("createGame(software): tick 1 is a hub tick", () => {
   });
 });
 
+/** Every sound event while `play` runs. */
+function soundsDuring(play: () => void): SoundEvent[] {
+  const events: SoundEvent[] = [];
+  const off = addSoundListener((e) => {
+    events.push(e);
+  });
+  play();
+  off();
+  return events;
+}
+
+describe("the hub song", () => {
+  test("plays in the hub, pauses in a minigame and plays on after it", () => {
+    const { game } = newGame();
+    expect(
+      soundsDuring(() => {
+        run(game, 30);
+      }),
+    ).toEqual(["play:hub"]);
+    expect(
+      soundsDuring(() => {
+        enterHive(game);
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual(["pause:hub"]);
+    expect(
+      soundsDuring(() => {
+        quitGame(game);
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual(["play:hub"]);
+  });
+
+  test("keeps playing under the prize counter menu", () => {
+    const { game } = newGame();
+    game.step(input());
+    expect(
+      soundsDuring(() => {
+        run(game, 3, { down: true, space: true });
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual([]);
+    expect(snap(game).menu).toBe("prizeCounter");
+  });
+
+  test("pauseAudio and resumeAudio pause and play it and the faced cabinet; stopAudio rewinds both", () => {
+    const { game } = newGame();
+    run(game, 25, { up: true });
+    expect(
+      soundsDuring(() => {
+        game.pauseAudio();
+      }),
+    ).toEqual(["pause:hub", "pause:attractSweet"]);
+    expect(
+      soundsDuring(() => {
+        game.resumeAudio();
+      }),
+    ).toEqual(["play:hub", "play:attractSweet"]);
+    expect(
+      soundsDuring(() => {
+        game.stopAudio();
+      }),
+    ).toEqual(["pause:hub", "rewind:hub", "pause:attractSweet", "rewind:attractSweet"]);
+  });
+});
+
 describe("entering and leaving software", () => {
   test("Space at a cabinet hands its software to the Game on the same tick", () => {
     const { game, built } = newGame();
     enterHive(game);
     const s = snap(game);
     expect(s.software).toBe("hive");
-    expect(s.sounds).toEqual(["pause:melody", "rewind:melody", "rewind:start", "play:start"]);
+    expect(s.sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "rewind:start", "play:start", "pause:hub"]);
     expect(built[0]?.updates).toEqual([]);
     game.step(input({ left: true }));
     expect(built[0]?.updates).toEqual([input({ left: true })]);
@@ -219,6 +283,7 @@ describe("entering and leaving software", () => {
 
   test("Escape in the hub does nothing special", () => {
     const { game } = newGame();
+    game.step(input());
     game.step(input({ escape: true, left: true }));
     const s = snap(game);
     expect(s.sounds).toEqual([]);

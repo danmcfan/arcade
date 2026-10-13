@@ -1,14 +1,24 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { arpeggio, bass, melody, type Note } from "../src/ui/sounds.ts";
+import { arpeggio, attractLoops, bass, hubSong, melody, type Note } from "../src/ui/sounds.ts";
 import {
+  attractBrassMonkeyPath,
+  attractFireflyPath,
+  attractSweetPath,
   denyPath,
+  hubPath,
   movePath,
+  renderAttractBrassMonkey,
+  renderAttractFirefly,
+  renderAttractSweet,
   renderDeny,
+  renderHub,
   renderMove,
+  renderScreenOn,
   renderSelect,
   renderTicket,
   renderTitle,
+  screenOnPath,
   selectPath,
   ticketPath,
   titlePath,
@@ -17,6 +27,15 @@ import {
 const length = (notes: readonly Note[]): number => notes.reduce((t, [, len]) => t + len, 0);
 
 describe("UI sound source", () => {
+  test("the hub song's voices are the same length, so the loop lines up", () => {
+    expect(length(hubSong.bass)).toBe(length(hubSong.melody));
+    expect(length(hubSong.arpeggio)).toBe(length(hubSong.melody));
+  });
+
+  test("every attract loop is four bars of eighths", () => {
+    for (const loop of Object.values(attractLoops)) expect(length(loop.notes)).toBe(32);
+  });
+
   test("the title music's voices are the same length, so the loop lines up", () => {
     expect(length(bass)).toBe(length(melody));
     expect(length(arpeggio)).toBe(length(melody));
@@ -26,6 +45,11 @@ describe("UI sound source", () => {
 describe("committed WAVs match src/ui/sounds.ts (run `bun run sounds` after editing it)", () => {
   for (const [name, path, render] of [
     ["title.wav", titlePath, renderTitle],
+    ["hub.wav", hubPath, renderHub],
+    ["screen-on.wav", screenOnPath, renderScreenOn],
+    ["attract-brass-monkey.wav", attractBrassMonkeyPath, renderAttractBrassMonkey],
+    ["attract-sweet.wav", attractSweetPath, renderAttractSweet],
+    ["attract-firefly.wav", attractFireflyPath, renderAttractFirefly],
     ["move.wav", movePath, renderMove],
     ["select.wav", selectPath, renderSelect],
     ["ticket.wav", ticketPath, renderTicket],

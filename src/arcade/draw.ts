@@ -1,16 +1,31 @@
-// Port of internal/arcade/draw.go, plus the prize counter and the decorations
-// of the prizes the player owns.
+// Port of internal/arcade/draw.go, plus the cabinet screens switching on, the
+// prize counter and the decorations of the prizes the player owns.
 
-import { imageArcade, imageCounter } from "../engine/assets.ts";
+import { imageArcade, imageCounter, imageScreens } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { titleImages } from "./machine.ts";
 import { prize } from "./prizes.ts";
+import { screenFrame } from "./screen.ts";
+import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
 
 export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
   drawImage(screen, imageArcade, buffer, buffer);
+  // A screen's frame covers its cabinet and the carpet its light falls on.
+  s.machines.forEach((m, row) => {
+    const frame = screenFrame(m.screen);
+    if (frame === null) return;
+    const img = cutImage(
+      imageScreens,
+      frame * powerFrameWidth,
+      row * powerFrameHeight,
+      powerFrameWidth,
+      powerFrameHeight,
+    );
+    drawImage(screen, img, m.rect.x - powerCabinetX + buffer, m.rect.y + buffer);
+  });
   // The player can't overlap the counter, so drawing it first is enough.
   drawImage(screen, imageCounter, s.counter.x + buffer, s.counter.y + buffer);
   // Decorations are not solid: the player walks in front of them.
