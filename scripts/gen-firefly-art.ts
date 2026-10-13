@@ -2,9 +2,9 @@
 //
 //   bun run art      # also writes src/assets/images/firefly/*.png
 //
-// firefly.png and spark.png are their rows as drawn. moth.png, wasp.png and
-// owl.png are rotation sheets: the up-facing source turned clockwise in 15°
-// steps, one frame per heading (`rotationRows` × `rotationColumns`). Quarter
+// firefly.png, spark.png and shot.png are their rows as drawn. moth.png,
+// wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
+// sheets: the up-facing source turned clockwise in 15° steps, one frame per heading (`rotationRows` × `rotationColumns`). Quarter
 // turns are exact; the other angles use RotSprite (scale the source up 8×
 // with Scale2x, rotate, sample back down), which keeps the outlines whole and
 // adds no colours. hit.png is the hit frames, each mirrored from its quarter.
@@ -22,10 +22,12 @@ import {
   hitQuarters,
   mothArt,
   owlArt,
+  owlHurtColours,
   rotationColumns,
   rotationRows,
   rotationStep,
   skyStops,
+  shotArt,
   sparkArt,
   starArt,
   stars,
@@ -33,7 +35,7 @@ import {
 } from "../src/firefly/art.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, empty, mirrorX, mirrorY, paint, plot, toPng, type Rows } from "./pixel-art.ts";
+import { blank, empty, mirrorX, mirrorY, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 
 function at(rows: Rows, x: number, y: number): string {
   return rows[y]?.[x] ?? empty;
@@ -182,6 +184,8 @@ export const fireflyArtFiles: readonly { file: string; render: () => PNG }[] = [
   { file: "moth.png", render: () => rotationSheet(mothArt) },
   { file: "wasp.png", render: () => rotationSheet(waspArt) },
   { file: "owl.png", render: () => rotationSheet(owlArt) },
+  { file: "owl-hurt.png", render: () => rotationSheet(recolour(owlArt, owlHurtColours)) },
+  { file: "shot.png", render: () => toPng(shotArt) },
   { file: "hit.png", render: renderHit },
   { file: "background.png", render: renderBackground },
 ];
