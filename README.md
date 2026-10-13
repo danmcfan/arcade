@@ -29,13 +29,13 @@ bun run build        # production bundle in dist/
 bun run preview      # serve dist/
 bun run check        # typecheck + test + build, as CI does (also run by the pre-push hook)
 bun run verify       # browser checks with screenshots and video (see below)
-bun run art          # rebuild the generated pixel art (UI from src/ui/, cabinets from art/, Firefly from src/firefly/art.ts)
+bun run art          # rebuild the generated pixel art (UI, prize decorations, hub room and player from src/ui/, cabinets from art/, Firefly from src/firefly/art.ts)
 bun run sounds       # rebuild the title music and menu sounds from src/ui/sounds.ts
 ```
 
 ## Pixel art for text
 
-All on-screen text is pixel art. The UI font and the title logo are drawn as ASCII (`#` and `.`) in `src/ui/glyphs.ts`; `bun run art` turns them into `src/assets/images/font.png` and `logo.png`, and a test fails if the committed PNGs drift from the source. `src/ui/text.ts` draws text, panels and key caps with them. The debug panel still uses the engine's debug font.
+All on-screen text is pixel art. The UI font and the title logo are drawn as ASCII (`#` and `.`) in `src/ui/glyphs.ts`; `bun run art` turns them into `src/assets/images/font.png` and `logo.png`, and a test fails if the committed PNGs drift from the source. The hub room (`src/ui/hubArt.ts`), the player's sprite sheet (`src/ui/playerArt.ts`), the HUD icons and the prize counter are rows of palette letters in the Sweetie 16 palette, generated the same way. `src/ui/text.ts` draws text, panels and key caps with them. The debug panel still uses the engine's debug font.
 
 Firefly's sprites (the firefly, its spark, the Moth, Wasp and Owl, the hit effect and the night background) are rows of Sweetie 16 palette letters in `src/firefly/art.ts`. `bun run art` writes them to `src/assets/images/firefly/`, turning each enemy into a sheet of 15° rotation frames (`scripts/gen-firefly-art.ts`), and a test fails if they drift.
 

@@ -39,7 +39,7 @@ function decoration(id: PrizeId): Sprite {
 
 /**
  * Every prize, in the order the prize counter menu lists them. The Sweet Sam
- * cabinet's art is x 73..86, y 40..63 of the hub image: the jar and the shoe
+ * cabinet's art is x 72..87, y 40..63 of the hub image: the jar and the shoe
  * stand on the floor against either side of it, the picture hangs on the
  * wall above it.
  */

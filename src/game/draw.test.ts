@@ -159,7 +159,7 @@ describe("hub draw", () => {
       // On the bottom wall, centred: counterRect (60, 106) + the buffer.
       ["draw", "counter", 0, 0, 40, 14, 76, 122],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
-      ["draw", "gamer", 0, 24, 16, 24, 88, 96],
+      ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
   });
 
@@ -175,7 +175,7 @@ describe("hub draw", () => {
       ["draw", "prizes", r.honeyJar.x, 0, 8, 9, 81, 71],
       ["draw", "prizes", r.runningShoes.x, 0, 9, 6, 103, 74],
       ["draw", "prizes", r.sleepyBees.x, 0, 12, 11, 90, 44],
-      ["draw", "gamer", 0, 24, 16, 24, 88, 96],
+      ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
   });
 
@@ -191,7 +191,7 @@ describe("hub draw", () => {
     for (let t = 0; t < 25; t++) game.step(input({ left: true })); // frame 2.5, x 55
     const { calls, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[2]).toEqual(["draw", "gamer", 32, 48, 16, 24, 63, 96]);
+    expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
   test("the title is drawn over everything while the melody plays", () => {
