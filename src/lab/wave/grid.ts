@@ -183,7 +183,21 @@ export class Grid {
         continue;
       }
 
-      const nDirection = oppositeDirection(direction);
+      let nDirection = -1;
+      switch (direction) {
+        case 0:
+          nDirection = 2;
+          break;
+        case 1:
+          nDirection = 3;
+          break;
+        case 2:
+          nDirection = 0;
+          break;
+        case 3:
+          nDirection = 1;
+          break;
+      }
 
       const newPossible = at(this.constraints, value, nDirection);
 
@@ -240,21 +254,5 @@ export class Grid {
     const row = this.entropy[x];
     if (row === undefined) throw new Error(`index out of range [${x}]`);
     row[y] = v;
-  }
-}
-
-/** The direction facing back at `direction` (0 up, 1 right, 2 down, 3 left); -1 for any other value. */
-function oppositeDirection(direction: number): number {
-  switch (direction) {
-    case 0:
-      return 2;
-    case 1:
-      return 3;
-    case 2:
-      return 0;
-    case 3:
-      return 1;
-    default:
-      return -1;
   }
 }

@@ -88,14 +88,6 @@ function capture(script: InputScript): void {
   console.log(`${script.name}: ${plan.length} frame(s) → ${dir}`);
 }
 
-/** Capture each named input script that has capture ticks, in order. */
-function captureAll(names: readonly string[]): void {
-  for (const name of names) {
-    const script = loadScript(inputPath(name));
-    if (script.captureTicks.length > 0) capture(script);
-  }
-}
-
 if (import.meta.main) {
   const requested = process.argv.slice(2);
   const names =
@@ -108,7 +100,10 @@ if (import.meta.main) {
   try {
     page.run("open", `${server.url}/?debug`);
     page.run("wait", "--fn", "window.__arcade !== undefined");
-    captureAll(names);
+    for (const name of names) {
+      const script = loadScript(inputPath(name));
+      if (script.captureTicks.length > 0) capture(script);
+    }
   } finally {
     page.run("close");
     server.stop();

@@ -68,12 +68,7 @@ function normalPrice(v: Verify): void {
     wallet(v),
   );
   v.frame("1-hub-counter");
-  walkToCounter(v);
-  buyAtNormalPrice(v);
-}
 
-/** The counter is solid; walk round it to stand above it, facing it. */
-function walkToCounter(v: Verify): void {
   v.tap("space");
   check(game(v).menu === null, "Space at the start position (not at the counter) opens nothing", game(v).menu);
 
@@ -96,10 +91,7 @@ function walkToCounter(v: Verify): void {
     "back above the counter, facing it",
     game(v).arcade.player,
   );
-}
 
-/** Open the menu, buy a token for 5 tickets, close it and Continue again. */
-function buyAtNormalPrice(v: Verify): void {
   v.tap("space");
   let g = game(v);
   check(

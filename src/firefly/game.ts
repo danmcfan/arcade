@@ -169,54 +169,21 @@ export class FireflySoftware implements FixedViewport {
     }
 
     if (i.space && this.fireDelay <= 0) {
-      this.fire();
+      this.bullets.push({
+        ...newEntity(imageSpark),
+        position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
+        direction: { x: 0, y: -5.0 },
+      });
+      this.fireDelay = 20;
+
+      soundLaser.rewind();
+      soundLaser.play();
     }
 
     if (this.fireDelay > 0) {
       this.fireDelay--;
     }
 
-    this.movePlayer(i);
-
-    for (const bullet of this.bullets) {
-      bullet.position = add(bullet.position, bullet.direction);
-      // Bullets are 0×0, so this is y <= 0.
-      if (bullet.position.y <= bullet.height / 2) {
-        bullet.dead = true;
-      }
-    }
-
-    // Dead bullets (just flown off the top) still collide this tick, and bugs
-    // that have not spawned yet (sitting at 0,0) are fair game: only
-    // DeadFrames is checked.
-    for (const bullet of this.bullets) {
-      hitFirstBug(bullet, this.bugs);
-    }
-
-    this.bullets = this.bullets.filter((b) => !b.dead);
-
-    for (const bug of this.bugs) {
-      updateBug(bug);
-    }
-
-    // Removed at the end of the tick: one snapshot can show `bugs: []` before
-    // the next update respawns the wave.
-    this.bugs = this.bugs.filter((b) => !b.dead);
-  }
-
-  private fire(): void {
-    this.bullets.push({
-      ...newEntity(imageSpark),
-      position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
-      direction: { x: 0, y: -5.0 },
-    });
-    this.fireDelay = 20;
-
-    soundLaser.rewind();
-    soundLaser.play();
-  }
-
-  private movePlayer(i: Input): void {
     // Uses the Up, Down, Left, Right priority: holding Up or Down masks Left/Right.
     let newPosition = this.player.position;
     switch (direction(i)) {
@@ -241,6 +208,72 @@ export class FireflySoftware implements FixedViewport {
     }
 
     this.player.position = newPosition;
+
+    for (const bullet of this.bullets) {
+      bullet.position = add(bullet.position, bullet.direction);
+      // Bullets are 0×0, so this is y <= 0.
+      if (bullet.position.y <= bullet.height / 2) {
+        bullet.dead = true;
+      }
+    }
+
+    // Dead bullets (just flown off the top) still collide this tick, and bugs
+    // that have not spawned yet (sitting at 0,0) are fair game: only
+    // DeadFrames is checked.
+    for (const bullet of this.bullets) {
+      for (const bug of this.bugs) {
+        if (bug.deadFrames > 0) {
+          continue;
+        }
+
+        if (collide(bullet.position, bug.position)) {
+          bullet.dead = true;
+          bug.deadFrames = 75;
+
+          soundBoom.rewind();
+          soundBoom.play();
+
+          break; // only one bug per bullet
+        }
+      }
+    }
+
+    this.bullets = this.bullets.filter((b) => !b.dead);
+
+    for (const bug of this.bugs) {
+      if (bug.deadFrames > 0) {
+        bug.deadFrames--;
+        if (bug.deadFrames === 0) {
+          bug.dead = true;
+        }
+        continue;
+      }
+
+      if (bug.duration < 0) {
+        bug.duration += bug.durationStep;
+        continue;
+      }
+
+      bug.previousPosition = bug.position;
+      if (bug.duration > 1) {
+        bug.position = sub(bug.position, { x: 0, y: 2.5 });
+      } else {
+        // Every bug is built with a pattern; only the player has none.
+        if (bug.pattern === null) throw new Error("bug without pattern");
+        bug.position = bug.pattern(bug.duration);
+        bug.duration += bug.durationStep;
+      }
+
+      bug.direction = sub(bug.position, bug.previousPosition);
+
+      if (bug.position.y < 0) {
+        bug.dead = true;
+      }
+    }
+
+    // Removed at the end of the tick: one snapshot can show `bugs: []` before
+    // the next update respawns the wave.
+    this.bugs = this.bugs.filter((b) => !b.dead);
   }
 
   fixedViewportSize(): [number, number] {
@@ -346,56 +379,6 @@ export class FireflySoftware implements FixedViewport {
 /** Go `NewFireFlySoftware()`. */
 export function newFireflySoftware(): FireflySoftware {
   return new FireflySoftware();
-}
-
-/** Kill the first live bug `bullet` touches, if any: only one bug per bullet. */
-function hitFirstBug(bullet: Entity, bugs: readonly Entity[]): void {
-  for (const bug of bugs) {
-    if (bug.deadFrames > 0) {
-      continue;
-    }
-
-    if (collide(bullet.position, bug.position)) {
-      bullet.dead = true;
-      bug.deadFrames = 75;
-
-      soundBoom.rewind();
-      soundBoom.play();
-      return;
-    }
-  }
-}
-
-/** One tick of a bug: dying, waiting to spawn, flying its pattern, or leaving. */
-function updateBug(bug: Entity): void {
-  if (bug.deadFrames > 0) {
-    bug.deadFrames--;
-    if (bug.deadFrames === 0) {
-      bug.dead = true;
-    }
-    return;
-  }
-
-  if (bug.duration < 0) {
-    bug.duration += bug.durationStep;
-    return;
-  }
-
-  bug.previousPosition = bug.position;
-  if (bug.duration > 1) {
-    bug.position = sub(bug.position, { x: 0, y: 2.5 });
-  } else {
-    // Every bug is built with a pattern; only the player has none.
-    if (bug.pattern === null) throw new Error("bug without pattern");
-    bug.position = bug.pattern(bug.duration);
-    bug.duration += bug.durationStep;
-  }
-
-  bug.direction = sub(bug.position, bug.previousPosition);
-
-  if (bug.position.y < 0) {
-    bug.dead = true;
-  }
 }
 
 /** Both axes strictly closer than one tile. */

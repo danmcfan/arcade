@@ -73,15 +73,10 @@ function pauseMenu(v: Verify): void {
   );
   check(stored(v)?.v === 3 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 3)", stored(v));
   v.step(150, { left: true });
-  minigamePauseMenu(v);
-  quitGame(v);
-}
 
-/** In a paid Sweet Sam run: Esc, Controls, Resume and a second Esc. */
-function minigamePauseMenu(v: Verify): void {
   v.tap("escape");
   const t = v.snapshot(isTitleSnapshot);
-  let g = game(v);
+  g = game(v);
   check(
     t.phase === "playing" && g.menu === "paused" && g.cursor === 0,
     "Esc in Sweet Sam opens the minigame pause menu (not the hub pause menu)",
@@ -109,16 +104,13 @@ function minigamePauseMenu(v: Verify): void {
   v.tap("escape");
   v.tap("escape");
   check(game(v).menu === null, "a second Esc resumes too");
-}
 
-/** Quit game from the minigame pause menu: back in the hub, the token spent, no tickets. */
-function quitGame(v: Verify): void {
   v.tap("escape");
   v.tap("down");
   v.tap("down");
   v.frame("4-quit-game-no-tickets");
   v.tap("space");
-  const g = game(v);
+  g = game(v);
   check(g.software === null && g.menu === null && g.payout === null, "Quit game returns to the hub with no payout", g);
   check(
     g.arcade.tokens === 4 && g.arcade.tickets === 0,
@@ -171,13 +163,8 @@ function payout(v: Verify): void {
     g.payout,
   );
   v.frame("6-payout-open");
-  payoutCount(v);
-}
-
-/** The payout counts up, Space skips to the totals, Space again closes it. */
-function payoutCount(v: Verify): void {
   v.step(25);
-  let g = v.snapshot(isGameSnapshot);
+  g = v.snapshot(isGameSnapshot);
   check(
     g.payout?.score === 460 && g.payout.tickets === 1,
     "the score spins down by 100 as the tickets spin up by 1",

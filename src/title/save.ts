@@ -47,46 +47,29 @@ function count(v: unknown): v is number {
   return typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 }
 
-function isSaveVersion(v: unknown): v is 1 | 2 | 3 {
-  return v === 1 || v === 2 || v === 3;
-}
-
-/** The saved player, or null when it is not one. */
-function parsePlayer(raw: unknown): SaveData["player"] | null {
-  if (!isRecord(raw)) return null;
-  const { x, y, dir } = raw;
-  if (!finite(x) || !finite(y) || !isDirection(dir)) return null;
-  return { x, y, dir };
-}
-
-/** Tokens and tickets, upgrading a `v: 1` save; null when either is invalid. */
-function parseWallet(o: Record<string, unknown>, v: 1 | 2 | 3): { tokens: number; tickets: number } | null {
-  const tokens = v === 1 ? v1Upgrade.tokens : o["tokens"];
-  const tickets = v === 1 ? v1Upgrade.tickets : o["tickets"];
-  if (!count(tokens) || !count(tickets)) return null;
-  return { tokens, tickets };
-}
-
-/** Owned prizes; v1 and v2 saves own none. Null when the list is invalid. */
-function parsePrizes(o: Record<string, unknown>, v: 1 | 2 | 3): PrizeId[] | null {
-  const prizes = v === 3 ? o["prizes"] : [];
-  if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
-  return inCatalogueOrder(prizes);
-}
-
 /** Validate untrusted JSON (from storage) as a save; null if it is not one. */
 export function parseSave(raw: unknown): SaveData | null {
   if (!isRecord(raw)) return null;
-  const v = raw["v"];
-  const highScore = raw["highScore"];
-  if (!isSaveVersion(v) || !finite(highScore) || highScore < 0) return null;
-  const player = parsePlayer(raw["player"]);
-  if (player === null) return null;
-  const wallet = parseWallet(raw, v);
-  if (wallet === null) return null;
-  const prizes = parsePrizes(raw, v);
-  if (prizes === null) return null;
-  return { v: 3, highScore, tokens: wallet.tokens, tickets: wallet.tickets, prizes, player };
+  const o = raw;
+  if ((o["v"] !== 1 && o["v"] !== 2 && o["v"] !== 3) || !finite(o["highScore"]) || o["highScore"] < 0) return null;
+  const p = o["player"];
+  if (!isRecord(p)) return null;
+  const dir = p["dir"];
+  if (!finite(p["x"]) || !finite(p["y"]) || !isDirection(dir)) return null;
+  const tokens = o["v"] === 1 ? v1Upgrade.tokens : o["tokens"];
+  const tickets = o["v"] === 1 ? v1Upgrade.tickets : o["tickets"];
+  if (!count(tokens) || !count(tickets)) return null;
+  // v1 and v2 saves own no prizes.
+  const prizes = o["v"] === 3 ? o["prizes"] : [];
+  if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
+  return {
+    v: 3,
+    highScore: o["highScore"],
+    tokens,
+    tickets,
+    prizes: inCatalogueOrder(prizes),
+    player: { x: p["x"], y: p["y"], dir },
+  };
 }
 
 export function memoryStore(initial: SaveData | null = null): SaveStore {

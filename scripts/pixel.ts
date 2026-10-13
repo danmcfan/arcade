@@ -103,43 +103,31 @@ async function importAt(file: string, rev: string | undefined): Promise<Record<s
   }
 }
 
-/** Every entry of a list or record of rows, labelled `name key`; other entries are skipped. */
-function entryPanels(value: unknown, name: string): Panel[] {
-  const entries = Array.isArray(value)
-    ? value.map((v: unknown, i) => [String(i), v] as const)
-    : Object.entries(isRecord(value) ? value : {});
-  return entries.flatMap(([k, v]) => (isRows(v) ? [{ label: `${name} ${k}`, png: toPng(v, sourcePalette) }] : []));
-}
-
-/** `mod`'s export `name`, or its entry `key` when given. */
-function exportOf(mod: Record<string, unknown>, name: string, key: string | undefined): unknown {
-  const exported = mod[name];
-  if (key === undefined) return exported;
-  return isRecord(exported) ? exported[key] : undefined;
-}
-
-/** The panels a `path.ts:name[.key]` image names, at `rev` when given; [] when it is not there. */
-async function loadSource(file: string, name: string, key: string | undefined, rev?: string): Promise<Panel[]> {
-  const mod = await importAt(file, rev);
-  if (mod === undefined) return [];
-  const value = exportOf(mod, name, key);
-  if (key !== undefined && value === undefined) {
-    if (rev !== undefined) return [];
-    throw new Error(`${file}'s ${name} has no entry "${key}"`);
-  }
-  if (isRows(value)) return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
-  const panels = entryPanels(value, name);
-  if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
-  return panels;
-}
-
 /** The images an <image> argument names (see the header), at `rev` when given; [] when it is not there. */
 export async function load(spec: string, rev?: string): Promise<Panel[]> {
   const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/u.exec(spec);
   if (ts) {
     const [, file, name, key] = ts;
     if (file === undefined || name === undefined) throw new Error(`"${spec}" is not path.ts:name`);
-    const panels = await loadSource(file, name, key, rev);
+    const mod = await importAt(file, rev);
+    if (mod === undefined) return [];
+    let value = mod[name];
+    if (key !== undefined) {
+      value = isRecord(value) ? value[key] : undefined;
+      if (value === undefined) {
+        if (rev !== undefined) return [];
+        throw new Error(`${file}'s ${name} has no entry "${key}"`);
+      }
+    }
+    if (isRows(value))
+      return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
+    const entries = Array.isArray(value)
+      ? value.map((v: unknown, i) => [String(i), v] as const)
+      : Object.entries(isRecord(value) ? value : {});
+    const panels = entries.flatMap(([k, v]) =>
+      isRows(v) ? [{ label: `${name} ${k}`, png: toPng(v, sourcePalette) }] : [],
+    );
+    if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
     return panels;
   }
   const [file = spec, area] = spec.split("#");
@@ -283,15 +271,7 @@ async function inOrder<T, R>(items: readonly T[], fn: (item: T) => Promise<R>): 
   return all;
 }
 
-/** A command's parsed options and image arguments. */
-interface Command {
-  specs: string[];
-  opts: Record<string, string>;
-  k: number | undefined;
-  out: (name: string) => string;
-}
-
-function parseArgs(argv: readonly string[]): { command: string | undefined; cmd: Command } {
+async function main(argv: string[]): Promise<void> {
   const opts: Record<string, string> = {};
   const args: string[] = [];
   for (let i = 0; i < argv.length; i++) {
@@ -304,93 +284,72 @@ function parseArgs(argv: readonly string[]): { command: string | undefined; cmd:
   if (k !== undefined && !(Number.isInteger(k) && k > 0))
     throw new Error(`--scale ${opts["scale"]} is not a whole number above 0`);
   const out = (name: string): string => resolve(opts["out"] ?? join(outDir, `${name}.png`));
-  return { command, cmd: { specs, opts, k, out } };
-}
+  if (specs.length === 0) usage();
 
-async function rowsCommand({ specs }: Command): Promise<void> {
-  const loaded = await inOrder(specs, load);
-  for (const { label: name, png } of loaded.flat()) {
-    console.log(`// ${name}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
-    for (const row of toRows(png)) console.log(`"${row}",`);
+  switch (command ?? "") {
+    case "rows": {
+      for (const { label: name, png } of (await inOrder(specs, load)).flat()) {
+        console.log(`// ${name}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
+        for (const row of toRows(png)) console.log(`"${row}",`);
+      }
+      return;
+    }
+    case "colours": {
+      const letterOf = letters();
+      for (const { label: name, png } of (await inOrder(specs, load)).flat()) {
+        console.log(`${name} (${png.width}x${png.height})`);
+        for (const [c, n] of [...colours(png)].toSorted((a, b) => b[1] - a[1])) {
+          console.log(
+            `  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`,
+          );
+        }
+      }
+      return;
+    }
+    case "show": {
+      const panels = (await inOrder(specs, load)).flat();
+      write(sheet(panels, k), out("show"));
+      console.log(panels.map((p) => p.label).join(" | "));
+      return;
+    }
+    case "before": {
+      const rev = opts["ref"] ?? "origin/main";
+      if (
+        Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0
+      ) {
+        throw new Error(`--ref ${rev} is not a commit`);
+      }
+      const panels: Panel[] = [];
+      await inOrder(specs, async (spec) => {
+        const before = new Map((await load(spec, rev)).map((p) => [p.label, p.png]));
+        for (const after of await load(spec)) {
+          const old = before.get(after.label);
+          if (old) panels.push({ label: `before ${after.label}`, png: old });
+          panels.push({ label: `${old ? "after" : "new"} ${after.label}`, png: after.png });
+        }
+      });
+      write(sheet(panels, k ?? Math.min(...panels.map((p) => autoScale(p.png)))), out("before-after"));
+      return;
+    }
+    case "place": {
+      const [baseSpec, ...rest] = specs;
+      if (baseSpec === undefined) usage();
+      const items = await Promise.all(
+        rest.map(async (s) => {
+          const at = /^(.+)@(-?\d+),(-?\d+)$/u.exec(s);
+          const image = at?.[1];
+          if (!at || image === undefined) throw new Error(`"${s}" is not <image>@x,y`);
+          return { png: await loadOne(image), x: Number(at[2]), y: Number(at[3]) };
+        }),
+      );
+      const base = await loadOne(baseSpec);
+      const png = place(base, items);
+      write(scale(png, k ?? autoScale(png)), out("place"));
+      return;
+    }
+    default:
+      usage();
   }
-}
-
-function printColours(name: string, png: PNG, letterOf: Map<string, string>): void {
-  console.log(`${name} (${png.width}x${png.height})`);
-  const counts = [...colours(png)].toSorted((a, b) => b[1] - a[1]);
-  for (const [c, n] of counts) {
-    console.log(
-      `  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`,
-    );
-  }
-}
-
-async function coloursCommand({ specs }: Command): Promise<void> {
-  const letterOf = letters();
-  const loaded = await inOrder(specs, load);
-  for (const { label: name, png } of loaded.flat()) printColours(name, png, letterOf);
-}
-
-async function showCommand({ specs, k, out }: Command): Promise<void> {
-  const panels = (await inOrder(specs, load)).flat();
-  write(sheet(panels, k), out("show"));
-  console.log(panels.map((p) => p.label).join(" | "));
-}
-
-/** `spec` at `rev` and in the working copy, as before/after (or new) panels. */
-async function beforeAfter(spec: string, rev: string): Promise<Panel[]> {
-  const before = new Map((await load(spec, rev)).map((p) => [p.label, p.png]));
-  return (await load(spec)).flatMap((after) => {
-    const old = before.get(after.label);
-    const now = { label: `${old ? "after" : "new"} ${after.label}`, png: after.png };
-    return old ? [{ label: `before ${after.label}`, png: old }, now] : [now];
-  });
-}
-
-async function beforeCommand({ specs, opts, k, out }: Command): Promise<void> {
-  const rev = opts["ref"] ?? "origin/main";
-  if (Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0) {
-    throw new Error(`--ref ${rev} is not a commit`);
-  }
-  const panels = (
-    await inOrder(specs, async (spec) => {
-      const pair = await beforeAfter(spec, rev);
-      return pair;
-    })
-  ).flat();
-  write(sheet(panels, k ?? Math.min(...panels.map((p) => autoScale(p.png)))), out("before-after"));
-}
-
-async function placeItem(s: string): Promise<{ png: PNG; x: number; y: number }> {
-  const at = /^(.+)@(-?\d+),(-?\d+)$/u.exec(s);
-  const image = at?.[1];
-  if (!at || image === undefined) throw new Error(`"${s}" is not <image>@x,y`);
-  return { png: await loadOne(image), x: Number(at[2]), y: Number(at[3]) };
-}
-
-async function placeCommand({ specs, k, out }: Command): Promise<void> {
-  const [baseSpec, ...rest] = specs;
-  if (baseSpec === undefined) usage();
-  const items = await inOrder(rest, placeItem);
-  const base = await loadOne(baseSpec);
-  const png = place(base, items);
-  write(scale(png, k ?? autoScale(png)), out("place"));
-}
-
-const commands = new Map<string, (cmd: Command) => Promise<void>>([
-  ["rows", rowsCommand],
-  ["colours", coloursCommand],
-  ["show", showCommand],
-  ["before", beforeCommand],
-  ["place", placeCommand],
-]);
-
-async function main(argv: string[]): Promise<void> {
-  const { command, cmd } = parseArgs(argv);
-  if (cmd.specs.length === 0) usage();
-  const run = commands.get(command ?? "");
-  if (run === undefined) usage();
-  await run(cmd);
 }
 
 if (import.meta.main) {

@@ -200,25 +200,7 @@ function newEnemy(
 /** Item slots are nullable: an eaten item becomes null and keeps its slot. */
 export function newItems(): (Entity | null)[] {
   return [
-    ...pelletRows(),
-    ...pelletColumns(),
-    // Individual pellets
-    newPellet(1, 2),
-    newPellet(1, 4),
-    newPellet(26, 2),
-    newPellet(26, 4),
-    newPellet(2, 23),
-    newPellet(25, 23),
-    // Power pellets
-    newPower(1, 3),
-    newPower(26, 3),
-    newPower(1, 23),
-    newPower(26, 23),
-  ];
-}
-
-function pelletRows(): Entity[] {
-  return [
+    // Rows of pellets
     ...newPelletRow(1, 12, 1),
     ...newPelletRow(15, 26, 1),
     ...newPelletRow(1, 26, 5),
@@ -235,11 +217,8 @@ function pelletRows(): Entity[] {
     ...newPelletRow(15, 18, 26),
     ...newPelletRow(21, 26, 26),
     ...newPelletRow(1, 26, 29),
-  ];
-}
 
-function pelletColumns(): Entity[] {
-  return [
+    // Columns of pellets
     ...newPelletColumn(9, 19, 6),
     ...newPelletColumn(9, 19, 21),
     ...newPelletColumn(2, 4, 6),
@@ -268,6 +247,20 @@ function pelletColumns(): Entity[] {
     ...newPelletColumn(27, 28, 12),
     ...newPelletColumn(27, 28, 15),
     ...newPelletColumn(27, 28, 26),
+
+    // Individual pellets
+    newPellet(1, 2),
+    newPellet(1, 4),
+    newPellet(26, 2),
+    newPellet(26, 4),
+    newPellet(2, 23),
+    newPellet(25, 23),
+
+    // Power pellets
+    newPower(1, 3),
+    newPower(26, 3),
+    newPower(1, 23),
+    newPower(26, 23),
   ];
 }
 
@@ -305,86 +298,83 @@ function newPower(tx: number, ty: number): Entity {
   return e;
 }
 
-/** Corner tiles as `[tx, ty, ...directions]`, in Go declaration order. */
-const cornerTable: readonly (readonly [number, number, ...Direction[]])[] = [
-  // ROW 1
-  [1, 1, "DOWN", "RIGHT"],
-  [6, 1, "DOWN", "LEFT", "RIGHT"],
-  [12, 1, "DOWN", "LEFT"],
-  [15, 1, "DOWN", "RIGHT"],
-  [21, 1, "DOWN", "LEFT", "RIGHT"],
-  [26, 1, "DOWN", "LEFT"],
-  // ROW 5
-  [1, 5, "UP", "DOWN", "RIGHT"],
-  [6, 5, "UP", "DOWN", "LEFT", "RIGHT"],
-  [9, 5, "DOWN", "LEFT", "RIGHT"],
-  [12, 5, "UP", "LEFT", "RIGHT"],
-  [15, 5, "UP", "LEFT", "RIGHT"],
-  [18, 5, "DOWN", "LEFT", "RIGHT"],
-  [21, 5, "UP", "DOWN", "LEFT", "RIGHT"],
-  [26, 5, "UP", "DOWN", "LEFT"],
-  // ROW 8
-  [1, 8, "UP", "RIGHT"],
-  [6, 8, "UP", "DOWN", "LEFT"],
-  [9, 8, "UP", "RIGHT"],
-  [12, 8, "DOWN", "LEFT"],
-  [15, 8, "DOWN", "RIGHT"],
-  [18, 8, "UP", "LEFT"],
-  [21, 8, "UP", "DOWN", "RIGHT"],
-  [26, 8, "UP", "LEFT"],
-  // ROW 11
-  [9, 11, "DOWN", "RIGHT"],
-  [12, 11, "UP", "LEFT", "RIGHT"],
-  [15, 11, "UP", "LEFT", "RIGHT"],
-  [18, 11, "DOWN", "LEFT"],
-  // ROW 14
-  [6, 14, "UP", "DOWN", "LEFT", "RIGHT"],
-  [9, 14, "UP", "DOWN", "LEFT"],
-  [18, 14, "UP", "DOWN", "RIGHT"],
-  [21, 14, "UP", "DOWN", "LEFT", "RIGHT"],
-  // ROW 17
-  [9, 17, "UP", "DOWN", "RIGHT"],
-  [18, 17, "UP", "DOWN", "LEFT"],
-  // ROW 20
-  [1, 20, "DOWN", "RIGHT"],
-  [6, 20, "UP", "DOWN", "LEFT", "RIGHT"],
-  [9, 20, "UP", "LEFT", "RIGHT"],
-  [12, 20, "DOWN", "LEFT"],
-  [15, 20, "DOWN", "RIGHT"],
-  [18, 20, "UP", "LEFT", "RIGHT"],
-  [21, 20, "UP", "DOWN", "LEFT", "RIGHT"],
-  [26, 20, "DOWN", "LEFT"],
-  // ROW 23
-  [1, 23, "UP", "RIGHT"],
-  [3, 23, "DOWN", "LEFT"],
-  [6, 23, "UP", "DOWN", "RIGHT"],
-  [9, 23, "DOWN", "LEFT", "RIGHT"],
-  [12, 23, "UP", "LEFT", "RIGHT"],
-  [15, 23, "UP", "LEFT", "RIGHT"],
-  [18, 23, "DOWN", "LEFT", "RIGHT"],
-  [21, 23, "UP", "DOWN", "LEFT"],
-  [24, 23, "DOWN", "RIGHT"],
-  [26, 23, "UP", "LEFT"],
-  // ROW 26
-  [1, 26, "DOWN", "RIGHT"],
-  [3, 26, "UP", "LEFT", "RIGHT"],
-  [6, 26, "UP", "LEFT"],
-  [9, 26, "UP", "RIGHT"],
-  [12, 26, "DOWN", "LEFT"],
-  [15, 26, "DOWN", "RIGHT"],
-  [18, 26, "UP", "LEFT"],
-  [21, 26, "UP", "RIGHT"],
-  [24, 26, "UP", "LEFT", "RIGHT"],
-  [26, 26, "DOWN", "LEFT"],
-  // ROW 29
-  [1, 29, "UP", "RIGHT"],
-  [12, 29, "UP", "LEFT", "RIGHT"],
-  [15, 29, "UP", "LEFT", "RIGHT"],
-  [26, 29, "UP", "LEFT"],
-];
-
 export function newCorners(): Entity[] {
-  return cornerTable.map(([tx, ty, ...directions]) => newCorner(tx, ty, ...directions));
+  return [
+    // ROW 1
+    newCorner(1, 1, "DOWN", "RIGHT"),
+    newCorner(6, 1, "DOWN", "LEFT", "RIGHT"),
+    newCorner(12, 1, "DOWN", "LEFT"),
+    newCorner(15, 1, "DOWN", "RIGHT"),
+    newCorner(21, 1, "DOWN", "LEFT", "RIGHT"),
+    newCorner(26, 1, "DOWN", "LEFT"),
+    // ROW 5
+    newCorner(1, 5, "UP", "DOWN", "RIGHT"),
+    newCorner(6, 5, "UP", "DOWN", "LEFT", "RIGHT"),
+    newCorner(9, 5, "DOWN", "LEFT", "RIGHT"),
+    newCorner(12, 5, "UP", "LEFT", "RIGHT"),
+    newCorner(15, 5, "UP", "LEFT", "RIGHT"),
+    newCorner(18, 5, "DOWN", "LEFT", "RIGHT"),
+    newCorner(21, 5, "UP", "DOWN", "LEFT", "RIGHT"),
+    newCorner(26, 5, "UP", "DOWN", "LEFT"),
+    // ROW 8
+    newCorner(1, 8, "UP", "RIGHT"),
+    newCorner(6, 8, "UP", "DOWN", "LEFT"),
+    newCorner(9, 8, "UP", "RIGHT"),
+    newCorner(12, 8, "DOWN", "LEFT"),
+    newCorner(15, 8, "DOWN", "RIGHT"),
+    newCorner(18, 8, "UP", "LEFT"),
+    newCorner(21, 8, "UP", "DOWN", "RIGHT"),
+    newCorner(26, 8, "UP", "LEFT"),
+    // ROW 11
+    newCorner(9, 11, "DOWN", "RIGHT"),
+    newCorner(12, 11, "UP", "LEFT", "RIGHT"),
+    newCorner(15, 11, "UP", "LEFT", "RIGHT"),
+    newCorner(18, 11, "DOWN", "LEFT"),
+    // ROW 14
+    newCorner(6, 14, "UP", "DOWN", "LEFT", "RIGHT"),
+    newCorner(9, 14, "UP", "DOWN", "LEFT"),
+    newCorner(18, 14, "UP", "DOWN", "RIGHT"),
+    newCorner(21, 14, "UP", "DOWN", "LEFT", "RIGHT"),
+    // ROW 17
+    newCorner(9, 17, "UP", "DOWN", "RIGHT"),
+    newCorner(18, 17, "UP", "DOWN", "LEFT"),
+    // ROW 20
+    newCorner(1, 20, "DOWN", "RIGHT"),
+    newCorner(6, 20, "UP", "DOWN", "LEFT", "RIGHT"),
+    newCorner(9, 20, "UP", "LEFT", "RIGHT"),
+    newCorner(12, 20, "DOWN", "LEFT"),
+    newCorner(15, 20, "DOWN", "RIGHT"),
+    newCorner(18, 20, "UP", "LEFT", "RIGHT"),
+    newCorner(21, 20, "UP", "DOWN", "LEFT", "RIGHT"),
+    newCorner(26, 20, "DOWN", "LEFT"),
+    // ROW 23
+    newCorner(1, 23, "UP", "RIGHT"),
+    newCorner(3, 23, "DOWN", "LEFT"),
+    newCorner(6, 23, "UP", "DOWN", "RIGHT"),
+    newCorner(9, 23, "DOWN", "LEFT", "RIGHT"),
+    newCorner(12, 23, "UP", "LEFT", "RIGHT"),
+    newCorner(15, 23, "UP", "LEFT", "RIGHT"),
+    newCorner(18, 23, "DOWN", "LEFT", "RIGHT"),
+    newCorner(21, 23, "UP", "DOWN", "LEFT"),
+    newCorner(24, 23, "DOWN", "RIGHT"),
+    newCorner(26, 23, "UP", "LEFT"),
+    // ROW 26
+    newCorner(1, 26, "DOWN", "RIGHT"),
+    newCorner(3, 26, "UP", "LEFT", "RIGHT"),
+    newCorner(6, 26, "UP", "LEFT"),
+    newCorner(9, 26, "UP", "RIGHT"),
+    newCorner(12, 26, "DOWN", "LEFT"),
+    newCorner(15, 26, "DOWN", "RIGHT"),
+    newCorner(18, 26, "UP", "LEFT"),
+    newCorner(21, 26, "UP", "RIGHT"),
+    newCorner(24, 26, "UP", "LEFT", "RIGHT"),
+    newCorner(26, 26, "DOWN", "LEFT"),
+    // ROW 29
+    newCorner(1, 29, "UP", "RIGHT"),
+    newCorner(12, 29, "UP", "LEFT", "RIGHT"),
+    newCorner(15, 29, "UP", "LEFT", "RIGHT"),
+    newCorner(26, 29, "UP", "LEFT"),
+  ];
 }
 
 function newCorner(tx: number, ty: number, ...directions: Direction[]): Entity {

@@ -136,8 +136,23 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
     return;
   }
 
-  if (e.home && stepOutOfHome(e)) {
-    return;
+  if (e.home) {
+    if (e.x < tileSize * 14) {
+      e.x += velocityEnemyTunnel;
+      return;
+    }
+
+    if (e.x > tileSize * 14) {
+      e.x -= velocityEnemyTunnel;
+      return;
+    }
+
+    if (e.y > tileSize * 14.5) {
+      e.y -= velocityEnemyTunnel;
+      return;
+    }
+
+    e.home = false;
   }
 
   let validDirections: readonly (Direction | "")[] = [e.direction];
@@ -148,83 +163,30 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   }
 
   if (validDirections.includes(e.direction)) {
-    moveAlong(e);
+    switch (e.direction) {
+      case "UP":
+        e.y -= e.velocity;
+        break;
+      case "DOWN":
+        e.y += e.velocity;
+        break;
+      case "LEFT":
+        e.x -= e.velocity;
+        break;
+      case "RIGHT":
+        e.x += e.velocity;
+        break;
+      case "":
+        break;
+    }
   }
 
   if (e.y === tunnelRowY) {
-    wrapTunnel(e);
-  }
-}
-
-/**
- * One step of a bee leaving the hive: centre, then rise. Returns true while
- * it is still leaving; on arrival clears `home` and returns false.
- */
-function stepOutOfHome(e: Entity): boolean {
-  if (e.x < tileSize * 14) {
-    e.x += velocityEnemyTunnel;
-    return true;
-  }
-
-  if (e.x > tileSize * 14) {
-    e.x -= velocityEnemyTunnel;
-    return true;
-  }
-
-  if (e.y > tileSize * 14.5) {
-    e.y -= velocityEnemyTunnel;
-    return true;
-  }
-
-  e.home = false;
-  return false;
-}
-
-/** Moves `e` by its velocity in its direction; no direction ("") stays put. */
-function moveAlong(e: Entity): void {
-  switch (e.direction) {
-    case "UP":
-      e.y -= e.velocity;
-      break;
-    case "DOWN":
-      e.y += e.velocity;
-      break;
-    case "LEFT":
-      e.x -= e.velocity;
-      break;
-    case "RIGHT":
-      e.x += e.velocity;
-      break;
-    case "":
-      break;
-  }
-}
-
-function wrapTunnel(e: Entity): void {
-  if (e.x <= 0) {
-    e.x = 8 * 28;
-  } else if (e.x >= 8 * 28) {
-    e.x = 0;
-  }
-}
-
-/** Shifts `tile` by `n` tiles in `dir`; no direction ("") leaves it. */
-function stepTile(tile: Tile, dir: Direction | "", n: number): void {
-  switch (dir) {
-    case "UP":
-      tile.y -= n;
-      break;
-    case "DOWN":
-      tile.y += n;
-      break;
-    case "LEFT":
-      tile.x -= n;
-      break;
-    case "RIGHT":
-      tile.x += n;
-      break;
-    case "":
-      break;
+    if (e.x <= 0) {
+      e.x = 8 * 28;
+    } else if (e.x >= 8 * 28) {
+      e.x = 0;
+    }
   }
 }
 
@@ -262,27 +224,27 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     return;
   }
 
-  const chosen = closestDirection(validDirections, tileCorner, target);
-  if (chosen !== null) {
-    e.direction = chosen;
-  }
-
-  e.x = corner.x;
-  e.y = corner.y;
-}
-
-/**
- * The direction whose next tile is closest to `target`. Go stores the
- * distances in a map, but only membership matters: the tie-break is the
- * fixed priority Up, Left, Down, Right.
- */
-function closestDirection(validDirections: readonly Direction[], tileCorner: Tile, target: Tile): Direction | null {
+  // Go stores these in a map, but only membership matters: the tie-break is
+  // the fixed priority Up, Left, Down, Right.
   const distances = new Map<Direction, number>();
 
   let minDistance = Number.MAX_VALUE;
   for (const dir of validDirections) {
     const tileNext = { ...tileCorner };
-    stepTile(tileNext, dir, 1);
+    switch (dir) {
+      case "UP":
+        tileNext.y--;
+        break;
+      case "DOWN":
+        tileNext.y++;
+        break;
+      case "LEFT":
+        tileNext.x--;
+        break;
+      case "RIGHT":
+        tileNext.x++;
+        break;
+    }
 
     const d = distance(tileNext, target);
     if (d < minDistance) {
@@ -298,8 +260,18 @@ function closestDirection(validDirections: readonly Direction[], tileCorner: Til
     }
   }
 
-  const priority: readonly Direction[] = ["UP", "LEFT", "DOWN", "RIGHT"];
-  return priority.find((dir) => minDirections.includes(dir)) ?? null;
+  if (minDirections.includes("UP")) {
+    e.direction = "UP";
+  } else if (minDirections.includes("LEFT")) {
+    e.direction = "LEFT";
+  } else if (minDirections.includes("DOWN")) {
+    e.direction = "DOWN";
+  } else if (minDirections.includes("RIGHT")) {
+    e.direction = "RIGHT";
+  }
+
+  e.x = corner.x;
+  e.y = corner.y;
 }
 
 /**
@@ -357,10 +329,56 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
     case "red":
       return tilePlayer;
     case "pink":
-      stepTile(tilePlayer, player.direction, 4);
+      switch (player.direction) {
+        case "UP":
+          tilePlayer.y -= 4;
+          break;
+        case "DOWN":
+          tilePlayer.y += 4;
+          break;
+        case "LEFT":
+          tilePlayer.x -= 4;
+          break;
+        case "RIGHT":
+          tilePlayer.x += 4;
+          break;
+        case "":
+          break;
+      }
       return tilePlayer;
-    case "teal":
-      return tealTarget(enemies, player, tilePlayer);
+    case "teal": {
+      const enemyRed = getEnemy(enemies, "red");
+      if (enemyRed === null) {
+        // Go dereferences a nil pointer here; unreachable (red always exists).
+        throw new Error("runtime error: invalid memory address or nil pointer dereference");
+      }
+      const tileRed = pointToTile(enemyRed.x, enemyRed.y);
+
+      switch (player.direction) {
+        case "UP":
+          tilePlayer.y -= 2;
+          break;
+        case "DOWN":
+          tilePlayer.y += 2;
+          break;
+        case "LEFT":
+          tilePlayer.x -= 2;
+          break;
+        case "RIGHT":
+          tilePlayer.x += 2;
+          break;
+        case "":
+          break;
+      }
+
+      const dx = tilePlayer.x - tileRed.x;
+      const dy = tilePlayer.y - tileRed.y;
+
+      tilePlayer.x += dx;
+      tilePlayer.y += dy;
+
+      return tilePlayer;
+    }
     case "orange": {
       const d = distance(pointToTile(e.x, e.y), tilePlayer);
       if (d < 8) {
@@ -382,24 +400,4 @@ export function getEnemy(es: readonly Entity[], kind: Entity["kind"]): Entity | 
     }
   }
   return null;
-}
-
-/** Teal aims past the player by twice red's offset from two tiles ahead. */
-function tealTarget(enemies: readonly Entity[], player: Entity, tilePlayer: Tile): Tile {
-  const enemyRed = getEnemy(enemies, "red");
-  if (enemyRed === null) {
-    // Go dereferences a nil pointer here; unreachable (red always exists).
-    throw new Error("runtime error: invalid memory address or nil pointer dereference");
-  }
-  const tileRed = pointToTile(enemyRed.x, enemyRed.y);
-
-  stepTile(tilePlayer, player.direction, 2);
-
-  const dx = tilePlayer.x - tileRed.x;
-  const dy = tilePlayer.y - tileRed.y;
-
-  tilePlayer.x += dx;
-  tilePlayer.y += dy;
-
-  return tilePlayer;
 }

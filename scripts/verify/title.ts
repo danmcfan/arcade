@@ -36,15 +36,7 @@ function hookChecks(v: Verify): void {
   v.openHook();
   v.page.eval("localStorage.clear()");
   v.openHook();
-  newGame(v);
-  hubPauseMenu(v);
-  confirmNewGame(v);
-  reloadAndPagehide(v);
-  minigameAndBack(v);
-}
 
-/** The first menu, New game, the intro and the first save. */
-function newGame(v: Verify): void {
   let s = v.snapshot(isTitleSnapshot);
   check(
     s.phase === "menu" && s.items.join() === "NEW GAME" && s.cursor === 0 && !s.canContinue,
@@ -64,13 +56,10 @@ function newGame(v: Verify): void {
   check(s.phase === "playing" && s.game?.software === null, "Space on the intro starts the game in the hub", s.phase);
   check(s.game?.arcade.player.x === 80 && s.game.arcade.player.y === 92, "a new game starts at the hub start position");
   check(stored(v)?.player.x === 80, "starting a game writes a save", stored(v));
-}
 
-/** Esc in the hub: the pause menu, Controls, Quit to menu. */
-function hubPauseMenu(v: Verify): void {
   v.step(20, { left: true });
   v.tap("escape");
-  let s = v.snapshot(isTitleSnapshot);
+  s = v.snapshot(isTitleSnapshot);
   check(
     s.phase === "paused" && s.items.join() === "RESUME,CONTROLS,QUIT TO MENU",
     "Esc in the hub opens the pause menu",
@@ -103,13 +92,11 @@ function hubPauseMenu(v: Verify): void {
     stored(v),
   );
   v.frame("5-menu-continue");
-}
 
-/** New game over a save asks first; No keeps the save. */
-function confirmNewGame(v: Verify): void {
+  // New game over a save asks first; No keeps the save.
   v.tap("down");
   v.tap("space");
-  let s = v.snapshot(isTitleSnapshot);
+  s = v.snapshot(isTitleSnapshot);
   check(
     s.phase === "confirm" && s.items.join() === "NO,YES" && s.cursor === 0,
     "New game with a save asks to confirm, No selected",
@@ -124,12 +111,10 @@ function confirmNewGame(v: Verify): void {
     s,
   );
   v.tap("up");
-}
 
-/** Reload: the save must come back from localStorage; closing the tab saves too. */
-function reloadAndPagehide(v: Verify): void {
+  // Reload: the save must come back from localStorage.
   v.openHook();
-  let s = v.snapshot(isTitleSnapshot);
+  s = v.snapshot(isTitleSnapshot);
   check(s.phase === "menu" && s.canContinue && s.cursor === 0, "after a reload, Continue is available and selected", s);
   v.tap("space");
   s = v.snapshot(isTitleSnapshot);
@@ -143,10 +128,8 @@ function reloadAndPagehide(v: Verify): void {
   v.step(10, { right: true });
   v.page.eval(`window.dispatchEvent(new Event("pagehide"))`);
   check(stored(v)?.player.x === 70, "pagehide saves the current position", stored(v));
-}
 
-/** Into a minigame and out: Esc opens the minigame pause menu, not the hub one. */
-function minigameAndBack(v: Verify): void {
+  // Into a minigame and out: Esc opens the minigame pause menu, not the hub one.
   v.step(10, { right: true });
   v.step(60, { up: true });
   v.step(2, { space: true });
@@ -154,7 +137,7 @@ function minigameAndBack(v: Verify): void {
   check(v.snapshot(isTitleSnapshot).game?.software === "hive", "Space at a cabinet starts its minigame");
   v.frame("6-hive");
   v.tap("escape");
-  let s = v.snapshot(isTitleSnapshot);
+  s = v.snapshot(isTitleSnapshot);
   check(
     s.phase === "playing" && s.game?.menu === "paused",
     "Esc in a minigame opens the minigame pause menu, not the hub pause menu",

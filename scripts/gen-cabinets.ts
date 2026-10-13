@@ -131,47 +131,24 @@ function titleLettering(file: string): Lettering {
   return { w: x1 - x0 + 1, h: y1 - y0 + 1, on: (x, y) => lit(x0 + x, y0 + y) };
 }
 
-function paletteMap(c: CabinetSource): (hex: string) => string {
-  return (hex) => {
+export function renderCabinet(c: CabinetSource): PNG {
+  const png = sourceCabinet();
+  const map = (hex: string): string => {
     const to = c.palette[hex];
     if (to === undefined) throw new Error(`${c.name}: palette has no entry for ${hex}`);
     return to;
   };
-}
 
-/** Swaps every colour through the palette, taking Sweet Sam's lettering off the marquee. */
-function recolourCabinet(png: PNG, map: (hex: string) => string): void {
   for (let y = 0; y < png.height; y++) {
     for (let x = 0; x < png.width; x++) {
       const i = (y * png.width + x) * 4;
       if (png.data[i + 3] === 0) continue;
-      const hex = hexAt(png, i);
-      const marqueeLetter = y < marqueeHeight && (hex === letterColour || hex === shadowColour);
-      setHex(png, x, y, map(marqueeLetter ? bodyColour : hex));
+      let hex = hexAt(png, i);
+      // Sweet Sam's lettering comes off the marquee.
+      if (y < marqueeHeight && (hex === letterColour || hex === shadowColour)) hex = bodyColour;
+      setHex(png, x, y, map(hex));
     }
   }
-}
-
-/** Fills one scale x scale block. */
-function setBlock(png: PNG, x: number, y: number, colour: string): void {
-  for (let sy = 0; sy < scale; sy++) {
-    for (let sx = 0; sx < scale; sx++) setHex(png, x + sx, y + sy, colour);
-  }
-}
-
-/** Draws the lettering at 2x on one frame's marquee, at (x0, y0). */
-function drawLettering(png: PNG, word: Lettering, x0: number, y0: number, colour: string): void {
-  for (let y = 0; y < word.h; y++) {
-    for (let x = 0; x < word.w; x++) {
-      if (word.on(x, y)) setBlock(png, x0 + x * scale, y0 + y * scale, colour);
-    }
-  }
-}
-
-export function renderCabinet(c: CabinetSource): PNG {
-  const png = sourceCabinet();
-  const map = paletteMap(c);
-  recolourCabinet(png, map);
 
   const word = titleLettering(c.title);
   const left = Math.trunc((frameWidth - (word.w + 1) * scale) / 2);
@@ -181,7 +158,18 @@ export function renderCabinet(c: CabinetSource): PNG {
     [scale, map(shadowColour)],
     [0, map(letterColour)],
   ] as const) {
-    for (let f = 0; f < frames; f++) drawLettering(png, word, f * frameWidth + left + dx, top + dx, colour);
+    for (let f = 0; f < frames; f++) {
+      for (let y = 0; y < word.h; y++) {
+        for (let x = 0; x < word.w; x++) {
+          if (!word.on(x, y)) continue;
+          for (let sy = 0; sy < scale; sy++) {
+            for (let sx = 0; sx < scale; sx++) {
+              setHex(png, f * frameWidth + left + x * scale + sx + dx, top + y * scale + sy + dx, colour);
+            }
+          }
+        }
+      }
+    }
   }
   return png;
 }

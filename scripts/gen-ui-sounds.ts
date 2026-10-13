@@ -48,20 +48,18 @@ function voice(
   let start = 0;
   for (const [midi, len] of notes) {
     const n = Math.round(len * eighth * sampleRate);
-    if (midi !== null) note(out, start, n, hz(midi), wave, gain, sustain);
+    if (midi !== null) {
+      const f = hz(midi);
+      const attack = 0.004 * sampleRate;
+      const decay = 0.08 * sampleRate;
+      const release = Math.min(0.02 * sampleRate, n / 2);
+      for (let i = 0; i < n && start + i < out.length; i++) {
+        let env = i < attack ? i / attack : Math.max(sustain, 1 - ((1 - sustain) * (i - attack)) / decay);
+        if (i > n - release) env *= (n - i) / release;
+        mix(out, start + i, wave((f * i) / sampleRate) * env * gain);
+      }
+    }
     start += n;
-  }
-}
-
-/** Adds one `n`-sample note at `f` Hz from sample `start`, with its envelope. */
-function note(out: Float64Array, start: number, n: number, f: number, wave: Wave, gain: number, sustain: number): void {
-  const attack = 0.004 * sampleRate;
-  const decay = 0.08 * sampleRate;
-  const release = Math.min(0.02 * sampleRate, n / 2);
-  for (let i = 0; i < n && start + i < out.length; i++) {
-    let env = i < attack ? i / attack : Math.max(sustain, 1 - ((1 - sustain) * (i - attack)) / decay);
-    if (i > n - release) env *= (n - i) / release;
-    mix(out, start + i, wave((f * i) / sampleRate) * env * gain);
   }
 }
 

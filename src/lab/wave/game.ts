@@ -10,7 +10,7 @@ import { makeSolid, sub, whole, type Sprite } from "../../engine/image.ts";
 import { Surface } from "../../engine/surface.ts";
 import type { Scene, WaveOptions } from "../../game/software.ts";
 import type { WaveSnapshot } from "../../game/snapshot.ts";
-import { Grid, type Cell } from "./grid.ts";
+import { Grid } from "./grid.ts";
 import { mountWaveOverlay } from "./overlay.ts";
 
 export const tileSize = 16;
@@ -120,24 +120,38 @@ export class Wave implements Scene {
    */
   draw(screen: Surface): void {
     this.frames++;
-    const canvas = this.currentCanvas();
-    if (canvas.paintedCount !== canvas.grid.collapsedCount) paintNewCells(canvas);
-    screen.drawSurface(canvas.surface, 0, 0);
-  }
+    let canvas = this.canvas;
+    if (canvas === null || canvas.grid !== this.grid) {
+      const g = this.grid;
+      canvas = {
+        grid: g,
+        surface: this.createOffscreen(tileSize * g.width, tileSize * g.height),
+        painted: new Uint8Array(g.width * g.height),
+        paintedCount: 0,
+      };
+      this.canvas = canvas;
+    }
 
-  /** The offscreen canvas for the current grid; a new grid gets a fresh one. */
-  private currentCanvas(): CellCanvas {
-    const canvas = this.canvas;
-    if (canvas !== null && canvas.grid === this.grid) return canvas;
-    const g = this.grid;
-    const fresh: CellCanvas = {
-      grid: g,
-      surface: this.createOffscreen(tileSize * g.width, tileSize * g.height),
-      painted: new Uint8Array(g.width * g.height),
-      paintedCount: 0,
-    };
-    this.canvas = fresh;
-    return fresh;
+    const g = canvas.grid;
+    if (canvas.paintedCount !== g.collapsedCount) {
+      for (let x = 0; x < g.width; x++) {
+        const col = g.cells[x] ?? [];
+        for (let y = 0; y < g.height; y++) {
+          const i = x * g.height + y;
+          const cell = col[y];
+          if ((canvas.painted[i] ?? 0) !== 0 || cell === undefined || !cell.collapsed || cell.possible.length !== 1) {
+            continue;
+          }
+          const tile = tiles[cell.possible[0] ?? 0];
+          if (tile === undefined) throw new Error("index out of range");
+          canvas.surface.draw(tile, x * tileSize, y * tileSize);
+          canvas.painted[i] = 1;
+          canvas.paintedCount++;
+        }
+      }
+    }
+
+    screen.drawSurface(canvas.surface, 0, 0);
   }
 
   /** The debugui window, as an HTML overlay outside the canvas (D6). */
@@ -176,27 +190,4 @@ export class Wave implements Scene {
     }
     return s;
   }
-}
-
-/** Paint every collapsed cell not yet on `canvas`. */
-function paintNewCells(canvas: CellCanvas): void {
-  const g = canvas.grid;
-  for (let x = 0; x < g.width; x++) {
-    const col = g.cells[x] ?? [];
-    for (let y = 0; y < g.height; y++) {
-      const cell = col[y];
-      if (cell !== undefined) paintCell(canvas, x, y, cell);
-    }
-  }
-}
-
-/** Paint cell (x, y) when it is collapsed to one tile and not yet painted. */
-function paintCell(canvas: CellCanvas, x: number, y: number, cell: Cell): void {
-  const i = x * canvas.grid.height + y;
-  if ((canvas.painted[i] ?? 0) !== 0 || !cell.collapsed || cell.possible.length !== 1) return;
-  const tile = tiles[cell.possible[0] ?? 0];
-  if (tile === undefined) throw new Error("index out of range");
-  canvas.surface.draw(tile, x * tileSize, y * tileSize);
-  canvas.painted[i] = 1;
-  canvas.paintedCount++;
 }

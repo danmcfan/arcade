@@ -27,39 +27,6 @@ interface Tick {
   sw: HiveSnapshot;
 }
 
-type Pad = [number, number, number, number];
-
-/** A fresh held direction: one of the four, all-random, or none. */
-function randomPad(rnd: () => number): Pad {
-  const k = Math.floor(rnd() * 6);
-  if (k === 4) return [rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0];
-  return [k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0, k === 3 ? 1 : 0];
-}
-
-/** The remaining item nearest the player (Manhattan), or null. */
-function nearestItem(s: HiveSoftware): { x: number; y: number } | null {
-  const p = s.player;
-  let best: { x: number; y: number } | null = null;
-  let bd = Infinity;
-  for (const it of s.items) {
-    if (!it) continue;
-    const d = Math.abs(it.x - p.x) + Math.abs(it.y - p.y);
-    if (d < bd) {
-      bd = d;
-      best = it;
-    }
-  }
-  return best;
-}
-
-/** Steer towards `best`, mostly along its longer axis. */
-function steerTowards(s: HiveSoftware, best: { x: number; y: number }, rnd: () => number): Pad {
-  const dx = best.x - s.player.x;
-  const dy = best.y - s.player.y;
-  const horiz = Math.abs(dx) >= Math.abs(dy) ? rnd() < 0.7 : rnd() < 0.3;
-  return horiz ? [0, 0, dx < 0 ? 1 : 0, dx >= 0 ? 1 : 0] : [dy < 0 ? 1 : 0, dy >= 0 ? 1 : 0, 0, 0];
-}
-
 /** Input generator with its own xorshift PRNG (independent of the game rng). */
 function makeGenerator(seed: number): (s: HiveSoftware) => Input {
   let g = (seed * 2654435761) >>> 0 || 1;
@@ -72,15 +39,32 @@ function makeGenerator(seed: number): (s: HiveSoftware) => Input {
     return g / 4294967296;
   };
   let hold = 0;
-  let cur: Pad = [0, 0, 0, 0];
+  let cur = [0, 0, 0, 0];
   return (s) => {
     if (hold <= 0) {
       hold = 10 + Math.floor(rnd() * 51);
-      cur = randomPad(rnd);
+      const k = Math.floor(rnd() * 6);
+      cur = [k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0, k === 3 ? 1 : 0];
+      if (k === 4) cur = [rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0];
     }
     // "greedy": steer towards the nearest remaining item most of the time.
-    const best = nearestItem(s);
-    if (best && rnd() < 0.8) cur = steerTowards(s, best, rnd);
+    const p = s.player;
+    let best: { x: number; y: number } | null = null;
+    let bd = Infinity;
+    for (const it of s.items) {
+      if (!it) continue;
+      const d = Math.abs(it.x - p.x) + Math.abs(it.y - p.y);
+      if (d < bd) {
+        bd = d;
+        best = it;
+      }
+    }
+    if (best && rnd() < 0.8) {
+      const dx = best.x - p.x;
+      const dy = best.y - p.y;
+      const horiz = Math.abs(dx) >= Math.abs(dy) ? rnd() < 0.7 : rnd() < 0.3;
+      cur = horiz ? [0, 0, dx < 0 ? 1 : 0, dx >= 0 ? 1 : 0] : [dy < 0 ? 1 : 0, dy >= 0 ? 1 : 0, 0, 0];
+    }
     hold--;
     return {
       up: cur[0] === 1,

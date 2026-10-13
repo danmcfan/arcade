@@ -19,36 +19,6 @@ export interface WaveOverlayModel {
 /** Mount the overlay into `parent`; the returned function removes it. */
 export function mountWaveOverlay(parent: HTMLElement, model: WaveOverlayModel): () => void {
   const doc = parent.ownerDocument;
-  const root = createRoot(doc);
-
-  const title = doc.createElement("div");
-  title.textContent = "Wave";
-  title.style.fontWeight = "bold";
-  root.append(title);
-
-  appendSlider(root, "grid", 64, 256, 64, {
-    get: () => model.gridSize,
-    set: (v) => {
-      model.gridSize = v;
-    },
-  });
-  appendSlider(root, "seconds", 1, 30, 1, {
-    get: () => model.seconds,
-    set: (v) => {
-      model.seconds = v;
-    },
-  });
-
-  const stopReadouts = startReadouts(root, model, () => {
-    parent.append(root);
-  });
-  return () => {
-    stopReadouts();
-    root.remove();
-  };
-}
-
-function createRoot(doc: Document): HTMLDivElement {
   const root = doc.createElement("div");
   root.setAttribute("aria-label", "Wave");
   Object.assign(root.style, {
@@ -65,57 +35,68 @@ function createRoot(doc: Document): HTMLDivElement {
     zIndex: "1",
     userSelect: "none",
   } satisfies Partial<CSSStyleDeclaration>);
-  return root;
-}
 
-interface SliderBinding {
-  get: () => number;
-  set: (v: number) => void;
-}
+  const title = doc.createElement("div");
+  title.textContent = "Wave";
+  title.style.fontWeight = "bold";
+  root.append(title);
 
-function appendSlider(
-  root: HTMLElement,
-  label: string,
-  min: number,
-  max: number,
-  step: number,
-  bind: SliderBinding,
-): void {
-  const doc = root.ownerDocument;
-  const row = doc.createElement("label");
-  row.style.display = "block";
-  const input = doc.createElement("input");
-  input.type = "range";
-  input.min = String(min);
-  input.max = String(max);
-  input.step = String(step);
-  input.value = String(bind.get());
-  input.style.width = "100%";
-  const value = doc.createElement("span");
-  value.textContent = `${label}: ${bind.get()}`;
-  input.addEventListener("input", () => {
-    bind.set(Number(input.value));
-    value.textContent = `${label}: ${bind.get()}`;
-  });
-  // Hand the keyboard back to the game (Space applies the settings).
-  input.addEventListener("change", () => {
-    input.blur();
-  });
-  row.append(value, input);
-  root.append(row);
-}
+  const slider = (
+    label: string,
+    min: number,
+    max: number,
+    step: number,
+    get: () => number,
+    set: (v: number) => void,
+  ): void => {
+    const row = doc.createElement("label");
+    row.style.display = "block";
+    const input = doc.createElement("input");
+    input.type = "range";
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.value = String(get());
+    input.style.width = "100%";
+    const value = doc.createElement("span");
+    value.textContent = `${label}: ${get()}`;
+    input.addEventListener("input", () => {
+      set(Number(input.value));
+      value.textContent = `${label}: ${get()}`;
+    });
+    // Hand the keyboard back to the game (Space applies the settings).
+    input.addEventListener("change", () => {
+      input.blur();
+    });
+    row.append(value, input);
+    root.append(row);
+  };
+  slider(
+    "grid",
+    64,
+    256,
+    64,
+    () => model.gridSize,
+    (v) => {
+      model.gridSize = v;
+    },
+  );
+  slider(
+    "seconds",
+    1,
+    30,
+    1,
+    () => model.seconds,
+    (v) => {
+      model.seconds = v;
+    },
+  );
 
-/**
- * Append the FPS, TPS and collapsed readouts, call `mount`, then keep the
- * readouts live; returns a stop function.
- */
-function startReadouts(root: HTMLElement, model: WaveOverlayModel, mount: () => void): () => void {
-  const doc = root.ownerDocument;
   const fps = doc.createElement("div");
   const tps = doc.createElement("div");
   const count = doc.createElement("div");
   root.append(fps, tps, count);
-  mount();
+  parent.append(root);
 
   // Go's ActualFPS/ActualTPS: rates over the last ~1 s window.
   const view = doc.defaultView;
@@ -143,5 +124,6 @@ function startReadouts(root: HTMLElement, model: WaveOverlayModel, mount: () => 
 
   return () => {
     view?.cancelAnimationFrame(raf);
+    root.remove();
   };
 }

@@ -71,66 +71,6 @@ export function lumberjackTrees(snapshot: unknown): TreeTop[] {
  * `width × height` frame. Unrotated trees (theta 0) and felled trees
  * (health ≤ 0, not drawn) get no mask.
  */
-/** The frame-clipped bounding box of a rotated tree frame, plus a pixel of slack. */
-function rotatedBounds(
-  corners: readonly (readonly [number, number])[],
-  width: number,
-  height: number,
-): { x0: number; x1: number; y0: number; y1: number } {
-  return {
-    x0: Math.max(0, Math.floor(Math.min(...corners.map((c) => c[0]))) - 1),
-    x1: Math.min(width, Math.ceil(Math.max(...corners.map((c) => c[0]))) + 1),
-    y0: Math.max(0, Math.floor(Math.min(...corners.map((c) => c[1]))) - 1),
-    y1: Math.min(height, Math.ceil(Math.max(...corners.map((c) => c[1]))) + 1),
-  };
-}
-
-/** Push a 1×1 mask for each edge pixel of tree `t` not already in `seen`. */
-function addTreeMasks(
-  t: TreeTop,
-  opaque: TexelOpaque,
-  width: number,
-  height: number,
-  seen: Set<number>,
-  masks: Mask[],
-): void {
-  const minX = t.x - FRAME_W / 2;
-  const minY = t.y - FRAME_H / 2;
-  const px = t.shakeRight ? PIVOT_X_RIGHT : PIVOT_X_LEFT;
-  const cos = Math.cos(t.theta);
-  const sin = Math.sin(t.theta);
-  // Destination → texel: inverse of Translate(-p) Rotate(θ) Translate(p) Translate(min).
-  const texel = (x: number, y: number): boolean => {
-    const dx = x - minX - px;
-    const dy = y - minY - PIVOT_Y;
-    const u = cos * dx + sin * dy + px;
-    const v = -sin * dx + cos * dy + PIVOT_Y;
-    return opaque(Math.floor(u), Math.floor(v));
-  };
-  // Bounding box of the rotated frame, plus a pixel of slack.
-  const corners = [
-    [0, 0],
-    [FRAME_W, 0],
-    [0, FRAME_H],
-    [FRAME_W, FRAME_H],
-  ].map(([u = 0, v = 0]) => {
-    const dx = u - px;
-    const dy = v - PIVOT_Y;
-    return [cos * dx - sin * dy + px + minX, sin * dx + cos * dy + PIVOT_Y + minY] as const;
-  });
-  const { x0, x1, y0, y1 } = rotatedBounds(corners, width, height);
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const c = texel(x + 0.5, y + 0.5);
-      const edge = texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
-      const key = y * width + x;
-      if (!edge || seen.has(key)) continue;
-      seen.add(key);
-      masks.push({ x, y, w: 1, h: 1 });
-    }
-  }
-}
-
 export function treeTopEdgeMasks(
   trees: readonly TreeTop[],
   opaque: TexelOpaque,
@@ -141,7 +81,45 @@ export function treeTopEdgeMasks(
   const seen = new Set<number>();
   for (const t of trees) {
     if (t.health <= 0 || t.theta === 0) continue;
-    addTreeMasks(t, opaque, width, height, seen, masks);
+    const minX = t.x - FRAME_W / 2;
+    const minY = t.y - FRAME_H / 2;
+    const px = t.shakeRight ? PIVOT_X_RIGHT : PIVOT_X_LEFT;
+    const cos = Math.cos(t.theta);
+    const sin = Math.sin(t.theta);
+    // Destination → texel: inverse of Translate(-p) Rotate(θ) Translate(p) Translate(min).
+    const texel = (x: number, y: number): boolean => {
+      const dx = x - minX - px;
+      const dy = y - minY - PIVOT_Y;
+      const u = cos * dx + sin * dy + px;
+      const v = -sin * dx + cos * dy + PIVOT_Y;
+      return opaque(Math.floor(u), Math.floor(v));
+    };
+    // Bounding box of the rotated frame, plus a pixel of slack.
+    const corners = [
+      [0, 0],
+      [FRAME_W, 0],
+      [0, FRAME_H],
+      [FRAME_W, FRAME_H],
+    ].map(([u = 0, v = 0]) => {
+      const dx = u - px;
+      const dy = v - PIVOT_Y;
+      return [cos * dx - sin * dy + px + minX, sin * dx + cos * dy + PIVOT_Y + minY] as const;
+    });
+    const x0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c[0]))) - 1);
+    const x1 = Math.min(width, Math.ceil(Math.max(...corners.map((c) => c[0]))) + 1);
+    const y0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c[1]))) - 1);
+    const y1 = Math.min(height, Math.ceil(Math.max(...corners.map((c) => c[1]))) + 1);
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const c = texel(x + 0.5, y + 0.5);
+        const edge = texel(x, y) !== c || texel(x + 1, y) !== c || texel(x, y + 1) !== c || texel(x + 1, y + 1) !== c;
+        const key = y * width + x;
+        if (edge && !seen.has(key)) {
+          seen.add(key);
+          masks.push({ x, y, w: 1, h: 1 });
+        }
+      }
+    }
   }
   return masks;
 }

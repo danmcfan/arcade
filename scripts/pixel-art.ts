@@ -43,16 +43,6 @@ function cssAt(png: PNG, i: number): string {
     .join("")}`;
 }
 
-/** The letter for one opaque-or-transparent pixel at byte offset `i`, or a thrown error naming (X, Y). */
-function letterAt(png: PNG, i: number, letterOf: Map<string, string>, X: number, Y: number): string {
-  const a = byteAt(png, i + 3);
-  if (a === 0) return empty;
-  if (a !== 255) throw new Error(`pixel (${X}, ${Y}) is half transparent (alpha ${a})`);
-  const letter = letterOf.get(cssAt(png, i));
-  if (letter === undefined) throw new Error(`pixel (${X}, ${Y}) is ${cssAt(png, i)}, not in the palette`);
-  return letter;
-}
-
 /** Each of `palette`'s colours (#rrggbb, lower case) mapped back to its letter. */
 export function letters(palette: Palette = sweetie): Map<string, string> {
   return new Map(Object.entries(palette).map(([letter, css]) => [css.toLowerCase(), letter]));
@@ -118,7 +108,16 @@ export function toRows(
   for (let Y = y; Y < y + h; Y++) {
     let row = "";
     for (let X = x; X < x + w; X++) {
-      row += letterAt(png, (Y * png.width + X) * 4, letterOf, X, Y);
+      const i = (Y * png.width + X) * 4;
+      const a = byteAt(png, i + 3);
+      if (a === 0) {
+        row += empty;
+        continue;
+      }
+      if (a !== 255) throw new Error(`pixel (${X}, ${Y}) is half transparent (alpha ${a})`);
+      const letter = letterOf.get(cssAt(png, i));
+      if (letter === undefined) throw new Error(`pixel (${X}, ${Y}) is ${cssAt(png, i)}, not in the palette`);
+      row += letter;
     }
     rows.push(row);
   }

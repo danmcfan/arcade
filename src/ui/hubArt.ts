@@ -140,19 +140,13 @@ export function roomRows(cabinets: readonly CabinetPlace[]): string[] {
 function roomPixel(x: number, y: number): string {
   const f = floorRect;
   if (x < f.x || x >= f.x + f.w || y < wallTop || y >= f.y + f.h) return "k";
-  if (y < f.y) return wallPixel(y);
+  if (y < wallTop + neonTube.length) return at(neonTube, y - wallTop, "neon row");
+  if (y >= f.y - skirting.length && y < f.y) return at(skirting, y - (f.y - skirting.length), "skirting row");
+  if (y < f.y) return "d";
   // The wall's shadow, then the carpet.
   if (y === f.y) return "k";
   const px = at(at(carpetTile, (y - f.y) % 16, "carpet row"), (x - f.x) % 16, "carpet pixel");
   return px === "." ? "n" : px;
-}
-
-/** The back wall above the floor: neon tube, plain wall, then skirting. */
-function wallPixel(y: number): string {
-  const f = floorRect;
-  if (y < wallTop + neonTube.length) return at(neonTube, y - wallTop, "neon row");
-  if (y >= f.y - skirting.length) return at(skirting, y - (f.y - skirting.length), "skirting row");
-  return "d";
 }
 
 /** `xs[i]`, throwing if the art is shorter than its layout expects. */

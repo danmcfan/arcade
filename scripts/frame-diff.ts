@@ -79,22 +79,18 @@ export function diffFiles(
   return result;
 }
 
-function parseArgs(args: readonly string[]): { files: string[]; masks: Mask[]; out: string | undefined } {
+if (import.meta.main) {
+  const args = process.argv.slice(2);
   const files: string[] = [];
   const masks: Mask[] = [];
   let out: string | undefined;
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (a === "--out") out = args[++i];
-    else if (a === "--mask") masks.push(parseMask(args[++i] ?? ""));
-    else if (a !== undefined) files.push(a);
-  }
-  return { files, masks, out };
-}
-
-if (import.meta.main) {
   try {
-    const { files, masks, out } = parseArgs(process.argv.slice(2));
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if (a === "--out") out = args[++i];
+      else if (a === "--mask") masks.push(parseMask(args[++i] ?? ""));
+      else if (a !== undefined) files.push(a);
+    }
     const [expected, actual] = files;
     if (expected === undefined || actual === undefined || files.length !== 2) {
       throw new Error(

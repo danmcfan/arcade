@@ -46,21 +46,6 @@ function widthOf(rows: Rows): number {
   return first.length;
 }
 
-/** A corner takes its two edge neighbours' colour where they match and the opposite ones don't. */
-function epxCorner(p: string, edge1: string, edge2: string, opposite1: string, opposite2: string): string {
-  return edge1 === edge2 && edge1 !== opposite1 && edge2 !== opposite2 ? edge2 : p;
-}
-
-/** Scale2x's 2×2 block for the pixel at (x, y): top-left, top-right, bottom-left, bottom-right. */
-function epxBlock(rows: Rows, x: number, y: number): [string, string, string, string] {
-  const p = at(rows, x, y);
-  const a = at(rows, x, y - 1);
-  const b = at(rows, x + 1, y);
-  const c = at(rows, x - 1, y);
-  const d = at(rows, x, y + 1);
-  return [epxCorner(p, c, a, d, b), epxCorner(p, a, b, c, d), epxCorner(p, d, c, b, a), epxCorner(p, b, d, a, c)];
-}
-
 /**
  * Scale2x (EPX): each pixel becomes 2×2, and a corner takes a neighbour's
  * colour where two neighbours meet along a diagonal edge. Outside is blank.
@@ -71,9 +56,13 @@ export function scale2x(rows: Rows): string[] {
     let top = "";
     let bottom = "";
     for (let x = 0; x < row.length; x++) {
-      const [tl, tr, bl, br] = epxBlock(rows, x, y);
-      top += tl + tr;
-      bottom += bl + br;
+      const p = at(rows, x, y);
+      const a = at(rows, x, y - 1);
+      const b = at(rows, x + 1, y);
+      const c = at(rows, x - 1, y);
+      const d = at(rows, x, y + 1);
+      top += (c === a && c !== d && a !== b ? a : p) + (a === b && a !== c && b !== d ? b : p);
+      bottom += (d === c && d !== b && c !== a ? c : p) + (b === d && b !== a && d !== c ? d : p);
     }
     out.push(top, bottom);
   });

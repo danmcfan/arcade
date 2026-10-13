@@ -91,66 +91,46 @@ export class Title implements Scene {
   }
 
   private stepPhase(i: Input, edges: MenuEdges): void {
-    if (this.chirps(edges)) soundSelect.blip();
+    // Every choice or Back chirps (Esc does nothing on the title menu itself).
+    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) soundSelect.blip();
 
     switch (this.phase) {
       case "menu":
-        this.stepMenu(edges);
+        this.moveCursor(edges);
+        if (edges.space) {
+          if (this.cursor !== this.newGameIndex) this.startGame(this.saved ?? undefined);
+          else if (this.canContinue) this.show("confirm", 0);
+          else this.show("intro", 0);
+        }
         break;
       case "confirm":
-        this.stepConfirm(edges);
+        this.moveCursor(edges);
+        if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", this.newGameIndex);
+        else if (edges.space) this.show("intro", 0);
         break;
       case "intro":
-        this.stepIntro(edges);
+        if (edges.escape) this.show("menu", this.newGameIndex);
+        else if (edges.space) {
+          this.store.clear();
+          this.saved = null;
+          this.startGame();
+        }
         break;
       case "playing":
         this.stepGame(i, edges.escape);
         break;
       case "paused":
-        this.stepPaused(i, edges);
+        this.moveCursor(edges);
+        if (edges.escape) this.resume(i);
+        else if (edges.space) {
+          if (this.cursor === 0) this.resume(i);
+          else if (this.cursor === 1) this.phase = "controls";
+          else this.quitToMenu();
+        }
         break;
       case "controls":
         if (edges.space || edges.escape) this.phase = "paused";
         break;
-    }
-  }
-
-  /** Every choice or Back chirps (Esc does nothing on the title menu itself). */
-  private chirps(edges: MenuEdges): boolean {
-    if (this.phase === "playing") return false;
-    return edges.space || (edges.escape && this.phase !== "menu");
-  }
-
-  private stepMenu(edges: MenuEdges): void {
-    this.moveCursor(edges);
-    if (!edges.space) return;
-    if (this.cursor !== this.newGameIndex) this.startGame(this.saved ?? undefined);
-    else if (this.canContinue) this.show("confirm", 0);
-    else this.show("intro", 0);
-  }
-
-  private stepConfirm(edges: MenuEdges): void {
-    this.moveCursor(edges);
-    if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", this.newGameIndex);
-    else if (edges.space) this.show("intro", 0);
-  }
-
-  private stepIntro(edges: MenuEdges): void {
-    if (edges.escape) this.show("menu", this.newGameIndex);
-    else if (edges.space) {
-      this.store.clear();
-      this.saved = null;
-      this.startGame();
-    }
-  }
-
-  private stepPaused(i: Input, edges: MenuEdges): void {
-    this.moveCursor(edges);
-    if (edges.escape) this.resume(i);
-    else if (edges.space) {
-      if (this.cursor === 0) this.resume(i);
-      else if (this.cursor === 1) this.phase = "controls";
-      else this.quitToMenu();
     }
   }
 

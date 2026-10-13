@@ -54,36 +54,36 @@ function keyPath(base: string, key: string): string {
  */
 export function diff(expected: unknown, actual: unknown, path = ""): Divergence | null {
   if (kind(expected) !== kind(actual)) return { path, expected, actual };
-  if (Array.isArray(expected) && Array.isArray(actual)) return diffArray(expected, actual, path);
-  if (isObject(expected) && isObject(actual)) return diffObject(expected, actual, path);
+  if (Array.isArray(expected) && Array.isArray(actual)) {
+    const e = expected;
+    const a = actual;
+    const n = Math.min(e.length, a.length);
+    for (let i = 0; i < n; i++) {
+      const d = diff(e[i], a[i], `${path}[${i}]`);
+      if (d) return d;
+    }
+    if (e.length !== a.length) return { path: `${path}.length`, expected: e.length, actual: a.length };
+    return null;
+  }
+  if (isObject(expected) && isObject(actual)) {
+    const e = expected;
+    const a = actual;
+    for (const key of Object.keys(e)) {
+      if (e[key] === undefined && a[key] === undefined) continue;
+      const d = diff(e[key], a[key], keyPath(path, key));
+      if (d) return d;
+    }
+    for (const key of Object.keys(a)) {
+      if (a[key] === undefined || key in e) continue;
+      return { path: keyPath(path, key), expected: undefined, actual: a[key] };
+    }
+    return null;
+  }
   return expected === actual ? null : { path, expected, actual };
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return kind(v) === "object";
-}
-
-function diffArray(e: readonly unknown[], a: readonly unknown[], path: string): Divergence | null {
-  const n = Math.min(e.length, a.length);
-  for (let i = 0; i < n; i++) {
-    const d = diff(e[i], a[i], `${path}[${i}]`);
-    if (d) return d;
-  }
-  if (e.length !== a.length) return { path: `${path}.length`, expected: e.length, actual: a.length };
-  return null;
-}
-
-function diffObject(e: Record<string, unknown>, a: Record<string, unknown>, path: string): Divergence | null {
-  for (const key of Object.keys(e)) {
-    if (e[key] === undefined && a[key] === undefined) continue;
-    const d = diff(e[key], a[key], keyPath(path, key));
-    if (d) return d;
-  }
-  for (const key of Object.keys(a)) {
-    if (a[key] === undefined || key in e) continue;
-    return { path: keyPath(path, key), expected: undefined, actual: a[key] };
-  }
-  return null;
 }
 
 /**

@@ -48,10 +48,6 @@ function freePort(): number {
   return port;
 }
 
-/**
- * The dev server at ARCADE_PORT if one is already up there, otherwise a new
- * one on a free port that `stop()` (or process exit) kills.
- */
 /** Poll `url` every 100 ms, up to `tries` times, until it answers or `proc` exits. */
 async function waitUp(url: string, proc: { exitCode: number | null }, tries: number): Promise<boolean> {
   if (await reachable(url)) return true;
@@ -60,6 +56,10 @@ async function waitUp(url: string, proc: { exitCode: number | null }, tries: num
   return waitUp(url, proc, tries - 1);
 }
 
+/**
+ * The dev server at ARCADE_PORT if one is already up there, otherwise a new
+ * one on a free port that `stop()` (or process exit) kills.
+ */
 export async function startServer(): Promise<Server> {
   const envPort = process.env["ARCADE_PORT"];
   if (envPort !== undefined && envPort !== "") {
@@ -234,29 +234,6 @@ const anyReply = (_x: unknown): _x is unknown => true;
 
 type Send = <T>(method: string, is: Guard<T>, params?: object, sessionId?: string) => Promise<T>;
 
-/** A CDP connection over `ws`: send a command, await its reply checked with `is`. */
-async function cdp(ws: WebSocket): Promise<Send> {
-  const replies = new Map<number, (m: CdpReply) => void>();
-  let id = 0;
-  ws.addEventListener("message", (e): void => {
-    const m: unknown = JSON.parse(String(e.data));
-    if (isCdpReply(m) && m.id !== undefined) replies.get(m.id)?.(m);
-  });
-  await new Promise((resolve, reject) => {
-    ws.addEventListener("open", resolve, { once: true });
-    ws.addEventListener("error", reject, { once: true });
-  });
-  return async (method, is, params = {}, sessionId) => {
-    const m = await new Promise<CdpReply>((resolve) => {
-      replies.set(++id, resolve);
-      ws.send(JSON.stringify({ id, method, params, sessionId }));
-    });
-    if (m.error !== undefined) throw new Error(`CDP ${method}: ${JSON.stringify(m.error)}`);
-    if (!is(m.result)) throw new Error(`CDP ${method}: unexpected result ${JSON.stringify(m.result)}`);
-    return m.result;
-  };
-}
-
 /** Attach to each page target in turn until one carries `mark`; its CDP session id, or null. */
 async function findMarked(send: Send, targetIds: string[], mark: string): Promise<string | null> {
   const [targetId, ...rest] = targetIds;
@@ -275,7 +252,25 @@ async function findMarked(send: Send, targetIds: string[], mark: string): Promis
  */
 async function emulateTouch(page: Browser): Promise<() => void> {
   const ws = new WebSocket(page.run("get", "cdp-url").trim());
-  const send = await cdp(ws);
+  const replies = new Map<number, (m: CdpReply) => void>();
+  let id = 0;
+  ws.addEventListener("message", (e): void => {
+    const m: unknown = JSON.parse(String(e.data));
+    if (isCdpReply(m) && m.id !== undefined) replies.get(m.id)?.(m);
+  });
+  await new Promise((resolve, reject) => {
+    ws.addEventListener("open", resolve, { once: true });
+    ws.addEventListener("error", reject, { once: true });
+  });
+  const send: Send = async (method, is, params = {}, sessionId) => {
+    const m = await new Promise<CdpReply>((resolve) => {
+      replies.set(++id, resolve);
+      ws.send(JSON.stringify({ id, method, params, sessionId }));
+    });
+    if (m.error !== undefined) throw new Error(`CDP ${method}: ${JSON.stringify(m.error)}`);
+    if (!is(m.result)) throw new Error(`CDP ${method}: unexpected result ${JSON.stringify(m.result)}`);
+    return m.result;
+  };
   // The browser may hold other pages (a recording opens a new context), so
   // mark the one agent-browser drives and find it by the mark.
   const mark = `touch-${Date.now()}-${Math.random()}`;
@@ -291,95 +286,74 @@ async function emulateTouch(page: Browser): Promise<() => void> {
   };
 }
 
-/** What every group of `Verify` methods shares. */
-interface Ctx {
-  dir: string;
-  url: string;
-  page: Browser;
-  cleanups: (() => void)[];
-}
-
-const fileIn = (ctx: Ctx, n: string, ext: string): string => join(ctx.dir, `${n}.${ext}`);
-
-function waitCanvas(page: Browser): void {
-  page.run("wait", "--fn", "document.getElementById('screen')?.width > 0");
-}
-
-/** Start recording `<name>.webm` on a fresh load of `scene` with the test hook. */
-function startRecording(ctx: Ctx, n: string, scene?: SceneName): string {
-  const webm = fileIn(ctx, n, "webm");
-  rmSync(webm, { force: true });
-  ctx.page.run("record", "start", webm, `${ctx.url}/${scene ? `?debug&scene=${scene}` : "?debug"}`);
-  waitCanvas(ctx.page);
-  ctx.page.run("wait", "--fn", "window.__arcade !== undefined");
-  return webm;
-}
-
-function seedStorage(page: Browser, storage: Record<string, string>): void {
-  const entries = JSON.stringify(Object.entries(storage));
-  page.eval(`for (const [k, val] of ${entries}) localStorage.setItem(k, val); "ok"`);
-}
-
-/** Run `play`, stop recording, and convert to `<name>.mp4`. */
-function finishRecording(ctx: Ctx, n: string, webm: string, play: () => void): string {
-  try {
-    play();
-  } finally {
-    ctx.page.run("record", "stop");
-  }
-  // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
-  const mp4 = fileIn(ctx, n, "mp4");
-  const ff = Bun.spawnSync([
-    "ffmpeg",
-    "-y",
-    "-loglevel",
-    "error",
-    "-i",
-    webm,
-    "-pix_fmt",
-    "yuv420p",
-    "-vf",
-    "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-    mp4,
-  ]);
-  if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${ff.stderr.toString()}`);
-  return mp4;
-}
-
-/** Page errors and console errors since the last call. */
-function pageErrors(page: Browser): string[] {
-  const lines = [
-    ...page.run("errors", "--clear").split("\n"),
-    ...page
-      .run("console", "--clear")
-      .split("\n")
-      .filter((l) => /\berror\b/iu.test(l)),
-  ];
-  return lines.map((l) => l.trim()).filter((l) => l !== "" && !/^no (page )?errors/iu.test(l));
-}
-
-type DriveMethods = Pick<Verify, "open" | "openHook" | "step" | "tap" | "snapshot" | "key" | "hold" | "wait">;
-
-/** Opening the page and driving it: the hook, keys and real time. */
-function driveMethods({ url, page }: Ctx): DriveMethods {
-  const open = (query = ""): void => {
-    page.run("open", `${url}/${query}`);
-    waitCanvas(page);
+function makeVerify(name: string, url: string): Verify & { cleanups: (() => void)[] } {
+  const dir = join(repoRoot, "out/verify", name);
+  mkdirSync(dir, { recursive: true });
+  const page = browser(`arcade-verify-${name}-${process.pid}`);
+  const file = (n: string, ext: string): string => join(dir, `${n}.${ext}`);
+  const waitCanvas = (): void => {
+    page.run("wait", "--fn", "document.getElementById('screen')?.width > 0");
   };
-  const step = (ticks: number, input: Partial<Input> = {}): void => {
-    page.eval(`window.__arcade.step(${ticks}, ${JSON.stringify(input)})`);
+  const cleanups: (() => void)[] = [];
+
+  /** Start recording `<name>.webm` on a fresh load of `scene` with the test hook. */
+  const startRecording = (n: string, scene?: SceneName): string => {
+    const webm = file(n, "webm");
+    rmSync(webm, { force: true });
+    page.run("record", "start", webm, `${url}/${scene ? `?debug&scene=${scene}` : "?debug"}`);
+    waitCanvas();
+    page.run("wait", "--fn", "window.__arcade !== undefined");
+    return webm;
   };
-  return {
-    open,
+  const seedStorage = (storage: Record<string, string>): void => {
+    const entries = JSON.stringify(Object.entries(storage));
+    page.eval(`for (const [k, val] of ${entries}) localStorage.setItem(k, val); "ok"`);
+  };
+  /** Run `play`, stop recording, and convert to `<name>.mp4`. */
+  const finishRecording = (n: string, webm: string, play: () => void): string => {
+    try {
+      play();
+    } finally {
+      page.run("record", "stop");
+    }
+    // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
+    const mp4 = file(n, "mp4");
+    const ff = Bun.spawnSync([
+      "ffmpeg",
+      "-y",
+      "-loglevel",
+      "error",
+      "-i",
+      webm,
+      "-pix_fmt",
+      "yuv420p",
+      "-vf",
+      "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+      mp4,
+    ]);
+    if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${ff.stderr.toString()}`);
+    return mp4;
+  };
+
+  const v: Verify = {
+    dir,
+    page,
+    open(query = "") {
+      page.run("open", `${url}/${query}`);
+      waitCanvas();
+    },
     openHook(query = "") {
-      open(query ? `?debug&${query.replace(/^\?/u, "")}` : "?debug");
+      const q = query ? `?debug&${query.replace(/^\?/u, "")}` : "?debug";
+      v.open(q);
       page.run("wait", "--fn", "window.__arcade !== undefined");
       page.eval("window.__arcade.pause()");
     },
-    step,
+    step(ticks, input = {}) {
+      page.eval(`window.__arcade.step(${ticks}, ${JSON.stringify(input)})`);
+    },
     tap(key) {
-      step(1, { [key]: true });
-      step(1);
+      v.step(1, { [key]: true });
+      v.step(1);
     },
     snapshot(is) {
       return evalJson(page, "JSON.stringify(window.__arcade.snapshot())", is);
@@ -395,69 +369,61 @@ function driveMethods({ url, page }: Ctx): DriveMethods {
         page.eval(`window.dispatchEvent(new KeyboardEvent("keyup", ${keyInit(code)})); "ok"`);
       }
     },
+    async phone(device = "iPhone 15") {
+      page.run("set", "device", device);
+      cleanups.push(await emulateTouch(page));
+    },
     wait(ms) {
       page.run("wait", String(ms));
     },
-  };
-}
-
-type CaptureMethods = Omit<Verify, keyof DriveMethods | "dir" | "page">;
-
-/** Phones, screenshots, frames, videos and page errors. */
-function captureMethods(ctx: Ctx): CaptureMethods {
-  const { page, cleanups } = ctx;
-  const phone = async (device = "iPhone 15"): Promise<void> => {
-    page.run("set", "device", device);
-    cleanups.push(await emulateTouch(page));
-  };
-  return {
-    phone,
     screenshot(n) {
-      const path = fileIn(ctx, n, "png");
+      const path = file(n, "png");
       page.run("screenshot", path);
       return path;
     },
     frame(n, scale = 4) {
-      const path = fileIn(ctx, n, "png");
+      const path = file(n, "png");
       writeFileSync(path, upscale(decodeDataUrl(page.eval("window.__arcade.frame()")), scale));
       return path;
     },
     record(n, play, opts = {}) {
-      const webm = startRecording(ctx, n, opts.scene);
+      const webm = startRecording(n, opts.scene);
       // No navigation once recording starts (it freezes the video), so record
       // the final URL with the hook installed and seed storage through it.
       if (opts.storage) {
-        seedStorage(page, opts.storage);
+        seedStorage(opts.storage);
         page.eval(`window.__arcade.load(${JSON.stringify(opts.scene ?? "title")}); "ok"`);
       }
-      return finishRecording(ctx, n, webm, play);
+      return finishRecording(n, webm, play);
     },
     async recordPhone(n, play, opts = {}) {
-      const webm = startRecording(ctx, n, opts.scene);
-      if (opts.storage) seedStorage(page, opts.storage);
+      const webm = startRecording(n, opts.scene);
+      if (opts.storage) seedStorage(opts.storage);
       // The recording's fresh context drops the emulation, and the page reads
       // the device only on load, so emulate and reload once. This one reload
       // shows in the video (agent-browser 0.33).
-      await phone(opts.device);
+      await v.phone(opts.device);
       page.eval("location.reload(); 'ok'");
       page.run("wait", "--fn", "window.__touchMark === undefined && window.__arcade !== undefined");
-      waitCanvas(page);
-      return finishRecording(ctx, n, webm, play);
+      waitCanvas();
+      return finishRecording(n, webm, play);
     },
-    errors: () => pageErrors(page),
+    errors() {
+      const lines = [
+        ...page.run("errors", "--clear").split("\n"),
+        ...page
+          .run("console", "--clear")
+          .split("\n")
+          .filter((l) => /\berror\b/iu.test(l)),
+      ];
+      return lines.map((l) => l.trim()).filter((l) => l !== "" && !/^no (page )?errors/iu.test(l));
+    },
     assertNoErrors() {
-      const errs = pageErrors(page);
+      const errs = v.errors();
       if (errs.length > 0) throw new Error(`page errors:\n  ${errs.join("\n  ")}`);
     },
   };
-}
-
-function makeVerify(name: string, url: string): Verify & { cleanups: (() => void)[] } {
-  const dir = join(repoRoot, "out/verify", name);
-  mkdirSync(dir, { recursive: true });
-  const page = browser(`arcade-verify-${name}-${process.pid}`);
-  const ctx: Ctx = { dir, url, page, cleanups: [] };
-  return { dir, page, ...driveMethods(ctx), ...captureMethods(ctx), cleanups: ctx.cleanups };
+  return Object.assign(v, { cleanups });
 }
 
 /**
