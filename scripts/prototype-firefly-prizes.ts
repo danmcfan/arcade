@@ -5,7 +5,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { prizeArt } from "../src/ui/prizeArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
-import { options } from "./prototype-firefly-prizes/options.ts";
+import { arrangements, options } from "./prototype-firefly-prizes/options.ts";
 
 const root = new URL("..", import.meta.url).pathname;
 const hub = `data:image/png;base64,${readFileSync(`${root}src/assets/images/arcade.png`).toString("base64")}`;
@@ -18,6 +18,7 @@ const data = {
     { rows: prizeArt.sleepyBees, x: 74, y: 28 },
   ],
   options,
+  arrangements,
 };
 const viewer = readFileSync(`${root}scripts/prototype-firefly-prizes/viewer.html`, "utf8");
 mkdirSync(`${root}out/prototype-firefly-prizes`, { recursive: true });

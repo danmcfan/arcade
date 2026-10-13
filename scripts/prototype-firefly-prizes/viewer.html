@@ -84,8 +84,9 @@
   <body>
     <h1>Firefly prize art (#35)</h1>
     <p>
-      Lantern (+1 life), Glow stick (3 sparks) and Wings (faster firefly), shown by the blue Firefly cabinet. All
-      options are new art; the Sweet Sam prizes are drawn for context. Pick one per knob, then copy your picks.
+      Lantern (+1 life), Glow stick (3 sparks) and Wings (faster firefly), hung on the wall around the blue Firefly
+      cabinet. The wall knob picks the arrangement. All options are new art; the Sweet Sam prizes are drawn for context.
+      Pick one per knob, then copy your picks.
     </p>
     <div class="wrap">
       <div class="panel">
@@ -100,12 +101,12 @@
     </div>
     <script>
       const DATA = /*DATA*/ null;
-      const knobs = { lantern: "L1", glowStick: "G1", wings: "W1" };
+      const knobs = { lantern: "L1", glowStick: "G2", wings: "W2", wall: "A1" };
       const presets = {
-        "Proposed (default)": { lantern: "L1", glowStick: "G1", wings: "W1" },
-        "Alt A": { lantern: "L2", glowStick: "G2", wings: "W2" },
-        "Alt B": { lantern: "L3", glowStick: "G3", wings: "W3" },
+        "Owner picks, flank (default)": { lantern: "L1", glowStick: "G2", wings: "W2", wall: "A1" },
+        "Owner picks, right": { lantern: "L1", glowStick: "G2", wings: "W2", wall: "A2" },
       };
+      DATA.options.wall = DATA.arrangements.map((a) => ({ ...a, frames: [] }));
       const hub = new Image();
       hub.src = DATA.hub;
       const knobsEl = document.getElementById("knobs");
@@ -158,7 +159,9 @@
         drawSheet();
       }
       function drawSheet() {
-        const all = Object.values(DATA.options).flat();
+        const all = Object.values(DATA.options)
+          .flat()
+          .filter((o) => o.frames.length);
         const s = 4;
         const w = all.reduce((a, o) => a + (o.frames[0][0].length + 2) * o.frames.length, 0);
         const cv = document.getElementById("sheet");
@@ -178,9 +181,10 @@
         ctx.clearRect(0, 0, 160, 144);
         if (hub.complete) ctx.drawImage(hub, 0, 0);
         if (document.getElementById("sam").checked) for (const p of DATA.sweetSam) draw(ctx, p.rows, p.x, p.y);
-        for (const k of Object.keys(knobs)) {
+        const spot = pick("wall");
+        for (const k of ["lantern", "glowStick", "wings"]) {
           const o = pick(k);
-          draw(ctx, o.frames[Math.floor(tick / 20) % o.frames.length], o.x, o.y);
+          draw(ctx, o.frames[Math.floor(tick / 20) % o.frames.length], spot[k].x, spot[k].y);
         }
         tick++;
         requestAnimationFrame(frame);

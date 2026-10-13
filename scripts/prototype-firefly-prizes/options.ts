@@ -17,34 +17,60 @@ const lanternL1 = ["...kk...", "..k..k..", ".kkkkkk.", "kmyyyymk", "kygwwgyk", "
 const lanternL2 = ["..kkk...", ".k...k..", ".kkkkk..", "krorrrk.", "kroyorrk", "kroyorrk", "krrorrrk", ".kkkkk.."];
 const lanternL3 = ["..kk....", ".k..k...", "kkkkkk..", "klgggk..", "kgylgk..", "kglggk..", "kkkkkk.."];
 
+/** A wall bracket over a lantern: plate on the wall, an arm, a hook down at `hook`. */
+const hung = (rows: readonly string[], hook: number): string[] => [
+  "kk......",
+  `km${"m".repeat(hook - 2)}k`.padEnd(8, "."),
+  `kk${".".repeat(hook - 2)}k`.padEnd(8, "."),
+  ...rows,
+];
+
 export const options = {
   lantern: [
     {
       id: "L1",
-      label: "L1 new: brass storm lantern, yellow flame",
+      label: "L1 new: brass storm lantern on a wall bracket",
       x: 112,
       y: 56,
-      frames: [lanternL1, lanternL1.map((r) => r.replaceAll("w", "y"))],
+      frames: [
+        hung(lanternL1, 4),
+        hung(
+          lanternL1.map((r) => r.replaceAll("w", "y")),
+          4,
+        ),
+      ],
     },
     {
       id: "L2",
-      label: "L2 new: red paper lantern",
+      label: "L2 new: red paper lantern on a wall bracket",
       x: 112,
       y: 56,
-      frames: [lanternL2, lanternL2.map((r) => r.replaceAll("y", "o"))],
+      frames: [
+        hung(lanternL2, 3),
+        hung(
+          lanternL2.map((r) => r.replaceAll("y", "o")),
+          3,
+        ),
+      ],
     },
     {
       id: "L3",
-      label: "L3 new: jar with a firefly in it",
+      label: "L3 new: firefly jar on a wall bracket",
       x: 112,
       y: 57,
-      frames: [lanternL3, lanternL3.map((r) => r.replaceAll("y", "g"))],
+      frames: [
+        hung(lanternL3, 2),
+        hung(
+          lanternL3.map((r) => r.replaceAll("y", "g")),
+          2,
+        ),
+      ],
     },
   ],
   glowStick: [
     {
       id: "G1",
-      label: "G1 new: lime stick leaning on the cabinet",
+      label: "G1 new: lime stick",
       x: 120,
       y: 54,
       frames: [
@@ -134,3 +160,24 @@ export const options = {
     },
   ],
 } as const satisfies Record<string, readonly Option[]>;
+
+// Where the three hang on the wall (hub wall: y 29..52; Firefly cabinet x 96..111,
+// top y 40; the 8 px gap x 88..95 sits between it and Sweet Sam's cabinet).
+// Positions override each option's own x, y.
+type Spot = { x: number; y: number };
+export const arrangements = [
+  {
+    id: "A1",
+    label: "A1 new: flank (glow stick left of the cabinet, wings above, lantern right)",
+    lantern: { x: 113, y: 36 },
+    glowStick: { x: 90, y: 34 },
+    wings: { x: 98, y: 31 },
+  },
+  {
+    id: "A2",
+    label: "A2 new: right (wings above, lantern and glow stick side by side right of it)",
+    lantern: { x: 113, y: 36 },
+    glowStick: { x: 124, y: 36 },
+    wings: { x: 98, y: 31 },
+  },
+] as const satisfies readonly ({ id: string; label: string } & Record<keyof typeof options, Spot>)[];
