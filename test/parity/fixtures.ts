@@ -19,7 +19,7 @@ export function tracePath(scenario: string): string {
 }
 
 const SCENES: ReadonlySet<unknown> = new Set(["title", "game", "wave", "lumberjack"]);
-const SOFTWARE: ReadonlySet<unknown> = new Set(["hive", "firefly", "brassMonkey"]);
+const SOFTWARE: ReadonlySet<unknown> = new Set(["sweetSam", "firefly", "brassMonkey"]);
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);

@@ -134,8 +134,8 @@ function hookChecks(v: Verify): void {
   v.step(60, { up: true });
   v.step(2, { space: true });
   v.page.eval("window.__arcade.step(1)");
-  check(v.snapshot(isTitleSnapshot).game?.software === "hive", "Space at a cabinet starts its minigame");
-  v.frame("6-hive");
+  check(v.snapshot(isTitleSnapshot).game?.software === "sweetSam", "Space at a cabinet starts its minigame");
+  v.frame("6-sweet-sam");
   v.tap("escape");
   s = v.snapshot(isTitleSnapshot);
   check(

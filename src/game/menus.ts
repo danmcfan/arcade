@@ -22,7 +22,7 @@ const standardControls: readonly ControlRow[] = [
 
 /** Each minigame's controls panel. For now every minigame has the same three rows. */
 export const minigameControls: Readonly<Record<SoftwareName, readonly ControlRow[]>> = {
-  hive: standardControls,
+  sweetSam: standardControls,
   firefly: standardControls,
   brassMonkey: standardControls,
 };

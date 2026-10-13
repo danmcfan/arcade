@@ -4,6 +4,6 @@ import { parityTest } from "./harness.ts";
 
 parityTest("arcade-walk");
 parityTest("arcade-enter-brass-monkey");
-parityTest("arcade-enter-hive");
+parityTest("arcade-enter-sweet-sam");
 parityTest("arcade-enter-firefly");
-parityTest("hive-highscore");
+parityTest("sweet-sam-highscore");

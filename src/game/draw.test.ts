@@ -155,7 +155,7 @@ class FakeFixed extends FakeSoftware implements FixedViewport {
 
 const built: FakeSoftware[] = [];
 const factory = (name: SoftwareName): Software => {
-  const sw = name === "hive" ? new FakeFixed(name) : new FakeSoftware(name);
+  const sw = name === "sweetSam" ? new FakeFixed(name) : new FakeSoftware(name);
   built.push(sw);
   return sw;
 };
@@ -297,7 +297,7 @@ describe("software draw", () => {
   });
 
   test("a FixedViewport draws with margin 0", () => {
-    const game = newGame("hive");
+    const game = newGame("sweetSam");
     game.step(input());
     game.draw(recordingSurface().surface);
     expect(built[0]?.margins).toEqual([0]);

@@ -18,7 +18,7 @@ Read at review time (`/code-review`, Standards axis). These rules are judgement 
 - **Derived pixels come from helpers.** Mirrored halves, outlines, flipped frames and colour variants come from `scripts/pixel-art.ts` (`mirrorX`, `outline`, `flipX`, `recolour`), not hand-typed copies of rows that can drift apart.
 - **Controls are shown as key caps.** Any on-screen control hint uses the key-cap style of the intro and Controls panel (`drawKey` in `src/ui/text.ts`), with the same labels everywhere.
 - **Destructive choices confirm, safe option first.** Anything that deletes progress (New game over a save) asks first, with No selected by default. A menu offers only the choices that are possible right now: Continue is hidden, not greyed out, when there is no save.
-- **Player-facing names come from the glossary.** Use Sweet Sam, Firefly, Brass Monkey, token and ticket in on-screen text and docs. Code names (`hive`, `brassMonkey`) stay in code.
+- **Player-facing names come from the glossary.** Use Sweet Sam, Firefly, Brass Monkey, token and ticket in on-screen text and docs. Code names (`sweetSam`, `brassMonkey`) stay in code.
 
 ## Structure
 

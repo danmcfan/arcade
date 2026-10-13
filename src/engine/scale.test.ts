@@ -13,7 +13,7 @@ describe("fitScale (D1: integer scale in device pixels)", () => {
   test("dpr 1.25: CSS size is exactly k * logical / dpr, not rounded to 1/64 px layout units", () => {
     // Verified in Chrome with a real --force-device-scale-factor=1.25 (T12): 684.8 CSS px paints exactly
     // 856 device rows, and rounding up to 684.8125 makes a half-pixel-centred canvas 857 rows tall.
-    // The 855-row hive seen in T11 came from CDP device-metrics emulation, which snaps to whole CSS px.
+    // The 855-row Sweet Sam seen in T11 came from CDP device-metrics emulation, which snaps to whole CSS px.
     expect(fitScale(336, 428, 1280, 800, 1.25)).toEqual({ scale: 2, integer: true, cssWidth: 537.6, cssHeight: 684.8 });
     expect(fitScale(512, 288, 1280, 800, 1.25)).toEqual({
       scale: 3,

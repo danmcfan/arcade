@@ -1,5 +1,6 @@
-// Port of internal/hive/digit_reel.go: the slot-machine digit effect. Sweet
-// Sam's score dials and the payout menu both spin their digits with it.
+// Port of the Go Sweet Sam minigame's digit_reel.go (docs/port-notes.md gives
+// its old Go name): the slot-machine digit effect. Sweet Sam's score dials and
+// the payout menu both spin their digits with it.
 
 /** How long one digit spends scrolling from → to at 60 FPS. */
 export const digitReelDurationFrames = 18;

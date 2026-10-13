@@ -30,7 +30,7 @@ function canvas(v: Verify): PNG {
 
 /** How to walk from the hub spawn to each cabinet (as in the arcade-enter-* fixtures). */
 const walks: { name: SoftwareName; label: string; sideways: Partial<Input> | null }[] = [
-  { name: "hive", label: "sweet-sam", sideways: null },
+  { name: "sweetSam", label: "sweet-sam", sideways: null },
   { name: "firefly", label: "firefly", sideways: { right: true } },
   { name: "brassMonkey", label: "brass-monkey", sideways: { left: true } },
 ];
@@ -56,7 +56,7 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   v.step(32, { up: true });
   let s = v.snapshot(isGameSnapshot);
   check(
-    s.software === null && s.arcade.title === (w.name === "hive" ? "sweet" : w.name),
+    s.software === null && s.arcade.title === (w.name === "sweetSam" ? "sweet" : w.name),
     `facing its hub cabinet shows the ${w.label} title`,
     s.arcade.title,
   );

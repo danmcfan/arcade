@@ -62,20 +62,20 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 
 ## Layout
 
-| Path                                                            | What                                                                                                     |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `src/main.ts`                                                   | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                                 |
-| `src/engine/`                                                   | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                                  |
-| `src/game/`                                                     | Top-level loop (hub and active minigame), scene registry, snapshot types                                 |
-| `src/title/`                                                    | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                           |
-| `src/ui/`                                                       | Pixel font and logo source, text and panel drawing                                                       |
-| `src/arcade/`, `src/hive/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                          |
-| `src/lab/wave/`, `src/lab/lumberjack/`                          | Lab scenes                                                                                               |
-| `test/fixtures/`                                                | Recorded input scripts, per-tick traces and golden frames (see below)                                    |
-| `test/parity/`                                                  | Replays every fixture scenario and compares it tick by tick                                              |
-| `scripts/`                                                      | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
-| `art/cabinet.ase`                                               | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)                     |
-| `docs/`                                                         | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                          |
+| Path                                                                 | What                                                                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `src/main.ts`                                                        | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                                 |
+| `src/engine/`                                                        | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                                  |
+| `src/game/`                                                          | Top-level loop (hub and active minigame), scene registry, snapshot types                                 |
+| `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                           |
+| `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                                       |
+| `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                          |
+| `src/lab/wave/`, `src/lab/lumberjack/`                               | Lab scenes                                                                                               |
+| `test/fixtures/`                                                     | Recorded input scripts, per-tick traces and golden frames (see below)                                    |
+| `test/parity/`                                                       | Replays every fixture scenario and compares it tick by tick                                              |
+| `scripts/`                                                           | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
+| `art/cabinet.ase`                                                    | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)                     |
+| `docs/`                                                              | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                          |
 
 ## Parity fixtures
 
@@ -113,7 +113,7 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # hive / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
 ```
 
 Copy the regenerated `test/fixtures/` back onto the current branch. If you change gameplay on purpose, the affected traces have to be updated with it, and there is no longer a Go reference to capture them from.

@@ -97,7 +97,7 @@ function minigame(v: Verify): void {
   v.openHook("scene=game");
   v.step(25, { up: true });
   v.step(1, { up: true, space: true });
-  check(game(v).software === "hive", "Space at Sweet Sam starts it");
+  check(game(v).software === "sweetSam", "Space at Sweet Sam starts it");
   check(game(v).sounds.includes("pause:hub"), "the hub song pauses for the minigame", game(v).sounds);
 }
 

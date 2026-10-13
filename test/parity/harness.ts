@@ -5,7 +5,7 @@
 //
 // Usage, in test/parity/<name>.test.ts:
 //   import { parityTest } from "./harness.ts";
-//   parityTest("hive-fuzz-1");
+//   parityTest("sweet-sam-fuzz-1");
 
 import { test } from "bun:test";
 import { existsSync } from "node:fs";
@@ -160,7 +160,7 @@ export function formatMismatch(scenario: string, m: Mismatch): string {
   );
 }
 
-/** Long scenarios (hive fuzz, wave full collapse) need more than bun's 5 s default. */
+/** Long scenarios (Sweet Sam fuzz, wave full collapse) need more than bun's 5 s default. */
 const PARITY_TIMEOUT_MS = 120_000;
 
 /**

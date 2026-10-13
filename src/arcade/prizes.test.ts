@@ -20,9 +20,9 @@ import { newState, blocked } from "./state.ts";
 describe("prize catalogue", () => {
   test("three Sweet Sam prizes: honey jar 25, running shoes 50, sleepy bees 100 tickets", () => {
     expect(prizes.map((p) => [p.id, p.name, p.price, p.software])).toEqual([
-      ["honeyJar", "HONEY JAR", 25, "hive"],
-      ["runningShoes", "RUNNING SHOES", 50, "hive"],
-      ["sleepyBees", "SLEEPY BEES", 100, "hive"],
+      ["honeyJar", "HONEY JAR", 25, "sweetSam"],
+      ["runningShoes", "RUNNING SHOES", 50, "sweetSam"],
+      ["sleepyBees", "SLEEPY BEES", 100, "sweetSam"],
     ]);
     expect([honeyJarPrice, runningShoesPrice, sleepyBeesPrice]).toEqual([25, 50, 100]);
   });

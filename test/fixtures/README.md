@@ -18,7 +18,7 @@ on purpose (ADR 0004; see "Re-recorded from the TypeScript game" below).
 | `traces/<name>.jsonl.gz` | Per-tick state snapshots (§4.3, `src/game/snapshot.ts`) |
 | `frames/<name>/<tick>.png` | Golden frames at logical resolution for each `captureTicks` entry |
 | `rng.json` | mulberry32 reference outputs for seeds 1 and 42 |
-| `hive.goReference.json` | Trimmed hive-only Go reference used by `src/hive/hive.test.ts` (not from `tools/golden/`; see below) |
+| `sweet-sam.goReference.json` | Trimmed Sweet Sam Go reference used by `src/sweet-sam/sweet-sam.test.ts` (not from `tools/golden/`; see below) |
 
 Total size: about 2.9 MB (traces 1.7 MB, frames 0.98 MB, inputs 96 KB, rng 68 KB).
 
@@ -27,7 +27,7 @@ Total size: about 2.9 MB (traces 1.7 MB, frames 0.98 MB, inputs 96 KB, rng 68 KB
 Exactly the `InputScript` type. Key order is irrelevant; one step per line.
 
 ```json
-{"name":"hive-fuzz-1","scene":"game","software":"hive","seed":1,"captureTicks":[1],"steps": [
+{"name":"sweet-sam-fuzz-1","scene":"game","software":"sweetSam","seed":1,"captureTicks":[1],"steps": [
   {"ticks":1,"input":{}},
   {"ticks":37,"input":{"left":true}}
 ]}
@@ -58,7 +58,7 @@ are exactly those in `src/game/snapshot.ts`:
 
 - `game` scenes: `GameSnapshot`. `sw` is the active software's snapshot or
   `null`; `sounds` lists sound calls in call order since the end of the
-  previous tick. Tick 1 also holds construction-time sounds (hive's
+  previous tick. Tick 1 also holds construction-time sounds (Sweet Sam's
   `rewind:start`, `play:start`), because the harness installs its sound hook
   before constructing anything.
 - `wave`: `WaveSnapshot`; only the **last** line carries `cells` (the full
@@ -88,7 +88,7 @@ scene's logical size at that tick (`Layout`), read back with `ReadPixels`
 and written as a normal non-premultiplied RGBA PNG. Pixels Go never draws
 are transparent (alpha 0), not black.
 
-- Sizes follow the layout: hub 192×176, hive, firefly and Brass Monkey 336×428
+- Sizes follow the layout: hub 192×176, Sweet Sam, firefly and Brass Monkey 336×428
   (each plays inside its cabinet; firefly and Brass Monkey were 256×320 and
   256×288 in the Go capture, before #15), lumberjack 512×288, plus 120 px
   of width while debug mode is on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
@@ -102,12 +102,12 @@ What the capture ticks show:
 
 | Scenario | Ticks |
 |---|---|
-| `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 hive cabinet title · 70 Brass Monkey title · 389 firefly title · 420 debug panel + overlay · 440 debug + hive title · 462 hub after debug off |
+| `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 Sweet Sam cabinet title · 70 Brass Monkey title · 389 firefly title · 420 debug panel + overlay · 440 debug + Sweet Sam title · 462 hub after debug off |
 | `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · Esc tick (minigame pause menu opens) · QUIT GAME selected (NO TICKETS) · hub after Quit game (1 token spent) |
-| `hive-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 7977 flashing bees · 9683 last FINALDEATHWAIT tick · 9684 hub after game over |
-| `hive-modes` | 3358 flashing bees (unshaken) |
-| `hive-fuzz-*` | 1 |
-| `hive-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered hive (high score dials) · 3124 later in that hive · 3125 minigame pause menu · 3158 hub after Quit game |
+| `sweet-sam-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 7977 flashing bees · 9683 last FINALDEATHWAIT tick · 9684 hub after game over |
+| `sweet-sam-modes` | 3358 flashing bees (unshaken) |
+| `sweet-sam-fuzz-*` | 1 |
+| `sweet-sam-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered Sweet Sam (high score dials) · 3124 later in that game · 3125 minigame pause menu · 3158 hub after Quit game |
 | `firefly-play` | 1 first wave · 60, 360, 685, 1098, 1401 hit effects mid-animation |
 | `brass-monkey-walk` | 191 facing left walking · 201 facing left idle |
 | `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
@@ -138,50 +138,50 @@ reproduce every entry exactly.
 |---|---|---|---|---|
 | `arcade-walk` | hub | 1 | 462 | every wall face (top, left, bottom, right), the prize counter's left side (then round it), all 3 cabinets approached facing Up (title + `play:melody`, then `pause:melody`/`rewind:melody`), Shift+P on (+120 px) and off, Esc in the hub (no-op) |
 | `arcade-enter-brass-monkey` | hub | 1 | 442 | Up+Space at the cabinet (1 token), ~300 ticks inside, Esc opens the minigame pause menu (minigame sounds paused), Down, Down, Space: Quit game, back in the hub (layout change) |
-| `arcade-enter-hive` | hub | 1 | 418 | same for hive |
+| `arcade-enter-sweet-sam` | hub | 1 | 418 | same for Sweet Sam |
 | `arcade-enter-firefly` | hub | 1 | 442 | same for firefly |
-| `hive-fuzz-1..4` | `game.New(hive)` | 1..4 | 3616–3650 | random held directions, 10–60 tick holds; after game over the rest drives the hub |
-| `hive-clear` | `game.New(hive)` | 11 | 9714 | look-ahead bot eats everything: round win at ~6700, bee chains 200→400→800→1600; then random holds to game over |
-| `hive-modes` | `game.New(hive)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
-| `hive-highscore` | hub | 21 | 3178 | enter hive from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter hive (its high score dials boot from it), Esc and Quit game |
+| `sweet-sam-fuzz-1..4` | `game.New(sweetSam)` | 1..4 | 3616–3650 | random held directions, 10–60 tick holds; after game over the rest drives the hub |
+| `sweet-sam-clear` | `game.New(sweetSam)` | 11 | 9714 | look-ahead bot eats everything: round win at ~6700, bee chains 200→400→800→1600; then random holds to game over |
+| `sweet-sam-modes` | `game.New(sweetSam)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
+| `sweet-sam-highscore` | hub | 21 | 3178 | enter Sweet Sam from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter Sweet Sam (its high score dials boot from it), Esc and Quit game |
 | `firefly-play` | `game.New(firefly)` | 1 | 1501 | Space held while sweeping: bullets, hits, explosions, wave cleared (`bugs: []`) and respawned, bugs leaving off the top, a bullet hitting an unspawned bug at (0,0) |
 | `brass-monkey-walk` | `game.New(brassMonkey)` | 1 | 206 | both wall clamps (x 6 and 108), flip left/right, idle frame reset, Up held |
 | `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
 | `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
 | `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-39,174 ticks in total. The hive bot only picked inputs; the scripts replay
+39,174 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
 
-`golden coverage` asserts, across all `hive-*` traces: power pellet eaten,
+`golden coverage` asserts, across all `sweet-sam-*` traces: power pellet eaten,
 bee eaten (PAUSE with a 200 and a 400 award), popup + particles, tunnel wrap
 (player and bee), death (PLAY → DEATHWAIT → START), final death (PLAY →
 FINALDEATHWAIT → back in the hub with the high score taken), round win
-(items 0 → START with a fresh set), the hub high score passed to a new hive,
+(items 0 → START with a fresh set), the hub high score passed to a new Sweet Sam game,
 and `modeIndex` 1..8. It also checks the firefly-play and lumberjack-chop
-must-cover items above. Note that in the Go-recorded traces hive's GAMEOVER
+must-cover items above. Note that in the Go-recorded traces Sweet Sam's GAMEOVER
 state never appears: the tick it is entered, `Game.Update` sees `GameOver()`
 and drops the software, so that tick's snapshot already has
-`software: null`. In the TS-recorded `hive-highscore` it shows for as long
+`software: null`. In the TS-recorded `sweet-sam-highscore` it shows for as long
 as the payout is open.
 
-## hive.goReference.json
+## sweet-sam.goReference.json
 
-A trimmed Go reference for hive on its own: seed 8, 6,000 ticks, driving the
-hive software directly (no hub) with the "greedy" input generator in
-`src/hive/hive.test.ts`. It holds the state transitions (`trans`), a few
+A trimmed Go reference for Sweet Sam on its own: seed 8, 6,000 ticks, driving the
+Sweet Sam software directly (no hub) with the "greedy" input generator in
+`src/sweet-sam/sweet-sam.test.ts`. It holds the state transitions (`trans`), a few
 complete snapshots (`snaps`) and the end state (`final`). It was captured during T5
-by the hive porter's throwaway Go harness, not by `tools/golden/`: a copy of
-`internal/hive` with `math/rand` swapped for mulberry32 at the same call
+by the Sweet Sam porter's throwaway Go harness, not by `tools/golden/`: a copy of
+the Go Sweet Sam package with `math/rand` swapped for mulberry32 at the same call
 positions, a `Snapshot()` emitting the §4.3 keys, built with
 `CGO_ENABLED=1 GOARCH=amd64`. The full per-tick traces matched the TS port
 bit for bit at the time.
 
 That harness was never committed, so **this file cannot be regenerated**.
-It is kept as a cheap hive-level regression check (`hive.test.ts` imports
-it; it is test-only and not in the bundle). The full `hive-*` traces above
+It is kept as a cheap Sweet Sam regression check (`sweet-sam.test.ts` imports
+it; it is test-only and not in the bundle). The full `sweet-sam-*` traces above
 supersede it for regression purposes: if the two ever disagree, the traces
 win.
 
@@ -216,18 +216,18 @@ Re-recorded from TypeScript so far:
 |---|---|
 | `arcade-enter-firefly`, `firefly-play` | #15: Firefly plays inside its cabinet bezel (336×428 layout) and its snapshot gains `joystick` |
 | `arcade-enter-brass-monkey`, `brass-monkey-walk` | #15: same for Brass Monkey |
-| `arcade-enter-hive`, `hive-clear`, `hive-fuzz-1`..`4`, `hive-highscore`, `hive-modes` (frames only) | #15: Sweet Sam's marquee is regenerated at the other cabinets' letter height. Only rows 0..53 (the marquee) were copied from the TypeScript capture; the rest of each frame is still the Go original |
+| `arcade-enter-sweet-sam`, `sweet-sam-clear`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-highscore`, `sweet-sam-modes` (frames only) | #15: Sweet Sam's marquee is regenerated at the other cabinets' letter height. Only rows 0..53 (the marquee) were copied from the TypeScript capture; the rest of each frame is still the Go original |
 | `arcade-walk` (frame 70 only) | #15: the Brass Monkey hub title card reads BRASS MONKEY (`titleCards` in `src/ui/glyphs.ts`). The frame differs from the Go original only in those 1080 title pixels |
-| `arcade-walk`, `arcade-enter-hive`, `arcade-enter-firefly`, `arcade-enter-brass-monkey`, `hive-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`hive-highscore` adds Space, Space). Traces and changed frames re-recorded |
-| `hive-fuzz-1`..`4`, `hive-clear`, `hive-modes`, `firefly-play`, `brass-monkey-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `hive-clear/9684` (the hub shows the counts) |
+| `arcade-walk`, `arcade-enter-sweet-sam`, `arcade-enter-firefly`, `arcade-enter-brass-monkey`, `sweet-sam-highscore` | #16: the hub draws a coin and the token count, a ticket and the ticket count; Esc in a minigame opens the minigame pause menu (inputs add Down, Down, Space: Quit game), and game over opens the payout (`sweet-sam-highscore` adds Space, Space). Traces and changed frames re-recorded |
+| `sweet-sam-fuzz-1`..`4`, `sweet-sam-clear`, `sweet-sam-modes`, `firefly-play`, `brass-monkey-walk` | #16: inputs and behaviour unchanged; `GameSnapshot` gained `arcade.tokens`, `arcade.tickets`, `run`, `menu`, `cursor` and `payout`, so the traces were re-recorded. Frames unchanged except `sweet-sam-clear/9684` (the hub shows the counts) |
 | `arcade-walk` | #21: the prize counter stands on the bottom wall and is solid. The walk along the bottom wall now stops at the counter, goes up round it and comes back down to the bottom wall (the 110-tick Right step became Right 24, Up 16, Right 80, Down 20), so every capture after tick 70 moved 30 ticks later (359, 390, 410, 432 became 389, 420, 440, 462). Trace and every frame re-recorded |
-| `hive-fuzz-1`..`3` | #21: after game over the random walk in the hub runs into the prize counter. Traces re-recorded; inputs and frames unchanged |
-| `arcade-enter-*` (hub frame after Quit game), `hive-clear` (9684), `hive-highscore` (2943, 3158) | #21: hub frames show the prize counter. Only those frames were re-recorded; they differ from the old ones only in the counter's 556 pixels. Traces unchanged |
+| `sweet-sam-fuzz-1`..`3` | #21: after game over the random walk in the hub runs into the prize counter. Traces re-recorded; inputs and frames unchanged |
+| `arcade-enter-*` (hub frame after Quit game), `sweet-sam-clear` (9684), `sweet-sam-highscore` (2943, 3158) | #21: hub frames show the prize counter. Only those frames were re-recorded; they differ from the old ones only in the counter's 556 pixels. Traces unchanged |
 | `firefly-play` (every frame), `arcade-enter-firefly` (58, 358, 359, 381) | #33: Firefly's art is regenerated from `src/firefly/art.ts`: the firefly, sparks, Moths and hit effect on a night sky with grass. Only the frames that show the Firefly playfield were re-recorded, and they differ only inside it (x 56..279, y 56..343). Inputs and traces unchanged |
 | `arcade-enter-brass-monkey`, `brass-monkey-walk` | #37: the code name became `brassMonkey` (fixtures renamed from their old code name). The only input change is `software`; every key press is the same. Traces re-recorded and equal to the old ones with only the software and title name changed. Frames moved, byte-identical |
 | `arcade-walk` | #37: the walk passes the Brass Monkey cabinet, so its trace names the hub title. Trace re-recorded and equal to the old one with only the title name changed; input and frames unchanged |
-| `arcade-walk` (every frame), `arcade-enter-*` (hub frame after Quit game), `hive-clear` (9684), `hive-highscore` (2943, 3158) | #17: the hub room, the cabinets, the player and the prize counter are redrawn as generated pixel art from the options the owner picked (arcade carpet and neon wall, classic upright cabinets, the original player in headphones, the glass-case counter; `src/ui/hubArt.ts`, `src/ui/playerArt.ts`, `src/ui/counterArt.ts`). Only the hub frames were re-recorded; inputs and traces unchanged |
-| `arcade-walk`, `arcade-enter-*`, `hive-highscore`, `hive-fuzz-1`..`3`, `hive-clear` | Hub screens and song: the hub song loops whenever no minigame runs (`play:hub` on the first hub tick, `pause:hub` entering a cabinet, `play:hub` back in the hub), and Go's hub melody became the faced cabinet's attract loop plus a screen-on sound (`play:melody` became `play:attract<Name>`, `rewind:screenOn`, `play:screenOn`). Traces re-recorded; each equals the old one in every field but `sounds`. The cabinet screens are dark glass until faced and then switch on like a CRT with light on the carpet, so the hub frames were re-recorded too (`arcade-walk` every frame, `arcade-enter-*` the hub frame after Quit game, `hive-clear` 9684, `hive-highscore` 2943 and 3158); they differ only on the three screens and the carpet in front of them. Inputs unchanged |
+| `arcade-walk` (every frame), `arcade-enter-*` (hub frame after Quit game), `sweet-sam-clear` (9684), `sweet-sam-highscore` (2943, 3158) | #17: the hub room, the cabinets, the player and the prize counter are redrawn as generated pixel art from the options the owner picked (arcade carpet and neon wall, classic upright cabinets, the original player in headphones, the glass-case counter; `src/ui/hubArt.ts`, `src/ui/playerArt.ts`, `src/ui/counterArt.ts`). Only the hub frames were re-recorded; inputs and traces unchanged |
+| `arcade-walk`, `arcade-enter-*`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`3`, `sweet-sam-clear` | Hub screens and song: the hub song loops whenever no minigame runs (`play:hub` on the first hub tick, `pause:hub` entering a cabinet, `play:hub` back in the hub), and Go's hub melody became the faced cabinet's attract loop plus a screen-on sound (`play:melody` became `play:attract<Name>`, `rewind:screenOn`, `play:screenOn`). Traces re-recorded; each equals the old one in every field but `sounds`. The cabinet screens are dark glass until faced and then switch on like a CRT with light on the carpet, so the hub frames were re-recorded too (`arcade-walk` every frame, `arcade-enter-*` the hub frame after Quit game, `sweet-sam-clear` 9684, `sweet-sam-highscore` 2943 and 3158); they differ only on the three screens and the carpet in front of them. Inputs unchanged |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end
@@ -256,7 +256,7 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # hive / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
 ```
 
 Traces are byte-for-byte reproducible (deterministic gzip header). The Go

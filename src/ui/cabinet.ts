@@ -1,5 +1,5 @@
 // The arcade cabinet bezel every minigame plays inside (a port of
-// internal/hive/cabinet.go, shared since #15). A `FixedViewport` minigame
+// the Go Sweet Sam minigame's cabinet.go, shared since #15). A `FixedViewport` minigame
 // sized `cabinetWidth` x `cabinetHeight` draws its cabinet strip at 0,0 with
 // `drawCabinet`, then its playfield inside the insets. The strip holds 5
 // joystick frames side by side; `cabinetJoystickFrame` picks one per tick.

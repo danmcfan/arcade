@@ -100,7 +100,7 @@ export interface GameSnapshot extends SceneSnapshotBase {
   /**
    * Sound events in call order ("play:start", "rewind:laser", …) emitted
    * since the end of the previous tick. For tick 1 this also includes events
-   * emitted while constructing the game and its initial software (hive's
+   * emitted while constructing the game and its initial software (Sweet Sam's
    * `StartState.OnEnter` plays "rewind:start", "play:start" at construction).
    * Go harness: install `OnSoundEvent` before `game.New(...)`, flush the
    * buffer into each tick's snapshot.
@@ -123,15 +123,15 @@ export interface PayoutSnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// hive (internal/hive)
+// sweetSam (the Go port's Sweet Sam package)
 
 /** Go `StateID` values. */
-export type HiveStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER";
+export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER";
 
 /** Enemy identity; Go compares `e.color` against `colorRed`, `colorPink`, `colorTeal`, `colorOrange`. */
-export type HiveEnemyKind = "red" | "pink" | "teal" | "orange";
+export type SweetSamEnemyKind = "red" | "pink" | "teal" | "orange";
 
-export interface HivePlayerSnapshot {
+export interface SweetSamPlayerSnapshot {
   /** `Entity.X`. */
   x: number;
   /** `Entity.Y`. */
@@ -146,9 +146,9 @@ export interface HivePlayerSnapshot {
   velocity: number;
 }
 
-export interface HiveEnemySnapshot {
-  /** From `Entity.color` (see `HiveEnemyKind`). */
-  kind: HiveEnemyKind;
+export interface SweetSamEnemySnapshot {
+  /** From `Entity.color` (see `SweetSamEnemyKind`). */
+  kind: SweetSamEnemyKind;
   /** `Entity.X`. */
   x: number;
   /** `Entity.Y`. */
@@ -175,7 +175,7 @@ export interface HiveEnemySnapshot {
   reverseTile: [number, number];
 }
 
-export interface HivePopupSnapshot {
+export interface SweetSamPopupSnapshot {
   /** `bonusEatPopup.x`. */
   x: number;
   /** `bonusEatPopup.y`. */
@@ -190,43 +190,43 @@ export interface HivePopupSnapshot {
  * One rolling digit: `[SettledDigit, active, from, to, t]` from `DigitReel`
  * (`SettledDigit`, `active`, `from`, `to` ints/bool; `t` float64).
  */
-export type HiveDialSnapshot = [settled: number, active: boolean, from: number, to: number, t: number];
+export type SweetSamDialSnapshot = [settled: number, active: boolean, from: number, to: number, t: number];
 
-export interface HiveSnapshot {
+export interface SweetSamSnapshot {
   /** `stateMachine.CurrentID()`. */
-  state: HiveStateId;
-  player: HivePlayerSnapshot;
-  /** `HiveSoftware.enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
-  enemies: HiveEnemySnapshot[];
-  /** Number of non-nil entries in `HiveSoftware.items`. */
+  state: SweetSamStateId;
+  player: SweetSamPlayerSnapshot;
+  /** `SweetSamSoftware.enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
+  enemies: SweetSamEnemySnapshot[];
+  /** Number of non-nil entries in `SweetSamSoftware.items`. */
   items: number;
   /**
    * FNV-1a 32-bit (`fnv1a32` in src/engine/gomath.ts) over the indexes of the
    * non-nil `items` entries, ascending, each as a little-endian uint32.
    */
   itemsHash: number;
-  /** `HiveSoftware.score`. */
+  /** `SweetSamSoftware.score`. */
   score: number;
-  /** `HiveSoftware.lives`. */
+  /** `SweetSamSoftware.lives`. */
   lives: number;
-  /** `HiveSoftware.highScore`. */
+  /** `SweetSamSoftware.highScore`. */
   highScore: number;
-  /** `HiveSoftware.modeIndex`. */
+  /** `SweetSamSoftware.modeIndex`. */
   modeIndex: number;
-  /** `HiveSoftware.modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
+  /** `SweetSamSoftware.modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
   mode: number;
-  /** `HiveSoftware.modeTicks`. */
+  /** `SweetSamSoftware.modeTicks`. */
   modeTicks: number;
-  /** `HiveSoftware.pauseTicks`. */
+  /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
-  /** `HiveSoftware.startTicks`. */
+  /** `SweetSamSoftware.startTicks`. */
   startTicks: number;
   /** `StartState.respawnBlinkRemaining` (the registered START state's field, whatever the current state). */
   respawnBlinkRemaining: number;
-  /** `HiveSoftware.scaredEatAwardNext`. */
+  /** `SweetSamSoftware.scaredEatAwardNext`. */
   scaredEatAwardNext: number;
-  /** `HiveSoftware.bonusEatPopups` in slice order. */
-  popups: HivePopupSnapshot[];
+  /** `SweetSamSoftware.bonusEatPopups` in slice order. */
+  popups: SweetSamPopupSnapshot[];
   /**
    * Camera: `[shakeOffsetX, shakeOffsetY, shakeTicksRemaining, shakeIntensity]`.
    */
@@ -236,12 +236,12 @@ export interface HiveSnapshot {
    * deliberately excluded: they come from `Sin/Cos` (fact 3).
    */
   particlesActive: number;
-  /** `HiveSoftware.pelletAnimTick`. */
+  /** `SweetSamSoftware.pelletAnimTick`. */
   pelletAnimTick: number;
-  /** `HiveSoftware.cabinetJoystickFrame`. */
+  /** `SweetSamSoftware.cabinetJoystickFrame`. */
   joystick: number;
   /** 12 dials: `scoreDial[0..5]` then `highScoreDial[0..5]`. */
-  dials: HiveDialSnapshot[];
+  dials: SweetSamDialSnapshot[];
 }
 
 // ---------------------------------------------------------------------------
@@ -280,7 +280,7 @@ export interface FireflySnapshot {
   bullets: FireflyBulletSnapshot[];
   /** `FireFlySoftware.bugs` in slice order. */
   bugs: FireflyBugSnapshot[];
-  /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }
 
@@ -298,12 +298,12 @@ export interface BrassMonkeySnapshot {
   left: boolean;
   /** `player.Moving`. */
   moving: boolean;
-  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
-export type SoftwareSnapshot = HiveSnapshot | FireflySnapshot | BrassMonkeySnapshot;
+export type SoftwareSnapshot = SweetSamSnapshot | FireflySnapshot | BrassMonkeySnapshot;
 
 // ---------------------------------------------------------------------------
 // wave (internal/wave, lab scene)

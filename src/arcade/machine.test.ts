@@ -18,7 +18,7 @@ function recordingFactory(): {
 }
 
 describe("newMachines", () => {
-  test("three cabinets left to right: brassMonkey, sweet (hive), firefly", () => {
+  test("three cabinets left to right: brassMonkey, sweet (Sweet Sam), firefly", () => {
     const { factory } = recordingFactory();
     const ms = newMachines(factory);
     expect(ms.map((m) => [m.rect, m.title])).toEqual([
@@ -31,10 +31,10 @@ describe("newMachines", () => {
   test("newSoftware builds the matching software and passes the high score and owned prizes through", () => {
     const { calls, factory } = recordingFactory();
     const ms = newMachines(factory);
-    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["brassMonkey", "hive", "firefly"]);
+    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["brassMonkey", "sweetSam", "firefly"]);
     expect(calls).toEqual([
       ["brassMonkey", 1234, ["honeyJar"]],
-      ["hive", 1234, ["honeyJar"]],
+      ["sweetSam", 1234, ["honeyJar"]],
       ["firefly", 1234, ["honeyJar"]],
     ]);
   });

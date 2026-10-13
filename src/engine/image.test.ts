@@ -5,7 +5,7 @@ import { snap } from "./surface.ts";
 const sheet: ImageAsset = { url: "sheet.png", width: 160, height: 32, image: null };
 
 describe("snap (D13 as settled in Phase 4: Go adjustDestinationPixel)", () => {
-  test("rounds half up, everything else to nearest (golden frames: hive y = 99.5 lands on row 100)", () => {
+  test("rounds half up, everything else to nearest (golden frames: Sweet Sam y = 99.5 lands on row 100)", () => {
     expect(snap(2)).toBe(2);
     expect(snap(0.5)).toBe(1);
     expect(snap(0.49)).toBe(0);

@@ -1,0 +1,18 @@
+{"name":"arcade-enter-sweet-sam","scene":"game","seed":1,"captureTicks":[34,334,335,357,368],"steps": [
+  {"ticks":1,"input":{}},
+  {"ticks":32,"input":{"up":true}},
+  {"ticks":1,"input":{"up":true,"space":true}},
+  {"ticks":120,"input":{}},
+  {"ticks":60,"input":{"left":true}},
+  {"ticks":60,"input":{"up":true}},
+  {"ticks":60,"input":{"right":true}},
+  {"ticks":1,"input":{"escape":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"down":true}},
+  {"ticks":10,"input":{}},
+  {"ticks":1,"input":{"space":true}},
+  {"ticks":30,"input":{}},
+  {"ticks":20,"input":{"down":true}}
+]}

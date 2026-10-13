@@ -3,6 +3,8 @@
 Implementation spec for an **orchestrator agent** that delegates to **sub-agents** and lands the whole port as **one PR** from the integration branch `ts-port`. Each ticket is built on its own branch in its own git worktree and merged into `ts-port` (D10). The ticket graph is in §8.
 
 > **Note (#37):** `gearhead` in this plan is the Go code name for Brass Monkey. The TypeScript code now calls it `brassMonkey` (`src/brass-monkey/`).
+>
+> **Note (#45):** `hive` in this plan is the Go code name for Sweet Sam. The TypeScript code now calls it `sweetSam` (`src/sweet-sam/`).
 
 Goal: replace the Go + Ebitengine (Wasm) build and the Odin + raylib prototype with a TypeScript game that draws to a `<canvas>`, built, served and tested with Bun. Gameplay must be **tick-for-tick identical** to the Go version, as proven by parity traces captured from Go before it is deleted.
 

@@ -43,7 +43,7 @@ export function newMachines(factory: SoftwareFactory): Machine[] {
     {
       rect: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "sweet",
-      newSoftware: (highScore, prizes) => factory("hive", highScore, prizes),
+      newSoftware: (highScore, prizes) => factory("sweetSam", highScore, prizes),
       screen: newScreen(),
     },
     {
