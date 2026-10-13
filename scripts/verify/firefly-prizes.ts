@@ -162,7 +162,13 @@ function buyAndPlay(v: Verify): void {
 
 function videos(v: Verify): void {
   console.log("video:");
-  v.record("buy-lantern", () =>{  buyAndPlay(v); }, { storage: { [saveKey]: save(60, []) } });
+  v.record(
+    "buy-lantern",
+    () => {
+      buyAndPlay(v);
+    },
+    { storage: { [saveKey]: save(60, []) } },
+  );
   const g = game(v);
   check(JSON.stringify(g.arcade.prizes) === '["lantern"]', "the video bought the lantern", g.arcade);
   check(
