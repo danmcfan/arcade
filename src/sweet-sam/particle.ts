@@ -10,10 +10,10 @@ export const particleSize = 3;
 export const particleBurstBeeEatenCount = 25;
 export const particleBurstPlayerEatenCount = 25;
 
-/** #72dcbb — burst when the player eats a bee. */
-export const particleColorTeal: Readonly<PremulColor> = { r: 0x72, g: 0xdc, b: 0xbb, a: 255 };
-/** #ee6a7c — burst when a bee eats the player. */
-export const particleColorRed: Readonly<PremulColor> = { r: 0xee, g: 0x6a, b: 0x7c, a: 255 };
+/** Sweetie 16 cyan (#73eff7) — burst when the player eats a bee. */
+export const particleColorTeal: Readonly<PremulColor> = { r: 0x73, g: 0xef, b: 0xf7, a: 255 };
+/** Sweetie 16 red (#b13e53) — burst when a bee eats the player. */
+export const particleColorRed: Readonly<PremulColor> = { r: 0xb1, g: 0x3e, b: 0x53, a: 255 };
 
 export class Particle {
   x = 0;

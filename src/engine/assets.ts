@@ -11,16 +11,9 @@ import playerUrl from "../assets/images/player.png";
 import fireflyUrl from "../assets/images/firefly.png";
 import brassMonkeyUrl from "../assets/images/brass-monkey.png";
 import sweetUrl from "../assets/images/sweet.png";
-import sweetSamMazeUrl from "../assets/images/sweet-sam-maze.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
-import bearUrl from "../assets/images/bear.png";
-import beeUrl from "../assets/images/bee.png";
-import foodUrl from "../assets/images/food.png";
-import readyUrl from "../assets/images/ready.png";
-import digitsUrl from "../assets/images/digits.png";
-import bonusUrl from "../assets/images/bonus.png";
 import workshopUrl from "../assets/images/workshop.png";
 import gnomeUrl from "../assets/images/gnome.png";
 import fontUrl from "../assets/images/font.png";
@@ -29,6 +22,14 @@ import iconsUrl from "../assets/images/icons.png";
 import counterUrl from "../assets/images/counter.png";
 import prizesUrl from "../assets/images/prizes.png";
 import screensUrl from "../assets/images/screens.png";
+
+import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
+import bearUrl from "../assets/images/sweet-sam/bear.png";
+import beesUrl from "../assets/images/sweet-sam/bees.png";
+import honeyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
+import smokePotUrl from "../assets/images/sweet-sam/smoke-pot.png";
+import bonusFlowerUrl from "../assets/images/sweet-sam/bonus-flower.png";
+import digitsUrl from "../assets/images/sweet-sam/digits.png";
 
 import fireflySpriteUrl from "../assets/images/firefly/firefly.png";
 import sparkUrl from "../assets/images/firefly/spark.png";
@@ -84,18 +85,10 @@ export const images = {
   brassMonkey: asset(brassMonkeyUrl, 160, 144),
   sweet: asset(sweetUrl, 160, 144),
 
-  sweetSamMaze: asset(sweetSamMazeUrl, 224, 288),
   cabinet: asset(cabinetUrl, 1680, 428),
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
   cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
   cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 1680, 428),
-  bear: asset(bearUrl, 64, 64),
-  bee: asset(beeUrl, 64, 96),
-  food: asset(foodUrl, 32, 24),
-  ready: asset(readyUrl, 48, 8),
-  digits: asset(digitsUrl, 80, 8),
-  bonus: asset(bonusUrl, 64, 16),
-
   workshop: asset(workshopUrl, 224, 256),
   gnome: asset(gnomeUrl, 64, 64),
 
@@ -118,16 +111,9 @@ export const imageTitleFirefly: Sprite = whole(images.firefly);
 export const imageTitleBrassMonkey: Sprite = whole(images.brassMonkey);
 export const imageTitleSweet: Sprite = whole(images.sweet);
 
-export const imageSweetSamMaze: Sprite = whole(images.sweetSamMaze);
 export const imageCabinet: Sprite = whole(images.cabinet);
 export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
 export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
-export const imageBear: Sprite = whole(images.bear);
-export const imageBee: Sprite = whole(images.bee);
-export const imageFood: Sprite = whole(images.food);
-export const imageReady: Sprite = whole(images.ready);
-export const imageDigits: Sprite = whole(images.digits);
-export const imageBonus: Sprite = whole(images.bonus);
 
 export const imageWorkshop: Sprite = whole(images.workshop);
 export const imageGnome: Sprite = whole(images.gnome);
@@ -137,6 +123,32 @@ export const imageLogo: Sprite = whole(images.logo);
 export const imageIcons: Sprite = whole(images.icons);
 export const imageCounter: Sprite = whole(images.counter);
 export const imagePrizes: Sprite = whole(images.prizes);
+
+/**
+ * Sweet Sam's sprites (src/assets/images/sweet-sam/), generated from
+ * src/sweet-sam/art.ts by `bun run art`. Sprite frames are 16×16; bees.png
+ * is one 64×96 sheet per bee (`beeOrder`), and the honey drop and smoke pot
+ * are 4 frames of 8×12.
+ */
+export const sweetSamImages = {
+  maze: asset(sweetSamMazeUrl, 224, 288),
+  bear: asset(bearUrl, 64, 80),
+  bees: asset(beesUrl, 64, 384),
+  honeyDrop: asset(honeyDropUrl, 32, 12),
+  smokePot: asset(smokePotUrl, 32, 12),
+  bonusFlower: asset(bonusFlowerUrl, 16, 16),
+  digits: asset(digitsUrl, 80, 8),
+} as const;
+
+export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
+export const imageBear: Sprite = whole(sweetSamImages.bear);
+export const imageBees: Sprite = whole(sweetSamImages.bees);
+export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);
+export const imageSmokePot: Sprite = whole(sweetSamImages.smokePot);
+/** @public Sweet Sam art the maze does not show yet (#47); kept with its siblings. */
+export const imageBonusFlower: Sprite = whole(sweetSamImages.bonusFlower);
+/** Sweet Sam's score dial digits, 0 to 9, 8×8 each, in the pixel font. */
+export const imageDigits: Sprite = whole(sweetSamImages.digits);
 
 /**
  * Firefly's sprites (src/assets/images/firefly/), generated from
@@ -195,6 +207,7 @@ export type LumberjackImagePath = keyof typeof lumberjackImages;
 /** Every image to decode before the first tick (D5). */
 export const allImages: readonly ImageAsset[] = [
   ...Object.values(images),
+  ...Object.values(sweetSamImages),
   ...Object.values(fireflyImages),
   waveThree,
   ...Object.values(lumberjackImages),

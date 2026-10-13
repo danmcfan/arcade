@@ -4,18 +4,19 @@
 
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
-import { imageBear, imageCabinet, imageDigits, imageReady } from "../engine/assets.ts";
+import { imageBear, imageCabinet, imageDigits } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
+import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
+import { glyphWidth } from "../ui/glyphs.ts";
+import { frameSize } from "./art.ts";
 import {
   pelletAnimFrameCount,
   pelletAnimHoldTicks,
   pelletAtlasCellH,
   pelletAtlasCellW,
-  pelletAtlasPowerRowY,
-  pelletAtlasSmallRowY,
   pointToTile,
   tileSize,
   type Entity,
@@ -40,6 +41,7 @@ export function draw(s: SweetSamSoftware, screen: Surface): void {
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;
   drawBackground(s, screen, bufX, bufY);
+  drawLabels(screen, bufX, bufY);
   drawScore(s, screen, bufX, bufY);
   drawHighScore(s, screen, bufX, bufY);
   drawLives(s, screen, bufX, bufY);
@@ -58,6 +60,16 @@ function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY
   screen.draw(s.background(), bufX, bufY);
 }
 
+/** "1UP" and "HIGH SCORE" above the score dials, where the Go maze image had them. */
+export const scoreLabels: readonly { text: string; cx: number }[] = [
+  { text: "1UP", cx: 37 },
+  { text: "HIGH SCORE", cx: 112 },
+];
+
+function drawLabels(screen: Surface, bufX: number, bufY: number): void {
+  for (const { text, cx } of scoreLabels) drawTextCentered(screen, text, cx + bufX, bufY);
+}
+
 function drawScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   drawRollingInteger(s, screen, bufX, bufY, s.scoreValue, 1, 1, s.scoreDial);
 }
@@ -69,16 +81,17 @@ function drawHighScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY:
 
 function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   for (let i = 0; i < s.lives - 1; i++) {
-    const sw = Math.trunc(imageBear.w / 4);
-    const sh = Math.trunc(imageBear.h / 4);
-    const spriteFrame = sub(imageBear, 0, 0, sw, sh);
+    // The first frame of bear.png: the bear facing down, standing.
+    const spriteFrame = sub(imageBear, 0, 0, frameSize, frameSize);
 
     screen.draw(spriteFrame, 8 * (2 + i * 2) + bufX, 8 * 34 + 1 + bufY);
   }
 }
 
-/** ImageReady ("READY!") strips: 48×8 → six 8×8 glyphs. */
-export const readyGlyphWidth = 8;
+/** Shown during START, centred over the bee home, each letter on a wave. */
+export const readyText = "READY!";
+/** The centre of the maze, which READY! is centred on. */
+const readyCentreX = 112;
 
 export const readyWaveAmpPx = 2.0;
 /** Sine advance per elapsed START frame. */
@@ -91,27 +104,18 @@ function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
     return;
   }
 
-  const img = imageReady;
-  const count = Math.trunc(img.w / readyGlyphWidth);
-  if (count <= 0) {
-    return;
-  }
-
-  const baseX = 8 * 11 + bufX;
+  let x = readyCentreX - Math.trunc(textWidth(readyText) / 2) + bufX;
   const baseY = 8 * 20 + bufY + 1;
 
   // startTicks counts down during START; more elapsed ⇒ larger phase progression.
   const intoReady = startTicks - s.startTicks;
 
-  for (let i = 0; i < count; i++) {
-    const rx = i * readyGlyphWidth;
-    const glyph = sub(img, rx, 0, rx + readyGlyphWidth, img.h);
-
+  Array.from(readyText).forEach((ch, i) => {
     // Traveling wave along the string (vertical offset only). No rounding; D13 snapping applies.
     const dy = readyWaveAmpPx * Math.sin(intoReady * readyWaveTimeRad + i * readyWaveGlyphPhaseRad);
-
-    screen.draw(glyph, baseX + rx, baseY + dy);
-  }
+    drawText(screen, ch, x, baseY + dy, "yellow");
+    x += glyphWidth(ch) + 1;
+  });
 }
 
 function drawItems(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
@@ -136,11 +140,7 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
 
   const frame = animFrame % pelletAnimFrameCount;
   const sx = frame * pelletAtlasCellW;
-  let sy = pelletAtlasSmallRowY;
-  if (e.powerPellet) {
-    sy = pelletAtlasPowerRowY;
-  }
-  const frameRect = sub(e.sprite, sx, sy, sx + pelletAtlasCellW, sy + pelletAtlasCellH);
+  const frameRect = sub(e.sprite, sx, 0, sx + pelletAtlasCellW, pelletAtlasCellH);
 
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }
@@ -310,8 +310,9 @@ function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): voi
     }
   }
 
-  const sx = e.width * Math.trunc(e.frame);
-  const sy = e.height * Math.trunc(row);
+  // A bee's sheet is a sub-image of bees.png, so frames count from its corner.
+  const sx = e.sprite.sx + e.width * Math.trunc(e.frame);
+  const sy = e.sprite.sy + e.height * Math.trunc(row);
   const sw = e.width;
   const sh = e.height;
 

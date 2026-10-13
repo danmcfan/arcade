@@ -3,7 +3,8 @@ import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { CameraSystem } from "./camera.ts";
 import { maxParticles, ParticleSystem, particleColorRed, particleColorTeal } from "./particle.ts";
-import { bonusEatFrameRect, bonusEatIndicatorTicks, scaredBeeEatPoints } from "./bonusEat.ts";
+import { bonusEatIndicatorTicks, bonusEatPoints, scaredBeeEatPoints } from "./bonusEat.ts";
+import { sweetie } from "../ui/sweetie16.ts";
 
 describe("CameraSystem", () => {
   test("idle: zero offsets and no random draws", () => {
@@ -42,10 +43,15 @@ describe("CameraSystem", () => {
   });
 });
 
+/** A colour's RGB as CSS hex, as `sweetie` writes them. */
+function css(c: { r: number; g: number; b: number }): string {
+  return `#${[c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 describe("ParticleSystem", () => {
-  test("colors are #72dcbb and #ee6a7c, opaque", () => {
-    expect(particleColorTeal).toEqual({ r: 0x72, g: 0xdc, b: 0xbb, a: 255 });
-    expect(particleColorRed).toEqual({ r: 0xee, g: 0x6a, b: 0x7c, a: 255 });
+  test("colors are Sweetie 16 cyan and red, opaque", () => {
+    expect([css(particleColorTeal), particleColorTeal.a]).toEqual([sweetie.c, 255]);
+    expect([css(particleColorRed), particleColorRed.a]).toEqual([sweetie.r, 255]);
   });
 
   test("a burst fills the first free slots, three random draws per particle", () => {
@@ -107,9 +113,7 @@ describe("bonus eat", () => {
     expect(scaredBeeEatPoints).toEqual([200, 400, 800, 1600]);
   });
 
-  test("frame rects are 16px columns, clamped to 0..3", () => {
-    expect(bonusEatFrameRect(-1)).toEqual([0, 0, 16, 16]);
-    expect(bonusEatFrameRect(2)).toEqual([32, 0, 48, 16]);
-    expect(bonusEatFrameRect(9)).toEqual([48, 0, 64, 16]);
+  test("a popup shows its rung of the ladder, clamped to 0..3", () => {
+    expect([-1, 0, 1, 2, 3, 9].map((i) => bonusEatPoints(i))).toEqual([200, 200, 400, 800, 1600, 1600]);
   });
 });
