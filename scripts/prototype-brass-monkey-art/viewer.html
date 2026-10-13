@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brass Monkey Characters</title>
+    <!-- PROTOTYPE (throwaway, #38). prototype-brass-monkey-art.ts inlines the art where DATA is. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #232740;
+        --line: #333c57;
+        --fg: #f4f4f4;
+        --muted: #94b0c2;
+        --accent: #ffcd75;
+        --accent-ink: #1a1c2c;
+        --display: "Silkscreen", ui-monospace, monospace;
+        --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+      }
+      body {
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding: 24px 16px 48px;
+      }
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+      }
+      header {
+        display: grid;
+        gap: 6px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 28px;
+        margin: 0;
+        color: var(--accent);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 80ch;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+      }
+      .bar output {
+        flex: 1 1 200px;
+        font-family: ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--fg);
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      }
+      .card {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        cursor: pointer;
+      }
+      .card.picked {
+        border-color: var(--accent);
+      }
+      .card h3 {
+        font-family: var(--display);
+        font-weight: 400;
+        font-size: 15px;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .card .pick {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .card.picked .pick {
+        color: var(--accent);
+      }
+      .card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      canvas {
+        image-rendering: pixelated;
+        display: block;
+        max-width: 100%;
+        border-radius: 3px;
+      }
+      .frames {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: end;
+      }
+      .frames figure {
+        margin: 0;
+        display: grid;
+        gap: 2px;
+        justify-items: center;
+      }
+      .frames figcaption {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      button {
+        font-family: var(--display);
+        font-size: 12px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 0;
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      #together {
+        width: 100%;
+        max-width: 896px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Brass Monkey characters, round 2</h1>
+        <p>
+          The monkey is A, made to look more like a machine three ways, with A as it was for comparison. The Gnome is
+          now a D&amp;D gnome, three new options from scratch: big head, long pointed ears, big nose, no pointy hat.
+          Click a card to pick one of each; the strip at the bottom shows the two together at 2×. Then press
+          <b>Copy my picks</b> and paste the line back, with any notes ("A2, but with A3's key").
+        </p>
+      </header>
+      <div class="bar">
+        <button id="copy">Copy my picks</button>
+        <output id="picks"></output>
+      </div>
+      <section>
+        <h2>The monkey (16×16)</h2>
+        <div class="grid" id="monkeys"></div>
+      </section>
+      <section>
+        <h2>The Gnome (32×32): a D&amp;D gnome</h2>
+        <div class="grid" id="gnomes"></div>
+      </section>
+      <section>
+        <h2>Your picks together, 2×</h2>
+        <canvas id="together" width="224" height="64"></canvas>
+      </section>
+    </main>
+    <script>
+      const DATA = /*DATA*/ null;
+      const S = DATA.sweetie;
+      const picks = { monkey: "A1", gnome: "1" };
+      const BACKDROP = S.k;
+      const GIRDER = ["rrrrrrrr", "r......r", ".r....r.", "..r..r..", "...rr...", "..r..r..", "rrrrrrrr", "........"];
+
+      function blit(ctx, rows, x, y, k = 1, flip = false) {
+        const w = rows[0].length;
+        rows.forEach((row, j) => {
+          for (let i = 0; i < w; i++) {
+            const ch = row[flip ? w - 1 - i : i];
+            if (ch === ".") continue;
+            ctx.fillStyle = S[ch];
+            ctx.fillRect(Math.round(x) + i * k, Math.round(y) + j * k, k, k);
+          }
+        });
+      }
+      function girders(ctx, y, width) {
+        for (let x = 0; x < width; x += 8) blit(ctx, GIRDER, x, y);
+      }
+      function canvas(w, h, k) {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.style.width = `${w * k}px`;
+        return c;
+      }
+      function frameSheet(frames, labels, k) {
+        const wrap = document.createElement("div");
+        wrap.className = "frames";
+        frames.forEach((f, i) => {
+          const c = canvas(f[0].length + 2, f.length + 2, k);
+          const x = c.getContext("2d");
+          x.fillStyle = BACKDROP;
+          x.fillRect(0, 0, c.width, c.height);
+          blit(x, f, 1, 1);
+          const fig = document.createElement("figure");
+          const cap = document.createElement("figcaption");
+          cap.textContent = labels[i];
+          fig.append(c, cap);
+          wrap.append(fig);
+        });
+        return wrap;
+      }
+
+      // Each animated stage draws itself from the shared clock.
+      const stages = [];
+      let t = 0;
+
+      // The game's walk: 1 px a step, frame += 0.2, cycle 0,1,0,2 over sheet columns.
+      function walker(width) {
+        return { x: 8, left: false, f: 0, width };
+      }
+      function stepWalker(w) {
+        w.x += w.left ? -1 : 1;
+        if (w.x >= w.width - 8) w.left = true;
+        if (w.x <= 8) w.left = false;
+        w.f = (w.f + 0.2) % 4;
+        return [0, 1, 0, 2][Math.trunc(w.f)];
+      }
+
+      function card(kind, c) {
+        const el = document.createElement("article");
+        el.className = "card";
+        el.dataset.kind = kind;
+        el.dataset.id = c.id;
+        const h = document.createElement("h3");
+        h.innerHTML = `<span>${c.id} · ${c.name}</span><span class="pick"></span>`;
+        const p = document.createElement("p");
+        p.textContent = c.note;
+        el.append(h, p);
+        if (kind === "monkey") {
+          const stage = canvas(72, 28, 4);
+          const w = walker(72);
+          stages.push(() => {
+            const x = stage.getContext("2d");
+            const col = stepWalker(w);
+            x.fillStyle = BACKDROP;
+            x.fillRect(0, 0, 72, 28);
+            girders(x, 20, 72);
+            blit(x, c.walk[col], w.x - 8, 4, 1, w.left);
+          });
+          el.append(
+            stage,
+            frameSheet(
+              [...c.walk, c.jump, ...c.climb],
+              ["walk 1", "walk 2", "walk 3", "jump", "climb 1", "climb 2"],
+              3,
+            ),
+          );
+          // The climb on a ladder, and the jump hopping beside it.
+          const ladder = canvas(72, 24, 4);
+          stages.push(() => {
+            const x = ladder.getContext("2d");
+            x.fillStyle = BACKDROP;
+            x.fillRect(0, 0, 72, 24);
+            for (let y = 0; y < 24; y++) {
+              x.fillStyle = S.c;
+              x.fillRect(29, y, 1, 1);
+              x.fillRect(42, y, 1, 1);
+              if ((y + Math.floor(t / 2)) % 4 === 0) x.fillRect(29, y, 14, 1);
+            }
+            blit(x, c.climb[Math.floor(t / 10) % 2], 28, 4);
+            blit(x, c.jump, 4, 4 - Math.round(Math.abs(Math.sin(t / 12)) * 4));
+          });
+          el.append(ladder);
+        } else {
+          const stage = canvas(56, 44, 4);
+          stages.push(() => {
+            const x = stage.getContext("2d");
+            x.fillStyle = BACKDROP;
+            x.fillRect(0, 0, 56, 44);
+            girders(x, 36, 56);
+            blit(x, Math.floor(t / 40) % 2 ? c.throw : c.idle, 12, 4);
+          });
+          el.append(stage, frameSheet([c.idle, c.throw], ["idle", "throw"], 3));
+        }
+        el.addEventListener("click", () => {
+          picks[kind] = c.id;
+          render();
+        });
+        return el;
+      }
+
+      document.getElementById("monkeys").append(...DATA.monkeys.map((c) => card("monkey", c)));
+      document.getElementById("gnomes").append(...DATA.gnomes.map((c) => card("gnome", c)));
+
+      // Both picks together at the game's scale: the Gnome on a top girder, the monkey walking below.
+      const together = document.getElementById("together");
+      const tw = walker(224);
+      stages.push(() => {
+        const x = together.getContext("2d");
+        const m = DATA.monkeys.find((c) => c.id === picks.monkey);
+        const g = DATA.gnomes.find((c) => c.id === picks.gnome);
+        x.fillStyle = BACKDROP;
+        x.fillRect(0, 0, 224, 64);
+        for (let i = 0; i < 7; i++) blit(x, GIRDER, i * 8, 32);
+        girders(x, 56, 224);
+        blit(x, Math.floor(t / 40) % 2 ? g.throw : g.idle, 8, 0);
+        blit(x, m.walk[stepWalker(tw)], tw.x - 8, 40, 1, tw.left);
+      });
+
+      function line() {
+        return `monkey=${picks.monkey} gnome=${picks.gnome}`;
+      }
+      function render() {
+        document.querySelectorAll(".card").forEach((el) => {
+          const on = picks[el.dataset.kind] === el.dataset.id;
+          el.classList.toggle("picked", on);
+          el.querySelector(".pick").textContent = on ? "picked" : "click to pick";
+        });
+        document.getElementById("picks").textContent = line();
+      }
+      document.getElementById("copy").onclick = () => navigator.clipboard?.writeText(line());
+      together.style.width = "448px";
+
+      function tick() {
+        t++;
+        stages.forEach((s) => s());
+        requestAnimationFrame(tick);
+      }
+      render();
+      tick();
+    </script>
+  </body>
+</html>
