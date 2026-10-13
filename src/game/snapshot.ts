@@ -315,18 +315,41 @@ export interface FireflySnapshot {
 // ---------------------------------------------------------------------------
 // brassMonkey (the Go port's Brass Monkey package)
 
-export interface BrassMonkeySnapshot {
-  /** `player.Position.X`. */
+/** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
+export interface BrassMonkeyHazardSnapshot {
+  kind: "gear" | "ember";
   x: number;
-  /** `player.Position.Y`. */
   y: number;
-  /** `player.Frame` (float64). */
+  dir: -1 | 1;
+  footing: "ground" | "air" | "climb";
+}
+
+/** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
+export interface BrassMonkeySnapshot {
+  phase: "play" | "dying" | "clear" | "escape" | "over";
+  phaseTicks: number;
+  /** 0 the girder floor, 1 the conveyor floor. */
+  floor: number;
+  /** Escapes so far: each loop is harder. */
+  loop: number;
+  lives: number;
+  score: number;
+  highScore: number;
+  bonus: number;
+  x: number;
+  y: number;
+  footing: "ground" | "air" | "climb";
+  vy: number;
+  /** The walk cycle (0 up to 4), or the climb (0 up to 2). */
   frame: number;
-  /** `player.Left`. */
   left: boolean;
-  /** `player.Moving`. */
   moving: boolean;
-  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
+  hazards: BrassMonkeyHazardSnapshot[];
+  /** Whether each of the floor's bolts has been collected. */
+  bolts: boolean[];
+  gearTimer: number;
+  emberTimer: number;
+  /** The cabinet's joystick frame (like `SweetSamSnapshot.joystick`). */
   joystick: number;
 }
 

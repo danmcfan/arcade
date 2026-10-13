@@ -1,17 +1,27 @@
-// The layout of Brass Monkey's floors: where the girders, ladders and exit
-// door stand, in the floor's own pixels (224×256, top-left 0, 0).
-// scripts/gen-brass-monkey-art.ts draws the girder floor from this and the
-// tiles in art.ts into girder-floor.png; #39 plays on it.
+// The layout of Brass Monkey's floors: where the girders, conveyors, ladders,
+// exit door, Gnome and bolts stand, in the floor's own pixels (224×256,
+// top-left 0, 0). scripts/gen-brass-monkey-art.ts draws each floor from this
+// and the tiles in art.ts into girder-floor.png and conveyor-floor.png; play.ts
+// plays on them.
 
 /**
  * A girder: its tiles from x0 up to x1 (exclusive), 8 px apart. Its top is at
- * y at x0 and moves `drop` px down every 16 px to the right (up when -1).
+ * y at x0 and moves `drop` px down every 16 px to the right (up when -1). A
+ * conveyor is a flat girder with a `belt`, which carries what stands on it
+ * left (-1) or right (1).
  */
 export interface Girder {
   x0: number;
   x1: number;
   y: number;
   drop: -1 | 0 | 1;
+  belt?: -1 | 1;
+}
+
+/** A point on a floor: x across, y the row its foot stands on (a girder's top). */
+export interface Spot {
+  x: number;
+  y: number;
 }
 
 /**
@@ -27,14 +37,19 @@ export interface Ladder {
 
 /**
  * A floor, `width` by `height` px, and where its pieces stand; `door` is the
- * exit door's foot, its left edge at x and its bottom row at y - 1.
+ * exit door's foot, its left edge at x and its bottom row at y - 1. `gnome` is
+ * the top-left of the Gnome's 32×32 frame, `start` the monkey's foot when the
+ * floor starts, and `bolts` the feet of the bolts to collect.
  */
 export interface Floor {
   width: number;
   height: number;
   girders: readonly Girder[];
   ladders: readonly Ladder[];
-  door: { x: number; y: number };
+  door: Spot;
+  gnome: Spot;
+  start: Spot;
+  bolts: readonly Spot[];
 }
 
 /** The top of `g` at x. */
@@ -87,4 +102,53 @@ export const girderFloor: Floor = {
     { x: 80, top: 32, bottom: 83 },
   ],
   door: { x: 104, y: 56 },
+  gnome: { x: 24, y: 52 },
+  start: { x: 16, y: 248 },
+  bolts: [
+    { x: 64, y: 212 },
+    { x: 150, y: 179 },
+    { x: 40, y: 144 },
+    { x: 120, y: 115 },
+  ],
 };
+
+/**
+ * The conveyor floor: three conveyors between a flat bottom girder and the
+ * Gnome's girder, each running the other way to the one below it, so a gear
+ * zigzags down; one ladder joins each pair, at alternate ends. The top
+ * platform and its ladder are the girder floor's.
+ */
+export const conveyorFloor: Floor = {
+  width: 224,
+  height: 256,
+  girders: [
+    { x0: 0, x1: 224, y: 248, drop: 0 },
+    { x0: 16, x1: 224, y: 208, drop: 0, belt: -1 },
+    { x0: 0, x1: 208, y: 168, drop: 0, belt: 1 },
+    { x0: 16, x1: 224, y: 128, drop: 0, belt: -1 },
+    // The Gnome's girder: a gear rolls off its right end onto the top conveyor.
+    { x0: 0, x1: 192, y: 88, drop: 0 },
+    // The top platform.
+    { x0: 88, x1: 136, y: 56, drop: 0 },
+  ],
+  ladders: [
+    { x: 200, top: 216, bottom: 247 },
+    { x: 24, top: 176, bottom: 207 },
+    { x: 184, top: 136, bottom: 167 },
+    { x: 40, top: 96, bottom: 127 },
+    { x: 152, top: 96, bottom: 127 },
+    { x: 128, top: 64, bottom: 87 },
+  ],
+  door: { x: 104, y: 56 },
+  gnome: { x: 24, y: 56 },
+  start: { x: 16, y: 248 },
+  bolts: [
+    { x: 120, y: 208 },
+    { x: 100, y: 168 },
+    { x: 160, y: 128 },
+    { x: 170, y: 88 },
+  ],
+};
+
+/** The floors in the order they are played. */
+export const floors: readonly Floor[] = [girderFloor, conveyorFloor];

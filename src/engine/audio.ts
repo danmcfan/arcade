@@ -19,7 +19,13 @@ export type SoundName =
   | "move"
   | "select"
   | "ticket"
-  | "deny";
+  | "deny"
+  | "monkeyJump"
+  | "monkeyBolt"
+  | "monkeyHazard"
+  | "monkeyDeath"
+  | "monkeyFloor"
+  | "monkeyEscape";
 export type SoundAction = "play" | "pause" | "rewind";
 /** Recorded as `"<action>:<name>"`, e.g. `"rewind:spark"`, `"pause:hub"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;

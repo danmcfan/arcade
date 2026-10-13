@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { arpeggio, attractLoops, bass, hubSong, melody, type Note } from "../src/ui/sounds.ts";
 import {
   attractBrassMonkeyPath,
   attractFireflyPath,
   attractSweetPath,
+  brassMonkeySoundFiles,
   denyPath,
   hitPath,
   hubPath,
@@ -66,6 +68,7 @@ describe("committed WAVs match src/ui/sounds.ts (run `bun run sounds` after edit
     ["hit.wav", hitPath, renderHit],
     ["life-lost.wav", lifeLostPath, renderLifeLost],
     ["stage.wav", stagePath, renderStage],
+    ...brassMonkeySoundFiles.map((f) => [basename(f.path), f.path, f.render] as const),
   ] as const) {
     test(name, () => {
       expect(Buffer.compare(readFileSync(path), render())).toBe(0);
