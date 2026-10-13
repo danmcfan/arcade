@@ -1,0 +1,435 @@
+<title>Hub Frame Playground</title>
+<style>
+  :root {
+    --bg: #f4f4f4;
+    --fg: #1a1c2c;
+    --muted: #566c86;
+    --card: #ffffff;
+    --line: #94b0c2;
+    --accent: #3b5dc9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1c2c;
+      --fg: #f4f4f4;
+      --muted: #94b0c2;
+      --card: #262a40;
+      --line: #333c57;
+      --accent: #73eff7;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1c2c;
+    --fg: #f4f4f4;
+    --muted: #94b0c2;
+    --card: #262a40;
+    --line: #333c57;
+    --accent: #73eff7;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font:
+      14px/1.4 system-ui,
+      sans-serif;
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+  p.lede {
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .layout {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .stage {
+    flex: 1 1 640px;
+    min-width: 0;
+  }
+  canvas {
+    image-rendering: pixelated;
+    display: block;
+    max-width: 100%;
+    height: auto;
+    background: #000;
+  }
+  #big {
+    width: 640px;
+  }
+  .panel {
+    flex: 0 1 380px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .knob {
+    margin-bottom: 12px;
+  }
+  .knob h3 {
+    font-size: 13px;
+    margin: 0 0 4px;
+  }
+  .opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  button {
+    font: inherit;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+  }
+  button.on {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .tag {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 3px;
+  }
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .preset {
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px;
+    background: var(--card);
+  }
+  .preset canvas {
+    width: 100%;
+  }
+  .preset b {
+    display: block;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .preset span {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  #picks {
+    font:
+      11px ui-monospace,
+      monospace;
+    word-break: break-all;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+</style>
+<main>
+  <h1>Hub frame: extend the room to 160×144 (#72)</h1>
+  <p class="lede">
+    The real hub (arcade.png, cabinets, counter, prizes) with the 24 px black border filled in. Collisions, cabinets,
+    counter and prize spots stay where they are; only pixels the player can't walk on change. Pick a preset, tweak the
+    knobs, then press <b>Copy my picks</b>.
+  </p>
+  <div class="layout">
+    <div class="stage">
+      <canvas id="big" width="160" height="144"></canvas>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="panel">
+      <div id="knobs"></div>
+      <button id="copy">Copy my picks</button>
+      <div id="picks"></div>
+    </div>
+  </div>
+</main>
+<script>
+  const D = /*DATA*/ null;
+  const W = 160,
+    H = 144,
+    F = { x0: 24, x1: 136, y0: 24, y1: 120 },
+    FLOOR_Y = 56;
+
+  const knobs = {
+    top: {
+      label: "Top edge (y 0..23)",
+      opts: {
+        black: "black border [current]",
+        wall: "taller wall [new]",
+        lamps: "taller wall + lamps over cabinets [new]",
+        cap: "wall-top cap [new]",
+      },
+    },
+    sides: {
+      label: "Left / right edges (x 0..23, 136..159)",
+      opts: { black: "black border [current]", carpet: "wall + carpet run to edge [new]", cap: "wall-top cap [new]" },
+    },
+    bottom: {
+      label: "Bottom edge (y 120..143)",
+      opts: { black: "black border [current]", carpet: "carpet runs to edge [new]", cap: "wall-top cap [new]" },
+    },
+    capWidth: {
+      label: "Cap thickness",
+      opts: { 16: "16 px (8 px wall/carpet inside) [new]", 24: "24 px (whole border) [new]" },
+    },
+    capTone: {
+      label: "Cap colour",
+      opts: { grey: "grey m/l [new]", purple: "purple p/r (skirting) [new]", dark: "dark d/m [new]" },
+    },
+    corners: { label: "Cap corners", opts: { square: "square [new]", post: "posts [new]" } },
+    collisions: { label: "Show collision walls", opts: { off: "off", on: "on" } },
+    player: { label: "Walking player", opts: { on: "on", off: "off" } },
+  };
+  const presets = [
+    {
+      name: "Current",
+      note: "as it is: black border",
+      v: { top: "black", sides: "black", bottom: "black", capWidth: "16", capTone: "grey", corners: "square" },
+    },
+    {
+      name: "A · Tall room",
+      note: "wall to the top, carpet to the sides and bottom",
+      v: { top: "wall", sides: "carpet", bottom: "carpet", capWidth: "16", capTone: "grey", corners: "square" },
+    },
+    {
+      name: "B · Walled box",
+      note: "grey wall-top caps all round, posts at corners",
+      v: { top: "cap", sides: "cap", bottom: "cap", capWidth: "16", capTone: "grey", corners: "post" },
+    },
+    {
+      name: "C · Lamps + ledge",
+      note: "lamps above, open sides, purple ledge below",
+      v: { top: "lamps", sides: "carpet", bottom: "cap", capWidth: "16", capTone: "purple", corners: "square" },
+    },
+  ];
+  let state = { ...presets[1].v, collisions: "off", player: "on" };
+
+  const pal = D.palette;
+  const room = D.room;
+  const px = (x, y) => room[y][x];
+  const mod = (a, n) => ((a % n) + n) % n;
+  function carpet(x, y) {
+    if (y === FLOOR_Y) return "k";
+    const t = px(F.x0 + mod(x - F.x0, 16), FLOOR_Y + mod(y - FLOOR_Y, 16));
+    return t === "k" ? "n" : t; // tile row 0 is the shadow row in the room: plain navy elsewhere
+  }
+  const wallFace = (y) => px(30, y); // a clear column of the wall: neon, wall, skirting
+  const tones = { grey: ["m", "l"], purple: ["p", "r"], dark: ["d", "m"] };
+
+  function build(v) {
+    const g = room.map((r) => Array.from(r));
+    const inside = (x, y) => x >= F.x0 && x < F.x1 && y >= F.y0 && y < F.y1;
+    const side = (x) => x < F.x0 || x >= F.x1;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        if (inside(x, y)) continue;
+        let c = "k";
+        if (y < F.y0) {
+          if (v.top !== "black" && !(side(x) && v.sides === "black")) c = "d";
+        } else if (y < F.y1) {
+          if (v.sides !== "black") c = y < FLOOR_Y ? wallFace(y) : carpet(x, y);
+        } else {
+          if (v.bottom !== "black" && !(side(x) && v.sides === "black")) c = carpet(x, y);
+        }
+        g[y][x] = c;
+      }
+    if (v.top === "lamps") {
+      const lamp = ["...mm...", "...mm...", "..kkkk..", ".kprrpk.", "kppppppk", "kkkkkkkk", "..yyyy..", "...oo..."];
+      for (const cx of [56, 80, 104]) {
+        for (let y = 0; y < 10; y++) {
+          g[y][cx - 1] = "m";
+          g[y][cx] = "m";
+        }
+        lamp.forEach((row, dy) =>
+          Array.from(row).forEach((c, dx) => {
+            if (c !== ".") g[10 + dy][cx - 4 + dx] = c;
+          }),
+        );
+        // light pooling down the wall, dithered
+        for (let y = 18; y < 24; y++)
+          for (let x = cx - 8; x < cx + 8; x++) {
+            const r = Math.abs(x - cx + 0.5) / (2 + (y - 18) * 1.2);
+            if (r < 1 && (x + y) % 2 === 0 && g[y][x] === "d") g[y][x] = "m";
+          }
+      }
+    }
+    const cw = +v.capWidth;
+    const [cap, rim] = tones[v.capTone];
+    const capAt = (x, y) =>
+      (v.top === "cap" && y < cw && !(side(x) && v.sides === "black")) ||
+      (v.sides === "cap" && (x < cw || x >= W - cw)) ||
+      (v.bottom === "cap" && y >= H - cw && !(side(x) && v.sides === "black"));
+    const caps = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (capAt(x, y)) caps.push([x, y]);
+    const isCap = new Set(caps.map(([x, y]) => x + "," + y));
+    const has = (x, y) => isCap.has(x + "," + y);
+    for (const [x, y] of caps) {
+      const edge =
+        (!has(x + 1, y) && x + 1 < W) ||
+        (!has(x - 1, y) && x > 0) ||
+        (!has(x, y + 1) && y + 1 < H) ||
+        (!has(x, y - 1) && y > 0);
+      g[y][x] = edge ? rim : cap;
+    }
+    // 1 px shadow where the cap meets the room
+    for (const [x, y] of caps)
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const nx = x + dx,
+          ny = y + dy;
+        if (nx >= 0 && nx < W && ny >= 0 && ny < H && !has(nx, ny) && !inside(nx, ny)) g[ny][nx] = "k";
+      }
+    if (v.corners === "post") {
+      const s = cw;
+      const corners = [];
+      if (v.top === "cap" && v.sides === "cap") corners.push([0, 0], [W - s, 0]);
+      if (v.bottom === "cap" && v.sides === "cap") corners.push([0, H - s], [W - s, H - s]);
+      for (const [ox, oy] of corners)
+        for (let y = 0; y < s; y++)
+          for (let x = 0; x < s; x++) {
+            const e = x === 0 || y === 0 || x === s - 1 || y === s - 1;
+            g[oy + y][ox + x] = e ? "k" : x === 1 || y === 1 ? "w" : x === s - 2 || y === s - 2 ? cap : rim;
+          }
+    }
+    return g;
+  }
+
+  function blit(g, rows, ox, oy) {
+    rows.forEach((row, dy) =>
+      Array.from(row).forEach((c, dx) => {
+        const y = oy + dy,
+          x = ox + dx;
+        if (c !== "." && y >= 0 && y < H && x >= 0 && x < W) g[y][x] = c;
+      }),
+    );
+  }
+
+  function paint(canvas, g, extra) {
+    const ctx = canvas.getContext("2d");
+    const img = ctx.createImageData(W, H);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const hex = pal[g[y][x]] || "#ff00ff";
+        const i = (y * W + x) * 4;
+        img.data[i] = parseInt(hex.slice(1, 3), 16);
+        img.data[i + 1] = parseInt(hex.slice(3, 5), 16);
+        img.data[i + 2] = parseInt(hex.slice(5, 7), 16);
+        img.data[i + 3] = 255;
+      }
+    ctx.putImageData(img, 0, 0);
+    if (extra) extra(ctx);
+  }
+
+  function scene(v, t) {
+    const g = build(v);
+    blit(g, D.counter.rows, D.counter.x, D.counter.y);
+    for (const p of D.prizes) blit(g, p.rows, p.x, p.y);
+    if (t !== undefined && state.player === "on") {
+      const span = 136 - 24 - 16,
+        step = Math.floor(t / 60) % (span * 2);
+      const dir = step < span ? "RIGHT" : "LEFT";
+      const x = 24 + (step < span ? step : span * 2 - step);
+      blit(g, D.walk[dir][Math.floor(t / 150) % 4], x, 68);
+    }
+    return g;
+  }
+
+  const walls = [
+    [0, 0, 160, 48],
+    [0, 48, 24, 72],
+    [136, 48, 24, 72],
+    [0, 120, 160, 24],
+  ];
+  function overlay(ctx) {
+    if (state.collisions !== "on") return;
+    ctx.fillStyle = "rgba(239,125,87,0.35)";
+    for (const [x, y, w, h] of walls) ctx.fillRect(x, y, w, h);
+  }
+
+  const big = document.getElementById("big");
+  function frame(t) {
+    paint(big, scene(state, t), overlay);
+    requestAnimationFrame(frame);
+  }
+
+  function renderKnobs() {
+    const host = document.getElementById("knobs");
+    host.innerHTML = "";
+    for (const [k, def] of Object.entries(knobs)) {
+      const d = document.createElement("div");
+      d.className = "knob";
+      d.innerHTML = `<h3>${def.label}</h3>`;
+      const o = document.createElement("div");
+      o.className = "opts";
+      for (const [val, lab] of Object.entries(def.opts)) {
+        const b = document.createElement("button");
+        const m = lab.match(/^(.*?)\s*(\[.*\])?$/);
+        b.innerHTML = m[1] + (m[2] ? `<span class="tag">${m[2]}</span>` : "");
+        if (state[k] === val) b.className = "on";
+        b.onclick = () => {
+          state[k] = val;
+          renderKnobs();
+        };
+        o.appendChild(b);
+      }
+      d.appendChild(o);
+      host.appendChild(d);
+    }
+    document.getElementById("picks").textContent = picks();
+  }
+  const pickKeys = ["top", "sides", "bottom", "capWidth", "capTone", "corners"];
+  const picks = () => JSON.stringify(Object.fromEntries(pickKeys.map((k) => [k, state[k]])));
+  document.getElementById("copy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(picks());
+      document.getElementById("copy").textContent = "Copied";
+    } catch {
+      /* the line is shown below */
+    }
+    setTimeout(() => (document.getElementById("copy").textContent = "Copy my picks"), 1200);
+  };
+
+  const ph = document.getElementById("presets");
+  for (const p of presets) {
+    const d = document.createElement("div");
+    d.className = "preset";
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    paint(c, scene(p.v));
+    d.append(c);
+    d.insertAdjacentHTML("beforeend", `<b>${p.name}</b><span>${p.note}</span>`);
+    d.onclick = () => {
+      Object.assign(state, p.v);
+      renderKnobs();
+    };
+    ph.appendChild(d);
+  }
+  renderKnobs();
+  requestAnimationFrame(frame);
+</script>
