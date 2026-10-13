@@ -6,13 +6,20 @@
 // monkey.png is one row of 16×16 frames: walk 1-3 (the head over each body,
 // 1 px lower on a step), jump, climb and climb mirrored. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
-// idle, throw. gen-brass-monkey-art.test.ts fails when the committed PNGs
-// drift.
+// idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
+// and their mirrors) and bolt.png (10×14: at rest, then a glint running over
+// its head) are one row of frames each. gen-brass-monkey-art.test.ts fails
+// when the committed PNGs drift.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
+  bolt,
+  boltGlints,
+  emberFlame,
+  emberTips,
+  gear,
   gnomeArmsDown,
   gnomeArmsUp,
   gnomeBody,
@@ -26,7 +33,7 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, empty, flipX, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
+import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
 
@@ -56,11 +63,36 @@ export function gnomeFrames(): Rows[] {
   return [gnomeArmsDown, gnomeArmsUp].map((arms) => outline(mirrorX(withArms(arms))));
 }
 
-/** `frames` side by side, each `size` square. */
-function sheet(frames: readonly Rows[], size: number): PNG {
-  const png = blank(size * frames.length, size);
+/** The gear's sheet frames, outlined: its two turns. */
+export function gearFrames(): Rows[] {
+  return gear.map((rows) => outline(rows));
+}
+
+/** The ember's fills before outlining: the flame with each tip. */
+export function emberFills(): Rows[] {
+  return emberTips.map((tip) => overlay(emberFlame, tip.rows, tip.x, tip.y));
+}
+
+/** The ember's sheet frames, outlined: two flickers, then both mirrored so it sways. */
+export function emberFrames(): Rows[] {
+  const frames = emberFills().map((rows) => outline(rows));
+  return [...frames, ...frames.map((rows) => flipX(rows))];
+}
+
+/** The bolt's sheet frames, outlined: at rest, then one frame for each step of the glint. */
+export function boltFrames(): Rows[] {
+  const rest = outline(bolt);
+  return [rest, ...boltGlints.map(([x, y]) => glint(rest, x, y))];
+}
+
+/** `frames` side by side; they must all be one size. */
+function sheet(frames: readonly Rows[]): PNG {
+  const w = frames[0]?.[0]?.length ?? 0;
+  const h = frames[0]?.length ?? 0;
+  for (const rows of frames) checkRows("sheet frame", rows, { w, h });
+  const png = blank(w * frames.length, h);
   frames.forEach((rows, i) => {
-    paint(png, rows, sweetie, i * size, 0);
+    paint(png, rows, sweetie, i * w, 0);
   });
   return png;
 }
@@ -69,8 +101,11 @@ export const brassMonkeyImagesDir = join(repoRoot, "src/assets/images/brass-monk
 
 /** Every generated Brass Monkey image: its file in src/assets/images/brass-monkey and how to draw it. */
 export const brassMonkeyArtFiles: readonly { file: string; render: () => PNG }[] = [
-  { file: "monkey.png", render: () => sheet(monkeyFrames(), 16) },
-  { file: "gnome.png", render: () => sheet(gnomeFrames(), 32) },
+  { file: "monkey.png", render: () => sheet(monkeyFrames()) },
+  { file: "gnome.png", render: () => sheet(gnomeFrames()) },
+  { file: "gear.png", render: () => sheet(gearFrames()) },
+  { file: "ember.png", render: () => sheet(emberFrames()) },
+  { file: "bolt.png", render: () => sheet(boltFrames()) },
 ];
 
 if (import.meta.main) {

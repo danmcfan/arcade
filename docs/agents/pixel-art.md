@@ -21,7 +21,7 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 | Hub room and cabinets, player    | `src/ui/hubArt.ts`, `playerArt.ts`                                                           | `scripts/gen-ui-art.ts`           |
 | HUD icons, prize counter, prizes | `src/ui/icons.ts`, `counterArt.ts`, `prizeArt.ts`                                            | `scripts/gen-ui-art.ts`           |
 | Firefly sprites and sky          | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
-| Brass Monkey monkey and Gnome    | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
+| Brass Monkey characters, items   | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
 | Sweet Sam maze, sprites, text    | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
 | Cabinet strips                   | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
 
@@ -42,6 +42,7 @@ When the change touches art that already exists as a PNG, hand-made or not, **im
 | `flipX`, `flipY`                      | Left-facing frames from right-facing ones                         |
 | `recolour(rows, { r: "b" })`          | Colour variants, such as one cabinet per minigame                 |
 | `overlay(rows, part, x, y)`           | A sprite built from parts (a head, then headphones on it)         |
+| `glint(rows, x, y)`                   | A glint frame: a white + over the sprite's colours, e.g. the bolt |
 | `checkRows(name, rows, { w, h })`     | Size and letters; the error names the row and column              |
 | `toPng`, `toRows`, `scale`, `colours` | Rows to PNG and back, upscale, colour count                       |
 

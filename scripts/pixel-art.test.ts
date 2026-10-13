@@ -5,6 +5,7 @@ import {
   colours,
   flipX,
   flipY,
+  glint,
   mirrorX,
   mirrorY,
   outline,
@@ -102,6 +103,11 @@ describe("derived rows", () => {
 
   test("recolour swaps only the letters in the map", () => {
     expect(recolour(["rrk", ".ro"], { r: "b", o: "y" })).toEqual(["bbk", ".by"]);
+  });
+
+  test("glint paints a white + over the sprite's colours, never its blanks or outline", () => {
+    expect(glint([".kkk.", "kyyyk", "kyoyk", ".kkk."], 2, 1)).toEqual([".kkk.", "kwwwk", "kywyk", ".kkk."]);
+    expect(glint(["kkk", "rrr"], 1, 1, "y", "r")).toEqual(["kyk", "rrr"]);
   });
 
   test("overlay draws a part on top, its blanks leave what is there", () => {

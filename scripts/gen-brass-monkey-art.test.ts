@@ -3,6 +3,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
+  bolt,
+  boltGlints,
+  emberFlame,
+  emberTips,
+  gear,
   gnomeArmsDown,
   gnomeArmsUp,
   gnomeBody,
@@ -14,10 +19,14 @@ import {
   monkeyStep,
 } from "../src/brass-monkey/art.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, toRows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, toRows } from "./pixel-art.ts";
 import {
+  boltFrames,
   brassMonkeyArtFiles,
   brassMonkeyImagesDir,
+  emberFills,
+  emberFrames,
+  gearFrames,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
@@ -45,8 +54,20 @@ describe("Brass Monkey art source", () => {
     }
   });
 
-  test("every monkey fill leaves a blank border on all four sides, so its outline is whole", () => {
-    for (const rows of monkeyFills()) {
+  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers) and a 10×14 bolt", () => {
+    for (const rows of gear) checkRows("gear", rows, { w: 12, h: 12 });
+    checkRows("ember", emberFlame, { w: 12, h: 12 });
+    checkRows("bolt", bolt, { w: 10, h: 14 });
+    expect([gear.length, emberTips.length]).toEqual([2, 2]);
+    for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
+  });
+
+  test("every bolt glint lands on the bolt", () => {
+    for (const [x, y] of boltGlints) expect({ x, y, px: bolt[y]?.[x] }).not.toEqual({ x, y, px: empty });
+  });
+
+  test("every monkey and item fill leaves a blank border on all four sides, so its outline is whole", () => {
+    for (const rows of [...monkeyFills(), ...gear, ...emberFills(), bolt]) {
       expect(rows[0]).toMatch(/^\.+$/u);
       expect(rows.at(-1)).toMatch(/^\.+$/u);
       for (const row of rows) expect([row[0], row.at(-1)]).toEqual([empty, empty]);
@@ -61,6 +82,23 @@ describe("generated frames", () => {
     expect(frames[5]).toEqual(flipX(frames[4] ?? []));
     // The outline is black, round every drawn pixel.
     expect(frames[0]?.[0]).toBe("......kkkk......");
+  });
+
+  test("the gear's frames are its two turns, outlined", () => {
+    const frames = gearFrames();
+    expect(frames).toEqual(gear.map((rows) => outline(rows)));
+  });
+
+  test("the ember flickers, then sways: the flame with each tip, then both mirrored", () => {
+    const frames = emberFrames();
+    expect(frames.slice(0, 2)).toEqual(emberFills().map((rows) => outline(rows)));
+    expect(frames.slice(2)).toEqual(frames.slice(0, 2).map((rows) => flipX(rows)));
+  });
+
+  test("the bolt rests, then a glint runs over its head, one frame for each step", () => {
+    const [rest, ...glints] = boltFrames();
+    expect(rest).toEqual(outline(bolt));
+    expect(glints).toEqual(boltGlints.map(([x, y]) => glint(outline(bolt), x, y)));
   });
 
   test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {

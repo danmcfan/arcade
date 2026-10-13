@@ -1,11 +1,12 @@
-// Brass Monkey's characters (#38) in a real browser (`bun run verify brass-monkey-art`).
+// Brass Monkey's characters and items (#38) in a real browser (`bun run verify brass-monkey-art`).
 // Part 1 drives the `?debug` test hook: the monkey walks right, turns and
 // walks left, and at each stop the canvas is checked pixel by pixel against
 // the generated sheets: the monkey's frame for its walk step (flipped when it
 // faces left) and the Gnome's idle frame on the top girder. Part 2 writes
-// every generated frame scaled up, the ones the game does not draw yet
-// included (jump, climb and the Gnome's throw, #39). Part 3 records Brass
-// Monkey played with the keyboard. Files go to out/verify/brass-monkey-art/.
+// every generated sheet scaled up, the frames the game does not draw yet
+// included (jump, climb, the Gnome's throw, the gear, the ember and the bolt,
+// #39). Part 3 records Brass Monkey played with the keyboard. Files go to
+// out/verify/brass-monkey-art/.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
