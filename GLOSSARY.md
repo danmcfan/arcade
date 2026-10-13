@@ -16,10 +16,6 @@ _Avoid_: gamer, avatar, hero
 An arcade machine: one in the hub that the player steps up to, and the same machine's bezel framing the minigame while it is played.
 _Avoid_: machine (in prose), arcade box
 
-**Use prompt**:
-The small Space key icon that shows above a cabinet or the prize counter when the player can use it.
-_Avoid_: highlight, hint, interaction prompt
-
 **Minigame**:
 A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
 _Avoid_: level, mode, sub-game
