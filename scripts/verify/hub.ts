@@ -138,7 +138,7 @@ function spaceUsesTheCabinet(v: Verify): void {
   v.openHook("scene=game");
   v.step(31, { up: true });
   v.step(1, { up: true, space: true });
-  check(game(v).software === "hive", "Space at the Sweet Sam cabinet starts Sweet Sam", game(v).software);
+  check(game(v).software === "sweetSam", "Space at the Sweet Sam cabinet starts Sweet Sam", game(v).software);
 }
 
 function video(v: Verify): void {

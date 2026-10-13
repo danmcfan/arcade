@@ -1,4 +1,4 @@
-// Port of internal/hive/digit_reel.go: the slot-machine digit effect. Sweet
+// Port of the Go port's Sweet Sam digit_reel.go: the slot-machine digit effect. Sweet
 // Sam's score dials and the payout menu both spin their digits with it.
 
 /** How long one digit spends scrolling from → to at 60 FPS. */

@@ -135,9 +135,9 @@ describe("window.__arcade (§3.5)", () => {
   test("seed then load: the new scene is built after seeding, with its options", () => {
     const { hook, current } = setup();
     hook.seed(99);
-    hook.load("game", { software: "hive" });
+    hook.load("game", { software: "sweetSam" });
     expect(current().bornWithRng).toBe(99);
-    expect(current().opts).toEqual({ software: "hive" });
+    expect(current().opts).toEqual({ software: "sweetSam" });
     expect(hook.tick()).toBe(0);
   });
 

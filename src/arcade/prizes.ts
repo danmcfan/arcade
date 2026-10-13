@@ -1,7 +1,7 @@
 // Prizes: hub decorations bought at the prize counter with tickets. Once
 // owned, a prize is always on: it shows by its minigame's cabinet and gives
 // the player an advantage in every run of that minigame (the minigame applies
-// it; for Sweet Sam see src/hive/advantages.ts). The catalogue is data, so a
+// it; for Sweet Sam see src/sweet-sam/advantages.ts). The catalogue is data, so a
 // later minigame adds its prizes here. The purchase rule is pure, so the
 // Game's menu and the tests share it.
 
@@ -48,7 +48,7 @@ export const prizes: readonly Prize[] = [
     id: "honeyJar",
     name: "HONEY JAR",
     price: honeyJarPrice,
-    software: "hive",
+    software: "sweetSam",
     sprite: decoration("honeyJar"),
     x: 65,
     y: 55,
@@ -57,7 +57,7 @@ export const prizes: readonly Prize[] = [
     id: "runningShoes",
     name: "RUNNING SHOES",
     price: runningShoesPrice,
-    software: "hive",
+    software: "sweetSam",
     sprite: decoration("runningShoes"),
     x: 87,
     y: 58,
@@ -66,7 +66,7 @@ export const prizes: readonly Prize[] = [
     id: "sleepyBees",
     name: "SLEEPY BEES",
     price: sleepyBeesPrice,
-    software: "hive",
+    software: "sweetSam",
     sprite: decoration("sleepyBees"),
     x: 74,
     y: 28,

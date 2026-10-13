@@ -50,7 +50,7 @@ describe("newState", () => {
   });
 
   test("the initial software is handed over as loadedSoftware", () => {
-    const sw = fakeFactory("hive", 0);
+    const sw = fakeFactory("sweetSam", 0);
     expect(newState(sw, fakeFactory).loadedSoftware).toBe(sw);
   });
 });
@@ -66,7 +66,7 @@ describe("tokens and tickets", () => {
     const s = newState(null, fakeFactory);
     run(s, 31, { up: true });
     update(s, input({ up: true, space: true }));
-    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.loadedSoftware?.name).toBe("sweetSam");
     expect(s.tokens).toBe(4);
     expect(s.loadedRun).toBe("paid");
   });
@@ -76,13 +76,13 @@ describe("tokens and tickets", () => {
     s.tokens = 0;
     run(s, 31, { up: true });
     update(s, input({ up: true, space: true }));
-    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.loadedSoftware?.name).toBe("sweetSam");
     expect(s.tokens).toBe(0);
     expect(s.loadedRun).toBe("free");
   });
 
   test("a minigame started directly (not at a cabinet) is outside the economy", () => {
-    const s = newState(fakeFactory("hive", 0), fakeFactory);
+    const s = newState(fakeFactory("sweetSam", 0), fakeFactory);
     expect(s.loadedRun).toBe("direct");
     expect(s.tokens).toBe(5);
     expect(newState(null, fakeFactory).loadedRun).toBeNull();
@@ -146,7 +146,7 @@ describe("walking", () => {
   });
 });
 
-/** Walk from spawn to beneath the sweet (hive) cabinet, facing up. */
+/** Walk from spawn to beneath the sweet (sweetSam) cabinet, facing up. */
 function walkToSweet(s: State): void {
   run(s, 31, { up: true }); // y 92 → 61; the player rect reaches the cabinet at y < 68
 }
@@ -198,7 +198,7 @@ describe("entering a machine", () => {
     run(s, 31, { up: true });
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
-    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.loadedSoftware?.name).toBe("sweetSam");
     expect(s.loadedSoftware === null ? undefined : highScores.get(s.loadedSoftware)).toBe(777);
     expect(s.melodyPlaying).toBe(false);
     expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
@@ -222,7 +222,7 @@ describe("entering a machine", () => {
       "pause:attractSweet",
       "rewind:attractSweet",
     ]);
-    expect(s.loadedSoftware?.name).toBe("hive");
+    expect(s.loadedSoftware?.name).toBe("sweetSam");
   });
 
   test("Space not facing up, or away from a cabinet, does nothing", () => {

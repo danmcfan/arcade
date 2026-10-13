@@ -11,7 +11,7 @@ import playerUrl from "../assets/images/player.png";
 import fireflyUrl from "../assets/images/firefly.png";
 import brassMonkeyUrl from "../assets/images/brass-monkey.png";
 import sweetUrl from "../assets/images/sweet.png";
-import hiveUrl from "../assets/images/hive.png";
+import sweetSamMazeUrl from "../assets/images/sweet-sam-maze.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
@@ -84,7 +84,7 @@ export const images = {
   brassMonkey: asset(brassMonkeyUrl, 160, 144),
   sweet: asset(sweetUrl, 160, 144),
 
-  hive: asset(hiveUrl, 224, 288),
+  sweetSamMaze: asset(sweetSamMazeUrl, 224, 288),
   cabinet: asset(cabinetUrl, 1680, 428),
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
   cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
@@ -118,7 +118,7 @@ export const imageTitleFirefly: Sprite = whole(images.firefly);
 export const imageTitleBrassMonkey: Sprite = whole(images.brassMonkey);
 export const imageTitleSweet: Sprite = whole(images.sweet);
 
-export const imageHive: Sprite = whole(images.hive);
+export const imageSweetSamMaze: Sprite = whole(images.sweetSamMaze);
 export const imageCabinet: Sprite = whole(images.cabinet);
 export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
 export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);

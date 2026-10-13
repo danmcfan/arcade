@@ -54,7 +54,7 @@ class FakeFixed extends FakeSoftware implements FixedViewport {
   }
 }
 
-/** Fake factory: hive is a FixedViewport, the others stay plain Software (224x288 / 224x256 background) so the margin path stays covered. */
+/** Fake factory: sweetSam is a FixedViewport, the others stay plain Software (224x288 / 224x256 background) so the margin path stays covered. */
 interface Fakes {
   built: FakeSoftware[];
   factory: (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
@@ -68,7 +68,7 @@ function fakes(): Fakes {
   const built: FakeSoftware[] = [];
   const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     let sw: FakeSoftware;
-    if (name === "hive") {
+    if (name === "sweetSam") {
       soundStart.rewind();
       soundStart.play();
       sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"), prizes);
@@ -103,8 +103,8 @@ function run(game: Game, ticks: number, keys: Partial<Input> = {}): void {
 function snap(game: Game): GameSnapshot {
   return game.snapshot();
 }
-/** From spawn, walk up to the hive cabinet and press Space. */
-function enterHive(game: Game): void {
+/** From spawn, walk up to the Sweet Sam cabinet and press Space. */
+function enterSweetSam(game: Game): void {
   run(game, 31, { up: true });
   game.step(input({ up: true, space: true }));
 }
@@ -152,7 +152,7 @@ describe("snapshot", () => {
 
   test("sounds hold only the events of the latest tick", () => {
     const { game } = newGame();
-    run(game, 31, { up: true }); // reaches the hive cabinet on tick 25
+    run(game, 31, { up: true }); // reaches the Sweet Sam cabinet on tick 25
     expect(snap(game).sounds).toEqual([]);
     game.step(input({ left: true }));
     expect(snap(game).sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
@@ -181,14 +181,14 @@ describe("snapshot", () => {
 
 describe("createGame(software): tick 1 is a hub tick", () => {
   test("construction sounds land in tick 1; the hub moves on tick 1; the software runs from tick 2", () => {
-    const { game, built } = newGame("hive");
-    expect(built.map((b) => b.name)).toEqual(["hive"]);
+    const { game, built } = newGame("sweetSam");
+    expect(built.map((b) => b.name)).toEqual(["sweetSam"]);
     expect(built[0]?.highScore).toBe(0);
 
     game.step(input({ left: true }));
     let s = snap(game);
     expect(s.sounds).toEqual(["rewind:start", "play:start"]);
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(s.arcade.player.x).toBe(79); // the hub consumed tick 1's input
     expect(built[0]?.updates).toEqual([]);
 
@@ -226,7 +226,7 @@ describe("the hub song", () => {
     ).toEqual(["play:hub"]);
     expect(
       soundsDuring(() => {
-        enterHive(game);
+        enterSweetSam(game);
       }).filter((e) => e.endsWith(":hub")),
     ).toEqual(["pause:hub"]);
     expect(
@@ -271,9 +271,9 @@ describe("the hub song", () => {
 describe("entering and leaving software", () => {
   test("Space at a cabinet hands its software to the Game on the same tick", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     const s = snap(game);
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(s.sounds).toEqual(["pause:attractSweet", "rewind:attractSweet", "rewind:start", "play:start", "pause:hub"]);
     expect(built[0]?.updates).toEqual([]);
     game.step(input({ left: true }));
@@ -292,16 +292,16 @@ describe("entering and leaving software", () => {
 
   test("Escape does not take the score as a high score", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     const sw = built[0];
-    if (sw === undefined) throw new Error("hive not built");
+    if (sw === undefined) throw new Error("sweetSam not built");
     sw.points = 500;
     quitGame(game);
     expect(snap(game).arcade.highScore).toBe(0);
   });
 
   test("a direct start (game.New(software)) that ends goes straight back to the hub: no payout", () => {
-    const { game, built } = newGame("hive");
+    const { game, built } = newGame("sweetSam");
     game.step(input());
     const first = defined(built[0]);
     first.points = 500;
@@ -317,9 +317,9 @@ describe("entering and leaving software", () => {
 
   test("on gameOver the high score becomes max(high score, score); the next machine gets it", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     const first = built[0];
-    if (first === undefined) throw new Error("hive not built");
+    if (first === undefined) throw new Error("sweetSam not built");
     first.points = 500;
     run(game, 2);
     expect(snap(game).arcade.highScore).toBe(0); // not over yet
@@ -333,7 +333,7 @@ describe("entering and leaving software", () => {
     // A lower score does not lower it; the next machine gets the high score.
     game.step(input({ space: true, up: true }));
     const second = built[1];
-    if (second === undefined) throw new Error("second hive not built");
+    if (second === undefined) throw new Error("second sweetSam not built");
     expect(second.highScore).toBe(500);
     second.points = 200;
     second.over = true;
@@ -390,14 +390,14 @@ const minigameSoundPauses: SoundEvent[] = ["pause:start", "pause:power", "pause:
 describe("minigame pause menu", () => {
   test("Esc opens it over the minigame: no update that tick, the tick still counts, sounds pause", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     run(game, 3);
     const tick = snap(game).tick;
     game.step(input({ escape: true, left: true }));
     const s = snap(game);
     expect(s.menu).toBe("paused");
     expect(s.cursor).toBe(0);
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(s.sw).not.toBeNull();
     expect(s.tick).toBe(tick + 1);
     expect(s.sounds).toEqual(["rewind:select", "play:select", ...minigameSoundPauses]);
@@ -407,7 +407,7 @@ describe("minigame pause menu", () => {
 
   test("the minigame does not advance while the menu is open, and held Esc does not close it", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     run(game, 3);
     run(game, 30, { escape: true });
     run(game, 30, { left: true });
@@ -417,7 +417,7 @@ describe("minigame pause menu", () => {
 
   test("Up and Down move the cursor with the move blip, wrapping", () => {
     const { game } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     tap(game, "escape");
     expect(
       heard(game, () => {
@@ -434,7 +434,7 @@ describe("minigame pause menu", () => {
 
   test("Space on Resume carries on from the same tick; the held Space is hidden until released", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     run(game, 3);
     tap(game, "escape");
     game.step(input({ space: true }));
@@ -450,7 +450,7 @@ describe("minigame pause menu", () => {
 
   test("a second Esc resumes too", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     tap(game, "escape");
     tap(game, "escape");
     expect(snap(game).menu).toBeNull();
@@ -460,7 +460,7 @@ describe("minigame pause menu", () => {
 
   test("Resume restarts only the minigame sounds that were playing", () => {
     const { game } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     const fakeElement = { paused: false };
     if (!standsInForAudio(fakeElement)) throw new Error("fake element lacks paused");
     soundPower.element = fakeElement;
@@ -478,7 +478,7 @@ describe("minigame pause menu", () => {
 
   test("Controls shows the controls; Esc or Space backs out to the menu", () => {
     const { game } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     tap(game, "escape");
     tap(game, "down");
     tap(game, "space");
@@ -493,7 +493,7 @@ describe("minigame pause menu", () => {
 
   test("Quit game returns to the hub: the token stays spent, no tickets, no payout", () => {
     const { game, built } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     expect(snap(game).arcade.tokens).toBe(4);
     defined(built[0]).points = 900;
     tap(game, "escape");
@@ -512,14 +512,14 @@ describe("minigame pause menu", () => {
     game.step(input({ up: true }));
     game.step(input({ space: true, up: true }));
     s = snap(game);
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(s.arcade.tokens).toBe(3);
   });
 });
 
 function endRun(points: number, tokens = 5): Harness & { sw: FakeSoftware } {
   const g = newGame(null, { highScore: 0, tokens, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
-  enterHive(g.game);
+  enterSweetSam(g.game);
   const sw = defined(g.built[0]);
   sw.points = points;
   sw.over = true;
@@ -532,7 +532,7 @@ describe("payout", () => {
     const { game, sw } = endRun(1420);
     let s = snap(game);
     expect(s.menu).toBe("payout");
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(s.run).toBe("paid");
     expect(s.arcade.highScore).toBe(1420);
     expect(s.arcade.tickets).toBe(14);
@@ -742,7 +742,7 @@ describe("prize counter", () => {
     tap(game, "escape");
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
-    expect(snap(game)).toMatchObject({ software: "hive", run: "paid" });
+    expect(snap(game)).toMatchObject({ software: "sweetSam", run: "paid" });
     expect(defined(built[0]).prizes).toEqual(["honeyJar"]);
 
     const free = newGame(null, {
@@ -752,7 +752,7 @@ describe("prize counter", () => {
       prizes: ["sleepyBees"],
       player: { x: 80, y: 92, dir: "UP" },
     });
-    enterHive(free.game);
+    enterSweetSam(free.game);
     expect(snap(free.game).run).toBe("free");
     expect(defined(free.built[0]).prizes).toEqual(["sleepyBees"]);
   });
@@ -804,14 +804,14 @@ describe("prize counter", () => {
     tap(game, "escape");
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
-    expect(snap(game)).toMatchObject({ software: "hive", run: "paid", arcade: { tokens: 0, tickets: 0 } });
+    expect(snap(game)).toMatchObject({ software: "sweetSam", run: "paid", arcade: { tokens: 0, tickets: 0 } });
   });
 });
 
 describe("progress", () => {
   test("carries tokens and tickets, and restore brings them back", () => {
     const { game } = newGame();
-    enterHive(game);
+    enterSweetSam(game);
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 0 });
     const restored = new Game(null, {
       createSoftware: fakes().factory,
@@ -840,7 +840,7 @@ describe("progress", () => {
   });
 
   test("a minigame started straight from game.New gets no prizes", () => {
-    const { built } = newGame("hive");
+    const { built } = newGame("sweetSam");
     expect(defined(built[0]).prizes).toEqual([]);
   });
 
@@ -874,7 +874,7 @@ describe("debug mode and layout", () => {
   });
 
   const sizes: [SoftwareName, [number, number], [number, number]][] = [
-    ["hive", [336, 428], [456, 428]],
+    ["sweetSam", [336, 428], [456, 428]],
     ["firefly", [256, 320], [376, 320]],
     ["brassMonkey", [256, 288], [376, 288]],
   ];

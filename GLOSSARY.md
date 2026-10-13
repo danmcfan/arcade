@@ -29,8 +29,8 @@ A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `
 _Avoid_: level, mode, sub-game
 
 **Sweet Sam**:
-The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `hive` until it is renamed.
-_Avoid_: hive (in player-facing text), bear game
+The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `sweetSam` (`src/sweet-sam/`).
+_Avoid_: bear game
 
 **Level**:
 One maze in Sweet Sam, played until the bear has eaten every honey drop. The next level is the same maze, harder.

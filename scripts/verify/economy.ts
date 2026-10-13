@@ -1,7 +1,7 @@
 // Tokens, tickets, free play, the minigame pause menu and the payout, in a
 // real browser (`bun run verify economy`). Part 1 plays from the title scene
 // through the `?debug` test hook: a New game's counts, a cabinet start, the
-// minigame pause menu and Quit game. Part 2 replays the hive-highscore
+// minigame pause menu and Quit game. Part 2 replays the sweet-sam-highscore
 // fixture's run (seed 21, 560 points) to its payout and checks the count,
 // Space to skip and Space to close. Part 3 continues a save with 0 tokens
 // and lets the bees end a free play. Part 4 records a full Sweet Sam payout
@@ -67,7 +67,7 @@ function pauseMenu(v: Verify): void {
   startSweetSam(v);
   g = game(v);
   check(
-    g.software === "hive" && g.run === "paid" && g.arcade.tokens === 4,
+    g.software === "sweetSam" && g.run === "paid" && g.arcade.tokens === 4,
     "starting Sweet Sam spends exactly 1 token",
     g.arcade,
   );
@@ -123,9 +123,9 @@ function pauseMenu(v: Verify): void {
   check(v.snapshot(isTitleSnapshot).phase === "paused", "back in the hub, Esc opens the hub pause menu");
 }
 
-/** The hive-highscore fixture up to `tick` (its run ends at 2871 with 560 points). */
+/** The sweet-sam-highscore fixture up to `tick` (its run ends at 2871 with 560 points). */
 function highscoreScript(tick: number): InputScript {
-  const script = loadScript(inputPath("hive-highscore"));
+  const script = loadScript(inputPath("sweet-sam-highscore"));
   const steps: InputScript["steps"] = [];
   let left = tick;
   for (const s of script.steps) {
@@ -144,18 +144,18 @@ function loadHighscore(v: Verify, tick: number): void {
 }
 
 function payout(v: Verify): void {
-  console.log("payout (hive-highscore run, 560 points):");
+  console.log("payout (sweet-sam-highscore run, 560 points):");
   v.openHook("scene=game");
   loadHighscore(v, 2870);
   let g = v.snapshot(isGameSnapshot);
   check(
-    g.software === "hive" && g.menu === null && g.arcade.tokens === 4 && g.arcade.tickets === 0,
+    g.software === "sweetSam" && g.menu === null && g.arcade.tokens === 4 && g.arcade.tickets === 0,
     "one tick before the run ends: a paid Sweet Sam run",
     g.arcade,
   );
   v.step(1, { up: true });
   g = v.snapshot(isGameSnapshot);
-  check(g.menu === "payout" && g.software === "hive", "game over opens the payout over the last frame", g.menu);
+  check(g.menu === "payout" && g.software === "sweetSam", "game over opens the payout over the last frame", g.menu);
   check(g.arcade.highScore === 560, "the high score is updated", g.arcade.highScore);
   check(
     g.payout?.score === 560 && g.payout.tickets === 0 && g.payout.total === 5 && g.payout.counting,
@@ -226,7 +226,7 @@ function freePlay(v: Verify): void {
   startSweetSam(v);
   g = game(v);
   check(
-    g.software === "hive" && g.run === "free" && g.arcade.tokens === 0,
+    g.software === "sweetSam" && g.run === "free" && g.arcade.tokens === 0,
     "with 0 tokens Sweet Sam still starts, as free play",
     g,
   );

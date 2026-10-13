@@ -8,7 +8,7 @@
 // and longer power pellets. Part 3 records the honey jar purchase and the run
 // it helps. Files go to out/verify/prizes/.
 
-import type { GameSnapshot, HiveSnapshot } from "../../src/game/snapshot.ts";
+import type { GameSnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { isPrizeId, type PrizeId } from "../../src/arcade/prizes.ts";
 import { saveKey } from "../../src/title/save.ts";
 import { isRecord } from "../browser.ts";
@@ -29,9 +29,9 @@ function game(v: Verify): GameSnapshot {
   return g;
 }
 
-function hive(v: Verify): HiveSnapshot {
+function sweetSam(v: Verify): SweetSamSnapshot {
   const g = game(v);
-  if (g.software !== "hive" || !isHiveSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
+  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
   return g.sw;
 }
 
@@ -44,7 +44,7 @@ function isStored(x: unknown): x is Stored {
   return Array.isArray(prizes) && prizes.every((p) => isPrizeId(p));
 }
 
-function isHiveSnapshot(x: unknown): x is HiveSnapshot {
+function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
   return isRecord(x) && typeof x["lives"] === "number" && Array.isArray(x["enemies"]) && isRecord(x["player"]);
 }
 
@@ -131,7 +131,7 @@ function buyHoneyJar(v: Verify): void {
   v.frame("4-hub-honey-jar");
 
   startSweetSam(v);
-  check(hive(v).lives === 4, "Sweet Sam starts with 4 lives with the honey jar", hive(v).lives);
+  check(sweetSam(v).lives === 4, "Sweet Sam starts with 4 lives with the honey jar", sweetSam(v).lives);
   v.step(30);
   v.frame("5-sweet-sam-4-lives");
 }
@@ -163,12 +163,12 @@ function allPrizes(v: Verify): void {
 
   v.step(1, { up: true, space: true });
   v.step(1);
-  check(hive(v).lives === 4, "Sweet Sam starts with 4 lives", hive(v).lives);
+  check(sweetSam(v).lives === 4, "Sweet Sam starts with 4 lives", sweetSam(v).lives);
   v.step(125);
   check(
-    hive(v).state === "PLAY" && hive(v).player.velocity === 1.125,
+    sweetSam(v).state === "PLAY" && sweetSam(v).player.velocity === 1.125,
     "the bear runs at 1.125 px a tick with the running shoes",
-    hive(v).player,
+    sweetSam(v).player,
   );
   v.frame("8-sweet-sam-all-prizes");
 }
@@ -210,7 +210,7 @@ function videos(v: Verify): void {
     g.arcade,
   );
   check(
-    g.software === "hive" && isHiveSnapshot(g.sw) && g.sw.lives === 4,
+    g.software === "sweetSam" && isSweetSamSnapshot(g.sw) && g.sw.lives === 4,
     "and started Sweet Sam with 4 lives",
     g.software,
   );

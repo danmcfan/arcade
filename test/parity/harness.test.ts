@@ -59,8 +59,8 @@ describe("diff", () => {
 describe("formatMismatch", () => {
   test("names the scenario, tick, field path and both values", () => {
     expect(
-      formatMismatch("hive-fuzz-1", { tick: 123, path: "sw.enemies[2].x", expected: 104.5, actual: 104.4375 }),
-    ).toBe("hive-fuzz-1: first divergence at tick 123, field sw.enemies[2].x: expected 104.5, got 104.4375");
+      formatMismatch("sweet-sam-fuzz-1", { tick: 123, path: "sw.enemies[2].x", expected: 104.5, actual: 104.4375 }),
+    ).toBe("sweet-sam-fuzz-1: first divergence at tick 123, field sw.enemies[2].x: expected 104.5, got 104.4375");
     expect(formatMismatch("w", { tick: 1, path: "", expected: { a: 1 }, actual: undefined })).toBe(
       'w: first divergence at tick 1, field (root): expected {"a":1}, got undefined',
     );
@@ -148,10 +148,10 @@ describe("replay", () => {
       seen.push([name, opts]);
       return new CountingScene(0);
     };
-    replay({ ...script, scene: "game", software: "hive", steps: [{ ticks: 1, input: {} }] }, create);
+    replay({ ...script, scene: "game", software: "sweetSam", steps: [{ ticks: 1, input: {} }] }, create);
     replay({ ...script, scene: "wave", wave: { gridSize: 64, seconds: 5 }, steps: [{ ticks: 1, input: {} }] }, create);
     expect(seen).toEqual([
-      ["game", { software: "hive", wave: undefined }],
+      ["game", { software: "sweetSam", wave: undefined }],
       ["wave", { software: undefined, wave: { gridSize: 64, seconds: 5 } }],
     ]);
   });

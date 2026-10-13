@@ -325,7 +325,7 @@ export class Surface {
    * any destination, transparent included (the hub debug panel hangs over
    * the transparent +120 strip).
    *
-   * An "invalid" one (a component above `a`: hive particles, the debug
+   * An "invalid" one (a component above `a`: Sweet Sam particles, the debug
    * overlay, fact 10) cannot be expressed as source-over: black at alpha
    * `a/255`, then `rgb(r,g,b)` added with "lighter". Exact on an opaque
    * destination; on a transparent one the result is opaque, where Go would

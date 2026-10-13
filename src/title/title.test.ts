@@ -49,7 +49,7 @@ function spyStore(initial: SaveData | null = null): SaveStore & { saves: number 
   return store;
 }
 
-/** Where a fresh hub player ends up after walking up to the hive ("sweet") cabinet. */
+/** Where a fresh hub player ends up after walking up to the Sweet Sam ("sweet") cabinet. */
 function atCabinet(): SaveData {
   const g = new Game(null);
   for (let n = 0; n < 60; n++) g.step(press("up"));
@@ -230,7 +230,7 @@ describe("continue", () => {
     t.step(NO_INPUT);
     // Facing the cabinet again (up) and pressing Space starts it.
     hold(t, { up: true, space: true }, 2);
-    expect(game(t).software).toBe("hive");
+    expect(game(t).software).toBe("sweetSam");
   });
 
   test("a saved position in or beyond a wall falls back to the start position", () => {
@@ -325,36 +325,36 @@ describe("pause menu", () => {
   });
 });
 
-/** Continue at the hive cabinet, then start it. */
-function inHive(store: SaveStore & { saves: number }): Title {
+/** Continue at the Sweet Sam cabinet, then start it. */
+function inSweetSam(store: SaveStore & { saves: number }): Title {
   const t = new Title({ store });
   tap(t, "space");
   hold(t, { up: true, space: true }, 2);
   t.step(NO_INPUT);
-  expect(game(t).software).toBe("hive");
+  expect(game(t).software).toBe("sweetSam");
   return t;
 }
 
 describe("minigames inside the title scene", () => {
   test("a cabinet start saves at once, so the spent token is kept", () => {
     const store = spyStore(atCabinet());
-    inHive(store);
+    inSweetSam(store);
     expect(store.load()?.tokens).toBe(4);
   });
 
   test("Esc in a minigame opens the minigame pause menu, not the hub pause menu", () => {
     const store = spyStore(atCabinet());
-    const t = inHive(store);
+    const t = inSweetSam(store);
     tap(t, "escape");
     expect(t.phase).toBe("playing");
-    expect(game(t)).toMatchObject({ software: "hive", menu: "paused" });
+    expect(game(t)).toMatchObject({ software: "sweetSam", menu: "paused" });
     tap(t, "escape");
     expect(game(t).menu).toBeNull();
   });
 
   test("Quit game returns to the hub and saves; the next Esc opens the hub pause menu", () => {
     const store = spyStore(atCabinet());
-    const t = inHive(store);
+    const t = inSweetSam(store);
     const saves = store.saves;
     tap(t, "escape");
     tap(t, "down");
@@ -642,6 +642,20 @@ describe("parseSave", () => {
     // A v2 save never had prizes: anything under that key is ignored.
     expect(parseSave({ ...v2, prizes: ["honeyJar"] })?.prizes).toEqual([]);
     expect(parseSave({ ...v2, tokens: -1 })).toBeNull();
+  });
+
+  test("a save written before the Sweet Sam code rename (#45) loads unchanged", () => {
+    // Saves name prizes by id, never the software, so the rename leaves them readable.
+    const raw =
+      '{"v":3,"highScore":2470,"tokens":2,"tickets":9,"prizes":["honeyJar","runningShoes","sleepyBees"],"player":{"x":70,"y":53,"dir":"UP"}}';
+    expect(parseSave(JSON.parse(raw))).toEqual({
+      v: 3,
+      highScore: 2470,
+      tokens: 2,
+      tickets: 9,
+      prizes: ["honeyJar", "runningShoes", "sleepyBees"],
+      player: { x: 70, y: 53, dir: "UP" },
+    });
   });
 
   test("upgrades a v1 save: same high score and position, plus 5 tokens, 0 tickets and no prizes", () => {

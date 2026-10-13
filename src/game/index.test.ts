@@ -18,13 +18,13 @@ test("the registry builds the hub Game: 192x176, starts in the hub", () => {
   }
 });
 
-test('createScene("game", { software: "hive" }): START sounds land in tick 1; 336x428 fixed viewport', () => {
-  const scene = createScene("game", { software: "hive" });
+test('createScene("game", { software: "sweetSam" }): START sounds land in tick 1; 336x428 fixed viewport', () => {
+  const scene = createScene("game", { software: "sweetSam" });
   try {
     scene.step({ ...NO_INPUT });
     const s = gameSnapshot(scene.snapshot());
     expect(s.sounds).toEqual(["rewind:start", "play:start"]);
-    expect(s.software).toBe("hive");
+    expect(s.software).toBe("sweetSam");
     expect(scene.layout()).toEqual([336, 428]);
     scene.step({ ...NO_INPUT, shiftP: true });
     expect(scene.layout()).toEqual([456, 428]);
