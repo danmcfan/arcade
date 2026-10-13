@@ -17,7 +17,6 @@ import {
   honeyPotArt,
   honeyPotShadow,
   honeyPotTop,
-  honeycomb,
   itemBob,
   mazeHeight,
   mazeTiles,
@@ -50,6 +49,7 @@ import {
   liftRows,
   beeFrames,
   isWax,
+  mazeLetter,
   mazeTileAt,
   sweetSamArtFiles,
   sweetSamImagesDir,
@@ -114,11 +114,10 @@ describe("Sweet Sam art source", () => {
     expect(honeyPotTop - Math.max(...itemBob)).toBeGreaterThanOrEqual(0);
   });
 
-  test("the maze map is 28×36 tiles and the honeycomb tiles evenly", () => {
+  test("the maze map is 28×36 tiles", () => {
     checkRows("maze", mazeTiles, { w: 28, h: 36 }, { "#": "", h: "", "=": "", " ": "" });
     expect(mazeTiles.length * tileSize).toBe(mazeHeight);
     expect((mazeTiles[0]?.length ?? 0) * tileSize).toBe(mazeWidth);
-    checkRows("honeycomb", honeycomb, { w: 8, h: 4 });
   });
 
   test("the text: labels in the maze's blank top row, READY! and the digits in 8×8 cells, points in 16×16 frames", () => {
@@ -185,6 +184,24 @@ describe("the maze art matches the game's maze", () => {
     expect(mazeTileAt(...tileOf(p))).toBe(".");
     expect(openAround(p.x, p.y)).toBe(true);
     expect(newEnemies().map((e) => mazeTileAt(...tileOf(e)))).toEqual([".", "h", "h", "h"]);
+  });
+});
+
+describe("the maze's wax", () => {
+  test("is solid yellow with an orange border: only y, o, the background k and the white door and labels", () => {
+    const used = new Set<string>();
+    for (let y = 0; y < mazeHeight; y++) for (let x = 0; x < mazeWidth; x++) used.add(mazeLetter(x, y));
+    expect([...used].toSorted()).toEqual(["k", "o", "w", "y"]);
+  });
+
+  test("outer corners are rounded and the border hugs the curve", () => {
+    // The outer wall's top-left corner: its top row starts 2 px in, the next 1 px, then the edge.
+    let i = 0;
+    while (!isWax(i % mazeWidth, Math.floor(i / mazeWidth))) i++;
+    const [x, y] = [i % mazeWidth, Math.floor(i / mazeWidth)];
+    expect(x).toBe(2);
+    expect([isWax(x - 2, y + 1), isWax(x - 1, y + 1), isWax(x - 2, y + 2)]).toEqual([false, true, true]);
+    expect([mazeLetter(x, y), mazeLetter(x - 1, y + 1), mazeLetter(x - 2, y + 2)]).toEqual(["o", "o", "o"]);
   });
 });
 

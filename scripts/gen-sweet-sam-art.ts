@@ -2,9 +2,9 @@
 //
 //   bun run art      # also writes src/assets/images/sweet-sam/*.png
 //
-// maze.png is `mazeTiles` drawn at 8 px a tile: honeycomb wax cut back 4 px
-// from every corridor (so corridors are 16 px wide), a darker rim where wax
-// meets the background, the bee home's door bar, and "1UP" and "HIGH SCORE"
+// maze.png is `mazeTiles` drawn at 8 px a tile: solid yellow wax cut back 4 px
+// from every corridor (so corridors are 16 px wide), its outer corners
+// rounded, an orange border where wax meets the background, the bee home's door bar, and "1UP" and "HIGH SCORE"
 // on the top row. bear.png is the walk
 // cycle, one row per facing (down, up, left, right; right mirrors left), then
 // the death frames. bees.png is the four bees, one 64×96 sheet each in
@@ -40,7 +40,6 @@ import {
   honeyPotShadow,
   honeyPotShadowTop,
   honeyPotTop,
-  honeycomb,
   itemBob,
   itemCellHeight,
   itemCellWidth,
@@ -57,7 +56,10 @@ import {
   sleepyLook,
   wakingLook,
   walkCycle,
+  waxCornerCap,
+  waxFill,
   waxRim,
+  waxRimWidth,
 } from "../src/sweet-sam/art.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
@@ -94,10 +96,41 @@ function tileUnder(x: number, y: number): string {
   return mazeTileAt(Math.floor(x / tile), Math.floor(y / tile));
 }
 
+/** True when pixel (x, y) is wax before its corners are rounded. */
+function isSquareWax(x: number, y: number): boolean {
+  if (x < 0 || y < 0 || x >= mazeWidth || y >= mazeHeight) return false;
+  return tileUnder(x, y) === "#" && !inCorridor(x, y);
+}
+
+/** Steps from (x, y) towards (dx, dy) until the next pixel is off the square wax, up to `waxCornerCap` + 1. */
+function runTo(x: number, y: number, dx: number, dy: number): number {
+  for (let n = 1; n <= waxCornerCap; n++) if (!isSquareWax(x + n * dx, y + n * dy)) return n;
+  return waxCornerCap + 1;
+}
+
+/** The wax mask, outer corners rounded, row-major; built once from the square wax. */
+const waxMask: boolean[] = Array.from({ length: mazeWidth * mazeHeight }, (_, i) => {
+  const x = i % mazeWidth;
+  const y = Math.floor(i / mazeWidth);
+  if (!isSquareWax(x, y)) return false;
+  const h = Math.min(runTo(x, y, -1, 0), runTo(x, y, 1, 0));
+  const v = Math.min(runTo(x, y, 0, -1), runTo(x, y, 0, 1));
+  return h + v > 3;
+});
+
 /** True when pixel (x, y) of maze.png is wax. */
 export function isWax(x: number, y: number): boolean {
   if (x < 0 || y < 0 || x >= mazeWidth || y >= mazeHeight) return false;
-  return tileUnder(x, y) === "#" && !inCorridor(x, y);
+  return waxMask[y * mazeWidth + x] ?? false;
+}
+
+/** True when wax pixel (x, y) is within `waxRimWidth` of non-wax (4-neighbour steps). */
+function onRim(x: number, y: number): boolean {
+  for (let dy = -waxRimWidth; dy <= waxRimWidth; dy++) {
+    const reach = waxRimWidth - Math.abs(dy);
+    for (let dx = -reach; dx <= reach; dx++) if (!isWax(x + dx, y + dy)) return true;
+  }
+  return false;
 }
 
 function isLetter(c: string): c is SweetieLetter {
@@ -110,11 +143,7 @@ export function mazeLetter(x: number, y: number): SweetieLetter {
   if (label !== undefined && isLetter(label)) return label;
   if (tileUnder(x, y) === "=" && doorBarRows.includes(y % tile) && !inCorridor(x, y)) return doorBar;
   if (!isWax(x, y)) return mazeBackground;
-  const rim = !isWax(x - 1, y) || !isWax(x + 1, y) || !isWax(x, y - 1) || !isWax(x, y + 1);
-  if (rim) return waxRim;
-  const row = honeycomb[y % honeycomb.length] ?? "";
-  const cell = row[x % row.length];
-  return cell === "o" ? "o" : "y";
+  return onRim(x, y) ? waxRim : waxFill;
 }
 
 export function renderMaze(): PNG {

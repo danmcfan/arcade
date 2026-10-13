@@ -205,7 +205,7 @@ function checkStop(v: Verify, name: string, shows: string): SweetSamSnapshot {
       s,
       placed.map((l) => l.p),
     ) === 0,
-    "the honeycomb wax shows wherever no sprite is",
+    "the wax shows wherever no sprite is",
   );
   check(labelMisses(frame, s) === 0, '"1UP" and "HIGH SCORE" show in the Go lettering');
   v.frame(name, 2);

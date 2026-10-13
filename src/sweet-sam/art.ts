@@ -336,7 +336,7 @@ export const mazeHeight = 288;
  * expects them:
  *
  * - `.` corridor. The corridor is 16 px wide: wax stops 4 px short of it.
- * - `#` honeycomb wax.
+ * - `#` wax: solid yellow, an orange border, rounded outer corners.
  * - `h` the bee home, `=` its door.
  * - ` ` the score rows above and the lives row below: plain background.
  */
@@ -382,11 +382,19 @@ export const mazeTiles: readonly string[] = [
 /** How far wax stops short of a corridor tile, in pixels. */
 export const corridorMargin = 4;
 
-/** The honeycomb the wax is cut from, repeated across the maze: `o` cell walls, `y` cells. */
-export const honeycomb: readonly string[] = ["yoyyyoyy", "yyoooyyy", "yoyyyoyy", "oyyyyyoo"];
+/** The wax inside its rim: solid yellow. */
+export const waxFill: SweetieLetter = "y";
 
-/** Wax next to the background, a 1 px darker rim. */
-export const waxRim: SweetieLetter = "r";
+/** Wax next to the background: an orange border `waxRimWidth` px wide. */
+export const waxRim: SweetieLetter = "o";
+export const waxRimWidth = 1;
+
+/**
+ * How round the wax's outer corners are: a corner pixel is cut when its
+ * distances to the nearest left/right and up/down edges (1 at the edge,
+ * capped at this) sum to 3 or less, which chops a 3-pixel triangle.
+ */
+export const waxCornerCap = 4;
 
 /** Behind everything: the dark of the hive. */
 export const mazeBackground: SweetieLetter = "k";
