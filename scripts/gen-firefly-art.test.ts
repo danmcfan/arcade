@@ -32,7 +32,7 @@ import {
 } from "./gen-firefly-art.ts";
 
 function size(rows: readonly string[]): [number, number] {
-  return [rows[0]!.length, rows.length];
+  return [rows[0]?.length ?? 0, rows.length];
 }
 
 describe("Firefly art source", () => {
@@ -55,7 +55,7 @@ describe("Firefly art source", () => {
     ] as const) {
       const [w, h] = size(rows);
       rows.forEach((row, y) => {
-        [...row].forEach((px, x) => {
+        row.split("").forEach((px, x) => {
           if (px === ".") return;
           const r = Math.hypot(x + 0.5 - w / 2, y + 0.5 - h / 2);
           expect({ name, x, y, inside: r <= w / 2 }).toEqual({ name, x, y, inside: true });
@@ -66,7 +66,9 @@ describe("Firefly art source", () => {
 
   test("the hit effect is 5 quarters of 16×16", () => {
     expect(hitQuarters.length).toBe(5);
-    hitQuarters.forEach((q, i) => checkRows(`hit ${i}`, q, { w: 16, h: 16 }));
+    hitQuarters.forEach((q, i) => {
+      checkRows(`hit ${i}`, q, { w: 16, h: 16 });
+    });
   });
 
   test("stars sit in the sky and the grass tile repeats evenly across the width", () => {
@@ -75,7 +77,7 @@ describe("Firefly art source", () => {
       expect(x >= 0 && x < backgroundWidth && y >= 0 && y < backgroundHeight - grassTile.length).toBe(true);
     }
     checkRows("grass", grassTile);
-    expect(backgroundWidth % grassTile[0]!.length).toBe(0);
+    expect(backgroundWidth % size(grassTile)[0]).toBe(0);
   });
 });
 
@@ -123,7 +125,7 @@ describe("rotation frames", () => {
 
 describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` after editing it)", () => {
   test("src/assets/images/firefly holds exactly the generated files", () => {
-    expect(readdirSync(fireflyImagesDir).sort()).toEqual(fireflyArtFiles.map((f) => f.file).sort());
+    expect(readdirSync(fireflyImagesDir).toSorted()).toEqual(fireflyArtFiles.map((f) => f.file).toSorted());
   });
 
   for (const { file, render } of fireflyArtFiles) {
@@ -142,7 +144,9 @@ describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` aft
   }
 
   test("the background is opaque: no cabinet shows through", () => {
-    const bg = fireflyArtFiles.find((f) => f.file === "background.png")!.render();
+    const background = fireflyArtFiles.find((f) => f.file === "background.png");
+    if (background === undefined) throw new Error("background.png is not a generated file");
+    const bg = background.render();
     expect([bg.width, bg.height]).toEqual([backgroundWidth, backgroundHeight]);
     expect(colours(bg).has("transparent")).toBe(false);
   });

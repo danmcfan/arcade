@@ -100,7 +100,7 @@ describe("reel sets", () => {
     bootReels(reels, 1420);
     syncAndTick(reels, digits6(1320));
     expect(reels.map((r) => r.active)).toEqual([false, false, false, true, false, false]);
-    expect([reels[3]!.from, reels[3]!.to, reels[3]!.t]).toEqual([4, 3, 1 / 18]);
+    expect([reels[3].from, reels[3].to, reels[3].t]).toEqual([4, 3, 1 / 18]);
   });
 
   test("bootReels settles every column on its digit with no spin", () => {

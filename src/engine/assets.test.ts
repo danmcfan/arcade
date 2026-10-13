@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
 import { allImages, fireflyImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
+import { defined } from "./defined.testutil.ts";
 import type { ImageAsset } from "./image.ts";
 
 function pngSize(path: string): { width: number; height: number } {
@@ -24,18 +25,18 @@ describe("image registry (D12)", () => {
   test("registers every arcade PNG", () => {
     const registered = Object.values(images).map((a) => basename(a.url));
     const onDisk = readdirSync(new URL("../assets/images", import.meta.url)).filter((f) => f.endsWith(".png"));
-    expect(registered.sort()).toEqual(onDisk.sort());
+    expect(registered.toSorted()).toEqual(onDisk.toSorted());
   });
 
   test("registers every Firefly PNG, and none of the Go space art is left", () => {
     const registered = Object.values(fireflyImages).map((a) => basename(a.url));
     const onDisk = readdirSync(new URL("../assets/images/firefly", import.meta.url));
-    expect(registered.sort()).toEqual(onDisk.sort());
-    const gone = ["galaxy.png", "ship.png", "bullet.png", "bug.png", "explosion.png", "shipExplosion.png"];
+    expect(registered.toSorted()).toEqual(onDisk.toSorted());
+    const gone = new Set(["galaxy.png", "ship.png", "bullet.png", "bug.png", "explosion.png", "shipExplosion.png"]);
     const all = readdirSync(new URL("../assets/images", import.meta.url), { recursive: true }).map((f) =>
       basename(String(f)),
     );
-    expect(all.filter((f) => gone.includes(f))).toEqual([]);
+    expect(all.filter((f) => gone.has(f))).toEqual([]);
   });
 
   test("registers the 9 lumberjack sheets by their Go paths", () => {
@@ -52,7 +53,7 @@ describe("image registry (D12)", () => {
 
 describe("sound registry", () => {
   test("mirrors assets.go plus the title's sounds: the two tunes loop, effects don't", () => {
-    expect(Object.keys(sounds).sort()).toEqual([
+    expect(Object.keys(sounds).toSorted()).toEqual([
       "boom",
       "death",
       "deny",
@@ -73,6 +74,11 @@ describe("sound registry", () => {
   });
 });
 
+/** Lets a test double stand in for the DOM image `loadImages` creates; it checks the members `loadImages` uses. */
+function standsInForImage(x: object): x is HTMLImageElement {
+  return "src" in x && "decode" in x && typeof x.decode === "function";
+}
+
 describe("loadImages (D5)", () => {
   class FakeImage {
     src = "";
@@ -86,24 +92,37 @@ describe("loadImages (D5)", () => {
   test("decodes every image before resolving and attaches it to its asset", async () => {
     const a: ImageAsset = { url: "a.png", width: 1, height: 1, image: null };
     const b: ImageAsset = { url: "b.png", width: 1, height: 1, image: null };
-    const made: FakeImage[] = [];
+    const made: (FakeImage & HTMLImageElement)[] = [];
     await loadImages([a, b], () => {
       const img = new FakeImage();
+      if (!standsInForImage(img)) throw new Error("FakeImage lacks src/decode");
       made.push(img);
-      return img as unknown as HTMLImageElement;
+      return img;
     });
     expect(made.map((i) => [i.src, i.decoded])).toEqual([
       ["a.png", true],
       ["b.png", true],
     ]);
-    expect(a.image).toBe(made[0] as unknown as HTMLImageElement);
-    expect(b.image).toBe(made[1] as unknown as HTMLImageElement);
+    expect(a.image).toBe(defined(made[0]));
+    expect(b.image).toBe(defined(made[1]));
   });
 
   test("rejects with the failing URL", async () => {
     const bad: ImageAsset = { url: "missing.png", width: 1, height: 1, image: null };
-    const broken = { src: "", decode: () => Promise.reject(new Error("decode failed")) };
-    await expect(loadImages([bad], () => broken as unknown as HTMLImageElement)).rejects.toThrow("missing.png");
+    const broken = {
+      src: "",
+      decode: async (): Promise<never> => {
+        await Promise.resolve();
+        throw new Error("decode failed");
+      },
+    };
+    if (!standsInForImage(broken)) throw new Error("broken image lacks src/decode");
+    const err = await loadImages([bad], () => broken).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(Error);
+    expect(err instanceof Error ? err.message : "").toContain("missing.png");
     expect(bad.image).toBeNull();
   });
 });

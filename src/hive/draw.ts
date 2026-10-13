@@ -218,8 +218,8 @@ function digitGlyphSize(): [number, number] {
   return [dw, dh];
 }
 
-function digitFrame(d: number): Sprite {
-  d = d % 10;
+function digitFrame(digit: number): Sprite {
+  let d = digit % 10;
   if (d < 0) {
     d += 10;
   }

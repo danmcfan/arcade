@@ -47,12 +47,33 @@ function crop(png: PNG, x: number, y: number, w: number, h: number): PNG {
 
 function parseArea(area: string): [number, number, number, number] {
   const n = area.split(",").map(Number);
-  if (n.length !== 4 || n.some((v) => !Number.isInteger(v))) throw new Error(`area "${area}" is not x,y,w,h`);
-  return n as [number, number, number, number];
+  const [x, y, w, h] = n;
+  if (
+    n.length !== 4 ||
+    !n.every((v) => Number.isInteger(v)) ||
+    x === undefined ||
+    y === undefined ||
+    w === undefined ||
+    h === undefined
+  ) {
+    throw new Error(`area "${area}" is not x,y,w,h`);
+  }
+  return [x, y, w, h];
 }
 
 function isRows(v: unknown): v is Rows {
   return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+/** `file`'s exports, checked to be an object. */
+async function importModule(file: string): Promise<Record<string, unknown>> {
+  const mod: unknown = await import(file);
+  if (!isRecord(mod)) throw new Error(`${file} did not import as a module`);
+  return mod;
 }
 
 /** Sweetie 16, plus `#` in white for the font's glyph rows. */
@@ -70,55 +91,70 @@ function gitShow(rev: string, file: string): Buffer | undefined {
 
 /** The module at `file`, or its `rev` version (copied next to it for the import, then removed). */
 async function importAt(file: string, rev: string | undefined): Promise<Record<string, unknown> | undefined> {
-  if (rev === undefined) return (await import(resolve(file))) as Record<string, unknown>;
+  if (rev === undefined) return importModule(resolve(file));
   const source = gitShow(rev, file);
   if (source === undefined) return undefined;
   const copy = join(dirname(resolve(file)), `.pixel-${Date.now()}-${basename(file)}`);
   writeFileSync(copy, source);
   try {
-    return (await import(copy)) as Record<string, unknown>;
+    return await importModule(copy);
   } finally {
     rmSync(copy);
   }
 }
 
+/** Every entry of a list or record of rows, labelled `name key`; other entries are skipped. */
+function entryPanels(value: unknown, name: string): Panel[] {
+  const entries = Array.isArray(value)
+    ? value.map((v: unknown, i) => [String(i), v] as const)
+    : Object.entries(isRecord(value) ? value : {});
+  return entries.flatMap(([k, v]) => (isRows(v) ? [{ label: `${name} ${k}`, png: toPng(v, sourcePalette) }] : []));
+}
+
+/** `mod`'s export `name`, or its entry `key` when given. */
+function exportOf(mod: Record<string, unknown>, name: string, key: string | undefined): unknown {
+  const exported = mod[name];
+  if (key === undefined) return exported;
+  return isRecord(exported) ? exported[key] : undefined;
+}
+
+/** The panels a `path.ts:name[.key]` image names, at `rev` when given; [] when it is not there. */
+async function loadSource(file: string, name: string, key: string | undefined, rev?: string): Promise<Panel[]> {
+  const mod = await importAt(file, rev);
+  if (mod === undefined) return [];
+  const value = exportOf(mod, name, key);
+  if (key !== undefined && value === undefined) {
+    if (rev !== undefined) return [];
+    throw new Error(`${file}'s ${name} has no entry "${key}"`);
+  }
+  if (isRows(value)) return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
+  const panels = entryPanels(value, name);
+  if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
+  return panels;
+}
+
 /** The images an <image> argument names (see the header), at `rev` when given; [] when it is not there. */
 export async function load(spec: string, rev?: string): Promise<Panel[]> {
-  const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/.exec(spec);
+  const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/u.exec(spec);
   if (ts) {
-    const [, file, name, key] = ts as unknown as [string, string, string, string | undefined];
-    const mod = await importAt(file, rev);
-    if (mod === undefined) return [];
-    let value = mod[name];
-    if (key !== undefined) {
-      value = (value as Record<string, unknown> | undefined)?.[key];
-      if (value === undefined) {
-        if (rev !== undefined) return [];
-        throw new Error(`${file}'s ${name} has no entry "${key}"`);
-      }
-    }
-    if (isRows(value))
-      return [{ label: key === undefined ? name : `${name} ${key}`, png: toPng(value, sourcePalette) }];
-    const entries = Array.isArray(value)
-      ? value.map((v, i) => [String(i), v] as const)
-      : Object.entries((value ?? {}) as object);
-    const panels = entries
-      .filter(([, v]) => isRows(v))
-      .map(([k, v]) => ({ label: `${name} ${k}`, png: toPng(v as Rows, sourcePalette) }));
-    if (panels.length === 0 && rev === undefined) throw new Error(`${file} exports no rows named "${name}"`);
+    const [, file, name, key] = ts;
+    if (file === undefined || name === undefined) throw new Error(`"${spec}" is not path.ts:name`);
+    const panels = await loadSource(file, name, key, rev);
     return panels;
   }
-  const [file, area] = spec.split("#") as [string, string | undefined];
+  const [file = spec, area] = spec.split("#");
   const bytes = rev === undefined ? readFileSync(file) : gitShow(rev, file);
   if (bytes === undefined) return [];
   const png = PNG.sync.read(bytes);
-  return [{ label: basename(spec).replace("#", " "), png: area ? crop(png, ...parseArea(area)) : png }];
+  const hasArea = area !== undefined && area !== "";
+  return [{ label: basename(spec).replace("#", " "), png: hasArea ? crop(png, ...parseArea(area)) : png }];
 }
 
 async function loadOne(spec: string): Promise<PNG> {
   const panels = await load(spec);
-  if (panels.length !== 1) throw new Error(`${spec} is ${panels.length} images; name one`);
-  return panels[0]!.png;
+  const [panel] = panels;
+  if (panels.length !== 1 || panel === undefined) throw new Error(`${spec} is ${panels.length} images; name one`);
+  return panel.png;
 }
 
 /** The largest whole scale, up to 8, that keeps the image within about 384 px. */
@@ -131,19 +167,37 @@ const gap = 16;
 const maxSheetWidth = 1800;
 const sheetColour = "#202020";
 const labelColour = "#f4f4f4";
-const checker = ["#8c8c8c", "#a0a0a0"];
+const checkerDark = "#8c8c8c";
+const checkerLight = "#a0a0a0";
+
+/** The glyph rows for `ch`, or `?`'s for a character the font lacks. */
+function glyph(ch: string): Rows {
+  const rows = glyphs[ch] ?? glyphs["?"];
+  if (rows === undefined) throw new Error("the font has no ? glyph");
+  return rows;
+}
+
+/** How wide `rows` are; throws on no rows. */
+function widthOf(rows: Rows): number {
+  const [first] = rows;
+  if (first === undefined) throw new Error("a glyph has no rows");
+  return first.length;
+}
 
 /** `text` in the game font, white, at 2x. */
 function label(text: string): PNG {
-  const chars = [...text.toUpperCase()].map((ch) => glyphs[ch] ?? glyphs["?"]!);
+  const chars = text
+    .toUpperCase()
+    .split("")
+    .map((ch) => glyph(ch));
   const png = blank(
-    chars.reduce((w, rows) => w + rows[0]!.length + 1, 0),
+    chars.reduce((w, rows) => w + widthOf(rows) + 1, 0),
     glyphHeight,
   );
   let x = 0;
   for (const rows of chars) {
     paint(png, rows, { "#": labelColour }, x, 0);
-    x += rows[0]!.length + 1;
+    x += widthOf(rows) + 1;
   }
   return scale(png, labelScale);
 }
@@ -187,14 +241,14 @@ export function sheet(panels: readonly Panel[], k?: number): PNG {
   }
   const out = blank(width, y + rowH + gap);
   for (let i = 0; i < out.width * out.height; i++) plot(out, i % out.width, Math.trunc(i / out.width), sheetColour);
-  for (const { x, y, tile } of placed) {
-    stamp(out, tile.label, x, y);
-    const top = y + labelH;
+  for (const { x: tx, y: ty, tile } of placed) {
+    stamp(out, tile.label, tx, ty);
+    const top = ty + labelH;
     for (let py = 0; py < tile.png.height; py++) {
       for (let px = 0; px < tile.png.width; px++)
-        plot(out, x + px, top + py, checker[(Math.trunc(px / 8) + Math.trunc(py / 8)) % 2]!);
+        plot(out, tx + px, top + py, (Math.trunc(px / 8) + Math.trunc(py / 8)) % 2 === 0 ? checkerDark : checkerLight);
     }
-    stamp(out, tile.png, x, top);
+    stamp(out, tile.png, tx, top);
   }
   return out;
 }
@@ -214,16 +268,34 @@ function write(png: PNG, out: string): void {
 }
 
 function usage(): never {
-  const header = readFileSync(import.meta.path, "utf8").split("\n\n")[0]!;
-  console.error(header.replace(/^\/\/ ?/gm, ""));
+  const header = readFileSync(import.meta.path, "utf8").split("\n\n")[0] ?? "";
+  console.error(header.replaceAll(/^\/\/ ?/gmu, ""));
   process.exit(1);
 }
 
-async function main(argv: string[]): Promise<void> {
+/** `fn` over `items` one after another, in order, so output and git copies never interleave. */
+async function inOrder<T, R>(items: readonly T[], fn: (item: T) => Promise<R>): Promise<R[]> {
+  const all = await items.reduce<Promise<R[]>>(async (done, item) => {
+    const results = await done;
+    results.push(await fn(item));
+    return results;
+  }, Promise.resolve([]));
+  return all;
+}
+
+/** A command's parsed options and image arguments. */
+interface Command {
+  specs: string[];
+  opts: Record<string, string>;
+  k: number | undefined;
+  out: (name: string) => string;
+}
+
+function parseArgs(argv: readonly string[]): { command: string | undefined; cmd: Command } {
   const opts: Record<string, string> = {};
   const args: string[] = [];
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
+    const a = argv[i] ?? usage();
     if (a.startsWith("--")) opts[a.slice(2)] = argv[++i] ?? usage();
     else args.push(a);
   }
@@ -232,79 +304,100 @@ async function main(argv: string[]): Promise<void> {
   if (k !== undefined && !(Number.isInteger(k) && k > 0))
     throw new Error(`--scale ${opts["scale"]} is not a whole number above 0`);
   const out = (name: string): string => resolve(opts["out"] ?? join(outDir, `${name}.png`));
-  if (specs.length === 0) usage();
+  return { command, cmd: { specs, opts, k, out } };
+}
 
-  switch (command) {
-    case "rows": {
-      for (const spec of specs) {
-        for (const { label, png } of await load(spec)) {
-          console.log(`// ${label}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
-          for (const row of toRows(png)) console.log(`"${row}",`);
-        }
-      }
-      return;
-    }
-    case "colours": {
-      const letterOf = letters();
-      for (const spec of specs) {
-        for (const { label, png } of await load(spec)) {
-          console.log(`${label} (${png.width}x${png.height})`);
-          for (const [c, n] of [...colours(png)].sort((a, b) => b[1] - a[1])) {
-            console.log(
-              `  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`,
-            );
-          }
-        }
-      }
-      return;
-    }
-    case "show": {
-      const panels = (await Promise.all(specs.map((s) => load(s)))).flat();
-      write(sheet(panels, k), out("show"));
-      console.log(panels.map((p) => p.label).join(" | "));
-      return;
-    }
-    case "before": {
-      const rev = opts["ref"] ?? "origin/main";
-      if (
-        Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0
-      ) {
-        throw new Error(`--ref ${rev} is not a commit`);
-      }
-      const panels: Panel[] = [];
-      for (const spec of specs) {
-        const before = new Map((await load(spec, rev)).map((p) => [p.label, p.png]));
-        for (const after of await load(spec)) {
-          const old = before.get(after.label);
-          if (old) panels.push({ label: `before ${after.label}`, png: old });
-          panels.push({ label: `${old ? "after" : "new"} ${after.label}`, png: after.png });
-        }
-      }
-      write(sheet(panels, k ?? Math.min(...panels.map((p) => autoScale(p.png)))), out("before-after"));
-      return;
-    }
-    case "place": {
-      const [baseSpec, ...rest] = specs as [string, ...string[]];
-      const items = await Promise.all(
-        rest.map(async (s) => {
-          const at = /^(.+)@(-?\d+),(-?\d+)$/.exec(s);
-          if (!at) throw new Error(`"${s}" is not <image>@x,y`);
-          return { png: await loadOne(at[1]!), x: Number(at[2]), y: Number(at[3]) };
-        }),
-      );
-      const base = await loadOne(baseSpec);
-      const png = place(base, items);
-      write(scale(png, k ?? autoScale(png)), out("place"));
-      return;
-    }
-    default:
-      usage();
+async function rowsCommand({ specs }: Command): Promise<void> {
+  const loaded = await inOrder(specs, load);
+  for (const { label: name, png } of loaded.flat()) {
+    console.log(`// ${name}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
+    for (const row of toRows(png)) console.log(`"${row}",`);
   }
 }
 
+function printColours(name: string, png: PNG, letterOf: Map<string, string>): void {
+  console.log(`${name} (${png.width}x${png.height})`);
+  const counts = [...colours(png)].toSorted((a, b) => b[1] - a[1]);
+  for (const [c, n] of counts) {
+    console.log(
+      `  ${c.padEnd(11)} ${(letterOf.get(c) ?? (c === "transparent" ? "." : "not Sweetie 16")).padEnd(14)} ${n}`,
+    );
+  }
+}
+
+async function coloursCommand({ specs }: Command): Promise<void> {
+  const letterOf = letters();
+  const loaded = await inOrder(specs, load);
+  for (const { label: name, png } of loaded.flat()) printColours(name, png, letterOf);
+}
+
+async function showCommand({ specs, k, out }: Command): Promise<void> {
+  const panels = (await inOrder(specs, load)).flat();
+  write(sheet(panels, k), out("show"));
+  console.log(panels.map((p) => p.label).join(" | "));
+}
+
+/** `spec` at `rev` and in the working copy, as before/after (or new) panels. */
+async function beforeAfter(spec: string, rev: string): Promise<Panel[]> {
+  const before = new Map((await load(spec, rev)).map((p) => [p.label, p.png]));
+  return (await load(spec)).flatMap((after) => {
+    const old = before.get(after.label);
+    const now = { label: `${old ? "after" : "new"} ${after.label}`, png: after.png };
+    return old ? [{ label: `before ${after.label}`, png: old }, now] : [now];
+  });
+}
+
+async function beforeCommand({ specs, opts, k, out }: Command): Promise<void> {
+  const rev = opts["ref"] ?? "origin/main";
+  if (Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoRoot }).exitCode !== 0) {
+    throw new Error(`--ref ${rev} is not a commit`);
+  }
+  const panels = (
+    await inOrder(specs, async (spec) => {
+      const pair = await beforeAfter(spec, rev);
+      return pair;
+    })
+  ).flat();
+  write(sheet(panels, k ?? Math.min(...panels.map((p) => autoScale(p.png)))), out("before-after"));
+}
+
+async function placeItem(s: string): Promise<{ png: PNG; x: number; y: number }> {
+  const at = /^(.+)@(-?\d+),(-?\d+)$/u.exec(s);
+  const image = at?.[1];
+  if (!at || image === undefined) throw new Error(`"${s}" is not <image>@x,y`);
+  return { png: await loadOne(image), x: Number(at[2]), y: Number(at[3]) };
+}
+
+async function placeCommand({ specs, k, out }: Command): Promise<void> {
+  const [baseSpec, ...rest] = specs;
+  if (baseSpec === undefined) usage();
+  const items = await inOrder(rest, placeItem);
+  const base = await loadOne(baseSpec);
+  const png = place(base, items);
+  write(scale(png, k ?? autoScale(png)), out("place"));
+}
+
+const commands = new Map<string, (cmd: Command) => Promise<void>>([
+  ["rows", rowsCommand],
+  ["colours", coloursCommand],
+  ["show", showCommand],
+  ["before", beforeCommand],
+  ["place", placeCommand],
+]);
+
+async function main(argv: string[]): Promise<void> {
+  const { command, cmd } = parseArgs(argv);
+  if (cmd.specs.length === 0) usage();
+  const run = commands.get(command ?? "");
+  if (run === undefined) usage();
+  await run(cmd);
+}
+
 if (import.meta.main) {
-  main(process.argv.slice(2)).catch((e: unknown) => {
+  try {
+    await main(process.argv.slice(2));
+  } catch (e: unknown) {
     console.error(`pixel: ${e instanceof Error ? e.message : String(e)}`);
     process.exit(1);
-  });
+  }
 }

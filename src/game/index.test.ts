@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { NO_INPUT } from "../engine/input.ts";
 import { createScene } from "./registry.ts";
-import type { GameSnapshot } from "./snapshot.ts";
+import { gameSnapshot } from "./snapshot.testutil.ts";
 
 test("the registry builds the hub Game: 192x176, starts in the hub", () => {
   const scene = createScene("game");
@@ -9,7 +9,7 @@ test("the registry builds the hub Game: 192x176, starts in the hub", () => {
     expect(scene.name).toBe("game");
     expect(scene.layout()).toEqual([192, 176]);
     scene.step({ ...NO_INPUT, right: true });
-    const s = scene.snapshot() as GameSnapshot;
+    const s = gameSnapshot(scene.snapshot());
     expect(s.tick).toBe(1);
     expect(s.software).toBeNull();
     expect(s.arcade.player.x).toBe(81);
@@ -22,7 +22,7 @@ test('createScene("game", { software: "hive" }): START sounds land in tick 1; 33
   const scene = createScene("game", { software: "hive" });
   try {
     scene.step({ ...NO_INPUT });
-    const s = scene.snapshot() as GameSnapshot;
+    const s = gameSnapshot(scene.snapshot());
     expect(s.sounds).toEqual(["rewind:start", "play:start"]);
     expect(s.software).toBe("hive");
     expect(scene.layout()).toEqual([336, 428]);
@@ -43,16 +43,16 @@ for (const [name, size] of real) {
     try {
       expect(scene.layout()).toEqual([192, 176]);
       scene.step({ ...NO_INPUT, left: true });
-      let s = scene.snapshot() as GameSnapshot;
+      let s = gameSnapshot(scene.snapshot());
       expect(s.software).toBe(name);
       expect(s.arcade.player.x).toBe(79);
       expect(scene.layout()).toEqual(size);
       scene.step({ ...NO_INPUT, left: true });
-      s = scene.snapshot() as GameSnapshot;
+      s = gameSnapshot(scene.snapshot());
       expect(s.arcade.player.x).toBe(79);
       expect(s.sw).not.toBeNull();
       scene.step({ ...NO_INPUT, escape: true });
-      s = scene.snapshot() as GameSnapshot;
+      s = gameSnapshot(scene.snapshot());
       expect(s.menu).toBe("paused");
       expect(s.sounds).toEqual([
         "rewind:select",
@@ -66,7 +66,7 @@ for (const [name, size] of real) {
       expect(scene.layout()).toEqual(size);
       for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }])
         scene.step({ ...NO_INPUT, ...keys });
-      s = scene.snapshot() as GameSnapshot;
+      s = gameSnapshot(scene.snapshot());
       expect(s.software).toBeNull();
       expect(scene.layout()).toEqual([192, 176]);
     } finally {

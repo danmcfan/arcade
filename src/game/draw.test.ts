@@ -2,6 +2,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { images } from "../engine/assets.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
+import { defined } from "../engine/defined.testutil.ts";
+import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import type { PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { iconRects, type IconName } from "../ui/icons.ts";
@@ -15,7 +17,7 @@ import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 // debugPrint draws glyphs on the surface; record its calls instead.
 // (Not `mock.module`: Bun module mocks leak into every later test file.)
 const printed: [string, number, number][] = [];
-const debugPrint = (_s: Surface, text: string, x: number, y: number) => {
+const debugPrint = (_s: Surface, text: string, x: number, y: number): void => {
   printed.push([text, x, y]);
 };
 
@@ -41,53 +43,71 @@ interface Icon {
   h: number;
 }
 
+function isIconName(k: string): k is IconName {
+  return k in iconRects;
+}
+
+interface Recording {
+  calls: Call[];
+  glyphs: Glyph[];
+  icons: Icon[];
+  text: (ink?: Ink) => string;
+  surface: Surface;
+  fills: () => number;
+  dimmed: () => [number, number, number, number] | null;
+}
+
 /**
  * Records the Surface calls the hub makes (only the ones it uses). Pixel-font
  * glyphs and HUD icons are decoded into `glyphs` and `icons` instead of
  * `calls`; panel and key-cap fills are counted in `fills`.
  */
-function recordingSurface() {
+function recordingSurface(): Recording {
   const calls: Call[] = [];
   const glyphs: Glyph[] = [];
   const icons: Icon[] = [];
   let fills = 0;
   let dimmed: [number, number, number, number] | null = null;
-  const surface = {
-    draw(s: Sprite, x: number, y: number) {
+  const surface = stubSurface({
+    draw(s: Sprite, x: number, y: number): void {
       if (s.asset === images.font) {
         const row = Math.trunc(s.sy / cell);
         const band = Math.trunc(row / bandRows);
         const i = (row % bandRows) * sheetColumns + s.sx / cell;
-        glyphs.push({ ch: charset[i]!, ink: inkOrder[band]!, x, y, h: s.h });
+        glyphs.push({ ch: defined(charset[i]), ink: defined(inkOrder[band]), x, y, h: s.h });
         return;
       }
       if (s.asset === images.icons) {
-        const name = (Object.keys(iconRects) as IconName[]).find((n) => iconRects[n].x === s.sx)!;
+        const name = defined(
+          Object.keys(iconRects)
+            .filter((k) => isIconName(k))
+            .find((n) => iconRects[n].x === s.sx),
+        );
         icons.push({ name, x, y, w: s.w, h: s.h });
         return;
       }
       const name = Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?";
       calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y]);
     },
-    fillRect() {
+    fillRect(): void {
       fills++;
     },
-    strokeRect(x: number, y: number, w: number, h: number, c: PremulColor) {
+    strokeRect(x: number, y: number, w: number, h: number, c: PremulColor): void {
       calls.push(["strokeRect", x, y, w, h, c]);
     },
-    fillPremul(x: number, y: number, w: number, h: number, c: PremulColor) {
+    fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
       if (c.r === dimColour.r && c.a === dimColour.a) {
         dimmed = [x, y, w, h];
         return;
       }
       calls.push(["fillPremul", x, y, w, h, c]);
     },
-  };
+  });
   /** Text drawn (whole glyphs only), in reading order, optionally of one ink. */
-  const text = (ink?: Ink) =>
+  const text = (ink?: Ink): string =>
     glyphs
       .filter((g) => g.h === glyphHeight && (ink === undefined || g.ink === ink))
-      .sort((a, b) => a.y - b.y || a.x - b.x)
+      .toSorted((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
   return {
@@ -95,7 +115,7 @@ function recordingSurface() {
     glyphs,
     icons,
     text,
-    surface: surface as unknown as Surface,
+    surface,
     fills: () => fills,
     dimmed: () => dimmed,
   };
@@ -141,7 +161,7 @@ const factory = (name: SoftwareName): Software => {
 };
 
 const games: { dispose(): void }[] = [];
-function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []) {
+function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []): Game {
   const restore = { highScore: 0, tokens, tickets: 0, prizes, player: { x: 80, y: 92, dir: "DOWN" as const } };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
   games.push(g);
@@ -287,12 +307,13 @@ describe("hub HUD", () => {
     expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket"]);
     expect(r.icons.every((i) => i.y >= 0 && i.y + i.h <= 16)).toBe(true);
     // Each icon is vertically centred on the text.
-    expect(r.icons.every((i) => 2 * i.y + i.h === 2 * r.glyphs[0]!.y + glyphHeight)).toBe(true);
-    expect(coin!.x).toBe(16);
+    expect(r.icons.every((i) => 2 * i.y + i.h === 2 * defined(r.glyphs[0]).y + glyphHeight)).toBe(true);
     const [tokens, tickets] = r.glyphs;
-    expect(tokens!.x).toBeGreaterThan(coin!.x + coin!.w);
-    expect(ticket!.x).toBeGreaterThan(tokens!.x);
-    expect(tickets!.x).toBeGreaterThan(ticket!.x + ticket!.w);
+    if (!coin || !ticket || !tokens || !tickets) throw new Error("expected two icons and two counts");
+    expect(coin.x).toBe(16);
+    expect(tokens.x).toBeGreaterThan(coin.x + coin.w);
+    expect(ticket.x).toBeGreaterThan(tokens.x);
+    expect(tickets.x).toBeGreaterThan(ticket.x + ticket.w);
   });
 
   test("a spent token shows at once; at 0 tokens the count reads FREE PLAY", () => {
@@ -319,20 +340,20 @@ describe("hub HUD", () => {
   });
 });
 
-describe("menus over a minigame", () => {
-  function atCabinet(tokens = 5): Game {
-    const game = newGame(null, tokens);
-    for (let t = 0; t < 31; t++) game.step(input({ up: true }));
-    game.step(input({ up: true, space: true }));
-    return game;
+function atCabinet(tokens = 5): Game {
+  const game = newGame(null, tokens);
+  for (let t = 0; t < 31; t++) game.step(input({ up: true }));
+  game.step(input({ up: true, space: true }));
+  return game;
+}
+function tapKeys(game: Game, ...keys: (keyof Input)[]): void {
+  for (const k of keys) {
+    game.step(input({ [k]: true }));
+    game.step(input());
   }
-  function tapKeys(game: Game, ...keys: (keyof Input)[]): void {
-    for (const k of keys) {
-      game.step(input({ [k]: true }));
-      game.step(input());
-    }
-  }
+}
 
+describe("menus over a minigame", () => {
   test("the minigame pause menu draws over the dimmed minigame: Resume, Controls, Quit game (no tickets)", () => {
     const game = atCabinet();
     tapKeys(game, "escape");
@@ -343,13 +364,13 @@ describe("menus over a minigame", () => {
     expect(r.text("yellow")).toBe("PAUSED>RESUME<");
     expect(r.text("white")).toBe("CONTROLSQUIT GAME");
     expect(r.text("orange")).toBe("NO TICKETS");
-    const quit = r.glyphs.find((g) => g.ch === "Q")!;
-    const note = r.glyphs.find((g) => g.ink === "orange")!;
+    const quit = defined(r.glyphs.find((g) => g.ch === "Q"));
+    const note = defined(r.glyphs.find((g) => g.ink === "orange"));
     expect(note.y).toBe(quit.y);
     expect(note.x).toBeGreaterThan(quit.x);
     // Centred on the minigame's layout.
     const paused = r.glyphs.filter((g) => g.ink === "yellow" && g.y === Math.min(...r.glyphs.map((x) => x.y)));
-    const mid = (paused[0]!.x + paused[paused.length - 1]!.x + 6) / 2;
+    const mid = (defined(paused[0]).x + defined(paused.at(-1)).x + 6) / 2;
     expect(Math.abs(mid - 168)).toBeLessThan(4);
   });
 
@@ -377,8 +398,9 @@ describe("menus over a minigame", () => {
 
   test("the payout shows the score and tickets on rolling digits, then the totals", () => {
     const game = atCabinet();
-    built[0]!.points = 1420;
-    built[0]!.over = true;
+    const sw = defined(built[0]);
+    sw.points = 1420;
+    sw.over = true;
     game.step(input());
     let r = recordingSurface();
     game.draw(r.surface);
@@ -400,8 +422,9 @@ describe("menus over a minigame", () => {
 
   test("after free play the payout reads FREE PLAY: 0 TICKETS", () => {
     const game = atCabinet(0);
-    built[0]!.points = 1420;
-    built[0]!.over = true;
+    const sw = defined(built[0]);
+    sw.points = 1420;
+    sw.over = true;
     game.step(input());
     const r = recordingSurface();
     game.draw(r.surface);
@@ -410,20 +433,20 @@ describe("menus over a minigame", () => {
   });
 });
 
-describe("prize counter menu", () => {
-  function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Game {
-    const g = new Game(null, {
-      createSoftware: factory,
-      debugPrint,
-      restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
-    });
-    games.push(g);
-    for (let t = 0; t < 2; t++) g.step(input({ down: true }));
-    g.step(input({ space: true }));
-    g.step(input());
-    return g;
-  }
+function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Game {
+  const g = new Game(null, {
+    createSoftware: factory,
+    debugPrint,
+    restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
+  });
+  games.push(g);
+  for (let t = 0; t < 2; t++) g.step(input({ down: true }));
+  g.step(input({ space: true }));
+  g.step(input());
+  return g;
+}
 
+describe("prize counter menu", () => {
   test("dims the hub image, not the counts, and lists the tickets, the token, the prizes and CLOSE", () => {
     const r = recordingSurface();
     atCounter(2, 120).draw(r.surface);
@@ -488,8 +511,9 @@ describe("prize counter menu", () => {
     expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
     const close = r.glyphs.find(
       (g) => g.ch === "C" && g.ink === "white" && r.glyphs.some((h) => h.ch === "L" && h.y === g.y && h.x > g.x),
-    )!;
-    const hint = r.glyphs.find((g) => g.ch === "O" && g.y > close.y)!;
+    );
+    if (!close) throw new Error("expected CLOSE");
+    const hint = defined(r.glyphs.find((g) => g.ch === "O" && g.y > close.y));
     expect(hint.y - close.y).toBeGreaterThanOrEqual(12);
   });
 });

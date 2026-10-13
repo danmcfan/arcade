@@ -1,6 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { Tree, thetaInterval, thetaMax } from "./tree.ts";
 
+/** Update until the shake ends (or 100 ticks), tracking the swing extremes. */
+function runShake(t: Tree): { peak: number; trough: number; ticks: number } {
+  let peak = 0;
+  let trough = 0;
+  let ticks = 0;
+  while (t.shaking && ticks < 100) {
+    t.update();
+    ticks++;
+    peak = Math.max(peak, t.theta);
+    trough = Math.min(trough, t.theta);
+  }
+  return { peak, trough, ticks };
+}
+
 describe("constants", () => {
   // Values printed by Go (`radians * 4.0`, `radians * 0.25` folded exactly at
   // compile time, then rounded once).
@@ -27,19 +41,6 @@ describe("Tree", () => {
     t.update();
     expect(t.theta).toBe(0);
   });
-
-  function runShake(t: Tree): { peak: number; trough: number; ticks: number } {
-    let peak = 0;
-    let trough = 0;
-    let ticks = 0;
-    while (t.shaking && ticks < 100) {
-      t.update();
-      ticks++;
-      peak = Math.max(peak, t.theta);
-      trough = Math.min(trough, t.theta);
-    }
-    return { peak, trough, ticks };
-  }
 
   test("a right shake swings up to thetaMax and returns to exactly 0", () => {
     const t = new Tree(128, 72);

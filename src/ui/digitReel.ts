@@ -7,19 +7,20 @@ export const digitReelDurationFrames = 18;
 export type Digits6 = [number, number, number, number, number, number];
 
 export function digits6(value: number): Digits6 {
-  if (value < 0) {
-    value = 0;
+  let v = value;
+  if (v < 0) {
+    v = 0;
   }
-  if (value > 999_999) {
-    value = 999_999;
+  if (v > 999_999) {
+    v = 999_999;
   }
   return [
-    Math.trunc(value / 100_000),
-    Math.trunc((value % 100_000) / 10_000),
-    Math.trunc((value % 10_000) / 1_000),
-    Math.trunc((value % 1_000) / 100),
-    Math.trunc((value % 100) / 10),
-    value % 10,
+    Math.trunc(v / 100_000),
+    Math.trunc((v % 100_000) / 10_000),
+    Math.trunc((v % 10_000) / 1_000),
+    Math.trunc((v % 1_000) / 100),
+    Math.trunc((v % 100) / 10),
+    v % 10,
   ];
 }
 
@@ -56,18 +57,18 @@ export class DigitReel {
   }
 
   syncTarget(target: number): void {
-    target %= 10;
-    if (target < 0) {
-      target = -target % 10;
+    let digit = target % 10;
+    if (digit < 0) {
+      digit = -digit % 10;
     }
     if (this.active) {
       return;
     }
-    if (this.settledDigit === target) {
+    if (this.settledDigit === digit) {
       return;
     }
     this.from = this.settledDigit;
-    this.to = target;
+    this.to = digit;
     this.active = true;
     this.t = 0;
   }
@@ -112,5 +113,7 @@ export function syncAndTick(reels: DigitReels, target: Digits6): void {
 /** Settle every reel on its digit of `value` at once, with no spin. */
 export function bootReels(reels: DigitReels, value: number): void {
   const d = digits6(value);
-  reels.forEach((r, i) => r.boot(d[i] ?? 0));
+  reels.forEach((r, i) => {
+    r.boot(d[i] ?? 0);
+  });
 }

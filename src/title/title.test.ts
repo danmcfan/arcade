@@ -3,7 +3,7 @@ import { images } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { Surface } from "../engine/surface.ts";
+import { Surface } from "../engine/surface.ts";
 import { Game } from "../game/game.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
@@ -37,12 +37,14 @@ function spyStore(initial: SaveData | null = null): SaveStore & { saves: number 
   const inner = memoryStore(initial);
   const store = {
     saves: 0,
-    load: () => inner.load(),
-    save(d: SaveData) {
+    load: (): SaveData | null => inner.load(),
+    save(d: SaveData): void {
       store.saves++;
       inner.save(d);
     },
-    clear: () => inner.clear(),
+    clear: (): void => {
+      inner.clear();
+    },
   };
   return store;
 }
@@ -237,7 +239,7 @@ describe("continue", () => {
       [10, 92],
       [80, 20],
       [80, 500],
-    ]) {
+    ] as const) {
       const t = new Title({
         store: memoryStore({
           v: 3,
@@ -245,7 +247,7 @@ describe("continue", () => {
           tokens: 5,
           tickets: 0,
           prizes: [],
-          player: { x: x!, y: y!, dir: "UP" },
+          player: { x, y, dir: "UP" },
         }),
       });
       tap(t, "space");
@@ -254,15 +256,15 @@ describe("continue", () => {
   });
 });
 
-describe("pause menu", () => {
-  function playing(store: SaveStore = memoryStore()): Title {
-    const t = new Title({ store });
-    tap(t, "space");
-    tap(t, "space");
-    expect(t.phase).toBe("playing");
-    return t;
-  }
+function playing(store: SaveStore = memoryStore()): Title {
+  const t = new Title({ store });
+  tap(t, "space");
+  tap(t, "space");
+  expect(t.phase).toBe("playing");
+  return t;
+}
 
+describe("pause menu", () => {
   test("Esc in the hub pauses; the game does not step while paused; Esc resumes", () => {
     const t = playing();
     hold(t, { left: true }, 10);
@@ -323,17 +325,17 @@ describe("pause menu", () => {
   });
 });
 
-describe("minigames inside the title scene", () => {
-  /** Continue at the hive cabinet, then start it. */
-  function inHive(store: SaveStore & { saves: number }): Title {
-    const t = new Title({ store });
-    tap(t, "space");
-    hold(t, { up: true, space: true }, 2);
-    t.step(NO_INPUT);
-    expect(game(t).software).toBe("hive");
-    return t;
-  }
+/** Continue at the hive cabinet, then start it. */
+function inHive(store: SaveStore & { saves: number }): Title {
+  const t = new Title({ store });
+  tap(t, "space");
+  hold(t, { up: true, space: true }, 2);
+  t.step(NO_INPUT);
+  expect(game(t).software).toBe("hive");
+  return t;
+}
 
+describe("minigames inside the title scene", () => {
   test("a cabinet start saves at once, so the spent token is kept", () => {
     const store = spyStore(atCabinet());
     inHive(store);
@@ -367,18 +369,18 @@ describe("minigames inside the title scene", () => {
   });
 });
 
-describe("prize counter inside the title scene", () => {
-  /** Continue from a save at the start position with these counts, then open the prize counter. */
-  function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: SaveData["prizes"] = []): Title {
-    store.save({ v: 3, highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
-    const t = new Title({ store });
-    tap(t, "space"); // Continue
-    hold(t, { down: true }, 2);
-    tap(t, "space");
-    expect(game(t).menu).toBe("prizeCounter");
-    return t;
-  }
+/** Continue from a save at the start position with these counts, then open the prize counter. */
+function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: SaveData["prizes"] = []): Title {
+  store.save({ v: 3, highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+  const t = new Title({ store });
+  tap(t, "space"); // Continue
+  hold(t, { down: true }, 2);
+  tap(t, "space");
+  expect(game(t).menu).toBe("prizeCounter");
+  return t;
+}
 
+describe("prize counter inside the title scene", () => {
   test("Esc closes the prize counter menu, not the hub pause menu; the next Esc pauses", () => {
     const t = atCounter(spyStore(), 5, 0);
     tap(t, "escape");
@@ -429,7 +431,9 @@ describe("prize counter inside the title scene", () => {
   test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v3", () => {
     const store = memoryStore();
     const raw = { v: 2, highScore: 40, tokens: 2, tickets: 30, player: { x: 80, y: 92, dir: "DOWN" } };
-    store.save(parseSave(raw)!);
+    const parsed = parseSave(raw);
+    if (parsed === null) throw new Error("v2 save did not parse");
+    store.save(parsed);
     const t = new Title({ store });
     tap(t, "space"); // Continue
     expect(game(t).arcade).toMatchObject({ highScore: 40, tokens: 2, tickets: 30 });
@@ -447,19 +451,26 @@ describe("prize counter inside the title scene", () => {
   });
 });
 
-describe("sounds", () => {
-  /** The sound calls made while `fn` runs. */
-  function heard(fn: () => void): SoundEvent[] {
-    const events: SoundEvent[] = [];
-    const off = addSoundListener((e) => events.push(e));
-    try {
-      fn();
-    } finally {
-      off();
-    }
-    return events;
+/** The sound calls made while `fn` runs. */
+function heard(fn: () => void): SoundEvent[] {
+  const events: SoundEvent[] = [];
+  const off = addSoundListener((e) => {
+    events.push(e);
+  });
+  try {
+    fn();
+  } finally {
+    off();
   }
+  return events;
+}
 
+/** Like `heard`, without the title music. */
+function effects(fn: () => void): SoundEvent[] {
+  return heard(fn).filter((e) => !e.endsWith(":title"));
+}
+
+describe("sounds", () => {
   test("the title music starts on the first tick and plays through the New game check and intro", () => {
     const t = new Title({
       store: memoryStore({
@@ -471,13 +482,29 @@ describe("sounds", () => {
         player: { x: 80, y: 92, dir: "UP" },
       }),
     });
-    expect(heard(() => t.step(NO_INPUT))).toEqual(["play:title"]);
+    expect(
+      heard(() => {
+        t.step(NO_INPUT);
+      }),
+    ).toEqual(["play:title"]);
     // Retried on key presses until the browser lets it play (never, without a DOM).
-    expect(heard(() => tap(t, "down"))).toContain("play:title");
-    expect(heard(() => tap(t, "space"))).not.toContain("pause:title");
+    expect(
+      heard(() => {
+        tap(t, "down");
+      }),
+    ).toContain("play:title");
+    expect(
+      heard(() => {
+        tap(t, "space");
+      }),
+    ).not.toContain("pause:title");
     expect(t.phase).toBe("confirm");
     tap(t, "down");
-    expect(heard(() => tap(t, "space"))).not.toContain("pause:title");
+    expect(
+      heard(() => {
+        tap(t, "space");
+      }),
+    ).not.toContain("pause:title");
     expect(t.phase).toBe("intro");
   });
 
@@ -485,15 +512,25 @@ describe("sounds", () => {
     const t = new Title();
     t.step(NO_INPUT);
     tap(t, "space");
-    const start = heard(() => tap(t, "space"));
+    const start = heard(() => {
+      tap(t, "space");
+    });
     expect(t.phase).toBe("playing");
     expect(start).toContain("pause:title");
     expect(start).toContain("rewind:title");
-    expect(heard(() => hold(t, { left: true }, 5))).not.toContain("play:title");
+    expect(
+      heard(() => {
+        hold(t, { left: true }, 5);
+      }),
+    ).not.toContain("play:title");
     tap(t, "escape");
     tap(t, "down");
     tap(t, "down");
-    expect(heard(() => tap(t, "space"))).toContain("play:title");
+    expect(
+      heard(() => {
+        tap(t, "space");
+      }),
+    ).toContain("play:title");
     expect(t.phase).toBe("menu");
   });
 
@@ -509,13 +546,32 @@ describe("sounds", () => {
       }),
     });
     t.step(NO_INPUT);
-    const effects = (fn: () => void) => heard(fn).filter((e) => !e.endsWith(":title"));
-    expect(effects(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
-    expect(effects(() => tap(t, "escape"))).toEqual([]);
-    expect(effects(() => hold(t, { left: true }, 3))).toEqual([]);
-    expect(effects(() => tap(t, "space"))).toEqual(["rewind:select", "play:select"]);
+    expect(
+      effects(() => {
+        tap(t, "down");
+      }),
+    ).toEqual(["rewind:move", "play:move"]);
+    expect(
+      effects(() => {
+        tap(t, "escape");
+      }),
+    ).toEqual([]);
+    expect(
+      effects(() => {
+        hold(t, { left: true }, 3);
+      }),
+    ).toEqual([]);
+    expect(
+      effects(() => {
+        tap(t, "space");
+      }),
+    ).toEqual(["rewind:select", "play:select"]);
     expect(t.phase).toBe("confirm");
-    expect(effects(() => tap(t, "escape"))).toEqual(["rewind:select", "play:select"]);
+    expect(
+      effects(() => {
+        tap(t, "escape");
+      }),
+    ).toEqual(["rewind:select", "play:select"]);
     expect(t.phase).toBe("menu");
   });
 
@@ -524,18 +580,33 @@ describe("sounds", () => {
     tap(t, "space");
     tap(t, "space");
     const select: SoundEvent[] = ["rewind:select", "play:select"];
-    expect(heard(() => tap(t, "escape"))).toEqual(expect.arrayContaining(select));
+    const opened = heard(() => {
+      tap(t, "escape");
+    });
+    for (const e of select) expect(opened).toContain(e);
     expect(t.phase).toBe("paused");
-    expect(heard(() => tap(t, "down"))).toEqual(["rewind:move", "play:move"]);
-    expect(heard(() => tap(t, "space"))).toEqual(select);
+    expect(
+      heard(() => {
+        tap(t, "down");
+      }),
+    ).toEqual(["rewind:move", "play:move"]);
+    expect(
+      heard(() => {
+        tap(t, "space");
+      }),
+    ).toEqual(select);
     expect(t.phase).toBe("controls");
-    expect(heard(() => tap(t, "escape"))).toEqual(select);
+    expect(
+      heard(() => {
+        tap(t, "escape");
+      }),
+    ).toEqual(select);
     expect(t.phase).toBe("paused");
   });
 });
 
 describe("parseSave", () => {
-  const ok = {
+  const ok: SaveData = {
     v: 3,
     highScore: 3,
     tokens: 4,
@@ -545,13 +616,9 @@ describe("parseSave", () => {
   };
 
   test("accepts a v3 save with its owned prizes", () => {
-    expect(parseSave(ok)).toEqual(ok as SaveData);
-    expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual({
-      ...ok,
-      tokens: 0,
-      tickets: 0,
-      prizes: [],
-    } as SaveData);
+    expect(parseSave(ok)).toEqual(ok);
+    const empty: SaveData = { ...ok, tokens: 0, tickets: 0, prizes: [] };
+    expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual(empty);
   });
 
   test("keeps owned prizes in catalogue order, once each", () => {
@@ -634,54 +701,85 @@ interface Glyph {
   y: number;
 }
 
-function recordingSurface() {
-  const glyphs: Glyph[] = [];
-  const sprites: [string, number, number][] = [];
+/** The drawn characters in reading order (top to bottom, left to right), optionally of one ink. */
+function readText(glyphs: readonly Glyph[], ink?: Ink, from = 0): string {
+  return glyphs
+    .slice(from)
+    .filter((g) => ink === undefined || g.ink === ink)
+    .toSorted((a, b) => a.y - b.y || a.x - b.x)
+    .map((g) => g.ch)
+    .join("");
+}
+
+interface KeyCap {
+  x: number;
+  y: number;
+  w: number;
+}
+
+/** A headless surface that records the glyphs, sprites and key caps drawn on it. */
+class RecordingSurface extends Surface {
+  readonly glyphs: Glyph[] = [];
+  readonly sprites: [string, number, number][] = [];
   /** Key caps, found by the face `drawKey` fills first: x, top and width. */
-  const caps: { x: number; y: number; w: number }[] = [];
+  readonly caps: KeyCap[] = [];
   /** How many glyphs were drawn before the last dimming fill. */
-  let dimmedAt = 0;
-  const surface = {
-    draw(s: Sprite, x: number, y: number) {
-      if (s.asset === images.font) {
-        const row = Math.trunc(s.sy / cell);
-        const band = Math.trunc(row / bandRows);
-        const i = (row % bandRows) * sheetColumns + s.sx / cell;
-        expect(s.h).toBe(glyphHeight);
-        glyphs.push({ ch: charset[i]!, ink: inkOrder[band]!, x, y });
-        return;
-      }
-      sprites.push([Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?", x, y]);
-    },
-    fillRect(x: number, y: number, w: number, h: number, colour: string) {
-      if (colour === "#566c86" && h === keyHeight - 1) caps.push({ x: x - 1, y, w: w + 2 });
-    },
-    fillPremul() {
-      dimmedAt = glyphs.length;
-    },
-    strokeRect() {},
-  };
-  /** The drawn characters in reading order (top to bottom, left to right), optionally of one ink. */
-  const text = (ink?: Ink, from = 0) =>
-    glyphs
-      .slice(from)
-      .filter((g) => ink === undefined || g.ink === ink)
-      .sort((a, b) => a.y - b.y || a.x - b.x)
-      .map((g) => g.ch)
-      .join("");
+  dimmedAt = 0;
+
+  constructor() {
+    super(null, 0, 0);
+  }
+
+  override draw(s: Sprite, x: number, y: number): void {
+    if (s.asset === images.font) {
+      const row = Math.trunc(s.sy / cell);
+      const band = Math.trunc(row / bandRows);
+      const i = (row % bandRows) * sheetColumns + s.sx / cell;
+      expect(s.h).toBe(glyphHeight);
+      const ch = charset[i];
+      const ink = inkOrder[band];
+      if (ch === undefined || ink === undefined) throw new Error(`glyph outside the font sheet: ${s.sx},${s.sy}`);
+      this.glyphs.push({ ch, ink, x, y });
+      return;
+    }
+    this.sprites.push([Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?", x, y]);
+  }
+
+  override fillRect(x: number, y: number, w: number, h: number, colour: string): void {
+    if (colour === "#566c86" && h === keyHeight - 1) this.caps.push({ x: x - 1, y, w: w + 2 });
+  }
+
+  override fillPremul(): void {
+    this.dimmedAt = this.glyphs.length;
+  }
+
+  override strokeRect(): void {}
+}
+
+function recordingSurface(): {
+  surface: Surface;
+  sprites: [string, number, number][];
+  glyphs: Glyph[];
+  text: (ink?: Ink, from?: number) => string;
+  over: (ink?: Ink) => string;
+  keys: () => (KeyCap & { label: string })[];
+} {
+  const surface = new RecordingSurface();
+  const { glyphs, sprites } = surface;
+  const text = (ink?: Ink, from = 0): string => readText(glyphs, ink, from);
   /** Each key cap drawn, with the label printed on it. */
-  const keys = () =>
-    caps.map((c) => ({
-      ...c,
-      label: glyphs
+  const keys = (): (KeyCap & { label: string })[] =>
+    surface.caps.map((c) => {
+      const label = glyphs
         .filter((g) => g.y === c.y + 1 && g.x >= c.x && g.x < c.x + c.w)
-        .sort((a, b) => a.x - b.x)
+        .toSorted((a, b) => a.x - b.x)
         .map((g) => g.ch)
-        .join(""),
-    }));
+        .join("");
+      return { x: c.x, y: c.y, w: c.w, label };
+    });
   /** Like `text`, but only what was drawn over the last dimming fill (a panel). */
-  const over = (ink?: Ink) => text(ink, dimmedAt);
-  return { surface: surface as unknown as Surface, sprites, glyphs, text, over, keys };
+  const over = (ink?: Ink): string => text(ink, surface.dimmedAt);
+  return { surface, sprites, glyphs, text, over, keys };
 }
 
 describe("drawing", () => {
@@ -694,7 +792,7 @@ describe("drawing", () => {
       ...pauseMenu,
       ...introLines,
       ...controls.map((c) => c.label),
-      ...hints.flatMap((h) => [...h.keys, h.label]),
+      ...hints.flatMap((h) => h.keys.concat(h.label)),
       "GAMES WITHIN A GAME",
       "PRESS SPACE TO START",
     ];
@@ -709,7 +807,7 @@ describe("drawing", () => {
     const r = recordingSurface();
     t.draw(r.surface);
     // One slice of logo.png per letter of ARCADE, so each can bob.
-    expect(r.sprites.map(([name]) => name)).toEqual(Array(6).fill("logo"));
+    expect(r.sprites.map(([name]) => name)).toEqual(Array.from({ length: 6 }, () => "logo"));
     expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
     expect(r.text("white")).not.toContain("CONTINUE");
@@ -791,11 +889,12 @@ describe("drawing", () => {
     const letterTops = frames.map((r) => r.sprites.map(([, , y]) => y).join());
     expect(new Set(letterTops).size).toBeGreaterThan(1);
     // Mid-wave, neighbouring letters sit at different heights.
-    expect(new Set(frames[10]!.sprites.map(([, , y]) => y)).size).toBeGreaterThan(1);
+    expect(new Set(frames[10]?.sprites.map(([, , y]) => y)).size).toBeGreaterThan(1);
 
     const gaps = frames.map((r) => {
-      const [left, ...rest] = r.glyphs.filter((g) => g.ink === "yellow").sort((a, b) => a.x - b.x);
-      return rest[0]!.x - left!.x;
+      const [left, first] = r.glyphs.filter((g) => g.ink === "yellow").toSorted((a, b) => a.x - b.x);
+      if (left === undefined || first === undefined) throw new Error("no selection arrow drawn");
+      return first.x - left.x;
     });
     // From the left arrow to the label's first letter, which stays put.
     expect(new Set(gaps)).toEqual(new Set([8, 9, 10]));

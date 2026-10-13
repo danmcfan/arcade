@@ -1,13 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { findMachine, newMachines } from "./machine.ts";
+import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
+import type { Rect } from "./collision.ts";
 import type { PrizeId } from "./prizes.ts";
 
-function recordingFactory() {
+function recordingFactory(): {
+  calls: [SoftwareName, number, readonly PrizeId[]][];
+  factory: (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
+} {
   const calls: [SoftwareName, number, readonly PrizeId[]][] = [];
   const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     calls.push([name, highScore, prizes]);
-    return { name } as Software;
+    return fakeSoftware(name);
   };
   return { calls, factory };
 }
@@ -35,10 +40,13 @@ describe("newMachines", () => {
   });
 });
 
+// Player rect is 16x24 centred on (x, y); y = 60 is flush with the top wall.
+function playerAt(x: number, y: number): Rect {
+  return { x: x - 8, y: y - 12, w: 16, h: 24 };
+}
+
 describe("findMachine", () => {
   const ms = newMachines(recordingFactory().factory);
-  // Player rect is 16x24 centred on (x, y); y = 60 is flush with the top wall.
-  const playerAt = (x: number, y: number) => ({ x: x - 8, y: y - 12, w: 16, h: 24 });
 
   test("spawn point is not at a machine", () => {
     expect(findMachine(playerAt(80, 92), ms)).toBeNull();

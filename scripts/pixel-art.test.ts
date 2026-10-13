@@ -57,19 +57,27 @@ describe("PNGs and rows", () => {
 
 describe("checkRows", () => {
   test("passes rows of one width in palette letters", () => {
-    expect(() => checkRows("ok", ["k.", ".k"], { w: 2, h: 2 })).not.toThrow();
+    expect(() => {
+      checkRows("ok", ["k.", ".k"], { w: 2, h: 2 });
+    }).not.toThrow();
   });
 
   test("names the row that is the wrong width", () => {
-    expect(() => checkRows("cat", ["kk", "kkk"])).toThrow('cat row 1 is 3 wide, want 2: "kkk"');
+    expect(() => {
+      checkRows("cat", ["kk", "kkk"]);
+    }).toThrow('cat row 1 is 3 wide, want 2: "kkk"');
   });
 
   test("names the row and column of a letter that is not in the palette", () => {
-    expect(() => checkRows("cat", ["kk", "kZ"])).toThrow('cat row 1 column 1 is "Z", not a palette letter: "kZ"');
+    expect(() => {
+      checkRows("cat", ["kk", "kZ"]);
+    }).toThrow('cat row 1 column 1 is "Z", not a palette letter: "kZ"');
   });
 
   test("checks the height when given", () => {
-    expect(() => checkRows("cat", ["kk"], { h: 2 })).toThrow("cat has 1 rows, want 2");
+    expect(() => {
+      checkRows("cat", ["kk"], { h: 2 });
+    }).toThrow("cat has 1 rows, want 2");
   });
 });
 

@@ -1,7 +1,7 @@
 // Port of internal/arcade/update.go, plus the token a cabinet start costs and
 // the prize counter (solid, opened with Space while facing it).
 
-import { direction, moving, type Direction, type Input } from "../engine/input.ts";
+import { direction, type Direction, type Input } from "../engine/input.ts";
 import { soundMelody } from "../engine/assets.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
@@ -27,13 +27,11 @@ export function update(s: State, i: Input): void {
       s.melodyPlaying = true;
       soundMelody.play();
     }
-  } else {
-    if (s.melodyPlaying) {
-      s.imageTitle = null;
-      s.melodyPlaying = false;
-      soundMelody.pause();
-      soundMelody.rewind();
-    }
+  } else if (s.melodyPlaying) {
+    s.imageTitle = null;
+    s.melodyPlaying = false;
+    soundMelody.pause();
+    soundMelody.rewind();
   }
 
   if (ok && s.player.direction === "UP" && i.space) {
@@ -67,9 +65,10 @@ export function startRun(s: State): RunKind {
 }
 
 function applyInput(s: State, i: Input): void {
-  if (moving(i)) {
-    // `direction()` is never "" while moving.
-    s.player.direction = direction(i) as Direction;
+  // `direction()` is "" exactly when not moving.
+  const d = direction(i);
+  if (d !== "") {
+    s.player.direction = d;
     s.player.velocity = 1;
     return;
   }

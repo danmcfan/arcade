@@ -42,6 +42,7 @@ export function buyToken(w: Wallet): Wallet | null {
     case "lastChance":
       return { tokens: 1, tickets: 0 };
     case "short":
-      return null;
+      break;
   }
+  return null;
 }

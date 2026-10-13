@@ -125,18 +125,19 @@ export const durationStep = 1.0 / (FRAMES_PER_SECOND * 3);
 function newBugs(): Entity[] {
   // Runtime float64 arithmetic in Go (durationStep is a typed variable there),
   // evaluated left to right: ((-durationStep) * 60) * k. The first of each
-  // side is -0, which is not < 0, so it starts flying on the first update.
+  // side is -0 (((-durationStep) * 60) * 0), which is not < 0, so it starts
+  // flying on the first update.
   const leftPatternFunc = newBezierPatternFunc(leftBezierConfig);
   const rightPatternFunc = newBezierPatternFunc(rightBezierConfig);
 
   return [
-    newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0, durationStep),
+    newBug(leftPatternFunc, "L", -0, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
     newBug(leftPatternFunc, "L", -durationStep * FRAMES_PER_SECOND * 0.8, durationStep),
 
-    newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0, durationStep),
+    newBug(rightPatternFunc, "R", -0, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.2, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.4, durationStep),
     newBug(rightPatternFunc, "R", -durationStep * FRAMES_PER_SECOND * 0.6, durationStep),
@@ -167,44 +168,15 @@ export class FireflySoftware implements FixedViewport {
       this.bugs = newBugs();
     }
 
-    if (i.space) {
-      if (this.fireDelay <= 0) {
-        this.bullets.push({
-          ...newEntity(imageSpark),
-          position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
-          direction: { x: 0, y: -5.0 },
-        });
-        this.fireDelay = 20;
-
-        soundLaser.rewind();
-        soundLaser.play();
-      }
+    if (i.space && this.fireDelay <= 0) {
+      this.fire();
     }
 
     if (this.fireDelay > 0) {
       this.fireDelay--;
     }
 
-    // Uses the Up, Down, Left, Right priority: holding Up or Down masks Left/Right.
-    let newPosition = this.player.position;
-    switch (direction(i)) {
-      case "LEFT":
-        newPosition = sub(newPosition, this.player.direction);
-        break;
-      case "RIGHT":
-        newPosition = add(newPosition, this.player.direction);
-        break;
-    }
-    newPosition = { ...newPosition };
-
-    if (newPosition.x < this.player.width / 2) {
-      newPosition.x = this.player.width / 2;
-    }
-    if (newPosition.x > tileSize * tileWidth - this.player.width / 2 + 1) {
-      newPosition.x = tileSize * tileWidth - this.player.width / 2 + 1;
-    }
-
-    this.player.position = newPosition;
+    this.movePlayer(i);
 
     for (const bullet of this.bullets) {
       bullet.position = add(bullet.position, bullet.direction);
@@ -218,59 +190,57 @@ export class FireflySoftware implements FixedViewport {
     // that have not spawned yet (sitting at 0,0) are fair game: only
     // DeadFrames is checked.
     for (const bullet of this.bullets) {
-      for (const bug of this.bugs) {
-        if (bug.deadFrames > 0) {
-          continue;
-        }
-
-        if (collide(bullet.position, bug.position)) {
-          bullet.dead = true;
-          bug.deadFrames = 75;
-
-          soundBoom.rewind();
-          soundBoom.play();
-
-          break; // only one bug per bullet
-        }
-      }
+      hitFirstBug(bullet, this.bugs);
     }
 
     this.bullets = this.bullets.filter((b) => !b.dead);
 
     for (const bug of this.bugs) {
-      if (bug.deadFrames > 0) {
-        bug.deadFrames--;
-        if (bug.deadFrames === 0) {
-          bug.dead = true;
-        }
-        continue;
-      }
-
-      if (bug.duration < 0) {
-        bug.duration += bug.durationStep;
-        continue;
-      }
-
-      bug.previousPosition = bug.position;
-      if (bug.duration > 1) {
-        bug.position = sub(bug.position, { x: 0, y: 2.5 });
-      } else {
-        // Every bug is built with a pattern; only the player has none.
-        if (bug.pattern === null) throw new Error("bug without pattern");
-        bug.position = bug.pattern(bug.duration);
-        bug.duration += bug.durationStep;
-      }
-
-      bug.direction = sub(bug.position, bug.previousPosition);
-
-      if (bug.position.y < 0) {
-        bug.dead = true;
-      }
+      updateBug(bug);
     }
 
     // Removed at the end of the tick: one snapshot can show `bugs: []` before
     // the next update respawns the wave.
     this.bugs = this.bugs.filter((b) => !b.dead);
+  }
+
+  private fire(): void {
+    this.bullets.push({
+      ...newEntity(imageSpark),
+      position: add(this.player.position, { x: -tileSize / 2, y: -tileSize }),
+      direction: { x: 0, y: -5.0 },
+    });
+    this.fireDelay = 20;
+
+    soundLaser.rewind();
+    soundLaser.play();
+  }
+
+  private movePlayer(i: Input): void {
+    // Uses the Up, Down, Left, Right priority: holding Up or Down masks Left/Right.
+    let newPosition = this.player.position;
+    switch (direction(i)) {
+      case "LEFT":
+        newPosition = sub(newPosition, this.player.direction);
+        break;
+      case "RIGHT":
+        newPosition = add(newPosition, this.player.direction);
+        break;
+      case "UP":
+      case "DOWN":
+      case "":
+        break;
+    }
+    newPosition = { ...newPosition };
+
+    if (newPosition.x < this.player.width / 2) {
+      newPosition.x = this.player.width / 2;
+    }
+    if (newPosition.x > tileSize * tileWidth - this.player.width / 2 + 1) {
+      newPosition.x = tileSize * tileWidth - this.player.width / 2 + 1;
+    }
+
+    this.player.position = newPosition;
   }
 
   fixedViewportSize(): [number, number] {
@@ -378,6 +348,56 @@ export function newFireflySoftware(): FireflySoftware {
   return new FireflySoftware();
 }
 
+/** Kill the first live bug `bullet` touches, if any: only one bug per bullet. */
+function hitFirstBug(bullet: Entity, bugs: readonly Entity[]): void {
+  for (const bug of bugs) {
+    if (bug.deadFrames > 0) {
+      continue;
+    }
+
+    if (collide(bullet.position, bug.position)) {
+      bullet.dead = true;
+      bug.deadFrames = 75;
+
+      soundBoom.rewind();
+      soundBoom.play();
+      return;
+    }
+  }
+}
+
+/** One tick of a bug: dying, waiting to spawn, flying its pattern, or leaving. */
+function updateBug(bug: Entity): void {
+  if (bug.deadFrames > 0) {
+    bug.deadFrames--;
+    if (bug.deadFrames === 0) {
+      bug.dead = true;
+    }
+    return;
+  }
+
+  if (bug.duration < 0) {
+    bug.duration += bug.durationStep;
+    return;
+  }
+
+  bug.previousPosition = bug.position;
+  if (bug.duration > 1) {
+    bug.position = sub(bug.position, { x: 0, y: 2.5 });
+  } else {
+    // Every bug is built with a pattern; only the player has none.
+    if (bug.pattern === null) throw new Error("bug without pattern");
+    bug.position = bug.pattern(bug.duration);
+    bug.duration += bug.durationStep;
+  }
+
+  bug.direction = sub(bug.position, bug.previousPosition);
+
+  if (bug.position.y < 0) {
+    bug.dead = true;
+  }
+}
+
 /** Both axes strictly closer than one tile. */
 export function collide(a: Vec, b: Vec): boolean {
   return Math.abs(a.x - b.x) < tileSize && Math.abs(a.y - b.y) < tileSize;
@@ -390,19 +410,19 @@ export function collide(a: Vec, b: Vec): boolean {
 export const radToDeg = 57.29577951308232;
 
 /** Sprite-sheet row (per 90°) and column (per 15°) for an angle in degrees. */
-export function frameAngle(angle: number): [row: number, col: number] {
-  const row = Math.trunc(angle / 90);
-  const col = Math.trunc((angle % 90) / 15);
+export function frameAngle(degrees: number): [row: number, col: number] {
+  const row = Math.trunc(degrees / 90);
+  const col = Math.trunc((degrees % 90) / 15);
   return [row, col];
 }
 
 /** Heading in degrees clockwise from up, in [0, 360). Draw-only (fact 3). */
-export function angle(direction: Vec): number {
-  if (direction.x === 0 && direction.y === 0) {
+export function angle(heading: Vec): number {
+  if (heading.x === 0 && heading.y === 0) {
     return 0;
   }
 
-  let a = Math.atan2(direction.y, direction.x) * radToDeg;
+  let a = Math.atan2(heading.y, heading.x) * radToDeg;
   a += 90;
 
   if (a < 0) {

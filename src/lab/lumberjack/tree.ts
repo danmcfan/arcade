@@ -96,9 +96,8 @@ export class Tree {
   pivotX(): number {
     if (this.shakeRight) {
       return pivotXRight;
-    } else {
-      return pivotXLeft;
     }
+    return pivotXLeft;
   }
 
   update(): void {

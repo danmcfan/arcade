@@ -41,22 +41,7 @@ export class Lumberjack implements Scene {
       // 80 per swing), re-triggering the shake each tick. Health is not
       // clamped and a tree at <= 0 still collides (D11).
       if (overlaps(player.actionHitbox(), tree.hitbox()) && player.acting && player.frameX === 2) {
-        const [overlapX, overlapY] = resolve(player.actionHitbox(), tree.hitbox());
-        if (overlapX < 0) {
-          tree.shake(true);
-          tree.health -= 10;
-        } else if (overlapX > 0) {
-          tree.shake(false);
-          tree.health -= 10;
-        }
-
-        if (overlapY < 0) {
-          tree.shake(true);
-          tree.health -= 10;
-        } else if (overlapY > 0) {
-          tree.shake(false);
-          tree.health -= 10;
-        }
+        chop(tree, player);
       }
 
       tree.update();
@@ -133,4 +118,24 @@ export class Lumberjack implements Scene {
 /** Go `NewGame()`. */
 export function newGame(): Lumberjack {
   return new Lumberjack();
+}
+
+/** One tick of an overlapping swing: shake and damage `tree` once per overlapping axis. */
+function chop(tree: Tree, player: Player): void {
+  const [overlapX, overlapY] = resolve(player.actionHitbox(), tree.hitbox());
+  if (overlapX < 0) {
+    tree.shake(true);
+    tree.health -= 10;
+  } else if (overlapX > 0) {
+    tree.shake(false);
+    tree.health -= 10;
+  }
+
+  if (overlapY < 0) {
+    tree.shake(true);
+    tree.health -= 10;
+  } else if (overlapY > 0) {
+    tree.shake(false);
+    tree.health -= 10;
+  }
 }

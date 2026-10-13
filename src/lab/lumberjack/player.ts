@@ -120,11 +120,31 @@ export class Player {
 
   /** Go `Player.Update(i)`; `trees` is the package global Go reads (`player.go:181`). */
   update(i: LumberjackInput, trees: readonly Tree[]): void {
-    if (i.up || i.down || i.left || i.right) {
-      this.moving = true;
-    } else {
-      this.moving = false;
+    this.updateAction(i);
+    this.move(i);
+
+    for (const tree of trees) {
+      if (overlaps(this.hitbox(), tree.hitbox())) {
+        const [overlapX, overlapY] = resolve(this.hitbox(), tree.hitbox());
+        this.positionX += overlapX;
+        this.positionY += overlapY;
+      }
     }
+
+    this.frameY = facingRows[this.direction];
+    if (this.moving) {
+      this.frameY += 3;
+    }
+    if (this.acting) {
+      this.frameY += 32;
+    }
+
+    this.advanceFrame();
+  }
+
+  /** Set `moving` and `acting`; starting a swing restarts the animation. */
+  private updateAction(i: LumberjackInput): void {
+    this.moving = i.up || i.down || i.left || i.right;
 
     if (i.space && !this.moving) {
       if (!this.acting) {
@@ -135,17 +155,17 @@ export class Player {
     } else {
       this.acting = false;
     }
+  }
 
+  /**
+   * Every held direction applies, in this order; Up+Down cancel out and the
+   * facing is the last one applied.
+   */
+  private move(i: LumberjackInput): void {
     const vertical = i.up || i.down;
     const horizontal = i.left || i.right;
+    const speed = vertical && horizontal ? baseSpeed * 0.75 : baseSpeed;
 
-    let speed = baseSpeed;
-    if (vertical && horizontal) {
-      speed = baseSpeed * 0.75;
-    }
-
-    // Every held direction applies, in this order; Up+Down cancel out and the
-    // facing is the last one applied.
     if (i.up) {
       this.direction = "UP";
       this.positionY -= speed;
@@ -162,38 +182,9 @@ export class Player {
       this.direction = "RIGHT";
       this.positionX += speed;
     }
+  }
 
-    for (const tree of trees) {
-      if (overlaps(this.hitbox(), tree.hitbox())) {
-        const [overlapX, overlapY] = resolve(this.hitbox(), tree.hitbox());
-        this.positionX += overlapX;
-        this.positionY += overlapY;
-      }
-    }
-
-    switch (this.direction) {
-      case "UP":
-        this.frameY = 2;
-        break;
-      case "DOWN":
-        this.frameY = 0;
-        break;
-      case "LEFT":
-        this.frameY = 1;
-        break;
-      case "RIGHT":
-        this.frameY = 1;
-        break;
-    }
-
-    if (this.moving) {
-      this.frameY += 3;
-    }
-
-    if (this.acting) {
-      this.frameY += 32;
-    }
-
+  private advanceFrame(): void {
     this.frameCounter++;
     if (this.frameCounter >= this.frameInterval) {
       this.frameCounter = 0;
@@ -228,3 +219,6 @@ export class Player {
     }
   }
 }
+
+/** The sprite-sheet row for standing still facing each direction. */
+const facingRows: Readonly<Record<Direction, number>> = { UP: 2, DOWN: 0, LEFT: 1, RIGHT: 1 };

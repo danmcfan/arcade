@@ -39,6 +39,28 @@ function at(rows: Rows, x: number, y: number): string {
   return rows[y]?.[x] ?? empty;
 }
 
+/** The width of the first row: every art source has at least one. */
+function widthOf(rows: Rows): number {
+  const first = rows[0];
+  if (first === undefined) throw new Error("art has no rows");
+  return first.length;
+}
+
+/** A corner takes its two edge neighbours' colour where they match and the opposite ones don't. */
+function epxCorner(p: string, edge1: string, edge2: string, opposite1: string, opposite2: string): string {
+  return edge1 === edge2 && edge1 !== opposite1 && edge2 !== opposite2 ? edge2 : p;
+}
+
+/** Scale2x's 2×2 block for the pixel at (x, y): top-left, top-right, bottom-left, bottom-right. */
+function epxBlock(rows: Rows, x: number, y: number): [string, string, string, string] {
+  const p = at(rows, x, y);
+  const a = at(rows, x, y - 1);
+  const b = at(rows, x + 1, y);
+  const c = at(rows, x - 1, y);
+  const d = at(rows, x, y + 1);
+  return [epxCorner(p, c, a, d, b), epxCorner(p, a, b, c, d), epxCorner(p, d, c, b, a), epxCorner(p, b, d, a, c)];
+}
+
 /**
  * Scale2x (EPX): each pixel becomes 2×2, and a corner takes a neighbour's
  * colour where two neighbours meet along a diagonal edge. Outside is blank.
@@ -49,13 +71,9 @@ export function scale2x(rows: Rows): string[] {
     let top = "";
     let bottom = "";
     for (let x = 0; x < row.length; x++) {
-      const p = at(rows, x, y);
-      const a = at(rows, x, y - 1);
-      const b = at(rows, x + 1, y);
-      const c = at(rows, x - 1, y);
-      const d = at(rows, x, y + 1);
-      top += (c === a && c !== d && a !== b ? a : p) + (a === b && a !== c && b !== d ? b : p);
-      bottom += (d === c && d !== b && c !== a ? c : p) + (b === d && b !== a && d !== c ? d : p);
+      const [tl, tr, bl, br] = epxBlock(rows, x, y);
+      top += tl + tr;
+      bottom += bl + br;
     }
     out.push(top, bottom);
   });
@@ -69,7 +87,7 @@ export function scale2x(rows: Rows): string[] {
  */
 export function rotate(rows: Rows, degrees: number): string[] {
   const h = rows.length;
-  const w = rows[0]!.length;
+  const w = widthOf(rows);
   const quarter = degrees % 90 === 0;
   const scale = quarter ? 1 : 8;
   const src = quarter ? rows : scale2x(scale2x(scale2x(rows)));
@@ -99,7 +117,7 @@ export function mirrorQuarter(quarter: Rows): string[] {
 
 /** One frame per heading: row r, column c is the source turned (r × 90 + c × 15)°. */
 export function rotationSheet(rows: Rows): PNG {
-  const w = rows[0]!.length;
+  const w = widthOf(rows);
   const h = rows.length;
   const png = blank(w * rotationColumns, h * rotationRows);
   for (let r = 0; r < rotationRows; r++) {
@@ -111,10 +129,14 @@ export function rotationSheet(rows: Rows): PNG {
 }
 
 export function renderHit(): PNG {
-  const frames = hitQuarters.map(mirrorQuarter);
-  const size = frames[0]!.length;
+  const frames = hitQuarters.map((q) => mirrorQuarter(q));
+  const first = frames[0];
+  if (first === undefined) throw new Error("hitQuarters is empty");
+  const size = first.length;
   const png = blank(size * frames.length, size);
-  frames.forEach((rows, i) => paint(png, rows, sweetie, i * size, 0));
+  frames.forEach((rows, i) => {
+    paint(png, rows, sweetie, i * size, 0);
+  });
   return png;
 }
 
@@ -126,17 +148,25 @@ const bayer = [
   [15, 7, 13, 5],
 ];
 
+function bayerAt(x: number, y: number): number {
+  const t = bayer[y % 4]?.[x % 4];
+  if (t === undefined) throw new Error(`no Bayer threshold at (${x}, ${y})`);
+  return t;
+}
+
 /** The sky colour at (x, y): the stop above, or the next one where the dither says so. */
 export function skyColor(x: number, y: number): SweetieLetter {
   for (let i = skyStops.length - 1; i >= 0; i--) {
-    const stop = skyStops[i]!;
-    if (y < stop.y) continue;
+    const stop = skyStops[i];
+    if (stop === undefined || y < stop.y) continue;
     const next = skyStops[i + 1];
     if (next === undefined) return stop.color;
     const t = (y - stop.y) / (next.y - stop.y);
-    return t * 16 > bayer[y % 4]![x % 4]! + 0.5 ? next.color : stop.color;
+    return t * 16 > bayerAt(x, y) + 0.5 ? next.color : stop.color;
   }
-  return skyStops[0]!.color;
+  const first = skyStops[0];
+  if (first === undefined) throw new Error("skyStops is empty");
+  return first.color;
 }
 
 export function renderBackground(): PNG {
@@ -148,7 +178,7 @@ export function renderBackground(): PNG {
     const rows = starArt[kind];
     paint(png, rows, sweetie, x - Math.trunc(rows[0].length / 2), y - Math.trunc(rows.length / 2));
   }
-  const tileW = grassTile[0]!.length;
+  const tileW = widthOf(grassTile);
   for (let ox = 0; ox < backgroundWidth; ox += tileW)
     paint(png, grassTile, sweetie, ox, backgroundHeight - grassTile.length);
   return png;

@@ -2,13 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { imageCabinetBrassMonkey, imageGnome, imageWorkshop } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { DrawOpts, Surface } from "../engine/surface.ts";
+import type { DrawOpts } from "../engine/surface.ts";
+import { defined } from "../engine/defined.testutil.ts";
+import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
+import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { createBrassMonkey } from "./index.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
-const snap = (g: ReturnType<typeof createBrassMonkey>) => g.snapshot() as BrassMonkeySnapshot;
+const snap = (g: ReturnType<typeof createBrassMonkey>): BrassMonkeySnapshot => brassMonkeySnapshot(g.snapshot());
 
 describe("BrassMonkeySoftware", () => {
   test("is the brassMonkey software on the workshop background, never over, scoreless", () => {
@@ -110,7 +113,7 @@ function record(
   const calls: DrawCall[] = [];
   const fills: Fill[] = [];
   const order: string[] = [];
-  const fake: Pick<Surface, "draw" | "fillRect"> = {
+  const fake = stubSurface({
     draw: (sprite, x, y, opts) => {
       calls.push({ sprite, x, y, opts });
       order.push("draw");
@@ -119,8 +122,8 @@ function record(
       fills.push([x, y, w, h, css]);
       order.push("fill");
     },
-  };
-  g.draw(fake as Surface, buffer);
+  });
+  g.draw(fake, buffer);
   return { calls, fills, order };
 }
 
@@ -128,7 +131,7 @@ function drawCalls(g: ReturnType<typeof createBrassMonkey>): DrawCall[] {
   return record(g).calls;
 }
 
-const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
+const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 
 describe("brassMonkey draw", () => {
   test("cabinet, 16 px workshop-dark bands above and below, workshop centred in the screen, then the gnome", () => {
@@ -152,7 +155,7 @@ describe("brassMonkey draw", () => {
   test("the cabinet shows the joystick frame of the last input", () => {
     const g = createBrassMonkey();
     g.update(held({ down: true }));
-    expect(rect(drawCalls(g)[0]!.sprite)).toEqual([2 * 336, 0, 336, 428]);
+    expect(rect(defined(drawCalls(g)[0]).sprite)).toEqual([2 * 336, 0, 336, 428]);
   });
 
   test("frames 0,1,2,3 map to sheet columns 0,1,0,2", () => {

@@ -9,7 +9,8 @@ import {
 } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
-import type { Surface } from "../engine/surface.ts";
+import { defined } from "../engine/defined.testutil.ts";
+import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { FireflySoftware } from "./game.ts";
 
 interface DrawCall {
@@ -22,16 +23,16 @@ interface DrawCall {
 /** Firefly is a FixedViewport: drawn with buffer 0, the playfield at the cabinet insets (56, 56). */
 function drawCalls(f: FireflySoftware, buffer = 0): DrawCall[] {
   const calls: DrawCall[] = [];
-  const fake: Pick<Surface, "draw"> = {
+  const fake = stubSurface({
     draw: (sprite, x, y) => {
       calls.push({ sprite, x, y });
     },
-  };
-  f.draw(fake as Surface, buffer);
+  });
+  f.draw(fake, buffer);
   return calls;
 }
 
-const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
+const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 
 describe("firefly draw", () => {
   test("cabinet at 0,0, the night sky inside the insets, the firefly centred on its position; Moths at the origin are culled", () => {
@@ -47,7 +48,7 @@ describe("firefly draw", () => {
   test("the cabinet shows the joystick frame of the last input", () => {
     const f = new FireflySoftware();
     f.update({ ...NO_INPUT, left: true });
-    expect(rect(drawCalls(f)[0]!.sprite)).toEqual([3 * 336, 0, 336, 428]);
+    expect(rect(defined(drawCalls(f)[0]).sprite)).toEqual([3 * 336, 0, 336, 428]);
   });
 
   test("sparks draw with their top-left at their position (they are 0×0)", () => {

@@ -79,8 +79,8 @@ export class Grid {
       const cells: Cell[] = [];
       for (let y = 0; y < height; y++) cells.push({ possible: [], collapsed: false });
       this.cells.push(cells);
-      this.entropy.push(new Array<number>(height).fill(0));
-      this.bucketIndex.push(new Array<number>(height).fill(0));
+      this.entropy.push(Array.from({ length: height }, () => 0));
+      this.bucketIndex.push(Array.from({ length: height }, () => 0));
     }
     this.reset();
   }
@@ -183,21 +183,7 @@ export class Grid {
         continue;
       }
 
-      let nDirection = -1;
-      switch (direction) {
-        case 0:
-          nDirection = 2;
-          break;
-        case 1:
-          nDirection = 3;
-          break;
-        case 2:
-          nDirection = 0;
-          break;
-        case 3:
-          nDirection = 1;
-          break;
-      }
+      const nDirection = oppositeDirection(direction);
 
       const newPossible = at(this.constraints, value, nDirection);
 
@@ -254,5 +240,21 @@ export class Grid {
     const row = this.entropy[x];
     if (row === undefined) throw new Error(`index out of range [${x}]`);
     row[y] = v;
+  }
+}
+
+/** The direction facing back at `direction` (0 up, 1 right, 2 down, 3 left); -1 for any other value. */
+function oppositeDirection(direction: number): number {
+  switch (direction) {
+    case 0:
+      return 2;
+    case 1:
+      return 3;
+    case 2:
+      return 0;
+    case 3:
+      return 1;
+    default:
+      return -1;
   }
 }

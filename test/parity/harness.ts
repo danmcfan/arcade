@@ -17,7 +17,7 @@ import type { Scene, SceneName } from "../../src/game/software.ts";
 import type { SceneSnapshot } from "../../src/game/snapshot.ts";
 import { inputPath, loadScript, readTrace, repoRoot, tracePath } from "./fixtures.ts";
 
-export { fixturesDir, inputPath, loadScript, parseTrace, readTrace, tracePath } from "./fixtures.ts";
+export { fixturesDir, inputPath, loadScript, readTrace, tracePath } from "./fixtures.ts";
 
 /** How scenes are built; the default is the real registry. */
 export type SceneFactory = (name: SceneName, opts: SceneOptions) => Scene;
@@ -53,35 +53,37 @@ function keyPath(base: string, key: string): string {
  * at `<path>.length`.
  */
 export function diff(expected: unknown, actual: unknown, path = ""): Divergence | null {
-  const ke = kind(expected);
-  const ka = kind(actual);
-  if (ke !== ka) return { path, expected, actual };
-  if (ke === "array") {
-    const e = expected as unknown[];
-    const a = actual as unknown[];
-    const n = Math.min(e.length, a.length);
-    for (let i = 0; i < n; i++) {
-      const d = diff(e[i], a[i], `${path}[${i}]`);
-      if (d) return d;
-    }
-    if (e.length !== a.length) return { path: `${path}.length`, expected: e.length, actual: a.length };
-    return null;
-  }
-  if (ke === "object") {
-    const e = expected as Record<string, unknown>;
-    const a = actual as Record<string, unknown>;
-    for (const key of Object.keys(e)) {
-      if (e[key] === undefined && a[key] === undefined) continue;
-      const d = diff(e[key], a[key], keyPath(path, key));
-      if (d) return d;
-    }
-    for (const key of Object.keys(a)) {
-      if (a[key] === undefined || key in e) continue;
-      return { path: keyPath(path, key), expected: undefined, actual: a[key] };
-    }
-    return null;
-  }
+  if (kind(expected) !== kind(actual)) return { path, expected, actual };
+  if (Array.isArray(expected) && Array.isArray(actual)) return diffArray(expected, actual, path);
+  if (isObject(expected) && isObject(actual)) return diffObject(expected, actual, path);
   return expected === actual ? null : { path, expected, actual };
+}
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return kind(v) === "object";
+}
+
+function diffArray(e: readonly unknown[], a: readonly unknown[], path: string): Divergence | null {
+  const n = Math.min(e.length, a.length);
+  for (let i = 0; i < n; i++) {
+    const d = diff(e[i], a[i], `${path}[${i}]`);
+    if (d) return d;
+  }
+  if (e.length !== a.length) return { path: `${path}.length`, expected: e.length, actual: a.length };
+  return null;
+}
+
+function diffObject(e: Record<string, unknown>, a: Record<string, unknown>, path: string): Divergence | null {
+  for (const key of Object.keys(e)) {
+    if (e[key] === undefined && a[key] === undefined) continue;
+    const d = diff(e[key], a[key], keyPath(path, key));
+    if (d) return d;
+  }
+  for (const key of Object.keys(a)) {
+    if (a[key] === undefined || key in e) continue;
+    return { path: keyPath(path, key), expected: undefined, actual: a[key] };
+  }
+  return null;
 }
 
 /**
@@ -125,7 +127,7 @@ export function compareTrace(
   trace: readonly unknown[],
   create: SceneFactory = createScene,
 ): Mismatch | null {
-  let mismatch: Mismatch | null = null;
+  const mismatches: Mismatch[] = [];
   let ticks = 0;
   replayEach(
     script,
@@ -134,13 +136,14 @@ export function compareTrace(
       if (k >= trace.length) return true;
       const d = diff(trace[k], snapshot);
       if (d) {
-        mismatch = { tick: k + 1, ...d };
+        mismatches.push({ tick: k + 1, ...d });
         return false;
       }
       return true;
     },
     create,
   );
+  const [mismatch] = mismatches;
   if (mismatch) return mismatch;
   if (ticks !== trace.length) return { tick: 0, path: "(trace length)", expected: trace.length, actual: ticks };
   return null;
@@ -167,18 +170,19 @@ const PARITY_TIMEOUT_MS = 120_000;
  * naming the missing file(s), until the golden fixtures exist.
  */
 export function parityTest(scenario: string): void {
-  const files = [inputPath(scenario), tracePath(scenario)];
+  const input = inputPath(scenario);
+  const trace = tracePath(scenario);
+  const files = [input, trace];
   const missing = files.filter((f) => !existsSync(f)).map((f) => relative(repoRoot, f));
   if (missing.length > 0) {
     const why = `missing ${missing.join(", ")}`;
-    console.warn(`[skip] parity ${scenario}: ${why}`);
+    process.stderr.write(`[skip] parity ${scenario}: ${why}\n`);
     test.skip(`${scenario} (skipped: ${why})`, () => {});
     return;
   }
   test(
     scenario,
     () => {
-      const [input, trace] = files as [string, string];
       const m = compareTrace(loadScript(input), readTrace(trace));
       if (m) throw new Error(formatMismatch(scenario, m));
     },

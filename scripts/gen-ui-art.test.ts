@@ -81,11 +81,11 @@ describe("UI art source", () => {
         checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
     }
     const sheet = playerSheetRows();
-    expect([sheet[0]!.length, sheet.length]).toEqual([images.player.width, images.player.height]);
+    expect([sheet[0]?.length, sheet.length]).toEqual([images.player.width, images.player.height]);
   });
 
   test("every prize decoration is rows of one width, in Sweetie 16 letters and ., and every prize has one", () => {
-    expect(Object.keys(prizeArt).sort()).toEqual(prizes.map((p) => p.id).sort());
+    expect(Object.keys(prizeArt).toSorted()).toEqual(prizes.map((p) => p.id).toSorted());
     for (const [id, rows] of Object.entries(prizeArt)) checkRows(id, rows);
   });
 

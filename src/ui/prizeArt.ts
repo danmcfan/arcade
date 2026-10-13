@@ -6,6 +6,7 @@
 // the sheet from here (src/arcade/prizes.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
+import { stripRects } from "./strip.ts";
 
 export const prizeArt = {
   /** A jar of honey with a red lid: stands on the floor left of the Sweet Sam cabinet. */
@@ -42,15 +43,10 @@ export const prizeArt = {
 const prizeGap = 1;
 
 /** Each decoration's rectangle in prizes.png (top row 0). */
-export const prizeRects: Readonly<Record<PrizeId, { x: number; w: number; h: number }>> = (() => {
-  let x = 0;
-  const rects = {} as Record<PrizeId, { x: number; w: number; h: number }>;
-  for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
-    rects[id] = { x, w: rows[0]!.length, h: rows.length };
-    x += rows[0]!.length + prizeGap;
-  }
-  return rects;
-})();
+export const prizeRects: Readonly<Record<PrizeId, { x: number; w: number; h: number }>> = stripRects(
+  prizeArt,
+  prizeGap,
+);
 
 export const prizeSheetWidth = Object.values(prizeRects).reduce((w, r) => Math.max(w, r.x + r.w), 0);
 export const prizeSheetHeight = Math.max(...Object.values(prizeRects).map((r) => r.h));

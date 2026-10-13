@@ -7,11 +7,12 @@
 // and lets the bees end a free play. Part 4 records a full Sweet Sam payout
 // in real time. Frames and the video go to out/verify/economy/.
 
-import type { GameSnapshot, TitleSnapshot } from "../../src/game/snapshot.ts";
+import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import type { InputScript } from "../../src/game/script.ts";
 import { saveKey } from "../../src/title/save.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
-import { verify, type Verify } from "../harness.ts";
+import { isRecord } from "../browser.ts";
+import { evalJson, isGameSnapshot, isStringArray, isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -23,15 +24,22 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 /** The Game inside the title scene. */
 function game(v: Verify): GameSnapshot {
-  const g = v.snapshot<TitleSnapshot>().game;
+  const g = v.snapshot(isTitleSnapshot).game;
   if (g === null) throw new Error("no game running");
   return g;
 }
 
-function stored(v: Verify): { v: number; tokens: number; tickets: number } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
-    typeof stored
-  >;
+type Stored = { v: number; tokens: number; tickets: number } | null;
+
+function isStored(x: unknown): x is Stored {
+  return (
+    x === null ||
+    (isRecord(x) && typeof x["v"] === "number" && typeof x["tokens"] === "number" && typeof x["tickets"] === "number")
+  );
+}
+
+function stored(v: Verify): Stored {
+  return evalJson(v.page, `localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`, isStored);
 }
 
 /** From the hub start position: walk up to the Sweet Sam cabinet and press Space. */
@@ -65,10 +73,15 @@ function pauseMenu(v: Verify): void {
   );
   check(stored(v)?.v === 3 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 3)", stored(v));
   v.step(150, { left: true });
+  minigamePauseMenu(v);
+  quitGame(v);
+}
 
+/** In a paid Sweet Sam run: Esc, Controls, Resume and a second Esc. */
+function minigamePauseMenu(v: Verify): void {
   v.tap("escape");
-  const t = v.snapshot<TitleSnapshot>();
-  g = game(v);
+  const t = v.snapshot(isTitleSnapshot);
+  let g = game(v);
   check(
     t.phase === "playing" && g.menu === "paused" && g.cursor === 0,
     "Esc in Sweet Sam opens the minigame pause menu (not the hub pause menu)",
@@ -96,13 +109,16 @@ function pauseMenu(v: Verify): void {
   v.tap("escape");
   v.tap("escape");
   check(game(v).menu === null, "a second Esc resumes too");
+}
 
+/** Quit game from the minigame pause menu: back in the hub, the token spent, no tickets. */
+function quitGame(v: Verify): void {
   v.tap("escape");
   v.tap("down");
   v.tap("down");
   v.frame("4-quit-game-no-tickets");
   v.tap("space");
-  g = game(v);
+  const g = game(v);
   check(g.software === null && g.menu === null && g.payout === null, "Quit game returns to the hub with no payout", g);
   check(
     g.arcade.tokens === 4 && g.arcade.tickets === 0,
@@ -112,7 +128,7 @@ function pauseMenu(v: Verify): void {
   check(stored(v)?.tokens === 4 && stored(v)?.tickets === 0, "Quit game saves");
   v.frame("5-hub-after-quit");
   v.tap("escape");
-  check(v.snapshot<TitleSnapshot>().phase === "paused", "back in the hub, Esc opens the hub pause menu");
+  check(v.snapshot(isTitleSnapshot).phase === "paused", "back in the hub, Esc opens the hub pause menu");
 }
 
 /** The hive-highscore fixture up to `tick` (its run ends at 2871 with 560 points). */
@@ -139,14 +155,14 @@ function payout(v: Verify): void {
   console.log("payout (hive-highscore run, 560 points):");
   v.openHook("scene=game");
   loadHighscore(v, 2870);
-  let g = v.snapshot<GameSnapshot>();
+  let g = v.snapshot(isGameSnapshot);
   check(
     g.software === "hive" && g.menu === null && g.arcade.tokens === 4 && g.arcade.tickets === 0,
     "one tick before the run ends: a paid Sweet Sam run",
     g.arcade,
   );
   v.step(1, { up: true });
-  g = v.snapshot<GameSnapshot>();
+  g = v.snapshot(isGameSnapshot);
   check(g.menu === "payout" && g.software === "hive", "game over opens the payout over the last frame", g.menu);
   check(g.arcade.highScore === 560, "the high score is updated", g.arcade.highScore);
   check(
@@ -155,8 +171,13 @@ function payout(v: Verify): void {
     g.payout,
   );
   v.frame("6-payout-open");
+  payoutCount(v);
+}
+
+/** The payout counts up, Space skips to the totals, Space again closes it. */
+function payoutCount(v: Verify): void {
   v.step(25);
-  g = v.snapshot<GameSnapshot>();
+  let g = v.snapshot(isGameSnapshot);
   check(
     g.payout?.score === 460 && g.payout.tickets === 1,
     "the score spins down by 100 as the tickets spin up by 1",
@@ -166,11 +187,11 @@ function payout(v: Verify): void {
   v.page.eval("window.__arcade.sounds()");
   v.step(20);
   check(
-    JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")).includes("play:ticket"),
+    evalJson(v.page, "JSON.stringify(window.__arcade.sounds())", isStringArray).includes("play:ticket"),
     "each ticket plays the ticket sound",
   );
   v.tap("space");
-  g = v.snapshot<GameSnapshot>();
+  g = v.snapshot(isGameSnapshot);
   check(
     g.menu === "payout" && g.payout?.score === 0 && g.payout.tickets === 5 && !g.payout.counting,
     "Space skips to the totals",
@@ -178,7 +199,7 @@ function payout(v: Verify): void {
   );
   v.frame("8-payout-totals");
   v.tap("space");
-  g = v.snapshot<GameSnapshot>();
+  g = v.snapshot(isGameSnapshot);
   check(g.software === null && g.menu === null, "Space again returns to the hub");
   check(
     g.arcade.tickets === 5 && g.arcade.tokens === 4,
@@ -252,7 +273,7 @@ function recordPayout(v: Verify): void {
     },
     { scene: "game" },
   );
-  const g = v.snapshot<GameSnapshot>();
+  const g = v.snapshot(isGameSnapshot);
   check(
     g.software === null && g.arcade.tickets === 5,
     "the recording ran the payout to the hub with 5 tickets",

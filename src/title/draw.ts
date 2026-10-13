@@ -64,18 +64,17 @@ export function draw(screen: Surface, t: Title): void {
       drawIntro(screen, t);
       return;
     case "playing":
-      t.game!.draw(screen);
+      t.hostedGame().draw(screen);
       return;
     case "paused":
-      t.game!.draw(screen);
+      t.hostedGame().draw(screen);
       dimHub(screen);
       drawPausePanel(screen, t.items(), t.cursor, t.tick, centre, 56);
       return;
     case "controls":
-      t.game!.draw(screen);
+      t.hostedGame().draw(screen);
       dimHub(screen);
       drawControlsPanel(screen, controls, 4, 40);
-      return;
   }
 }
 
@@ -88,7 +87,20 @@ function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
 }
 
-const logoLetterWidth = logoLetters["A"]![0]!.length;
+/** The rows of logo letter `ch`; every letter of `logoWord` has them. */
+function letterRows(ch: string): readonly string[] {
+  const rows = logoLetters[ch];
+  if (rows === undefined) throw new Error(`no logo letter "${ch}"`);
+  return rows;
+}
+
+function firstRowWidth(rows: readonly string[]): number {
+  const row = rows[0];
+  if (row === undefined) throw new Error("logo letter has no rows");
+  return row.length;
+}
+
+const logoLetterWidth = firstRowWidth(letterRows("A"));
 /** Ticks between the starts of two rainbow sweeps across the logo. */
 const sweepPeriod = 180;
 /** Ticks the sweep takes to cross the logo; it starts off the left edge. */
@@ -112,17 +124,17 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
   const band = sweepColours.length * stripeWidth;
   const span = imageLogo.w + 15 + band;
   const lead = phase < sweepTicks ? Math.trunc((phase * span) / sweepTicks) : -1;
-  [...logoWord].forEach((ch, i) => {
+  Array.from(logoWord).forEach((ch, i) => {
     const ox = i * (logoLetterWidth + logoGap);
     const x = left + ox;
     const y = top - logoBob(tick, i);
     screen.draw(sub(imageLogo, ox, 0, ox + logoLetterWidth + logoShadow[0], imageLogo.h), x, y);
     if (lead < 0) return;
-    logoLetters[ch]!.forEach((row, ry) => {
-      [...row].forEach((px, rx) => {
+    letterRows(ch).forEach((row, ry) => {
+      Array.from(row).forEach((px, rx) => {
         const d = lead - (ox + rx + ry);
-        if (px === "#" && d >= 0 && d < band)
-          screen.fillRect(x + rx, y + ry, 1, 1, sweepColours[Math.trunc(d / stripeWidth)]!);
+        const colour = sweepColours[Math.trunc(d / stripeWidth)];
+        if (px === "#" && d >= 0 && colour !== undefined) screen.fillRect(x + rx, y + ry, 1, 1, colour);
       });
     });
   });
@@ -134,7 +146,8 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
   drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
-  if (t.savedHighScore) drawTextCentered(screen, `HIGH SCORE ${t.savedHighScore}`, centre, 122, "orange");
+  const highScore = t.savedHighScore;
+  if (highScore !== null && highScore !== 0) drawTextCentered(screen, `HIGH SCORE ${highScore}`, centre, 122, "orange");
 }
 
 function drawMenu(screen: Surface, t: Title): void {
@@ -151,9 +164,9 @@ function drawConfirm(screen: Surface, t: Title): void {
   const x = centre - w / 2;
   const y = 40;
   drawPanel(screen, x, y, w, h);
-  confirmLines.forEach((line, i) =>
-    drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white"),
-  );
+  confirmLines.forEach((line, i) => {
+    drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
+  });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
   drawHints(screen, menuHints, hintsTop, centre);
 }
@@ -161,7 +174,9 @@ function drawConfirm(screen: Surface, t: Title): void {
 function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
-  introLines.forEach((line, i) => drawTextCentered(screen, line, centre, 26 + i * 10, "white"));
+  introLines.forEach((line, i) => {
+    drawTextCentered(screen, line, centre, 26 + i * 10, "white");
+  });
   drawControls(screen, controls, 12, 104, 86);
   if (blinkOn(t)) drawTextCentered(screen, "PRESS SPACE TO START", centre, 146, "yellow");
   drawHints(screen, backHints, hintsTop, centre);

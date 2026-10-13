@@ -8,6 +8,21 @@ export interface Browser {
   eval(js: string): string;
 }
 
+/** A non-null object, so its keys can be read. */
+export function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object";
+}
+
+/** Unwrap agent-browser's `--json` envelope (`{ success, data: { result } }`) to the eval result. */
+function pick(v: unknown): unknown {
+  if (isRecord(v)) {
+    if (v["success"] === false) throw new Error(`eval failed: ${JSON.stringify(v["error"] ?? v)}`);
+    if ("data" in v) return pick(v["data"]);
+    if ("result" in v) return v["result"];
+  }
+  return v;
+}
+
 export function browser(session: string): Browser {
   const run = (...args: string[]): string => {
     const r = Bun.spawnSync(["agent-browser", "--session", session, ...args], { stdout: "pipe", stderr: "pipe" });
@@ -21,15 +36,6 @@ export function browser(session: string): Browser {
     eval(js) {
       const out = run("--json", "eval", "-b", Buffer.from(js).toString("base64")).trim();
       const parsed: unknown = JSON.parse(out);
-      const pick = (v: unknown): unknown => {
-        if (v !== null && typeof v === "object") {
-          const o = v as Record<string, unknown>;
-          if (o["success"] === false) throw new Error(`eval failed: ${JSON.stringify(o["error"] ?? o)}`);
-          if ("data" in o) return pick(o["data"]);
-          if ("result" in o) return o["result"];
-        }
-        return v;
-      };
       const result = pick(parsed);
       return typeof result === "string" ? result : JSON.stringify(result);
     },
@@ -37,7 +43,7 @@ export function browser(session: string): Browser {
 }
 
 export function decodeDataUrl(url: string): Buffer {
-  const m = /^data:image\/png;base64,(.*)$/.exec(url);
-  if (!m?.[1]) throw new Error(`not a PNG data URL: ${url.slice(0, 40)}...`);
-  return Buffer.from(m[1], "base64");
+  const data = /^data:image\/png;base64,(.*)$/u.exec(url)?.[1];
+  if (data === undefined || data === "") throw new Error(`not a PNG data URL: ${url.slice(0, 40)}...`);
+  return Buffer.from(data, "base64");
 }

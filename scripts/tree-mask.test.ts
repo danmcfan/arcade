@@ -18,7 +18,7 @@ function tree(over: Partial<LumberjackTreeSnapshot>): LumberjackTreeSnapshot {
 }
 
 // Opaque texel block u in [10, 30), v in [10, 30). Tree minX = 96, minY = 32.
-const block = (u: number, v: number) => u >= 10 && u < 30 && v >= 10 && v < 30;
+const block = (u: number, v: number): boolean => u >= 10 && u < 30 && v >= 10 && v < 30;
 
 function masked(trees: LumberjackTreeSnapshot[]): Set<string> {
   return new Set(treeTopEdgeMasks(trees, block, 512, 288).map((m) => `${m.x},${m.y}`));
@@ -69,8 +69,8 @@ describe("lumberjackTrees", () => {
   });
 
   test("throws on a snapshot that is not lumberjack-shaped", () => {
-    expect(() => lumberjackTrees({ tick: 3, rng: 1, sw: {} })).toThrow(/trees/);
-    expect(() => lumberjackTrees({ trees: [{ x: 1, y: 2 }] })).toThrow(/trees\[0\]/);
+    expect(() => lumberjackTrees({ tick: 3, rng: 1, sw: {} })).toThrow(/trees/u);
+    expect(() => lumberjackTrees({ trees: [{ x: 1, y: 2 }] })).toThrow(/trees\[0\]/u);
     expect(() => lumberjackTrees(null)).toThrow();
   });
 });

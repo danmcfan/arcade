@@ -24,6 +24,8 @@ export function fnv1a32Bytes(data: Uint8Array): number {
 export function fnv1a32(values: readonly number[]): number {
   const buf = new Uint8Array(values.length * 4);
   const view = new DataView(buf.buffer);
-  values.forEach((v, i) => view.setUint32(i * 4, v >>> 0, true));
+  values.forEach((v, i) => {
+    view.setUint32(i * 4, v >>> 0, true);
+  });
   return fnv1a32Bytes(buf);
 }

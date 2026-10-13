@@ -7,9 +7,9 @@
 // counter in real time. Files go to out/verify/hub/.
 
 import { PNG } from "pngjs";
-import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import { decodeDataUrl } from "../browser.ts";
-import { verify, type Verify } from "../harness.ts";
+import type { GameSnapshot } from "../../src/game/snapshot.ts";
+import { isGameSnapshot, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -30,7 +30,12 @@ function canvas(v: Verify): PNG {
 
 function pixel(png: PNG, x: number, y: number): string {
   const i = (y * png.width + x) * 4;
-  return `#${[0, 1, 2].map((j) => png.data[i + j]!.toString(16).padStart(2, "0")).join("")}`;
+  const hex = [0, 1, 2].map((j) => {
+    const c = png.data[i + j];
+    if (c === undefined) throw new Error(`pixel (${x}, ${y}) is outside the ${png.width}x${png.height} canvas`);
+    return c.toString(16).padStart(2, "0");
+  });
+  return `#${hex.join("")}`;
 }
 
 /** Whether any key-cap edge pixel is on the canvas. */
@@ -55,7 +60,7 @@ function playerPixel(v: Verify, dx: number, dy: number): string {
 }
 
 function game(v: Verify): GameSnapshot {
-  return v.snapshot<GameSnapshot>();
+  return v.snapshot(isGameSnapshot);
 }
 
 function floorAndPlayer(v: Verify): void {

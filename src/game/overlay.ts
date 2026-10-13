@@ -97,7 +97,6 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       return;
     case "prizeCounter":
       drawPrizeCounter(screen, o.wallet, o.cursor, o.tick, centre, middle - counterHeight / 2);
-      return;
   }
 }
 

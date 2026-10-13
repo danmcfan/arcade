@@ -7,9 +7,10 @@
 // then finds the next token greyed out with the "no" sound. Part 3 records
 // both purchases in real time. Files go to out/verify/prize-counter/.
 
-import type { GameSnapshot, TitleSnapshot } from "../../src/game/snapshot.ts";
+import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import { saveKey } from "../../src/title/save.ts";
-import { verify, type Verify } from "../harness.ts";
+import { isRecord } from "../browser.ts";
+import { evalJson, isStringArray, isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -21,7 +22,7 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 /** The Game inside the title scene. */
 function game(v: Verify): GameSnapshot {
-  const g = v.snapshot<TitleSnapshot>().game;
+  const g = v.snapshot(isTitleSnapshot).game;
   if (g === null) throw new Error("no game running");
   return g;
 }
@@ -31,10 +32,14 @@ function wallet(v: Verify): { tokens: number; tickets: number } {
   return { tokens: a.tokens, tickets: a.tickets };
 }
 
-function stored(v: Verify): { tokens: number; tickets: number } | null {
-  return JSON.parse(v.page.eval(`localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`)) as ReturnType<
-    typeof stored
-  >;
+type Stored = { tokens: number; tickets: number } | null;
+
+function isStored(x: unknown): x is Stored {
+  return x === null || (isRecord(x) && typeof x["tokens"] === "number" && typeof x["tickets"] === "number");
+}
+
+function stored(v: Verify): Stored {
+  return evalJson(v.page, `localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`, isStored);
 }
 
 /** A save at the hub start position (80, 92), facing down. */
@@ -51,7 +56,7 @@ function continueWith(v: Verify, tokens: number, tickets: number): void {
 }
 
 function sounds(v: Verify): string[] {
-  return JSON.parse(v.page.eval("JSON.stringify(window.__arcade.sounds())")) as string[];
+  return evalJson(v.page, "JSON.stringify(window.__arcade.sounds())", isStringArray);
 }
 
 function normalPrice(v: Verify): void {
@@ -63,7 +68,12 @@ function normalPrice(v: Verify): void {
     wallet(v),
   );
   v.frame("1-hub-counter");
+  walkToCounter(v);
+  buyAtNormalPrice(v);
+}
 
+/** The counter is solid; walk round it to stand above it, facing it. */
+function walkToCounter(v: Verify): void {
   v.tap("space");
   check(game(v).menu === null, "Space at the start position (not at the counter) opens nothing", game(v).menu);
 
@@ -86,7 +96,10 @@ function normalPrice(v: Verify): void {
     "back above the counter, facing it",
     game(v).arcade.player,
   );
+}
 
+/** Open the menu, buy a token for 5 tickets, close it and Continue again. */
+function buyAtNormalPrice(v: Verify): void {
   v.tap("space");
   let g = game(v);
   check(
@@ -110,12 +123,12 @@ function normalPrice(v: Verify): void {
   v.tap("escape");
   g = game(v);
   check(
-    g.menu === null && v.snapshot<TitleSnapshot>().phase === "playing",
+    g.menu === null && v.snapshot(isTitleSnapshot).phase === "playing",
     "Esc closes the menu (not the hub pause menu)",
     g.menu,
   );
   v.tap("escape");
-  check(v.snapshot<TitleSnapshot>().phase === "paused", "the next Esc opens the hub pause menu");
+  check(v.snapshot(isTitleSnapshot).phase === "paused", "the next Esc opens the hub pause menu");
 
   v.openHook();
   v.tap("space"); // Continue
@@ -176,13 +189,25 @@ function buyOnVideo(v: Verify): void {
 
 function videos(v: Verify): void {
   console.log("videos:");
-  v.record("normal-price", () => buyOnVideo(v), { storage: { [saveKey]: save(2, 12) } });
+  v.record(
+    "normal-price",
+    () => {
+      buyOnVideo(v);
+    },
+    { storage: { [saveKey]: save(2, 12) } },
+  );
   check(
     JSON.stringify(wallet(v)) === '{"tokens":4,"tickets":2}',
     "the normal-price video bought two tokens: 4 tokens, 2 tickets",
     wallet(v),
   );
-  v.record("last-chance", () => buyOnVideo(v), { storage: { [saveKey]: save(0, 3) } });
+  v.record(
+    "last-chance",
+    () => {
+      buyOnVideo(v);
+    },
+    { storage: { [saveKey]: save(0, 3) } },
+  );
   check(
     JSON.stringify(wallet(v)) === '{"tokens":1,"tickets":0}',
     "the last-chance video bought one token for all 3 tickets",

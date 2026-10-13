@@ -73,14 +73,16 @@ export const prizes: readonly Prize[] = [
   },
 ];
 
-const prizeIds: readonly string[] = prizes.map((p) => p.id);
+const prizeIds: ReadonlySet<string> = new Set(prizes.map((p) => p.id));
 
 export function isPrizeId(v: unknown): v is PrizeId {
-  return typeof v === "string" && prizeIds.includes(v);
+  return typeof v === "string" && prizeIds.has(v);
 }
 
 export function prize(id: PrizeId): Prize {
-  return prizes.find((p) => p.id === id)!;
+  const found = prizes.find((p) => p.id === id);
+  if (found === undefined) throw new Error(`prize: unknown prize id ${id}`);
+  return found;
 }
 
 /** `ids` without repeats, in catalogue order: how owned prizes are kept. */

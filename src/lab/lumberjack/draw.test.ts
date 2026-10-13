@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Sprite } from "../../engine/image.ts";
-import type { DrawOpts, Surface } from "../../engine/surface.ts";
+import { Surface, type DrawOpts } from "../../engine/surface.ts";
 import { createLumberjack } from "./index.ts";
 import { Player } from "./player.ts";
 import { Spritesheet } from "./sprite.ts";
@@ -34,16 +34,23 @@ interface DrawCall {
   opts: DrawOpts | undefined;
 }
 
+/** A canvas-less Surface that records `draw`, the only method the player uses (debug is off). */
+class DrawRecorder extends Surface {
+  readonly calls: DrawCall[] = [];
+
+  constructor() {
+    super(null, 0, 0);
+  }
+
+  override draw(s: Sprite, x: number, y: number, opts?: DrawOpts): void {
+    this.calls.push({ url: s.asset.url, sx: s.sx, sy: s.sy, x, y, opts });
+  }
+}
+
 /** Records `draw` calls; the only Surface method the player uses. */
 function recordingSurface(): { surface: Surface; calls: DrawCall[] } {
-  const calls: DrawCall[] = [];
-  const fake = {
-    draw(s: Sprite, x: number, y: number, opts?: DrawOpts): void {
-      calls.push({ url: s.asset.url, sx: s.sx, sy: s.sy, x, y, opts });
-    },
-  };
-  // A structural fake: Player.draw only calls `draw` (debug is off).
-  return { surface: fake as unknown as Surface, calls };
+  const surface = new DrawRecorder();
+  return { surface, calls: surface.calls };
 }
 
 describe("Player.draw", () => {
@@ -83,7 +90,9 @@ describe("Player.draw", () => {
   test("an out-of-range frame throws (Go would panic drawing a nil image)", () => {
     const p = new Player();
     p.frameY = 56;
-    expect(() => p.draw(recordingSurface().surface)).toThrow("out of range");
+    expect(() => {
+      p.draw(recordingSurface().surface);
+    }).toThrow("out of range");
   });
 });
 

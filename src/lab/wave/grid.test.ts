@@ -45,6 +45,21 @@ function collapsedCells(g: Grid): { x: number; y: number; v: number }[] {
   return out;
 }
 
+/** The in-bounds neighbours of (x, y) on a 5x5 grid allow only what can sit next to `v`. */
+function expectNeighboursConstrained(g: Grid, x: number, y: number, v: number): void {
+  const expected = v === 1 ? [1, 2] : v === 3 ? [2, 3] : [1, 2, 3];
+  for (const [nx, ny] of [
+    [x, y - 1],
+    [x + 1, y],
+    [x, y + 1],
+    [x - 1, y],
+  ] as const) {
+    if (nx < 0 || ny < 0 || nx >= 5 || ny >= 5) continue;
+    expect(g.cell(nx, ny).possible).toEqual(expected);
+    expect(g.entropy[nx]?.[ny]).toBe(expected.length);
+  }
+}
+
 test("the first step draws x, y, then the pattern, and constrains the four neighbours", () => {
   for (let seed = 1; seed <= 20; seed++) {
     const g = new Grid(5, 5);
@@ -59,17 +74,7 @@ test("the first step draws x, y, then the pattern, and constrains the four neigh
     expect(g.cell(x, y).possible).toEqual([v]);
     expect(g.entropyBuckets[0]).toEqual([{ x, y }]);
 
-    const expected = v === 1 ? [1, 2] : v === 3 ? [2, 3] : [1, 2, 3];
-    for (const [nx, ny] of [
-      [x, y - 1],
-      [x + 1, y],
-      [x, y + 1],
-      [x - 1, y],
-    ] as const) {
-      if (nx < 0 || ny < 0 || nx >= 5 || ny >= 5) continue;
-      expect(g.cell(nx, ny).possible).toEqual(expected);
-      expect(g.entropy[nx]?.[ny]).toBe(expected.length);
-    }
+    expectNeighboursConstrained(g, x, y, v);
   }
 });
 
@@ -124,23 +129,26 @@ test("width*height steps collapse every cell to a single pattern, and further st
   expect(g.collapsedCount).toBe(16 * 12);
 });
 
+/** Cell (x, y) of a 24x24 grid is not water (3) beside grass (1) to its right or below. */
+function expectNoWaterGrassEdge(g: Grid, x: number, y: number): void {
+  const v = g.cell(x, y).possible[0];
+  for (const [nx, ny] of [
+    [x + 1, y],
+    [x, y + 1],
+  ] as const) {
+    if (nx >= 24 || ny >= 24) continue;
+    const n = g.cell(nx, ny).possible[0];
+    expect(new Set([v, n])).not.toEqual(new Set([1, 3]));
+  }
+}
+
 test("after a full collapse, water never touches grass (over many seeds)", () => {
   for (let seed = 1; seed <= 200; seed++) {
     rng.seed(seed);
     const g = new Grid(24, 24);
     for (let i = 0; i < 24 * 24; i++) g.step();
     for (let x = 0; x < 24; x++) {
-      for (let y = 0; y < 24; y++) {
-        const v = g.cell(x, y).possible[0];
-        for (const [nx, ny] of [
-          [x + 1, y],
-          [x, y + 1],
-        ] as const) {
-          if (nx >= 24 || ny >= 24) continue;
-          const n = g.cell(nx, ny).possible[0];
-          expect([v, n].sort()).not.toEqual([1, 3]);
-        }
-      }
+      for (let y = 0; y < 24; y++) expectNoWaterGrassEdge(g, x, y);
     }
   }
 });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { overlaps, resolve } from "./hitbox.ts";
+import { overlaps, resolve, type Hitbox } from "./hitbox.ts";
 
 describe("overlaps", () => {
   const a = { x: 0, y: 0, w: 10, h: 10 };
@@ -20,9 +20,12 @@ describe("overlaps", () => {
   });
 });
 
-describe("resolve", () => {
-  const box = (x: number, y: number) => ({ x, y, w: 10, h: 10 });
+/** A 10x10 box at (x, y). */
+function box(x: number, y: number): Hitbox {
+  return { x, y, w: 10, h: 10 };
+}
 
+describe("resolve", () => {
   test("src left of dst is pushed left by the overlap", () => {
     expect(resolve(box(0, 0), box(8, 0))).toEqual([-2, 0]);
   });

@@ -3,7 +3,26 @@ import { join } from "node:path";
 import { prizeArt } from "../src/ui/prizeArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { toPng, toRows } from "./pixel-art.ts";
-import { autoScale, load, place, sheet } from "./pixel.ts";
+import { autoScale, load, place, sheet, type Panel } from "./pixel.ts";
+
+/** The error `promise` rejects with; fails the test when it resolves or rejects with a non-Error. */
+async function rejection(promise: Promise<unknown>): Promise<Error> {
+  try {
+    await promise;
+  } catch (e: unknown) {
+    if (e instanceof Error) return e;
+    throw new Error(`rejected with a non-Error: ${String(e)}`, { cause: e });
+  }
+  throw new Error("expected a rejection, but it resolved");
+}
+
+/** The only panel `load` returns for `spec`; throws unless there is exactly one. */
+async function onlyPanel(spec: string, rev?: string): Promise<Panel> {
+  const panels = await load(spec, rev);
+  const [panel] = panels;
+  if (panels.length !== 1 || panel === undefined) throw new Error(`${spec} loaded ${panels.length} panels, want 1`);
+  return panel;
+}
 
 const prizeSource = join(repoRoot, "src/ui/prizeArt.ts");
 const icons = join(repoRoot, "src/assets/images/icons.png");
@@ -12,48 +31,52 @@ describe("load", () => {
   test("a record of rows is one image per entry, labelled with its key", async () => {
     const panels = await load(`${prizeSource}:prizeArt`);
     expect(panels.map((p) => p.label)).toEqual(Object.keys(prizeArt).map((k) => `prizeArt ${k}`));
-    expect(toRows(panels[0]!.png)).toEqual([...prizeArt.honeyJar]);
+    const [first] = panels;
+    if (first === undefined) throw new Error("no panels");
+    expect(toRows(first.png)).toEqual([...prizeArt.honeyJar]);
   });
 
   test("name.key picks one entry", async () => {
-    const [panel] = await load(`${prizeSource}:prizeArt.runningShoes`);
-    expect(toRows(panel!.png)).toEqual([...prizeArt.runningShoes]);
+    const panel = await onlyPanel(`${prizeSource}:prizeArt.runningShoes`);
+    expect(toRows(panel.png)).toEqual([...prizeArt.runningShoes]);
   });
 
   test("name.key names a missing key", async () => {
-    await expect(load(`${prizeSource}:prizeArt.nope`)).rejects.toThrow('prizeArt has no entry "nope"');
+    expect((await rejection(load(`${prizeSource}:prizeArt.nope`))).message).toContain('prizeArt has no entry "nope"');
   });
 
   test("glyph rows (# and .) draw in white", async () => {
-    const [panel] = await load(`${join(repoRoot, "src/ui/glyphs.ts")}:glyphs.A`);
-    expect(toRows(panel!.png)[0]).toBe(".wwww.");
+    const panel = await onlyPanel(`${join(repoRoot, "src/ui/glyphs.ts")}:glyphs.A`);
+    expect(toRows(panel.png)[0]).toBe(".wwww.");
   });
 
   test("with a rev, an art source is read as committed there", async () => {
-    const [panel] = await load(`${prizeSource}:prizeArt.honeyJar`, "HEAD");
-    expect(toRows(panel!.png)).toEqual([...prizeArt.honeyJar]);
+    const panel = await onlyPanel(`${prizeSource}:prizeArt.honeyJar`, "HEAD");
+    expect(toRows(panel.png)).toEqual([...prizeArt.honeyJar]);
   });
 
   test("an export with no rows is an error", async () => {
-    await expect(load(`${prizeSource}:prizeRects`)).rejects.toThrow('exports no rows named "prizeRects"');
+    expect((await rejection(load(`${prizeSource}:prizeRects`))).message).toContain(
+      'exports no rows named "prizeRects"',
+    );
   });
 
   test("path.png#x,y,w,h is one area of the PNG", async () => {
-    const [panel] = await load(`${icons}#0,0,9,9`);
-    expect([panel!.png.width, panel!.png.height]).toEqual([9, 9]);
-    expect(panel!.label).toBe("icons.png 0,0,9,9");
+    const panel = await onlyPanel(`${icons}#0,0,9,9`);
+    expect([panel.png.width, panel.png.height]).toEqual([9, 9]);
+    expect(panel.label).toBe("icons.png 0,0,9,9");
   });
 
   test("an area outside the PNG is an error", async () => {
-    await expect(load(`${icons}#20,0,9,9`)).rejects.toThrow("is outside the 23x9 image");
+    expect((await rejection(load(`${icons}#20,0,9,9`))).message).toContain("is outside the 23x9 image");
   });
 });
 
 describe("sheets", () => {
   test("autoScale fits about 384 px, between 1x and 8x", () => {
     expect(autoScale(toPng(["k"]))).toBe(8);
-    expect(autoScale(toPng(Array(192).fill("k".repeat(192))))).toBe(2);
-    expect(autoScale(toPng(Array(500).fill("k")))).toBe(1);
+    expect(autoScale(toPng(Array.from({ length: 192 }, () => "k".repeat(192))))).toBe(2);
+    expect(autoScale(toPng(Array.from({ length: 500 }, () => "k")))).toBe(1);
   });
 
   test("a sheet holds every panel at its scale, with room for the labels", () => {

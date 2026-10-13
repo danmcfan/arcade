@@ -5,13 +5,7 @@ import type { PremulColor, Surface } from "../../engine/surface.ts";
 // Debug colours: Go `color.RGBA` values, which are premultiplied (fact 10,
 // D15), so they are drawn with `fillPremul`. Only used when `debug` is on.
 export const colorRed: PremulColor = { r: 255, g: 0, b: 0, a: 8 };
-export const colorGreen: PremulColor = { r: 0, g: 255, b: 0, a: 8 };
-export const colorBlue: PremulColor = { r: 0, g: 0, b: 255, a: 8 };
-export const colorYellow: PremulColor = { r: 255, g: 255, b: 0, a: 8 };
-export const colorPurple: PremulColor = { r: 255, g: 0, b: 255, a: 8 };
-export const colorOrange: PremulColor = { r: 255, g: 128, b: 0, a: 8 };
 export const colorPink: PremulColor = { r: 255, g: 0, b: 180, a: 8 };
-export const colorTeal: PremulColor = { r: 0, g: 255, b: 220, a: 8 };
 
 /** Go `Hitbox` (a value type: copy, never share). */
 export interface Hitbox {
@@ -48,9 +42,8 @@ export function resolve(src: Hitbox, dst: Hitbox): [number, number] {
 
   if (Math.abs(overlapX) < Math.abs(overlapY)) {
     return [-overlapX, 0.0];
-  } else {
-    return [0.0, -overlapY];
   }
+  return [0.0, -overlapY];
 }
 
 /** Go `Draw(screen, h, color)`: `vector.FillRect` with a premultiplied colour. Debug only. */

@@ -77,8 +77,13 @@ const KEY_TO_CODE: Readonly<Record<string, string>> = {
 export function eventCode(e: Pick<KeyboardEvent, "code" | "key">): string {
   if (e.code) return e.code;
   const k = e.key;
-  if (/^[a-z]$/i.test(k)) return `Key${k.toUpperCase()}`;
+  if (/^[a-z]$/iu.test(k)) return `Key${k.toUpperCase()}`;
   return KEY_TO_CODE[k] ?? k;
+}
+
+/** Key listeners only ever receive key events; this narrows `Event` without a cast. */
+function isKeyEvent(e: Event): e is KeyboardEvent {
+  return "code" in e;
 }
 
 /** The subset of `EventTarget` used here, so tests can pass fakes. */
@@ -98,18 +103,22 @@ export function installKeyboard(
   isHidden: () => boolean = () => document.hidden,
 ): () => void {
   const onDown = (e: Event): void => {
-    const k = e as KeyboardEvent;
+    if (!isKeyEvent(e)) return;
+    const k = e;
     const code = eventCode(k);
     if (shouldPreventDefault(code)) k.preventDefault();
     keys.keyDown(code);
   };
   const onUp = (e: Event): void => {
-    const k = e as KeyboardEvent;
+    if (!isKeyEvent(e)) return;
+    const k = e;
     const code = eventCode(k);
     if (shouldPreventDefault(code)) k.preventDefault();
     keys.keyUp(code);
   };
-  const onBlur = (): void => keys.clear();
+  const onBlur = (): void => {
+    keys.clear();
+  };
   const onVisibility = (): void => {
     if (isHidden()) keys.clear();
   };

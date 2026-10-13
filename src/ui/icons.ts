@@ -4,6 +4,8 @@
 // src/assets/images/icons.png; the runtime reads each icon's place in the
 // sheet from here (src/ui/hud.ts).
 
+import { stripRects } from "./strip.ts";
+
 export const icons = {
   token: [
     "..ooooo..",
@@ -35,15 +37,7 @@ export type IconName = keyof typeof icons;
 const iconGap = 1;
 
 /** Each icon's rectangle in icons.png. */
-export const iconRects: Readonly<Record<IconName, { x: number; w: number; h: number }>> = (() => {
-  let x = 0;
-  const rects = {} as Record<IconName, { x: number; w: number; h: number }>;
-  for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
-    rects[name] = { x, w: rows[0]!.length, h: rows.length };
-    x += rows[0]!.length + iconGap;
-  }
-  return rects;
-})();
+export const iconRects: Readonly<Record<IconName, { x: number; w: number; h: number }>> = stripRects(icons, iconGap);
 
 export const iconSheetWidth = Object.values(iconRects).reduce((w, r) => Math.max(w, r.x + r.w), 0);
 export const iconSheetHeight = Math.max(...Object.values(iconRects).map((r) => r.h));

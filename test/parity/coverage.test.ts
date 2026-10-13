@@ -11,8 +11,8 @@ const parityDir = new URL("./", import.meta.url).pathname;
 function fixtureScenarios(): string[] {
   return readdirSync(`${fixturesDir}inputs`)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => f.slice(0, -".json".length))
-    .sort();
+    .map((f): string => f.slice(0, -".json".length))
+    .toSorted((a, b) => a.localeCompare(b));
 }
 
 /** `parityTest("x")` calls in each parity test file, as `[file, scenario]`. */
@@ -20,9 +20,12 @@ function registrations(): [string, string][] {
   const out: [string, string][] = [];
   for (const file of readdirSync(parityDir)
     .filter((f) => f.endsWith(".test.ts"))
-    .sort()) {
+    .toSorted((a, b) => a.localeCompare(b))) {
     const src = readFileSync(`${parityDir}${file}`, "utf8");
-    for (const m of src.matchAll(/^\s*parityTest\(\s*"([^"]+)"\s*\)/gm)) out.push([file, m[1] as string]);
+    for (const m of src.matchAll(/^\s*parityTest\(\s*"([^"]+)"\s*\)/gmu)) {
+      const name = m[1];
+      if (name !== undefined) out.push([file, name]);
+    }
   }
   return out;
 }

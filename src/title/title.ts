@@ -25,7 +25,7 @@ import { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 
 /** Phases the title music plays in: everything before the Game starts. */
-const MUSIC_PHASES: readonly TitlePhase[] = ["menu", "confirm", "intro"];
+const MUSIC_PHASES: ReadonlySet<string> = new Set<TitlePhase>(["menu", "confirm", "intro"]);
 
 export interface TitleDeps {
   /** Where the save lives; default: an in-memory store. */
@@ -57,7 +57,7 @@ export class Title implements Scene {
 
   constructor(deps: TitleDeps = {}) {
     this.store = deps.store ?? memoryStore();
-    this.createGame = deps.createGame ?? ((restore) => new Game(null, restore ? { restore } : {}));
+    this.createGame = deps.createGame ?? ((restore): Game => new Game(null, restore ? { restore } : {}));
     this.saved = this.store.load();
   }
 
@@ -91,46 +91,66 @@ export class Title implements Scene {
   }
 
   private stepPhase(i: Input, edges: MenuEdges): void {
-    // Every choice or Back chirps (Esc does nothing on the title menu itself).
-    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) soundSelect.blip();
+    if (this.chirps(edges)) soundSelect.blip();
 
     switch (this.phase) {
       case "menu":
-        this.moveCursor(edges);
-        if (edges.space) {
-          if (this.cursor !== this.newGameIndex) this.startGame(this.saved ?? undefined);
-          else if (this.canContinue) this.show("confirm", 0);
-          else this.show("intro", 0);
-        }
+        this.stepMenu(edges);
         break;
       case "confirm":
-        this.moveCursor(edges);
-        if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", this.newGameIndex);
-        else if (edges.space) this.show("intro", 0);
+        this.stepConfirm(edges);
         break;
       case "intro":
-        if (edges.escape) this.show("menu", this.newGameIndex);
-        else if (edges.space) {
-          this.store.clear();
-          this.saved = null;
-          this.startGame();
-        }
+        this.stepIntro(edges);
         break;
       case "playing":
         this.stepGame(i, edges.escape);
         break;
       case "paused":
-        this.moveCursor(edges);
-        if (edges.escape) this.resume(i);
-        else if (edges.space) {
-          if (this.cursor === 0) this.resume(i);
-          else if (this.cursor === 1) this.phase = "controls";
-          else this.quitToMenu();
-        }
+        this.stepPaused(i, edges);
         break;
       case "controls":
         if (edges.space || edges.escape) this.phase = "paused";
         break;
+    }
+  }
+
+  /** Every choice or Back chirps (Esc does nothing on the title menu itself). */
+  private chirps(edges: MenuEdges): boolean {
+    if (this.phase === "playing") return false;
+    return edges.space || (edges.escape && this.phase !== "menu");
+  }
+
+  private stepMenu(edges: MenuEdges): void {
+    this.moveCursor(edges);
+    if (!edges.space) return;
+    if (this.cursor !== this.newGameIndex) this.startGame(this.saved ?? undefined);
+    else if (this.canContinue) this.show("confirm", 0);
+    else this.show("intro", 0);
+  }
+
+  private stepConfirm(edges: MenuEdges): void {
+    this.moveCursor(edges);
+    if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", this.newGameIndex);
+    else if (edges.space) this.show("intro", 0);
+  }
+
+  private stepIntro(edges: MenuEdges): void {
+    if (edges.escape) this.show("menu", this.newGameIndex);
+    else if (edges.space) {
+      this.store.clear();
+      this.saved = null;
+      this.startGame();
+    }
+  }
+
+  private stepPaused(i: Input, edges: MenuEdges): void {
+    this.moveCursor(edges);
+    if (edges.escape) this.resume(i);
+    else if (edges.space) {
+      if (this.cursor === 0) this.resume(i);
+      else if (this.cursor === 1) this.phase = "controls";
+      else this.quitToMenu();
     }
   }
 
@@ -148,7 +168,7 @@ export class Title implements Scene {
    * may still be loading. Stop it once play starts.
    */
   private updateMusic(anyPressed: boolean): void {
-    const wanted = MUSIC_PHASES.includes(this.phase);
+    const wanted = MUSIC_PHASES.has(this.phase);
     if (wanted && (!this.musicOn || (anyPressed && !soundTitleMusic.playing))) {
       this.musicOn = true;
       soundTitleMusic.play();
@@ -178,7 +198,7 @@ export class Title implements Scene {
   }
 
   private stepGame(i: Input, escapePressed: boolean): void {
-    const game = this.game!;
+    const game = this.hostedGame();
     if (game.inHub() && escapePressed) {
       soundSelect.blip();
       game.pauseAudio();
@@ -204,15 +224,22 @@ export class Title implements Scene {
     this.phase = "playing";
     this.cursor = 0;
     this.keys.maskHeld(i);
-    this.game!.resumeAudio();
+    this.hostedGame().resumeAudio();
   }
 
   private quitToMenu(): void {
     this.persist();
-    this.game!.stopAudio();
-    this.game!.dispose();
+    const game = this.hostedGame();
+    game.stopAudio();
+    game.dispose();
     this.game = null;
     this.show("menu", 0);
+  }
+
+  /** The hosted Game; only called in phases that have one. */
+  hostedGame(): Game {
+    if (this.game === null) throw new Error(`title: no Game in phase "${this.phase}"`);
+    return this.game;
   }
 
   persist(): void {

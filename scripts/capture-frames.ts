@@ -44,7 +44,7 @@ function held(i: Input): Partial<Input> {
 export function compressInputs(inputs: readonly Input[]): InputStep[] {
   const steps: Array<{ ticks: number; input: Input }> = [];
   for (const i of inputs) {
-    const last = steps[steps.length - 1];
+    const last = steps.at(-1);
     if (last && !i.shiftP && !last.input.shiftP && sameInput(last.input, i)) last.ticks++;
     else steps.push({ ticks: 1, input: i });
   }
@@ -60,7 +60,7 @@ export interface CapturePlan {
 
 export function planCaptures(script: InputScript): CapturePlan[] {
   const inputs = expandSteps(script.steps);
-  const ticks = [...script.captureTicks].sort((a, b) => a - b);
+  const ticks = script.captureTicks.toSorted((a, b) => a - b);
   let done = 0;
   return ticks.map((tick) => {
     if (!Number.isInteger(tick) || tick < 1 || tick > inputs.length) {
@@ -88,6 +88,14 @@ function capture(script: InputScript): void {
   console.log(`${script.name}: ${plan.length} frame(s) → ${dir}`);
 }
 
+/** Capture each named input script that has capture ticks, in order. */
+function captureAll(names: readonly string[]): void {
+  for (const name of names) {
+    const script = loadScript(inputPath(name));
+    if (script.captureTicks.length > 0) capture(script);
+  }
+}
+
 if (import.meta.main) {
   const requested = process.argv.slice(2);
   const names =
@@ -100,10 +108,7 @@ if (import.meta.main) {
   try {
     page.run("open", `${server.url}/?debug`);
     page.run("wait", "--fn", "window.__arcade !== undefined");
-    for (const name of names) {
-      const script = loadScript(inputPath(name));
-      if (script.captureTicks.length > 0) capture(script);
-    }
+    captureAll(names);
   } finally {
     page.run("close");
     server.stop();

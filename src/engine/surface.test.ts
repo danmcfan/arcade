@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { FakeCanvas, fakeCanvas, type FakeContext } from "./fakeCanvas.testutil.ts";
+import { FakeCanvas, canvasElement, fakeCanvas, type FakeContext } from "./fakeCanvas.testutil.ts";
 import { makeSolid, sub, whole, type ImageAsset } from "./image.ts";
 import { Surface, setCanvasFactory } from "./surface.ts";
 
-const pixels = { tag: "decoded image" };
-const sheet: ImageAsset = { url: "sheet.png", width: 64, height: 32, image: pixels as unknown as CanvasImageSource };
+/** The decoded sheet: any canvas image source will do, the tests only check it is passed through. */
+const pixels = canvasElement(new FakeCanvas(64, 32));
+const sheet: ImageAsset = { url: "sheet.png", width: 64, height: 32, image: pixels };
 const sprite = sub(whole(sheet), 16, 0, 32, 16);
 
 let made: FakeCanvas[] = [];
@@ -13,10 +14,12 @@ beforeEach(() => {
   setCanvasFactory((w, h) => {
     const c = new FakeCanvas(w, h);
     made.push(c);
-    return c as unknown as HTMLCanvasElement;
+    return canvasElement(c);
   });
 });
-afterEach(() => setCanvasFactory(null));
+afterEach(() => {
+  setCanvasFactory(null);
+});
 
 function screen(w = 192, h = 176): { s: Surface; ctx: FakeContext } {
   const { canvas, ctx } = fakeCanvas(w, h);
@@ -63,7 +66,9 @@ describe("Surface.draw", () => {
     // which adjustDestinationPixel moves to (26 + 5/16, 36 + 11/16); the other
     // corners move the same way, so the sprite still covers columns 10..25.
     const expected = [-1, 0, 0, -1, 26.3125, 36.6875];
-    expected.forEach((v, i) => expect(m[i]).toBeCloseTo(v, 6));
+    expected.forEach((v, i) => {
+      expect(m[i]).toBeCloseTo(v, 6);
+    });
   });
 
   test("small rotations (lumberjack tree top) use the adjusted vertices, not the exact affine", () => {
@@ -148,14 +153,13 @@ describe("resize (D1)", () => {
   });
 
   test("resizing to the same size keeps the canvas contents", () => {
-    const { canvas } = fakeCanvas(192, 176);
+    const { canvas, ctx } = fakeCanvas(192, 176);
     const s = new Surface(canvas);
     let assigned = 0;
-    const real = canvas as unknown as FakeCanvas;
-    const proto = Object.getPrototypeOf(real) as object;
-    const desc = Object.getOwnPropertyDescriptor(proto, "width");
+    const real = ctx.canvas;
+    const desc = Object.getOwnPropertyDescriptor(FakeCanvas.prototype, "width");
     Object.defineProperty(real, "width", {
-      get: () => desc?.get?.call(real) as number,
+      get: (): unknown => desc?.get?.call(real),
       set: (v: number) => {
         assigned++;
         desc?.set?.call(real, v);
@@ -221,7 +225,7 @@ describe("rect primitives", () => {
     const { s, ctx } = screen();
     s.strokeRect(10, 20, 4, 3, { r: 0, g: 255, b: 0, a: 64 });
     const covered = new Map<string, number>();
-    for (const o of ctx.ops.filter((o) => o.composite === "lighter")) {
+    for (const o of ctx.ops.filter((op) => op.composite === "lighter")) {
       for (let x = o.x; x < o.x + o.w; x++)
         for (let y = o.y; y < o.y + o.h; y++) covered.set(`${x},${y}`, (covered.get(`${x},${y}`) ?? 0) + 1);
     }

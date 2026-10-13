@@ -30,7 +30,7 @@ import { buyPrize, inCatalogueOrder, prizeOffers, prizes, type PrizeId } from ".
 import { blocked, newState, type RunKind, type State } from "../arcade/state.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
-import { createSoftware } from "./registry.ts";
+import { createSoftware } from "./softwareFactories.ts";
 import {
   closeItemIndex,
   firstPrizeIndex,
@@ -64,7 +64,7 @@ const minigameSounds: readonly Sound[] = [soundStart, soundPower, soundDeath, so
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
-  /** Builds a machine's software; default: `createSoftware` from ./registry.ts. */
+  /** Builds a machine's software; default: `createSoftware` from ./softwareFactories.ts. */
   createSoftware?: SoftwareFactory;
   /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
   debugPrint?: DebugPrinter;
@@ -75,7 +75,7 @@ export interface GameDeps {
 export class Game implements Scene {
   readonly name = "game";
 
-  private arcade: State;
+  private readonly arcade: State;
 
   private software: Software | null = null;
   /** How `software` was started; null in the hub. */
@@ -95,7 +95,7 @@ export class Game implements Scene {
   private readonly keys = new MenuKeys();
 
   private debugMode = initialDebugMode;
-  private debugPanel: Panel;
+  private readonly debugPanel: Panel;
 
   private tick = 0;
   /** Sound events since the end of the previous tick. */
@@ -111,7 +111,9 @@ export class Game implements Scene {
    */
   constructor(initialSoftware: SoftwareName | null, deps: GameDeps = {}) {
     const factory = deps.createSoftware ?? createSoftware;
-    this.unsubscribe = addSoundListener((e) => this.pendingSounds.push(e));
+    this.unsubscribe = addSoundListener((e) => {
+      this.pendingSounds.push(e);
+    });
     const sw = initialSoftware === null ? null : factory(initialSoftware, 0, []);
     this.arcade = newState(sw, factory);
     if (deps.restore) this.restore(deps.restore);
@@ -197,24 +199,30 @@ export class Game implements Scene {
       else this.updateHub(input);
       return;
     }
+    this.updateInMinigame(this.software, raw, input, edges);
+  }
+
+  /** A tick while a minigame is loaded: the minigame itself or one of its menus. */
+  private updateInMinigame(software: Software, raw: Input, input: Input, edges: MenuEdges): void {
     switch (this.menu) {
       case null:
-        this.updateMinigame(this.software, input, edges);
-        return;
+        this.updateMinigame(software, input, edges);
+        break;
       case "paused":
         this.updatePauseMenu(raw, edges);
-        return;
+        break;
       case "controls":
         if (edges.space || edges.escape) {
           soundSelect.blip();
           this.menu = "paused";
         }
-        return;
+        break;
       case "payout":
-        this.updatePayout(this.payout!, raw, edges);
-        return;
+        if (this.payout === null) throw new Error("game: payout menu without a payout");
+        this.updatePayout(this.payout, raw, edges);
+        break;
       case "prizeCounter":
-        return; // only opens in the hub
+        break; // only opens in the hub
     }
   }
 
@@ -236,32 +244,13 @@ export class Game implements Scene {
   }
 
   private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
-    const n = prizeCounterItems(tokenOffer(this.arcade), prizeOffers(this.arcade)).length;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta !== 0) {
-      this.cursor = (this.cursor + delta + n) % n;
-      soundMove.blip();
-    }
+    this.moveCounterCursor(edges);
     if (edges.space && this.cursor === tokenItemIndex) {
-      const after = buyToken(this.arcade);
-      if (after === null) {
-        soundDeny.blip();
-        return;
-      }
-      soundSelect.blip();
-      this.arcade.tokens = after.tokens;
-      this.arcade.tickets = after.tickets;
+      this.buyTokenItem();
       return;
     }
     if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
-      const after = buyPrize(this.arcade, prizes[this.cursor - firstPrizeIndex]!.id);
-      if (after === null) {
-        soundDeny.blip();
-        return;
-      }
-      soundSelect.blip();
-      this.arcade.tickets = after.tickets;
-      this.arcade.prizes = after.prizes;
+      this.buyPrizeItem();
       return;
     }
     if (!edges.space && !edges.escape) return;
@@ -270,6 +259,40 @@ export class Game implements Scene {
     this.menu = null;
     this.cursor = 0;
     this.keys.maskHeld(raw);
+  }
+
+  private moveCounterCursor(edges: MenuEdges): void {
+    const n = prizeCounterItems(tokenOffer(this.arcade), prizeOffers(this.arcade)).length;
+    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
+    if (delta !== 0) {
+      this.cursor = (this.cursor + delta + n) % n;
+      soundMove.blip();
+    }
+  }
+
+  private buyTokenItem(): void {
+    const after = buyToken(this.arcade);
+    if (after === null) {
+      soundDeny.blip();
+      return;
+    }
+    soundSelect.blip();
+    this.arcade.tokens = after.tokens;
+    this.arcade.tickets = after.tickets;
+  }
+
+  /** Buy the prize under the cursor, which is on a prize item. */
+  private buyPrizeItem(): void {
+    const prize = prizes[this.cursor - firstPrizeIndex];
+    if (prize === undefined) throw new Error(`prize counter: no prize at item ${this.cursor}`);
+    const after = buyPrize(this.arcade, prize.id);
+    if (after === null) {
+      soundDeny.blip();
+      return;
+    }
+    soundSelect.blip();
+    this.arcade.tickets = after.tickets;
+    this.arcade.prizes = after.prizes;
   }
 
   private updateMinigame(software: Software, input: Input, edges: MenuEdges): void {

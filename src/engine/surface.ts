@@ -139,7 +139,7 @@ export function setCanvasFactory(factory: CanvasFactory | null): void {
 }
 
 function context2d(canvas: Canvas): Context {
-  const ctx = canvas.getContext("2d") as Context | null;
+  const ctx = canvas.getContext("2d");
   if (ctx === null) throw new Error("Surface: 2D context unavailable");
   ctx.imageSmoothingEnabled = false;
   return ctx;
@@ -197,7 +197,7 @@ export class Surface {
   /** The 2D context, creating the canvas first for a lazy offscreen surface. */
   private context(): Context {
     if (this.ctx !== null) return this.ctx;
-    if (this.canvas === null) this.canvas = canvasFactory(this.w, this.h);
+    this.canvas ??= canvasFactory(this.w, this.h);
     this.ctx = context2d(this.canvas);
     return this.ctx;
   }
@@ -274,7 +274,7 @@ export class Surface {
       ctx.setTransform(...rotatedTransform(w, h, x, y, rot, opts?.flipX ?? false));
     } else {
       ctx.setTransform(1, 0, 0, 1, snap(x), snap(y));
-      if (opts?.flipX) {
+      if (opts?.flipX === true) {
         // GeoM: Scale(-1, 1) then Translate(w, 0), applied first.
         ctx.translate(w, 0);
         ctx.scale(-1, 1);
@@ -418,7 +418,9 @@ export class Surface {
 
   /** Make a rectangle transparent (lumberjack's init-time pixel clears). */
   clearRect(x: number, y: number, w: number, h: number): void {
-    this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => ctx.clearRect(px, py, pw, ph));
+    this.pixelRect(x, y, w, h, (ctx, px, py, pw, ph) => {
+      ctx.clearRect(px, py, pw, ph);
+    });
   }
 
   /**

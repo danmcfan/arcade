@@ -11,10 +11,9 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import type { Input } from "../../src/engine/input.ts";
-import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import type { SoftwareName } from "../../src/game/software.ts";
 import { decodeDataUrl } from "../browser.ts";
-import { upscale, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -55,7 +54,7 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   v.step(1);
   if (w.sideways) v.step(24, w.sideways);
   v.step(32, { up: true });
-  let s = v.snapshot<GameSnapshot>();
+  let s = v.snapshot(isGameSnapshot);
   check(
     s.software === null && s.arcade.title === (w.name === "hive" ? "sweet" : w.name),
     `facing its hub cabinet shows the ${w.label} title`,
@@ -64,13 +63,13 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   const hub = canvas(v);
 
   v.step(1, { up: true, space: true });
-  s = v.snapshot<GameSnapshot>();
+  s = v.snapshot(isGameSnapshot);
   check(s.software === w.name, `Up+Space enters ${w.label}`, s.software);
 
   for (const [dir, input, frame] of directions) {
     v.step(1, input);
-    s = v.snapshot<GameSnapshot>();
-    const sw = s.sw as { joystick?: number } | null;
+    s = v.snapshot(isGameSnapshot);
+    const sw = s.sw;
     check(sw?.joystick === frame, `${dir}: joystick frame ${frame}`, sw?.joystick);
     v.frame(`${w.label}-${dir}`, 2);
   }
@@ -86,7 +85,7 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   v.tap("down");
   v.tap("down");
   v.tap("space");
-  check(v.snapshot<GameSnapshot>().software === null, `Esc, Quit game leaves ${w.label} for the hub`);
+  check(v.snapshot(isGameSnapshot).software === null, `Esc, Quit game leaves ${w.label} for the hub`);
   return { hub, cabinet };
 }
 
@@ -98,7 +97,7 @@ function sideBySide(shots: Shot[], path: string): void {
   const hubH = 176 * hubScale;
   const out = new PNG({ width: shots.length * colW + (shots.length + 1) * gap, height: gap + hubH + gap + 428 + gap });
   for (let i = 0; i < out.data.length; i += 4) out.data.set([0x33, 0x3c, 0x57, 255], i);
-  const blit = (src: PNG, ox: number, oy: number) => {
+  const blit = (src: PNG, ox: number, oy: number): void => {
     for (let y = 0; y < src.height; y++) {
       for (let x = 0; x < src.width; x++) {
         const s = (y * src.width + x) * 4;
@@ -117,11 +116,10 @@ function sideBySide(shots: Shot[], path: string): void {
 
 function recordWalk(v: Verify): void {
   console.log("video:");
-  const software = () =>
-    (JSON.parse(v.page.eval("JSON.stringify(window.__arcade.snapshot())")) as GameSnapshot).software;
+  const software = (): SoftwareName | null => v.snapshot(isGameSnapshot).software;
   const seen: (SoftwareName | null)[] = [];
   // Esc opens the minigame pause menu; Quit game is its third item.
-  const quitGame = () => {
+  const quitGame = (): void => {
     v.key("Escape");
     v.wait(250);
     v.key("ArrowDown");

@@ -72,25 +72,29 @@ export function diffFiles(
   const expected = PNG.sync.read(readFileSync(expectedPath));
   const actual = PNG.sync.read(readFileSync(actualPath));
   const { diff, ...result } = diffImages(expected, actual, opts.masks);
-  if (opts.out) {
+  if (opts.out !== undefined && opts.out !== "") {
     mkdirSync(dirname(opts.out), { recursive: true });
     writeFileSync(opts.out, PNG.sync.write(diff));
   }
   return result;
 }
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
+function parseArgs(args: readonly string[]): { files: string[]; masks: Mask[]; out: string | undefined } {
   const files: string[] = [];
   const masks: Mask[] = [];
   let out: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--out") out = args[++i];
+    else if (a === "--mask") masks.push(parseMask(args[++i] ?? ""));
+    else if (a !== undefined) files.push(a);
+  }
+  return { files, masks, out };
+}
+
+if (import.meta.main) {
   try {
-    for (let i = 0; i < args.length; i++) {
-      const a = args[i];
-      if (a === "--out") out = args[++i];
-      else if (a === "--mask") masks.push(parseMask(args[++i] ?? ""));
-      else if (a !== undefined) files.push(a);
-    }
+    const { files, masks, out } = parseArgs(process.argv.slice(2));
     const [expected, actual] = files;
     if (expected === undefined || actual === undefined || files.length !== 2) {
       throw new Error(
@@ -98,7 +102,9 @@ if (import.meta.main) {
       );
     }
     const r = diffFiles(expected, actual, { masks, out });
-    console.log(`${r.diffPixels} differing pixels (${r.width}x${r.height})${out ? `; diff: ${out}` : ""}`);
+    console.log(
+      `${r.diffPixels} differing pixels (${r.width}x${r.height})${out !== undefined && out !== "" ? `; diff: ${out}` : ""}`,
+    );
     process.exit(r.diffPixels === 0 ? 0 : 1);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);

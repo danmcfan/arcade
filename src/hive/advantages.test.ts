@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { addSoundListener } from "../engine/audio.ts";
-import type { HiveSnapshot } from "../game/snapshot.ts";
 import { blueFramesDuration, framesPerSecond } from "./constants.ts";
 import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";
 import {
@@ -22,11 +21,14 @@ beforeEach(() => {
   rng.seed(1);
   unsubscribe = addSoundListener(() => {});
 });
-afterEach(() => unsubscribe());
+afterEach(() => {
+  unsubscribe();
+});
 
 /** Sweet Sam with these prizes, advanced past READY into PLAY. */
 function playing(prizes: readonly PrizeId[]): HiveSoftware {
-  const s = createHive(0, prizes) as HiveSoftware;
+  const s = createHive(0, prizes);
+  if (!(s instanceof HiveSoftware)) throw new Error("createHive did not return a HiveSoftware");
   for (let k = 0; k < 122; k++) s.update(NO_INPUT);
   expect(s.snapshot().state).toBe("PLAY");
   return s;
@@ -42,7 +44,9 @@ function eatPowerPellet(s: HiveSoftware): number {
   power.y = s.player.y;
   s.update(NO_INPUT);
   expect(s.items[idx]).toBeNull();
-  return s.enemies[0]!.blueFrames;
+  const red = s.enemies[0];
+  if (!red) throw new Error("no red bee");
+  return red.blueFrames;
 }
 
 describe("hiveAdvantages", () => {
@@ -80,7 +84,8 @@ describe("Sweet Sam with prizes", () => {
 
   test("honey jar: a run starts with 4 lives", () => {
     const s = createHive(0, ["honeyJar"]);
-    expect((s.snapshot() as HiveSnapshot).lives).toBe(4);
+    if (!(s instanceof HiveSoftware)) throw new Error("createHive did not return a HiveSoftware");
+    expect(s.snapshot().lives).toBe(4);
   });
 
   test("running shoes: the bear moves at 1.125 px a tick, and still turns at corners", () => {
@@ -97,7 +102,9 @@ describe("Sweet Sam with prizes", () => {
 
   test("running shoes: power-pellet speed is unchanged", () => {
     const s = playing(["runningShoes"]);
-    s.enemies[0]!.blueFrames = 300;
+    const red = s.enemies[0];
+    if (!red) throw new Error("no red bee");
+    red.blueFrames = 300;
     s.update(NO_INPUT);
     expect(s.player.velocity).toBe(velocityPlayerPower);
   });

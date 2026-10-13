@@ -58,25 +58,27 @@ export class Payout {
     }
     if (!this.counting) return false;
 
-    let paid = false;
-    if (this.score > 0 || this.tickets < this.total) {
-      this.timer++;
-      if (this.timer >= ticksPerTicket) {
-        this.timer = 0;
-        if (this.tickets < this.total) {
-          this.tickets++;
-          this.score = Math.max(0, this.score - pointsPerTicket);
-          paid = true;
-        } else {
-          this.score = 0;
-        }
-      }
-    }
+    const paid = this.countDown();
     syncAndTick(this.scoreReels, digits6(this.score));
     syncAndTick(this.ticketReels, digits6(this.tickets));
     const settled = [...this.scoreReels, ...this.ticketReels].every((r) => !r.active);
     if (this.score === 0 && this.tickets === this.total && settled) this.counting = false;
     return paid;
+  }
+
+  /** Advance the count by a tick; true when a ticket was paid. */
+  private countDown(): boolean {
+    if (this.score <= 0 && this.tickets >= this.total) return false;
+    this.timer++;
+    if (this.timer < ticksPerTicket) return false;
+    this.timer = 0;
+    if (this.tickets < this.total) {
+      this.tickets++;
+      this.score = Math.max(0, this.score - pointsPerTicket);
+      return true;
+    }
+    this.score = 0;
+    return false;
   }
 
   private skip(): void {
