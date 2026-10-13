@@ -32,22 +32,29 @@ export interface Machine {
   screen: Screen;
 }
 
+/** Where each cabinet stands in the hub (its art's top-left is the rect's), by title. */
+export const cabinetRects: Readonly<Record<ArcadeTitle, Rect>> = {
+  brassMonkey: { x: tileSize * 6, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+  sweet: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+  firefly: { x: tileSize * 12, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+};
+
 export function newMachines(factory: SoftwareFactory): Machine[] {
   return [
     {
-      rect: { x: tileSize * 6, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+      rect: { ...cabinetRects.brassMonkey },
       title: "brassMonkey",
       newSoftware: (highScore, prizes) => factory("brassMonkey", highScore, prizes),
       screen: newScreen(),
     },
     {
-      rect: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+      rect: { ...cabinetRects.sweet },
       title: "sweet",
       newSoftware: (highScore, prizes) => factory("sweetSam", highScore, prizes),
       screen: newScreen(),
     },
     {
-      rect: { x: tileSize * 12, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+      rect: { ...cabinetRects.firefly },
       title: "firefly",
       newSoftware: (highScore, prizes) => factory("firefly", highScore, prizes),
       screen: newScreen(),

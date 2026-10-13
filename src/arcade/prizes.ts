@@ -9,7 +9,7 @@ import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
-import { tileSize } from "./collision.ts";
+import { cabinetRects } from "./machine.ts";
 
 export type PrizeId = "honeyJar" | "runningShoes" | "sleepyBees" | "lantern" | "glowStick" | "wings";
 
@@ -21,12 +21,8 @@ export const lanternPrice = 25;
 export const glowStickPrice = 50;
 export const wingsPrice = 100;
 
-/**
- * Top-left of the Firefly cabinet's art in the hub image (its machine rect in
- * src/arcade/machine.ts). Its prizes hang on the wall at offsets from it, so
- * they move with the cabinet.
- */
-const fireflyCabinet = { x: tileSize * 12, y: tileSize * 5 };
+/** The Firefly cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
+const fireflyCabinet = cabinetRects.firefly;
 
 export interface Prize {
   id: PrizeId;
@@ -82,7 +78,7 @@ export const prizes: readonly Prize[] = [
     x: 74,
     y: 28,
   },
-  // The Firefly cabinet's art is x 96..111, y 40..63; the wall runs y 29..52.
+  // The wall runs 11 px above the Firefly cabinet's top to 13 px below it.
   // The lantern hangs from its bracket right of the cabinet, the glow stick in
   // the gap left of it, the wings above it.
   {

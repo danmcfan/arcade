@@ -53,25 +53,28 @@ export const prizeArt = {
   ],
   /** A cyan glow stick on a hook: hangs on the wall left of the Firefly cabinet. */
   glowStick: [".k.", "k.k", ".k.", "kck", "kwk", "kck", "kck", "kck", "kck", ".k."],
-  /** A pair of firefly wings mounted bare: hangs on the wall above the Firefly cabinet. */
-  wings: [
-    ".kk......kk.",
-    "kcBk....kBck",
-    "kccBk..kBcck",
-    ".kccBkkBcck.",
-    "..kcckkcck..",
-    "...kkyykk...",
-    "....kyyk....",
-    ".....kk.....",
-  ],
+  /**
+   * A pair of firefly wings mounted bare: hangs on the wall above the Firefly
+   * cabinet. The left half; the generator mirrors it into the right
+   * (`mirroredPrizes`).
+   */
+  wings: [".kk...", "kcBk..", "kccBk.", ".kccBk", "..kcck", "...kky", "....ky", ".....k"],
 } as const satisfies Record<PrizeId, readonly string[]>;
+
+/** Decorations drawn as their left half: the sheet holds them mirrored, twice as wide. */
+const mirrored: readonly PrizeId[] = ["wings"];
+export const mirroredPrizes: ReadonlySet<string> = new Set(mirrored);
+
+/** Each decoration's rows as the sheet's size needs them: a mirrored one twice as wide. */
+const sheetSizes: Record<PrizeId, readonly string[]> = { ...prizeArt };
+for (const id of mirrored) sheetSizes[id] = prizeArt[id].map((r) => r.repeat(2));
 
 /** Gap between decorations in the sheet. */
 const prizeGap = 1;
 
 /** Each decoration's rectangle in prizes.png (top row 0). */
 export const prizeRects: Readonly<Record<PrizeId, { x: number; w: number; h: number }>> = stripRects(
-  prizeArt,
+  sheetSizes,
   prizeGap,
 );
 

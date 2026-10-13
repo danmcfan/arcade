@@ -41,11 +41,11 @@ import { newMachines } from "../src/arcade/machine.ts";
 import { counterArt } from "../src/ui/counterArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
-import { prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
+import { mirroredPrizes, prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, paint, plot, toPng } from "./pixel-art.ts";
+import { blank, mirrorX, paint, plot, toPng } from "./pixel-art.ts";
 
 function own<T extends object>(o: T, key: PropertyKey): key is keyof T {
   return Object.hasOwn(o, key);
@@ -110,7 +110,7 @@ export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
   for (const [id, rows] of Object.entries(prizeArt)) {
     if (!own(prizeRects, id)) throw new Error(`prize ${id} has no sheet rect`);
-    paint(png, rows, sweetie, prizeRects[id].x, 0);
+    paint(png, mirroredPrizes.has(id) ? mirrorX(rows) : rows, sweetie, prizeRects[id].x, 0);
   }
   return png;
 }
