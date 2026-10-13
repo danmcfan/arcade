@@ -1,21 +1,16 @@
 // Port of the Go Sweet Sam minigame's entity.go (docs/port-notes.md gives its old Go name).
 
 import { opposite, type Axis, type Direction } from "../engine/input.ts";
-import type { Sprite } from "../engine/image.ts";
+import { sub, type Sprite } from "../engine/image.ts";
 import type { PremulColor } from "../engine/surface.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
-import { imageBear, imageBee, imageFood } from "../engine/assets.ts";
+import { imageBear, imageBees, imageHoneyDrop, imageHoneyPot } from "../engine/assets.ts";
+import { beeOrder, itemCellHeight, itemCellWidth } from "./art.ts";
 
 export const tileSize = 8;
 export const tileWidth = 28;
 export const tileHeight = 36;
 
-// Sweet Sam food atlas (food.png): two rows of four 8×12 frames (32×24). Small pellets use row 1 (y=0);
-// power pellets use row 2 (y=12).
-export const pelletAtlasCellW = 8;
-export const pelletAtlasCellH = 12;
-export const pelletAtlasSmallRowY = 0;
-export const pelletAtlasPowerRowY = pelletAtlasSmallRowY + pelletAtlasCellH;
 export const pelletAnimHoldTicks = 15;
 export const pelletAnimFrameCount = 4;
 
@@ -101,7 +96,7 @@ export class Entity {
   kind: SweetSamEnemyKind | null = null;
   /** Debug drawing only. */
   color: PremulColor | null = null;
-  /** Go `e.Sprite == assets.ImageFood`. */
+  /** Go `e.Sprite == assets.ImageFood`: a honey drop or a honey pot. */
   isFood = false;
 
   frame = 0;
@@ -131,7 +126,7 @@ export class Entity {
   /** Hidden skips drawing only; gameplay states own when this is toggled. */
   hidden = false;
 
-  /** Distinguishes power pellets from small dots within the Sweet Sam food atlas. */
+  /** A honey pot rather than a honey drop. */
   powerPellet = false;
 
   target: Tile = { x: 0, y: 0 };
@@ -143,6 +138,13 @@ export class Entity {
   isPower(): boolean {
     return this.powerPellet && this.isFood;
   }
+}
+
+/** Each bee's 64×96 sheet: a sub-image of bees.png, which stacks them in `beeOrder`. */
+export function beeSheet(kind: SweetSamEnemyKind): Sprite {
+  const h = imageBees.h / beeOrder.length;
+  const y = beeOrder.indexOf(kind) * h;
+  return sub(imageBees, 0, y, imageBees.w, y + h);
 }
 
 export function newPlayer(): Entity {
@@ -179,7 +181,7 @@ function newEnemy(
   dotMinimum: number,
 ): Entity {
   const e = new Entity();
-  e.sprite = imageBee;
+  e.sprite = beeSheet(kind);
   e.kind = kind;
   e.color = kindColors[kind];
   e.frameIncrement = 0.1;
@@ -282,18 +284,19 @@ function newPelletColumn(tya: number, tyb: number, tx: number): Entity[] {
 
 function newPellet(tx: number, ty: number): Entity {
   const e = new Entity();
-  e.sprite = imageFood;
+  e.sprite = imageHoneyDrop;
   e.isFood = true;
   e.frameTotal = 1;
   e.x = 8 * tx + 4;
   e.y = 8 * (ty + 3) + 4;
-  e.width = pelletAtlasCellW;
-  e.height = pelletAtlasCellH;
+  e.width = itemCellWidth;
+  e.height = itemCellHeight;
   return e;
 }
 
 function newPower(tx: number, ty: number): Entity {
   const e = newPellet(tx, ty);
+  e.sprite = imageHoneyPot;
   e.powerPellet = true;
   return e;
 }

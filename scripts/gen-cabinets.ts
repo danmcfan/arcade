@@ -7,7 +7,8 @@
 // and the hub title art to letter its marquee with). Each strip is
 // art/cabinet.png with every colour swapped through the palette, and the
 // hand-drawn "SWEET SAM" marquee replaced by the title art's top line of
-// lettering at 2x with a one-pixel (2 px) drop shadow. Recolouring later
+// lettering at 2x with a one-pixel (2 px) drop shadow. Each cabinet's
+// `bevel` gives it a lit and a shaded edge (`bevelColour`). Recolouring later
 // (#18, #19) means editing cabinets.json or the title art and rerunning.
 // gen-cabinets.test.ts fails when the committed PNGs drift from the sources.
 
@@ -25,12 +26,23 @@ export interface CabinetSource {
   title: string;
   /** Source colour (hex, no #) → replacement, for every colour in cabinet.png. */
   palette: Record<string, string>;
+  /** Bevelled edges on the body: the lit and shaded colours (hex, no #). */
+  bevel: Bevel;
+}
+
+export interface Bevel {
+  light: string;
+  dark: string;
 }
 
 const imagesDir = join(repoRoot, "src/assets/images");
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
+}
+
+function isBevel(v: unknown): v is Bevel {
+  return isRecord(v) && typeof v["light"] === "string" && typeof v["dark"] === "string";
 }
 
 function isCabinetSource(v: unknown): v is CabinetSource {
@@ -40,7 +52,8 @@ function isCabinetSource(v: unknown): v is CabinetSource {
     typeof v["file"] === "string" &&
     typeof v["title"] === "string" &&
     isRecord(v["palette"]) &&
-    Object.values(v["palette"]).every((to) => typeof to === "string")
+    Object.values(v["palette"]).every((to) => typeof to === "string") &&
+    isBevel(v["bevel"])
   );
 }
 
@@ -58,6 +71,7 @@ export const cabinets: CabinetSource[] = parseCabinets(
 );
 
 export const frameWidth = 336;
+const frameHeight = 428;
 /** Rows 0..53 are the marquee; the screen starts at row 54. */
 export const marqueeHeight = 54;
 /** Title-art rows searched for the lettering ("PRESS SPACE TO PLAY" sits far below). */
@@ -69,6 +83,25 @@ const scale = 2;
 const letterColour = "ffcd75";
 const shadowColour = "ef7d57";
 const bodyColour = "b13e53";
+
+/** The screen's dark glass, inclusive, in frame coordinates. */
+const screen = { x0: 54, y0: 54, x1: 281, y1: 345 };
+const bevelWidth = 3;
+
+/**
+ * The bevel colour for body pixel (x, y) of a frame, or undefined off the
+ * bevel: the cabinet's edge is lit on its top and left and shaded on its
+ * bottom and right; the lip round the screen is the other way round, so the
+ * screen sits in.
+ */
+export function bevelColour(bevel: Bevel, x: number, y: number): string | undefined {
+  if (x < bevelWidth || y < bevelWidth) return bevel.light;
+  if (x >= frameWidth - bevelWidth || y >= frameHeight - bevelWidth) return bevel.dark;
+  const w = bevelWidth;
+  const inLip = x >= screen.x0 - w && x <= screen.x1 + w && y >= screen.y0 - w && y <= screen.y1 + w;
+  if (!inLip) return undefined;
+  return x < screen.x0 || y < screen.y0 ? bevel.dark : bevel.light;
+}
 
 export function cabinetPath(c: CabinetSource): string {
   return join(imagesDir, c.file);
@@ -146,7 +179,8 @@ export function renderCabinet(c: CabinetSource): PNG {
       let hex = hexAt(png, i);
       // Sweet Sam's lettering comes off the marquee.
       if (y < marqueeHeight && (hex === letterColour || hex === shadowColour)) hex = bodyColour;
-      setHex(png, x, y, map(hex));
+      const bevel = hex === bodyColour ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
+      setHex(png, x, y, bevel ?? map(hex));
     }
   }
 

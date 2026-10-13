@@ -1,23 +1,26 @@
 {
-  "about": "Cabinet strips recoloured from cabinet.png (exported from cabinet.ase) by `bun run art` (scripts/gen-cabinets.ts). palette maps each source colour to its Sweetie-16 replacement: 1a1c2c screen, b13e53 body, 5d275d joystick base, ffcd75 marquee letters and ball, ef7d57 letter shadow. The marquee is the lettering of `title` (the hub title art) at 2x. Colours are provisional until #18 and #19 settle the title art.",
+  "about": "Cabinet strips recoloured from cabinet.png (exported from cabinet.ase) by `bun run art` (scripts/gen-cabinets.ts). palette maps each source colour to its Sweetie-16 replacement: 1a1c2c screen, b13e53 body, 5d275d joystick base, ffcd75 marquee letters and ball, ef7d57 letter shadow. The marquee is the lettering of `title` (the hub title art) at 2x. The bevel gives the body a lit (top, left) and shaded (bottom, right) edge, the screen's lip the other way round. Colours are provisional until #18 and #19 settle the title art.",
   "cabinets": [
     {
       "name": "sweetSam",
       "file": "cabinet.png",
       "title": "sweet.png",
-      "palette": { "1a1c2c": "1a1c2c", "b13e53": "b13e53", "5d275d": "5d275d", "ffcd75": "ffcd75", "ef7d57": "ef7d57" }
+      "palette": { "1a1c2c": "1a1c2c", "b13e53": "b13e53", "5d275d": "1a1c2c", "ffcd75": "ffcd75", "ef7d57": "ef7d57" },
+      "bevel": { "light": "ef7d57", "dark": "5d275d" }
     },
     {
       "name": "firefly",
       "file": "cabinet-firefly.png",
       "title": "firefly.png",
-      "palette": { "1a1c2c": "1a1c2c", "b13e53": "3b5dc9", "5d275d": "29366f", "ffcd75": "73eff7", "ef7d57": "41a6f6" }
+      "palette": { "1a1c2c": "1a1c2c", "b13e53": "3b5dc9", "5d275d": "1a1c2c", "ffcd75": "73eff7", "ef7d57": "41a6f6" },
+      "bevel": { "light": "41a6f6", "dark": "29366f" }
     },
     {
       "name": "brassMonkey",
       "file": "cabinet-brass-monkey.png",
       "title": "brass-monkey.png",
-      "palette": { "1a1c2c": "1a1c2c", "b13e53": "257179", "5d275d": "333c57", "ffcd75": "a7f070", "ef7d57": "38b764" }
+      "palette": { "1a1c2c": "1a1c2c", "b13e53": "257179", "5d275d": "1a1c2c", "ffcd75": "a7f070", "ef7d57": "38b764" },
+      "bevel": { "light": "38b764", "dark": "333c57" }
     }
   ]
 }

@@ -27,4 +27,3 @@ Every change ships as a pull request that the repo owner reviews and merges on G
 ## Boundaries
 
 - Work reaches `main` only through a PR the owner merges. Leave `gh pr merge` and pushes to `main` to the owner, even when asked to "push" (push the branch and update the PR).
-- The pre-push hook (`.githooks/pre-push`) rejects pushes to `main` and runs `bun run check` before any push. `bun install` sets it up through the `prepare` script.

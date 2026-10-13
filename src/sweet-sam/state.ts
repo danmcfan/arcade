@@ -14,7 +14,7 @@ import {
   particleBurstBeeEatenCount,
   particleBurstPlayerEatenCount,
   particleColorRed,
-  particleColorTeal,
+  particleColorCyan,
 } from "./particle.ts";
 import {
   bonusEatFrameCount,
@@ -234,7 +234,7 @@ export class PlayState implements State {
         soundPower.play();
 
         s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
-        s.particles.spawnBurst(e.x, e.y, particleColorTeal, particleBurstBeeEatenCount);
+        s.particles.spawnBurst(e.x, e.y, particleColorCyan, particleBurstBeeEatenCount);
 
         let awardIdx = s.scaredEatAwardNext;
         if (awardIdx >= bonusEatFrameCount) {
