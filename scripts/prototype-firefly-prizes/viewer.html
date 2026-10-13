@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firefly Prize Art</title>
+    <style>
+      :root {
+        --bg: #f4f4f4;
+        --fg: #1a1c2c;
+        --panel: #e4e8ee;
+        --accent: #3b5dc9;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #1a1c2c;
+          --fg: #f4f4f4;
+          --panel: #29366f;
+          --accent: #41a6f6;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #1a1c2c;
+        --fg: #f4f4f4;
+        --panel: #29366f;
+        --accent: #41a6f6;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        max-width: 1100px;
+      }
+      canvas {
+        image-rendering: pixelated;
+        max-width: 100%;
+        display: block;
+      }
+      .panel {
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 12px;
+      }
+      fieldset {
+        border: 0;
+        padding: 0;
+        margin: 0 0 12px;
+      }
+      legend {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      label {
+        display: block;
+        cursor: pointer;
+      }
+      button {
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        margin: 2px 4px 2px 0;
+      }
+      code {
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Firefly prize art (#35)</h1>
+    <p>
+      Lantern (+1 life), Glow stick (3 sparks) and Wings (faster firefly), shown by the blue Firefly cabinet. All
+      options are new art; the Sweet Sam prizes are drawn for context. Pick one per knob, then copy your picks.
+    </p>
+    <div class="wrap">
+      <div class="panel">
+        <canvas id="scene" width="160" height="144" style="width: 480px"></canvas>
+        <label><input type="checkbox" id="sam" checked /> Show Sweet Sam prizes</label>
+      </div>
+      <div class="panel" id="knobs"></div>
+      <div class="panel" style="flex-basis: 100%">
+        <strong>Sheets at 4×</strong>
+        <canvas id="sheet" width="10" height="10"></canvas>
+      </div>
+    </div>
+    <script>
+      const DATA = /*DATA*/ null;
+      const knobs = { lantern: "L1", glowStick: "G1", wings: "W1" };
+      const presets = {
+        "Proposed (default)": { lantern: "L1", glowStick: "G1", wings: "W1" },
+        "Alt A": { lantern: "L2", glowStick: "G2", wings: "W2" },
+        "Alt B": { lantern: "L3", glowStick: "G3", wings: "W3" },
+      };
+      const hub = new Image();
+      hub.src = DATA.hub;
+      const knobsEl = document.getElementById("knobs");
+      function draw(ctx, rows, x, y, s = 1) {
+        rows.forEach((row, j) =>
+          [...row].forEach((ch, i) => {
+            if (ch === ".") return;
+            ctx.fillStyle = DATA.sweetie[ch];
+            ctx.fillRect((x + i) * s, (y + j) * s, s, s);
+          }),
+        );
+      }
+      function pick(k) {
+        return DATA.options[k].find((o) => o.id === knobs[k]);
+      }
+      function render() {
+        knobsEl.innerHTML = "";
+        for (const [name, p] of Object.entries(presets)) {
+          const b = document.createElement("button");
+          b.textContent = name;
+          b.onclick = () => {
+            Object.assign(knobs, p);
+            render();
+          };
+          knobsEl.append(b);
+        }
+        for (const [k, opts] of Object.entries(DATA.options)) {
+          const fs = document.createElement("fieldset");
+          fs.innerHTML = `<legend>${k}</legend>`;
+          for (const o of opts) {
+            const l = document.createElement("label");
+            l.innerHTML = `<input type="radio" name="${k}" ${knobs[k] === o.id ? "checked" : ""}/> ${o.label}`;
+            l.querySelector("input").onchange = () => {
+              knobs[k] = o.id;
+              render();
+            };
+            fs.append(l);
+          }
+          knobsEl.append(fs);
+        }
+        const copy = document.createElement("button");
+        copy.textContent = "Copy my picks";
+        const line = Object.entries(knobs)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(" ");
+        copy.onclick = () => navigator.clipboard?.writeText(line);
+        const c = document.createElement("p");
+        c.innerHTML = `<code>${line}</code>`;
+        knobsEl.append(copy, c);
+        drawSheet();
+      }
+      function drawSheet() {
+        const all = Object.values(DATA.options).flat();
+        const s = 4;
+        const w = all.reduce((a, o) => a + (o.frames[0][0].length + 2) * o.frames.length, 0);
+        const cv = document.getElementById("sheet");
+        cv.width = w * s;
+        cv.height = 14 * s;
+        const ctx = cv.getContext("2d");
+        let x = 0;
+        for (const o of all)
+          for (const f of o.frames) {
+            draw(ctx, f, x, 1, s);
+            x += f[0].length + 2;
+          }
+      }
+      let tick = 0;
+      function frame() {
+        const ctx = document.getElementById("scene").getContext("2d");
+        ctx.clearRect(0, 0, 160, 144);
+        if (hub.complete) ctx.drawImage(hub, 0, 0);
+        if (document.getElementById("sam").checked) for (const p of DATA.sweetSam) draw(ctx, p.rows, p.x, p.y);
+        for (const k of Object.keys(knobs)) {
+          const o = pick(k);
+          draw(ctx, o.frames[Math.floor(tick / 20) % o.frames.length], o.x, o.y);
+        }
+        tick++;
+        requestAnimationFrame(frame);
+      }
+      render();
+      frame();
+    </script>
+  </body>
+</html>
