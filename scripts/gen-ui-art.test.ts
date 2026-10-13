@@ -6,10 +6,12 @@ import { counterRect } from "../src/arcade/prizeCounter.ts";
 import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
 import { iconPalette, icons } from "../src/ui/icons.ts";
 import { cabinetArt, hubPalette, roomHeight, roomWidth } from "../src/ui/hubArt.ts";
-import { sweetie16 } from "../src/ui/palette.ts";
+import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { playerFrameHeight, playerFrames, playerFramesFor, playerFrameWidth, playerPalette, playerSheetRows, sheetOrder } from "../src/ui/playerArt.ts";
 import { newPlayer } from "../src/arcade/entity.ts";
 import { images } from "../src/engine/assets.ts";
+import { prizeArt, prizePalette } from "../src/ui/prizeArt.ts";
+import { prizes } from "../src/arcade/prizes.ts";
 import {
   counterPath,
   fontPath,
@@ -17,11 +19,13 @@ import {
   iconsPath,
   logoPath,
   playerPath,
+  prizesPath,
   renderCounter,
   renderFont,
   renderIcons,
   renderLogo,
   renderPlayer,
+  renderPrizes,
   renderRoom,
   renderTitleCard,
   roomPath,
@@ -89,9 +93,19 @@ describe("UI art source", () => {
   });
 
   test("the generated art uses Sweetie 16 colours only", () => {
-    for (const [name, palette] of Object.entries({ hubPalette, playerPalette, counterPalette, iconPalette })) {
+    for (const [name, palette] of Object.entries({ hubPalette, playerPalette, counterPalette, iconPalette, prizePalette })) {
       for (const [letter, colour] of Object.entries(palette)) {
-        expect({ name, letter, colour, sweetie16: sweetie16.includes(colour) }).toEqual({ name, letter, colour, sweetie16: true });
+        expect({ name, letter, colour, sweetie16: (sweetie16 as readonly string[]).includes(colour) }).toEqual({ name, letter, colour, sweetie16: true });
+      }
+    }
+  });
+
+  test("every prize decoration is rows of one width, in palette letters and ., and every prize has one", () => {
+    expect(Object.keys(prizeArt).sort()).toEqual(prizes.map((p) => p.id).sort());
+    const allowed = new RegExp(`^[.${Object.keys(prizePalette).join("")}]+$`);
+    for (const [id, rows] of Object.entries(prizeArt)) {
+      for (const row of rows) {
+        expect({ id, row, ok: allowed.test(row) && row.length === rows[0]!.length }).toEqual({ id, row, ok: true });
       }
     }
   });
@@ -108,7 +122,7 @@ describe("UI art source", () => {
   });
 });
 
-describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, hubArt.ts and playerArt.ts (run `bun run art` after editing them)", () => {
+describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, prizeArt.ts, hubArt.ts and playerArt.ts (run `bun run art` after editing them)", () => {
   const pngs: [name: string, path: string, render: () => PNG][] = [
     ["font.png", fontPath, renderFont],
     ["logo.png", logoPath, renderLogo],
@@ -116,6 +130,7 @@ describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, hubArt
     ["counter.png", counterPath, renderCounter],
     ["arcade.png", roomPath, renderRoom],
     ["player.png", playerPath, renderPlayer],
+    ["prizes.png", prizesPath, renderPrizes],
     ...titleCards.map((card): [string, string, () => PNG] => [card.file, titleCardPath(card.file), () => renderTitleCard(card)]),
   ];
   for (const [name, path, render] of pngs) {

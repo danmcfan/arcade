@@ -1,12 +1,13 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, counter.png, arcade.png, player.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, counter.png, prizes.png, arcade.png, player.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. logo.png is "ARCADE" in the
 // title-card display font with a drop shadow. icons.png is the HUD icons from
 // src/ui/icons.ts. counter.png is the hub's prize counter from
-// src/ui/counterArt.ts. arcade.png is the hub room with its cabinets
+// src/ui/counterArt.ts. prizes.png is the hub's prize decorations from
+// src/ui/prizeArt.ts. arcade.png is the hub room with its cabinets
 // (src/ui/hubArt.ts) and player.png the player's sprite sheet
 // (src/ui/playerArt.ts). Each of `titleCards` is its hub title card with the top
 // line of lettering replaced by `text`. gen-ui-art.test.ts fails when the
@@ -40,28 +41,11 @@ import { newMachines } from "../src/arcade/machine.ts";
 import { counterArt, counterPalette } from "../src/ui/counterArt.ts";
 import { hubPalette, roomRows } from "../src/ui/hubArt.ts";
 import { playerPalette, playerSheetRows } from "../src/ui/playerArt.ts";
+import { prizeArt, prizePalette, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
+import type { PrizeId } from "../src/arcade/prizes.ts";
 import { iconPalette, iconRects, icons, iconSheetHeight, iconSheetWidth, type IconName } from "../src/ui/icons.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-
-function hex(css: string): [number, number, number] {
-  const n = Number.parseInt(css.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function plot(png: PNG, x: number, y: number, css: string): void {
-  const i = (y * png.width + x) * 4;
-  const [r, g, b] = hex(css);
-  png.data[i] = r;
-  png.data[i + 1] = g;
-  png.data[i + 2] = b;
-  png.data[i + 3] = 255;
-}
-
-function blank(width: number, height: number): PNG {
-  const png = new PNG({ width, height });
-  png.data.fill(0);
-  return png;
-}
+import { blank, paint, plot, type Palette, type Rows } from "./pixel-art.ts";
 
 export function renderFont(): PNG {
   const png = blank(fontSheetWidth, fontSheetHeight);
@@ -81,7 +65,7 @@ export function renderFont(): PNG {
 
 export function renderLogo(): PNG {
   const png = blank(logoWidth, logoHeight);
-  const paint = (dx: number, dy: number, color: (y: number) => string): void => {
+  const letter = (dx: number, dy: number, color: (y: number) => string): void => {
     let ox = 0;
     for (const ch of logoWord) {
       const rows = logoLetters[ch]!;
@@ -93,31 +77,31 @@ export function renderLogo(): PNG {
       ox += rows[0]!.length + logoGap;
     }
   };
-  paint(logoShadow[0], logoShadow[1], () => logoShadowColor);
-  paint(0, 0, (y) => logoBands.find((b) => y < b.until)!.color);
+  letter(logoShadow[0], logoShadow[1], () => logoShadowColor);
+  letter(0, 0, (y) => logoBands.find((b) => y < b.until)!.color);
   return png;
 }
 
 export function renderIcons(): PNG {
   const png = blank(iconSheetWidth, iconSheetHeight);
   for (const [name, rows] of Object.entries(icons) as [IconName, readonly string[]][]) {
-    rows.forEach((row, y) => {
-      [...row].forEach((px, x) => {
-        if (px !== ".") plot(png, iconRects[name].x + x, y, iconPalette[px]!);
-      });
-    });
+    paint(png, rows, iconPalette, iconRects[name].x, 0);
   }
   return png;
 }
 
 /** Rows of palette letters (`.` is blank) as an image. */
-function renderRows(rows: readonly string[], palette: Readonly<Record<string, string>>): PNG {
+function renderRows(rows: Rows, palette: Palette): PNG {
   const png = blank(rows[0]!.length, rows.length);
-  rows.forEach((row, y) => {
-    [...row].forEach((px, x) => {
-      if (px !== ".") plot(png, x, y, palette[px]!);
-    });
-  });
+  paint(png, rows, palette);
+  return png;
+}
+
+export function renderPrizes(): PNG {
+  const png = blank(prizeSheetWidth, prizeSheetHeight);
+  for (const [id, rows] of Object.entries(prizeArt) as [PrizeId, readonly string[]][]) {
+    paint(png, rows, prizePalette, prizeRects[id].x, 0);
+  }
   return png;
 }
 
@@ -166,6 +150,7 @@ export const fontPath = join(repoRoot, "src/assets/images/font.png");
 export const logoPath = join(repoRoot, "src/assets/images/logo.png");
 export const iconsPath = join(repoRoot, "src/assets/images/icons.png");
 export const counterPath = join(repoRoot, "src/assets/images/counter.png");
+export const prizesPath = join(repoRoot, "src/assets/images/prizes.png");
 export const roomPath = join(repoRoot, "src/assets/images/arcade.png");
 export const playerPath = join(repoRoot, "src/assets/images/player.png");
 
@@ -174,6 +159,7 @@ if (import.meta.main) {
   writeFileSync(logoPath, PNG.sync.write(renderLogo()));
   writeFileSync(iconsPath, PNG.sync.write(renderIcons()));
   writeFileSync(counterPath, PNG.sync.write(renderCounter()));
+  writeFileSync(prizesPath, PNG.sync.write(renderPrizes()));
   writeFileSync(roomPath, PNG.sync.write(renderRoom()));
   writeFileSync(playerPath, PNG.sync.write(renderPlayer()));
   for (const card of titleCards) {
@@ -181,6 +167,6 @@ if (import.meta.main) {
     console.log(`wrote ${titleCardPath(card.file)} ("${card.text}")`);
   }
   console.log(
-    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}), ${counterPath}, ${roomPath} and ${playerPath}`,
+    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}), ${counterPath}, ${prizesPath} (${prizeSheetWidth}x${prizeSheetHeight}), ${roomPath} and ${playerPath}`,
   );
 }

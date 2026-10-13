@@ -6,8 +6,9 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { Game, type Progress } from "./game.ts";
-import type { GameSnapshot, GearheadSnapshot, SoftwareSnapshot } from "./snapshot.ts";
+import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snapshot.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
+import type { PrizeId } from "../arcade/prizes.ts";
 
 class FakeSoftware implements Software {
   updates: Input[] = [];
@@ -18,6 +19,7 @@ class FakeSoftware implements Software {
     readonly name: SoftwareName,
     readonly highScore: number,
     private readonly bg: Sprite,
+    readonly prizes: readonly PrizeId[] = [],
   ) {}
   background(): Sprite {
     return this.bg;
@@ -35,7 +37,7 @@ class FakeSoftware implements Software {
     return this.points;
   }
   snapshot(): SoftwareSnapshot {
-    const s: GearheadSnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
+    const s: BrassMonkeySnapshot = { x: this.updates.length, y: 0, frame: 0, left: false, moving: false, joystick: 0 };
     return s;
   }
 }
@@ -49,16 +51,16 @@ class FakeFixed extends FakeSoftware implements FixedViewport {
 /** Fake factory: hive is a FixedViewport, the others stay plain Software (224x288 / 224x256 background) so the margin path stays covered. */
 function fakes() {
   const built: FakeSoftware[] = [];
-  const factory = (name: SoftwareName, highScore: number): Software => {
+  const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     let sw: FakeSoftware;
     if (name === "hive") {
       soundStart.rewind();
       soundStart.play();
-      sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"));
+      sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"), prizes);
     } else if (name === "firefly") {
-      sw = new FakeSoftware(name, highScore, makeSolid(224, 288, "#000"));
+      sw = new FakeSoftware(name, highScore, makeSolid(224, 288, "#000"), prizes);
     } else {
-      sw = new FakeSoftware(name, highScore, makeSolid(224, 256, "#000"));
+      sw = new FakeSoftware(name, highScore, makeSolid(224, 256, "#000"), prizes);
     }
     built.push(sw);
     return sw;
@@ -91,8 +93,8 @@ function enterHive(game: Game): void {
   run(game, 31, { up: true });
   game.step(input({ up: true, space: true }));
 }
-/** From spawn, walk to the gearhead cabinet and press Space. */
-function enterGearhead(game: Game): void {
+/** From spawn, walk to the Brass Monkey cabinet and press Space. */
+function enterBrassMonkey(game: Game): void {
   run(game, 31, { up: true });
   run(game, 24, { left: true });
   game.step(input({ up: true, space: true }));
@@ -153,10 +155,10 @@ describe("snapshot", () => {
 
   test("inside a software, sw is that software's snapshot", () => {
     const { game } = newGame();
-    enterGearhead(game);
+    enterBrassMonkey(game);
     run(game, 3);
     const s = snap(game);
-    expect(s.software).toBe("gearhead");
+    expect(s.software).toBe("brassMonkey");
     expect(s.sw).toEqual({ x: 3, y: 0, frame: 0, left: false, moving: false, joystick: 0 });
   });
 });
@@ -423,7 +425,7 @@ describe("minigame pause menu", () => {
 
 describe("payout", () => {
   function endRun(points: number, tokens = 5) {
-    const g = newGame(null, { highScore: 0, tokens, tickets: 0, player: { x: 80, y: 92, dir: "DOWN" } });
+    const g = newGame(null, { highScore: 0, tokens, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
     enterHive(g.game);
     const sw = g.built[0]!;
     sw.points = points;
@@ -509,7 +511,7 @@ describe("payout", () => {
 describe("prize counter", () => {
   /** A hub with these counts; the player walks down to the counter and presses Space. */
   function atCounter(tokens: number, tickets: number) {
-    const g = newGame(null, { highScore: 0, tokens, tickets, player: { x: 80, y: 92, dir: "DOWN" } });
+    const g = newGame(null, { highScore: 0, tokens, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
     run(g.game, 2, { down: true });
     g.game.step(input({ down: true, space: true }));
     g.game.step(input());
@@ -561,8 +563,8 @@ describe("prize counter", () => {
 
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
-    tap(game, "down");
-    expect(snap(game).cursor).toBe(1);
+    tap(game, "up");
+    expect(snap(game).cursor).toBe(4);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
     expect(snap(game).cursor).toBe(0);
@@ -571,13 +573,75 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move the cursor round the two items with the move blip", () => {
+  test("Up and Down move the cursor round the five items (token, three prizes, CLOSE) with the move blip", () => {
     const { game } = atCounter(5, 0);
     const sounds = heard(game, () => tap(game, "up"));
-    expect(snap(game).cursor).toBe(1);
+    expect(snap(game).cursor).toBe(4);
     expect(sounds).toEqual(["rewind:move", "play:move"]);
     tap(game, "down");
     expect(snap(game).cursor).toBe(0);
+    for (let i = 1; i <= 4; i++) {
+      tap(game, "down");
+      expect(snap(game).cursor).toBe(i);
+    }
+  });
+
+  /** The prize counter menu with the cursor on prize `n` (0 = honey jar). */
+  function atPrize(tickets: number, n: number, prizes: PrizeId[] = []) {
+    const g = newGame(null, { highScore: 0, tokens: 5, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+    run(g.game, 2, { down: true });
+    g.game.step(input({ down: true, space: true }));
+    g.game.step(input());
+    for (let i = 0; i <= n; i++) tap(g.game, "down");
+    return g;
+  }
+
+  test("Space on a prize the player can afford buys it: its price comes off once and it is owned", () => {
+    const { game } = atPrize(60, 0);
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(sounds).toEqual(["rewind:select", "play:select"]);
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
+    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
+    expect(snap(game).menu).toBe("prizeCounter");
+  });
+
+  test("an owned prize can't be bought again: the no sound, nothing taken", () => {
+    const { game } = atPrize(60, 0);
+    tap(game, "space");
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
+  });
+
+  test("an unaffordable prize can't be bought: the no sound, nothing taken", () => {
+    const { game } = atPrize(99, 2);
+    const sounds = heard(game, () => tap(game, "space"));
+    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+    expect(snap(game).arcade.tickets).toBe(99);
+    expect(snap(game).arcade.prizes).toBeUndefined();
+  });
+
+  test("prizes are kept in catalogue order whatever order they were bought in", () => {
+    const { game } = atPrize(200, 2);
+    tap(game, "space"); // sleepy bees
+    tap(game, "up");
+    tap(game, "space"); // running shoes
+    expect(snap(game).arcade).toMatchObject({ tickets: 50, prizes: ["runningShoes", "sleepyBees"] });
+  });
+
+  test("owned prizes go to every minigame the player starts, paid or free play", () => {
+    const { game, built } = atPrize(60, 0);
+    tap(game, "space");
+    tap(game, "escape");
+    run(game, 40, { up: true });
+    game.step(input({ up: true, space: true }));
+    expect(snap(game)).toMatchObject({ software: "hive", run: "paid" });
+    expect(built[0]!.prizes).toEqual(["honeyJar"]);
+
+    const free = newGame(null, { highScore: 0, tokens: 0, tickets: 0, prizes: ["sleepyBees"], player: { x: 80, y: 92, dir: "UP" } });
+    enterHive(free.game);
+    expect(snap(free.game).run).toBe("free");
+    expect(free.built[0]!.prizes).toEqual(["sleepyBees"]);
   });
 
   test("with 5 or more tickets, Space buys a token for 5 and the counts update at once", () => {
@@ -630,13 +694,30 @@ describe("progress", () => {
     const { game } = newGame();
     enterHive(game);
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 0 });
-    const restored = new Game(null, { createSoftware: fakes().factory, restore: { highScore: 9, tokens: 2, tickets: 31, player: { x: 80, y: 92, dir: "UP" } } });
+    const restored = new Game(null, { createSoftware: fakes().factory, restore: { highScore: 9, tokens: 2, tickets: 31, prizes: [], player: { x: 80, y: 92, dir: "UP" } } });
     games.push(restored);
     expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
   });
 
+  test("carries owned prizes, and restore brings them back in catalogue order", () => {
+    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, prizes: ["sleepyBees", "honeyJar"], player: { x: 80, y: 92, dir: "UP" } });
+    expect(game.progress().prizes).toEqual(["honeyJar", "sleepyBees"]);
+    expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees"]);
+  });
+
+  test("a fresh hub owns no prizes, and its snapshot has no prizes key (the parity traces predate prizes)", () => {
+    const { game } = newGame();
+    expect(game.progress().prizes).toEqual([]);
+    expect("prizes" in snap(game).arcade).toBe(false);
+  });
+
+  test("a minigame started straight from game.New gets no prizes", () => {
+    const { built } = newGame("hive");
+    expect(built[0]!.prizes).toEqual([]);
+  });
+
   test("a saved position inside the prize counter keeps the start position", () => {
-    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, player: { x: 80, y: 100, dir: "LEFT" } });
+    const { game } = newGame(null, { highScore: 0, tokens: 5, tickets: 0, prizes: [], player: { x: 80, y: 100, dir: "LEFT" } });
     expect(snap(game).arcade.player).toMatchObject({ x: 80, y: 92, dir: "LEFT" });
   });
 });
@@ -661,7 +742,7 @@ describe("debug mode and layout", () => {
   const sizes: [SoftwareName, [number, number], [number, number]][] = [
     ["hive", [336, 428], [456, 428]],
     ["firefly", [256, 320], [376, 320]],
-    ["gearhead", [256, 288], [376, 288]],
+    ["brassMonkey", [256, 288], [376, 288]],
   ];
   for (const [name, plain, debug] of sizes) {
     test(`${name} layout is ${plain.join("x")}, ${debug.join("x")} with debug`, () => {
@@ -675,7 +756,7 @@ describe("debug mode and layout", () => {
   }
 
   test("Shift+P inside a software still updates the software that tick", () => {
-    const { game, built } = newGame("gearhead");
+    const { game, built } = newGame("brassMonkey");
     game.step(input());
     game.step(input({ shiftP: true }));
     expect(built[0]?.updates.length).toBe(1);

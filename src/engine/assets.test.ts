@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
-import { allImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
+import { allImages, fireflyImages, images, loadImages, lumberjackImages, sounds } from "./assets.ts";
 import type { ImageAsset } from "./image.ts";
 
 function pngSize(path: string): { width: number; height: number } {
@@ -21,12 +21,19 @@ describe("image registry (D12)", () => {
     }
   });
 
-  test("registers every arcade PNG except the unused shipExplosion.png", () => {
+  test("registers every arcade PNG", () => {
     const registered = Object.values(images).map((a) => basename(a.url));
-    const onDisk = readdirSync(new URL("../assets/images", import.meta.url)).filter(
-      (f) => f.endsWith(".png") && f !== "shipExplosion.png",
-    );
+    const onDisk = readdirSync(new URL("../assets/images", import.meta.url)).filter((f) => f.endsWith(".png"));
     expect(registered.sort()).toEqual(onDisk.sort());
+  });
+
+  test("registers every Firefly PNG, and none of the Go space art is left", () => {
+    const registered = Object.values(fireflyImages).map((a) => basename(a.url));
+    const onDisk = readdirSync(new URL("../assets/images/firefly", import.meta.url));
+    expect(registered.sort()).toEqual(onDisk.sort());
+    const gone = ["galaxy.png", "ship.png", "bullet.png", "bug.png", "explosion.png", "shipExplosion.png"];
+    const all = readdirSync(new URL("../assets/images", import.meta.url), { recursive: true }).map((f) => basename(String(f)));
+    expect(all.filter((f) => gone.includes(f))).toEqual([]);
   });
 
   test("registers the 9 lumberjack sheets by their Go paths", () => {

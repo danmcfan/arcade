@@ -16,7 +16,7 @@ Read at review time (`/code-review`, Standards axis). These rules are judgement 
 - **Generated assets change at their source.** Font, logo and sound changes edit `src/ui/glyphs.ts` / `src/ui/sounds.ts` and commit the regenerated PNG/WAV in the same change. Watch for a hand-edited generated file.
 - **Controls are shown as key caps.** Any on-screen control hint uses the key-cap style of the intro and Controls panel (`drawKey` in `src/ui/text.ts`), with the same labels everywhere.
 - **Destructive choices confirm, safe option first.** Anything that deletes progress (New game over a save) asks first, with No selected by default. A menu offers only the choices that are possible right now: Continue is hidden, not greyed out, when there is no save.
-- **Player-facing names come from the glossary.** Use Sweet Sam, Firefly, Brass Monkey, token and ticket in on-screen text and docs. Code names (`hive`, `gearhead`) stay in code.
+- **Player-facing names come from the glossary.** Use Sweet Sam, Firefly, Brass Monkey, token and ticket in on-screen text and docs. Code names (`hive`, `brassMonkey`) stay in code.
 
 ## Structure
 

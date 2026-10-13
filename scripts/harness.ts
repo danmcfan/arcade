@@ -94,6 +94,8 @@ export interface Verify {
   snapshot<T extends SceneSnapshot = SceneSnapshot>(): T;
   /** A real keydown on `code` (e.g. "Space", "ArrowLeft"), held `ms` so the game loop sees it, then keyup. */
   key(code: string, ms?: number): void;
+  /** Keydown on `code`, run `play` (more `key()` and `wait()` calls) while it is held, then keyup: Space held while steering, say. */
+  hold(code: string, play: () => void): void;
   /**
    * Emulate a phone for the rest of this run: the `device` viewport (an
    * agent-browser device name) plus a touch screen, so `(pointer: coarse)`
@@ -135,10 +137,14 @@ export function upscale(png: Buffer, scale: number): Buffer {
   return PNG.sync.write(dst);
 }
 
-function keyScript(code: string, ms: number): string {
+function keyInit(code: string): string {
   // `key` matters too: some handlers fall back to it when `code` is empty.
   const key = code === "Space" ? " " : code.startsWith("Key") ? code.slice(3).toLowerCase() : code;
-  const init = JSON.stringify({ code, key, bubbles: true });
+  return JSON.stringify({ code, key, bubbles: true });
+}
+
+function keyScript(code: string, ms: number): string {
+  const init = keyInit(code);
   return `(async () => {
     window.dispatchEvent(new KeyboardEvent("keydown", ${init}));
     await new Promise((r) => setTimeout(r, ${ms}));
@@ -254,6 +260,14 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     },
     key(code, ms = 120) {
       page.eval(keyScript(code, ms));
+    },
+    hold(code, play) {
+      page.eval(`window.dispatchEvent(new KeyboardEvent("keydown", ${keyInit(code)})); "ok"`);
+      try {
+        play();
+      } finally {
+        page.eval(`window.dispatchEvent(new KeyboardEvent("keyup", ${keyInit(code)})); "ok"`);
+      }
     },
     async phone(device = "iPhone 15") {
       page.run("set", "device", device);

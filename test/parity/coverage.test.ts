@@ -43,7 +43,7 @@ test("every registered parity scenario has an input script and a trace", () => {
 // §4.4 required scenarios (rng is covered by src/engine/rng.test.ts).
 const REQUIRED = [
   "arcade-walk",
-  "arcade-enter-gearhead",
+  "arcade-enter-brass-monkey",
   "arcade-enter-hive",
   "arcade-enter-firefly",
   "hive-fuzz-1",
@@ -53,7 +53,7 @@ const REQUIRED = [
   "hive-clear",
   "hive-highscore",
   "firefly-play",
-  "gearhead-walk",
+  "brass-monkey-walk",
   "wave-64-seed7",
   "wave-128-seed3",
   "lumberjack-chop",

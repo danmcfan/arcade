@@ -3,7 +3,7 @@
 import type { Input } from "../engine/input.ts";
 import { soundDeath, soundPower, soundStart } from "../engine/assets.ts";
 import type { HiveStateId } from "../game/snapshot.ts";
-import { framesPerSecond, blueFramesDuration } from "./constants.ts";
+import { framesPerSecond } from "./constants.ts";
 import { cameraShakeEnemyEatIntensity, cameraShakeEnemyEatTicks, cameraShakePowerPelletIntensity, cameraShakePowerPelletTicks } from "./camera.ts";
 import { particleBurstBeeEatenCount, particleBurstPlayerEatenCount, particleColorRed, particleColorTeal } from "./particle.ts";
 import { bonusEatFrameCount, resetScaredEatAwardIfNobodyScared, scaredBeeEatPoints, spawnBonusEatIndicator } from "./bonusEat.ts";
@@ -16,7 +16,6 @@ import {
   velocityEnemyNormal,
   velocityEnemyPower,
   velocityEnemyTunnel,
-  velocityPlayerNormal,
   velocityPlayerPower,
 } from "./entity.ts";
 import {
@@ -180,7 +179,7 @@ export class PlayState implements State {
       return stateIDStart;
     }
 
-    s.player.velocity = velocityPlayerNormal;
+    s.player.velocity = s.advantages.playerVelocity;
     for (const e of s.enemies) {
       e.velocity = velocityEnemyNormal;
       if (e.blueFrames > 0) {
@@ -276,7 +275,7 @@ export class PlayState implements State {
           e.reverseDirection = true;
           e.reverseTile = pointToTile(e.x, e.y);
 
-          e.blueFrames = blueFramesDuration;
+          e.blueFrames = s.advantages.blueFrames;
           e.flashFrames = 0;
           e.flash = false;
         }

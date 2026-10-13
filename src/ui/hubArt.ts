@@ -16,7 +16,7 @@ export const hubPalette: Readonly<Record<string, string>> = {
   t: "#b13e53",
   f: "#29366f",
   F: "#333c57",
-  // Brass Monkey (gearhead)
+  // Brass Monkey
   g: "#38b764",
   G: "#a7f070",
   e: "#257179",
@@ -74,7 +74,7 @@ export const cabinetArt: readonly string[] = [
 
 /** Each cabinet's colours (palette letters for `1`, `2` and `3`): the colours of its minigame. */
 export const cabinetColours: Readonly<Record<ArcadeTitle, readonly [top: string, light: string, body: string]>> = {
-  gearhead: ["g", "G", "e"],
+  brassMonkey: ["g", "G", "e"],
   sweet: ["o", "y", "r"],
   firefly: ["b", "c", "d"],
 };

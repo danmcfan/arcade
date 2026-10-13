@@ -17,6 +17,7 @@
 import type { Direction } from "../engine/input.ts";
 import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
+import type { PrizeId } from "../arcade/prizes.ts";
 
 /** Fields every top-level scene snapshot carries. */
 export interface SceneSnapshotBase {
@@ -30,7 +31,7 @@ export interface SceneSnapshotBase {
 // game (internal/game + internal/arcade)
 
 /** Title image shown by the hub: Go `State.imageTitle` (nil → null). */
-export type ArcadeTitle = "gearhead" | "sweet" | "firefly";
+export type ArcadeTitle = "brassMonkey" | "sweet" | "firefly";
 
 export interface ArcadePlayerSnapshot {
   /** `entity.X` (float64). */
@@ -48,7 +49,7 @@ export interface ArcadeSnapshot {
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
   /**
-   * `State.imageTitle`: `assets.ImageTitleGearhead` → "gearhead",
+   * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
    */
   title: ArcadeTitle | null;
@@ -58,6 +59,12 @@ export interface ArcadeSnapshot {
   tokens: number;
   /** Tickets won so far (no Go original). */
   tickets: number;
+  /**
+   * Prizes the player owns, in catalogue order (no Go original, #22). The
+   * key is absent while they own none, so the traces recorded before prizes
+   * existed (which own none) still match key for key.
+   */
+  prizes?: PrizeId[];
 }
 
 /** How the running minigame was started (`RunKind` in src/arcade/state.ts). */
@@ -81,7 +88,7 @@ export interface GameSnapshot extends SceneSnapshotBase {
   menu: GameMenu | null;
   /**
    * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
-   * or the prize counter menu (the token, CLOSE). Stays 1 (CONTROLS) while
+   * or the prize counter menu (the token, the prizes, CLOSE). Stays 1 (CONTROLS) while
    * the controls panel shows; 0 in the hub, the running minigame and the
    * payout.
    */
@@ -278,9 +285,9 @@ export interface FireflySnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// gearhead (internal/gearhead)
+// brassMonkey (the Go port's Brass Monkey package)
 
-export interface GearheadSnapshot {
+export interface BrassMonkeySnapshot {
   /** `player.Position.X`. */
   x: number;
   /** `player.Position.Y`. */
@@ -291,12 +298,12 @@ export interface GearheadSnapshot {
   left: boolean;
   /** `player.Moving`. */
   moving: boolean;
-  /** `GearheadSoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
+  /** `BrassMonkeySoftware.cabinetJoystickFrame` (TS only, #15; like `HiveSnapshot.joystick`). */
   joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
-export type SoftwareSnapshot = HiveSnapshot | FireflySnapshot | GearheadSnapshot;
+export type SoftwareSnapshot = HiveSnapshot | FireflySnapshot | BrassMonkeySnapshot;
 
 // ---------------------------------------------------------------------------
 // wave (internal/wave, lab scene)

@@ -16,6 +16,10 @@ _Avoid_: gamer, avatar, hero
 An arcade machine: one in the hub that the player steps up to, and the same machine's bezel framing the minigame while it is played.
 _Avoid_: machine (in prose), arcade box
 
+**Use prompt**:
+The small Space key icon that shows above a cabinet or the prize counter when the player can use it.
+_Avoid_: highlight, hint, interaction prompt
+
 **Minigame**:
 A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
 _Avoid_: level, mode, sub-game
@@ -28,9 +32,53 @@ _Avoid_: hive (in player-facing text), bear game
 The Galaga-style shooter: a firefly fighting off the insects and birds that try to eat it.
 _Avoid_: galaxy, space shooter
 
+**Stage**:
+One group of Firefly enemies that flies in and attacks. The next stage starts when the player kills them all, and each stage is harder.
+_Avoid_: wave, level, round
+
+**Spark**:
+The light the firefly shoots at enemies.
+_Avoid_: bullet, laser, shot (for the firefly's)
+
+**Moth**:
+The basic Firefly enemy. One hit kills it.
+_Avoid_: bug, bee, grunt
+
+**Wasp**:
+The Firefly enemy that dives at the firefly most often. One hit kills it.
+_Avoid_: butterfly, diver
+
+**Owl**:
+The large Firefly enemy, a bird that swoops down to eat the firefly. Two hits kill it.
+_Avoid_: boss, bird (when the Owl is meant)
+
 **Brass Monkey**:
-The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `gearhead` until it is renamed.
-_Avoid_: gearhead (in player-facing text), gnome game
+The Donkey Kong-style platformer: a robot monkey escaping the factory of the gnome who built it. Code name `brassMonkey` (`src/brass-monkey/`).
+_Avoid_: gnome game
+
+**Gnome**:
+The Brass Monkey villain who built the monkey. It stands at the top of each floor and sends hazards down.
+_Avoid_: boss, Kong
+
+**Floor**:
+One factory floor in Brass Monkey. The monkey escapes it by climbing to its exit.
+_Avoid_: level, stage, board
+
+**Hazard**:
+Anything the gnome sends that costs the monkey a life when it touches the monkey: a gear or an ember.
+_Avoid_: enemy, obstacle
+
+**Gear**:
+A hazard that rolls down the girders. The monkey jumps over it.
+_Avoid_: barrel, cog
+
+**Ember**:
+A hazard that moves along the girders and climbs ladders.
+_Avoid_: spark (a spark is the firefly's light), fireball
+
+**Bolt**:
+An item the monkey collects in Brass Monkey for points.
+_Avoid_: coin, pickup
 
 **Lab scene**:
 A demo reachable only by URL (`?scene=wave`, `?scene=lumberjack`), outside the hub and not part of the game.
@@ -77,7 +125,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the hub high score, where the player stood, and their tokens and tickets. Minigame progress is not part of it.
+What Continue restores: the hub high score, where the player stood, their tokens and tickets, and the prizes they own. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

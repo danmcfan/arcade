@@ -4,7 +4,7 @@
 // menu (Resume / Controls / Quit game), and a minigame that ends shows the
 // payout, which turns its score into tickets, before the hub comes back.
 // Space at the prize counter opens the prize counter menu over the hub, where
-// tickets buy tokens.
+// tickets buy tokens and prizes.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import {
@@ -26,11 +26,12 @@ import type { Surface } from "../engine/surface.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
 import { buyToken, tokenOffer } from "../arcade/prizeCounter.ts";
+import { buyPrize, inCatalogueOrder, prizeOffers, prizes, type PrizeId } from "../arcade/prizes.ts";
 import { blocked, newState, type RunKind, type State } from "../arcade/state.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./registry.ts";
-import { minigamePauseMenu, prizeCounterItems, quitGameIndex, tokenItemIndex } from "./menus.ts";
+import { closeItemIndex, firstPrizeIndex, minigamePauseMenu, prizeCounterItems, quitGameIndex, tokenItemIndex } from "./menus.ts";
 import { drawHud } from "../ui/hud.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
@@ -41,11 +42,13 @@ const buffer = 16;
 
 const initialDebugMode = false;
 
-/** What "Continue" brings back: the hub high score, tokens and tickets, and where the player stood. */
+/** What "Continue" brings back: the hub high score, tokens, tickets and prizes, and where the player stood. */
 export interface Progress {
   highScore: number;
   tokens: number;
   tickets: number;
+  /** Owned prizes, in catalogue order. */
+  prizes: PrizeId[];
   player: { x: number; y: number; dir: Direction };
 }
 
@@ -102,7 +105,7 @@ export class Game implements Scene {
   constructor(initialSoftware: SoftwareName | null, deps: GameDeps = {}) {
     const factory = deps.createSoftware ?? createSoftware;
     this.unsubscribe = addSoundListener((e) => this.pendingSounds.push(e));
-    const sw = initialSoftware === null ? null : factory(initialSoftware, 0);
+    const sw = initialSoftware === null ? null : factory(initialSoftware, 0, []);
     this.arcade = newState(sw, factory);
     if (deps.restore) this.restore(deps.restore);
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
@@ -118,6 +121,7 @@ export class Game implements Scene {
     this.arcade.highScore = p.highScore;
     this.arcade.tokens = p.tokens;
     this.arcade.tickets = p.tickets;
+    this.arcade.prizes = inCatalogueOrder(p.prizes);
     player.direction = p.player.dir;
     const rect = { x: p.player.x - player.width / 2, y: p.player.y - player.height / 2, w: player.width, h: player.height };
     const inside = rect.x >= 0 && rect.y >= 0 && rect.x + rect.w <= imageArcade.w && rect.y + rect.h <= imageArcade.h;
@@ -135,7 +139,7 @@ export class Game implements Scene {
   progress(): Progress {
     const a = this.arcade;
     const p = a.player;
-    return { highScore: a.highScore, tokens: a.tokens, tickets: a.tickets, player: { x: p.x, y: p.y, dir: p.direction } };
+    return { highScore: a.highScore, tokens: a.tokens, tickets: a.tickets, prizes: [...a.prizes], player: { x: p.x, y: p.y, dir: p.direction } };
   }
 
   /** Silence the hub melody while a menu covers the game. */
@@ -214,7 +218,7 @@ export class Game implements Scene {
   }
 
   private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
-    const n = prizeCounterItems(tokenOffer(this.arcade)).length;
+    const n = prizeCounterItems(tokenOffer(this.arcade), prizeOffers(this.arcade)).length;
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta !== 0) {
       this.cursor = (this.cursor + delta + n) % n;
@@ -229,6 +233,17 @@ export class Game implements Scene {
       soundSelect.blip();
       this.arcade.tokens = after.tokens;
       this.arcade.tickets = after.tickets;
+      return;
+    }
+    if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
+      const after = buyPrize(this.arcade, prizes[this.cursor - firstPrizeIndex]!.id);
+      if (after === null) {
+        soundDeny.blip();
+        return;
+      }
+      soundSelect.blip();
+      this.arcade.tickets = after.tickets;
+      this.arcade.prizes = after.prizes;
       return;
     }
     if (!edges.space && !edges.escape) return;
@@ -402,6 +417,7 @@ export class Game implements Scene {
         highScore: this.arcade.highScore,
         tokens: this.arcade.tokens,
         tickets: this.arcade.tickets,
+        ...(this.arcade.prizes.length > 0 ? { prizes: [...this.arcade.prizes] } : {}),
       },
       run: this.run,
       menu: this.menu,

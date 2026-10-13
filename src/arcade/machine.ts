@@ -6,17 +6,19 @@
 // name (`ArcadeTitle`), which is also what the snapshot reports.
 
 import type { Sprite } from "../engine/image.ts";
-import { imageTitleFirefly, imageTitleGearhead, imageTitleSweet } from "../engine/assets.ts";
+import { imageTitleFirefly, imageTitleBrassMonkey, imageTitleSweet } from "../engine/assets.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { checkCollision, type Rect } from "./collision.ts";
+import type { PrizeId } from "./prizes.ts";
 import { tileSize } from "./state.ts";
 
-export type SoftwareFactory = (name: SoftwareName, highScore: number) => Software;
+/** Builds a minigame for a run: the hub high score and the prizes the player owns. */
+export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
 
 /** Go `assets.ImageTitle*`, keyed by the title's name. */
 export const titleImages: Readonly<Record<ArcadeTitle, Sprite>> = {
-  gearhead: imageTitleGearhead,
+  brassMonkey: imageTitleBrassMonkey,
   sweet: imageTitleSweet,
   firefly: imageTitleFirefly,
 };
@@ -25,25 +27,25 @@ export interface Machine {
   rect: Rect;
   /** Go `imageTitle`, by name; the sprite is `titleImages[title]`. */
   title: ArcadeTitle;
-  newSoftware: (highScore: number) => Software;
+  newSoftware: (highScore: number, prizes: readonly PrizeId[]) => Software;
 }
 
 export function newMachines(factory: SoftwareFactory): Machine[] {
   return [
     {
       rect: { x: tileSize * 6, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
-      title: "gearhead",
-      newSoftware: (highScore) => factory("gearhead", highScore),
+      title: "brassMonkey",
+      newSoftware: (highScore, prizes) => factory("brassMonkey", highScore, prizes),
     },
     {
       rect: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "sweet",
-      newSoftware: (highScore) => factory("hive", highScore),
+      newSoftware: (highScore, prizes) => factory("hive", highScore, prizes),
     },
     {
       rect: { x: tileSize * 12, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
       title: "firefly",
-      newSoftware: (highScore) => factory("firefly", highScore),
+      newSoftware: (highScore, prizes) => factory("firefly", highScore, prizes),
     },
   ];
 }

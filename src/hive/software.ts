@@ -30,6 +30,7 @@ import {
 } from "./state.ts";
 import { modeScatter, restartRound, update, type Mode } from "./update.ts";
 import { draw, type DrawCache } from "./draw.ts";
+import { noAdvantages, type HiveAdvantages } from "./advantages.ts";
 
 export { framesPerSecond, blueFramesDuration } from "./constants.ts";
 
@@ -61,6 +62,8 @@ export class HiveSoftware implements FixedViewport {
   /** Go `HiveSoftware.score` (renamed: `score()` is the Software method). */
   scoreValue = 0;
   highScore: number;
+  /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
+  readonly advantages: Readonly<HiveAdvantages>;
 
   readonly scoreDial: DigitReels = newDigitReels();
   readonly highScoreDial: DigitReels = newDigitReels();
@@ -78,8 +81,9 @@ export class HiveSoftware implements FixedViewport {
   /** Lazily created draw resources (Go `digitDialScratch`); never touched by update (D12). */
   drawCache: DrawCache = { digitDialScratch: null };
 
-  constructor(highscore: number) {
+  constructor(highscore: number, advantages: Readonly<HiveAdvantages> = noAdvantages) {
     this.highScore = highscore;
+    this.advantages = advantages;
 
     this.startState = new StartState(this);
     this.stateMachine.registerState(stateIDStart, this.startState);
@@ -89,7 +93,7 @@ export class HiveSoftware implements FixedViewport {
     this.stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(this));
     this.stateMachine.registerState(stateIDGameOver, new GameOverState());
 
-    this.lives = 3;
+    this.lives = advantages.lives;
     this.scoreValue = 0;
     this.items = newItems();
 

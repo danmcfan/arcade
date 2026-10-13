@@ -3,7 +3,7 @@
 import { parityTest } from "./harness.ts";
 
 parityTest("arcade-walk");
-parityTest("arcade-enter-gearhead");
+parityTest("arcade-enter-brass-monkey");
 parityTest("arcade-enter-hive");
 parityTest("arcade-enter-firefly");
 parityTest("hive-highscore");

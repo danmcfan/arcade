@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageBug, imageBullet, imageCabinetFirefly, imageExplosion, imageGalaxy, imageShip } from "../engine/assets.ts";
+import { imageCabinetFirefly, imageFirefly, imageFireflyBackground, imageHit, imageMoth, imageSpark } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -27,13 +27,13 @@ function drawCalls(f: FireflySoftware, buffer = 0): DrawCall[] {
 const rect = (s: Sprite) => [s.sx, s.sy, s.w, s.h];
 
 describe("firefly draw", () => {
-  test("cabinet at 0,0, galaxy inside the insets, ship centred on its position; bugs at the origin are culled", () => {
+  test("cabinet at 0,0, the night sky inside the insets, the firefly centred on its position; Moths at the origin are culled", () => {
     const [cabinet, ...calls] = drawCalls(new FireflySoftware());
     expect(cabinet?.sprite.asset).toBe(imageCabinetFirefly.asset);
     expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
     expect(calls).toEqual([
-      { sprite: imageGalaxy, x: 56, y: 56 },
-      { sprite: imageShip, x: 112 + 56 - 8, y: 264 + 56 - 8 },
+      { sprite: imageFireflyBackground, x: 56, y: 56 },
+      { sprite: imageFirefly, x: 112 + 56 - 8, y: 264 + 56 - 8 },
     ]);
   });
 
@@ -43,15 +43,15 @@ describe("firefly draw", () => {
     expect(rect(drawCalls(f)[0]!.sprite)).toEqual([3 * 336, 0, 336, 428]);
   });
 
-  test("bullets draw with their top-left at their position (they are 0×0)", () => {
+  test("sparks draw with their top-left at their position (they are 0×0)", () => {
     const f = new FireflySoftware();
     for (const b of f.bugs) b.deadFrames = 10_000;
     f.update({ ...NO_INPUT, space: true });
-    const bullet = drawCalls(f).find((c) => c.sprite === imageBullet);
-    expect(bullet).toEqual({ sprite: imageBullet, x: 108 + 56, y: 251 + 56 });
+    const spark = drawCalls(f).find((c) => c.sprite === imageSpark);
+    expect(spark).toEqual({ sprite: imageSpark, x: 108 + 56, y: 251 + 56 });
   });
 
-  test("bug culling bounds are exclusive: (0, 224) × (0, 288)", () => {
+  test("Moth culling bounds are exclusive: (0, 224) × (0, 288)", () => {
     const f = new FireflySoftware();
     const positions = [
       { x: 0, y: 50 },
@@ -64,24 +64,24 @@ describe("firefly draw", () => {
     f.bugs.forEach((b, i) => {
       b.position = positions[i] ?? { x: 0, y: 0 };
     });
-    const bugs = drawCalls(f).filter((c) => c.sprite.asset === imageBug.asset);
-    expect(bugs.map((c) => [c.x, c.y])).toEqual([[0.5 + 56 - 8, 287.5 + 56 - 8]]);
+    const moths = drawCalls(f).filter((c) => c.sprite.asset === imageMoth.asset);
+    expect(moths.map((c) => [c.x, c.y])).toEqual([[0.5 + 56 - 8, 287.5 + 56 - 8]]);
   });
 
-  test("bug sprite frame follows its heading: moving right is row 1, col 0", () => {
+  test("a Moth's frame follows its heading: moving right is row 1, col 0", () => {
     const f = new FireflySoftware();
     f.bugs = f.bugs.slice(0, 1);
     const [bug] = f.bugs;
     if (bug === undefined) throw new Error("no bug");
     bug.position = { x: 100, y: 100 };
     bug.direction = { x: 1, y: 0 };
-    const call = drawCalls(f).find((c) => c.sprite.asset === imageBug.asset);
+    const call = drawCalls(f).find((c) => c.sprite.asset === imageMoth.asset);
     expect(call?.x).toBe(100 + 56 - 8);
     expect(call?.y).toBe(100 + 56 - 8);
     expect(call && rect(call.sprite)).toEqual([0, 16, 16, 16]);
   });
 
-  test("explosion column is 5 - trunc(deadFrames/15), drawn 16 up-left of the bug", () => {
+  test("hit effect column is 5 - trunc(deadFrames/15), drawn 16 up-left of the Moth", () => {
     const f = new FireflySoftware();
     f.bugs = f.bugs.slice(0, 1);
     const [bug] = f.bugs;
@@ -98,7 +98,7 @@ describe("firefly draw", () => {
     ];
     for (const [deadFrames, sheetRect] of cases) {
       bug.deadFrames = deadFrames;
-      const call = drawCalls(f).find((c) => c.sprite.asset === imageExplosion.asset);
+      const call = drawCalls(f).find((c) => c.sprite.asset === imageHit.asset);
       expect(call?.x).toBe(100 + 56 - 16);
       expect(call?.y).toBe(100 + 56 - 16);
       expect(call && rect(call.sprite)).toEqual(sheetRect);
