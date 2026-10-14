@@ -5,10 +5,10 @@
 //
 // The room is an arcade at night, filling the whole 160x144 Game Boy frame
 // (#72): a dark wall from the ceiling's cyan neon tube down to the skirting,
-// with the LED scoreboard (src/ui/tickerArt.ts) under the tube, and a navy
-// arcade carpet with a sparse confetti print out to the frame's edges. The
-// cabinets are classic uprights in their minigames' colours, their screens
-// dark glass until the player walks up. Then the screen warms up like a CRT
+// with the LED scoreboard in its marquee of bulbs (src/ui/tickerArt.ts) under
+// the tube, and a navy arcade carpet with a sparse confetti print out to the
+// frame's edges. The cabinets are classic uprights in their minigames'
+// colours, their screens dark glass until the player walks up. Then the screen warms up like a CRT
 // and shows a glimpse of its game, and its light pools on the carpet:
 // `powerSheetRows()`, written to src/assets/images/screens.png. The wall
 // around each cabinet stays empty for prizes (#22). The prize desk
@@ -16,7 +16,7 @@
 
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { deskPixel } from "./deskArt.ts";
-import { tickerBoardPixel, tickerRect } from "./tickerArt.ts";
+import { tickerBoardPixel } from "./tickerArt.ts";
 
 /** Size of the room image: the Game Boy's screen. */
 export const roomWidth = 160;
@@ -151,8 +151,8 @@ function roomPixel(x: number, y: number): string {
   const desk = deskPixel(x, y);
   if (desk !== null) return desk;
   if (y < neonTube.length) return at(neonTube, y, "neon row");
-  const t = tickerRect;
-  if (x >= t.x && x < t.x + t.w && y >= t.y && y < t.y + t.h) return tickerBoardPixel(x, y);
+  const board = tickerBoardPixel(x, y);
+  if (board !== null) return board;
   if (y >= f.y - skirting.length && y < f.y) return at(skirting, y - (f.y - skirting.length), "skirting row");
   if (y < f.y) return "d";
   // The wall's shadow, then the carpet, its print lined up on the floor's corner.

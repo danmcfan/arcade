@@ -412,7 +412,7 @@ export class Game implements Scene {
     }
 
     // Everything in the hub, its counts and its menu included, is drawn inside the hub image (#72).
-    drawArcade(screen, this.arcade, buffer, this.debugMode);
+    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode);
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
     if (this.menu === "prizeCounter") {
