@@ -44,7 +44,7 @@ export function update(s: State, i: Input): void {
     s.loadedSoftware = machine.newSoftware(s.highScore, s.prizes);
   }
 
-  if (i.space && facing(s.player, s.counter)) {
+  if (i.space && s.counters.some((r) => facing(s.player, r))) {
     s.counterOpened = true;
   }
 

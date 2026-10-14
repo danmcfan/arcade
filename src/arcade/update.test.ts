@@ -3,7 +3,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
-import { counterRect } from "./prizeCounter.ts";
+import { counterRects, deskParts } from "./desk.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update } from "./update.ts";
 
@@ -139,8 +139,8 @@ describe("walking", () => {
     expect(s.player.frame).not.toBe(0);
     run(s, 100, { right: true });
     expect(s.player.x).toBe(128);
-    run(s, 100, { down: true }); // x 128: beside the prize counter, not above it
-    expect(s.player.y).toBe(108);
+    run(s, 100, { down: true }); // x 128: the prize desk spans the floor, so it stops the player too
+    expect(s.player.y).toBe(94);
     run(s, 100, { up: true });
     expect(s.player.y).toBe(60);
   });
@@ -182,10 +182,10 @@ describe("melody and title", () => {
   test("each cabinet shows its own title", () => {
     const s = newState(null, fakeFactory);
     walkToSweet(s);
-    run(s, 24, { left: true }); // x = 56, under brassMonkey
+    run(s, 40, { left: true }); // x = 40, under brassMonkey
     run(s, 1, { up: true });
     expect(s.imageTitle).toBe("brassMonkey");
-    run(s, 48, { right: true }); // x = 104, under firefly
+    run(s, 80, { right: true }); // x = 120, under firefly
     run(s, 1, { up: true });
     expect(s.imageTitle).toBe("firefly");
   });
@@ -246,59 +246,84 @@ describe("entering a machine", () => {
   });
 });
 
-describe("prize counter", () => {
+describe("prize desk", () => {
+  const deskTop = Math.min(...deskParts.map((p) => p.y));
+
   test("is solid: walking down from the start stops at its top edge", () => {
     const s = newState(null, fakeFactory);
     run(s, 100, { down: true });
-    expect(s.player.y).toBe(counterRect.y - s.player.height / 2);
+    expect(s.player.y).toBe(deskTop - s.player.height / 2);
     expect(s.player.y).toBe(94);
   });
 
-  test("can't be walked through from the side", () => {
-    const s = newState(null, fakeFactory);
-    run(s, 40, { left: true }); // x 40
-    run(s, 40, { down: true }); // y 108, against the bottom wall
-    run(s, 100, { right: true });
-    expect(s.player.x).toBe(counterRect.x - s.player.width / 2);
-    run(s, 40, { left: true });
-    run(s, 100, { up: true }); // round the counter to its right-hand side
-    run(s, 100, { right: true });
-    run(s, 100, { down: true });
-    run(s, 100, { left: true });
-    expect(s.player.x).toBe(counterRect.x + counterRect.w + s.player.width / 2);
+  test("spans the floor: down stops at it from the left wall to the right wall, the flap included", () => {
+    for (const x of [32, 48, 107, 128]) {
+      const at = newState(null, fakeFactory);
+      at.player.x = x;
+      run(at, 100, { down: true });
+      expect({ x, y: at.player.y }).toEqual({ x, y: 94 });
+    }
   });
 
-  test("Space facing it from above opens it, and starts no minigame", () => {
+  test("its rects run from its top to the bottom wall, and the flap's gap is narrower than the player", () => {
+    for (const r of counterRects) expect(r.y + r.h).toBe(120);
     const s = newState(null, fakeFactory);
-    run(s, 100, { down: true });
-    expect(s.counterOpened).toBe(false);
-    update(s, input({ space: true }));
-    expect(s.counterOpened).toBe(true);
-    expect(s.loadedSoftware).toBeNull();
-    expect(s.tokens).toBe(startingTokens);
+    const gaps = counterRects
+      .filter((r) => r.y === deskTop)
+      .toSorted((a, b) => a.x - b.x)
+      .flatMap((r, i, rs) => {
+        const next = rs[i + 1];
+        return next === undefined ? [] : [next.x - (r.x + r.w)];
+      })
+      .filter((g) => g > 0);
+    expect(gaps.every((g) => g < s.player.width)).toBe(true);
   });
 
-  test("Space facing it from the side opens it", () => {
-    const s = newState(null, fakeFactory);
-    run(s, 40, { left: true });
-    run(s, 40, { down: true });
-    run(s, 100, { right: true });
-    update(s, input({ space: true }));
-    expect(s.counterOpened).toBe(true);
+  test("Space facing it from above opens it, anywhere along it, and starts no minigame", () => {
+    for (const x of [32, 80, 107, 128]) {
+      const s = newState(null, fakeFactory);
+      s.player.x = x;
+      run(s, 100, { down: true });
+      expect(s.counterOpened).toBe(false);
+      update(s, input({ space: true }));
+      expect({ x, opened: s.counterOpened }).toEqual({ x, opened: true });
+      expect(s.loadedSoftware).toBeNull();
+      expect(s.tokens).toBe(startingTokens);
+    }
   });
 
   test("Space elsewhere, or next to it but facing away, does not open it", () => {
     const s = newState(null, fakeFactory);
-    update(s, input({ space: true })); // start position, facing down: 2 px short of the counter
+    update(s, input({ space: true })); // start position, facing down: 2 px short of the desk
     expect(s.counterOpened).toBe(false);
     run(s, 100, { down: true });
     run(s, 1, { left: true });
-    run(s, 1, { right: true });
-    update(s, input({ space: true })); // touching it, facing right
+    update(s, input({ space: true })); // touching it, facing left
     expect(s.counterOpened).toBe(false);
     run(s, 30, { up: true });
     update(s, input({ space: true }));
     expect(s.counterOpened).toBe(false);
+  });
+});
+
+describe("cabinets 40 px apart", () => {
+  test("walking up to each cabinet and pressing Space starts its minigame", () => {
+    const cases: [number, SoftwareName][] = [
+      [40, "brassMonkey"],
+      [80, "sweetSam"],
+      [120, "firefly"],
+    ];
+    for (const [x, name] of cases) {
+      const started: SoftwareName[] = [];
+      const s = newState(null, (n) => {
+        started.push(n);
+        return fakeSoftware(n);
+      });
+      s.player.x = x;
+      run(s, 40, { up: true });
+      update(s, input({ up: true, space: true }));
+      expect({ x, started }).toEqual({ x, started: [name] });
+    }
   });
 });
 

@@ -1,15 +1,16 @@
 // The redrawn hub (#17) in a real browser (`bun run verify hub`). Part 1
 // drives the `?debug` test hook in the hub (`?scene=game`): the player on the
 // arcade carpet, each cabinet's title while facing it (with no key cap drawn
-// over the hub), the prize counter, and Space at a cabinet starting that
+// over the hub), the prize desk, and Space at a cabinet starting that
 // cabinet. A key cap would show in the frame as its edge colour, which none
-// of the hub art uses. Part 2 records a walk past every cabinet to the
-// counter in real time. Files go to out/verify/hub/.
+// of the hub art below the scoreboard uses. Part 2 records a walk past every cabinet to the
+// prize desk in real time. Files go to out/verify/hub/.
 
 import { PNG } from "pngjs";
 import { decodeDataUrl } from "../browser.ts";
 import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { tickerRect } from "../../src/ui/tickerArt.ts";
 
 let checks = 0;
 
@@ -38,10 +39,10 @@ function pixel(png: PNG, x: number, y: number): string {
   return `#${hex.join("")}`;
 }
 
-/** Whether any key-cap edge pixel is on the canvas. */
+/** Whether any key-cap edge pixel is on the canvas, below the scoreboard (its frame is the same grey). */
 function keyCapShown(v: Verify): boolean {
   const png = canvas(v);
-  for (let y = 0; y < png.height; y++) {
+  for (let y = margin + tickerRect.y + tickerRect.h; y < png.height; y++) {
     for (let x = 0; x < png.width; x++) if (pixel(png, x, y) === keyEdge) return true;
   }
   return false;
@@ -75,9 +76,9 @@ function floorAndPlayer(v: Verify): void {
     playerPixel(v, 5, 5),
   );
   check(
-    pixel(canvas(v), 80 + margin, 26 + margin) === "#73eff7",
-    "the neon tube runs along the top of the wall",
-    pixel(canvas(v), 80 + margin, 26 + margin),
+    pixel(canvas(v), 80 + margin, 2 + margin) === "#73eff7",
+    "the neon tube runs along the ceiling, at the top of the frame",
+    pixel(canvas(v), 80 + margin, 2 + margin),
   );
   v.frame("1-player-on-carpet");
 
@@ -100,7 +101,7 @@ function cabinets(v: Verify): void {
   v.step(1, { down: true });
   check(game(v).arcade.title === null, "turning round hides the title", game(v).arcade.title);
 
-  v.step(24, { left: true }); // x 56
+  v.step(40, { left: true }); // x 40
   v.step(2, { up: true });
   check(
     game(v).arcade.title === "brassMonkey",
@@ -110,7 +111,7 @@ function cabinets(v: Verify): void {
   check(!keyCapShown(v), "with no key cap over the hub");
   v.frame("4-at-brass-monkey");
 
-  v.step(48, { right: true }); // x 104
+  v.step(80, { right: true }); // x 120
   v.step(1, { up: true });
   check(
     game(v).arcade.title === "firefly",
@@ -122,9 +123,9 @@ function cabinets(v: Verify): void {
 }
 
 function counter(v: Verify): void {
-  console.log("the prize counter:");
-  v.step(40, { down: true }); // (104, 94): on top of the counter's right end
-  check(game(v).arcade.player.y === 94, "walking down stops on the counter", game(v).arcade.player);
+  console.log("the prize desk:");
+  v.step(40, { down: true }); // (120, 94): above the desk's right end
+  check(game(v).arcade.player.y === 94, "walking down stops at the desk", game(v).arcade.player);
   check(!keyCapShown(v), "facing it: no key cap over the hub");
   v.frame("6-at-prize-counter");
 
@@ -151,13 +152,13 @@ function video(v: Verify): void {
       v.wait(1500);
       v.key("ArrowDown", 150); // turn away: the title goes
       v.wait(500);
-      v.key("ArrowLeft", 420); // below Brass Monkey
+      v.key("ArrowLeft", 700); // below Brass Monkey
       v.key("ArrowUp", 150);
       v.wait(1500);
-      v.key("ArrowRight", 820); // below Firefly
+      v.key("ArrowRight", 1370); // below Firefly
       v.key("ArrowUp", 150);
       v.wait(1500);
-      v.key("ArrowDown", 700); // down to the prize counter
+      v.key("ArrowDown", 700); // down to the prize desk
       v.wait(2000);
     },
     { scene: "game" },

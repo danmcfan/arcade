@@ -66,7 +66,7 @@ function continueWith(v: Verify, tickets: number, prizes: PrizeId[]): void {
 /** From the start position, walk up and right to the Firefly cabinet and press Space. */
 function startFirefly(v: Verify): void {
   v.step(40, { up: true });
-  v.step(24, { right: true });
+  v.step(40, { right: true });
   v.step(1, { up: true, space: true });
   v.step(1);
 }
@@ -153,7 +153,7 @@ function buyAndPlay(v: Verify): void {
   v.key("Escape");
   v.wait(600);
   v.key("ArrowUp", 900);
-  v.key("ArrowRight", 600);
+  v.key("ArrowRight", 750);
   v.wait(1500); // see the lantern on the wall
   v.key("ArrowUp", 100);
   v.key("Space"); // start Firefly

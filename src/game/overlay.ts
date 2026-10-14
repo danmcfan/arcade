@@ -1,10 +1,11 @@
 // What the Game draws over a frozen minigame (the minigame pause menu, its
 // controls panel, and the payout) or over the hub (the prize counter menu).
 // They look like the hub pause menu (shared pieces in src/ui/menu.ts),
-// centred on the layout.
+// centred on the layout; the prize counter menu fills the hub's playfield
+// under the scoreboard, inside the 160x144 frame (#72).
 
 import { tokenOffer, type Wallet } from "../arcade/prizeCounter.ts";
-import { prizeOffers, prizes, type PrizeWallet } from "../arcade/prizes.ts";
+import { prizeOffers, type PrizeWallet } from "../arcade/prizes.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawIcon } from "../ui/hud.ts";
 import { iconRects } from "../ui/icons.ts";
@@ -14,7 +15,7 @@ import {
   dim,
   drawControlsPanel,
   drawHints,
-  drawMenuItems,
+  arrowOffset,
   drawPausePanel,
   pausePanelHeight,
   type Hint,
@@ -63,10 +64,10 @@ export const counterHints: readonly Hint[] = [
   { keys: ["SPACE"], label: "OK" },
   { keys: ["ESC"], label: "BACK" },
 ];
-/** Wide enough for RUNNING SHOES: 50 TICKETS with its arrows at their furthest out (8 px of the hub's margin each side). */
-const counterWidth = 176;
-/** Title, tickets, the token, each prize, CLOSE and the hints. */
-const counterHeight = 82 + 12 * prizes.length;
+/** Items the prize counter shows at once; the list scrolls to keep the cursor in view. */
+export const counterVisibleItems = 7;
+/** Space between item rows. */
+const counterRowHeight = 10;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
@@ -96,38 +97,68 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       if (o.payout !== null) drawPayout(screen, o.payout, centre, middle - payoutHeight / 2);
       return;
     case "prizeCounter":
-      drawPrizeCounter(screen, o.wallet, o.cursor, o.tick, centre, middle - counterHeight / 2);
+      drawPrizeCounter(screen, o.wallet, o.cursor, o.tick, o.playfield);
   }
 }
 
+/** The first item shown when `cursor` is selected in a list of `n`: the cursor kept in the middle where it can be. */
+export function counterWindowStart(cursor: number, n: number): number {
+  const half = Math.trunc(counterVisibleItems / 2);
+  return Math.max(0, Math.min(cursor - half, n - counterVisibleItems));
+}
+
 /**
- * The prize counter panel, top at `y`: the player's tickets, then the token,
- * the prizes (each greyed out when it can't be bought, owned ones read
- * OWNED) and CLOSE.
+ * The prize counter panel, filling `area` but for a 1-2 px border: the
+ * player's tickets, then a scrolling list of the token, the prizes (each
+ * greyed out when it can't be bought, owned ones read OWNED) and CLOSE, names
+ * on the left and prices on the right, and the key hints.
  */
 function drawPrizeCounter(
   screen: Surface,
   w: Wallet & PrizeWallet,
   cursor: number,
   tick: number,
-  centre: number,
-  y: number,
+  area: { x: number; y: number; w: number; h: number },
 ): void {
-  drawPanel(screen, centre - counterWidth / 2, y, counterWidth, counterHeight);
-  drawTextCentered(screen, prizeCounterTitle, centre, y + 8, "yellow");
+  const x = area.x + 2;
+  const y = area.y + 1;
+  const width = area.w - 4;
+  const height = area.h - 2;
+  const centre = x + Math.trunc(width / 2);
+  drawPanel(screen, x, y, width, height);
+  drawTextCentered(screen, prizeCounterTitle, centre, y + 6, "yellow");
   const count = `${w.tickets}`;
   const icon = iconRects.ticket;
   const left = centre - Math.trunc((icon.w + 3 + textWidth(count)) / 2);
-  drawIcon(screen, "ticket", left, y + 21 - (icon.h - textHeight) / 2);
-  drawText(screen, count, left + icon.w + 3, y + 21, "yellow");
+  drawIcon(screen, "ticket", left, y + 17 - (icon.h - textHeight) / 2);
+  drawText(screen, count, left + icon.w + 3, y + 17, "yellow");
   const offer = tokenOffer(w);
   const offers = prizeOffers(w);
-  const greyed = offer === "short" ? [tokenItemIndex] : [];
+  const greyed = new Set(offer === "short" ? [tokenItemIndex] : []);
   offers.forEach((o, i) => {
-    if (o !== "buy") greyed.push(firstPrizeIndex + i);
+    if (o !== "buy") greyed.add(firstPrizeIndex + i);
   });
-  drawMenuItems(screen, prizeCounterItems(offer, offers), cursor, y + 37, tick, centre, greyed);
-  drawHints(screen, counterHints, y + counterHeight - keyHeight - 6, centre);
+  const items = prizeCounterItems(offer, offers);
+  const start = counterWindowStart(cursor, items.length);
+  const top = y + 31;
+  const nameX = x + 14;
+  const valueRight = x + width - 16;
+  items.slice(start, start + counterVisibleItems).forEach((item, row) => {
+    const i = start + row;
+    const rowY = top + row * counterRowHeight;
+    const grey = greyed.has(i);
+    const ink = grey ? "grey" : i === cursor ? "yellow" : "white";
+    drawText(screen, item.label, nameX, rowY, ink);
+    drawText(screen, item.value, valueRight - textWidth(item.value), rowY, grey ? "grey" : "yellow");
+    if (i === cursor) drawText(screen, ">", x + 5 + arrowOffset(tick) - 1, rowY, "yellow");
+  });
+  // More items above or below the window.
+  const arrowX = x + width - 10;
+  if (start > 0) drawText(screen, "↑", arrowX, top, "grey");
+  if (start + counterVisibleItems < items.length) {
+    drawText(screen, "↓", arrowX, top + (counterVisibleItems - 1) * counterRowHeight, "grey");
+  }
+  drawHints(screen, counterHints, y + height - keyHeight - 5, centre);
 }
 
 /** The payout panel, top at `y`: the score spinning down, the tickets spinning up, and a key hint. */

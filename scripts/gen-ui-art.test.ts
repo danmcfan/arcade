@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
-import { counterRect } from "../src/arcade/prizeCounter.ts";
-import { counterArt } from "../src/ui/counterArt.ts";
+import { employeeFrames, employeeHeight, employeeSheetRows, employeeWidth } from "../src/ui/employeeArt.ts";
+import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
 import {
   cabinetArt,
@@ -28,7 +28,7 @@ import { prizeArt } from "../src/ui/prizeArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import {
-  counterPath,
+  employeePath,
   fontPath,
   hubPowerRows,
   hubRoomRows,
@@ -36,7 +36,7 @@ import {
   logoPath,
   playerPath,
   prizesPath,
-  renderCounter,
+  renderEmployee,
   renderFont,
   renderIcons,
   renderLogo,
@@ -44,9 +44,11 @@ import {
   renderPrizes,
   renderRoom,
   renderScreens,
+  renderTicker,
   renderTitleCard,
   roomPath,
   screensPath,
+  tickerPath,
   titleCardPath,
 } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
@@ -71,8 +73,18 @@ describe("UI art source", () => {
     for (const [name, rows] of Object.entries(icons)) checkRows(name, rows);
   });
 
-  test("the prize counter is the size of its collision rect, in Sweetie 16 letters and .", () => {
-    checkRows("counter", counterArt, { w: counterRect.w, h: counterRect.h });
+  test("every scoreboard glyph is 5 rows of one width, made of # and .", () => {
+    for (const [ch, rows] of Object.entries(tickerGlyphs))
+      checkRows(`ticker glyph "${ch}"`, rows, { h: tickerGlyphHeight }, { "#": sweetie.w });
+    const sheet = tickerSheetRows();
+    expect([sheet[0]?.length, sheet.length]).toEqual([images.ticker.width, images.ticker.height]);
+  });
+
+  test("every employee frame is the player's 16x24 box, in Sweetie 16 letters and .", () => {
+    for (const [i, frame] of employeeFrames.entries())
+      checkRows(`employee ${i}`, frame, { w: employeeWidth, h: employeeHeight });
+    const sheet = employeeSheetRows();
+    expect([sheet[0]?.length, sheet.length]).toEqual([images.employee.width, images.employee.height]);
   });
 
   test("the hub room is the hub image's size, in Sweetie 16 letters", () => {
@@ -119,12 +131,13 @@ describe("UI art source", () => {
   });
 });
 
-describe("committed PNGs match src/ui/glyphs.ts, icons.ts, counterArt.ts, prizeArt.ts, hubArt.ts and playerArt.ts (run `bun run art` after editing them)", () => {
+describe("committed PNGs match src/ui/glyphs.ts, icons.ts, tickerArt.ts, employeeArt.ts, prizeArt.ts, hubArt.ts and playerArt.ts (run `bun run art` after editing them)", () => {
   const pngs: [name: string, path: string, render: () => PNG][] = [
     ["font.png", fontPath, renderFont],
     ["logo.png", logoPath, renderLogo],
     ["icons.png", iconsPath, renderIcons],
-    ["counter.png", counterPath, renderCounter],
+    ["ticker.png", tickerPath, renderTicker],
+    ["employee.png", employeePath, renderEmployee],
     ["arcade.png", roomPath, renderRoom],
     ["screens.png", screensPath, renderScreens],
     ["player.png", playerPath, renderPlayer],

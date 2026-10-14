@@ -1,17 +1,21 @@
 // Port of internal/arcade/draw.go, plus the cabinet screens switching on, the
-// prize counter and the decorations of the prizes the player owns.
+// prize desk's employee, the decorations of the prizes the player owns and
+// the LED scoreboard. Everything is drawn inside the hub image (the 160x144
+// Game Boy frame, #72); Go's title card is now the scoreboard's text.
 
-import { imageArcade, imageCounter, imageScreens } from "../engine/assets.ts";
+import { imageArcade, imageScreens } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawDebugOverlay } from "./debug.ts";
-import { titleImages } from "./machine.ts";
+import { drawEmployee } from "./employee.ts";
 import { prize } from "./prizes.ts";
+import { drawTicker } from "./ticker.ts";
 import { screenFrame } from "./screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
 
-export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
+/** `tick` is the Game's tick (in its snapshot): it times the employee's idle animation. */
+export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean, tick: number): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
   s.machines.forEach((m, row) => {
@@ -26,8 +30,8 @@ export function draw(screen: Surface, s: State, buffer: number, debugMode: boole
     );
     drawImage(screen, img, m.rect.x - powerCabinetX + buffer, m.rect.y + buffer);
   });
-  // The player can't overlap the counter, so drawing it first is enough.
-  drawImage(screen, imageCounter, s.counter.x + buffer, s.counter.y + buffer);
+  // The desk is in the room image; the employee stands in it, out of the player's reach.
+  drawEmployee(screen, tick, buffer);
   // Decorations are not solid: the player walks in front of them.
   for (const id of s.prizes) {
     const p = prize(id);
@@ -45,9 +49,7 @@ export function draw(screen: Surface, s: State, buffer: number, debugMode: boole
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
 
-  if (s.melodyPlaying && s.imageTitle !== null) {
-    drawImage(screen, titleImages[s.imageTitle], buffer, buffer);
-  }
+  drawTicker(screen, { tokens: s.tokens, tickets: s.tickets, title: s.melodyPlaying ? s.imageTitle : null }, buffer);
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);

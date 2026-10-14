@@ -1,6 +1,6 @@
-{"name":"arcade-enter-brass-monkey","scene":"game","seed":1,"captureTicks":[58,358,359,381,392],"steps": [
+{"name":"arcade-enter-brass-monkey","scene":"game","seed":1,"captureTicks":[74,374,375,397,408],"steps": [
   {"ticks":1,"input":{}},
-  {"ticks":24,"input":{"left":true}},
+  {"ticks":40,"input":{"left":true}},
   {"ticks":32,"input":{"up":true}},
   {"ticks":1,"input":{"up":true,"space":true}},
   {"ticks":40,"input":{"left":true}},

@@ -164,7 +164,7 @@ describe("in the arcade", () => {
       };
       // Walk to the Brass Monkey cabinet and put in a token.
       step(31, { up: true });
-      step(24, { left: true });
+      step(40, { left: true });
       game.step(held({ up: true, space: true }));
       expect(game.snapshot()).toMatchObject({ software: "brassMonkey" });
       // Jump on the spot, over and over, until the last life is gone.

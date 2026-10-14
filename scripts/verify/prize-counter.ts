@@ -1,8 +1,8 @@
 // The prize counter (#21) in a real browser (`bun run verify prize-counter`).
 // Part 1 drives the `?debug` test hook from the title scene: Continue a save
-// with 2 tokens and 12 tickets, check that the counter is solid and that Space
-// only opens its menu when facing it, buy a token at the normal price (the HUD
-// and the save update at once), close the menu and Continue again. Part 2
+// with 2 tokens and 12 tickets, check that the prize desk is solid and that
+// Space only opens its menu when facing it, buy a token at the normal price
+// (the scoreboard and the save update at once), close the menu and Continue again. Part 2
 // Continues a save with 0 tokens and 3 tickets, buys the last-chance token and
 // then finds the next token greyed out with the "no" sound. Part 3 records
 // both purchases in real time. Files go to out/verify/prize-counter/.
@@ -73,22 +73,19 @@ function normalPrice(v: Verify): void {
   check(game(v).menu === null, "Space at the start position (not at the counter) opens nothing", game(v).menu);
 
   v.step(30, { down: true });
-  check(game(v).arcade.player.y === 94, "walking down stops at the counter: it is solid", game(v).arcade.player);
-  v.step(30, { left: true });
+  check(game(v).arcade.player.y === 94, "walking down stops at the prize desk: it is solid", game(v).arcade.player);
+  v.step(60, { left: true });
   v.step(20, { down: true });
-  v.step(30, { right: true });
   check(
-    game(v).arcade.player.x === 52,
-    "walking right along the bottom wall stops at the counter's side",
+    game(v).arcade.player.x === 32 && game(v).arcade.player.y === 94,
+    "the desk spans the floor to the left wall: there is no way round it",
     game(v).arcade.player,
   );
-  v.step(10, { left: true }); // x 42
-  v.step(20, { up: true }); // y 88
-  v.step(38, { right: true }); // x 80
+  v.step(48, { right: true }); // x 80
   v.step(10, { down: true }); // y 94
   check(
     game(v).arcade.player.x === 80 && game(v).arcade.player.y === 94,
-    "back above the counter, facing it",
+    "back above the middle of the desk, facing it",
     game(v).arcade.player,
   );
 

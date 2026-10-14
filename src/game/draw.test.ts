@@ -9,6 +9,7 @@ import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink 
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
+import { tickerGlyphHeight, tickerGlyphX, tickerInkOrder, tickerRect, type TickerInk } from "../ui/tickerArt.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
@@ -48,10 +49,23 @@ function isIconName(k: string): k is IconName {
   return k in iconRects;
 }
 
+/** A lit letter on the hub's LED scoreboard. */
+interface Lit {
+  ch: string;
+  ink: TickerInk;
+  x: number;
+  y: number;
+}
+
 interface Recording {
   calls: Call[];
   glyphs: Glyph[];
   icons: Icon[];
+  lit: Lit[];
+  /** The scoreboard's letters left to right, optionally of one ink. */
+  board: (ink?: TickerInk) => string;
+  /** Every rect drawn or filled: [x, y, w, h]. */
+  boxes: [number, number, number, number][];
   text: (ink?: Ink) => string;
   surface: Surface;
   fills: () => number;
@@ -67,10 +81,18 @@ function recordingSurface(): Recording {
   const calls: Call[] = [];
   const glyphs: Glyph[] = [];
   const icons: Icon[] = [];
+  const lit: Lit[] = [];
+  const boxes: [number, number, number, number][] = [];
   let fills = 0;
   let dimmed: [number, number, number, number] | null = null;
   const surface = stubSurface({
     draw(s: Sprite, x: number, y: number): void {
+      boxes.push([x, y, s.w, s.h]);
+      if (s.asset === images.ticker) {
+        const ch = defined(Object.entries(tickerGlyphX).find(([, gx]) => gx === s.sx)?.[0]);
+        lit.push({ ch, ink: defined(tickerInkOrder[s.sy / tickerGlyphHeight]), x, y });
+        return;
+      }
       if (s.asset === images.font) {
         const row = Math.trunc(s.sy / cell);
         const band = Math.trunc(row / bandRows);
@@ -90,13 +112,15 @@ function recordingSurface(): Recording {
       const name = Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?";
       calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y]);
     },
-    fillRect(): void {
+    fillRect(x: number, y: number, w: number, h: number): void {
+      boxes.push([x, y, w, h]);
       fills++;
     },
     strokeRect(x: number, y: number, w: number, h: number, c: PremulColor): void {
       calls.push(["strokeRect", x, y, w, h, c]);
     },
     fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
+      boxes.push([x, y, w, h]);
       if (c.r === dimColour.r && c.a === dimColour.a) {
         dimmed = [x, y, w, h];
         return;
@@ -111,10 +135,19 @@ function recordingSurface(): Recording {
       .toSorted((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
+  const board = (ink?: TickerInk): string =>
+    lit
+      .filter((g) => ink === undefined || g.ink === ink)
+      .toSorted((a, b) => a.x - b.x)
+      .map((g) => g.ch)
+      .join("");
   return {
     calls,
     glyphs,
     icons,
+    lit,
+    board,
+    boxes,
     text,
     surface,
     fills: () => fills,
@@ -182,46 +215,96 @@ const green = { r: 0, g: 255, b: 0, a: 64 };
 const red = { r: 255, g: 0, b: 0, a: 64 };
 const yellow = { r: 255, g: 255, b: 0, a: 64 };
 
+/** The hub image's place on the 192x176 screen: the 160x144 Game Boy frame. */
+const frame = { x: 16, y: 16, w: 160, h: 144 };
+function insideFrame(boxes: readonly [number, number, number, number][]): [number, number, number, number][] {
+  return boxes.filter(
+    ([x, y, w, h]) => x < frame.x || y < frame.y || x + w > frame.x + frame.w || y + h > frame.y + frame.h,
+  );
+}
+
 describe("hub draw", () => {
-  test("background at the 16 px buffer, the prize counter, then the player frame centred on its position", () => {
+  test("the room at the 16 px buffer, the employee in the desk, then the player frame centred on its position", () => {
     const game = newGame();
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
-      // On the bottom wall, centred: counterRect (60, 106) + the buffer.
-      ["draw", "counter", 0, 0, 40, 14, 76, 122],
+      // Idle frame 0 at employeeSpot (72, 108) + the buffer.
+      ["draw", "employee", 0, 0, 16, 24, 88, 124],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
   });
 
-  test("each owned prize's decoration is drawn by the Sweet Sam cabinet, after the counter and under the player", () => {
+  test("the employee idles: stand, breathe, stand, then a wave", () => {
+    const game = newGame();
+    const frames: number[] = [];
+    for (let t = 0; t < 222; t++) {
+      const { calls, surface } = recordingSurface();
+      game.draw(surface);
+      const e = defined(calls.find((c) => c[1] === "employee"));
+      frames.push(e[2] / 16);
+      game.step(input());
+    }
+    const runs = frames.reduce<[number, number][]>((out, f) => {
+      const last = out.at(-1);
+      if (last?.[0] === f) last[1]++;
+      else out.push([f, 1]);
+      return out;
+    }, []);
+    expect(runs).toEqual([
+      [0, 84],
+      [1, 30],
+      [0, 54],
+      [2, 18],
+      [0, 18],
+      [2, 18],
+    ]);
+  });
+
+  test("Sweet Sam's prizes hang on the wall round its cabinet (art x 72..87, y 40..63), under the player", () => {
     const game = newGame(null, 5, ["honeyJar", "runningShoes", "sleepyBees"]);
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     const r = prizeRects;
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
-      ["draw", "counter", 0, 0, 40, 14, 76, 122],
-      // The jar and the shoe either side of the cabinet (art x 73..86), the picture above it; + the buffer.
-      ["draw", "prizes", r.honeyJar.x, 0, 8, 9, 81, 71],
-      ["draw", "prizes", r.runningShoes.x, 0, 9, 6, 103, 74],
+      ["draw", "employee", 0, 0, 16, 24, 88, 124],
+      // The jar left of the picture, the shoes right of it, the picture above the cabinet; + the buffer.
+      ["draw", "prizes", r.honeyJar.x, 0, 8, 9, 79, 45],
+      ["draw", "prizes", r.runningShoes.x, 0, 9, 6, 105, 47],
       ["draw", "prizes", r.sleepyBees.x, 0, 12, 11, 90, 44],
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
+    // On the wall: above the skirting (y 53), clear of the floor.
+    for (const c of calls.filter((x) => x[1] === "prizes"))
+      expect(Number(c[7]) - 16 + Number(c[5])).toBeLessThanOrEqual(53);
   });
 
-  test("each owned Firefly prize hangs on the wall by the Firefly cabinet (art x 96..111, y 40..63)", () => {
+  test("each owned Firefly prize hangs on the wall by the Firefly cabinet (art x 112..127, y 40..63)", () => {
     const game = newGame(null, 5, ["lantern", "glowStick", "wings"]);
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     const r = prizeRects;
     // The lantern right of the cabinet, the glow stick left of it, the wings above it; + the buffer.
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", r.lantern.x, 0, 8, 11, 129, 52],
-      ["draw", "prizes", r.glowStick.x, 0, 3, 10, 108, 50],
-      ["draw", "prizes", r.wings.x, 0, 12, 8, 114, 47],
+      ["draw", "prizes", r.lantern.x, 0, 8, 11, 145, 52],
+      ["draw", "prizes", r.glowStick.x, 0, 3, 10, 124, 50],
+      ["draw", "prizes", r.wings.x, 0, 12, 8, 130, 47],
+    ]);
+  });
+
+  test("each owned Brass Monkey prize hangs on the wall by the Brass Monkey cabinet (art x 32..47, y 40..63)", () => {
+    const game = newGame(null, 5, ["oilCan", "springBoots", "pocketWatch"]);
+    const { calls, surface } = recordingSurface();
+    game.draw(surface);
+    const r = prizeRects;
+    // The oil can on a shelf left of the cabinet, the boots and the watch on pegs above it; + the buffer.
+    expect(calls.filter((c) => c[1] === "prizes")).toEqual([
+      ["draw", "prizes", r.oilCan.x, 0, 12, 11, 35, 57],
+      ["draw", "prizes", r.springBoots.x, 0, 10, 12, 48, 43],
+      ["draw", "prizes", r.pocketWatch.x, 0, 9, 11, 62, 44],
     ]);
   });
 
@@ -230,7 +313,7 @@ describe("hub draw", () => {
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", prizeRects.runningShoes.x, 0, 9, 6, 103, 74],
+      ["draw", "prizes", prizeRects.runningShoes.x, 0, 9, 6, 105, 47],
     ]);
   });
 
@@ -242,13 +325,32 @@ describe("hub draw", () => {
     expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
-  test("the title is drawn over everything while the melody plays", () => {
+  test("while the melody plays, the scoreboard shows the cabinet's name and PRESS SPACE TO PLAY", () => {
     const game = newGame();
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
-    const { calls, surface } = recordingSurface();
+    const { board, surface } = recordingSurface();
     game.draw(surface);
-    expect(calls[4]).toEqual(["draw", "sweet", 0, 0, 160, 144, 16, 16]);
-    expect(calls.length).toBe(5);
+    expect(board("yellow")).toBe("SWEETSAM");
+    expect(board("white")).toBe("PRESSSPACETOPLAY");
+    expect(board("orange")).toBe("");
+  });
+
+  test("each cabinet's name in its own colour", () => {
+    const game = newGame();
+    const names: string[] = [];
+    for (const [dx, ink] of [
+      [-40, "green"],
+      [40, "cyan"],
+    ] as const) {
+      const g = newGame();
+      for (let t = 0; t < Math.abs(dx); t++) g.step(input(dx < 0 ? { left: true } : { right: true }));
+      for (let t = 0; t < 25; t++) g.step(input({ up: true }));
+      const r = recordingSurface();
+      g.draw(r.surface);
+      names.push(r.board(ink));
+    }
+    game.dispose();
+    expect(names).toEqual(["BRASSMONKEY", "FIREFLY"]);
   });
 
   test("the faced cabinet's screen switches on over the room: its row of screens.png, a frame per step", () => {
@@ -280,10 +382,14 @@ describe("hub draw", () => {
       ["strokeRect", 16, 64, 23, 71, red],
       ["strokeRect", 152, 64, 23, 71, red],
       ["strokeRect", 16, 136, 159, 23, red],
-      ["strokeRect", 64, 56, 15, 15, yellow],
+      ["strokeRect", 48, 56, 15, 15, yellow],
       ["strokeRect", 88, 56, 15, 15, yellow],
-      ["strokeRect", 112, 56, 15, 15, yellow],
-      ["strokeRect", 76, 122, 39, 13, yellow],
+      ["strokeRect", 128, 56, 15, 15, yellow],
+      // The prize desk: its long top either side of the flap, then its two arms.
+      ["strokeRect", 48, 122, 71, 13, yellow],
+      ["strokeRect", 126, 122, 17, 13, yellow],
+      ["strokeRect", 48, 124, 9, 11, yellow],
+      ["strokeRect", 134, 124, 9, 11, yellow],
       ["fillPremul", 192, 0, 120, 176, { r: 20, g: 20, b: 20, a: 200 }],
     ]);
     expect(printed).toEqual([["Player: (80,92)", 200, 8]]);
@@ -328,40 +434,63 @@ describe("software draw", () => {
   });
 });
 
-describe("hub HUD", () => {
-  test("a coin and the token count on the left, a ticket and the ticket count on the right, in the top margin", () => {
+describe("hub scoreboard", () => {
+  test("TOKENS and its count on the left, TICKETS and its count on the right, lit on the board in the room", () => {
     const game = newGame();
     const r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow")).toBe("50");
-    expect(r.glyphs.every((g) => g.y >= 0 && g.y + glyphHeight <= 16)).toBe(true);
-    const [coin, ticket] = r.icons;
-    expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket"]);
-    expect(r.icons.every((i) => i.y >= 0 && i.y + i.h <= 16)).toBe(true);
-    // Each icon is vertically centred on the text.
-    expect(r.icons.every((i) => 2 * i.y + i.h === 2 * defined(r.glyphs[0]).y + glyphHeight)).toBe(true);
-    const [tokens, tickets] = r.glyphs;
-    if (!coin || !ticket || !tokens || !tickets) throw new Error("expected two icons and two counts");
-    expect(coin.x).toBe(16);
-    expect(tokens.x).toBeGreaterThan(coin.x + coin.w);
-    expect(ticket.x).toBeGreaterThan(tokens.x);
-    expect(tickets.x).toBeGreaterThan(ticket.x + ticket.w);
+    expect(r.board("orange")).toBe("TOKENSTICKETS");
+    expect(r.board("yellow")).toBe("50");
+    // No overlay counts in the margin any more: no font glyphs or icons at all.
+    expect(r.glyphs).toEqual([]);
+    expect(r.icons).toEqual([]);
+    const board = { x: tickerRect.x + 16, y: tickerRect.y + 16, w: tickerRect.w, h: tickerRect.h };
+    for (const g of r.lit) {
+      expect(g.x).toBeGreaterThan(board.x);
+      expect(g.y).toBeGreaterThan(board.y);
+      expect(g.y + tickerGlyphHeight).toBeLessThan(board.y + board.h);
+    }
+    const [tokens, tickets] = [r.lit.find((g) => g.ch === "5"), r.lit.find((g) => g.ch === "0")];
+    expect(defined(tokens).x).toBeLessThan(defined(tickets).x);
   });
 
   test("a spent token shows at once; at 0 tokens the count reads FREE PLAY", () => {
     const game = newGame(null, 1);
     const r1 = recordingSurface();
     game.draw(r1.surface);
-    expect(r1.text("yellow")).toBe("10");
+    expect(r1.board("yellow")).toBe("10");
     for (let t = 0; t < 31; t++) game.step(input({ up: true }));
     game.step(input({ up: true, space: true }));
     for (const keys of [{ escape: true }, {}, { down: true }, {}, { down: true }, {}, { space: true }])
       game.step(input(keys));
+    game.step(input({ down: true }));
     const r0 = recordingSurface();
     game.draw(r0.surface);
-    expect(r0.text("orange")).toBe("FREE PLAY");
-    expect(r0.text("yellow")).toBe("0");
-    expect(r0.icons.map((i) => i.name)).toEqual(["token", "ticket"]);
+    expect(r0.board("orange")).toBe("TOKENSFREEPLAYTICKETS");
+    expect(r0.board("yellow")).toBe("0");
+  });
+
+  test("large ticket counts fit, right-aligned on the board; past 999999 it reads 999999", () => {
+    for (const [tickets, shown] of [
+      [1250, "1250"],
+      [99_999, "99999"],
+      [1_234_567, "999999"],
+    ] as const) {
+      const g = new Game(null, {
+        createSoftware: factory,
+        debugPrint,
+        restore: { highScore: 0, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      });
+      games.push(g);
+      const r = recordingSurface();
+      g.draw(r.surface);
+      expect(r.board("yellow")).toBe(shown);
+      const right = Math.max(...r.lit.map((l) => l.x + 3));
+      expect(right).toBe(tickerRect.x + tickerRect.w - 4 + 16);
+      const label = Math.max(...r.lit.filter((l) => l.ink === "orange").map((l) => l.x + 3));
+      const count = Math.min(...r.lit.filter((l) => l.ink === "yellow").map((l) => l.x));
+      expect(count).toBeGreaterThan(label);
+    }
   });
 
   test("the hub pause dims only the hub image, so the counts stay readable (title scene)", () => {
@@ -369,6 +498,48 @@ describe("hub HUD", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(r.dimmed()).toBeNull();
+  });
+});
+
+describe("the Game Boy frame", () => {
+  test("nothing in the hub draws outside the 160x144 hub image: room, desk, prizes, scoreboard, player, menu", () => {
+    const owned: PrizeId[] = [
+      "honeyJar",
+      "runningShoes",
+      "sleepyBees",
+      "lantern",
+      "glowStick",
+      "wings",
+      "oilCan",
+      "springBoots",
+      "pocketWatch",
+    ];
+    const game = newGame(null, 0, owned);
+    const outside: unknown[] = [];
+    const check = (): void => {
+      const r = recordingSurface();
+      game.draw(r.surface);
+      outside.push(...insideFrame(r.boxes));
+    };
+    check();
+    // Walk the room's edges, face each cabinet, then open the prize counter menu and scroll it.
+    for (const keys of [{ left: true }, { up: true }, { right: true }, { down: true }, { left: true }] as const) {
+      for (let t = 0; t < 120; t++) {
+        game.step(input(keys));
+        if (t % 10 === 0) check();
+      }
+    }
+    for (let t = 0; t < 60; t++) game.step(input({ right: true }));
+    for (let t = 0; t < 60; t++) game.step(input({ down: true }));
+    game.step(input({ space: true }));
+    game.step(input());
+    expect(game.snapshot().menu).toBe("prizeCounter");
+    for (let i = 0; i < 12; i++) {
+      check();
+      game.step(input({ down: true }));
+      game.step(input());
+    }
+    expect(outside).toEqual([]);
   });
 });
 
@@ -409,7 +580,7 @@ describe("menus over a minigame", () => {
   test("a minigame with a margin dims only its playfield", () => {
     const game = newGame(null);
     for (let t = 0; t < 31; t++) game.step(input({ up: true }));
-    for (let t = 0; t < 24; t++) game.step(input({ left: true }));
+    for (let t = 0; t < 40; t++) game.step(input({ left: true }));
     game.step(input({ up: true, space: true }));
     expect(game.snapshot()).toMatchObject({ software: "brassMonkey" });
     tapKeys(game, "escape");
@@ -479,77 +650,84 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
 }
 
 describe("prize counter menu", () => {
-  test("dims the hub image, not the counts, and lists the tickets, the token, the prizes and CLOSE", () => {
+  test("fills the room under the scoreboard: the room dims there, the board stays lit", () => {
     const r = recordingSurface();
     atCounter(2, 120).draw(r.surface);
-    expect(r.dimmed()).toEqual([16, 16, 160, 144]);
-    // HUD 2 and 120, the title, the selected token, the ticket count in the panel.
-    expect(r.text("yellow")).toBe("PRIZE COUNTER2120120>TOKEN: 5 TICKETS<");
-    expect(r.text("white")).toBe(
-      "HONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS" +
-        "LANTERN: 25 TICKETSGLOW STICK: 50 TICKETSWINGS: 100 TICKETS" +
-        "OIL CAN: 25 TICKETSSPRING BOOTS: 50 TICKETSPOCKET WATCH: 100 TICKETSCLOSESPACEESCOKBACK",
-    ); // key caps sit 1 px above their labels;
-    expect(r.text("grey")).toBe("");
-    expect(r.icons.map((i) => i.name)).toEqual(["token", "ticket", "ticket"]);
+    const below = tickerRect.y + tickerRect.h;
+    expect(r.dimmed()).toEqual([16, 16 + below, 160, 144 - below]);
+    expect(r.board("yellow")).toBe("2120");
+    expect(insideFrame(r.boxes)).toEqual([]);
   });
 
-  test("a bought token shows in the HUD at once", () => {
+  test("lists the tickets, then the token and the prizes with their prices on the right, seven at a time", () => {
+    const r = recordingSurface();
+    atCounter(2, 120).draw(r.surface);
+    // The title, the ticket count, the selected token and every price shown.
+    expect(r.text("yellow")).toBe("PRIZE COUNTER120>TOKEN525501002550100");
+    expect(r.text("white")).toBe("HONEY JARRUNNING SHOESSLEEPY BEESLANTERNGLOW STICKWINGSSPACEESCOKBACK");
+    // More below.
+    expect(r.text("grey")).toBe("↓");
+    expect(r.icons.map((i) => i.name)).toEqual(["ticket"]);
+  });
+
+  test("scrolling down keeps the cursor in view and shows CLOSE last", () => {
+    const game = atCounter(5, 60);
+    for (let i = 0; i < 10; i++) {
+      game.step(input({ down: true }));
+      game.step(input());
+    }
+    expect(game.snapshot().cursor).toBe(10);
+    const r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.text("yellow")).toContain(">CLOSE");
+    // Items 4..10 (LANTERN to CLOSE); at 60 tickets the 100-ticket prizes are greyed out.
+    expect(r.text("white")).toBe("LANTERNGLOW STICKOIL CANSPRING BOOTSSPACEESCOKBACK");
+    expect(r.text("grey")).toBe("↑WINGS100POCKET WATCH100");
+  });
+
+  test("a bought token shows on the scoreboard at once", () => {
     const game = atCounter(2, 12);
     game.step(input({ space: true }));
     const r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow").startsWith("PRIZE COUNTER377")).toBe(true);
+    expect(r.board("yellow")).toBe("37");
   });
 
   test("with 0 tokens and too few tickets the token item is the last-chance token", () => {
     const game = atCounter(0, 3);
-    // Tick 20 of 40: the selection arrows are at their furthest out.
-    while (game.snapshot().tick % 40 !== 20) game.step(input());
     const r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">LAST CHANCE: ALL TICKETS<");
-    // Inside the 176-px panel (x 8..184) and clear of its 3-px frame.
-    const arrows = r.glyphs.filter((g) => g.ch === ">" || g.ch === "<");
-    expect(Math.min(...arrows.map((g) => g.x))).toBeGreaterThanOrEqual(8 + 3);
-    expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
+    expect(r.text("yellow")).toContain(">LAST CHANCEALL");
   });
 
   test("with tokens left and too few tickets the token item and every prize are greyed out", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
-    expect(r.text("grey")).toBe(
-      "TOKEN: 5 TICKETSHONEY JAR: 25 TICKETSRUNNING SHOES: 50 TICKETSSLEEPY BEES: 100 TICKETS" +
-        "LANTERN: 25 TICKETSGLOW STICK: 50 TICKETSWINGS: 100 TICKETS" +
-        "OIL CAN: 25 TICKETSSPRING BOOTS: 50 TICKETSPOCKET WATCH: 100 TICKETS",
-    );
-    expect(r.text("yellow")).toBe("PRIZE COUNTER133><");
+    expect(r.text("grey")).toBe("TOKEN5HONEY JAR25RUNNING SHOES50SLEEPY BEES100LANTERN25GLOW STICK50WINGS100↓");
+    expect(r.text("yellow")).toBe("PRIZE COUNTER3>");
   });
 
   test("a prize the player can't afford is greyed out; an owned one reads OWNED, greyed out", () => {
     const r = recordingSurface();
     atCounter(1, 60, ["honeyJar"]).draw(r.surface);
-    expect(r.text("grey")).toBe("HONEY JAR: OWNEDSLEEPY BEES: 100 TICKETSWINGS: 100 TICKETSPOCKET WATCH: 100 TICKETS");
-    expect(r.text("white")).toContain("RUNNING SHOES: 50 TICKETS");
+    expect(r.text("grey")).toBe("HONEY JAROWNEDSLEEPY BEES100WINGS100↓");
+    expect(r.text("white")).toContain("RUNNING SHOES");
   });
 
-  test("the longest prize, selected, keeps its arrows inside the panel; the hints sit below CLOSE", () => {
+  test("the selection arrow and the prices stay inside the panel, clear of its frame", () => {
     const game = atCounter(5, 60);
     game.step(input({ down: true }));
     game.step(input());
     game.step(input({ down: true }));
-    while (game.snapshot().tick % 40 !== 20) game.step(input());
-    const r = recordingSurface();
-    game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">RUNNING SHOES: 50 TICKETS<");
-    const arrows = r.glyphs.filter((g) => g.ch === ">" || g.ch === "<");
-    expect(Math.min(...arrows.map((g) => g.x))).toBeGreaterThanOrEqual(8 + 3);
-    expect(Math.max(...arrows.map((g) => g.x + 4))).toBeLessThanOrEqual(184 - 3);
-    const close = r.glyphs.find(
-      (g) => g.ch === "C" && g.ink === "white" && r.glyphs.some((h) => h.ch === "L" && h.y === g.y && h.x > g.x),
-    );
-    if (!close) throw new Error("expected CLOSE");
-    const hint = defined(r.glyphs.find((g) => g.ch === "O" && g.y > close.y));
-    expect(hint.y - close.y).toBeGreaterThanOrEqual(12);
+    const panel = { x: 18, w: 156 };
+    for (let t = 0; t < 40; t++) {
+      const r = recordingSurface();
+      game.draw(r.surface);
+      for (const g of r.glyphs) {
+        expect(g.x).toBeGreaterThanOrEqual(panel.x + 3);
+        expect(g.x + 6).toBeLessThanOrEqual(panel.x + panel.w - 3);
+      }
+      game.step(input());
+    }
   });
 });

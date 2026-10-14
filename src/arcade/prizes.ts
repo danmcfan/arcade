@@ -29,14 +29,13 @@ export const sleepyBeesPrice = 100;
 export const lanternPrice = 25;
 export const glowStickPrice = 50;
 export const wingsPrice = 100;
-
-/** The Firefly cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
-const fireflyCabinet = cabinetRects.firefly;
 export const oilCanPrice = 25;
 export const springBootsPrice = 50;
 export const pocketWatchPrice = 100;
 
-/** The Brass Monkey cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
+// Every prize hangs on the wall at an offset from its own cabinet, so it moves with it.
+const sweetCabinet = cabinetRects.sweet;
+const fireflyCabinet = cabinetRects.firefly;
 const brassCabinet = cabinetRects.brassMonkey;
 
 export interface Prize {
@@ -60,13 +59,12 @@ function decoration(id: PrizeId): Sprite {
 }
 
 /**
- * Every prize, in the order the prize counter menu lists them. The Sweet Sam
- * cabinet's art is x 72..87, y 40..63 of the hub image: the jar and the shoe
- * stand on the floor against either side of it, the picture hangs on the
- * wall above it. The Brass Monkey cabinet's art is x 48..63, y 40..63: the oil
- * can stands on a shelf on the wall left of it, the spring boots and the
- * pocket watch hang from pegs on the wall above it (the boots over its left
- * side, the watch between it and the Sweet Sam picture).
+ * Every prize, in the order the prize counter menu lists them, each hung on
+ * the wall around its cabinet (a cabinet's art is 16x24 from its rect's
+ * top-left, `cabinetRects`). Sweet Sam: the picture above the cabinet, the
+ * jar and the shoes either side of the picture. Brass Monkey: the oil can on a
+ * shelf left of the cabinet, the spring boots and the pocket watch on pegs
+ * above it. Firefly: see below.
  */
 export const prizes: readonly Prize[] = [
   {
@@ -75,8 +73,8 @@ export const prizes: readonly Prize[] = [
     price: honeyJarPrice,
     software: "sweetSam",
     sprite: decoration("honeyJar"),
-    x: 65,
-    y: 55,
+    x: sweetCabinet.x - 9,
+    y: sweetCabinet.y - 11,
   },
   {
     id: "runningShoes",
@@ -84,8 +82,8 @@ export const prizes: readonly Prize[] = [
     price: runningShoesPrice,
     software: "sweetSam",
     sprite: decoration("runningShoes"),
-    x: 87,
-    y: 58,
+    x: sweetCabinet.x + 17,
+    y: sweetCabinet.y - 9,
   },
   {
     id: "sleepyBees",
@@ -93,8 +91,8 @@ export const prizes: readonly Prize[] = [
     price: sleepyBeesPrice,
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
-    x: 74,
-    y: 28,
+    x: sweetCabinet.x + 2,
+    y: sweetCabinet.y - 12,
   },
   // The wall runs 11 px above the Firefly cabinet's top to 13 px below it.
   // The lantern hangs from its bracket right of the cabinet, the glow stick in

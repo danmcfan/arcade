@@ -59,7 +59,7 @@ function playToPayout(v: Verify): void {
   v.tap("space"); // New game -> intro
   v.tap("space"); // intro -> hub
   v.step(31, { up: true });
-  v.step(24, { right: true });
+  v.step(40, { right: true });
   v.step(1, { up: true, space: true });
   let g = game(v);
   check(g.software === "firefly" && g.run === "paid", "Space at the Firefly cabinet starts a paid run", g.run);

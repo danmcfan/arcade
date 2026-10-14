@@ -5,8 +5,6 @@
 // the hub can be tested with fake software. The title image is identified by
 // name (`ArcadeTitle`), which is also what the snapshot reports.
 
-import type { Sprite } from "../engine/image.ts";
-import { imageTitleFirefly, imageTitleBrassMonkey, imageTitleSweet } from "../engine/assets.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { checkCollision, tileSize, type Rect } from "./collision.ts";
@@ -16,27 +14,24 @@ import { newScreen, type Screen } from "./screen.ts";
 /** Builds a minigame for a run: the hub high score and the prizes the player owns. */
 export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
 
-/** Go `assets.ImageTitle*`, keyed by the title's name. */
-export const titleImages: Readonly<Record<ArcadeTitle, Sprite>> = {
-  brassMonkey: imageTitleBrassMonkey,
-  sweet: imageTitleSweet,
-  firefly: imageTitleFirefly,
-};
-
 export interface Machine {
   rect: Rect;
-  /** Go `imageTitle`, by name; the sprite is `titleImages[title]`. */
+  /** Go `imageTitle`, by name; the LED scoreboard shows its name (src/arcade/ticker.ts). */
   title: ArcadeTitle;
   newSoftware: (highScore: number, prizes: readonly PrizeId[]) => Software;
   /** Its screen: on while the player faces it. */
   screen: Screen;
 }
 
-/** Where each cabinet stands in the hub (its art's top-left is the rect's), by title. */
+/**
+ * Where each cabinet stands in the hub (its art's top-left is the rect's), by
+ * title: 40 px apart (Go had them 24 apart, at tiles 6, 9 and 12), so each
+ * cabinet's prizes have wall room around it (#72).
+ */
 export const cabinetRects: Readonly<Record<ArcadeTitle, Rect>> = {
-  brassMonkey: { x: tileSize * 6, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+  brassMonkey: { x: tileSize * 4, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
   sweet: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
-  firefly: { x: tileSize * 12, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
+  firefly: { x: tileSize * 14, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
 };
 
 export function newMachines(factory: SoftwareFactory): Machine[] {

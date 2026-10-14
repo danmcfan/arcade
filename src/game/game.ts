@@ -3,7 +3,7 @@
 // `Layout`. Beyond the Go original: Esc in a minigame opens the minigame pause
 // menu (Resume / Controls / Quit game), and a minigame that ends shows the
 // payout, which turns its score into tickets, before the hub comes back.
-// Space at the prize counter opens the prize counter menu over the hub, where
+// Space at the prize desk opens the prize counter menu over the hub, where
 // tickets buy tokens and prizes.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
@@ -40,7 +40,7 @@ import {
   quitGameIndex,
   tokenItemIndex,
 } from "./menus.ts";
-import { drawHud } from "../ui/hud.ts";
+import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
 import type { GameMenu, GameSnapshot } from "./snapshot.ts";
@@ -408,12 +408,13 @@ export class Game implements Scene {
       return;
     }
 
-    drawArcade(screen, this.arcade, buffer, this.debugMode);
+    // Everything in the hub, its counts and its menu included, is drawn inside the hub image (#72).
+    drawArcade(screen, this.arcade, buffer, this.debugMode, this.tick);
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
-    drawHud(screen, this.arcade.tokens, this.arcade.tickets, hubWidth);
     if (this.menu === "prizeCounter") {
-      // Only the hub image dims, so the HUD counts stay readable and change as tokens are bought.
+      // The menu fills the room under the scoreboard, so the counts stay readable and change as tokens are bought.
+      const below = tickerRect.y + tickerRect.h;
       drawMenuOverlay(screen, {
         menu: this.menu,
         software: null,
@@ -423,7 +424,7 @@ export class Game implements Scene {
         tick: this.tick,
         width: hubWidth,
         height: hubHeight,
-        playfield: { x: buffer, y: buffer, w: imageArcade.w, h: imageArcade.h },
+        playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });
     }
 

@@ -29,16 +29,22 @@ export const minigameControls: Readonly<Record<SoftwareName, readonly ControlRow
 
 export const prizeCounterTitle = "PRIZE COUNTER";
 
-/** The token item's label for each offer; "short" is the normal price, greyed out. */
-export const tokenItemLabels: Readonly<Record<TokenOffer, string>> = {
-  token: `TOKEN: ${ticketsPerToken} TICKETS`,
-  lastChance: "LAST CHANCE: ALL TICKETS",
-  short: `TOKEN: ${ticketsPerToken} TICKETS`,
+/** One prize counter item: its name on the left, its price in tickets (or OWNED, ALL) on the right. */
+export interface CounterItem {
+  label: string;
+  value: string;
+}
+
+/** The token item for each offer; "short" is the normal price, greyed out. */
+export const tokenItems: Readonly<Record<TokenOffer, CounterItem>> = {
+  token: { label: "TOKEN", value: `${ticketsPerToken}` },
+  lastChance: { label: "LAST CHANCE", value: "ALL" },
+  short: { label: "TOKEN", value: `${ticketsPerToken}` },
 };
 
 /** A prize's item: its name and price, or OWNED once bought. */
-export function prizeItemLabel(p: Prize, offer: PrizeOffer): string {
-  return offer === "owned" ? `${p.name}: OWNED` : `${p.name}: ${p.price} TICKETS`;
+export function prizeItem(p: Prize, offer: PrizeOffer): CounterItem {
+  return { label: p.name, value: offer === "owned" ? "OWNED" : `${p.price}` };
 }
 
 export const closeItem = "CLOSE";
@@ -50,11 +56,11 @@ export const firstPrizeIndex = 1;
 export const closeItemIndex = firstPrizeIndex + prizes.length;
 
 /** The prize counter menu: the token, each prize (`offers` in catalogue order), then CLOSE. */
-export function prizeCounterItems(offer: TokenOffer, offers: readonly PrizeOffer[]): readonly string[] {
+export function prizeCounterItems(offer: TokenOffer, offers: readonly PrizeOffer[]): readonly CounterItem[] {
   const prizeItems = prizes.map((p, i) => {
     const prizeOffer = offers[i];
     if (prizeOffer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
-    return prizeItemLabel(p, prizeOffer);
+    return prizeItem(p, prizeOffer);
   });
-  return [tokenItemLabels[offer], ...prizeItems, closeItem];
+  return [tokenItems[offer], ...prizeItems, { label: closeItem, value: "" }];
 }

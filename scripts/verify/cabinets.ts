@@ -52,7 +52,7 @@ function enterAndJoystick(v: Verify, w: (typeof walks)[number]): Shot {
   console.log(`${w.label}:`);
   v.openHook("scene=game");
   v.step(1);
-  if (w.sideways) v.step(24, w.sideways);
+  if (w.sideways) v.step(40, w.sideways);
   v.step(32, { up: true });
   let s = v.snapshot(isGameSnapshot);
   check(
@@ -131,7 +131,7 @@ function recordWalk(v: Verify): void {
     () => {
       v.wait(600);
       // Firefly: right of the spawn.
-      v.key("ArrowRight", 400);
+      v.key("ArrowRight", 720);
       v.key("ArrowUp", 700);
       v.key("Space");
       v.wait(400);
@@ -143,7 +143,7 @@ function recordWalk(v: Verify): void {
       quitGame();
       v.wait(500);
       // Brass Monkey: left of the spawn.
-      v.key("ArrowLeft", 800);
+      v.key("ArrowLeft", 1400);
       v.key("ArrowUp", 300);
       v.key("Space");
       v.wait(400);

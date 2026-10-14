@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { checkCollision, newWalls } from "./collision.ts";
 import { newMachines } from "./machine.ts";
-import { counterRect } from "./prizeCounter.ts";
+import { counterRects } from "./desk.ts";
 import {
   buyPrize,
   honeyJarPrice,
@@ -72,7 +72,7 @@ describe("prize catalogue", () => {
           hit: false,
         });
       }
-      expect({ id: p.id, counter: checkCollision(r, counterRect) }).toEqual({ id: p.id, counter: false });
+      expect({ id: p.id, desk: counterRects.some((c) => checkCollision(r, c)) }).toEqual({ id: p.id, desk: false });
     }
   });
 

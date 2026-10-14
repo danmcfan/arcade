@@ -119,7 +119,7 @@ describe("new game", () => {
       tokens: 5,
       tickets: 0,
       prizes: [],
-      player: { x: 50, y: 100, dir: "LEFT" },
+      player: { x: 50, y: 90, dir: "LEFT" },
     };
     const store = memoryStore(save);
     const t = new Title({ store });
@@ -142,7 +142,7 @@ describe("new game", () => {
       tokens: 5,
       tickets: 0,
       prizes: [],
-      player: { x: 50, y: 100, dir: "LEFT" },
+      player: { x: 50, y: 90, dir: "LEFT" },
     });
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
@@ -172,7 +172,7 @@ describe("new game", () => {
       tokens: 0,
       tickets: 88,
       prizes: ["honeyJar", "runningShoes", "sleepyBees", "lantern", "glowStick", "wings"],
-      player: { x: 50, y: 100, dir: "LEFT" },
+      player: { x: 50, y: 90, dir: "LEFT" },
     });
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
@@ -191,7 +191,7 @@ describe("new game", () => {
       tokens: 0,
       tickets: 88,
       prizes: [],
-      player: { x: 50, y: 100, dir: "LEFT" },
+      player: { x: 50, y: 90, dir: "LEFT" },
     });
     const t = new Title({ store });
     tap(t, "down");
@@ -213,12 +213,12 @@ describe("continue", () => {
         tokens: 5,
         tickets: 0,
         prizes: [],
-        player: { x: 50, y: 100, dir: "LEFT" },
+        player: { x: 50, y: 90, dir: "LEFT" },
       }),
     });
     tap(t, "space");
     expect(t.phase).toBe("playing");
-    expect(game(t).arcade.player).toMatchObject({ x: 50, y: 100, dir: "LEFT" });
+    expect(game(t).arcade.player).toMatchObject({ x: 50, y: 90, dir: "LEFT" });
     expect(game(t).arcade.highScore).toBe(120);
   });
 
@@ -317,7 +317,7 @@ describe("pause menu", () => {
         tokens: 2,
         tickets: 37,
         prizes: [],
-        player: { x: 50, y: 100, dir: "LEFT" },
+        player: { x: 50, y: 90, dir: "LEFT" },
       }),
     });
     tap(t, "space");
