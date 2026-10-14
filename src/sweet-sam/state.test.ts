@@ -5,7 +5,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
-import { paidTickets } from "../arcade/wallet.testutil.ts";
+import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerTicks, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { deathRoundDelayTicks } from "./update.ts";
@@ -503,7 +503,7 @@ describe("game over pays out", () => {
       step(s);
     }
     expect([s.lives, s.score(), s.snapshot().state]).toEqual([0, 1234, "GAMEOVER"]);
-    expect(paidTickets(s.score())).toBe(12);
+    expect(ticketsFor(s.score())).toBe(12);
   });
 });
 

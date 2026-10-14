@@ -271,12 +271,14 @@ export class Game implements Scene {
       this.cursor = (this.cursor + delta + n) % n;
       soundMove.blip();
     }
-    if (edges.space && this.cursor < closeItemIndex) {
-      const prize = this.cursor >= firstPrizeIndex ? prizes[this.cursor - firstPrizeIndex] : undefined;
-      if (this.cursor !== tokenItemIndex && prize === undefined) {
-        throw new Error(`prize counter: no prize at item ${this.cursor}`);
-      }
-      (wallet.buy(prize?.id ?? "token") ? soundSelect : soundDeny).blip();
+    if (edges.space && this.cursor === tokenItemIndex) {
+      (wallet.buy("token") ? soundSelect : soundDeny).blip();
+      return;
+    }
+    if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
+      const prize = prizes[this.cursor - firstPrizeIndex];
+      if (prize === undefined) throw new Error(`prize counter: no prize at item ${this.cursor}`);
+      (wallet.buy(prize.id) ? soundSelect : soundDeny).blip();
       return;
     }
     if (!edges.space && !edges.escape) return;

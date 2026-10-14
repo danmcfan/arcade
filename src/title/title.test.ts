@@ -397,6 +397,24 @@ function endedRun(store: SaveStore & { saves: number }, tokens: number, points: 
 }
 
 describe("saving when the wallet changes", () => {
+  test("every purchase saves at once, token or prize; a refused one does not", () => {
+    const store = spyStore();
+    const t = atCounter(store, 0, 30);
+    let saves = store.saves;
+    tap(t, "space"); // a token: 25 tickets left
+    expect(store.saves).toBe(saves + 1);
+    expect(store.load()).toMatchObject({ tokens: 1, tickets: 25, prizes: [] });
+    saves = store.saves;
+    tap(t, "down");
+    tap(t, "space"); // the honey jar: 0 tickets left
+    expect(store.saves).toBe(saves + 1);
+    expect(store.load()).toMatchObject({ tokens: 1, tickets: 0, prizes: ["honeyJar"] });
+    saves = store.saves;
+    tap(t, "down");
+    tap(t, "space"); // the running shoes: too few tickets
+    expect(store.saves).toBe(saves);
+  });
+
   test("a payout saves at once, while the payout is still counting", () => {
     const store = spyStore();
     endedRun(store, 5, 1420);

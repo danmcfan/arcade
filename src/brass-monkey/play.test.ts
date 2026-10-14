@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
-import { paidTickets } from "../arcade/wallet.testutil.ts";
+import { ticketsFor } from "../arcade/wallet.ts";
 import { conveyorFloor } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
@@ -208,7 +208,7 @@ describe("losing a life", () => {
       step(run, t.dyingTicks);
     }
     expect([run.phase, run.lives]).toEqual(["over", 0]);
-    expect(paidTickets(run.score)).toBe(123);
+    expect(ticketsFor(run.score)).toBe(123);
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { prizes, type PrizeId } from "./prizes.ts";
-import { pointsPerTicket, startingTokens, ticketsPerToken, Wallet, type WalletProgress } from "./wallet.ts";
+import { pointsPerTicket, startingTokens, ticketsFor, ticketsPerToken, Wallet, type WalletProgress } from "./wallet.ts";
 
 function wallet(p: Partial<WalletProgress> = {}): Wallet {
   return new Wallet({ highScore: 0, tokens: startingTokens, tickets: 0, prizes: [], ...p });
@@ -53,6 +53,7 @@ describe("settleRun", () => {
       [0, 1],
     ] as const) {
       const w = wallet({ tickets: 3 });
+      expect(ticketsFor(score)).toBe(tickets);
       expect(w.settleRun(score, "paid")).toBe(tickets);
       expect(w.tickets).toBe(3 + tickets);
     }

@@ -17,6 +17,11 @@ export const ticketsPerToken = 5;
 /** Points per ticket. */
 export const pointsPerTicket = 100;
 
+/** Tickets a paid run scoring `score` pays: 1 per 100 points rounded down, at least 1. */
+export function ticketsFor(score: number): number {
+  return Math.max(1, Math.floor(score / pointsPerTicket));
+}
+
 /**
  * How a minigame was started: at a cabinet for a token ("paid"), at a cabinet
  * with no tokens ("free", free play), or straight from `game.New(software)`
@@ -108,11 +113,11 @@ export class Wallet {
 
   /**
    * A run that ended (not quit): keep the best score as the high score, and
-   * pay tickets for a paid run (1 per 100 points rounded down, at least 1).
+   * pay `ticketsFor(score)` for a paid run.
    * Returns the tickets paid.
    */
   settleRun(score: number, run: RunKind): number {
-    const tickets = run === "paid" ? Math.max(1, Math.floor(score / pointsPerTicket)) : 0;
+    const tickets = run === "paid" ? ticketsFor(score) : 0;
     if (score > this._highScore || tickets > 0) this._version++;
     this._highScore = Math.max(this._highScore, score);
     this._tickets += tickets;

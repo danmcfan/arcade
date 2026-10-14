@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
-import { paidTickets } from "../../src/arcade/wallet.testutil.ts";
+import { ticketsFor } from "../../src/arcade/wallet.ts";
 import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
 import { decodeDataUrl } from "../browser.ts";
 import {
@@ -179,8 +179,8 @@ function playToPayout(v: Verify): void {
     check(seen.has(name), `saw ${name}`);
   check(g.menu === "payout", "game over opens the payout", g.menu);
   check(
-    g.payout?.score === lastScore && g.payout.total === paidTickets(lastScore) && lastScore > 0,
-    `the payout turns the score (${lastScore}) into ${paidTickets(lastScore)} tickets`,
+    g.payout?.score === lastScore && g.payout.total === ticketsFor(lastScore) && lastScore > 0,
+    `the payout turns the score (${lastScore}) into ${ticketsFor(lastScore)} tickets`,
     g.payout,
   );
   v.frame("9-payout", 2);

@@ -14,7 +14,7 @@ import * as rng from "../engine/rng.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { Game } from "../game/game.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
-import { paidTickets } from "../arcade/wallet.testutil.ts";
+import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { BrassMonkeySoftware } from "./game.ts";
@@ -181,7 +181,7 @@ describe("in the arcade", () => {
       }
       const { payout } = game.snapshot();
       expect(payout?.score).toBeGreaterThan(0);
-      expect(payout?.total).toBe(paidTickets(payout?.score ?? 0));
+      expect(payout?.total).toBe(ticketsFor(payout?.score ?? 0));
     } finally {
       game.dispose();
     }
