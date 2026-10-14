@@ -11,9 +11,9 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 import type { Direction, Input } from "../../src/engine/input.ts";
 import { playerFrameHeight, playerFrames, playerFramesFor, playerFrameWidth } from "../../src/ui/playerArt.ts";
-import { sweetie, type SweetieLetter } from "../../src/ui/sweetie16.ts";
 import { decodeDataUrl } from "../browser.ts";
 import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
+import { empty, toPng, toRows } from "../pixel-art.ts";
 
 let checks = 0;
 
@@ -25,44 +25,26 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 /** The hub image sits 16 px in from the canvas edge (`buffer` in src/arcade/draw.ts). */
 const margin = 16;
+/** Ticks a walk may take to show every frame: one cycle is 40 (`frameIncrement` 0.1 over 4 frames). */
+const tickLimit = 60;
 
-function canvas(v: Verify): PNG {
-  return PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
-}
-
-function isLetter(ch: string): ch is SweetieLetter {
-  return ch in sweetie;
-}
-
-/** The player's 16x24 box as drawn: its top-left on the canvas and its pixels. */
-function crop(png: PNG, left: number, top: number): PNG {
-  const out = new PNG({ width: playerFrameWidth, height: playerFrameHeight });
-  for (let y = 0; y < playerFrameHeight; y++)
-    png.data.copy(
-      out.data,
-      y * playerFrameWidth * 4,
-      ((top + y) * png.width + left) * 4,
-      ((top + y) * png.width + left + playerFrameWidth) * 4,
-    );
-  return out;
+/** The player's 16x24 box as drawn this tick, as Sweetie 16 letters. */
+function drawnBox(v: Verify, x: number, y: number): string[] {
+  const png = PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
+  const left = Math.trunc(x + margin - playerFrameWidth / 2);
+  const top = Math.trunc(y + margin - playerFrameHeight / 2);
+  return toRows(png, undefined, left, top, playerFrameWidth, playerFrameHeight);
 }
 
 /** The art's opaque pixels that the drawn box does not show, as "x,y" (empty when it matches). */
-function mismatches(drawn: PNG, rows: readonly string[]): string[] {
-  const bad: string[] = [];
-  rows.forEach((row, y) => {
-    Array.from(row).forEach((ch, x) => {
-      if (!isLetter(ch)) return;
-      const i = (y * drawn.width + x) * 4;
-      const hex = `#${[0, 1, 2].map((j) => (drawn.data[i + j] ?? 0).toString(16).padStart(2, "0")).join("")}`;
-      if (hex !== sweetie[ch]) bad.push(`${x},${y}`);
-    });
-  });
-  return bad;
+function mismatches(drawn: readonly string[], art: readonly string[]): string[] {
+  return art.flatMap((row, y) =>
+    Array.from(row).flatMap((ch, x) => (ch !== empty && drawn[y]?.[x] !== ch ? [`${x},${y}`] : [])),
+  );
 }
 
 /** Each facing and the key that turns the player to it. The side walks cross the open carpet; up comes last, as it ends at the cabinets. */
-const walks: [Direction, Partial<Input>][] = [
+const facingKeys: [Direction, Partial<Input>][] = [
   ["DOWN", { down: true }],
   ["LEFT", { left: true }],
   ["RIGHT", { right: true }],
@@ -70,58 +52,51 @@ const walks: [Direction, Partial<Input>][] = [
 ];
 
 /** Walks each way for one whole cycle, checking every tick; returns the drawn frames, a row per facing. */
-function walkCycles(v: Verify): PNG[][] {
+function walkCycles(v: Verify): string[][][] {
   console.log("walk cycles (hub, ?scene=game):");
   v.openHook("scene=game");
   v.step(1);
-  const sheet: PNG[][] = [];
-  for (const [dir, input] of walks) {
-    const drawn: PNG[] = [];
+  const sheet: string[][][] = [];
+  for (const [dir, input] of facingKeys) {
+    const drawn: string[][] = [];
     let ticks = 0;
-    let wrong: string[] = [];
-    while (drawn.length < playerFrames && ticks < 60) {
+    let firstMismatch: string[] = [];
+    while (drawn.length < playerFrames && ticks < tickLimit) {
       v.step(1, input);
       ticks++;
       const p = v.snapshot(isGameSnapshot).arcade.player;
       const frame = Math.trunc(p.frame);
-      const box = crop(
-        canvas(v),
-        Math.trunc(p.x + margin - playerFrameWidth / 2),
-        Math.trunc(p.y + margin - playerFrameHeight / 2),
-      );
+      const box = drawnBox(v, p.x, p.y);
       const bad = mismatches(box, playerFramesFor(dir)[frame] ?? []);
-      if (bad.length > 0 && wrong.length === 0) wrong = [`tick ${ticks} frame ${frame}`, ...bad.slice(0, 8)];
+      if (bad.length > 0 && firstMismatch.length === 0)
+        firstMismatch = [`tick ${ticks} frame ${frame}`, ...bad.slice(0, 8)];
       if (frame === drawn.length) drawn.push(box);
     }
     check(v.snapshot(isGameSnapshot).arcade.player.dir === dir, `walking ${dir.toLowerCase()} faces ${dir}`);
     check(drawn.length === playerFrames, `${dir}: the walk reaches all ${playerFrames} frames`, drawn.length);
-    check(wrong.length === 0, `${dir}: every tick draws playerArt.ts's frame for the facing and walk frame`, wrong);
+    check(
+      firstMismatch.length === 0,
+      `${dir}: every tick draws playerArt.ts's frame for the facing and walk frame`,
+      firstMismatch,
+    );
     v.frame(`hub-${dir.toLowerCase()}`);
     sheet.push(drawn);
   }
   return sheet;
 }
 
-/** The drawn frames, a row per facing on dark grey, scaled up. */
-function writeSheet(sheet: PNG[][], path: string): void {
+/** The drawn frames, a row per facing on dark grey (`d`), scaled up. */
+function writeSheet(sheet: string[][][], path: string): void {
   const gap = 4;
-  const out = new PNG({
-    width: gap + playerFrames * (playerFrameWidth + gap),
-    height: gap + sheet.length * (playerFrameHeight + gap),
-  });
-  for (let i = 0; i < out.data.length; i += 4) out.data.set([0x33, 0x3c, 0x57, 255], i);
-  for (const [r, row] of sheet.entries())
-    for (const [c, png] of row.entries())
-      png.bitblt(
-        out,
-        0,
-        0,
-        png.width,
-        png.height,
-        gap + c * (playerFrameWidth + gap),
-        gap + r * (playerFrameHeight + gap),
-      );
-  writeFileSync(path, upscale(PNG.sync.write(out), 8));
+  const width = gap + playerFrames * (playerFrameWidth + gap);
+  const spacer = "d".repeat(gap);
+  const rows = Array.from({ length: gap }, () => "d".repeat(width));
+  for (const frames of sheet) {
+    for (let y = 0; y < playerFrameHeight; y++)
+      rows.push(spacer + frames.map((f) => (f[y] ?? "").replaceAll(empty, "d") + spacer).join(""));
+    rows.push(...Array.from({ length: gap }, () => "d".repeat(width)));
+  }
+  writeFileSync(path, upscale(PNG.sync.write(toPng(rows)), 8));
 }
 
 function recordWalk(v: Verify): void {
