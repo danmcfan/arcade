@@ -50,10 +50,10 @@ export const carpetTile: readonly string[] = [
 ];
 
 /**
- * One cabinet seen from the front, 16x24, black stripes down both sides: `1`
- * its lit colour (marquee, buttons, coin slots), `w` the marquee's lettering,
- * `2` its trim (marquee, control panel), `3` its body, `4` its shaded right
- * side and `S` its screen (`cabinetScreens`).
+ * One cabinet seen from the front, 16x24, a band of body colour between black
+ * lines down each side: `1` its lit colour (marquee, buttons, coin slots), `w`
+ * the marquee's lettering, `2` its trim (marquee, control panel), `3` its
+ * body, `4` its shaded right side and `S` its screen (`cabinetScreens`).
  */
 export const cabinetArt: readonly string[] = [
   "kkkkkkkkkkkkkkkk",
