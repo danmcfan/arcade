@@ -5,12 +5,26 @@
     <title>Art studio</title>
     <style>
       :root {
-        --bg: #1a1c2c;
-        --panel: #262b44;
-        --line: #333c57;
-        --text: #f4f4f4;
-        --dim: #94b0c2;
-        --accent: #ffcd75;
+        --bg: #f4f4f5;
+        --panel: #ffffff;
+        --line: #e4e4e7;
+        --text: #18181b;
+        --dim: #71717a;
+        --hover: #f4f4f5;
+        --accent: #3b5dc9;
+        --accent-soft: #e8edfb;
+        --error: #b13e53;
+      }
+      :root[data-theme="dark"] {
+        --bg: #09090b;
+        --panel: #18181b;
+        --line: #3f3f46;
+        --text: #f4f4f5;
+        --dim: #a1a1aa;
+        --hover: #27272a;
+        --accent: #73a7f6;
+        --accent-soft: #1e2a44;
+        --error: #ef7d57;
       }
       * {
         box-sizing: border-box;
@@ -20,29 +34,41 @@
         background: var(--bg);
         color: var(--text);
         font:
-          13px/1.4 ui-monospace,
-          Menlo,
-          monospace;
+          13px/1.4 system-ui,
+          -apple-system,
+          sans-serif;
         display: grid;
-        grid-template-columns: 260px 1fr 220px;
+        grid-template-columns: 240px 1fr 260px;
         grid-template-rows: auto 1fr auto;
         height: 100vh;
       }
       header {
         grid-column: 1 / -1;
         display: flex;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
-        padding: 8px;
+        padding: 8px 12px;
+        background: var(--panel);
         border-bottom: 1px solid var(--line);
+      }
+      header strong {
+        margin-right: 8px;
       }
       header input {
         flex: 1;
+        font-family: ui-monospace, Menlo, monospace;
+      }
+      .sep {
+        width: 1px;
+        align-self: stretch;
+        background: var(--line);
+        margin: 0 4px;
       }
       aside,
       #side {
-        padding: 8px;
+        padding: 12px;
         overflow: auto;
+        background: var(--panel);
         border-right: 1px solid var(--line);
       }
       #side {
@@ -53,80 +79,151 @@
         overflow: auto;
         display: grid;
         place-items: center;
-        background: #0e0f18;
+        background: var(--bg);
       }
       footer {
         grid-column: 1 / -1;
         display: flex;
         gap: 8px;
-        padding: 8px;
+        padding: 8px 12px;
+        background: var(--panel);
         border-top: 1px solid var(--line);
         overflow-x: auto;
       }
       h2 {
         font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
         color: var(--dim);
         text-transform: uppercase;
-        margin: 12px 0 4px;
+        margin: 16px 0 6px;
+      }
+      h2:first-child {
+        margin-top: 0;
       }
       button,
-      input,
-      select {
+      input {
         font: inherit;
         color: var(--text);
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 3px;
-        padding: 3px 6px;
+        border-radius: 6px;
+        padding: 4px 8px;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--hover);
+      }
+      button.icon {
+        display: inline-grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+      }
+      button.icon svg {
+        width: 16px;
+        height: 16px;
       }
       button.on {
         border-color: var(--accent);
+        background: var(--accent-soft);
         color: var(--accent);
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
       }
       #items button,
       #variants button {
         display: block;
         width: 100%;
         text-align: left;
-        margin: 1px 0;
+        margin: 2px 0;
+        border-color: transparent;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      #palette {
+      #items button:hover,
+      #variants button:hover {
+        border-color: var(--line);
+      }
+      #items button {
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 12px;
+      }
+      #backdrop .icon {
+        width: auto;
+        height: auto;
+        aspect-ratio: 1;
+      }
+      #palette,
+      #backdrop {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(8, 1fr);
         gap: 4px;
       }
       .swatch {
-        height: 32px;
+        aspect-ratio: 1;
+        padding: 0;
+        font-size: 10px;
         color: #fff;
         text-shadow: 0 0 2px #000;
       }
       .swatch.on {
         outline: 2px solid var(--accent);
+        outline-offset: 1px;
       }
       canvas {
         image-rendering: pixelated;
       }
       #editor {
         cursor: crosshair;
+        border: 1px solid var(--line);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+      }
+      #previews {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+      }
+      #previews canvas,
+      .frame {
+        border: 1px solid var(--line);
+        border-radius: 4px;
       }
       .frame {
-        border: 2px solid var(--line);
-        background: #8c8c8c;
+        cursor: pointer;
       }
       .frame.on {
         border-color: var(--accent);
+        outline: 1px solid var(--accent);
+      }
+      label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        color: var(--dim);
+        margin-top: 6px;
       }
       #dirty {
         color: var(--accent);
+        font-size: 12px;
       }
       #status {
         white-space: pre-wrap;
         color: var(--dim);
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 11px;
         max-height: 30vh;
         overflow: auto;
+      }
+      #status.error {
+        color: var(--error);
       }
     </style>
   </head>
@@ -135,28 +232,35 @@
       <strong>Art studio</strong>
       <input id="spec" list="specs" placeholder="path.ts:name" />
       <datalist id="specs"></datalist>
-      <button id="open">Open</button>
+      <button id="open" class="icon" title="Open (Enter)"></button>
       <span id="dirty"></span>
-      <button id="undo" title="Ctrl+Z">Undo</button>
-      <button id="redo" title="Ctrl+Shift+Z">Redo</button>
-      <button id="save" title="Ctrl+S">Save</button>
+      <span class="sep"></span>
+      <button id="undo" class="icon" title="Undo (Ctrl+Z)"></button>
+      <button id="redo" class="icon" title="Redo (Ctrl+Shift+Z)"></button>
+      <button id="save" class="icon" title="Save (Ctrl+S)"></button>
+      <span class="sep"></span>
+      <button id="theme" class="icon"></button>
     </header>
     <aside>
       <h2>Exports</h2>
-      <input id="filter" placeholder="filter" />
+      <input id="filter" placeholder="Filter" style="width: 100%" />
       <div id="items"></div>
     </aside>
     <main><canvas id="editor"></canvas></main>
     <div id="side">
       <h2>Tools</h2>
-      <div id="tools"></div>
+      <div id="tools" class="bar"></div>
       <h2>View</h2>
-      <div id="view"></div>
+      <div id="view" class="bar"></div>
       <h2>Palette</h2>
       <div id="palette"></div>
+      <h2>Backdrop</h2>
+      <div id="backdrop"></div>
       <h2>Preview</h2>
-      <canvas id="preview1"></canvas>
-      <canvas id="preview4"></canvas>
+      <div id="previews">
+        <canvas id="preview1"></canvas>
+        <canvas id="preview4"></canvas>
+      </div>
       <label>fps <input id="fps" type="number" value="6" min="1" max="30" style="width: 4em" /></label>
       <h2>Variants</h2>
       <div id="variants"></div>

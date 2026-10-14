@@ -56,6 +56,12 @@ await verify(
       page.eval("document.querySelectorAll('#palette .swatch').length") === "16",
       "the palette is the 16 Sweetie letters",
     );
+    check(
+      page.eval(
+        "[...document.querySelectorAll('header button, #tools button, #view button')].every((b) => b.querySelector('svg') !== null)",
+      ) === "true",
+      "every tool and header button is an icon",
+    );
     v.screenshot("1-open");
 
     page.eval(
@@ -70,7 +76,7 @@ await verify(
     // The pencil in blue at the cell (8, 0), with mirror X on.
     page.eval(`
     [...document.querySelectorAll('#palette .swatch')].find((b) => b.textContent === 'b').click();
-    [...document.querySelectorAll('#tools button')].find((b) => b.textContent === 'Mirror X').click();
+    [...document.querySelectorAll('#tools button')].find((b) => b.title.startsWith('Mirror X')).click();
     const c = document.querySelector('#editor'), r = c.getBoundingClientRect(), z = r.width / 16;
     const at = { clientX: r.left + 2 * z + 1, clientY: r.top + 1, bubbles: true };
     c.dispatchEvent(new MouseEvent('mousedown', at));
@@ -78,6 +84,22 @@ await verify(
     "ok"`);
     check(page.eval("document.querySelector('#dirty').textContent") !== "", "drawing marks the art unsaved");
     v.screenshot("3-drawn");
+
+    page.eval(`document.querySelector('#theme').click(); "ok"`);
+    check(page.eval("document.documentElement.dataset.theme") === "dark", "the theme button switches to dark mode");
+    v.screenshot("4-dark");
+
+    page.eval(
+      `[...document.querySelectorAll('#backdrop .swatch')].find((b) => b.title.startsWith('Backdrop n ')).click(); "ok"`,
+    );
+    check(
+      page.eval(
+        "document.querySelector('#editor').getContext('2d').getImageData(1, 1, 1, 1).data.slice(0, 3).join()",
+      ) === "41,54,111",
+      "a navy backdrop fills the blank cells",
+    );
+    v.screenshot("5-backdrop");
+    page.eval(`document.querySelector('#theme').click(); "ok"`);
 
     const errors = page.eval("document.querySelector('#status').textContent");
     check(!errors.startsWith("error"), "no error in the status", errors);

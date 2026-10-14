@@ -2,6 +2,26 @@
 // one export's rows with a Sweetie 16 palette, step through its frames, try
 // the agent's variants and save the rows back into the source.
 
+import {
+  createElement,
+  Eraser,
+  FlipHorizontal2,
+  FolderOpen,
+  Grid3x3,
+  type IconNode,
+  Grid2x2,
+  Layers,
+  Moon,
+  PaintBucket,
+  Pencil,
+  Pipette,
+  Redo2,
+  Save,
+  Sun,
+  Undo2,
+  ZoomIn,
+  ZoomOut,
+} from "lucide";
 import type { RowsValue, StudioItem } from "./studio-source.ts";
 
 /** One image: rows of letters, `.` blank, as mutable cells. */
@@ -16,8 +36,26 @@ interface Opened {
 type Tool = "pencil" | "eraser" | "fill" | "eyedropper";
 
 const blank = ".";
-const checkerDark = "#8c8c8c";
-const checkerLight = "#a0a0a0";
+type Theme = "light" | "dark";
+
+/**
+ * The checker blank cells show on, per theme: a light one for dark art, a dark
+ * one for light art.
+ */
+const checkers: Record<Theme, [string, string]> = {
+  light: ["#ffffff", "#e4e4e7"],
+  dark: ["#27272a", "#3f3f46"],
+};
+const themeKey = "studio-theme";
+
+/** The theme the viewer last picked, if the browser kept it. */
+function storedTheme(): Theme {
+  try {
+    return localStorage.getItem(themeKey) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const node = document.querySelector(`#${id}`);
@@ -50,6 +88,8 @@ const ui = {
   fps: byId("fps", HTMLInputElement),
   variants: byId("variants", HTMLDivElement),
   status: byId("status", HTMLDivElement),
+  theme: byId("theme", HTMLButtonElement),
+  backdrop: byId("backdrop", HTMLDivElement),
   frames: byId("frames", HTMLElement),
 };
 
@@ -66,6 +106,9 @@ interface State {
   grid: boolean;
   onion: boolean;
   zoom: number;
+  theme: Theme;
+  /** What blank cells show on: "checker", or a palette letter as a solid colour. */
+  backdrop: string;
   palette: Record<string, string>;
   undo: Grid[][];
   redo: Grid[][];
@@ -86,6 +129,8 @@ const state: State = {
   grid: true,
   onion: true,
   zoom: 16,
+  theme: storedTheme(),
+  backdrop: "checker",
   palette: {},
   undo: [],
   redo: [],
@@ -134,10 +179,18 @@ function checkpoint(): void {
   state.redo = [];
 }
 
-function paintChecker(ctx: CanvasRenderingContext2D, w: number, h: number, cell: number): void {
+/** The backdrop under the art: a solid palette colour, or the theme's checker. */
+function paintBackdrop(ctx: CanvasRenderingContext2D, w: number, h: number, cell: number): void {
+  const solid = state.palette[state.backdrop];
+  if (solid !== undefined) {
+    ctx.fillStyle = solid;
+    ctx.fillRect(0, 0, w * cell, h * cell);
+    return;
+  }
+  const [a, b] = checkers[state.theme];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      ctx.fillStyle = (x + y) % 2 === 0 ? checkerDark : checkerLight;
+      ctx.fillStyle = (x + y) % 2 === 0 ? a : b;
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
   }
@@ -167,12 +220,12 @@ function drawEditor(): void {
   ui.editor.width = w * z;
   ui.editor.height = h * z;
   const ctx = context(ui.editor);
-  paintChecker(ctx, w, h, z);
+  paintBackdrop(ctx, w, h, z);
   const prev = state.frames[state.current - 1];
   if (state.onion && prev !== undefined) paintGrid(ctx, prev, z, 0.3);
   paintGrid(ctx, g, z);
   if (state.grid && z >= 4) {
-    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.strokeStyle = state.theme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.25)";
     ctx.beginPath();
     for (let x = 0; x <= w; x++) {
       ctx.moveTo(x * z + 0.5, 0);
@@ -195,7 +248,9 @@ function drawFrames(): void {
       c.height = h * 3;
       c.className = i === state.current ? "frame on" : "frame";
       c.title = `frame ${i}`;
-      paintGrid(context(c), g, 3);
+      const ctx = context(c);
+      paintBackdrop(ctx, w, h, 3);
+      paintGrid(ctx, g, 3);
       c.addEventListener("click", () => {
         state.current = i;
         render();
@@ -275,11 +330,17 @@ window.addEventListener("mouseup", () => {
   drawing = false;
 });
 
-function toggle(label: string, on: boolean, click: () => void, title = ""): HTMLButtonElement {
+/** Put a Lucide icon in `b`, sized by the `.icon` button style. */
+function setIcon(b: HTMLButtonElement, icon: IconNode): void {
+  b.replaceChildren(createElement(icon, { "aria-hidden": "true" }));
+  b.setAttribute("aria-label", b.title);
+}
+
+function toggle(icon: IconNode, on: boolean, click: () => void, title: string): HTMLButtonElement {
   const b = document.createElement("button");
-  b.textContent = label;
   b.title = title;
-  b.className = on ? "on" : "";
+  b.className = on ? "icon on" : "icon";
+  setIcon(b, icon);
   b.addEventListener("click", () => {
     click();
     buildSide();
@@ -288,12 +349,12 @@ function toggle(label: string, on: boolean, click: () => void, title = ""): HTML
   return b;
 }
 
-/** Each tool, its button label and its key. */
-const tools: [Tool, string, string][] = [
-  ["pencil", "Pencil", "b"],
-  ["eraser", "Eraser", "e"],
-  ["fill", "Fill", "g"],
-  ["eyedropper", "Pick", "i"],
+/** Each tool, its name, its key and its icon. */
+const tools: [Tool, string, string, IconNode][] = [
+  ["pencil", "Pencil", "b", Pencil],
+  ["eraser", "Eraser", "e", Eraser],
+  ["fill", "Fill", "g", PaintBucket],
+  ["eyedropper", "Pick", "i", Pipette],
 ];
 
 function zoom(by: number): void {
@@ -302,9 +363,9 @@ function zoom(by: number): void {
 
 function buildSide(): void {
   ui.tools.replaceChildren(
-    ...tools.map(([tool, label, key]) =>
+    ...tools.map(([tool, label, key, icon]) =>
       toggle(
-        label,
+        icon,
         state.tool === tool,
         () => {
           state.tool = tool;
@@ -313,7 +374,7 @@ function buildSide(): void {
       ),
     ),
     toggle(
-      "Mirror X",
+      FlipHorizontal2,
       state.mirror,
       () => {
         state.mirror = !state.mirror;
@@ -322,14 +383,24 @@ function buildSide(): void {
     ),
   );
   ui.view.replaceChildren(
-    toggle("Grid", state.grid, () => {
-      state.grid = !state.grid;
-    }),
-    toggle("Onion", state.onion, () => {
-      state.onion = !state.onion;
-    }),
     toggle(
-      "−",
+      Grid3x3,
+      state.grid,
+      () => {
+        state.grid = !state.grid;
+      },
+      "Grid",
+    ),
+    toggle(
+      Layers,
+      state.onion,
+      () => {
+        state.onion = !state.onion;
+      },
+      "Onion skin",
+    ),
+    toggle(
+      ZoomOut,
       false,
       () => {
         zoom(1 / 2);
@@ -337,13 +408,36 @@ function buildSide(): void {
       "Zoom out (-)",
     ),
     toggle(
-      "+",
+      ZoomIn,
       false,
       () => {
         zoom(2);
       },
       "Zoom in (+)",
     ),
+  );
+  const backdropButton = (letter: string, css: string): HTMLButtonElement => {
+    const b = document.createElement("button");
+    b.className = letter === state.backdrop ? "swatch on" : "swatch";
+    b.style.background = css;
+    b.title = `Backdrop ${letter} ${css}`;
+    b.addEventListener("click", () => {
+      state.backdrop = letter;
+      buildSide();
+      render();
+    });
+    return b;
+  };
+  ui.backdrop.replaceChildren(
+    toggle(
+      Grid2x2,
+      state.backdrop === "checker",
+      () => {
+        state.backdrop = "checker";
+      },
+      "Backdrop: checker",
+    ),
+    ...Object.entries(state.palette).map(([letter, css]) => backdropButton(letter, css)),
   );
   // Glyph rows draw in one ink: the swatches pick the ink, not the letter.
   const chosen = state.glyph ? state.ink : state.letter;
@@ -386,8 +480,9 @@ function buildVariants(variants: Opened["variants"], opened: Opened["value"]): v
   if (all.length === 1) ui.variants.append("none in out/studio/variants/");
 }
 
-function showStatus(text: string): void {
+function showStatus(text: string, error = false): void {
   ui.status.textContent = text;
+  ui.status.className = error ? "error" : "";
 }
 
 async function api<T>(path: string, is: (v: unknown) => v is T, init?: RequestInit): Promise<T> {
@@ -464,9 +559,31 @@ function undoRedo(from: Grid[][], to: Grid[][]): void {
 
 function report(p: Promise<void>): void {
   p.catch((e: unknown) => {
-    showStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
+    showStatus(`error: ${e instanceof Error ? e.message : String(e)}`, true);
   });
 }
+
+setIcon(ui.open, FolderOpen);
+setIcon(ui.undo, Undo2);
+setIcon(ui.redo, Redo2);
+setIcon(ui.save, Save);
+
+function applyTheme(): void {
+  document.documentElement.dataset["theme"] = state.theme;
+  ui.theme.title = state.theme === "dark" ? "Light mode" : "Dark mode";
+  setIcon(ui.theme, state.theme === "dark" ? Sun : Moon);
+}
+applyTheme();
+ui.theme.addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  try {
+    localStorage.setItem(themeKey, state.theme);
+  } catch {
+    // Not kept: the studio opens light next time.
+  }
+  applyTheme();
+  render();
+});
 
 ui.open.addEventListener("click", () => {
   report(open(ui.spec.value.trim()));
@@ -532,7 +649,9 @@ function animate(): void {
       const { w, h } = size(g);
       canvas.width = w * k;
       canvas.height = h * k;
-      paintGrid(context(canvas), g, k);
+      const ctx = context(canvas);
+      paintBackdrop(ctx, w, h, k);
+      paintGrid(ctx, g, k);
     }
   }
   requestAnimationFrame(animate);
@@ -561,5 +680,5 @@ async function start(): Promise<void> {
 try {
   await start();
 } catch (e: unknown) {
-  showStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
+  showStatus(`error: ${e instanceof Error ? e.message : String(e)}`, true);
 }
