@@ -2,13 +2,16 @@
 
 Every image in the game is pixel art, and ADR 0006 has it generated from source in the repo; some PNGs are still hand-made. Read this before you draw, redraw or spec art: how the owner steers it, where the source lives, how to draw less of it, how to look at it, and the bar it has to clear.
 
-## Steer it first
+## Work it out with the owner
 
-Every art change, new or redrawn, starts in the **art studio**, which the owner steers; the PR comes after. The owner looks and fine-tunes there, so you write rows, not a viewer.
+Every art change, new or redrawn, starts with the owner, before any PR. Ask which of two modes they want:
 
-1. **Write variants.** For each export the issue touches, write candidate rows to `out/studio/variants/<issue>-<slug>.json`: `{ "path.ts:name": { "label": rows } }` (`path.ts:name.key` for an entry of a record; frames for a list of frames). One label per option the issue asks you to offer; anything beyond the issue is an extra, labelled as one.
-2. **Run `bun run studio`** and give the owner the URL, with `?spec=path.ts:name` for the first export. The studio opens any rows export, lists the variants beside it, and draws with the Sweetie 16 palette, frames, onion skin and an animated preview.
-3. **Wait for the owner's save.** Saving writes the rows into the export's array literal, formats the file and runs `bun run art`. The saved source is the brief: read it back with `git diff`, finish the change around it, and name the picks in the PR.
+- **Prototype**: several options for an asset. Write each export's options to `out/studio/variants/<issue>-<slug>.json`: `{ "path.ts:name": { "label": rows } }` (`path.ts:name.key` for an entry of a record; frames for a list of frames). One label per option the issue asks for; anything beyond the issue is an extra, labelled as one. The owner then decides how to compare them: in the studio, or as a sheet from `bun run pixel show`.
+- **Tweak**: small changes to an existing asset. Edit its rows in place, show the result with `bun run pixel before`, and adjust from the owner's notes.
+
+Start the studio only when the owner asks for it: run `bun run studio` and give them the URL, with `?spec=path.ts:name` for the first export. It opens any rows export, lists the variants beside it, and draws with the Sweetie 16 palette, frames, onion skin and an animated preview. Saving writes the rows into the export's array literal, formats the file and runs `bun run art`; read the save back with `git diff`.
+
+The owner's picks are the brief either way: finish the change around them, and name them in the PR.
 
 ## Source
 
@@ -65,5 +68,5 @@ In the running game, the verify check shows the art (`docs/agents/visual-verific
 ## The bar
 
 - **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the verify check's screenshots, so the owner judges the change at a glance.
-- **The owner's picks.** The art matches what the owner saved in the studio (Steer it first), and nothing more.
+- **The owner's picks.** The art matches what the owner picked (Work it out with the owner), and nothing more.
 - **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the studio variants should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.
