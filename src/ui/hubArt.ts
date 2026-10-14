@@ -50,35 +50,36 @@ export const carpetTile: readonly string[] = [
 ];
 
 /**
- * One cabinet seen from the front, 16x24: `1` its lit colour (marquee, coin
- * slots, buttons), `2` its trim (marquee frame, control panel), `3` its body,
- * `4` its shaded right side and `S` its screen (`cabinetScreens`).
+ * One cabinet seen from the front, 16x24, black stripes down both sides: `1`
+ * its lit colour (marquee, buttons, coin slots), `w` the marquee's lettering,
+ * `2` its trim (marquee, control panel), `3` its body, `4` its shaded right
+ * side and `S` its screen (`cabinetScreens`).
  */
 export const cabinetArt: readonly string[] = [
-  ".kkkkkkkkkkkkkk.",
-  "k22222222222222k",
-  "k21111111111112k",
-  "k22222222222222k",
   "kkkkkkkkkkkkkkkk",
-  ".k333333333334k.",
-  ".k3kkkkkkkkkk4k.",
-  ".k3kSSSSSSSSk4k.",
-  ".k3kSSSSSSSSk4k.",
-  ".k3kSSSSSSSSk4k.",
-  ".k3kSSSSSSSSk4k.",
-  ".k3kSSSSSSSSk4k.",
-  ".k3kkkkkkkkkk4k.",
-  ".k333333333334k.",
+  "k3k2222222222k4k",
+  "k3k21w1ww1w12k4k",
+  "k3k2222222222k4k",
+  "k3kkkkkkkkkkkk4k",
+  "k3k3333333333k4k",
+  "k3kkkkkkkkkkkk4k",
+  "k3kkSSSSSSSSkk4k",
+  "k3kkSSSSSSSSkk4k",
+  "k3kkSSSSSSSSkk4k",
+  "k3kkSSSSSSSSkk4k",
+  "k3kkSSSSSSSSkk4k",
+  "k3kkkkkkkkkkkk4k",
+  "k3k3333333333k4k",
+  "k3k2222222222k4k",
+  "k3k21k1222112k4k",
+  "k3k2222222222k4k",
+  "k3kkkkkkkkkkkk4k",
+  "k3k3333333333k4k",
+  "k3k33kkkkkk33k4k",
+  "k3k33k1kk1k33k4k",
+  "k3k33kkkkkk33k4k",
+  "k3k3333333333k4k",
   "kkkkkkkkkkkkkkkk",
-  "k2k222222222222k",
-  "k2k222221212222k",
-  "kkkkkkkkkkkkkkkk",
-  ".k333333333334k.",
-  ".k3333kkkk3334k.",
-  ".k3333k11k3334k.",
-  ".k3333kkkk3334k.",
-  ".k333333333334k.",
-  ".kkkkkkkkkkkkkk.",
 ];
 
 /** Each cabinet's colours (Sweetie 16 letters for `1` to `4`): the colours of its minigame. */
