@@ -40,6 +40,7 @@ import {
   quitGameIndex,
   tokenItemIndex,
 } from "./menus.ts";
+import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
 import { Payout, ticketsFor } from "./payout.ts";
@@ -390,19 +391,21 @@ export class Game implements Scene {
       this.software.draw(screen, margin);
       if (this.menu !== null) {
         const [w, h] = this.minigameSize(this.software);
+        // Over a cabinet, the menu stays on its screen, clear of the bezel.
         const playfield = isFixedViewport(this.software)
-          ? { x: 0, y: 0, w, h }
+          ? { x: cabinetInsetLeft, y: cabinetInsetTop, w: cabinetPlayfieldWidth, h: cabinetPlayfieldHeight }
           : { x: buffer, y: buffer, w: w - buffer * 2, h: h - buffer * 2 };
-        drawMenuOverlay(screen, {
+        const overlay = {
           menu: this.menu,
           software: this.software.name,
           cursor: this.cursor,
           payout: this.payout,
           wallet: this.arcade,
           tick: this.tick,
-          width: w,
-          height: h,
           playfield,
+        };
+        screen.clipped(playfield.x, playfield.y, playfield.w, playfield.h, () => {
+          drawMenuOverlay(screen, overlay);
         });
       }
       return;
@@ -422,8 +425,6 @@ export class Game implements Scene {
         payout: null,
         wallet: this.arcade,
         tick: this.tick,
-        width: hubWidth,
-        height: hubHeight,
         playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });
     }

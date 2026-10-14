@@ -15,7 +15,7 @@ import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
-import { screenDraws } from "../ui/cabinet.testutil.ts";
+import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { FireflySoftware } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
@@ -54,17 +54,11 @@ function onlyEnemy(kind: Enemy["kind"], x: number, y: number): { f: FireflySoftw
 describe("firefly draw", () => {
   test("only the cabinet draws outside the 224x288 screen, so an enemy off its edge is cut off", () => {
     const { f } = onlyEnemy("owl", -12, 300);
-    const { unclipped, clipped } = screenDraws((screen) => {
+    const paints = screenPaints((screen) => {
       f.draw(screen, 0);
     });
-    expect(unclipped.map((s) => s.asset)).toEqual([imageCabinetFirefly.asset]);
-    expect(
-      of(
-        clipped.map((c) => ({ sprite: c.sprite, x: 0, y: 0 })),
-        imageOwl,
-      ),
-    ).toHaveLength(1);
-    for (const c of clipped) expect(c.clip).toEqual([56, 56, 224, 288]);
+    expectDrawnOnScreen(paints, imageCabinetFirefly);
+    expect(paints.filter((p) => p.sprite?.asset === imageOwl.asset && p.clip !== null)).toHaveLength(1);
   });
 
   test("the cabinet at 0,0, the night sky inside the insets, then the firefly centred on its position", () => {

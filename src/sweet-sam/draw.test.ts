@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
 import { imageCabinet } from "../engine/assets.ts";
-import { screenDraws } from "../ui/cabinet.testutil.ts";
+import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { particleColorCyan } from "./particle.ts";
 
@@ -271,11 +271,9 @@ describe("SweetSamSoftware.draw", () => {
 describe("SweetSamSoftware.draw screen", () => {
   test("only the cabinet draws outside the 224x288 screen; everything else is clipped to it", () => {
     const s = new SweetSamSoftware(0);
-    const { unclipped, clipped } = screenDraws((screen) => {
+    const paints = screenPaints((screen) => {
       s.draw(screen, 0);
     });
-    expect(unclipped.map((sp) => sp.asset)).toEqual([imageCabinet.asset]);
-    expect(clipped.length).toBeGreaterThan(0);
-    for (const c of clipped) expect(c.clip).toEqual([56, 56, 224, 288]);
+    expectDrawnOnScreen(paints, imageCabinet);
   });
 });

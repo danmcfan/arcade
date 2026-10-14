@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { images } from "../engine/assets.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
@@ -70,6 +71,8 @@ interface Recording {
   surface: Surface;
   fills: () => number;
   dimmed: () => [number, number, number, number] | null;
+  /** Each clip rect, in order. */
+  clips: [number, number, number, number][];
 }
 
 /**
@@ -85,7 +88,12 @@ function recordingSurface(): Recording {
   const boxes: [number, number, number, number][] = [];
   let fills = 0;
   let dimmed: [number, number, number, number] | null = null;
+  const clips: [number, number, number, number][] = [];
   const surface = stubSurface({
+    clipped(x: number, y: number, w: number, h: number, draw: () => void): void {
+      clips.push([x, y, w, h]);
+      draw();
+    },
     draw(s: Sprite, x: number, y: number): void {
       boxes.push([x, y, s.w, s.h]);
       if (s.asset === images.ticker) {
@@ -152,6 +160,7 @@ function recordingSurface(): Recording {
     surface,
     fills: () => fills,
     dimmed: () => dimmed,
+    clips,
   };
 }
 
@@ -540,6 +549,14 @@ describe("the Game Boy frame", () => {
   });
 });
 
+/** The cabinet's screen in its 336x428 layout: `[x, y, w, h]`. */
+const cabinetScreen: [number, number, number, number] = [
+  cabinetInsetLeft,
+  cabinetInsetTop,
+  cabinetPlayfieldWidth,
+  cabinetPlayfieldHeight,
+];
+
 function atCabinet(tokens = 5): Game {
   const game = newGame(null, tokens);
   for (let t = 0; t < 31; t++) game.step(input({ up: true }));
@@ -560,7 +577,7 @@ describe("menus over a minigame", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(built[0]?.margins).toEqual([0]);
-    expect(r.dimmed()).toEqual([0, 0, 336, 428]);
+    expect(r.dimmed()).toEqual(cabinetScreen);
     expect(r.text("yellow")).toBe("PAUSED>RESUME<");
     expect(r.text("white")).toBe("CONTROLSQUIT GAME");
     expect(r.text("orange")).toBe("NO TICKETS");
@@ -568,10 +585,35 @@ describe("menus over a minigame", () => {
     const note = defined(r.glyphs.find((g) => g.ink === "orange"));
     expect(note.y).toBe(quit.y);
     expect(note.x).toBeGreaterThan(quit.x);
-    // Centred on the minigame's layout.
+    // Centred on the cabinet's screen.
     const paused = r.glyphs.filter((g) => g.ink === "yellow" && g.y === Math.min(...r.glyphs.map((x) => x.y)));
     const mid = (defined(paused[0]).x + defined(paused.at(-1)).x + 6) / 2;
     expect(Math.abs(mid - 168)).toBeLessThan(4);
+  });
+
+  test("over a cabinet, every menu fits inside the 224x288 screen and is clipped to it", () => {
+    const [sx, sy, sWidth, sHeight] = cabinetScreen;
+    const inside = ([x, y, w, h]: [number, number, number, number]): boolean =>
+      x >= sx && y >= sy && x + w <= sx + sWidth && y + h <= sy + sHeight;
+    const shown: Array<[string, Game]> = [];
+    const paused = atCabinet();
+    tapKeys(paused, "escape");
+    shown.push(["paused", paused]);
+    const controls = atCabinet();
+    tapKeys(controls, "escape", "down", "space");
+    shown.push(["controls", controls]);
+    const payout = atCabinet();
+    const sw = defined(built.at(-1));
+    sw.points = 1420;
+    sw.over = true;
+    payout.step(input());
+    shown.push(["payout", payout]);
+    for (const [menu, game] of shown) {
+      const r = recordingSurface();
+      game.draw(r.surface);
+      expect([menu, r.clips]).toEqual([menu, [cabinetScreen]]);
+      expect([menu, r.boxes.filter((b) => !inside(b))]).toEqual([menu, []]);
+    }
   });
 
   test("a minigame with a margin dims only its playfield", () => {
