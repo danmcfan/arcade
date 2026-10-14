@@ -36,18 +36,10 @@ export function isFixedViewport(s: Software): s is FixedViewport {
   return "fixedViewportSize" in s && typeof s.fixedViewportSize === "function";
 }
 
-export type SceneName = "title" | "game" | "wave" | "lumberjack";
-
-/** Pending wave slider values (Go globals `gridSize`, `seconds`). */
-export interface WaveOptions {
-  /** 64..256 step 64; default 128. */
-  gridSize: number;
-  /** 1..30; default 5. */
-  seconds: number;
-}
+export type SceneName = "title" | "game";
 
 /**
- * A top-level scene: the arcade `Game`, or a lab scene (wave, lumberjack).
+ * A top-level scene: the title or the arcade `Game`.
  * The loop reads input and calls `step(input)` once per fixed tick, then
  * `draw(screen)` once per frame after resizing the screen to `layout()`.
  * Nothing here may touch the DOM in `step()`/`snapshot()` (D12).
@@ -59,17 +51,8 @@ export interface Scene {
   draw(screen: Surface): void;
   /** Logical resolution `[w, h]` (Go `Layout`), including the +120 debug width. */
   layout(): [number, number];
-  /**
-   * §4.3 snapshot of the state after the last `step()`. `full` is only
-   * meaningful for wave (adds `cells`); other scenes ignore it.
-   */
-  snapshot(opts?: { full?: boolean }): SceneSnapshot;
-  /**
-   * Browser only, optional: mount HTML outside the canvas (wave's slider
-   * overlay, D6) and return a function that removes it. Called by main.ts,
-   * never by tests.
-   */
-  mountOverlay?(parent: HTMLElement): () => void;
+  /** §4.3 snapshot of the state after the last `step()`. */
+  snapshot(): SceneSnapshot;
   /** Optional: release listeners (e.g. the Game's sound listener) when the scene is replaced. */
   dispose?(): void;
   /** Optional, browser only: write the save now (main.ts calls it when the page is hidden). */

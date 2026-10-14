@@ -3,18 +3,14 @@
 // machines, the test hook (`__arcade.load`), main.ts (`?scene=`) and the
 // parity harness all construct through here.
 
-import { createWave } from "../lab/wave/index.ts";
-import { createLumberjack } from "../lab/lumberjack/index.ts";
 import { createGame } from "./index.ts";
 import { createTitle } from "../title/index.ts";
 import type { SaveStore } from "../title/save.ts";
-import type { Scene, SceneName, SoftwareName, WaveOptions } from "./software.ts";
+import type { Scene, SceneName, SoftwareName } from "./software.ts";
 
 export interface SceneOptions {
   /** `game` only: start as `game.New(<software>)`; omit to start in the hub. */
   software?: SoftwareName | undefined;
-  /** `wave` only: pending slider values (defaults 128 and 5). */
-  wave?: Partial<WaveOptions> | undefined;
   /** `title` only: where the save lives; default: in memory. */
   store?: SaveStore;
 }
@@ -30,6 +26,4 @@ export function createScene(name: SceneName, opts: SceneOptions = {}): Scene {
 const sceneFactories: Readonly<Record<SceneName, (opts: SceneOptions) => Scene>> = {
   title: (opts) => createTitle(opts.store),
   game: (opts) => createGame(opts.software),
-  wave: (opts) => createWave(opts.wave),
-  lumberjack: () => createLumberjack(),
 };

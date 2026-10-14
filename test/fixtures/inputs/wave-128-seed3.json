@@ -1,6 +1,0 @@
-{"name":"wave-128-seed3","scene":"wave","seed":3,"wave":{"gridSize":128,"seconds":5},"captureTicks":[100,253,405],"steps": [
-  {"ticks":100,"input":{}},
-  {"ticks":1,"input":{"space":true}},
-  {"ticks":304,"input":{}},
-  {"ticks":5,"input":{}}
-]}

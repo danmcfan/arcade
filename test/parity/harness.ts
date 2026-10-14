@@ -88,8 +88,7 @@ function isObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * Replay `script` tick by tick: `rng.seed(script.seed)`, build the scene,
- * then for each expanded input `step()` and `snapshot()` (`{ full: true }` on
- * the last tick). `onTick(k, snapshot)` gets the 0-based index k (the
+ * then for each expanded input `step()` and `snapshot()`. `onTick(k, snapshot)` gets the 0-based index k (the
  * snapshot after step k + 1) and may return `false` to stop early.
  */
 export function replayEach(
@@ -99,12 +98,11 @@ export function replayEach(
 ): void {
   const inputs = expandSteps(script.steps);
   rng.seed(script.seed);
-  const scene = create(script.scene, { software: script.software, wave: script.wave });
+  const scene = create(script.scene, { software: script.software });
   try {
     for (const [k, input] of inputs.entries()) {
       scene.step(input);
-      const last = k === inputs.length - 1;
-      if (onTick(k, last ? scene.snapshot({ full: true }) : scene.snapshot()) === false) return;
+      if (onTick(k, scene.snapshot()) === false) return;
     }
   } finally {
     scene.dispose?.();
@@ -160,7 +158,7 @@ export function formatMismatch(scenario: string, m: Mismatch): string {
   );
 }
 
-/** Long scenarios (Sweet Sam fuzz, wave full collapse) need more than bun's 5 s default. */
+/** Long scenarios (Sweet Sam fuzz) need more than bun's 5 s default. */
 const PARITY_TIMEOUT_MS = 120_000;
 
 /**

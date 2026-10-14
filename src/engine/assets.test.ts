@@ -2,16 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
-import {
-  allImages,
-  brassMonkeyImages,
-  fireflyImages,
-  images,
-  loadImages,
-  lumberjackImages,
-  sounds,
-  sweetSamImages,
-} from "./assets.ts";
+import { allImages, brassMonkeyImages, fireflyImages, images, loadImages, sounds, sweetSamImages } from "./assets.ts";
 import { defined } from "./defined.testutil.ts";
 import type { ImageAsset } from "./image.ts";
 
@@ -70,13 +61,6 @@ describe("image registry (D12)", () => {
     ]);
     const top = readdirSync(new URL("../assets/images", import.meta.url));
     expect(top.filter((f) => gone.has(f))).toEqual([]);
-  });
-
-  test("registers the 9 lumberjack sheets by their Go paths", () => {
-    expect(Object.keys(lumberjackImages).length).toBe(9);
-    for (const [path, asset] of Object.entries(lumberjackImages)) {
-      expect(asset.url.endsWith(`/lab/lumberjack/images/${path}`)).toBe(true);
-    }
   });
 
   test("decoded pixels start detached (no DOM under bun test)", () => {

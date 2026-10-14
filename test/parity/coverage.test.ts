@@ -62,9 +62,6 @@ const REQUIRED = [
   "sweet-sam-highscore",
   "firefly-stages",
   "brass-monkey-play",
-  "wave-64-seed7",
-  "wave-128-seed3",
-  "lumberjack-chop",
 ];
 
 test("every §4.4 required scenario has a fixture", () => {

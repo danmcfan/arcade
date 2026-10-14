@@ -1,6 +1,0 @@
-{"name":"wave-64-seed7","scene":"wave","seed":7,"wave":{"gridSize":64,"seconds":5},"captureTicks":[40,199,357],"steps": [
-  {"ticks":40,"input":{}},
-  {"ticks":1,"input":{"space":true}},
-  {"ticks":316,"input":{}},
-  {"ticks":5,"input":{}}
-]}

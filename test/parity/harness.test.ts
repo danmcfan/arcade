@@ -89,10 +89,9 @@ function countingSnapshot(tick: number, rngState: number, lefts: number): Counti
 
 /** A scene whose snapshot is its tick count, the rng state and the inputs seen. */
 class CountingScene implements Scene {
-  readonly name = "lumberjack" as const;
+  readonly name = "title" as const;
   ticks = 0;
   lefts = 0;
-  fullCalls: number[] = [];
   readonly seedAtBirth: number;
 
   constructor(seedAtBirth: number) {
@@ -108,15 +107,14 @@ class CountingScene implements Scene {
   layout(): [number, number] {
     return [1, 1];
   }
-  snapshot(opts?: { full?: boolean }): CountingSnapshot {
-    if (opts?.full === true) this.fullCalls.push(this.ticks);
+  snapshot(): CountingSnapshot {
     return countingSnapshot(this.ticks, this.seedAtBirth, this.lefts);
   }
 }
 
 const script: InputScript = {
   name: "fake",
-  scene: "lumberjack",
+  scene: "title",
   seed: 77,
   steps: [
     { ticks: 2, input: { left: true } },
@@ -126,11 +124,11 @@ const script: InputScript = {
 };
 
 describe("replay", () => {
-  test("seeds the rng before building the scene, steps each tick and snapshots after each step (full on the last)", () => {
+  test("seeds the rng before building the scene, steps each tick and snapshots after each step", () => {
     const scenes: CountingScene[] = [];
     const create: SceneFactory = (name, opts) => {
-      expect(name).toBe("lumberjack");
-      expect(opts).toEqual({ software: undefined, wave: undefined });
+      expect(name).toBe("title");
+      expect(opts).toEqual({ software: undefined });
       const scene = new CountingScene(rng.state());
       scenes.push(scene);
       return scene;
@@ -139,21 +137,16 @@ describe("replay", () => {
     const snaps = replay(script, create);
     expect(snaps).toEqual([countingSnapshot(1, 77, 1), countingSnapshot(2, 77, 2), countingSnapshot(3, 77, 2)]);
     expect(scenes).toHaveLength(1);
-    expect(scenes[0]?.fullCalls).toEqual([3]);
   });
 
-  test("passes software and wave options through to the scene factory", () => {
+  test("passes the software option through to the scene factory", () => {
     const seen: unknown[] = [];
     const create: SceneFactory = (name, opts) => {
       seen.push([name, opts]);
       return new CountingScene(0);
     };
     replay({ ...script, scene: "game", software: "sweetSam", steps: [{ ticks: 1, input: {} }] }, create);
-    replay({ ...script, scene: "wave", wave: { gridSize: 64, seconds: 5 }, steps: [{ ticks: 1, input: {} }] }, create);
-    expect(seen).toEqual([
-      ["game", { software: "sweetSam", wave: undefined }],
-      ["wave", { software: undefined, wave: { gridSize: 64, seconds: 5 } }],
-    ]);
+    expect(seen).toEqual([["game", { software: "sweetSam" }]]);
   });
 });
 

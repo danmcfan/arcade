@@ -1,5 +1,4 @@
-// Typed asset registry, mirroring internal/assets/assets.go plus the wave and
-// lumberjack images (D5, D12). Image sizes are hard-coded from the PNG headers
+// Typed asset registry, mirroring internal/assets/assets.go (D5, D12). Image sizes are hard-coded from the PNG headers
 // (checked by assets.test.ts) so code can read them with no DOM.
 
 import { whole, type ImageAsset, type Sprite } from "./image.ts";
@@ -52,19 +51,7 @@ import wallUrl from "../assets/images/brass-monkey/wall.png";
 import girderFloorUrl from "../assets/images/brass-monkey/girder-floor.png";
 import conveyorFloorUrl from "../assets/images/brass-monkey/conveyor-floor.png";
 
-import waveThreeUrl from "../lab/wave/three.png";
-
 import debugFontUrl from "./debugfont.png";
-
-import ljGrassUrl from "../lab/lumberjack/images/Tiles/Grass/Grass_1_Middle.png";
-import ljBaseUrl from "../lab/lumberjack/images/Player/Player_Base/Player_Base_animations.png";
-import ljHairUrl from "../lab/lumberjack/images/Player/Head/Hair_1/Hair_1_Brown.png";
-import ljShirtUrl from "../lab/lumberjack/images/Player/Chest/Lumberjack_Shirt/Lumberjack_Shirt_1_Red.png";
-import ljHandsUrl from "../lab/lumberjack/images/Player/Hands/Hands_1_Bare.png";
-import ljPantsUrl from "../lab/lumberjack/images/Player/Legs/OG_Pants/Pants_1_Blue.png";
-import ljShoesUrl from "../lab/lumberjack/images/Player/Feet/Shoes_1_Brown.png";
-import ljToolsUrl from "../lab/lumberjack/images/Player/Tools/Iron/Iron_Tools.png";
-import ljOakUrl from "../lab/lumberjack/images/Trees/Big_Oak_Tree.png";
 
 import hubUrl from "../assets/sounds/hub.wav";
 import screenOnUrl from "../assets/sounds/screen-on.wav";
@@ -250,9 +237,6 @@ export const imageConveyor: Sprite = whole(brassMonkeyImages.conveyor);
 export const imageDoor: Sprite = whole(brassMonkeyImages.door);
 export const imageWall: Sprite = whole(brassMonkeyImages.wall);
 
-/** internal/wave/three.png: grass, sand, water tiles (16×16 each). */
-export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
-
 /**
  * The Go engine's debug font (`text.png`, Apache-2.0, see
  * debugfont.LICENSE.txt): 6×16 glyphs indexed by code point. Drawn by
@@ -260,32 +244,12 @@ export const waveThree: ImageAsset = asset(waveThreeUrl, 48, 16);
  */
 export const debugFont: ImageAsset = asset(debugFontUrl, 192, 128);
 
-/**
- * The 9 lumberjack sheets Go draws, keyed by the path Go passes to
- * `NewSpritesheet` (relative to `internal/lumberjack/images/`).
- * `Trees/Oak_Leaf_Particle.png` is loaded by Go but never drawn: skipped.
- */
-export const lumberjackImages = {
-  "Tiles/Grass/Grass_1_Middle.png": asset(ljGrassUrl, 16, 16),
-  "Player/Player_Base/Player_Base_animations.png": asset(ljBaseUrl, 576, 3584),
-  "Player/Head/Hair_1/Hair_1_Brown.png": asset(ljHairUrl, 576, 3584),
-  "Player/Chest/Lumberjack_Shirt/Lumberjack_Shirt_1_Red.png": asset(ljShirtUrl, 576, 3584),
-  "Player/Hands/Hands_1_Bare.png": asset(ljHandsUrl, 576, 3584),
-  "Player/Legs/OG_Pants/Pants_1_Blue.png": asset(ljPantsUrl, 576, 3584),
-  "Player/Feet/Shoes_1_Brown.png": asset(ljShoesUrl, 576, 3584),
-  "Player/Tools/Iron/Iron_Tools.png": asset(ljToolsUrl, 384, 768),
-  "Trees/Big_Oak_Tree.png": asset(ljOakUrl, 192, 80),
-} as const;
-export type LumberjackImagePath = keyof typeof lumberjackImages;
-
 /** Every image to decode before the first tick (D5). */
 export const allImages: readonly ImageAsset[] = [
   ...Object.values(images),
   ...Object.values(sweetSamImages),
   ...Object.values(fireflyImages),
   ...Object.values(brassMonkeyImages),
-  waveThree,
-  ...Object.values(lumberjackImages),
   debugFont,
 ];
 

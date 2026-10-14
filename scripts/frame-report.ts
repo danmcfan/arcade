@@ -5,52 +5,30 @@
 //
 // Reads test/fixtures/frames/<scenario>/<tick>.png and out/frames/<same>,
 // writes out/diff/<scenario>/<tick>.png (pixelmatch diff) and
-// out/frame-report.md. Lumberjack frames mask the edge pixels of rotated
-// tree tops (scripts/tree-mask.ts, from the trace snapshot at that tick).
-// Exits 1 if any frame has differing pixels after masking.
+// out/frame-report.md. Exits 1 if any frame has differing pixels.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import { fixturesDir, readTrace, repoRoot, tracePath } from "../test/parity/fixtures.ts";
-import { diffImages, type Mask } from "./frame-diff.ts";
-import { lumberjackTrees, treeTopEdgeMasks, treeTopTexels } from "./tree-mask.ts";
+import { fixturesDir, repoRoot } from "../test/parity/fixtures.ts";
+import { diffImages } from "./frame-diff.ts";
 
 const goldenDir = join(fixturesDir, "frames");
 const actualDir = join(repoRoot, "out/frames");
 const diffDir = join(repoRoot, "out/diff");
 const reportPath = join(repoRoot, "out/frame-report.md");
-const treeSheet = join(repoRoot, "src/lab/lumberjack/images/Trees/Big_Oak_Tree.png");
 
 export interface FrameRow {
   scenario: string;
   tick: number;
   width: number;
   height: number;
-  /** pixelmatch (threshold 0.1) differing pixels after masking; -1 if the capture is missing or the size differs. */
+  /** pixelmatch (threshold 0.1) differing pixels; -1 if the capture is missing or the size differs. */
   diffPixels: number;
-  /** Pixels covered by the mask (lumberjack only). */
-  maskedPixels: number;
-  /** pixelmatch differing pixels with no mask. */
-  unmaskedDiffPixels: number;
   /** Pixels whose RGBA bytes are not identical (informational: ±1 rounding shows here). */
   exactDiffPixels: number;
   diffPath: string;
   note?: string;
-}
-
-function snapshotAt(scenario: string, tick: number): unknown {
-  const snap = readTrace(tracePath(scenario)).find(
-    (s) => typeof s === "object" && s !== null && "tick" in s && s.tick === tick,
-  );
-  if (snap === undefined) throw new Error(`${scenario}: no trace line for tick ${tick}`);
-  return snap;
-}
-
-function masksFor(scenario: string, tick: number, width: number, height: number): Mask[] {
-  if (!scenario.startsWith("lumberjack")) return [];
-  const trees = lumberjackTrees(snapshotAt(scenario, tick));
-  return treeTopEdgeMasks(trees, treeTopTexels(PNG.sync.read(readFileSync(treeSheet))), width, height);
 }
 
 function exactDiff(a: PNG, b: PNG): number {
@@ -76,8 +54,6 @@ export function compareFrame(scenario: string, tick: number): FrameRow {
     width: expected.width,
     height: expected.height,
     diffPixels: -1,
-    maskedPixels: 0,
-    unmaskedDiffPixels: -1,
     exactDiffPixels: -1,
     diffPath: "",
   };
@@ -87,16 +63,13 @@ export function compareFrame(scenario: string, tick: number): FrameRow {
   if (actual.width !== expected.width || actual.height !== expected.height) {
     return { ...row, note: `size ${actual.width}x${actual.height}` };
   }
-  const masks = masksFor(scenario, tick, expected.width, expected.height);
-  const { diff, diffPixels } = diffImages(expected, actual, masks);
+  const { diff, diffPixels } = diffImages(expected, actual);
   const outPath = join(diffDir, rel);
   mkdirSync(join(diffDir, scenario), { recursive: true });
   writeFileSync(outPath, PNG.sync.write(diff));
   return {
     ...row,
     diffPixels,
-    maskedPixels: masks.length,
-    unmaskedDiffPixels: masks.length > 0 ? diffImages(expected, actual).diffPixels : diffPixels,
     exactDiffPixels: exactDiff(expected, actual),
     diffPath: `out/diff/${scenario}/${tick}.png`,
   };
@@ -113,20 +86,19 @@ export function renderReport(rows: readonly FrameRow[]): string {
     "# Frame report",
     "",
     `Golden frames (test/fixtures/frames) vs TS captures (out/frames), pixelmatch threshold 0.1.`,
-    `${zero} of ${rows.length} frames have 0 differing pixels after masking.`,
+    `${zero} of ${rows.length} frames have 0 differing pixels.`,
     "",
-    "| Scenario | Tick | Size | Diff pixels | Masked pixels | Unmasked diff | Exact-byte diff | Diff PNG |",
-    "|---|---:|---|---:|---:|---:|---:|---|",
+    "| Scenario | Tick | Size | Diff pixels | Exact-byte diff | Diff PNG |",
+    "|---|---:|---|---:|---:|---|",
   ];
   for (const r of rows) {
     const diff = r.diffPixels < 0 ? `n/a (${r.note})` : String(r.diffPixels);
     lines.push(
-      `| ${r.scenario} | ${r.tick} | ${r.width}x${r.height} | ${diff} | ${r.maskedPixels || ""} | ${opt(r.unmaskedDiffPixels)} | ${opt(r.exactDiffPixels)} | ${r.diffPath} |`,
+      `| ${r.scenario} | ${r.tick} | ${r.width}x${r.height} | ${diff} | ${opt(r.exactDiffPixels)} | ${r.diffPath} |`,
     );
   }
   lines.push(
     "",
-    "Masked pixels: lumberjack rotated tree-top edge pixels (scripts/tree-mask.ts), the only allowed differences.",
     "Exact-byte diff counts pixels whose RGBA bytes differ at all (±1 rounding in blended pixels); informational only.",
     "",
   );

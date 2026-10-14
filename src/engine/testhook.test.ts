@@ -7,7 +7,7 @@ import { createTestHook, type ArcadeTestHook } from "./testhook.ts";
 import { defined } from "./defined.testutil.ts";
 import type { Scene, SceneName } from "../game/software.ts";
 import type { SceneOptions } from "../game/registry.ts";
-import type { SceneSnapshot, WaveSnapshot } from "../game/snapshot.ts";
+import type { SceneSnapshot } from "../game/snapshot.ts";
 
 class FakeScene implements Scene {
   inputs: Input[] = [];
@@ -28,11 +28,16 @@ class FakeScene implements Scene {
   layout(): [number, number] {
     return [192, 176];
   }
-  snapshot(opts?: { full?: boolean }): SceneSnapshot {
-    // Shaped as a wave snapshot, whose `cells` only a full snapshot carries.
-    const snap: WaveSnapshot = { tick: this.inputs.length, rng: rng.state(), collapsed: 0, width: 0, cellsHash: 0 };
-    if (opts?.full === true) snap.cells = [];
-    return snap;
+  snapshot(): SceneSnapshot {
+    return {
+      tick: this.inputs.length,
+      rng: rng.state(),
+      phase: "menu",
+      items: [],
+      cursor: 0,
+      canContinue: false,
+      game: null,
+    };
   }
   dispose(): void {
     this.disposed = true;
@@ -78,10 +83,10 @@ describe("Runtime", () => {
     const { runtime, made } = setup();
     runtime.step(NO_INPUT);
     expect(runtime.ticks).toBe(1);
-    runtime.load("wave", { wave: { gridSize: 64 } });
+    runtime.load("game", { software: "firefly" });
     expect(made[0]?.disposed).toBe(true);
-    expect(made[1]?.name).toBe("wave");
-    expect(made[1]?.opts).toEqual({ wave: { gridSize: 64 } });
+    expect(made[1]?.name).toBe("game");
+    expect(made[1]?.opts).toEqual({ software: "firefly" });
     expect(runtime.ticks).toBe(0);
   });
 
@@ -91,7 +96,7 @@ describe("Runtime", () => {
     runtime.onReplace((next, prev) => {
       seen.push([next, prev]);
     });
-    runtime.load("lumberjack");
+    runtime.load("game");
     expect(seen).toEqual([[defined(made[1]), defined(made[0])]]);
   });
 });
@@ -145,17 +150,9 @@ describe("window.__arcade (§3.5)", () => {
     const { hook } = setup();
     hook.seed(5);
     hook.step(2);
-    expect(hook.snapshot()).toEqual({ tick: 2, rng: 5, collapsed: 0, width: 0, cellsHash: 0 });
+    expect(hook.snapshot()).toMatchObject({ tick: 2, rng: 5 });
     expect(hook.layout()).toEqual([192, 176]);
     expect(hook.frame()).toBe("data:image/png;base64,AAAA");
-  });
-
-  test("snapshot({ full: true }) asks the scene for its full snapshot (§4.3 last tick)", () => {
-    const { hook } = setup();
-    hook.seed(5);
-    hook.step(1);
-    expect(hook.snapshot({ full: true })).toEqual({ tick: 1, rng: 5, collapsed: 0, width: 0, cellsHash: 0, cells: [] });
-    expect(hook.snapshot({ full: false })).toEqual({ tick: 1, rng: 5, collapsed: 0, width: 0, cellsHash: 0 });
   });
 
   test("sounds() returns the calls since the last call, regardless of ready", () => {

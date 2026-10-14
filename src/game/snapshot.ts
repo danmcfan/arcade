@@ -369,86 +369,6 @@ export interface BrassMonkeySnapshot {
 export type SoftwareSnapshot = SweetSamSnapshot | FireflySnapshot | BrassMonkeySnapshot;
 
 // ---------------------------------------------------------------------------
-// wave (internal/wave, lab scene)
-
-/** One `grid.Cell`. */
-export interface WaveCellSnapshot {
-  /** `Cell.Possible`, in slice order. */
-  possible: number[];
-  /** `Cell.Collapsed`. */
-  collapsed: boolean;
-}
-
-export interface WaveSnapshot extends SceneSnapshotBase {
-  /** `grid.CollapsedCount`. */
-  collapsed: number;
-  /** `grid.Width` (the current grid is square). */
-  width: number;
-  /**
-   * FNV-1a 32-bit over, for each cell with `Collapsed && len(Possible) == 1`
-   * in Draw order (x outer, y inner), the little-endian uint32 triple
-   * `x, y, Possible[0]`.
-   */
-  cellsHash: number;
-  /**
-   * Full grid, `Cells[x][y]`. Present only when the snapshot is taken with
-   * `{ full: true }`, which the harness does on the scenario's last tick
-   * (Go harness: on the last JSONL line only). Omitted (key absent) otherwise.
-   */
-  cells?: WaveCellSnapshot[][];
-}
-
-// ---------------------------------------------------------------------------
-// lumberjack (internal/lumberjack, lab scene)
-
-export interface LumberjackPlayerSnapshot {
-  /** `Player.PositionX`. */
-  x: number;
-  /** `Player.PositionY`. */
-  y: number;
-  /** `Player.Direction` (lumberjack.Direction string). */
-  dir: Direction;
-  /** `Player.FrameX`. */
-  frameX: number;
-  /** `Player.FrameY`. */
-  frameY: number;
-  /** `Player.FrameCounter`. */
-  frameCounter: number;
-  /** `Player.Moving`. */
-  moving: boolean;
-  /** `Player.Acting`. */
-  acting: boolean;
-}
-
-export interface LumberjackTreeSnapshot {
-  /** `Tree.PositionX`. */
-  x: number;
-  /** `Tree.PositionY`. */
-  y: number;
-  /** `Tree.Theta` (float64). */
-  theta: number;
-  /** `Tree.ThetaIncreasing`. */
-  thetaInc: boolean;
-  /** `Tree.Shaking`. */
-  shaking: boolean;
-  /** `Tree.ShakeRight`. */
-  shakeRight: boolean;
-  /** `Tree.Behind`. */
-  behind: boolean;
-  /** `Tree.Transparent`. */
-  transparent: boolean;
-  /** `Tree.Health` (float64; goes negative). */
-  health: number;
-}
-
-export interface LumberjackSnapshot extends SceneSnapshotBase {
-  player: LumberjackPlayerSnapshot;
-  /** The global `trees` slice, in order. */
-  trees: LumberjackTreeSnapshot[];
-}
-
-/** What `Scene.snapshot()` returns. */
-// ---------------------------------------------------------------------------
 // title (src/title): no Go original, so no parity trace.
 
 /** Which screen the title scene shows. */
@@ -466,4 +386,5 @@ export interface TitleSnapshot extends SceneSnapshotBase {
   game: GameSnapshot | null;
 }
 
-export type SceneSnapshot = TitleSnapshot | GameSnapshot | WaveSnapshot | LumberjackSnapshot;
+/** What `Scene.snapshot()` returns. */
+export type SceneSnapshot = TitleSnapshot | GameSnapshot;

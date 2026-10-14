@@ -40,14 +40,6 @@ Exactly the `InputScript` type. Key order is irrelevant; one step per line.
 - `scene: "game"` with `software` = `game.New(<software>)`: tick 1 is a hub
   tick with that tick's input; the software runs from tick 2. Without
   `software` the game starts in the hub.
-- `scene: "wave"`: `wave` holds the **pending** slider values. The first grid
-  is `gridSize²`, but `StepInterval` and the layout use the active values,
-  which start at 128 and 5 until a Space rising edge copies pending to
-  active (so `wave-64-seed7` runs a 64² grid at 54 steps/tick on a 2048²
-  canvas until its Space press). `space` is held; the scene acts on its
-  rising edge (the first tick is a rising edge if `space` is held).
-- `scene: "lumberjack"`: up/down/left/right/space map 1:1 to its own held
-  `Input`.
 
 ## Traces
 
@@ -61,16 +53,13 @@ are exactly those in `src/game/snapshot.ts`:
   previous tick. Tick 1 also holds construction-time sounds (Sweet Sam's
   `rewind:start`, `play:start`), because the harness installs its sound hook
   before constructing anything.
-- `wave`: `WaveSnapshot`; only the **last** line carries `cells` (the full
-  grid, `cells[x][y]`).
-- `lumberjack`: `LumberjackSnapshot`.
 
 Number formatting is Go's `encoding/json` (shortest round-trip), so
 `JSON.parse` gives the exact float64 Go had. Traces re-recorded from
 TypeScript (see "Regenerating") use `JSON.stringify` instead, which parses
 to the same values. Watch for:
 
-- **Exponent notation** for tiny or huge floats (e.g. a lumberjack `theta` of
+- **Exponent notation** for tiny or huge floats (e.g.
   `-5.204170427930421e-18`). `JSON.parse` handles it.
 - **Negative zero** is written as `-0` (firefly bugs L0 and R0 start with
   `duration: -0` because Go computes `-durationStep*60*0`; it shows on the
@@ -90,11 +79,8 @@ are transparent (alpha 0), not black.
 
 - Sizes follow the layout: hub 192×176, Sweet Sam, firefly and Brass Monkey 336×428
   (each plays inside its cabinet; firefly and Brass Monkey were 256×320 and
-  256×288 in the Go capture, before #15), lumberjack 512×288, plus 120 px
-  of width while debug mode is on. Wave is `16 × activeGridSize` square (2048² before a restart, 1024²
-  after Space with `gridSize` 64).
-- Wave frames contain `drawCells` only (no debugui window; that becomes an
-  HTML overlay in TS).
+  256×288 in the Go capture, before #15), plus 120 px
+  of width while debug mode is on.
 - `golden verify` replays every script and checks each PNG exists with the
   scene's size at that tick.
 
@@ -111,9 +97,6 @@ What the capture ticks show:
 | `sweet-sam-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered Sweet Sam (high score dials) · 3124 later in that game · 3125 minigame pause menu · 3158 hub after Quit game |
 | `firefly-stages` | 40 STAGE 1 · 160 Owls flying in, one hurt · 195 hit effect · 500 the formation filling · 745 a dive dropping shots · 1120 the firefly's burst after a lost life · 1160 STAGE 2 |
 | `brass-monkey-play` | 190 climbing the first ladder · 612 mid-jump over a gear · 1030 girder floor finished · 1400 the conveyor floor · 1662 a life lost · 8040 the escaped scene |
-| `lumberjack-chop` | 108 tree top rotated mid-shake · 556, 561 player behind tree 1 (alpha 0.5) |
-| `wave-64-seed7` | 40 mid-run before Space (2048² canvas) · 199 50% collapsed · 357 100% collapsed |
-| `wave-128-seed3` | 100 mid-run before Space · 253 50% · 405 100% |
 
 ## rng.json
 
@@ -148,11 +131,8 @@ reproduce every entry exactly.
 | `sweet-sam-highscore` | hub | 21 | 3178 | enter Sweet Sam from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter Sweet Sam (its high score dials boot from it), Esc and Quit game |
 | `firefly-stages` | `game.New(firefly)` | 10 | 1261 | recorded from the TypeScript game (#34): a bot's inputs (Space held, steering under the nearest enemy) through stage 1's start, the entry, kills (an Owl hurt, then killed), dives with shots, a lost life, and stage 2's start |
 | `brass-monkey-play` | `game.New(brassMonkey)` | 163 | 9136 | recorded from TypeScript (#39); inputs written by `scripts/gen-brass-monkey-play.ts`'s bot: climbs, jumps (hazards jumped), bolts, both floors finished, 2 lives lost, the escape, then standing still to game over and back in the hub |
-| `wave-64-seed7` | wave 64/5 | 7 | 362 | 40 ticks of the first grid, Space mid-run (applies 64/5: 13 steps/tick), run to full collapse + 5 ticks |
-| `wave-128-seed3` | wave 128/5 | 3 | 410 | 100 ticks, Space mid-run, run to full collapse + 5 ticks |
-| `lumberjack-chop` | lumberjack | 1 | 621 | walk into tree 0 (Resolve), chop from the right (shakes right) and from below (shakes left) until health ≤ 0, keep chopping to −300, diagonal walk that bumps the invisible tree, Up+Down held, behind tree 1 (transparent), walk into tree 1 from above |
 
-47,864 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
+46,471 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -162,7 +142,7 @@ bee eaten (PAUSE with a 200 and a 400 award), popup + particles, tunnel wrap
 (player and bee), death (PLAY → DEATHWAIT → START), final death (PLAY →
 FINALDEATHWAIT → back in the hub with the high score taken), round win
 (items 0 → START with a fresh set), the hub high score passed to a new Sweet Sam game,
-and `modeIndex` 1..8. It also checks the lumberjack-chop must-cover items above. Note that in the Go-recorded traces Sweet Sam's GAMEOVER
+and `modeIndex` 1..8. Note that in the Go-recorded traces Sweet Sam's GAMEOVER
 state never appears: the tick it is entered, `Game.Update` sees `GameOver()`
 and drops the software, so that tick's snapshot already has
 `software: null`. In the TS-recorded `sweet-sam-highscore` it shows for as long
@@ -273,13 +253,12 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly coverage
 ```
 
 Traces are byte-for-byte reproducible (deterministic gzip header). The Go
 hooks the harness relies on are behavior-neutral: `internal/rng` replaces
 `math/rand` (seeded from the clock in normal play), `assets.OnSoundEvent`
 and `assets.Silent` (nil/false in the game), `Game.UpdateWithInput`,
-`wave.Game.Step`/`DrawCells`/`NewWithPending` (the four wave globals became
-fields), `lumberjack.Step`/`ResetState`, firefly's `PatternName`, and
+firefly's `PatternName`, and
 read-only `Snapshot()` methods in `golden.go` files.

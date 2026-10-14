@@ -76,7 +76,7 @@ function capture(script: InputScript): void {
   const plan = planCaptures(script);
   const dir = join(outDir, script.name);
   mkdirSync(dir, { recursive: true });
-  const loadOpts = JSON.stringify({ software: script.software, wave: script.wave });
+  const loadOpts = JSON.stringify({ software: script.software });
   page.eval(
     `(() => { const a = window.__arcade; a.pause(); a.seed(${script.seed}); a.load(${JSON.stringify(script.scene)}, ${loadOpts}); return "ok"; })()`,
   );
