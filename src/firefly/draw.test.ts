@@ -26,7 +26,7 @@ interface DrawCall {
   y: number;
 }
 
-/** Firefly is a FixedViewport: drawn with buffer 0, the playfield at the cabinet insets (56, 56). */
+/** Firefly is a FixedViewport: drawn with buffer 0, the playfield at the cabinet insets (8, 8). */
 function drawCalls(f: FireflySoftware): DrawCall[] {
   const calls: DrawCall[] = [];
   const fake = stubSurface({
@@ -64,16 +64,16 @@ describe("firefly draw", () => {
   test("the cabinet at 0,0, the night sky inside the insets, then the firefly centred on its position", () => {
     const [cabinet, sky, ...rest] = drawCalls(new FireflySoftware());
     expect(cabinet?.sprite.asset).toBe(imageCabinetFirefly.asset);
-    expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 336, 428], 0, 0]);
-    expect(sky).toEqual({ sprite: imageFireflyBackground, x: 56, y: 56 });
-    expect(rest[0]).toEqual({ sprite: imageFirefly, x: 112 + 56 - 8, y: 264 + 56 - 8 });
+    expect(cabinet && [rect(cabinet.sprite), cabinet.x, cabinet.y]).toEqual([[0, 0, 240, 304], 0, 0]);
+    expect(sky).toEqual({ sprite: imageFireflyBackground, x: 8, y: 8 });
+    expect(rest[0]).toEqual({ sprite: imageFirefly, x: 112 + 8 - 8, y: 264 + 8 - 8 });
   });
 
-  test("waiting enemies are not drawn; the cabinet shows the last input's joystick frame", () => {
+  test("waiting enemies are not drawn; the cabinet outline is one image whatever the input", () => {
     const f = new FireflySoftware();
     f.update({ ...NO_INPUT, left: true });
     const calls = drawCalls(f);
-    expect(rect(defined(calls[0]).sprite)).toEqual([3 * 336, 0, 336, 428]);
+    expect(rect(defined(calls[0]).sprite)).toEqual([0, 0, 240, 304]);
     expect(of(calls, imageMoth)).toEqual([]);
   });
 
@@ -83,9 +83,9 @@ describe("firefly draw", () => {
     expect(of(calls, imageFont).length).toBeGreaterThan(6); // "0" and "STAGE 1"
     // 2 spare fireflies along the top right, plus the one in play.
     expect(of(calls, imageFirefly).map((c) => [c.x, c.y])).toEqual([
-      [112 + 56 - 8, 264 + 56 - 8],
-      [56 + 224 - 18, 58],
-      [56 + 224 - 36, 58],
+      [112 + 8 - 8, 264 + 8 - 8],
+      [8 + 224 - 18, 10],
+      [8 + 224 - 36, 10],
     ]);
     f.stageTick = stageIntroTicks + 1;
     expect(of(drawCalls(f), imageFont).length).toBe(1);
@@ -94,7 +94,7 @@ describe("firefly draw", () => {
   test("an enemy in formation faces down: row 2 of its sheet, centred on it", () => {
     const { f } = onlyEnemy("moth", 100, 80);
     expect(of(drawCalls(f), imageMoth).map((c) => [rect(c.sprite), c.x, c.y])).toEqual([
-      [[0, 32, 16, 16], 100 + 56 - 8, 80 + 56 - 8],
+      [[0, 32, 16, 16], 100 + 8 - 8, 80 + 8 - 8],
     ]);
   });
 
@@ -104,7 +104,7 @@ describe("firefly draw", () => {
     e.hp = 1;
     const calls = drawCalls(f);
     expect(of(calls, imageOwl)).toEqual([]);
-    expect(of(calls, imageOwlHurt).map((c) => [c.x, c.y])).toEqual([[100 + 56 - 16, 80 + 56 - 16]]);
+    expect(of(calls, imageOwlHurt).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 16, 80 + 8 - 16]]);
   });
 
   test("a killed enemy shows the 5 frames of its hit effect, 15 ticks each", () => {
@@ -114,7 +114,7 @@ describe("firefly draw", () => {
       e.deadFrames = d;
       return of(drawCalls(f), imageHit).map((c) => [c.sprite.sx, c.x, c.y]);
     });
-    expect(frames).toEqual([[[0, 140, 120]], [[32, 140, 120]], [[96, 140, 120]], [[128, 140, 120]]]);
+    expect(frames).toEqual([[[0, 92, 72]], [[32, 92, 72]], [[96, 92, 72]], [[128, 92, 72]]]);
   });
 
   test("sparks and enemy shots are drawn centred on their position", () => {
@@ -122,15 +122,15 @@ describe("firefly draw", () => {
     f.sparks = [{ x: 50, y: 60 }];
     f.shots = [{ x: 70, y: 90, dx: 0, dy: 3 }];
     const calls = drawCalls(f);
-    expect(of(calls, imageSpark)).toEqual([{ sprite: imageSpark, x: 50 + 56 - 4, y: 60 + 56 - 4 }]);
-    expect(of(calls, imageShot)).toEqual([{ sprite: imageShot, x: 70 + 56 - 2, y: 90 + 56 - 4 }]);
+    expect(of(calls, imageSpark)).toEqual([{ sprite: imageSpark, x: 50 + 8 - 4, y: 60 + 8 - 4 }]);
+    expect(of(calls, imageShot)).toEqual([{ sprite: imageShot, x: 70 + 8 - 2, y: 90 + 8 - 4 }]);
   });
 
   test("after a lost life the firefly bursts in its place instead", () => {
     const f = new FireflySoftware();
     f.respawn = respawnTicks;
     const calls = drawCalls(f);
-    expect(of(calls, imageHit).map((c) => [c.sprite.sx, c.x, c.y])).toEqual([[0, 112 + 56 - 16, 264 + 56 - 16]]);
+    expect(of(calls, imageHit).map((c) => [c.sprite.sx, c.x, c.y])).toEqual([[0, 112 + 8 - 16, 264 + 8 - 16]]);
     // Only the spare lives are left.
     expect(of(calls, imageFirefly).length).toBe(2);
   });

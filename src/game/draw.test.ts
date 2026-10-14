@@ -192,7 +192,7 @@ class FakeSoftware implements Software {
 }
 class FakeFixed extends FakeSoftware implements FixedViewport {
   fixedViewportSize(): [number, number] {
-    return [336, 428];
+    return [240, 304];
   }
 }
 
@@ -588,7 +588,7 @@ describe("menus over a minigame", () => {
     // Centred on the cabinet's screen.
     const paused = r.glyphs.filter((g) => g.ink === "yellow" && g.y === Math.min(...r.glyphs.map((x) => x.y)));
     const mid = (defined(paused[0]).x + defined(paused.at(-1)).x + 6) / 2;
-    expect(Math.abs(mid - 168)).toBeLessThan(4);
+    expect(Math.abs(mid - 120)).toBeLessThan(4);
   });
 
   test("over a cabinet, every menu fits inside the 224x288 screen and is clipped to it", () => {

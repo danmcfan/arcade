@@ -16,7 +16,7 @@ import {
 } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
-import { cabinetInsetLeft, cabinetInsetTop, drawCabinet, drawOnScreen } from "../ui/cabinet.ts";
+import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { drawText, drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
@@ -63,7 +63,6 @@ function drawLives(screen: Surface, spare: number): void {
 
 /** What drawing needs of the game (`FireflySoftware`). */
 export interface FireflyView {
-  cabinetJoystickFrame: number;
   stage: number;
   stageTick: number;
   lives: number;
@@ -76,7 +75,7 @@ export interface FireflyView {
 }
 
 export function drawFirefly(screen: Surface, f: FireflyView): void {
-  drawCabinet(screen, f.cabinetJoystickFrame, imageCabinetFirefly);
+  screen.draw(imageCabinetFirefly, 0, 0);
   drawOnScreen(screen, () => {
     drawField(screen, f);
   });

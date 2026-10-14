@@ -94,10 +94,10 @@ export const images = {
   screens: asset(screensUrl, 392, 108),
   player: asset(playerUrl, 64, 96),
 
-  cabinet: asset(cabinetUrl, 1680, 428),
+  cabinet: asset(cabinetUrl, 240, 304),
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
-  cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
-  cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 1680, 428),
+  cabinetFirefly: asset(cabinetFireflyUrl, 240, 304),
+  cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 240, 304),
 
   // Title screen, menus, menu icons, the hub scoreboard, the desk employee and prize decorations;
   // generated from src/ui/glyphs.ts, icons.ts, tickerArt.ts, employeeArt.ts and

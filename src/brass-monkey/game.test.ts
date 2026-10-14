@@ -63,7 +63,7 @@ describe("BrassMonkeySoftware", () => {
   test("is the brassMonkey software in its cabinet", () => {
     const g = createBrassMonkey();
     expect(g.name).toBe("brassMonkey");
-    expect(isFixedViewport(g) && g.fixedViewportSize()).toEqual([336, 428]);
+    expect(isFixedViewport(g) && g.fixedViewportSize()).toEqual([240, 304]);
   });
 
   test("score() and gameOver() are the run's", () => {
@@ -98,7 +98,7 @@ describe("BrassMonkeySoftware", () => {
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
   });
 
-  test("the snapshot holds the monkey, the floor, lives, score, bonus and the joystick", () => {
+  test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {
     const g = quiet();
     g.update(held({ right: true }));
     expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({
@@ -114,7 +114,6 @@ describe("BrassMonkeySoftware", () => {
       moving: true,
       hazards: [],
       bolts: [false, false, false, false],
-      joystick: 4,
     });
   });
 });
@@ -133,8 +132,8 @@ describe("draw", () => {
     expect(fills).toBe(0);
     expect(calls[0]?.sprite.asset).toBe(imageCabinetBrassMonkey.asset);
     const walls = calls.filter((c) => c.sprite === imageWall);
-    expect(walls.map((c) => [c.x, c.y])).toEqual([0, 32, 64, 96, 128, 160, 192].map((x) => [56 + x, 56]));
-    expect(calls.find((c) => c.sprite === imageGirderFloor)).toMatchObject({ x: 56, y: 88 });
+    expect(walls.map((c) => [c.x, c.y])).toEqual([0, 32, 64, 96, 128, 160, 192].map((x) => [8 + x, 8]));
+    expect(calls.find((c) => c.sprite === imageGirderFloor)).toMatchObject({ x: 8, y: 40 });
   });
 
   test("the Gnome raises its arms just before it sends a hazard", () => {
@@ -149,7 +148,7 @@ describe("draw", () => {
     const g = quiet();
     const monkey = (): DrawCall | undefined =>
       record(g).calls.find((c) => c.sprite.asset === imageMonkey.asset && c.sprite.h === 16 && c.y > 100);
-    expect(monkey()).toMatchObject({ x: 56 + 16 - 8, y: 88 + 248 - 16 });
+    expect(monkey()).toMatchObject({ x: 8 + 16 - 8, y: 40 + 248 - 16 });
     g.update(held({ space: true }));
     expect(monkey()?.sprite.sx).toBe(3 * 16);
   });

@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
+import { cabinetHeight, cabinetWidth } from "../src/ui/cabinet.ts";
 import {
   bevelColour,
   cabinetPath,
   cabinets,
   colours,
-  frameWidth,
   hexAt,
+  outline,
   renderCabinet,
   sourceCabinet,
 } from "./gen-cabinets.ts";
@@ -20,49 +21,35 @@ describe("cabinet sources (art/cabinets.json)", () => {
       expect({ name: c.name, keys: Object.keys(c.palette).toSorted() }).toEqual({ name: c.name, keys: source });
   });
 
-  test("every cabinet has a black joystick base and a bevel set off from its body", () => {
-    for (const c of cabinets) {
-      const [body, base] = [c.palette["b13e53"], c.palette["5d275d"]];
-      expect({ name: c.name, base }).toEqual({ name: c.name, base: "1a1c2c" });
-      expect([c.bevel.light, c.bevel.dark]).not.toContain(body);
-    }
+  test("every cabinet's bevel is set off from its body", () => {
+    for (const c of cabinets) expect([c.bevel.light, c.bevel.dark]).not.toContain(c.palette["b13e53"]);
   });
 });
 
-describe("generated cabinets", () => {
+describe("generated cabinet outlines", () => {
   for (const c of cabinets) {
-    test(`${c.name}: same size and alpha mask, only palette and bevel colours`, () => {
-      const src = sourceCabinet();
+    test(`${c.name}: the cabinet's size, opaque, only the screen, body and bevel colours`, () => {
       const out = renderCabinet(c);
-      expect([out.width, out.height]).toEqual([1680, 428]);
-      for (let i = 3; i < src.data.length; i += 4) {
-        if (src.data[i] !== out.data[i]) throw new Error(`${c.name}: alpha differs at byte ${i}`);
-      }
+      expect([out.width, out.height]).toEqual([cabinetWidth, cabinetHeight]);
+      for (let i = 3; i < out.data.length; i += 4) if (out.data[i] !== 255) throw new Error(`${c.name}: byte ${i}`);
       expect(colours(out).toSorted()).toEqual(
-        [...new Set([...Object.values(c.palette), c.bevel.light, c.bevel.dark])].toSorted(),
+        [c.palette["1a1c2c"] ?? "screen", c.palette["b13e53"] ?? "body", c.bevel.light, c.bevel.dark].toSorted(),
       );
     });
 
-    test(`${c.name}: the screen and joystick keep the Sweet Sam shape`, () => {
+    test(`${c.name}: each pixel is the source's under the palette, its lip bevelled, its marquee letters gone`, () => {
       const src = sourceCabinet();
       const out = renderCabinet(c);
-      // Below the marquee every pixel is the palette image of the source pixel, or the bevel on the body.
-      for (let i = 54 * 1680 * 4; i < src.data.length; i += 4) {
-        const [x, y] = [(i / 4) % 1680, Math.trunc(i / 4 / 1680)];
-        const bevel = hexAt(src, i) === "b13e53" ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
-        const want = bevel ?? c.palette[hexAt(src, i)];
-        if (hexAt(out, i) !== want) throw new Error(`${c.name}: pixel ${i / 4} is ${hexAt(out, i)}, want ${want}`);
+      for (let y = 0; y < out.height; y++) {
+        for (let x = 0; x < out.width; x++) {
+          const [fx, fy] = [outline.x + x, outline.y + y];
+          let hex = hexAt(src, (fy * src.width + fx) * 4);
+          if (hex === "ffcd75" || hex === "ef7d57") hex = "b13e53";
+          const want = (hex === "b13e53" ? bevelColour(c.bevel, fx, fy) : undefined) ?? c.palette[hex];
+          const got = hexAt(out, (y * out.width + x) * 4);
+          if (got !== want) throw new Error(`${c.name}: (${x}, ${y}) is ${got}, want ${want}`);
+        }
       }
-    });
-
-    test(`${c.name}: marquee is regenerated, not the hand-drawn Sweet Sam one's`, () => {
-      const out = renderCabinet(c);
-      const letter = c.palette["ffcd75"];
-      if (letter === undefined) throw new Error(`${c.name}: palette has no entry for ffcd75`);
-      let lit = 0;
-      for (let i = 0; i < 54 * 1680 * 4; i += 4) if (hexAt(out, i) === letter) lit++;
-      expect(lit).toBeGreaterThan(0);
-      expect(lit).not.toBe(colourCount(sourceCabinet(), "ffcd75", 54));
     });
 
     test(`${c.name}: committed PNG matches (run \`bun run art\` after editing the sources)`, () => {
@@ -73,9 +60,3 @@ describe("generated cabinets", () => {
     });
   }
 });
-
-function colourCount(png: PNG, hex: string, rows: number): number {
-  let n = 0;
-  for (let i = 0; i < rows * png.width * 4; i += 4) if (hexAt(png, i) === hex) n++;
-  return n;
-}

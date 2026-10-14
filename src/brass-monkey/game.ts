@@ -25,10 +25,8 @@ import {
   cabinetHeight,
   cabinetInsetLeft,
   cabinetInsetTop,
-  cabinetJoystickFrame,
   cabinetPlayfieldWidth,
   cabinetWidth,
-  drawCabinet,
   drawOnScreen,
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
@@ -52,8 +50,6 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   readonly run: Run;
   private highScore: number;
-  /** The bezel's joystick frame for the last input. */
-  private cabinetJoystickFrame = 0;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
@@ -71,7 +67,6 @@ export class BrassMonkeySoftware implements FixedViewport {
   }
 
   update(i: Input): void {
-    this.cabinetJoystickFrame = cabinetJoystickFrame(i);
     this.run.update(i);
     this.highScore = Math.max(this.highScore, this.run.score);
   }
@@ -82,7 +77,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   /** A `FixedViewport`: `buffer` is 0. */
   draw(screen: Surface, _buffer: number): void {
-    drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetBrassMonkey);
+    screen.draw(imageCabinetBrassMonkey, 0, 0);
     drawOnScreen(screen, () => {
       this.drawScreen(screen);
     });
@@ -157,7 +152,6 @@ export class BrassMonkeySoftware implements FixedViewport {
       bolts: [...run.bolts],
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
-      joystick: this.cabinetJoystickFrame,
     };
   }
 }

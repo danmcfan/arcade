@@ -1,16 +1,16 @@
-// Build every minigame's cabinet strip from the Sweet Sam one:
+// Build every minigame's cabinet outline from the Sweet Sam cabinet strip:
 //
 //   bun run art      # also writes the cabinet PNGs in src/assets/images
 //
 // Sources, in art/: cabinet.png (Sweet Sam's strip, exported from
-// cabinet.ase) and cabinets.json (per cabinet its output file, a palette map,
-// and the hub title art to letter its marquee with). Each strip is
-// art/cabinet.png with every colour swapped through the palette, and the
-// hand-drawn "SWEET SAM" marquee replaced by the title art's top line of
-// lettering at 2x with a one-pixel (2 px) drop shadow. Each cabinet's
-// `bevel` gives it a lit and a shaded edge (`bevelColour`). Recolouring later
-// (#18, #19) means editing cabinets.json or the title art and rerunning.
-// gen-cabinets.test.ts fails when the committed PNGs drift from the sources.
+// cabinet.ase) and cabinets.json (per cabinet its output file and a palette
+// map). Each outline is the 8 px of art/cabinet.png round the screen (#113):
+// its first frame cropped to the 240x304 box at (48, 48), with every colour
+// swapped through the palette. Each cabinet's `bevel` gives the screen's lip a
+// shaded and a lit edge (`bevelColour`), so the screen sits in. The marquee
+// and the joystick fall outside the crop. Recolouring later means editing
+// cabinets.json and rerunning. gen-cabinets.test.ts fails when the committed
+// PNGs drift from the sources.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,8 +22,6 @@ export interface CabinetSource {
   name: string;
   /** Output file in src/assets/images. */
   file: string;
-  /** Hub title art in src/assets/images whose lettering goes on the marquee. */
-  title: string;
   /** Source colour (hex, no #) → replacement, for every colour in cabinet.png. */
   palette: Record<string, string>;
   /** Bevelled edges on the body: the lit and shaded colours (hex, no #). */
@@ -36,8 +34,6 @@ export interface Bevel {
 }
 
 const imagesDir = join(repoRoot, "src/assets/images");
-/** The hub's old title cards, kept as the source of each marquee's lettering. */
-const titleCardsDir = join(repoRoot, "art/title-cards");
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -52,7 +48,6 @@ function isCabinetSource(v: unknown): v is CabinetSource {
     isRecord(v) &&
     typeof v["name"] === "string" &&
     typeof v["file"] === "string" &&
-    typeof v["title"] === "string" &&
     isRecord(v["palette"]) &&
     Object.values(v["palette"]).every((to) => typeof to === "string") &&
     isBevel(v["bevel"])
@@ -72,16 +67,12 @@ export const cabinets: CabinetSource[] = parseCabinets(
   JSON.parse(readFileSync(join(repoRoot, "art/cabinets.json"), "utf8")),
 );
 
+/** One joystick frame of art/cabinet.png. */
 export const frameWidth = 336;
-const frameHeight = 428;
-/** Rows 0..53 are the marquee; the screen starts at row 54. */
-export const marqueeHeight = 54;
-/** Title-art rows searched for the lettering ("PRESS SPACE TO PLAY" sits far below). */
-const titleRows = 40;
-/** Sweet Sam's marquee letters span rows 2..49; centre the new lettering on the same line. */
-const marqueeCentreY = 26;
-const scale = 2;
+/** The crop of a frame each outline is: the screen and 8 px round it. */
+export const outline = { x: 48, y: 48, w: 240, h: 304 };
 
+/** Sweet Sam's hand-drawn marquee letters and their shadow, painted over with the body where the crop reaches them. */
 const letterColour = "ffcd75";
 const shadowColour = "ef7d57";
 const bodyColour = "b13e53";
@@ -92,13 +83,10 @@ const bevelWidth = 3;
 
 /**
  * The bevel colour for body pixel (x, y) of a frame, or undefined off the
- * bevel: the cabinet's edge is lit on its top and left and shaded on its
- * bottom and right; the lip round the screen is the other way round, so the
- * screen sits in.
+ * bevel: the lip round the screen is shaded on its top and left and lit on
+ * its bottom and right, so the screen sits in.
  */
 export function bevelColour(bevel: Bevel, x: number, y: number): string | undefined {
-  if (x < bevelWidth || y < bevelWidth) return bevel.light;
-  if (x >= frameWidth - bevelWidth || y >= frameHeight - bevelWidth) return bevel.dark;
   const w = bevelWidth;
   const inLip = x >= screen.x0 - w && x <= screen.x1 + w && y >= screen.y0 - w && y <= screen.y1 + w;
   if (!inLip) return undefined;
@@ -145,69 +133,26 @@ export function colours(png: PNG): string[] {
   return [...out];
 }
 
-interface Lettering {
-  w: number;
-  h: number;
-  on: (x: number, y: number) => boolean;
-}
-
-/** The opaque pixels of the title art's top line of lettering, cropped to their bounds. */
-function titleLettering(file: string): Lettering {
-  const png = PNG.sync.read(readFileSync(join(titleCardsDir, file)));
-  const lit = (x: number, y: number): boolean => byteAt(png, (y * png.width + x) * 4 + 3) > 0;
-  let [x0, y0, x1, y1] = [png.width, titleRows, -1, -1];
-  for (let y = 0; y < titleRows; y++) {
-    for (let x = 0; x < png.width; x++) {
-      if (!lit(x, y)) continue;
-      [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
-    }
-  }
-  if (x1 < 0) throw new Error(`${file}: no lettering in the top ${titleRows} rows`);
-  return { w: x1 - x0 + 1, h: y1 - y0 + 1, on: (x, y) => lit(x0 + x, y0 + y) };
-}
-
 export function renderCabinet(c: CabinetSource): PNG {
-  const png = sourceCabinet();
+  const src = sourceCabinet();
+  const out = new PNG({ width: outline.w, height: outline.h });
   const map = (hex: string): string => {
     const to = c.palette[hex];
     if (to === undefined) throw new Error(`${c.name}: palette has no entry for ${hex}`);
     return to;
   };
-
-  for (let y = 0; y < png.height; y++) {
-    for (let x = 0; x < png.width; x++) {
-      const i = (y * png.width + x) * 4;
-      if (png.data[i + 3] === 0) continue;
-      let hex = hexAt(png, i);
-      // Sweet Sam's lettering comes off the marquee.
-      if (y < marqueeHeight && (hex === letterColour || hex === shadowColour)) hex = bodyColour;
-      const bevel = hex === bodyColour ? bevelColour(c.bevel, x % frameWidth, y) : undefined;
-      setHex(png, x, y, bevel ?? map(hex));
+  for (let y = 0; y < outline.h; y++) {
+    for (let x = 0; x < outline.w; x++) {
+      const [fx, fy] = [outline.x + x, outline.y + y];
+      const i = (fy * src.width + fx) * 4;
+      if (src.data[i + 3] === 0) continue;
+      let hex = hexAt(src, i);
+      if (hex === letterColour || hex === shadowColour) hex = bodyColour;
+      const bevel = hex === bodyColour ? bevelColour(c.bevel, fx, fy) : undefined;
+      setHex(out, x, y, bevel ?? map(hex));
     }
   }
-
-  const word = titleLettering(c.title);
-  const left = Math.trunc((frameWidth - (word.w + 1) * scale) / 2);
-  const top = marqueeCentreY - Math.trunc(((word.h + 1) * scale) / 2);
-  const frames = png.width / frameWidth;
-  for (const [dx, colour] of [
-    [scale, map(shadowColour)],
-    [0, map(letterColour)],
-  ] as const) {
-    for (let f = 0; f < frames; f++) {
-      for (let y = 0; y < word.h; y++) {
-        for (let x = 0; x < word.w; x++) {
-          if (!word.on(x, y)) continue;
-          for (let sy = 0; sy < scale; sy++) {
-            for (let sx = 0; sx < scale; sx++) {
-              setHex(png, f * frameWidth + left + x * scale + sx + dx, top + y * scale + sy + dx, colour);
-            }
-          }
-        }
-      }
-    }
-  }
-  return png;
+  return out;
 }
 
 if (import.meta.main) {

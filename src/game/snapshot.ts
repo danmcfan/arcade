@@ -238,8 +238,6 @@ export interface SweetSamSnapshot {
   particlesActive: number;
   /** `SweetSamSoftware.pelletAnimTick`. */
   pelletAnimTick: number;
-  /** `SweetSamSoftware.cabinetJoystickFrame`. */
-  joystick: number;
   /** 12 dials: `scoreDial[0..5]` then `highScoreDial[0..5]`. */
   dials: SweetSamDialSnapshot[];
   /** The level being played, from 1 (#47). */
@@ -320,8 +318,6 @@ export interface FireflySnapshot {
   diveTimer: number;
   /** The formation's x offset this tick. */
   sway: number;
-  /** `FireflySoftware.cabinetJoystickFrame` (TS only, #15; like `SweetSamSnapshot.joystick`). */
-  joystick: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -361,8 +357,6 @@ export interface BrassMonkeySnapshot {
   bolts: boolean[];
   gearTimer: number;
   emberTimer: number;
-  /** The cabinet's joystick frame (like `SweetSamSnapshot.joystick`). */
-  joystick: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */

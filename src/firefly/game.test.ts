@@ -113,18 +113,7 @@ describe("a new run", () => {
   test("is a FixedViewport the size of the cabinet", () => {
     const f = createFirefly();
     expect(isFixedViewport(f)).toBe(true);
-    if (isFixedViewport(f)) expect(f.fixedViewportSize()).toEqual([336, 428]);
-  });
-
-  test("the snapshot's joystick follows the input", () => {
-    const f = new FireflySoftware();
-    const frames = [held(), held({ up: true }), held({ down: true }), held({ left: true }), held({ right: true })].map(
-      (i) => {
-        f.update(i);
-        return f.snapshot().joystick;
-      },
-    );
-    expect(frames).toEqual([0, 1, 2, 3, 4]);
+    if (isFixedViewport(f)) expect(f.fixedViewportSize()).toEqual([240, 304]);
   });
 });
 
