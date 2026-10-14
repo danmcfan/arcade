@@ -1,6 +1,7 @@
 // The redrawn hub (#17) in a real browser (`bun run verify hub`). Part 1
 // drives the `?debug` test hook in the hub (`?scene=game`): the player on the
-// arcade carpet, each cabinet's title while facing it (with no key cap drawn
+// arcade carpet, the scoreboard's marquee bulbs chasing round it (#92), each
+// cabinet's title while facing it (with no key cap drawn
 // over the hub), the prize desk, and Space at a cabinet starting that
 // cabinet. A key cap would show in the frame as its edge colour, which none
 // of the hub art below the scoreboard uses outside the prize desk (its lip
@@ -11,7 +12,8 @@ import { PNG } from "pngjs";
 import { decodeDataUrl } from "../browser.ts";
 import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
-import { tickerRect } from "../../src/ui/tickerArt.ts";
+import { sweetie } from "../../src/ui/sweetie16.ts";
+import { tickerBulbs, tickerRect } from "../../src/ui/tickerArt.ts";
 import { deskRect } from "../../src/arcade/desk.ts";
 
 let checks = 0;
@@ -47,7 +49,7 @@ function onDesk(x: number, y: number): boolean {
   return x >= margin + d.x && x < margin + d.x + d.w && y >= margin + d.y && y < margin + d.y + d.h;
 }
 
-/** Whether any key-cap edge pixel is on the canvas, below the scoreboard (its frame is the same grey) and off the desk. */
+/** Whether any key-cap edge pixel is on the canvas, below the scoreboard and off the desk. */
 function keyCapShown(v: Verify): boolean {
   const png = canvas(v);
   for (let y = margin + tickerRect.y + tickerRect.h; y < png.height; y++) {
@@ -93,6 +95,33 @@ function floorAndPlayer(v: Verify): void {
   v.step(32, { left: true });
   v.frame("2-player-walking-left");
   v.step(32, { right: true });
+}
+
+/** Each of the marquee's bulbs round the ring on the canvas: 1 lit, 0 unlit, ? neither. */
+function bulbs(v: Verify): string {
+  const png = canvas(v);
+  const state: Readonly<Record<string, string>> = { [sweetie.y]: "1", [sweetie.o]: "0" };
+  return tickerBulbs.map((b) => state[pixel(png, margin + b.x, margin + b.y)] ?? "?").join("");
+}
+
+function marquee(v: Verify): void {
+  console.log("the scoreboard's marquee:");
+  v.openHook("scene=game");
+  const r = tickerRect;
+  const frame = pixel(canvas(v), margin + r.x + 2, margin + r.y + 2);
+  check(frame === sweetie.r, "the board sits in a red marquee frame", frame);
+  const first = bulbs(v);
+  const lit = first.split("").filter((c) => c === "1").length;
+  check(
+    !first.includes("?") && Math.abs(lit - (tickerBulbs.length * 2) / 3) < 1,
+    "two of every three bulbs are lit yellow, the rest dark orange",
+    first,
+  );
+  v.frame("0-marquee");
+  v.step(8);
+  check(bulbs(v) !== first, "8 ticks later the dark bulbs have stepped along", bulbs(v));
+  v.step(16);
+  check(bulbs(v) === first, "after 24 ticks the chase is back where it started", bulbs(v));
 }
 
 function cabinets(v: Verify): void {
@@ -183,6 +212,7 @@ function video(v: Verify): void {
 }
 
 await verify("hub", (v) => {
+  marquee(v);
   floorAndPlayer(v);
   cabinets(v);
   counter(v);

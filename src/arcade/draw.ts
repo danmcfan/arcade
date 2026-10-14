@@ -14,7 +14,7 @@ import { screenFrame } from "./screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
 
-export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
+export function draw(screen: Surface, s: State, tick: number, buffer: number, debugMode: boolean): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
   s.machines.forEach((m, row) => {
@@ -51,6 +51,7 @@ export function draw(screen: Surface, s: State, buffer: number, debugMode: boole
   drawTicker(
     screen,
     { tokens: s.wallet.tokens, tickets: s.wallet.tickets, title: s.melodyPlaying ? s.imageTitle : null },
+    tick,
     buffer,
   );
 

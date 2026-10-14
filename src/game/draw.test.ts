@@ -10,7 +10,16 @@ import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink 
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
-import { tickerGlyphHeight, tickerGlyphX, tickerInkOrder, tickerRect, type TickerInk } from "../ui/tickerArt.ts";
+import { sweetie } from "../ui/sweetie16.ts";
+import {
+  tickerBulbs,
+  tickerGlyphHeight,
+  tickerGlyphX,
+  tickerInkOrder,
+  tickerRect,
+  tickerRight,
+  type TickerInk,
+} from "../ui/tickerArt.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
@@ -70,6 +79,8 @@ interface Recording {
   text: (ink?: Ink) => string;
   surface: Surface;
   fills: () => number;
+  /** Each single pixel filled in `css`, as "x,y". */
+  dots: (css: string) => string[];
   dimmed: () => [number, number, number, number] | null;
   /** Each clip rect, in order. */
   clips: [number, number, number, number][];
@@ -86,6 +97,7 @@ function recordingSurface(): Recording {
   const icons: Icon[] = [];
   const lit: Lit[] = [];
   const boxes: [number, number, number, number][] = [];
+  const dots: [number, number, string][] = [];
   let fills = 0;
   let dimmed: [number, number, number, number] | null = null;
   const clips: [number, number, number, number][] = [];
@@ -120,8 +132,9 @@ function recordingSurface(): Recording {
       const name = Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?";
       calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y]);
     },
-    fillRect(x: number, y: number, w: number, h: number): void {
+    fillRect(x: number, y: number, w: number, h: number, css: string): void {
       boxes.push([x, y, w, h]);
+      if (w === 1 && h === 1) dots.push([x, y, css]);
       fills++;
     },
     strokeRect(x: number, y: number, w: number, h: number, c: PremulColor): void {
@@ -159,6 +172,7 @@ function recordingSurface(): Recording {
     text,
     surface,
     fills: () => fills,
+    dots: (css) => dots.filter(([, , c]) => c === css).map(([x, y]) => `${x},${y}`),
     dimmed: () => dimmed,
     clips,
   };
@@ -476,11 +490,32 @@ describe("hub scoreboard", () => {
       g.draw(r.surface);
       expect(r.board("yellow")).toBe(shown);
       const right = Math.max(...r.lit.map((l) => l.x + 3));
-      expect(right).toBe(tickerRect.x + tickerRect.w - 4 + 16);
+      expect(right).toBe(tickerRight + 16);
       const label = Math.max(...r.lit.filter((l) => l.ink === "orange").map((l) => l.x + 3));
       const count = Math.min(...r.lit.filter((l) => l.ink === "yellow").map((l) => l.x));
       expect(count).toBeGreaterThan(label);
     }
+  });
+
+  test("the marquee's bulbs chase round the board: two of every three lit, stepping every 8 ticks", () => {
+    const game = newGame();
+    const lit = (): string[] => {
+      const r = recordingSurface();
+      game.draw(r.surface);
+      return r.dots(sweetie.y);
+    };
+    const bulbs = new Set(tickerBulbs.map((b) => `${b.x + 16},${b.y + 16}`));
+    const first = lit();
+    expect(first.length).toBeGreaterThanOrEqual(Math.floor((tickerBulbs.length * 2) / 3));
+    expect(first.length).toBeLessThanOrEqual(Math.ceil((tickerBulbs.length * 2) / 3));
+    for (const b of first) expect(bulbs.has(b)).toBe(true);
+    const steps = (n: number): void => {
+      for (let t = 0; t < n; t++) game.step(input());
+    };
+    steps(8);
+    expect(lit()).not.toEqual(first);
+    steps(16);
+    expect(lit()).toEqual(first);
   });
 
   test("the hub pause dims only the hub image, so the counts stay readable (title scene)", () => {
