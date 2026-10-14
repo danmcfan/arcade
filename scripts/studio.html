@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Art studio</title>
+    <style>
+      :root {
+        --bg: #1a1c2c;
+        --panel: #262b44;
+        --line: #333c57;
+        --text: #f4f4f4;
+        --dim: #94b0c2;
+        --accent: #ffcd75;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          13px/1.4 ui-monospace,
+          Menlo,
+          monospace;
+        display: grid;
+        grid-template-columns: 260px 1fr 220px;
+        grid-template-rows: auto 1fr auto;
+        height: 100vh;
+      }
+      header {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      header input {
+        flex: 1;
+      }
+      aside,
+      #side {
+        padding: 8px;
+        overflow: auto;
+        border-right: 1px solid var(--line);
+      }
+      #side {
+        border-right: 0;
+        border-left: 1px solid var(--line);
+      }
+      main {
+        overflow: auto;
+        display: grid;
+        place-items: center;
+        background: #0e0f18;
+      }
+      footer {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        border-top: 1px solid var(--line);
+        overflow-x: auto;
+      }
+      h2 {
+        font-size: 11px;
+        color: var(--dim);
+        text-transform: uppercase;
+        margin: 12px 0 4px;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: var(--text);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 3px 6px;
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      #items button,
+      #variants button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        margin: 1px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #palette {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+      .swatch {
+        height: 32px;
+        color: #fff;
+        text-shadow: 0 0 2px #000;
+      }
+      .swatch.on {
+        outline: 2px solid var(--accent);
+      }
+      canvas {
+        image-rendering: pixelated;
+      }
+      #editor {
+        cursor: crosshair;
+      }
+      .frame {
+        border: 2px solid var(--line);
+        background: #8c8c8c;
+      }
+      .frame.on {
+        border-color: var(--accent);
+      }
+      #dirty {
+        color: var(--accent);
+      }
+      #status {
+        white-space: pre-wrap;
+        color: var(--dim);
+        max-height: 30vh;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Art studio</strong>
+      <input id="spec" list="specs" placeholder="path.ts:name" />
+      <datalist id="specs"></datalist>
+      <button id="open">Open</button>
+      <span id="dirty"></span>
+      <button id="undo" title="Ctrl+Z">Undo</button>
+      <button id="redo" title="Ctrl+Shift+Z">Redo</button>
+      <button id="save" title="Ctrl+S">Save</button>
+    </header>
+    <aside>
+      <h2>Exports</h2>
+      <input id="filter" placeholder="filter" />
+      <div id="items"></div>
+    </aside>
+    <main><canvas id="editor"></canvas></main>
+    <div id="side">
+      <h2>Tools</h2>
+      <div id="tools"></div>
+      <h2>View</h2>
+      <div id="view"></div>
+      <h2>Palette</h2>
+      <div id="palette"></div>
+      <h2>Preview</h2>
+      <canvas id="preview1"></canvas>
+      <canvas id="preview4"></canvas>
+      <label>fps <input id="fps" type="number" value="6" min="1" max="30" style="width: 4em" /></label>
+      <h2>Variants</h2>
+      <div id="variants"></div>
+      <h2>Status</h2>
+      <div id="status"></div>
+    </div>
+    <footer id="frames"></footer>
+    <script type="module" src="./studio-page.ts"></script>
+  </body>
+</html>

@@ -62,7 +62,7 @@ function parseArea(area: string): [number, number, number, number] {
   return [x, y, w, h];
 }
 
-function isRows(v: unknown): v is Rows {
+export function isRows(v: unknown): v is Rows {
   return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
@@ -90,10 +90,14 @@ function gitShow(rev: string, file: string): Buffer | undefined {
   return r.exitCode === 0 ? Buffer.from(r.stdout) : undefined;
 }
 
-/** The module at `file`, or its `rev` version (copied next to it for the import, then removed). */
+/**
+ * The module at `file`, or its `rev` version, or (`rev` "fresh") the file as it
+ * is on disk now, past the import cache. A copy is made next to it for the
+ * import, then removed.
+ */
 async function importAt(file: string, rev: string | undefined): Promise<Record<string, unknown> | undefined> {
   if (rev === undefined) return importModule(resolve(file));
-  const source = gitShow(rev, file);
+  const source = rev === fresh ? readFileSync(resolve(file)) : gitShow(rev, file);
   if (source === undefined) return undefined;
   const copy = join(dirname(resolve(file)), `.pixel-${Date.now()}-${basename(file)}`);
   writeFileSync(copy, source);
@@ -102,6 +106,26 @@ async function importAt(file: string, rev: string | undefined): Promise<Record<s
   } finally {
     rmSync(copy);
   }
+}
+
+/** The `rev` that reads a source as it is on disk now, past the import cache (`bun run studio` after a save). */
+export const fresh = "<fresh>";
+
+/**
+ * The value a `path.ts:name` or `path.ts:name.key` spec names, imported fresh
+ * from disk; throws when the export or entry is missing.
+ */
+export async function exportValue(spec: string): Promise<unknown> {
+  const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/u.exec(spec);
+  const [, file, name, key] = ts ?? [];
+  if (file === undefined || name === undefined) throw new Error(`"${spec}" is not path.ts:name`);
+  const mod = await importAt(file, fresh);
+  const value = mod?.[name];
+  if (value === undefined) throw new Error(`${file} has no export "${name}"`);
+  if (key === undefined) return value;
+  const entry = isRecord(value) ? value[key] : undefined;
+  if (entry === undefined) throw new Error(`${file}'s ${name} has no entry "${key}"`);
+  return entry;
 }
 
 /** The images an <image> argument names (see the header), at `rev` when given; [] when it is not there. */
