@@ -98,7 +98,7 @@ describe("UI art source", () => {
     checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
     checkRows("carpet tile", carpetTile, { w: 16, h: 16 });
     // The glass case's contents, tiled along it inside its 1 px outline.
-    checkRows("desk case", caseRows, { h: 5 });
+    checkRows("desk case", caseRows, { w: 34, h: 5 });
     // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
     checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
   });
