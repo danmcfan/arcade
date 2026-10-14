@@ -16,6 +16,7 @@
     "traces": "bun scripts/record-traces.ts",
     "verify": "bun scripts/verify.ts",
     "pixel": "bun scripts/pixel.ts",
+    "studio": "bun scripts/studio.ts",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun run knip && bun test && bun run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

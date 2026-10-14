@@ -62,11 +62,11 @@ function parseArea(area: string): [number, number, number, number] {
   return [x, y, w, h];
 }
 
-function isRows(v: unknown): v is Rows {
+export function isRows(v: unknown): v is Rows {
   return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
+export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
@@ -90,11 +90,8 @@ function gitShow(rev: string, file: string): Buffer | undefined {
   return r.exitCode === 0 ? Buffer.from(r.stdout) : undefined;
 }
 
-/** The module at `file`, or its `rev` version (copied next to it for the import, then removed). */
-async function importAt(file: string, rev: string | undefined): Promise<Record<string, unknown> | undefined> {
-  if (rev === undefined) return importModule(resolve(file));
-  const source = gitShow(rev, file);
-  if (source === undefined) return undefined;
+/** The module in `source`, imported from a copy next to `file` (so its imports resolve), then removed. */
+async function importCopy(file: string, source: Buffer): Promise<Record<string, unknown>> {
   const copy = join(dirname(resolve(file)), `.pixel-${Date.now()}-${basename(file)}`);
   writeFileSync(copy, source);
   try {
@@ -104,12 +101,46 @@ async function importAt(file: string, rev: string | undefined): Promise<Record<s
   }
 }
 
+/** The module at `file`, or its `rev` version. */
+async function importAt(file: string, rev: string | undefined): Promise<Record<string, unknown> | undefined> {
+  const source = rev === undefined ? undefined : gitShow(rev, file);
+  if (rev !== undefined && source === undefined) return undefined;
+  const mod = await (source === undefined ? importModule(resolve(file)) : importCopy(file, source));
+  return mod;
+}
+
+/** An art source export a `path.ts:name` or `path.ts:name.key` spec names. */
+export interface SourceSpec {
+  file: string;
+  name: string;
+  key: string | undefined;
+}
+
+/** The parts of a `path.ts:name[.key]` spec, or undefined for any other <image>. */
+export function parseSpec(spec: string): SourceSpec | undefined {
+  const [, file, name, key] = /^(.+\.ts):(\w+)(?:\.(\w+))?$/u.exec(spec) ?? [];
+  return file === undefined || name === undefined ? undefined : { file, name, key };
+}
+
+/**
+ * The value `spec` names, read from the file as it is on disk now, past the
+ * import cache (`bun run studio` after a save); throws when it is missing.
+ */
+export async function exportValue({ file, name, key }: SourceSpec): Promise<unknown> {
+  const mod = await importCopy(file, readFileSync(resolve(file)));
+  const value = mod[name];
+  if (value === undefined) throw new Error(`${file} has no export "${name}"`);
+  if (key === undefined) return value;
+  const entry = isRecord(value) ? value[key] : undefined;
+  if (entry === undefined) throw new Error(`${file}'s ${name} has no entry "${key}"`);
+  return entry;
+}
+
 /** The images an <image> argument names (see the header), at `rev` when given; [] when it is not there. */
 export async function load(spec: string, rev?: string): Promise<Panel[]> {
-  const ts = /^(.+\.ts):(\w+)(?:\.(\w+))?$/u.exec(spec);
+  const ts = parseSpec(spec);
   if (ts) {
-    const [, file, name, key] = ts;
-    if (file === undefined || name === undefined) throw new Error(`"${spec}" is not path.ts:name`);
+    const { file, name, key } = ts;
     const mod = await importAt(file, rev);
     if (mod === undefined) return [];
     let value = mod[name];

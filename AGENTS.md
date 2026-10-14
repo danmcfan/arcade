@@ -24,7 +24,7 @@ Verify any change a player can see or hear with a verify check (`bun run verify 
 
 ## Pixel art
 
-Any art request (creating, redrawing or specifying art) starts with a playground the owner steers, before any PR: `docs/agents/pixel-art.md` (the playground, sources, helpers, `bun run pixel`, the quality bar).
+Any art request (creating, redrawing or specifying art) starts in the art studio the owner steers (`bun run studio`), before any PR: `docs/agents/pixel-art.md` (variants, sources, helpers, `bun run pixel`, the quality bar).
 
 ## Quality gate
 
