@@ -7,7 +7,7 @@
 import { deskFace, deskFlap, deskParts, inDeskPart, onDeskTop } from "../arcade/desk.ts";
 
 /** The glass case's contents, tiled along it: a star, a ball, a bear, a heart and a flower (the old counter's case). */
-const caseRows: readonly string[] = [
+export const caseRows: readonly string[] = [
   "cwnnnnnnnnnncnnnnnnnnnnnnncnnnnnnn",
   "wnnnnynnnnnBBnnnoonoonnrrnrrnnngnn",
   "nnnyyyyynnBwBBnnooooonnrrrrrnngggn",

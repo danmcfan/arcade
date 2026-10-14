@@ -2,11 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
-import { employeeFrames, employeeHeight, employeeSheetRows, employeeWidth } from "../src/ui/employeeArt.ts";
+import { employeeFrames, employeeHeight, employeeSheetRows, employeeWidth, half } from "../src/ui/employeeArt.ts";
+import { caseRows } from "../src/ui/deskArt.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
 import {
   cabinetArt,
+  carpetTile,
   powerFrameHeight,
   powerFrames,
   powerFrameWidth,
@@ -20,7 +22,10 @@ import {
   playerFramesFor,
   playerFrameWidth,
   playerSheetRows,
+  right,
   sheetOrder,
+  up,
+  down,
 } from "../src/ui/playerArt.ts";
 import { newPlayer } from "../src/arcade/entity.ts";
 import { images } from "../src/engine/assets.ts";
@@ -81,6 +86,7 @@ describe("UI art source", () => {
   });
 
   test("every employee frame is the player's 16x24 box, in Sweetie 16 letters and .", () => {
+    checkRows("employee half", half, { w: employeeWidth / 2, h: employeeHeight });
     for (const [i, frame] of employeeFrames.entries())
       checkRows(`employee ${i}`, frame, { w: employeeWidth, h: employeeHeight });
     const sheet = employeeSheetRows();
@@ -90,6 +96,9 @@ describe("UI art source", () => {
   test("the hub room is the hub image's size, in Sweetie 16 letters", () => {
     expect([roomWidth, roomHeight]).toEqual([images.arcade.width, images.arcade.height]);
     checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
+    checkRows("carpet tile", carpetTile, { w: 16, h: 16 });
+    // The glass case's contents, tiled along it inside its 1 px outline.
+    checkRows("desk case", caseRows, { h: 5 });
     // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
     checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
   });
@@ -106,6 +115,9 @@ describe("UI art source", () => {
     expect([playerFrameWidth, playerFrameHeight, playerFrames]).toEqual([p.width, p.height, p.frameTotal]);
     // Sheet rows follow the player's frameDirection.
     expect(sheetOrder.map((d) => p.frameDirection[d])).toEqual([0, 1, 2, 3]);
+    for (const [name, facing] of Object.entries({ up, down, right }))
+      for (const pose of ["stand", "step", "otherStep"] as const)
+        checkRows(`player ${name} ${pose}`, facing[pose], { w: playerFrameWidth, h: playerFrameHeight });
     for (const dir of sheetOrder) {
       for (const [i, frame] of playerFramesFor(dir).entries())
         checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
