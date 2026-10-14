@@ -16,11 +16,12 @@ import {
 import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
-import { drawText, drawTextCentered, textHeight, textWidth } from "../ui/text.ts";
+import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerX, flowerY } from "./flower.ts";
+import { levelCap } from "./levels.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
-import { frameSize, itemCellHeight, itemCellWidth } from "./art.ts";
+import { frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
@@ -81,13 +82,22 @@ function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-/** The level counter: "L n" in the pixel font at the bottom right, level with the lives. */
+/** The level counter: the flowers of the last `levelCounterLength` levels at the bottom right, their bottom pixels on the screen's bottom row, the current level's rightmost (Pac-Man's fruit row). */
 export const levelCounterRight = 8 * 26;
+export const levelCounterLength = 7;
+
+/** The bonus flower for `level`: one frame of flower.png per level, the last holding from `levelCap` on. */
+export function flowerSprite(level: number): Sprite {
+  const x = (Math.min(Math.max(level, 1), levelCap) - 1) * frameSize;
+  return sub(imageFlower, x, 0, x + frameSize, frameSize);
+}
 
 function drawLevel(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const text = `L${s.level}`;
-  const y = 8 * 34 + 1 + Math.trunc((frameSize - textHeight) / 2);
-  drawText(screen, text, levelCounterRight - textWidth(text) + bufX, y + bufY, "yellow");
+  const first = Math.max(1, s.level - levelCounterLength + 1);
+  for (let level = first; level <= s.level; level++) {
+    const x = levelCounterRight - (s.level - level + 1) * frameSize;
+    screen.draw(flowerSprite(level), x + bufX, mazeHeight - frameSize + bufY);
+  }
 }
 
 /** Where READY! and "LEVEL n" stand: centred under the bee home. */
@@ -102,7 +112,7 @@ function drawLevelBanner(s: SweetSamSoftware, screen: Surface, bufX: number, buf
 
 function drawFlower(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   if (s.flowerTicks <= 0) return;
-  screen.draw(imageFlower, flowerX - frameSize / 2 + bufX, flowerY - frameSize / 2 + bufY);
+  screen.draw(flowerSprite(s.level), flowerX - frameSize / 2 + bufX, flowerY - frameSize / 2 + bufY);
 }
 
 /** An eaten flower's points, in the pixel font where it stood. */
