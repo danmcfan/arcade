@@ -2,7 +2,7 @@
 // scratch script. Sheets go to out/pixel/ (git ignores out/); read the PNG
 // it prints.
 //
-//   bun run pixel rows    <image>...                  each image as Sweetie 16 letter rows
+//   bun run pixel rows    <image>... [--nearest]      each image as Sweetie 16 letter rows
 //   bun run pixel colours <image>...                  each colour, its letter and pixel count
 //   bun run pixel show    <image>...                  one labelled sheet, scaled up
 //   bun run pixel before  <image>... [--ref <rev>]    <rev>'s version beside the working copy (PNG or source)
@@ -16,9 +16,10 @@
 //                        glyph rows (`#` and `.`) draw in white
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
-// Options: --scale N (default: fits each image to about 384 px, at most 8x),
+// Options: --scale N (default: fits each image to about 256 px, at most 8x),
 // --out <file.png> (show, before and place), --ref <rev> (before; default
-// origin/main).
+// origin/main), --nearest (rows: letter each colour as the nearest Sweetie 16
+// one, to import art drawn in another palette).
 
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
@@ -26,7 +27,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, colours, letters, paint, plot, scale, toPng, toRows, type Rows } from "./pixel-art.ts";
+import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
 /** One image to show, with the label it gets on a sheet. */
 export interface Panel {
@@ -145,14 +146,15 @@ async function loadOne(spec: string): Promise<PNG> {
   return panel.png;
 }
 
-/** The largest whole scale, up to 8, that keeps the image within about 384 px. */
+/** The largest whole scale, up to 8, that keeps the image within about 256 px. */
 export function autoScale(png: PNG): number {
-  return Math.max(1, Math.min(8, Math.floor(384 / Math.max(png.width, png.height))));
+  return Math.max(1, Math.min(8, Math.floor(256 / Math.max(png.width, png.height))));
 }
 
 const labelScale = 2;
 const gap = 16;
-const maxSheetWidth = 1800;
+// Sheets are read back as images, which cost tokens by area: keep them small.
+const maxSheetWidth = 1024;
 const sheetColour = "#202020";
 const labelColour = "#f4f4f4";
 const checkerDark = "#8c8c8c";
@@ -276,7 +278,8 @@ async function main(argv: string[]): Promise<void> {
   const args: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] ?? usage();
-    if (a.startsWith("--")) opts[a.slice(2)] = argv[++i] ?? usage();
+    if (a === "--nearest") opts["nearest"] = "yes";
+    else if (a.startsWith("--")) opts[a.slice(2)] = argv[++i] ?? usage();
     else args.push(a);
   }
   const [command, ...specs] = args;
@@ -290,7 +293,7 @@ async function main(argv: string[]): Promise<void> {
     case "rows": {
       for (const { label: name, png } of (await inOrder(specs, load)).flat()) {
         console.log(`// ${name}: ${png.width}x${png.height}, Sweetie 16 letters (src/ui/sweetie16.ts)`);
-        for (const row of toRows(png)) console.log(`"${row}",`);
+        for (const row of toRows(opts["nearest"] === undefined ? png : snap(png))) console.log(`"${row}",`);
       }
       return;
     }

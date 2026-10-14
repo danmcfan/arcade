@@ -73,9 +73,9 @@ describe("load", () => {
 });
 
 describe("sheets", () => {
-  test("autoScale fits about 384 px, between 1x and 8x", () => {
+  test("autoScale fits about 256 px, between 1x and 8x", () => {
     expect(autoScale(toPng(["k"]))).toBe(8);
-    expect(autoScale(toPng(Array.from({ length: 192 }, () => "k".repeat(192))))).toBe(2);
+    expect(autoScale(toPng(Array.from({ length: 128 }, () => "k".repeat(128))))).toBe(2);
     expect(autoScale(toPng(Array.from({ length: 500 }, () => "k")))).toBe(1);
   });
 

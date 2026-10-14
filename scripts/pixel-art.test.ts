@@ -13,6 +13,7 @@ import {
   recolour,
   scale,
   toPng,
+  snap,
   toRows,
 } from "./pixel-art.ts";
 
@@ -36,6 +37,11 @@ describe("PNGs and rows", () => {
   test("toRows names a colour that is not in the palette, and where it is", () => {
     const png = toPng(rows, { ...sweetie, y: "#123456" });
     expect(() => toRows(png)).toThrow("pixel (0, 1) is #123456, not in the palette");
+  });
+
+  test("snap moves an off-palette colour to the nearest palette one", () => {
+    const png = toPng(rows, { ...sweetie, y: "#fecc70" });
+    expect(toRows(snap(png))).toEqual(rows);
   });
 
   test("scale makes each pixel k × k", () => {
