@@ -18,7 +18,12 @@ import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/sna
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
 import { beeOrder, frameSize, scoreLabelsArt, scoreLabelsX } from "../../src/sweet-sam/art.ts";
-import { cabinetInsetLeft, cabinetInsetTop } from "../../src/ui/cabinet.ts";
+import {
+  cabinetInsetLeft,
+  cabinetInsetTop,
+  cabinetPlayfieldHeight,
+  cabinetPlayfieldWidth,
+} from "../../src/ui/cabinet.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { decodeDataUrl, isRecord } from "../browser.ts";
 import { planCaptures } from "../capture-frames.ts";
@@ -150,6 +155,16 @@ const nearBurst = (s: SweetSamSnapshot, x: number, y: number): boolean =>
   bursts(s).some((b) => Math.abs(b.x - x) < burstReach && Math.abs(b.y - y) < burstReach);
 
 /** Wax pixels of maze.png, away from every sprite and burst, that differ on the canvas. */
+/** Whether canvas pixel (x, y) is on the cabinet's screen, inside the clip. */
+function onScreen(x: number, y: number): boolean {
+  return (
+    x >= cabinetInsetLeft &&
+    x < cabinetInsetLeft + cabinetPlayfieldWidth &&
+    y >= cabinetInsetTop &&
+    y < cabinetInsetTop + cabinetPlayfieldHeight
+  );
+}
+
 function waxMisses(frame: PNG, s: SweetSamSnapshot, boxes: Placed[]): number {
   const ox = cabinetInsetLeft + s.shake[0];
   const oy = cabinetInsetTop + s.shake[1];
@@ -159,6 +174,8 @@ function waxMisses(frame: PNG, s: SweetSamSnapshot, boxes: Placed[]): number {
       if (!isWax(x, y) || nearBurst(s, x, y)) continue;
       const cx = snap(x + ox);
       const cy = snap(y + oy);
+      // A shake moves edge pixels off the screen, where the clip cuts them.
+      if (!onScreen(cx, cy)) continue;
       // Sprites, popups and particles can overlap the wax by up to a tile.
       if (boxes.some((b) => cx >= b.x - 8 && cx < b.x + 24 && cy >= b.y - 24 && cy < b.y + 24)) continue;
       if (px(frame, cx, cy) !== px(maze, x, y)) misses++;
