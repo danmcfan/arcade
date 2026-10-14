@@ -9,7 +9,7 @@ import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
 import { updateScreen } from "./screen.ts";
-import { blocked, type RunKind, type State } from "./state.ts";
+import { blocked, type State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
   applyInput(s, i);
@@ -40,8 +40,8 @@ export function update(s: State, i: Input): void {
     // Go leaves imageTitle set here; only melodyPlaying is cleared (D11).
     stopMelody(s);
 
-    s.loadedRun = startRun(s);
-    s.loadedSoftware = machine.newSoftware(s.highScore, s.prizes);
+    s.loadedRun = s.wallet.startRun();
+    s.loadedSoftware = machine.newSoftware(s.wallet.highScore, s.wallet.prizes);
   }
 
   if (i.space && s.counters.some((r) => facing(s.player, r))) {
@@ -63,15 +63,6 @@ function stopMelody(s: State): void {
 export function facing(p: Entity, r: Rect): boolean {
   const [x, y] = newPosition(p.x, p.y, p.direction, 1);
   return checkCollision({ x: x - p.width / 2, y: y - p.height / 2, w: p.width, h: p.height }, r);
-}
-
-/** A cabinet start: spend a token, or play free when there are none. */
-export function startRun(s: State): RunKind {
-  if (s.tokens > 0) {
-    s.tokens--;
-    return "paid";
-  }
-  return "free";
 }
 
 function applyInput(s: State, i: Input): void {

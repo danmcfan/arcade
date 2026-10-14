@@ -106,12 +106,16 @@ _Avoid_: coin, pickup
 
 ## Economy
 
+**Wallet**:
+What the player has: their tokens, tickets and owned prizes, and the hub high score. It holds every rule that changes them: what a cabinet start costs, what a run pays, and what the prize counter sells. The save and the scoreboard's counts come from it. In code, `Wallet` (`src/arcade/wallet.ts`).
+_Avoid_: purse, bank, inventory, account
+
 **Token**:
-The currency spent to start a minigame: one token per play.
+The currency spent to start a minigame: one token per play, taken from the wallet.
 _Avoid_: coin, credit
 
 **Ticket**:
-The reward the payout gives when a minigame ends.
+The reward the payout gives when a minigame ends: one per 100 points, at least one. The wallet settles them when the run ends, and the payout counts them up.
 _Avoid_: points
 
 **Payout**:
@@ -119,7 +123,7 @@ The menu shown when a minigame ends, which turns the score into tickets.
 _Avoid_: reward screen, cutscene
 
 **Prize counter**:
-The place in the hub where the player spends tickets on tokens and prizes: the prize desk across the bottom of the room, with its employee, and the menu it opens.
+The place in the hub where the player spends tickets on tokens and prizes: the prize desk across the bottom of the room, with its employee, and the menu it opens. What it offers, and at what price, comes from the wallet.
 _Avoid_: shop, store, token exchange, redemption
 
 **Employee**:
@@ -131,7 +135,7 @@ The LED board on the hub's wall that shows the player's tokens and tickets, and 
 _Avoid_: HUD, status bar
 
 **Last-chance token**:
-The token the prize counter sells for all the player's tickets, even 0, when they have no tokens and too few tickets to buy one.
+The token the prize counter sells for all the player's tickets, even 0, when they have no tokens and too few tickets to buy one. It is a wallet rule.
 _Avoid_: free token, pity token, bailout
 
 **Prize**:
@@ -139,7 +143,7 @@ A decoration bought with tickets that shows in the hub and gives the player an a
 _Avoid_: power-up, upgrade, item, reward
 
 **Free play**:
-A play that costs nothing because the player has no tokens. It pays no tickets.
+A play that costs nothing because the player's wallet has no tokens. It pays no tickets, but can still set the high score.
 _Avoid_: free credit, bonus play
 
 **Score**:
@@ -153,7 +157,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the hub high score, where the player stood, their tokens and tickets, and the prizes they own. Minigame progress is not part of it.
+What Continue restores: the wallet (the hub high score, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

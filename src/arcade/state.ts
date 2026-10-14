@@ -1,23 +1,12 @@
 // Port of internal/arcade/state.go.
 
 import type { Software } from "../game/software.ts";
-import type { ArcadeTitle, RunKindSnapshot } from "../game/snapshot.ts";
+import type { ArcadeTitle } from "../game/snapshot.ts";
 import { checkCollisions, newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
 import { counterRects } from "./desk.ts";
-import type { PrizeId } from "./prizes.ts";
-
-/** Tokens a New game starts with. */
-export const startingTokens = 5;
-
-/**
- * How the loaded minigame was started: at a cabinet for a token ("paid"),
- * at a cabinet with no tokens ("free", free play), or straight from
- * `game.New(software)` without the hub ("direct": the parity fixtures and
- * `?scene=game&software=`), which costs nothing and has no payout.
- */
-export type RunKind = RunKindSnapshot;
+import { Wallet, type RunKind } from "./wallet.ts";
 
 export class State {
   player: Entity;
@@ -36,11 +25,8 @@ export class State {
   /** Space was pressed facing the prize counter: picked up (and cleared) by the Game, which opens its menu. */
   counterOpened = false;
 
-  highScore = 0;
-  tokens = startingTokens;
-  tickets = 0;
-  /** Prizes the player owns, in catalogue order (src/arcade/prizes.ts). */
-  prizes: PrizeId[] = [];
+  /** Tokens, tickets, owned prizes and the high score. */
+  wallet = new Wallet();
 
   constructor(initialSoftware: Software | null, factory: SoftwareFactory) {
     this.player = newPlayer();
