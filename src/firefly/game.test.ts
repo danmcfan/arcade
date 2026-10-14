@@ -4,7 +4,7 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import * as rng from "../engine/rng.ts";
 import { Game } from "../game/game.ts";
-import { ticketsFor } from "../game/payout.ts";
+import { paidTickets } from "../arcade/wallet.testutil.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
@@ -381,7 +381,7 @@ describe("payout", () => {
     expect(s.menu).toBe("payout");
     expect(score).toBeGreaterThan(0);
     expect(s.payout?.score).toBe(score);
-    expect(s.payout?.total).toBe(ticketsFor(score, false));
-    expect(s.arcade.tickets).toBe(ticketsFor(score, false));
+    expect(s.payout?.total).toBe(paidTickets(score));
+    expect(s.arcade.tickets).toBe(paidTickets(score));
   });
 });

@@ -4,9 +4,11 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { Surface } from "../engine/surface.ts";
+import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { Game } from "../game/game.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
+import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
 import { panelHints } from "../ui/menu.ts";
@@ -366,6 +368,48 @@ describe("minigames inside the title scene", () => {
     expect(store.load()).toMatchObject({ tokens: 4, tickets: 0 });
     tap(t, "escape");
     expect(t.phase).toBe("paused");
+  });
+});
+
+/** A Sweet Sam run that ends on its first update, scoring `points`. */
+function endingSoftware(points: number): Software {
+  return {
+    ...fakeSoftware("sweetSam"),
+    update: (): void => {},
+    gameOver: (): boolean => true,
+    score: (): number => points,
+  };
+}
+
+/** Continue at the Sweet Sam cabinet with `tokens`, start a run that scores `points`, and let it end. */
+function endedRun(store: SaveStore & { saves: number }, tokens: number, points: number): Title {
+  store.save({ ...atCabinet(), tokens });
+  const t = new Title({
+    store,
+    createGame: (restore): Game =>
+      new Game(null, { createSoftware: (): Software => endingSoftware(points), ...(restore ? { restore } : {}) }),
+  });
+  tap(t, "space"); // Continue
+  hold(t, { up: true, space: true }, 2);
+  t.step(NO_INPUT); // the run ends: the payout opens over it
+  expect(t.hostedGame().inHub()).toBe(false);
+  return t;
+}
+
+describe("saving when the wallet changes", () => {
+  test("a payout saves at once, while the payout is still counting", () => {
+    const store = spyStore();
+    endedRun(store, 5, 1420);
+    expect(store.load()).toMatchObject({ tokens: 4, tickets: 14, highScore: 1420 });
+  });
+
+  test("a free play run that only sets a new high score saves it at once", () => {
+    const store = spyStore();
+    const t = endedRun(store, 0, 900);
+    const saves = store.saves;
+    expect(store.load()).toMatchObject({ tokens: 0, tickets: 0, highScore: 900 });
+    t.step(NO_INPUT);
+    expect(store.saves).toBe(saves); // nothing changed since: no save
   });
 });
 

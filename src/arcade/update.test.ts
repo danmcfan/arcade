@@ -4,8 +4,9 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import { counterRects, deskRect } from "./desk.ts";
-import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
-import { startRun, update } from "./update.ts";
+import { formatFloat0, newState, type State } from "./state.ts";
+import { update } from "./update.ts";
+import { startingTokens, Wallet } from "./wallet.ts";
 
 /** The high score each fake was constructed with. */
 const highScores = new WeakMap<Software, number>();
@@ -46,7 +47,7 @@ describe("newState", () => {
     expect(s.melodyPlaying).toBe(false);
     expect(s.imageTitle).toBeNull();
     expect(s.loadedSoftware).toBeNull();
-    expect(s.highScore).toBe(0);
+    expect(s.wallet.highScore).toBe(0);
   });
 
   test("the initial software is handed over as loadedSoftware", () => {
@@ -58,7 +59,7 @@ describe("newState", () => {
 describe("tokens and tickets", () => {
   test("a new hub starts with 5 tokens and 0 tickets", () => {
     const s = newState(null, fakeFactory);
-    expect([s.tokens, s.tickets]).toEqual([startingTokens, 0]);
+    expect([s.wallet.tokens, s.wallet.tickets]).toEqual([startingTokens, 0]);
     expect(startingTokens).toBe(5);
   });
 
@@ -67,34 +68,25 @@ describe("tokens and tickets", () => {
     run(s, 31, { up: true });
     update(s, input({ up: true, space: true }));
     expect(s.loadedSoftware?.name).toBe("sweetSam");
-    expect(s.tokens).toBe(4);
+    expect(s.wallet.tokens).toBe(4);
     expect(s.loadedRun).toBe("paid");
   });
 
   test("with 0 tokens the minigame still starts, as free play", () => {
     const s = newState(null, fakeFactory);
-    s.tokens = 0;
+    s.wallet = new Wallet({ highScore: 0, tokens: 0, tickets: 0, prizes: [] });
     run(s, 31, { up: true });
     update(s, input({ up: true, space: true }));
     expect(s.loadedSoftware?.name).toBe("sweetSam");
-    expect(s.tokens).toBe(0);
+    expect(s.wallet.tokens).toBe(0);
     expect(s.loadedRun).toBe("free");
   });
 
   test("a minigame started directly (not at a cabinet) is outside the economy", () => {
     const s = newState(fakeFactory("sweetSam", 0), fakeFactory);
     expect(s.loadedRun).toBe("direct");
-    expect(s.tokens).toBe(5);
+    expect(s.wallet.tokens).toBe(5);
     expect(newState(null, fakeFactory).loadedRun).toBeNull();
-  });
-
-  test("startRun picks the kind of run and spends the token", () => {
-    const s = newState(null, fakeFactory);
-    s.tokens = 1;
-    expect(startRun(s)).toBe("paid");
-    expect(s.tokens).toBe(0);
-    expect(startRun(s)).toBe("free");
-    expect(s.tokens).toBe(0);
   });
 });
 
@@ -194,7 +186,7 @@ describe("melody and title", () => {
 describe("entering a machine", () => {
   test("Space facing up at a cabinet loads its software with the high score", () => {
     const s = newState(null, fakeFactory);
-    s.highScore = 777;
+    s.wallet = new Wallet({ highScore: 777, tokens: startingTokens, tickets: 0, prizes: [] });
     run(s, 31, { up: true });
     sounds.length = 0;
     update(s, input({ up: true, space: true }));
@@ -278,7 +270,7 @@ describe("prize desk", () => {
       update(s, input({ space: true }));
       expect({ x, opened: s.counterOpened }).toEqual({ x, opened: true });
       expect(s.loadedSoftware).toBeNull();
-      expect(s.tokens).toBe(startingTokens);
+      expect(s.wallet.tokens).toBe(startingTokens);
     }
   });
 

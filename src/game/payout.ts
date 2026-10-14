@@ -1,14 +1,13 @@
 // The payout: the menu shown when a minigame ends, which turns its score into
 // tickets. The score spins down 100 at a time while the tickets spin up one
-// at a time, on the shared slot-machine reels. Space skips to the totals,
+// at a time, on the shared slot-machine reels. The Wallet settles the tickets;
+// the payout only counts them up. Space skips to the totals,
 // and Space again closes it. After free play it only shows the score.
 // Pure game state: the Game plays the sounds and draws it.
 
+import { pointsPerTicket } from "../arcade/wallet.ts";
 import { bootReels, digits6, newDigitReels, syncAndTick, type DigitReels } from "../ui/digitReel.ts";
 import type { PayoutSnapshot } from "./snapshot.ts";
-
-/** Points per ticket. */
-export const pointsPerTicket = 100;
 
 /**
  * Ticks between two tickets. Longer than a digit spin (18 ticks), because a
@@ -16,12 +15,6 @@ export const pointsPerTicket = 100;
  * big scores: Space skips to the totals.
  */
 export const ticksPerTicket = 20;
-
-/** Tickets a run pays: 1 per 100 points rounded down, at least 1; none after free play. */
-export function ticketsFor(score: number, freePlay: boolean): number {
-  if (freePlay) return 0;
-  return Math.max(1, Math.floor(score / pointsPerTicket));
-}
 
 export class Payout {
   /** Score still shown; counts down to 0. */
@@ -39,10 +32,11 @@ export class Payout {
 
   readonly freePlay: boolean;
 
-  constructor(score: number, freePlay: boolean) {
+  /** `total` is the tickets the Wallet settled for the run (0 after free play). */
+  constructor(score: number, total: number, freePlay: boolean) {
     this.freePlay = freePlay;
     this.score = score;
-    this.total = ticketsFor(score, freePlay);
+    this.total = total;
     this.counting = !freePlay;
     bootReels(this.scoreReels, score);
     bootReels(this.ticketReels, 0);
