@@ -5,11 +5,13 @@
 //
 // The player keeps the original Go sprite's outline (FRLG's Gary): spiky
 // black hair with purple highlights and teal eyes, in cyan headphones whose
-// cups are lit on the outside, an orange hoodie (sleeves to the wrists,
-// drawstrings, a ribbed hem, the hood on his back), blue jeans and white
-// sneakers. The sheet is 4 frames across (stand, step, stand, other
-// step) and one row per facing direction, in the order of
-// `newPlayer().frameDirection` (src/arcade/entity.ts): up, down, left, right.
+// cups are lit on the outside, an orange hoodie, blue jeans and white
+// sneakers. Facing up or down the hoodie shows its sleeves, a red hem and,
+// from the front, drawstrings or, from the back, the hood; the side view's
+// torso is too small for more than its orange and one drawstring. The sheet
+// is 4 frames across (stand, step, stand, other step) and one row per facing
+// direction, in the order of `newPlayer().frameDirection`
+// (src/arcade/entity.ts): up, down, left, right.
 // Each frame is 16x24, the player's collision box; the step frames sit 1 px
 // lower than the stand.
 
@@ -23,7 +25,7 @@ export const playerFrames = 4;
 /** One facing's frames, each a whole 16x24 frame: stand, step, other step. */
 type Facing = string[][];
 
-/** Facing up: the back of the head, the headphone band across the hair, the hood on his back. */
+/** Facing up: the back of the head, the headphone band across the hair, the hoodie's hood. */
 export const up: Facing = [
   [
     "................",
