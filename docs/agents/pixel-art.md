@@ -6,7 +6,7 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 Every art change, new or redrawn, starts with the owner, before any PR. Ask which of two modes they want:
 
-- **Prototype**: several options for an asset. Write each export's options to `out/studio/variants/<issue>-<slug>.json`: `{ "path.ts:name": { "label": rows } }` (`path.ts:name.key` for an entry of a record; frames for a list of frames). One label per option the issue asks for; anything beyond the issue is an extra, labelled as one. Then show them in the game: `bun run pixel preview out/studio/variants/<issue>-<slug>.json` writes an HTML page with the game screen on the left and the options on the right (arrow keys or a click switch them). Publish it with the Artifact tool and give the owner the link; that page is how prototypes reach the owner. When it reports no scene shows the art, add the screen to `scripts/pixel-scenes.ts` first.
+- **Prototype**: a few options for an asset, each built from the art the issue names to start from: its references, or the existing art. Put them in a variants file (`bun run pixel` has the format) under `out/studio/variants/`, run `bun run pixel preview <file>` and publish the page with the Artifact tool. That link is how the owner sees prototypes.
 - **Tweak**: small changes to an existing asset. Edit its rows in place, show the result with `bun run pixel before`, and adjust from the owner's notes.
 
 Start the studio only when the owner asks for it: run `bun run studio` and give them the URL, with `?spec=path.ts:name` for the first export. It opens any rows export, lists the variants beside it, and draws with the Sweetie 16 palette, frames, onion skin and an animated preview. Saving writes the rows into the export's array literal, formats the file and runs `bun run art`; read the save back with `git diff`.
@@ -29,24 +29,13 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 
 `bun run art` writes the PNGs. Commit the source and the PNGs together: the drift tests fail when they differ. A PNG in `src/assets/images` that no generator writes is hand-made; most came from the Go game.
 
-## Import before you redraw
+## Import before you draw
 
-When the change touches art that already exists as a PNG, hand-made or not, **import** it first: `bun run pixel rows <png>` (or `<png>#x,y,w,h` for one frame of a sheet) prints its rows, and those rows become the source you edit. Art that only git still holds comes out with `git show <rev>:<png> > out/pixel/old.png` first. Hand-made art, the owner's especially (`art/cabinet.ase`, and the Go player `src/ui/playerArt.ts` was imported from), is the quality bar. Keep its look and change only what the issue asks for. Start from a blank grid only for things that do not exist yet.
+When the change touches art that already exists as a PNG, hand-made or not, or the issue names reference art, **import** it first: `bun run pixel rows <png>` (or `<png>#x,y,w,h` for one frame of a sheet) prints its rows, and those rows become the source you edit. Art that only git still holds comes out with `git show <rev>:<png> > out/pixel/old.png` first. Hand-made art, the owner's especially (`art/cabinet.ase`, and the Go player `src/ui/playerArt.ts` was imported from), is the quality bar. Keep its look and change only what the issue asks for. A reference sets the style: take its proportions, shading and poses from its pixels, and recolour or redraw only what makes the asset ours.
 
 ## Derive what follows
 
-`scripts/pixel-art.ts` makes the pixels that follow from other pixels. Draw the part only a person can decide and **derive** the rest:
-
-| Helper                                | Use it for                                                        |
-| ------------------------------------- | ----------------------------------------------------------------- |
-| `mirrorX`, `mirrorY`                  | A symmetric sprite: draw the left (or top) half                   |
-| `outline(rows, "k")`                  | The 1 px edge round the drawn pixels; leave a blank border for it |
-| `flipX`, `flipY`                      | Left-facing frames from right-facing ones                         |
-| `recolour(rows, { r: "b" })`          | Colour variants, such as one cabinet per minigame                 |
-| `overlay(rows, part, x, y)`           | A sprite built from parts (a head, then headphones on it)         |
-| `glint(rows, x, y)`                   | A glint frame: a white + over the sprite's colours, e.g. the bolt |
-| `checkRows(name, rows, { w, h })`     | Size and letters; the error names the row and column              |
-| `toPng`, `toRows`, `scale`, `colours` | Rows to PNG and back, upscale, colour count                       |
+`scripts/pixel-art.ts` makes the pixels that follow from other pixels. Draw the part only a person can decide and **derive** the rest with its helpers (mirror, flip, outline, recolour, overlay, glint; the file's header lists them).
 
 Give each sprite its own export, so a change is an `Edit` of a short block of rows. A rewrite of the whole art file costs more and risks the sprites you did not mean to change. Every export gets a `checkRows` call in its generator's test.
 
@@ -54,15 +43,7 @@ Give each sprite its own export, so a change is an `Edit` of a short block of ro
 
 Check art as text first: `bun run pixel rows` and `checkRows` catch size, letters and stray colours without an image. Read a PNG only to judge the look, once per change; every image you read is paid for again on each later call. `bun run pixel` writes a small labelled sheet to `out/pixel/` and prints its path; pass `--scale` only when you need it bigger.
 
-| Command                                           | When                                                                                                                  |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pixel show <image>...`                           | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`.                      |
-| `pixel preview <variants.json>`                   | Prototypes for the owner: each option drawn into its game screen, as an HTML page to publish                          |
-| `pixel place <base> <image>@x,y...`               | To judge a sprite where it stands, e.g. the player in the hub                                                         |
-| `pixel before <image>...`                         | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources           |
-| `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour; `rows --nearest` imports art in another palette (the Go game's PICO-8 PNGs) |
-
-An `<image>` is `path.png`, `path.png#x,y,w,h`, `path.ts:name` or `path.ts:name.key`. Run `bun run pixel` alone for the full usage.
+`show` while drawing, `place` to judge a sprite where it stands, `preview` for the owner, `before` for the PR, `rows` and `colours` to import art or find a stray colour. Run `bun run pixel` alone for the usage.
 
 In the running game, the verify check shows the art (`docs/agents/visual-verification.md`). `pixel` is for the drawing loop before that.
 
@@ -70,4 +51,4 @@ In the running game, the verify check shows the art (`docs/agents/visual-verific
 
 - **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the verify check's screenshots, so the owner judges the change at a glance.
 - **The owner's picks.** The art matches what the owner picked (Work it out with the owner), and nothing more.
-- **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the studio variants should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.
+- **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the prototypes should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.

@@ -4,6 +4,7 @@ import { prizeArt } from "../src/ui/prizeArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { toPng, toRows } from "./pixel-art.ts";
 import { cabinetArt } from "../src/ui/hubArt.ts";
+import { down, up } from "../src/ui/playerArt.ts";
 import { autoScale, load, place, previewOptions, sheet, type Panel } from "./pixel.ts";
 
 /** The error `promise` rejects with; fails the test when it resolves or rejects with a non-Error. */
@@ -92,6 +93,11 @@ describe("sheets", () => {
   });
 });
 
+/** `frames` with every drawn pixel white. */
+function whitened(frames: readonly (readonly string[])[]): string[][] {
+  return frames.map((f) => f.map((r) => r.replaceAll(/[^.]/gu, "w")));
+}
+
 describe("previewOptions", () => {
   test("draws each option into the hub, then puts the export back", async () => {
     const current = [...cabinetArt];
@@ -99,12 +105,29 @@ describe("previewOptions", () => {
     const options = await previewOptions({ "src/ui/hubArt.ts:cabinetArt": { Current: current, Blanked: blanked } });
     expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
     expect(options[0]?.screens).not.toEqual(options[1]?.screens);
-    // The middle cabinet switches on and off: more than one screen, the dark room first and last.
-    const timeline = options[0]?.timeline ?? [];
+    // The middle cabinet switches on and off: more than one screen, the dark room first.
     expect(options[0]?.screens.length).toBeGreaterThan(1);
-    expect(timeline.at(0)).toBe(0);
-    expect(timeline.at(-1)).toBe(0);
+    expect(options[0]?.timeline.at(0)).toBe(0);
     expect([...cabinetArt]).toEqual(current);
+  });
+
+  test("draws player options into the hub, walking, then puts the facing back", async () => {
+    const current = down.map((frame) => frame.slice());
+    const blanked = current.map((frame) => frame.map((row) => row.replaceAll(/[^.]/gu, "w")));
+    const options = await previewOptions({ "src/ui/playerArt.ts:down": { Current: current, Blanked: blanked } });
+    expect(options[0]?.screens).not.toEqual(options[1]?.screens);
+    // The walk cycle changes the screen while the cabinet stays dark.
+    expect(new Set(options[0]?.timeline.slice(0, 40)).size).toBeGreaterThan(1);
+    expect(down.map((frame) => frame.slice())).toEqual(current);
+  });
+
+  test("one option per label, swapping every export that has it", async () => {
+    const options = await previewOptions({
+      "src/ui/playerArt.ts:down": { Current: down.map((f) => f.slice()), Blanked: whitened(down) },
+      "src/ui/playerArt.ts:up": { Current: up.map((f) => f.slice()), Blanked: whitened(up) },
+    });
+    expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
+    expect(options[1]?.frames).toHaveLength(6);
   });
 
   test("names the scenes file when no scene shows the art", async () => {

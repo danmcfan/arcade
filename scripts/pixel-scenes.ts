@@ -5,14 +5,13 @@
 // game. Add a scene here when prototyped art belongs to a screen none of these
 // draw.
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PNG } from "pngjs";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import type { PNG } from "pngjs";
+import type { Direction } from "../src/engine/input.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { blank, paint, toPng } from "./pixel-art.ts";
+import { paint, toPng } from "./pixel-art.ts";
+import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
@@ -24,18 +23,16 @@ export interface Scene {
   render: () => PNG[];
 }
 
-/** The first frame of the player sheet, standing in front of the middle cabinet. */
-function withPlayer(room: PNG): PNG {
-  const sheet = PNG.sync.read(readFileSync(join(repoRoot, "src/assets/images/player.png")));
-  const player = blank(16, 24);
-  PNG.bitblt(sheet, player, 0, 0, 16, 24, 0, 0);
-  for (let y = 0; y < 24; y++) {
-    for (let x = 0; x < 16; x++) {
-      const s = (y * 16 + x) * 4;
-      if (player.data[s + 3] === 0) continue;
-      player.data.copy(room.data, ((66 + y) * room.width + 72 + x) * 4, s, s + 4);
-    }
-  }
+/** Ticks per walk frame: the player's `frameIncrement` of 0.1 (src/arcade/entity.ts). */
+const ticksPerStep = 10;
+/** The facings the player walks in place through, one walk cycle each. */
+const walkOrder: readonly Direction[] = ["DOWN", "LEFT", "UP", "RIGHT"];
+
+/** The player walking in place in front of the middle cabinet, drawn from `playerFramesFor` on `tick`. */
+function withPlayer(room: PNG, tick: number): PNG {
+  const step = Math.trunc(tick / ticksPerStep);
+  const dir = walkOrder[Math.trunc(step / playerFrames) % walkOrder.length] ?? "DOWN";
+  paint(room, playerFramesFor(dir)[step % playerFrames] ?? [], sweetie, 72, 66);
   return room;
 }
 
@@ -43,7 +40,8 @@ function withPlayer(room: PNG): PNG {
 const hubLoop = { off: 40, on: 80, after: 40 } as const;
 
 /**
- * The hub room, the player in front of the middle cabinet as its screen
+ * The hub room, the player walking in place in front of the middle cabinet
+ * through each facing as its screen
  * switches on and off on the game's own timing (src/arcade/screen.ts), drawn
  * from screens.png's frames (`powerSheetRows`).
  */
@@ -66,7 +64,7 @@ function hubFrames(): PNG[] {
         .map((r) => r.slice(column * powerFrameWidth, (column + 1) * powerFrameWidth));
       paint(png, cell, sweetie, cabinet.rect.x - powerCabinetX, cabinet.rect.y);
     }
-    frames.push(withPlayer(png));
+    frames.push(withPlayer(png, tick));
   }
   return frames;
 }
@@ -74,7 +72,7 @@ function hubFrames(): PNG[] {
 export const scenes: readonly Scene[] = [
   {
     name: "hub",
-    sources: ["src/ui/hubArt.ts", "src/ui/deskArt.ts", "src/ui/tickerArt.ts"],
+    sources: ["src/ui/hubArt.ts", "src/ui/deskArt.ts", "src/ui/tickerArt.ts", "src/ui/playerArt.ts"],
     render: hubFrames,
   },
 ];
