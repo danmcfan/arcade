@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { writeRows, type RowsValue } from "./studio-source.ts";
+import { isRecord } from "./pixel.ts";
+import { artSources, asRowsValue, writeRows } from "./studio-source.ts";
 
 const fixture = `// A fixture art source.
 import { mirrorX } from "./pixel-art.ts";
@@ -55,32 +56,13 @@ describe("writeRows", () => {
   });
 });
 
-function isRows(v: unknown): v is string[] {
-  return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function isValue(v: unknown): v is RowsValue {
-  return isRows(v) || (Array.isArray(v) && v.length > 0 && v.every((f) => isRows(f)));
-}
-
 describe("writeRows on the real art sources", () => {
-  const sources = [
-    "src/ui/glyphs.ts",
-    "src/ui/hubArt.ts",
-    "src/ui/icons.ts",
-    "src/ui/prizeArt.ts",
-    "src/firefly/art.ts",
-    "src/brass-monkey/art.ts",
-    "src/sweet-sam/art.ts",
-  ];
   // Computed exports (`Object.keys(...)`, `mirrorX(...)`) are refused, not art to save into.
   const computed = new Set(["charset", "inkOrder"]);
+  // Their rows are private consts, so these export no rows to save into.
+  const noRows = new Set(["src/ui/deskArt.ts", "src/ui/employeeArt.ts"]);
 
-  test.each(sources)("writing back %s's own rows changes nothing", async (file) => {
+  test.each(artSources.filter((f) => !noRows.has(f)))("writing back %s's own rows changes nothing", async (file) => {
     const path = join(repoRoot, file);
     const source = readFileSync(path, "utf8");
     const mod: unknown = await import(path);
@@ -90,8 +72,9 @@ describe("writeRows on the real art sources", () => {
       const entries: [string | undefined, unknown][] =
         isRecord(value) && !Array.isArray(value) ? Object.entries(value) : [[undefined, value]];
       for (const [key, rows] of entries) {
-        if (!isValue(rows) || computed.has(name)) continue;
-        expect(writeRows(source, name, key, rows)).toBe(source);
+        const saved = asRowsValue(rows);
+        if (saved === undefined || computed.has(name)) continue;
+        expect(writeRows(source, name, key, saved)).toBe(source);
         written++;
       }
     }

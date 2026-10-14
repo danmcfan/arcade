@@ -3,9 +3,42 @@
 // every other byte of the file stays as it was.
 
 import type { Rows } from "./pixel-art.ts";
+import { isRows } from "./pixel.ts";
 
 /** Rows, or a list of frames of rows. */
 export type RowsValue = Rows | readonly Rows[];
+
+/** The art sources, as in the table in docs/agents/pixel-art.md. */
+export const artSources = [
+  "src/ui/glyphs.ts",
+  "src/ui/hubArt.ts",
+  "src/ui/deskArt.ts",
+  "src/ui/employeeArt.ts",
+  "src/ui/playerArt.ts",
+  "src/ui/tickerArt.ts",
+  "src/ui/icons.ts",
+  "src/ui/prizeArt.ts",
+  "src/firefly/art.ts",
+  "src/brass-monkey/art.ts",
+  "src/sweet-sam/art.ts",
+];
+
+/** One export the studio can open: its spec, and whether it is frames and glyph rows. */
+export interface StudioItem {
+  spec: string;
+  frames: boolean;
+  glyph: boolean;
+}
+
+/** True for a list of frames, false for one image. */
+export function isFrames(v: unknown): v is readonly Rows[] {
+  return Array.isArray(v) && v.length > 0 && v.every((f) => isRows(f));
+}
+
+/** `v` as rows or frames, or undefined when it is neither. */
+export function asRowsValue(v: unknown): RowsValue | undefined {
+  return isRows(v) || isFrames(v) ? v : undefined;
+}
 
 const printWidth = 120;
 
@@ -104,10 +137,6 @@ function isRowsLiteral(text: string): boolean {
   return true;
 }
 
-function isFrames(value: RowsValue): value is readonly Rows[] {
-  return value.some((v) => typeof v !== "string");
-}
-
 /** `value` as Prettier prints it, starting at column `column` of a line indented `indent`. */
 function format(value: RowsValue, indent: number, column: number): string {
   const pad = " ".repeat(indent);
@@ -131,6 +160,24 @@ function format(value: RowsValue, indent: number, column: number): string {
  * as rows (a call such as `mirrorX(...)` cannot be saved into).
  */
 export function writeRows(source: string, name: string, key: string | undefined, value: RowsValue): string {
+  const [start, end] = rowsSpan(source, name, key);
+  const lineStart = source.lastIndexOf("\n", start) + 1;
+  const indent = /^ */u.exec(source.slice(lineStart))?.[0].length ?? 0;
+  return source.slice(0, start) + format(value, indent, start - lineStart) + source.slice(end);
+}
+
+/** Whether `writeRows` can save into export `name` (entry `key`): it is written out as rows. */
+export function isSaveable(source: string, name: string, key: string | undefined): boolean {
+  try {
+    rowsSpan(source, name, key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The [start, end) span of export `name`'s (entry `key`'s) rows literal; throws as `writeRows` says. */
+function rowsSpan(source: string, name: string, key: string | undefined): [number, number] {
   const head = new RegExp(`^export const ${name}\\b[^=]*=\\s*`, "mu").exec(source);
   if (!head) throw new Error(`the source has no export "${name}"`);
   let start = head.index + head[0].length;
@@ -146,7 +193,5 @@ export function writeRows(source: string, name: string, key: string | undefined,
   }
   const label = key === undefined ? name : `${name}.${key}`;
   if (!isRowsLiteral(source.slice(start, end))) throw new Error(`${label} is not a literal of rows`);
-  const lineStart = source.lastIndexOf("\n", start) + 1;
-  const indent = /^ */u.exec(source.slice(lineStart))?.[0].length ?? 0;
-  return source.slice(0, start) + format(value, indent, start - lineStart) + source.slice(end);
+  return [start, end];
 }

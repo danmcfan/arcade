@@ -56,19 +56,25 @@ async function waitUp(url: string, proc: { exitCode: number | null }, tries: num
   return waitUp(url, proc, tries - 1);
 }
 
+/** The command that serves a page on `port`. */
+export type ServerCommand = (port: number) => string[];
+
+/** The game's dev server. */
+const devServer: ServerCommand = (port) => ["bun", `--port=${port}`, "./index.html"];
+
 /**
  * The dev server at ARCADE_PORT if one is already up there, otherwise a new
- * one on a free port that `stop()` (or process exit) kills.
+ * one (or `command`'s server) on a free port that `stop()` (or process exit) kills.
  */
-export async function startServer(): Promise<Server> {
+export async function startServer(command: ServerCommand = devServer): Promise<Server> {
   const envPort = process.env["ARCADE_PORT"];
-  if (envPort !== undefined && envPort !== "") {
+  if (command === devServer && envPort !== undefined && envPort !== "") {
     const url = `http://localhost:${envPort}`;
     if (await reachable(url)) return { url, stop() {} };
   }
   const port = freePort();
   const url = `http://localhost:${port}`;
-  const proc = Bun.spawn(["bun", `--port=${port}`, "./index.html"], {
+  const proc = Bun.spawn(command(port), {
     cwd: repoRoot,
     stdout: "ignore",
     stderr: "pipe",
@@ -92,6 +98,8 @@ export interface RecordOptions {
 export interface Verify {
   /** Where this run writes its files: out/verify/<name>/. */
   dir: string;
+  /** The server's root URL, e.g. http://localhost:4123. */
+  url: string;
   page: Browser;
   /** Open the game (query like "?scene=game") and wait for the canvas. */
   open(query?: string): void;
@@ -337,6 +345,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
 
   const v: Verify = {
     dir,
+    url,
     page,
     open(query = "") {
       page.run("open", `${url}/${query}`);
@@ -427,11 +436,15 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
 }
 
 /**
- * Run `body` against a fresh browser session and dev server, then clean both
- * up. Exits non-zero (and prints the error) if `body` throws.
+ * Run `body` against a fresh browser session and dev server (or
+ * `opts.server`'s, e.g. the art studio), then clean both up. Exits non-zero (and prints the error) if `body` throws.
  */
-export async function verify(name: string, body: (v: Verify) => void | Promise<void>): Promise<void> {
-  const server = await startServer();
+export async function verify(
+  name: string,
+  body: (v: Verify) => void | Promise<void>,
+  opts: { server?: ServerCommand } = {},
+): Promise<void> {
+  const server = await startServer(opts.server);
   const v = makeVerify(name, server.url);
   try {
     await body(v);

@@ -2,16 +2,10 @@
 // one export's rows with a Sweetie 16 palette, step through its frames, try
 // the agent's variants and save the rows back into the source.
 
-import type { RowsValue } from "./studio-source.ts";
+import type { RowsValue, StudioItem } from "./studio-source.ts";
 
 /** One image: rows of letters, `.` blank, as mutable cells. */
 type Grid = string[][];
-
-interface Item {
-  spec: string;
-  frames: boolean;
-  glyph: boolean;
-}
 
 interface Opened {
   value: RowsValue;
@@ -124,7 +118,7 @@ function colourOf(letter: string): string | undefined {
   return state.palette[letter === "#" ? state.ink : letter];
 }
 
-function snapshot(): Grid[] {
+function cloneFrames(): Grid[] {
   return state.frames.map((g) => g.map((r) => [...r]));
 }
 
@@ -136,7 +130,7 @@ function markDirty(): void {
 
 /** Remember the frames before an edit, for undo. */
 function checkpoint(): void {
-  state.undo.push(snapshot());
+  state.undo.push(cloneFrames());
   state.redo = [];
 }
 
@@ -294,12 +288,17 @@ function toggle(label: string, on: boolean, click: () => void, title = ""): HTML
   return b;
 }
 
+/** Each tool, its button label and its key. */
 const tools: [Tool, string, string][] = [
-  ["pencil", "Pencil", "B"],
-  ["eraser", "Eraser", "E"],
-  ["fill", "Fill", "G"],
-  ["eyedropper", "Pick", "I"],
+  ["pencil", "Pencil", "b"],
+  ["eraser", "Eraser", "e"],
+  ["fill", "Fill", "g"],
+  ["eyedropper", "Pick", "i"],
 ];
+
+function zoom(by: number): void {
+  state.zoom = Math.max(1, Math.min(64, state.zoom * by));
+}
 
 function buildSide(): void {
   ui.tools.replaceChildren(
@@ -310,7 +309,7 @@ function buildSide(): void {
         () => {
           state.tool = tool;
         },
-        `${label} (${key})`,
+        `${label} (${key.toUpperCase()})`,
       ),
     ),
     toggle(
@@ -333,7 +332,7 @@ function buildSide(): void {
       "−",
       false,
       () => {
-        state.zoom = Math.max(1, state.zoom / 2);
+        zoom(1 / 2);
       },
       "Zoom out (-)",
     ),
@@ -341,7 +340,7 @@ function buildSide(): void {
       "+",
       false,
       () => {
-        state.zoom = Math.min(64, state.zoom * 2);
+        zoom(2);
       },
       "Zoom in (+)",
     ),
@@ -407,7 +406,7 @@ function isOpened(v: unknown): v is Opened {
   return typeof v === "object" && v !== null && "value" in v && "glyph" in v && "variants" in v;
 }
 
-function isItems(v: unknown): v is Item[] {
+function isItems(v: unknown): v is StudioItem[] {
   return Array.isArray(v) && v.every((i) => typeof i === "object" && i !== null && "spec" in i);
 }
 
@@ -457,7 +456,7 @@ async function save(): Promise<void> {
 function undoRedo(from: Grid[][], to: Grid[][]): void {
   const prev = from.pop();
   if (prev === undefined) return;
-  to.push(snapshot());
+  to.push(cloneFrames());
   state.frames = prev;
   state.current = Math.min(state.current, prev.length - 1);
   render();
@@ -485,18 +484,18 @@ ui.redo.addEventListener("click", () => {
   undoRedo(state.redo, state.undo);
 });
 
-const keyTools: Record<string, Tool> = { b: "pencil", e: "eraser", g: "fill", i: "eyedropper" };
 window.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLInputElement) return;
   const mod = e.ctrlKey || e.metaKey;
+  const keyed = tools.find(([, , key]) => key === e.key);
   if (mod && e.key.toLowerCase() === "z")
     undoRedo(e.shiftKey ? state.redo : state.undo, e.shiftKey ? state.undo : state.redo);
   else if (mod && e.key === "s") report(save());
   else if (mod) return;
-  else if (keyTools[e.key] !== undefined) state.tool = keyTools[e.key] ?? "pencil";
+  else if (keyed !== undefined) state.tool = keyed[0];
   else if (e.key === "m") state.mirror = !state.mirror;
-  else if (e.key === "+" || e.key === "=") state.zoom = Math.min(64, state.zoom * 2);
-  else if (e.key === "-") state.zoom = Math.max(1, state.zoom / 2);
+  else if (e.key === "+" || e.key === "=") zoom(2);
+  else if (e.key === "-") zoom(1 / 2);
   else if (e.key === "ArrowRight") state.current = (state.current + 1) % state.frames.length;
   else if (e.key === "ArrowLeft") state.current = (state.current - 1 + state.frames.length) % state.frames.length;
   else return;
@@ -505,7 +504,7 @@ window.addEventListener("keydown", (e) => {
   render();
 });
 
-function buildItems(items: Item[]): void {
+function buildItems(items: StudioItem[]): void {
   const shown = items.filter((i) => i.spec.toLowerCase().includes(ui.filter.value.toLowerCase()));
   ui.items.replaceChildren(
     ...shown.map((item) => {
