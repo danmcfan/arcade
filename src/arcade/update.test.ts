@@ -3,7 +3,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
-import { counterRects, deskParts } from "./desk.ts";
+import { counterRects, deskRect } from "./desk.ts";
 import { formatFloat0, newState, startingTokens, type State } from "./state.ts";
 import { startRun, update } from "./update.ts";
 
@@ -140,7 +140,7 @@ describe("walking", () => {
     run(s, 100, { right: true });
     expect(s.player.x).toBe(128);
     run(s, 100, { down: true }); // x 128: the prize desk spans the floor, so it stops the player too
-    expect(s.player.y).toBe(94);
+    expect(s.player.y).toBe(95);
     run(s, 100, { up: true });
     expect(s.player.y).toBe(60);
   });
@@ -247,36 +247,26 @@ describe("entering a machine", () => {
 });
 
 describe("prize desk", () => {
-  const deskTop = Math.min(...deskParts.map((p) => p.y));
+  const deskTop = deskRect.y;
 
   test("is solid: walking down from the start stops at its top edge", () => {
     const s = newState(null, fakeFactory);
     run(s, 100, { down: true });
     expect(s.player.y).toBe(deskTop - s.player.height / 2);
-    expect(s.player.y).toBe(94);
+    expect(s.player.y).toBe(95);
   });
 
-  test("spans the floor: down stops at it from the left wall to the right wall, the flap included", () => {
+  test("spans the floor: down stops at it from the left wall to the right wall", () => {
     for (const x of [32, 48, 107, 128]) {
       const at = newState(null, fakeFactory);
       at.player.x = x;
       run(at, 100, { down: true });
-      expect({ x, y: at.player.y }).toEqual({ x, y: 94 });
+      expect({ x, y: at.player.y }).toEqual({ x, y: 95 });
     }
   });
 
-  test("its rects run from its top to the bottom wall, and the flap's gap is narrower than the player", () => {
-    for (const r of counterRects) expect(r.y + r.h).toBe(120);
-    const s = newState(null, fakeFactory);
-    const gaps = counterRects
-      .filter((r) => r.y === deskTop)
-      .toSorted((a, b) => a.x - b.x)
-      .flatMap((r, i, rs) => {
-        const next = rs[i + 1];
-        return next === undefined ? [] : [next.x - (r.x + r.w)];
-      })
-      .filter((g) => g > 0);
-    expect(gaps.every((g) => g < s.player.width)).toBe(true);
+  test("is one rect from its top to the bottom wall, as wide as the desk: no way into the U", () => {
+    expect(counterRects).toEqual([{ x: deskRect.x, y: deskTop, w: deskRect.w, h: 120 - deskTop }]);
   });
 
   test("Space facing it from above opens it, anywhere along it, and starts no minigame", () => {

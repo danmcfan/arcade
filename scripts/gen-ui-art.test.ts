@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
 import { employeeFrames, employeeHeight, employeeSheetRows, employeeWidth, half } from "../src/ui/employeeArt.ts";
-import { caseRows } from "../src/ui/deskArt.ts";
+import { deskRows } from "../src/ui/deskArt.ts";
+import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
 import {
@@ -97,8 +98,7 @@ describe("UI art source", () => {
     expect([roomWidth, roomHeight]).toEqual([images.arcade.width, images.arcade.height]);
     checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
     checkRows("carpet tile", carpetTile, { w: 16, h: 16 });
-    // The glass case's contents, tiled along it inside its 1 px outline.
-    checkRows("desk case", caseRows, { w: 34, h: 5 });
+    checkRows("desk", deskRows, { w: deskRect.w, h: deskRect.h });
     // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
     checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
   });

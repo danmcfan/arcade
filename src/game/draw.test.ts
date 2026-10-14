@@ -230,8 +230,8 @@ describe("hub draw", () => {
     game.draw(surface);
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
-      // Idle frame 0 at employeeSpot (72, 108) + the buffer.
-      ["draw", "employee", 0, 0, 16, 24, 88, 124],
+      // Idle frame 0 at employeeSpot (72, 116) + the buffer.
+      ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
@@ -270,7 +270,7 @@ describe("hub draw", () => {
     const r = prizeRects;
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
-      ["draw", "employee", 0, 0, 16, 24, 88, 124],
+      ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // The jar left of the picture, the shoes right of it, the picture above the cabinet; + the buffer.
       ["draw", "prizes", r.honeyJar.x, 0, 8, 9, 79, 45],
       ["draw", "prizes", r.runningShoes.x, 0, 9, 6, 105, 47],
@@ -385,11 +385,8 @@ describe("hub draw", () => {
       ["strokeRect", 48, 56, 15, 15, yellow],
       ["strokeRect", 88, 56, 15, 15, yellow],
       ["strokeRect", 128, 56, 15, 15, yellow],
-      // The prize desk: its long top either side of the flap, then its two arms.
-      ["strokeRect", 48, 122, 71, 13, yellow],
-      ["strokeRect", 126, 122, 17, 13, yellow],
-      ["strokeRect", 48, 124, 9, 11, yellow],
-      ["strokeRect", 134, 124, 9, 11, yellow],
+      // The prize desk: the whole U, from its top down to the bottom wall.
+      ["strokeRect", 52, 123, 87, 12, yellow],
       ["fillPremul", 192, 0, 120, 176, { r: 20, g: 20, b: 20, a: 200 }],
     ]);
     expect(printed).toEqual([["Player: (80,92)", 200, 8]]);
@@ -643,7 +640,7 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
     restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
   });
   games.push(g);
-  for (let t = 0; t < 2; t++) g.step(input({ down: true }));
+  for (let t = 0; t < 3; t++) g.step(input({ down: true }));
   g.step(input({ space: true }));
   g.step(input());
   return g;

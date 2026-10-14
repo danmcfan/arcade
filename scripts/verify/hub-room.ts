@@ -85,18 +85,18 @@ function room(v: Verify): void {
   check(total > 0 && lit === 0, "nothing is drawn in the 16 px margin round the 160x144 frame", { lit, total });
 
   v.step(30, { down: true });
-  check(game(v).arcade.player.y === 94, "walking down stops at the desk: it is solid", game(v).arcade.player);
+  check(game(v).arcade.player.y === 95, "walking down stops at the desk: it is solid", game(v).arcade.player);
   v.step(60, { left: true });
   v.step(10, { down: true });
   check(
-    game(v).arcade.player.x === 32 && game(v).arcade.player.y === 94,
+    game(v).arcade.player.x === 32 && game(v).arcade.player.y === 95,
     "the desk runs to the left wall: no way round it",
     game(v).arcade.player,
   );
   v.step(100, { right: true });
   v.step(10, { down: true });
   check(
-    game(v).arcade.player.x === 128 && game(v).arcade.player.y === 94,
+    game(v).arcade.player.x === 128 && game(v).arcade.player.y === 95,
     "and to the right wall",
     game(v).arcade.player,
   );

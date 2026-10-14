@@ -242,7 +242,7 @@ describe("the hub song", () => {
     game.step(input());
     expect(
       soundsDuring(() => {
-        run(game, 3, { down: true, space: true });
+        run(game, 4, { down: true, space: true });
       }).filter((e) => e.endsWith(":hub")),
     ).toEqual([]);
     expect(snap(game).menu).toBe("prizeCounter");
@@ -627,7 +627,7 @@ describe("payout", () => {
 /** A hub with these counts; the player walks down to the counter and presses Space. */
 function atCounter(tokens: number, tickets: number): Harness {
   const g = newGame(null, { highScore: 0, tokens, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
-  run(g.game, 2, { down: true });
+  run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
   return g;
@@ -641,7 +641,7 @@ function wallet(game: Game): { tokens: number; tickets: number } {
 /** The prize counter menu with the cursor on prize `n` (0 = honey jar). */
 function atPrize(tickets: number, n: number, prizes: PrizeId[] = []): Harness {
   const g = newGame(null, { highScore: 0, tokens: 5, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
-  run(g.game, 2, { down: true });
+  run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
   for (let i = 0; i <= n; i++) tap(g.game, "down");
@@ -651,7 +651,7 @@ function atPrize(tickets: number, n: number, prizes: PrizeId[] = []): Harness {
 describe("prize counter", () => {
   test("Space facing the counter opens its menu over the hub", () => {
     const { game, built } = newGame();
-    run(game, 2, { down: true });
+    run(game, 3, { down: true });
     const sounds = heard(game, () => {
       game.step(input({ space: true }));
     });
