@@ -374,7 +374,7 @@ function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: Sa
   store.save({ v: 3, highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
   const t = new Title({ store });
   tap(t, "space"); // Continue
-  hold(t, { down: true }, 2);
+  hold(t, { down: true }, 3);
   tap(t, "space");
   expect(game(t).menu).toBe("prizeCounter");
   return t;
@@ -418,7 +418,7 @@ describe("prize counter inside the title scene", () => {
       tokens: 3,
       tickets: 15,
       prizes: ["honeyJar"],
-      player: { x: 80, y: 94, dir: "DOWN" },
+      player: { x: 80, y: 95, dir: "DOWN" },
     });
     t.dispose();
 

@@ -73,18 +73,18 @@ function normalPrice(v: Verify): void {
   check(game(v).menu === null, "Space at the start position (not at the counter) opens nothing", game(v).menu);
 
   v.step(30, { down: true });
-  check(game(v).arcade.player.y === 94, "walking down stops at the prize desk: it is solid", game(v).arcade.player);
+  check(game(v).arcade.player.y === 95, "walking down stops at the prize desk: it is solid", game(v).arcade.player);
   v.step(60, { left: true });
   v.step(20, { down: true });
   check(
-    game(v).arcade.player.x === 32 && game(v).arcade.player.y === 94,
+    game(v).arcade.player.x === 32 && game(v).arcade.player.y === 95,
     "the desk spans the floor to the left wall: there is no way round it",
     game(v).arcade.player,
   );
   v.step(48, { right: true }); // x 80
-  v.step(10, { down: true }); // y 94
+  v.step(10, { down: true }); // y 95
   check(
-    game(v).arcade.player.x === 80 && game(v).arcade.player.y === 94,
+    game(v).arcade.player.x === 80 && game(v).arcade.player.y === 95,
     "back above the middle of the desk, facing it",
     game(v).arcade.player,
   );
