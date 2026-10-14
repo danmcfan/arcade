@@ -4,12 +4,11 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 ## Steer it first
 
-Every art change, new or redrawn, starts with a **playground**: a local HTML page that draws the candidate art with a toggle for each choice. The owner steers the art direction there; the PR comes after.
+Every art change, new or redrawn, starts with a **playground** the owner steers; the PR comes after. Keep it cheap: the owner judges the look, so you write data, not a viewer.
 
-1. **Build it**: `scripts/prototype-<slug>.ts` inlines the rows (the current source, any imported originals, the new options) into `scripts/prototype-<slug>/viewer.html` and writes `out/prototype-<slug>/index.html`. The script sits at the top of `scripts/` so knip counts it as an entry. Open the page and publish it as an artifact so the owner can reach it anywhere. `prototype/46-sweet-sam-art` is a worked example.
-2. **One knob per decision**: a colour, a shape, a look, whether a piece exists at all. Tag each option with where it came from (original, current, new) and give presets for the art as it is and as proposed. Show the sprites animated in a small scene and as sheets at 4×, and a **Copy my picks** button that copies the knob values as one line.
-3. **Scope the knobs to the issue.** Anything beyond what the issue asks becomes an option, so the owner opts into it; the presets default to the issue's scope.
-4. **Iterate** on the owner's feedback until they paste back their picks. That paste is the brief: commit the playground to a `prototype/<issue>-<slug>` branch, draw the picks into the real source, and name the picks in the PR.
+1. **Copy, don't write, the viewer.** Start from the newest `prototype/<issue>-<slug>` branch (`git show origin/prototype/46-sweet-sam-art:scripts/prototype-sweet-sam-art/viewer.html`) and change only its data: a `scripts/prototype-<slug>.ts` inlines the rows into `viewer.html` and writes `out/prototype-<slug>/index.html`. Publish it as an artifact.
+2. **One knob per decision the issue asks for**, each option a set of rows tagged original, current or new, with a **Copy my picks** button. Anything beyond the issue is an opt-in option.
+3. **Wait for the picks.** The owner's pasted picks are the brief: commit the playground to `prototype/<issue>-<slug>`, draw the picks into the real source, and name them in the PR.
 
 ## Source
 
@@ -50,14 +49,14 @@ Give each sprite its own export, so a change is an `Edit` of a short block of ro
 
 ## Look at it
 
-`bun run pixel` writes a labelled sheet to `out/pixel/` and prints its path. Read that PNG.
+Check art as text first: `bun run pixel rows` and `checkRows` catch size, letters and stray colours without an image. Read a PNG only to judge the look, once per change; every image you read is paid for again on each later call. `bun run pixel` writes a small labelled sheet to `out/pixel/` and prints its path; pass `--scale` only when you need it bigger.
 
-| Command                                           | When                                                                                                        |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `pixel show <image>...`                           | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`.            |
-| `pixel place <base> <image>@x,y...`               | To judge a sprite where it stands, e.g. the player in the hub                                               |
-| `pixel before <image>...`                         | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources |
-| `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour                                                                    |
+| Command                                           | When                                                                                                                  |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pixel show <image>...`                           | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`.                      |
+| `pixel place <base> <image>@x,y...`               | To judge a sprite where it stands, e.g. the player in the hub                                                         |
+| `pixel before <image>...`                         | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources           |
+| `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour; `rows --nearest` imports art in another palette (the Go game's PICO-8 PNGs) |
 
 An `<image>` is `path.png`, `path.png#x,y,w,h`, `path.ts:name` or `path.ts:name.key`. Run `bun run pixel` alone for the full usage.
 

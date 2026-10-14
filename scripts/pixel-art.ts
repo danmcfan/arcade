@@ -3,7 +3,7 @@
 // Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts), `.` blank.
 //
 // - PNGs: blank, plot, paint rows into a PNG, toPng, toRows (a PNG back to
-//   rows), scale, colours.
+//   rows), snap (to the nearest palette colour), scale, colours.
 // - Rows: checkRows (size and letters, naming the bad row and column), and
 //   the derivations that save drawing pixels by hand: outline, mirrorX/Y,
 //   flipX/Y, recolour, overlay, glint.
@@ -122,6 +122,28 @@ export function toRows(
     rows.push(row);
   }
   return rows;
+}
+
+/**
+ * A copy of `png` with each opaque colour moved to the nearest `palette`
+ * colour, so `toRows` can import art drawn in another palette (the Go game's
+ * PICO-8 PNGs).
+ */
+export function snap(png: PNG, palette: Palette = sweetie): PNG {
+  const choices = Object.values(palette).map((c) => hex(c));
+  const out = blank(png.width, png.height);
+  for (let i = 0; i < png.data.length; i += 4) {
+    if (byteAt(png, i + 3) === 0) continue;
+    const [r, g, b] = [byteAt(png, i), byteAt(png, i + 1), byteAt(png, i + 2)];
+    let best: [number, number, number] = [r, g, b];
+    let bestD = Infinity;
+    for (const c of choices) {
+      const d = (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2;
+      if (d < bestD) [best, bestD] = [c, d];
+    }
+    out.data.set([...best, byteAt(png, i + 3)], i);
+  }
+  return out;
 }
 
 /** `png` scaled up `k` times, nearest neighbour. */

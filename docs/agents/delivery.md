@@ -21,8 +21,9 @@ Every change ships as a pull request that the repo owner reviews and merges on G
    - Include `Closes #<n>` for each issue it finishes.
    - Reference an attachment inline with `![alt](./out/verify/<name>/<shot>.png)` and `gh` rewrites the link to the uploaded file. Videos render as a player.
 
-6. **Watch CI**: `gh pr checks --watch`. Fix any red check on the same branch.
-7. **Follow-ups** (review comments, more changes): commit to the same branch and push. To replace the evidence, use `gh pr edit <n> --attach ...` or `gh pr comment <n> --attach ...`.
+6. **Review in a fresh session.** `/code-review` and its fixes run in a new session, not the one that built the change: a long build context makes every review call cost more.
+7. **Watch CI**: `gh pr checks --watch`. Fix any red check on the same branch.
+8. **Follow-ups** (review comments, more changes): commit to the same branch and push. To replace the evidence, use `gh pr edit <n> --attach ...` or `gh pr comment <n> --attach ...`.
 
 ## Boundaries
 
