@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { tickerBulbs, tickerFace, tickerGlyphs, tickerRect, tickerRight, tickerTextY } from "../ui/tickerArt.ts";
+import {
+  type Bulb,
+  tickerBulbs,
+  tickerFace,
+  tickerGlyphs,
+  tickerRect,
+  tickerRight,
+  tickerTextY,
+} from "../ui/tickerArt.ts";
 import { litBulbs, maxShown, tickerLetters, tickerTextWidth, tickerTitles, type TickerView } from "./ticker.ts";
 
 const text = (v: TickerView, ink?: string): string =>
@@ -79,14 +87,14 @@ describe("LED scoreboard", () => {
   });
 });
 
-const key = (b: { x: number; y: number }): string => `${b.x},${b.y}`;
+const key = (b: Bulb): string => `${b.x},${b.y}`;
 /** The lit bulbs on `tick`, as "x,y". */
 const litOn = (tick: number): string[] => litBulbs(tick).map((b) => key(b));
 
 describe("marquee bulbs", () => {
   const r = tickerRect;
 
-  test("ring the board 1 px in from its edge, 3 px apart all the way round", () => {
+  test("ring the board 1 px in from its edge, 3 px apart all the way round, the last to the first too", () => {
     expect(tickerBulbs.length).toBeGreaterThan(90);
     for (const b of tickerBulbs) {
       const onRing =
@@ -96,7 +104,7 @@ describe("marquee bulbs", () => {
     }
     tickerBulbs.forEach((b, i) => {
       const next = tickerBulbs[(i + 1) % tickerBulbs.length];
-      if (next === undefined || i === tickerBulbs.length - 1) return;
+      if (next === undefined) throw new Error(`no bulb after ${i}`);
       expect(Math.abs(next.x - b.x) + Math.abs(next.y - b.y)).toBe(3);
     });
     expect(new Set(tickerBulbs.map((b) => key(b))).size).toBe(tickerBulbs.length);

@@ -8,11 +8,12 @@
 // with the LED scoreboard in its marquee of bulbs (src/ui/tickerArt.ts) under
 // the tube, and a navy arcade carpet with a sparse confetti print out to the
 // frame's edges. The cabinets are classic uprights in their minigames'
-// colours, their screens dark glass until the player walks up. Then the screen warms up like a CRT
-// and shows a glimpse of its game, and its light pools on the carpet:
-// `powerSheetRows()`, written to src/assets/images/screens.png. The wall
-// around each cabinet stays empty for prizes (#22). The prize desk
-// (src/ui/deskArt.ts) stands across the bottom of the floor.
+// colours, their screens dark glass until the player walks up. Then the
+// screen warms up like a CRT and shows a glimpse of its game, and its light
+// pools on the carpet: `powerSheetRows()`, written to
+// src/assets/images/screens.png. The wall around each cabinet stays empty for
+// prizes (#22). The prize desk (src/ui/deskArt.ts) stands across the bottom
+// of the floor.
 
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { deskPixel } from "./deskArt.ts";

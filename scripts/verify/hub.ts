@@ -12,6 +12,7 @@ import { PNG } from "pngjs";
 import { decodeDataUrl } from "../browser.ts";
 import type { GameSnapshot } from "../../src/game/snapshot.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { sweetie } from "../../src/ui/sweetie16.ts";
 import { tickerBulbs, tickerRect } from "../../src/ui/tickerArt.ts";
 import { deskRect } from "../../src/arcade/desk.ts";
 
@@ -96,29 +97,27 @@ function floorAndPlayer(v: Verify): void {
   v.step(32, { right: true });
 }
 
-/** Which of the marquee's bulbs are lit (yellow) on the canvas, as a string of 1s and 0s round the ring. */
+/** Each of the marquee's bulbs round the ring on the canvas: 1 lit, 0 unlit, ? neither. */
 function bulbs(v: Verify): string {
   const png = canvas(v);
-  return tickerBulbs.map((b) => (pixel(png, margin + b.x, margin + b.y) === "#ffcd75" ? "1" : "0")).join("");
+  const state: Readonly<Record<string, string>> = { [sweetie.y]: "1", [sweetie.o]: "0" };
+  return tickerBulbs.map((b) => state[pixel(png, margin + b.x, margin + b.y)] ?? "?").join("");
 }
 
 function marquee(v: Verify): void {
   console.log("the scoreboard's marquee:");
   v.openHook("scene=game");
   const r = tickerRect;
-  check(
-    pixel(canvas(v), margin + r.x + 2, margin + r.y + 2) === "#b13e53",
-    "the board sits in a red marquee frame",
-    pixel(canvas(v), margin + r.x + 2, margin + r.y + 2),
-  );
+  const frame = pixel(canvas(v), margin + r.x + 2, margin + r.y + 2);
+  check(frame === sweetie.r, "the board sits in a red marquee frame", frame);
   const first = bulbs(v);
-  const unlit = tickerBulbs.filter((b) => pixel(canvas(v), margin + b.x, margin + b.y) === "#ef7d57").length;
   const lit = first.split("").filter((c) => c === "1").length;
   check(
-    lit + unlit === tickerBulbs.length && Math.abs(lit - (tickerBulbs.length * 2) / 3) < 1,
+    !first.includes("?") && Math.abs(lit - (tickerBulbs.length * 2) / 3) < 1,
     "two of every three bulbs are lit yellow, the rest dark orange",
-    { lit, unlit },
+    first,
   );
+  v.frame("0-marquee");
   v.step(8);
   check(bulbs(v) !== first, "8 ticks later the dark bulbs have stepped along", bulbs(v));
   v.step(16);

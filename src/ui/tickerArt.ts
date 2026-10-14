@@ -97,17 +97,23 @@ export function tickerSheetRows(): string[] {
 }
 
 /** The bulbs' colours: unlit in the room image, lit by the scoreboard. */
-export const bulbUnlit = "o";
+const bulbUnlit = "o";
 export const bulbLit = "y";
+
+/** One of the marquee's bulbs, in hub-image coordinates. */
+export interface Bulb {
+  x: number;
+  y: number;
+}
 
 /**
  * The marquee's bulbs, one every 3 px round the ring 1 px inside the frame's
  * edge, clockwise from the top-left corner.
  */
-export const tickerBulbs: readonly { x: number; y: number }[] = (() => {
+export const tickerBulbs: readonly Bulb[] = (() => {
   const r = tickerRect;
   const [x0, y0, x1, y1] = [r.x + 1, r.y + 1, r.x + r.w - 2, r.y + r.h - 2];
-  const ring: { x: number; y: number }[] = [];
+  const ring: Bulb[] = [];
   for (let x = x0; x <= x1; x++) ring.push({ x, y: y0 });
   for (let y = y0 + 1; y <= y1; y++) ring.push({ x: x1, y });
   for (let x = x1 - 1; x >= x0; x--) ring.push({ x, y: y1 });

@@ -12,6 +12,7 @@ import type { ArcadeTitle } from "../game/snapshot.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import {
   bulbLit,
+  tickerBulbs,
   tickerGap,
   tickerGlyphHeight,
   tickerGlyphs,
@@ -20,8 +21,8 @@ import {
   tickerLeft,
   tickerRight,
   tickerSpace,
-  tickerBulbs,
   tickerTextY,
+  type Bulb,
   type TickerInk,
 } from "../ui/tickerArt.ts";
 
@@ -106,7 +107,7 @@ export function tickerLetters(v: TickerView): TickerGlyph[] {
 const chaseStep = 8;
 
 /** The marquee's lit bulbs on `tick`: two of every three, the dark one stepping along the ring. */
-export function litBulbs(tick: number): { x: number; y: number }[] {
+export function litBulbs(tick: number): Bulb[] {
   const phase = Math.trunc(tick / chaseStep) % 3;
   return tickerBulbs.filter((_, i) => (i + phase) % 3 !== 0);
 }
