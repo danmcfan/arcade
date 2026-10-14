@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
-import { employee, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
+import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
@@ -35,6 +35,7 @@ import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import {
   employeePath,
+  employeeRows,
   fontPath,
   hubPowerRows,
   hubRoomRows,
@@ -87,7 +88,8 @@ describe("UI art source", () => {
   });
 
   test("the employee is one frame in the player's 16x24 box, in Sweetie 16 letters and .", () => {
-    checkRows("employee", employee, { w: employeeWidth, h: employeeHeight });
+    checkRows("employee half", employeeHalf, { w: employeeWidth / 2, h: employeeHeight });
+    checkRows("employee", employeeRows(), { w: employeeWidth, h: employeeHeight });
     expect([employeeWidth, employeeHeight]).toEqual([images.employee.width, images.employee.height]);
   });
 

@@ -57,7 +57,7 @@ describe("writeRows", () => {
 });
 
 describe("writeRows on the real art sources", () => {
-  // Computed exports (`Object.keys(...)`, `mirrorX(...)`, frames built from drawn rows) are refused, not art to save into.
+  // Computed exports (`Object.keys(...)`, `mirrorX(...)`) are refused, not art to save into.
   const computed = new Set(["charset", "inkOrder"]);
   test.each(artSources)("writing back %s's own rows changes nothing", async (file) => {
     const path = join(repoRoot, file);
