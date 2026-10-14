@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
-import { employeeFrames, employeeHeight, employeeSheetRows, employeeWidth, half } from "../src/ui/employeeArt.ts";
+import { employee, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
@@ -86,12 +86,9 @@ describe("UI art source", () => {
     expect([sheet[0]?.length, sheet.length]).toEqual([images.ticker.width, images.ticker.height]);
   });
 
-  test("every employee frame is the player's 16x24 box, in Sweetie 16 letters and .", () => {
-    checkRows("employee half", half, { w: employeeWidth / 2, h: employeeHeight });
-    for (const [i, frame] of employeeFrames.entries())
-      checkRows(`employee ${i}`, frame, { w: employeeWidth, h: employeeHeight });
-    const sheet = employeeSheetRows();
-    expect([sheet[0]?.length, sheet.length]).toEqual([images.employee.width, images.employee.height]);
+  test("the employee is one frame in the player's 16x24 box, in Sweetie 16 letters and .", () => {
+    checkRows("employee", employee, { w: employeeWidth, h: employeeHeight });
+    expect([employeeWidth, employeeHeight]).toEqual([images.employee.width, images.employee.height]);
   });
 
   test("the hub room is the hub image's size, in Sweetie 16 letters", () => {

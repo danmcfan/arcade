@@ -41,7 +41,7 @@ import {
   titleRows,
 } from "../src/ui/glyphs.ts";
 import { newMachines } from "../src/arcade/machine.ts";
-import { employeeSheetRows } from "../src/ui/employeeArt.ts";
+import { employee } from "../src/ui/employeeArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
 import { mirroredPrizes, prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
@@ -124,7 +124,7 @@ export function renderTicker(): PNG {
 }
 
 export function renderEmployee(): PNG {
-  return toPng(employeeSheetRows());
+  return toPng(employee);
 }
 
 /** Where the hub's machines stand, in their order. */

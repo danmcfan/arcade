@@ -230,37 +230,21 @@ describe("hub draw", () => {
     game.draw(surface);
     expect(calls).toEqual([
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
-      // Idle frame 0 at employeeSpot (72, 116) + the buffer.
+      // At employeeSpot (72, 116) + the buffer.
       ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
   });
 
-  test("the employee idles: stand, breathe, stand, then a wave", () => {
+  test("the employee stands still: the one frame on every tick", () => {
     const game = newGame();
-    const frames: number[] = [];
-    for (let t = 0; t < 222; t++) {
+    for (let t = 0; t < 240; t++) {
       const { calls, surface } = recordingSurface();
       game.draw(surface);
-      const e = defined(calls.find((c) => c[1] === "employee"));
-      frames.push(e[2] / 16);
+      expect(calls.find((c) => c[1] === "employee")).toEqual(["draw", "employee", 0, 0, 16, 24, 88, 132]);
       game.step(input());
     }
-    const runs = frames.reduce<[number, number][]>((out, f) => {
-      const last = out.at(-1);
-      if (last?.[0] === f) last[1]++;
-      else out.push([f, 1]);
-      return out;
-    }, []);
-    expect(runs).toEqual([
-      [0, 84],
-      [1, 30],
-      [0, 54],
-      [2, 18],
-      [0, 18],
-      [2, 18],
-    ]);
   });
 
   test("Sweet Sam's prizes hang on the wall round its cabinet (art x 72..87, y 40..63), under the player", () => {

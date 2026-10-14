@@ -174,7 +174,7 @@ function video(v: Verify): void {
       }
       v.wait(800);
       v.key("Escape");
-      v.wait(1500); // the employee idles
+      v.wait(1500); // the employee stands still
     },
     { storage: { [saveKey]: save(3, 1250, allPrizes) } },
   );

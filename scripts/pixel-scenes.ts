@@ -7,10 +7,12 @@
 
 import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
+import { employeeSpot } from "../src/arcade/desk.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
 import { paint, toPng } from "./pixel-art.ts";
+import { employee } from "../src/ui/employeeArt.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 
@@ -40,8 +42,8 @@ function withPlayer(room: PNG, tick: number): PNG {
 const hubLoop = { off: 40, on: 80, after: 40 } as const;
 
 /**
- * The hub room, the player walking in place in front of the middle cabinet
- * through each facing as its screen
+ * The hub room with the employee behind the desk, the player walking in
+ * place in front of the middle cabinet through each facing as its screen
  * switches on and off on the game's own timing (src/arcade/screen.ts), drawn
  * from screens.png's frames (`powerSheetRows`).
  */
@@ -57,6 +59,7 @@ function hubFrames(): PNG[] {
   for (let tick = 0; tick < hubLoop.off + hubLoop.on + hubLoop.after; tick++) {
     updateScreen(screen, tick >= hubLoop.off && tick < hubLoop.off + hubLoop.on);
     const png = toPng(room);
+    paint(png, employee, sweetie, employeeSpot.x, employeeSpot.y);
     const column = screenFrame(screen);
     if (column !== null) {
       const cell = sheet
@@ -72,7 +75,13 @@ function hubFrames(): PNG[] {
 export const scenes: readonly Scene[] = [
   {
     name: "hub",
-    sources: ["src/ui/hubArt.ts", "src/ui/deskArt.ts", "src/ui/tickerArt.ts", "src/ui/playerArt.ts"],
+    sources: [
+      "src/ui/hubArt.ts",
+      "src/ui/deskArt.ts",
+      "src/ui/tickerArt.ts",
+      "src/ui/employeeArt.ts",
+      "src/ui/playerArt.ts",
+    ],
     render: hubFrames,
   },
 ];
