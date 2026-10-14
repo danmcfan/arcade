@@ -18,24 +18,24 @@ test("the registry builds the hub Game: 192x176, starts in the hub", () => {
   }
 });
 
-test('createScene("game", { software: "sweetSam" }): START sounds land in tick 1; 336x428 fixed viewport', () => {
+test('createScene("game", { software: "sweetSam" }): START sounds land in tick 1; 240x304 fixed viewport', () => {
   const scene = createScene("game", { software: "sweetSam" });
   try {
     scene.step({ ...NO_INPUT });
     const s = gameSnapshot(scene.snapshot());
     expect(s.sounds).toEqual(["rewind:sweetStart", "play:sweetStart"]);
     expect(s.software).toBe("sweetSam");
-    expect(scene.layout()).toEqual([336, 428]);
+    expect(scene.layout()).toEqual([240, 304]);
     scene.step({ ...NO_INPUT, shiftP: true });
-    expect(scene.layout()).toEqual([456, 428]);
+    expect(scene.layout()).toEqual([360, 304]);
   } finally {
     scene.dispose?.();
   }
 });
 
 const real: ["brassMonkey" | "firefly", [number, number]][] = [
-  ["brassMonkey", [336, 428]], // its cabinet (#15)
-  ["firefly", [336, 428]], // its cabinet (#15)
+  ["brassMonkey", [240, 304]], // its cabinet outline (#113)
+  ["firefly", [240, 304]], // its cabinet outline (#113)
 ];
 for (const [name, size] of real) {
   test(`createScene("game", { software: "${name}" }): hub tick 1, then the real ${name} runs`, () => {

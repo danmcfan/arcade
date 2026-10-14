@@ -11,7 +11,7 @@ import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { FireflySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
-import { cabinetHeight, cabinetJoystickFrame, cabinetWidth } from "../ui/cabinet.ts";
+import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { drawFirefly } from "./draw.ts";
@@ -135,9 +135,6 @@ export class FireflySoftware implements FixedViewport {
     this.lives = advantages.lives;
   }
 
-  /** The bezel's joystick frame for the last input (no gameplay effect). */
-  cabinetJoystickFrame = 0;
-
   stage = 1;
   stageTick = 0;
   lives: number;
@@ -154,7 +151,6 @@ export class FireflySoftware implements FixedViewport {
   ticks = 0;
 
   update(i: Input): void {
-    this.cabinetJoystickFrame = cabinetJoystickFrame(i);
     if (this.over) return;
 
     if (this.stageTick === 0) play(soundStage);
@@ -436,7 +432,6 @@ export class FireflySoftware implements FixedViewport {
       shots: this.shots.map((s) => ({ x: s.x, y: s.y, dx: s.dx, dy: s.dy })),
       diveTimer: this.diveTimer,
       sway: this.sway(),
-      joystick: this.cabinetJoystickFrame,
     };
   }
 }

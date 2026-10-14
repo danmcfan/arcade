@@ -118,6 +118,21 @@ const trace = run(8, 6000);
 /** Snapshot keys added after the Go capture (#47: levels, the bonus flower, the death animation). */
 const keysSinceGo = ["level", "levelBannerTicks", "mazeFlash", "flower", "flowerPopup", "deathFrame"] as const;
 
+/** Go snapshot keys dropped since (#113: the cabinet outline has no joystick). */
+const keysDroppedSinceGo = ["joystick"] as const;
+
+/** A Go reference snapshot without the keys dropped since. */
+function withoutDropped(want: object): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...want };
+  const sw: unknown = out["sw"];
+  if (typeof sw === "object" && sw !== null) {
+    const kept: Record<string, unknown> = { ...sw };
+    for (const k of keysDroppedSinceGo) delete kept[k];
+    out["sw"] = kept;
+  }
+  return out;
+}
+
 /** Sounds by their Go names; the ones Go never had (#47) are dropped. */
 const goSoundNames: Partial<Record<string, string>> = { sweetStart: "start", sweetBee: "power", sweetDeath: "death" };
 
@@ -151,7 +166,7 @@ describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", (
     for (const [tick, want] of Object.entries(reference.snaps)) {
       expect(goView(trace[Number(tick) - 1])).toEqual<unknown>({
         tick: Number(tick),
-        ...want,
+        ...withoutDropped(want),
       });
     }
   });
@@ -188,7 +203,6 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "shake",
         "particlesActive",
         "pelletAnimTick",
-        "joystick",
         "dials",
         ...keysSinceGo,
       ].toSorted(),

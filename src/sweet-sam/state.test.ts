@@ -104,7 +104,7 @@ describe("construction", () => {
     ]);
     expect(snap.dials.slice(6).map((d) => d[0])).toEqual([0, 0, 1, 2, 3, 0]);
     expect(s.gameOver()).toBe(false);
-    expect(s.fixedViewportSize()).toEqual([336, 428]);
+    expect(s.fixedViewportSize()).toEqual([240, 304]);
     expect(s.name).toBe("sweetSam");
   });
 
@@ -521,12 +521,6 @@ describe("input", () => {
     s.player.x = 124.4; // corner (15, 23) at (124, 212) allows UP, LEFT, RIGHT
     step(s, 1, { ...NO_INPUT, up: true });
     expect([s.player.direction, s.player.x, s.player.y]).toEqual(["UP", 124, 211]);
-  });
-
-  test("the joystick frame follows input priority every tick", () => {
-    const s = new SweetSamSoftware(0);
-    step(s, 1, { ...NO_INPUT, down: true, left: true });
-    expect(s.snapshot().joystick).toBe(2);
   });
 });
 

@@ -4,7 +4,6 @@ import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
 import { levelValues, modeScatter, type Mode } from "./levels.ts";
-import { cabinetJoystickFrame } from "../ui/cabinet.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {
@@ -38,11 +37,10 @@ export function deathFrameAt(elapsed: number): number {
 }
 
 /**
- * Go `Update`. The order is part of the spec: joystick,
- * pelletAnimTick, camera (rand), particles, state machine, popups, dials.
+ * Go `Update`. The order is part of the spec (Go's joystick step drew only
+ * the cabinet's joystick, gone since #113): pelletAnimTick, camera (rand), particles, state machine, popups, dials.
  */
 export function update(s: SweetSamSoftware, i: Input): void {
-  s.cabinetJoystickFrame = cabinetJoystickFrame(i);
   s.pelletAnimTick++;
   s.camera.update();
   s.particles.update();

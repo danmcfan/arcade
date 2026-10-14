@@ -90,8 +90,6 @@ export class SweetSamSoftware implements FixedViewport {
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
 
-  cabinetJoystickFrame = 0;
-
   /** Lazily created draw resources (Go `digitDialScratch`); never touched by update (D12). */
   drawCache: DrawCache = { digitDialScratch: null };
 
@@ -229,7 +227,6 @@ export class SweetSamSoftware implements FixedViewport {
       ],
       particlesActive: this.particles.activeCount(),
       pelletAnimTick: this.pelletAnimTick,
-      joystick: this.cabinetJoystickFrame,
       dials: [...this.scoreDial.map(dial), ...this.highScoreDial.map(dial)],
       level: this.level,
       levelBannerTicks: this.levelBannerTicks,

@@ -7,7 +7,7 @@
 // which pays the score in tickets. Part 2 writes the new sprite sheets (the
 // hurt Owl and the enemy shot) scaled up. Part 3 records Firefly played with
 // the keyboard. Part 1 also reads the canvas to check that an enemy past the
-// screen's edge and the payout never paint over the bezel. Files go to out/verify/firefly/.
+// screen's edge and the payout never paint over the cabinet outline. Files go to out/verify/firefly/.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -18,7 +18,6 @@ import { ticketsFor } from "../../src/game/payout.ts";
 import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
 import { decodeDataUrl } from "../browser.ts";
 import {
-  cabinetFrameWidth,
   cabinetInsetLeft,
   cabinetInsetTop,
   cabinetPlayfieldHeight,
@@ -45,13 +44,12 @@ function firefly(g: GameSnapshot): FireflySnapshot | null {
   return g.software === "firefly" && g.sw !== null && "stageTick" in g.sw ? g.sw : null;
 }
 
-const cabinetStrip = PNG.sync.read(readFileSync(join(import.meta.dir, "../../src/assets/images/cabinet-firefly.png")));
+const cabinetOutline = PNG.sync.read(
+  readFileSync(join(import.meta.dir, "../../src/assets/images/cabinet-firefly.png")),
+);
 
-/**
- * Bezel pixels in the canvas that differ from joystick frame `joystick` of the
- * cabinet strip: 0 when nothing is drawn over the bezel.
- */
-function bezelPixelsChanged(v: Verify, joystick: number): number {
+/** Outline pixels in the canvas that differ from the cabinet outline: 0 when nothing is drawn over it. */
+function outlinePixelsChanged(v: Verify): number {
   const png = PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
   let changed = 0;
   for (let y = 0; y < png.height; y++) {
@@ -63,8 +61,7 @@ function bezelPixelsChanged(v: Verify, joystick: number): number {
         y < cabinetInsetTop + cabinetPlayfieldHeight;
       if (onScreen) continue;
       const i = (y * png.width + x) * 4;
-      const j = (y * cabinetStrip.width + joystick * cabinetFrameWidth + x) * 4;
-      for (let c = 0; c < 4; c++) if (png.data[i + c] !== cabinetStrip.data[j + c]) changed++;
+      for (let c = 0; c < 4; c++) if (png.data[i + c] !== cabinetOutline.data[i + c]) changed++;
     }
   }
   return changed;
@@ -128,8 +125,8 @@ function playToPayout(v: Verify): void {
     lastScore = s.score;
 
     if (!seen.has("0-enemy-past-edge") && pastEdge(s)) {
-      const changed = bezelPixelsChanged(v, s.joystick);
-      check(changed === 0, "an enemy past the screen's edge is cut off: the bezel stays the cabinet art", changed);
+      const changed = outlinePixelsChanged(v);
+      check(changed === 0, "an enemy past the screen's edge is cut off: the outline stays the cabinet art", changed);
       shoot("0-enemy-past-edge", "saw an enemy past the screen's edge");
     }
     if (s.stage === 1 && s.stageTick === 40) shoot("1-stage-1", "STAGE 1 shows while the enemies wait");
@@ -187,9 +184,8 @@ function playToPayout(v: Verify): void {
     g.payout,
   );
   v.frame("9-payout", 2);
-  const sw = firefly(g);
-  const changed = sw === null ? -1 : bezelPixelsChanged(v, sw.joystick);
-  check(changed === 0, "the payout and its dim stay inside the screen: the bezel stays the cabinet art", changed);
+  const changed = outlinePixelsChanged(v);
+  check(changed === 0, "the payout and its dim stay inside the screen: the outline stays the cabinet art", changed);
   v.tap("space");
   v.step(1);
   v.frame("10-payout-counted", 2);

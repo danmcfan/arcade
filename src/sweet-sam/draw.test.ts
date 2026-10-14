@@ -50,14 +50,14 @@ afterAll(() => {
 });
 
 function render(s: SweetSamSoftware): Op[] {
-  const screen = new Recorder(336, 428, "screen");
+  const screen = new Recorder(240, 304, "screen");
   s.draw(screen, 0);
   return screen.ops;
 }
 
 /** The flower draws at the bonus flower's spot below the bee home (the level counter's are lower). */
 function atFlower(ops: readonly Op[]): Op[] {
-  return ops.filter((o) => name(o) === "draw:flower.png" && o[7] === 164 - 8 + 56);
+  return ops.filter((o) => name(o) === "draw:flower.png" && o[7] === 164 - 8 + 8);
 }
 
 /** The flower.png frame each flower draw takes (0 for level 1), left to right. */
@@ -74,42 +74,42 @@ describe("SweetSamSoftware.draw", () => {
   test("fresh game: cabinet, maze (labels baked in), score dials, lives, READY, food, bees (player hidden)", () => {
     const s = new SweetSamSoftware(0);
     const ops = render(s);
-    expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 336, 428, 0, 0]);
-    expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 56, 56]);
+    expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 240, 304, 0, 0]);
+    expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 8, 8]);
     const rest = ops.slice(2);
     // Only the last two digits of a zero score draw; one 8×8 scratch cell is reused.
     expect(rest.slice(0, 4)).toEqual([
-      ["drawSurface", "cell0", 96, 64],
-      ["drawSurface", "cell0", 104, 64],
-      ["drawSurface", "cell0", 176, 64],
-      ["drawSurface", "cell0", 184, 64],
+      ["drawSurface", "cell0", 48, 16],
+      ["drawSurface", "cell0", 56, 16],
+      ["drawSurface", "cell0", 128, 16],
+      ["drawSurface", "cell0", 136, 16],
     ]);
     expect(cells.length).toBe(1);
     expect(cells[0]?.ops.slice(-2)).toEqual([["clear"], ["draw", "digits.png", 0, 0, 8, 8, 0, 0]]);
     // lives - 1 bear icons: the bear's first frame
     expect(rest.slice(4, 6)).toEqual([
-      ["draw", "bear.png", 0, 0, 16, 16, 72, 329],
-      ["draw", "bear.png", 0, 0, 16, 16, 88, 329],
+      ["draw", "bear.png", 0, 0, 16, 16, 24, 281],
+      ["draw", "bear.png", 0, 0, 16, 16, 40, 281],
     ]);
     // The level counter: level 1's flower, right-aligned at x 208, its bottom row the screen's (288 tall).
-    expect(rest[6]).toEqual(["draw", "flower.png", 0, 0, 16, 16, 208 - 16 + 56, 288 - 16 + 56]);
+    expect(rest[6]).toEqual(["draw", "flower.png", 0, 0, 16, 16, 208 - 16 + 8, 288 - 16 + 8]);
     // READY! glyphs ride a sine wave, 2·sin(tick·0.14 + i·1.05), here at tick 0
     // (not rounded here: the Surface snaps).
     const ready = rest.slice(7, 13);
-    expect(ready.map((o) => [o[1], o[2], o[6]])).toEqual([0, 8, 16, 24, 32, 40].map((x) => ["ready.png", x, 144 + x]));
-    expect(ready.map((o) => o[7])).toEqual([0, 1, 2, 3, 4, 5].map((i) => 217 + 2 * Math.sin(i * 1.05)));
+    expect(ready.map((o) => [o[1], o[2], o[6]])).toEqual([0, 8, 16, 24, 32, 40].map((x) => ["ready.png", x, 96 + x]));
+    expect(ready.map((o) => o[7])).toEqual([0, 1, 2, 3, 4, 5].map((i) => 169 + 2 * Math.sin(i * 1.05)));
     const food = rest.slice(13, 13 + 244);
     expect(food.filter((o) => name(o) === "draw:honey-drop.png").length).toBe(240);
     expect(food.filter((o) => name(o) === "draw:honey-pot.png").length).toBe(4);
-    expect(food[0]).toEqual(["draw", "honey-drop.png", 0, 0, 8, 12, 64, 86]);
-    expect(food[243]).toEqual(["draw", "honey-pot.png", 0, 0, 8, 12, 264, 262]);
+    expect(food[0]).toEqual(["draw", "honey-drop.png", 0, 0, 8, 12, 16, 38]);
+    expect(food[243]).toEqual(["draw", "honey-pot.png", 0, 0, 8, 12, 216, 214]);
     // One sheet per bee in bees.png (red, pink, teal, orange, 96 px apart), each facing its way.
-    // red bee: RIGHT row 0, at (112-8+56, 116-8+56)
+    // red bee: RIGHT row 0, at (112-8+8, 116-8+8)
     expect(rest.slice(13 + 244)).toEqual([
-      ["draw", "bees.png", 0, 0, 16, 16, 160, 164],
-      ["draw", "bees.png", 0, 96 + 16, 16, 16, 160, 188],
-      ["draw", "bees.png", 0, 192, 16, 16, 144, 188],
-      ["draw", "bees.png", 0, 288 + 16, 16, 16, 176, 188],
+      ["draw", "bees.png", 0, 0, 16, 16, 112, 116],
+      ["draw", "bees.png", 0, 96 + 16, 16, 16, 112, 140],
+      ["draw", "bees.png", 0, 192, 16, 16, 96, 140],
+      ["draw", "bees.png", 0, 288 + 16, 16, 16, 128, 140],
     ]);
   });
 
@@ -139,29 +139,29 @@ describe("SweetSamSoftware.draw", () => {
     p.maxLifeTicks = 40;
 
     const ops = render(s);
-    expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 336, 428, 0, 0]);
-    expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 57.25, 55.5]);
+    expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 240, 304, 0, 0]);
+    expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 9.25, 7.5]);
     const rest = ops.slice(2);
     // score/high dials are rounded with goRound before drawing
     expect(rest.slice(0, 4).map((o) => [o[2], o[3]])).toEqual([
-      [97, 64],
-      [105, 64],
-      [177, 64],
-      [185, 64],
+      [49, 16],
+      [57, 16],
+      [129, 16],
+      [137, 16],
     ]);
     expect(name(rest[4])).toBe("draw:flower.png");
     // player: LEFT row 2, frame trunc(2.7) = 2
-    expect(rest[5]).toEqual(["draw", "bear.png", 32, 32, 16, 16, 112 - 8 + 57.25, 212 - 8 + 55.5]);
+    expect(rest[5]).toEqual(["draw", "bear.png", 32, 32, 16, 16, 112 - 8 + 9.25, 212 - 8 + 7.5]);
     // red sleepy + UP: row 1+2 = 3; pink waking + LEFT: row 1+2+2 = 5, in pink's sheet (96 down)
     expect(rest[6]?.slice(1, 6)).toEqual(["bees.png", 0, 48, 16, 16]);
     expect(rest[7]?.slice(1, 6)).toEqual(["bees.png", 0, 96 + 80, 16, 16]);
     // popup: frame 2 of points.png, centred, one tile above the bee
-    expect(rest[10]).toEqual(["draw", "points.png", 32, 0, 16, 16, 100 + 57.25 - 8, 120 + 55.5 - 8 - 16]);
+    expect(rest[10]).toEqual(["draw", "points.png", 32, 0, 16, 16, 100 + 9.25 - 8, 120 + 7.5 - 8 - 16]);
     // particle: premultiplied fill, a = trunc(7/40*255) = trunc(44.625) = 44
     expect(rest[11]).toEqual([
       "fillPremul",
-      p.x - 1.5 + 57.25,
-      p.y - 1.5 + 55.5,
+      p.x - 1.5 + 9.25,
+      p.y - 1.5 + 7.5,
       3,
       3,
       { r: 0x73, g: 0xef, b: 0xf7, a: 44 },
@@ -173,7 +173,7 @@ describe("SweetSamSoftware.draw", () => {
     const s = new SweetSamSoftware(0);
     s.flowerTicks = 100;
     let ops = render(s);
-    expect(atFlower(ops)).toEqual([["draw", "flower.png", 0, 0, 16, 16, 112 - 8 + 56, 164 - 8 + 56]]);
+    expect(atFlower(ops)).toEqual([["draw", "flower.png", 0, 0, 16, 16, 112 - 8 + 8, 164 - 8 + 8]]);
     s.flowerTicks = 0;
     s.flowerPopup = { points: 300, ticks: 50 };
     ops = render(s);
@@ -183,7 +183,7 @@ describe("SweetSamSoftware.draw", () => {
     expect(popup.map((o) => name(o))).toEqual(["draw:font.png", "draw:font.png", "draw:font.png"]);
     const left = Number(popup[0]?.[6]);
     const right = Number(popup[2]?.[6]) + Number(popup[2]?.[4]);
-    expect(Math.abs(left + right - 2 * (112 + 56))).toBeLessThanOrEqual(1);
+    expect(Math.abs(left + right - 2 * (112 + 8))).toBeLessThanOrEqual(1);
   });
 
   test("each level has its own flower; the last holds from level 5 on", () => {
@@ -205,11 +205,11 @@ describe("SweetSamSoftware.draw", () => {
     s.level = 3;
     let ops = render(s).filter((o) => name(o) === "draw:flower.png");
     expect(flowerFrames(ops)).toEqual([0, 1, 2]);
-    expect(ops.map((o) => o[6])).toEqual([160 + 56, 176 + 56, 192 + 56]);
+    expect(ops.map((o) => o[6])).toEqual([160 + 8, 176 + 8, 192 + 8]);
     s.level = 12;
     ops = render(s).filter((o) => name(o) === "draw:flower.png");
     expect(flowerFrames(ops)).toEqual([4, 4, 4, 4, 4, 4, 4]);
-    expect(ops.at(-1)?.[6]).toBe(192 + 56);
+    expect(ops.at(-1)?.[6]).toBe(192 + 8);
   });
 
   test("LEVEL n shows in place of READY, then READY", () => {
@@ -244,9 +244,9 @@ describe("SweetSamSoftware.draw", () => {
     s.stateMachine.changeState("DEATHWAIT");
     s.player.hidden = true;
     const bear = (): Op[] => render(s).filter((o) => name(o) === "draw:bear.png" && o[3] === 64);
-    expect(bear()).toEqual([["draw", "bear.png", 0, 64, 16, 16, 112 - 8 + 56, 212 - 8 + 56]]);
+    expect(bear()).toEqual([["draw", "bear.png", 0, 64, 16, 16, 112 - 8 + 8, 212 - 8 + 8]]);
     s.pauseTicks = 0;
-    expect(bear()).toEqual([["draw", "bear.png", 48, 64, 16, 16, 112 - 8 + 56, 212 - 8 + 56]]);
+    expect(bear()).toEqual([["draw", "bear.png", 48, 64, 16, 16, 112 - 8 + 8, 212 - 8 + 8]]);
   });
 
   test("rolling digit: old glyph scrolls up, new glyph rises from below inside the cell", () => {

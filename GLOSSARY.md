@@ -13,7 +13,7 @@ The character the person controls in the hub.
 _Avoid_: gamer, avatar, hero
 
 **Cabinet**:
-An arcade machine: one in the hub that the player steps up to, and the same machine's bezel framing the minigame while it is played.
+An arcade machine: one in the hub that the player steps up to, and the same machine's thin outline (its bezel) framing the minigame's screen while it is played.
 _Avoid_: machine (in prose), arcade box
 
 **Attract loop**:

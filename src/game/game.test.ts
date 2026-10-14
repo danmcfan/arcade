@@ -51,7 +51,7 @@ class FakeSoftware implements Software {
 
 class FakeFixed extends FakeSoftware implements FixedViewport {
   fixedViewportSize(): [number, number] {
-    return [336, 428];
+    return [240, 304];
   }
 }
 
@@ -558,7 +558,7 @@ describe("payout", () => {
     expect(s.arcade.tickets).toBe(14);
     expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true });
     expect(game.inHub()).toBe(false);
-    expect(game.layout()).toEqual([336, 428]);
+    expect(game.layout()).toEqual([240, 304]);
     const sounds = heard(game, () => {
       run(game, 14 * 20 + 40);
     });
@@ -922,7 +922,7 @@ describe("debug mode and layout", () => {
   });
 
   const sizes: [SoftwareName, [number, number], [number, number]][] = [
-    ["sweetSam", [336, 428], [456, 428]],
+    ["sweetSam", [240, 304], [360, 304]],
     ["firefly", [256, 320], [376, 320]],
     ["brassMonkey", [256, 288], [376, 288]],
   ];
