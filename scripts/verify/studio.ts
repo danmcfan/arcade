@@ -85,6 +85,22 @@ await verify(
     check(page.eval("document.querySelector('#dirty').textContent") !== "", "drawing marks the art unsaved");
     v.screenshot("3-drawn");
 
+    page.eval(`document.querySelector('#theme').click(); "ok"`);
+    check(page.eval("document.documentElement.dataset.theme") === "dark", "the theme button switches to dark mode");
+    v.screenshot("4-dark");
+
+    page.eval(
+      `[...document.querySelectorAll('#backdrop .swatch')].find((b) => b.title.startsWith('Backdrop n ')).click(); "ok"`,
+    );
+    check(
+      page.eval(
+        "document.querySelector('#editor').getContext('2d').getImageData(1, 1, 1, 1).data.slice(0, 3).join()",
+      ) === "41,54,111",
+      "a navy backdrop fills the blank cells",
+    );
+    v.screenshot("5-backdrop");
+    page.eval(`document.querySelector('#theme').click(); "ok"`);
+
     const errors = page.eval("document.querySelector('#status').textContent");
     check(!errors.startsWith("error"), "no error in the status", errors);
     v.assertNoErrors();

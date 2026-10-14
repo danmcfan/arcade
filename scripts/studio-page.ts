@@ -9,12 +9,15 @@ import {
   FolderOpen,
   Grid3x3,
   type IconNode,
+  Grid2x2,
   Layers,
+  Moon,
   PaintBucket,
   Pencil,
   Pipette,
   Redo2,
   Save,
+  Sun,
   Undo2,
   ZoomIn,
   ZoomOut,
@@ -33,9 +36,26 @@ interface Opened {
 type Tool = "pencil" | "eraser" | "fill" | "eyedropper";
 
 const blank = ".";
-// Blank cells show as a light white and grey checker, as in most editors.
-const checkerDark = "#e4e4e7";
-const checkerLight = "#ffffff";
+type Theme = "light" | "dark";
+
+/**
+ * The checker blank cells show on, per theme: a light one for dark art, a dark
+ * one for light art.
+ */
+const checkers: Record<Theme, [string, string]> = {
+  light: ["#ffffff", "#e4e4e7"],
+  dark: ["#27272a", "#3f3f46"],
+};
+const themeKey = "studio-theme";
+
+/** The theme the viewer last picked, if the browser kept it. */
+function storedTheme(): Theme {
+  try {
+    return localStorage.getItem(themeKey) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const node = document.querySelector(`#${id}`);
@@ -68,6 +88,8 @@ const ui = {
   fps: byId("fps", HTMLInputElement),
   variants: byId("variants", HTMLDivElement),
   status: byId("status", HTMLDivElement),
+  theme: byId("theme", HTMLButtonElement),
+  backdrop: byId("backdrop", HTMLDivElement),
   frames: byId("frames", HTMLElement),
 };
 
@@ -84,6 +106,9 @@ interface State {
   grid: boolean;
   onion: boolean;
   zoom: number;
+  theme: Theme;
+  /** What blank cells show on: "checker", or a palette letter as a solid colour. */
+  backdrop: string;
   palette: Record<string, string>;
   undo: Grid[][];
   redo: Grid[][];
@@ -104,6 +129,8 @@ const state: State = {
   grid: true,
   onion: true,
   zoom: 16,
+  theme: storedTheme(),
+  backdrop: "checker",
   palette: {},
   undo: [],
   redo: [],
@@ -152,10 +179,18 @@ function checkpoint(): void {
   state.redo = [];
 }
 
-function paintChecker(ctx: CanvasRenderingContext2D, w: number, h: number, cell: number): void {
+/** The backdrop under the art: a solid palette colour, or the theme's checker. */
+function paintBackdrop(ctx: CanvasRenderingContext2D, w: number, h: number, cell: number): void {
+  const solid = state.palette[state.backdrop];
+  if (solid !== undefined) {
+    ctx.fillStyle = solid;
+    ctx.fillRect(0, 0, w * cell, h * cell);
+    return;
+  }
+  const [a, b] = checkers[state.theme];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      ctx.fillStyle = (x + y) % 2 === 0 ? checkerDark : checkerLight;
+      ctx.fillStyle = (x + y) % 2 === 0 ? a : b;
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
   }
@@ -185,12 +220,12 @@ function drawEditor(): void {
   ui.editor.width = w * z;
   ui.editor.height = h * z;
   const ctx = context(ui.editor);
-  paintChecker(ctx, w, h, z);
+  paintBackdrop(ctx, w, h, z);
   const prev = state.frames[state.current - 1];
   if (state.onion && prev !== undefined) paintGrid(ctx, prev, z, 0.3);
   paintGrid(ctx, g, z);
   if (state.grid && z >= 4) {
-    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.strokeStyle = state.theme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.25)";
     ctx.beginPath();
     for (let x = 0; x <= w; x++) {
       ctx.moveTo(x * z + 0.5, 0);
@@ -214,7 +249,7 @@ function drawFrames(): void {
       c.className = i === state.current ? "frame on" : "frame";
       c.title = `frame ${i}`;
       const ctx = context(c);
-      paintChecker(ctx, w, h, 3);
+      paintBackdrop(ctx, w, h, 3);
       paintGrid(ctx, g, 3);
       c.addEventListener("click", () => {
         state.current = i;
@@ -381,6 +416,29 @@ function buildSide(): void {
       "Zoom in (+)",
     ),
   );
+  const backdropButton = (letter: string, css: string): HTMLButtonElement => {
+    const b = document.createElement("button");
+    b.className = letter === state.backdrop ? "swatch on" : "swatch";
+    b.style.background = css;
+    b.title = `Backdrop ${letter} ${css}`;
+    b.addEventListener("click", () => {
+      state.backdrop = letter;
+      buildSide();
+      render();
+    });
+    return b;
+  };
+  ui.backdrop.replaceChildren(
+    toggle(
+      Grid2x2,
+      state.backdrop === "checker",
+      () => {
+        state.backdrop = "checker";
+      },
+      "Backdrop: checker",
+    ),
+    ...Object.entries(state.palette).map(([letter, css]) => backdropButton(letter, css)),
+  );
   // Glyph rows draw in one ink: the swatches pick the ink, not the letter.
   const chosen = state.glyph ? state.ink : state.letter;
   ui.palette.replaceChildren(
@@ -510,6 +568,23 @@ setIcon(ui.undo, Undo2);
 setIcon(ui.redo, Redo2);
 setIcon(ui.save, Save);
 
+function applyTheme(): void {
+  document.documentElement.dataset["theme"] = state.theme;
+  ui.theme.title = state.theme === "dark" ? "Light mode" : "Dark mode";
+  setIcon(ui.theme, state.theme === "dark" ? Sun : Moon);
+}
+applyTheme();
+ui.theme.addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  try {
+    localStorage.setItem(themeKey, state.theme);
+  } catch {
+    // Not kept: the studio opens light next time.
+  }
+  applyTheme();
+  render();
+});
+
 ui.open.addEventListener("click", () => {
   report(open(ui.spec.value.trim()));
 });
@@ -575,7 +650,7 @@ function animate(): void {
       canvas.width = w * k;
       canvas.height = h * k;
       const ctx = context(canvas);
-      paintChecker(ctx, w, h, k);
+      paintBackdrop(ctx, w, h, k);
       paintGrid(ctx, g, k);
     }
   }
