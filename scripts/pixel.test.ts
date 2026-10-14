@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { prizeArt } from "../src/ui/prizeArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { toPng, toRows } from "./pixel-art.ts";
-import { autoScale, load, place, sheet, type Panel } from "./pixel.ts";
+import { cabinetArt } from "../src/ui/hubArt.ts";
+import { autoScale, load, place, previewOptions, sheet, type Panel } from "./pixel.ts";
 
 /** The error `promise` rejects with; fails the test when it resolves or rejects with a non-Error. */
 async function rejection(promise: Promise<unknown>): Promise<Error> {
@@ -88,5 +89,21 @@ describe("sheets", () => {
   test("place draws over the base, and transparent pixels leave it", () => {
     const out = place(toPng(["yyy", "yyy"]), [{ png: toPng(["r.", ".r"]), x: 1, y: 0 }]);
     expect(toRows(out)).toEqual(["yry", "yyr"]);
+  });
+});
+
+describe("previewOptions", () => {
+  test("draws each option into the hub, then puts the export back", async () => {
+    const current = [...cabinetArt];
+    const blanked = current.map((row) => row.replaceAll(/[^S.]/gu, "k"));
+    const options = await previewOptions({ "src/ui/hubArt.ts:cabinetArt": { Current: current, Blanked: blanked } });
+    expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
+    expect(options[0]?.screen).not.toBe(options[1]?.screen);
+    expect([...cabinetArt]).toEqual(current);
+  });
+
+  test("names the scenes file when no scene shows the art", async () => {
+    const e = await rejection(previewOptions({ "src/ui/prizeArt.ts:prizeArt": { A: ["k"] } }));
+    expect(e.message).toContain("scripts/pixel-scenes.ts");
   });
 });

@@ -7,6 +7,7 @@
 //   bun run pixel show    <image>...                  one labelled sheet, scaled up
 //   bun run pixel before  <image>... [--ref <rev>]    <rev>'s version beside the working copy (PNG or source)
 //   bun run pixel place   <base> <image>@x,y...       images drawn onto <base> at (x, y)
+//   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
 //
 // An <image> is one of:
 //   path.png             the whole PNG
@@ -17,7 +18,7 @@
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
 // Options: --scale N (default: fits each image to about 256 px, at most 8x),
-// --out <file.png> (show, before and place), --ref <rev> (before; default
+// --out <file> (show, before, place and preview), --ref <rev> (before; default
 // origin/main), --nearest (rows: letter each colour as the nearest Sweetie 16
 // one, to import art drawn in another palette).
 
@@ -27,6 +28,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
+import { sceneFor } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
 /** One image to show, with the label it gets on a sheet. */
@@ -282,6 +284,58 @@ export function place(base: PNG, items: readonly { png: PNG; x: number; y: numbe
   return out;
 }
 
+/** One prototype option: its frames, and the game screen drawn with it in place. */
+export interface PreviewOption {
+  label: string;
+  frames: string[];
+  screen: string;
+}
+
+/** Sweetie 16, plus grey for placeholder letters a generator recolours (the cabinets' `1` to `4` and `S`). */
+function thumbPalette(frames: readonly Rows[]): Record<string, string> {
+  const palette: Record<string, string> = { ...sourcePalette };
+  for (const ch of frames.join("")) if (ch !== "." && ch !== "," && !(ch in palette)) palette[ch] = "#8c8c8c";
+  return palette;
+}
+
+function dataUrl(png: PNG): string {
+  return `data:image/png;base64,${PNG.sync.write(png).toString("base64")}`;
+}
+
+/** A variants file's options, each swapped into its export and drawn into the scene that shows it. */
+export async function previewOptions(variants: Record<string, unknown>): Promise<PreviewOption[]> {
+  const options: PreviewOption[] = [];
+  const specs = Object.entries(variants);
+  await inOrder(specs, async ([spec, byLabel]) => {
+    const ts = parseSpec(spec);
+    if (ts === undefined) throw new Error(`"${spec}" is not path.ts:name[.key]`);
+    if (!isRecord(byLabel)) throw new Error(`${spec} has no options`);
+    const scene = sceneFor(ts.file);
+    // The module the scene imports, so a swap here is the one it draws.
+    const mod = await importModule(join(repoRoot, ts.file));
+    const exported = mod[ts.name];
+    const value = ts.key === undefined ? exported : isRecord(exported) ? exported[ts.key] : undefined;
+    if (!Array.isArray(value)) throw new Error(`${spec} is not a list of rows or frames`);
+    const target: unknown[] = value;
+    const original = [...target];
+    try {
+      for (const [name, option] of Object.entries(byLabel)) {
+        const frames = isRows(option) ? [option] : Array.isArray(option) ? option.filter((f) => isRows(f)) : [];
+        if (frames.length === 0) throw new Error(`${spec} option "${name}" has no rows`);
+        target.splice(0, target.length, ...(isRows(option) ? option : frames));
+        options.push({
+          label: specs.length === 1 ? name : `${ts.key ?? ts.name}: ${name}`,
+          frames: frames.map((rows) => dataUrl(toPng(rows, thumbPalette(frames)))),
+          screen: dataUrl(scene.render()),
+        });
+      }
+    } finally {
+      target.splice(0, target.length, ...original);
+    }
+  });
+  return options;
+}
+
 function write(png: PNG, out: string): void {
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, PNG.sync.write(png));
@@ -379,6 +433,24 @@ async function main(argv: string[]): Promise<void> {
       const base = await loadOne(baseSpec);
       const png = place(base, items);
       write(scale(png, k ?? autoScale(png)), out("place"));
+      return;
+    }
+    case "preview": {
+      const [file] = specs;
+      if (file === undefined) usage();
+      const parsed: unknown = JSON.parse(readFileSync(resolve(file), "utf8"));
+      if (!isRecord(parsed)) throw new Error(`${file} is not a variants object`);
+      const options = await previewOptions(parsed);
+      const title = basename(file, ".json");
+      const page = readFileSync(join(import.meta.dir, "pixel-preview.html"), "utf8")
+        .replaceAll("__TITLE__", title)
+        .replace('"__OPTIONS__"', () => JSON.stringify(options));
+      const html = resolve(opts["out"] ?? join(outDir, `${title}.html`));
+      mkdirSync(dirname(html), { recursive: true });
+      writeFileSync(html, page);
+      console.log(
+        `wrote ${relative(process.cwd(), html)} (${options.length} options); publish it with the Artifact tool`,
+      );
       return;
     }
     default:
