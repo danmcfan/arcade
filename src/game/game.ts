@@ -26,9 +26,9 @@ import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
-import { buyToken, tokenOffer } from "../arcade/prizeCounter.ts";
-import { buyPrize, inCatalogueOrder, prizeOffers, prizes, type PrizeId } from "../arcade/prizes.ts";
-import { blocked, newState, type RunKind, type State } from "../arcade/state.ts";
+import { prizes } from "../arcade/prizes.ts";
+import { blocked, newState, type State } from "../arcade/state.ts";
+import { Wallet, type RunKind, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./softwareFactories.ts";
@@ -43,7 +43,7 @@ import {
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
-import { Payout, ticketsFor } from "./payout.ts";
+import { Payout } from "./payout.ts";
 import type { GameMenu, GameSnapshot } from "./snapshot.ts";
 import { isFixedViewport, type Scene, type Software, type SoftwareName } from "./software.ts";
 
@@ -52,12 +52,7 @@ const buffer = 16;
 const initialDebugMode = false;
 
 /** What "Continue" brings back: the hub high score, tokens, tickets and prizes, and where the player stood. */
-export interface Progress {
-  highScore: number;
-  tokens: number;
-  tickets: number;
-  /** Owned prizes, in catalogue order. */
-  prizes: PrizeId[];
+export interface Progress extends WalletProgress {
   player: { x: number; y: number; dir: Direction };
 }
 
@@ -137,10 +132,7 @@ export class Game implements Scene {
    */
   private restore(p: Progress): void {
     const player = this.arcade.player;
-    this.arcade.highScore = p.highScore;
-    this.arcade.tokens = p.tokens;
-    this.arcade.tickets = p.tickets;
-    this.arcade.prizes = inCatalogueOrder(p.prizes);
+    this.arcade.wallet = new Wallet(p);
     player.direction = p.player.dir;
     const rect = {
       x: p.player.x - player.width / 2,
@@ -161,15 +153,16 @@ export class Game implements Scene {
   }
 
   progress(): Progress {
-    const a = this.arcade;
-    const p = a.player;
+    const p = this.arcade.player;
     return {
-      highScore: a.highScore,
-      tokens: a.tokens,
-      tickets: a.tickets,
-      prizes: [...a.prizes],
+      ...this.arcade.wallet.toProgress(),
       player: { x: p.x, y: p.y, dir: p.direction },
     };
+  }
+
+  /** Goes up whenever tokens, tickets, prizes or the high score change. */
+  walletVersion(): number {
+    return this.arcade.wallet.version;
   }
 
   /** The faced cabinet's attract loop, while it plays. */
@@ -271,34 +264,21 @@ export class Game implements Scene {
   }
 
   private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
-    const n = prizeCounterItems(tokenOffer(this.arcade), prizeOffers(this.arcade)).length;
+    const wallet = this.arcade.wallet;
+    const n = prizeCounterItems(wallet.counter()).length;
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta !== 0) {
       this.cursor = (this.cursor + delta + n) % n;
       soundMove.blip();
     }
     if (edges.space && this.cursor === tokenItemIndex) {
-      const after = buyToken(this.arcade);
-      if (after === null) {
-        soundDeny.blip();
-        return;
-      }
-      soundSelect.blip();
-      this.arcade.tokens = after.tokens;
-      this.arcade.tickets = after.tickets;
+      (wallet.buy("token") ? soundSelect : soundDeny).blip();
       return;
     }
     if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
       const prize = prizes[this.cursor - firstPrizeIndex];
       if (prize === undefined) throw new Error(`prize counter: no prize at item ${this.cursor}`);
-      const after = buyPrize(this.arcade, prize.id);
-      if (after === null) {
-        soundDeny.blip();
-        return;
-      }
-      soundSelect.blip();
-      this.arcade.tickets = after.tickets;
-      this.arcade.prizes = after.prizes;
+      (wallet.buy(prize.id) ? soundSelect : soundDeny).blip();
       return;
     }
     if (!edges.space && !edges.escape) return;
@@ -318,15 +298,14 @@ export class Game implements Scene {
     software.update(input);
     if (software.gameOver()) {
       const score = software.score();
-      this.arcade.highScore = Math.max(this.arcade.highScore, score);
-      if (this.run === "direct") {
+      const run = this.run ?? "direct";
+      // Paid out at once, so a save taken during the count keeps them.
+      const tickets = this.arcade.wallet.settleRun(score, run);
+      if (run === "direct") {
         this.leaveMinigame();
         return;
       }
-      // Paid out at once, so a save taken during the count keeps them.
-      const freePlay = this.run === "free";
-      this.arcade.tickets += ticketsFor(score, freePlay);
-      this.payout = new Payout(score, freePlay);
+      this.payout = new Payout(score, tickets, run === "free");
       this.menu = "payout";
     }
   }
@@ -400,7 +379,7 @@ export class Game implements Scene {
           software: this.software.name,
           cursor: this.cursor,
           payout: this.payout,
-          wallet: this.arcade,
+          wallet: this.arcade.wallet,
           tick: this.tick,
           playfield,
         };
@@ -423,7 +402,7 @@ export class Game implements Scene {
         software: null,
         cursor: this.cursor,
         payout: null,
-        wallet: this.arcade,
+        wallet: this.arcade.wallet,
         tick: this.tick,
         playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });
@@ -466,10 +445,7 @@ export class Game implements Scene {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
         title: this.arcade.imageTitle,
-        highScore: this.arcade.highScore,
-        tokens: this.arcade.tokens,
-        tickets: this.arcade.tickets,
-        ...(this.arcade.prizes.length > 0 ? { prizes: [...this.arcade.prizes] } : {}),
+        ...this.walletSnapshot(),
       },
       run: this.run,
       menu: this.menu,
@@ -478,6 +454,12 @@ export class Game implements Scene {
       sw: this.software === null ? null : this.software.snapshot(),
       sounds: [...this.tickSounds],
     };
+  }
+
+  /** The wallet as the `arcade` snapshot shows it: `prizes` is absent while none is owned (ADR-0004). */
+  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScore" | "tokens" | "tickets" | "prizes"> {
+    const { highScore, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
+    return { highScore, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
   }
 
   dispose(): void {

@@ -2,8 +2,8 @@
 // owned, a prize is always on: it shows by its minigame's cabinet and gives
 // the player an advantage in every run of that minigame (the minigame applies
 // it; for Sweet Sam see src/sweet-sam/advantages.ts). The catalogue is data, so a
-// later minigame adds its prizes here. The purchase rule is pure, so the
-// Game's menu and the tests share it.
+// later minigame adds its prizes here. The Wallet (./wallet.ts) owns which are
+// owned and the rule for buying them.
 
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
@@ -163,34 +163,4 @@ export function prize(id: PrizeId): Prize {
   const found = prizes.find((p) => p.id === id);
   if (found === undefined) throw new Error(`prize: unknown prize id ${id}`);
   return found;
-}
-
-/** `ids` without repeats, in catalogue order: how owned prizes are kept. */
-export function inCatalogueOrder(ids: readonly PrizeId[]): PrizeId[] {
-  return prizes.filter((p) => ids.includes(p.id)).map((p) => p.id);
-}
-
-/** What the player has to spend and already owns. */
-export interface PrizeWallet {
-  tickets: number;
-  prizes: readonly PrizeId[];
-}
-
-/** Whether a prize can be bought: "buy", "owned" (bought already) or "short" (too few tickets). */
-export type PrizeOffer = "buy" | "owned" | "short";
-
-export function prizeOffer(w: PrizeWallet, id: PrizeId): PrizeOffer {
-  if (w.prizes.includes(id)) return "owned";
-  return w.tickets >= prize(id).price ? "buy" : "short";
-}
-
-/** Every prize's offer, in catalogue order. */
-export function prizeOffers(w: PrizeWallet): PrizeOffer[] {
-  return prizes.map((p) => prizeOffer(w, p.id));
-}
-
-/** The wallet after buying prize `id`, or null when it can't be bought. */
-export function buyPrize(w: PrizeWallet, id: PrizeId): { tickets: number; prizes: PrizeId[] } | null {
-  if (prizeOffer(w, id) !== "buy") return null;
-  return { tickets: w.tickets - prize(id).price, prizes: inCatalogueOrder([...w.prizes, id]) };
 }

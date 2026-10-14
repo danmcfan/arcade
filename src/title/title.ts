@@ -187,17 +187,12 @@ export class Title implements Scene {
       return;
     }
     const wasInHub = game.inHub();
-    const before = game.progress();
+    const before = game.walletVersion();
     game.step(this.keys.unmasked(i));
-    const after = game.progress();
-    // A cabinet start spent a token, a minigame just ended (after its payout,
-    // or Quit game), the prize counter menu opened or closed, or tokens,
-    // tickets or prizes changed (a purchase, a payout): save.
-    const changed =
-      before.tokens !== after.tokens ||
-      before.tickets !== after.tickets ||
-      before.prizes.length !== after.prizes.length;
-    if (wasInHub !== game.inHub() || changed) this.persist();
+    // A minigame just started or ended (after its payout, or Quit game), the
+    // prize counter menu opened or closed, or the wallet changed (a token
+    // spent, a purchase, a payout, a new high score): save.
+    if (wasInHub !== game.inHub() || before !== game.walletVersion()) this.persist();
   }
 
   private resume(i: Input): void {

@@ -3,8 +3,8 @@
 // over the hub. (The title
 // scene's menus are in src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
-import { ticketsPerToken, type TokenOffer } from "../arcade/prizeCounter.ts";
-import { prizes, type Prize, type PrizeOffer } from "../arcade/prizes.ts";
+import { prizes, type Prize } from "../arcade/prizes.ts";
+import { ticketsPerToken, type CounterOffers, type PrizeOffer, type TokenOffer } from "../arcade/wallet.ts";
 import { moveControl, type ControlRow } from "../ui/menu.ts";
 import type { SoftwareName } from "./software.ts";
 
@@ -55,12 +55,12 @@ export const firstPrizeIndex = 1;
 /** Index of CLOSE in the prize counter menu. */
 export const closeItemIndex = firstPrizeIndex + prizes.length;
 
-/** The prize counter menu: the token, each prize (`offers` in catalogue order), then CLOSE. */
-export function prizeCounterItems(offer: TokenOffer, offers: readonly PrizeOffer[]): readonly CounterItem[] {
+/** The prize counter menu: the token, each prize (in catalogue order), then CLOSE. */
+export function prizeCounterItems(offers: CounterOffers): readonly CounterItem[] {
   const prizeItems = prizes.map((p, i) => {
-    const prizeOffer = offers[i];
+    const prizeOffer = offers.prizes[i];
     if (prizeOffer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
     return prizeItem(p, prizeOffer);
   });
-  return [tokenItems[offer], ...prizeItems, { label: closeItem, value: "" }];
+  return [tokenItems[offers.token], ...prizeItems, { label: closeItem, value: "" }];
 }

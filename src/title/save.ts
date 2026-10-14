@@ -4,8 +4,8 @@
 // pass `memoryStore()`.
 
 import type { Direction } from "../engine/input.ts";
-import { startingTokens } from "../arcade/state.ts";
-import { inCatalogueOrder, isPrizeId, type PrizeId } from "../arcade/prizes.ts";
+import { isPrizeId, type PrizeId } from "../arcade/prizes.ts";
+import { startingTokens, Wallet } from "../arcade/wallet.ts";
 import type { Progress } from "../game/game.ts";
 
 export interface SaveData extends Progress {
@@ -62,12 +62,10 @@ export function parseSave(raw: unknown): SaveData | null {
   // v1 and v2 saves own no prizes.
   const prizes = o["v"] === 3 ? o["prizes"] : [];
   if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
+  const wallet = new Wallet({ highScore: o["highScore"], tokens, tickets, prizes });
   return {
     v: 3,
-    highScore: o["highScore"],
-    tokens,
-    tickets,
-    prizes: inCatalogueOrder(prizes),
+    ...wallet.toProgress(),
     player: { x: p["x"], y: p["y"], dir },
   };
 }

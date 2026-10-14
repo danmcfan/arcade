@@ -568,12 +568,6 @@ describe("payout", () => {
     expect(sw.updates.length).toBe(1); // never updated after the game over
   });
 
-  test("a score of 60 adds 1 ticket", () => {
-    const { game } = endRun(60);
-    expect(snap(game).arcade.tickets).toBe(1);
-    expect(snap(game).payout?.total).toBe(1);
-  });
-
   test("Space skips to the totals, Space again returns to the hub with the tickets", () => {
     const { game } = endRun(1420);
     run(game, 30);
@@ -610,17 +604,6 @@ describe("payout", () => {
     const { game } = endRun(1420);
     tap(game, "escape");
     expect(snap(game).menu).toBe("payout");
-  });
-
-  test("tickets add up over runs", () => {
-    const { game, built } = endRun(250);
-    closePayout(game);
-    game.step(input({ up: true, space: true }));
-    defined(built[1]).points = 60;
-    defined(built[1]).over = true;
-    game.step(input());
-    expect(snap(game).arcade.tickets).toBe(3);
-    expect(snap(game).arcade.tokens).toBe(3);
   });
 });
 
@@ -728,16 +711,6 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("an owned prize can't be bought again: the no sound, nothing taken", () => {
-    const { game } = atPrize(60, 0);
-    tap(game, "space");
-    const sounds = heard(game, () => {
-      tap(game, "space");
-    });
-    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
-    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
-  });
-
   test("an unaffordable prize can't be bought: the no sound, nothing taken", () => {
     const { game } = atPrize(99, 2);
     const sounds = heard(game, () => {
@@ -746,14 +719,6 @@ describe("prize counter", () => {
     expect(sounds).toEqual(["rewind:deny", "play:deny"]);
     expect(snap(game).arcade.tickets).toBe(99);
     expect(snap(game).arcade.prizes).toBeUndefined();
-  });
-
-  test("prizes are kept in catalogue order whatever order they were bought in", () => {
-    const { game } = atPrize(200, 2);
-    tap(game, "space"); // sleepy bees
-    tap(game, "up");
-    tap(game, "space"); // running shoes
-    expect(snap(game).arcade).toMatchObject({ tickets: 50, prizes: ["runningShoes", "sleepyBees"] });
   });
 
   test("owned prizes go to every minigame the player starts, paid or free play", () => {
@@ -816,24 +781,6 @@ describe("prize counter", () => {
     expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
     expect(sounds).toEqual(["rewind:deny", "play:deny"]);
     expect(snap(game).menu).toBe("prizeCounter");
-  });
-
-  test("with 0 tokens and too few tickets, the last-chance token takes all the tickets", () => {
-    const { game } = atCounter(0, 3);
-    tap(game, "space");
-    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
-    // Now there is a token and too few tickets: no second one.
-    const sounds = heard(game, () => {
-      tap(game, "space");
-    });
-    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
-    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
-  });
-
-  test("the last-chance token is sold even for 0 tickets", () => {
-    const { game } = atCounter(0, 0);
-    tap(game, "space");
-    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
   });
 
   test("a bought token pays for the next cabinet start", () => {

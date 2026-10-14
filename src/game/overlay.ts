@@ -4,8 +4,7 @@
 // centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
-import { tokenOffer, type Wallet } from "../arcade/prizeCounter.ts";
-import { prizeOffers, type PrizeWallet } from "../arcade/prizes.ts";
+import type { Wallet } from "../arcade/wallet.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawIcon } from "../ui/hud.ts";
 import { iconRects } from "../ui/icons.ts";
@@ -42,8 +41,8 @@ export interface MenuOverlay {
   software: SoftwareName | null;
   cursor: number;
   payout: Payout | null;
-  /** The player's tokens, tickets and prizes, for the prize counter menu. */
-  wallet: Wallet & PrizeWallet;
+  /** The player's wallet, for the prize counter menu. */
+  wallet: Wallet;
   tick: number;
   /** The part of the layout the minigame paints: dimmed, with the panel centred on it. */
   playfield: { x: number; y: number; w: number; h: number };
@@ -112,7 +111,7 @@ export function counterWindowStart(cursor: number, n: number): number {
  */
 function drawPrizeCounter(
   screen: Surface,
-  w: Wallet & PrizeWallet,
+  w: Wallet,
   cursor: number,
   tick: number,
   area: { x: number; y: number; w: number; h: number },
@@ -129,13 +128,12 @@ function drawPrizeCounter(
   const left = centre - Math.trunc((icon.w + 3 + textWidth(count)) / 2);
   drawIcon(screen, "ticket", left, y + 17 - (icon.h - textHeight) / 2);
   drawText(screen, count, left + icon.w + 3, y + 17, "yellow");
-  const offer = tokenOffer(w);
-  const offers = prizeOffers(w);
-  const greyed = new Set(offer === "short" ? [tokenItemIndex] : []);
-  offers.forEach((o, i) => {
+  const offers = w.counter();
+  const greyed = new Set(offers.token === "short" ? [tokenItemIndex] : []);
+  offers.prizes.forEach((o, i) => {
     if (o !== "buy") greyed.add(firstPrizeIndex + i);
   });
-  const items = prizeCounterItems(offer, offers);
+  const items = prizeCounterItems(offers);
   const start = counterWindowStart(cursor, items.length);
   const top = y + 31;
   const nameX = x + 14;

@@ -32,7 +32,7 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
   // The desk is in the room image; the employee stands in it, out of the player's reach.
   drawEmployee(screen, buffer);
   // Decorations are not solid: the player walks in front of them.
-  for (const id of s.prizes) {
+  for (const id of s.wallet.prizes) {
     const p = prize(id);
     drawImage(screen, p.sprite, p.x + buffer, p.y + buffer);
   }
@@ -50,7 +50,7 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
 
   drawTicker(
     screen,
-    { tokens: s.tokens, tickets: s.tickets, title: s.melodyPlaying ? s.imageTitle : null },
+    { tokens: s.wallet.tokens, tickets: s.wallet.tickets, title: s.melodyPlaying ? s.imageTitle : null },
     tick,
     buffer,
   );

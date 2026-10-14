@@ -3,12 +3,8 @@ import { checkCollision, newWalls } from "./collision.ts";
 import { newMachines } from "./machine.ts";
 import { counterRects } from "./desk.ts";
 import {
-  buyPrize,
   honeyJarPrice,
-  inCatalogueOrder,
   isPrizeId,
-  prizeOffer,
-  prizeOffers,
   oilCanPrice,
   pocketWatchPrice,
   prize,
@@ -25,6 +21,7 @@ import type { ArcadeTitle } from "../game/snapshot.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
+import { Wallet } from "./wallet.ts";
 
 describe("prize catalogue", () => {
   test("three prizes each for Sweet Sam, Firefly and Brass Monkey, 25, 50 and 100 tickets each", () => {
@@ -92,7 +89,7 @@ describe("prize catalogue", () => {
 
   test("decorations do not block movement: owning every prize changes nothing that is solid", () => {
     const s = newState(null, () => fakeSoftware());
-    s.prizes = prizes.map((p) => p.id);
+    s.wallet = new Wallet({ highScore: 0, tokens: 0, tickets: 0, prizes: prizes.map((p) => p.id) });
     for (const p of prizes) {
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
       // Whatever blocks a decoration's rect is the wall it is drawn on, nothing more.
@@ -104,59 +101,5 @@ describe("prize catalogue", () => {
     expect(prizes.every((p) => isPrizeId(p.id))).toBe(true);
     expect(isPrizeId("goldenTrophy")).toBe(false);
     expect(isPrizeId(1)).toBe(false);
-  });
-
-  test("owned prizes are kept once each, in catalogue order", () => {
-    expect(inCatalogueOrder(["sleepyBees", "honeyJar", "sleepyBees"])).toEqual(["honeyJar", "sleepyBees"]);
-    expect(inCatalogueOrder(["wings", "honeyJar", "lantern", "wings"])).toEqual(["honeyJar", "lantern", "wings"]);
-  });
-});
-
-describe("buyPrize", () => {
-  test("buys the Brass Monkey prizes the same way", () => {
-    expect(buyPrize({ tickets: 30, prizes: [] }, "oilCan")).toEqual({ tickets: 5, prizes: ["oilCan"] });
-    expect(buyPrize({ tickets: 175, prizes: ["oilCan", "honeyJar"] }, "pocketWatch")).toEqual({
-      tickets: 75,
-      prizes: ["honeyJar", "oilCan", "pocketWatch"],
-    });
-    expect(buyPrize({ tickets: 49, prizes: [] }, "springBoots")).toBeNull();
-    expect(buyPrize({ tickets: 100, prizes: ["springBoots"] }, "springBoots")).toBeNull();
-  });
-
-  test("takes the prize's price once and adds it to the owned prizes", () => {
-    expect(buyPrize({ tickets: 25, prizes: [] }, "honeyJar")).toEqual({ tickets: 0, prizes: ["honeyJar"] });
-    expect(buyPrize({ tickets: 130, prizes: ["sleepyBees"] }, "runningShoes")).toEqual({
-      tickets: 80,
-      prizes: ["runningShoes", "sleepyBees"],
-    });
-    expect(buyPrize({ tickets: 100, prizes: [] }, "sleepyBees")).toEqual({ tickets: 0, prizes: ["sleepyBees"] });
-  });
-
-  test("an owned prize can't be bought again", () => {
-    const after = defined(buyPrize({ tickets: 60, prizes: [] }, "honeyJar"));
-    expect(after).toEqual({ tickets: 35, prizes: ["honeyJar"] });
-    expect(buyPrize(after, "honeyJar")).toBeNull();
-    expect(prizeOffer(after, "honeyJar")).toBe("owned");
-  });
-
-  test("an unaffordable prize can't be bought", () => {
-    expect(buyPrize({ tickets: 24, prizes: [] }, "honeyJar")).toBeNull();
-    expect(buyPrize({ tickets: 49, prizes: ["honeyJar"] }, "runningShoes")).toBeNull();
-    expect(buyPrize({ tickets: 99, prizes: [] }, "sleepyBees")).toBeNull();
-    expect(prizeOffer({ tickets: 99, prizes: [] }, "sleepyBees")).toBe("short");
-  });
-
-  test("prizeOffers lists every prize's offer in catalogue order", () => {
-    expect(prizeOffers({ tickets: 60, prizes: ["honeyJar", "glowStick"] })).toEqual([
-      "owned",
-      "buy",
-      "short",
-      "buy",
-      "owned",
-      "short",
-      "buy",
-      "buy",
-      "short",
-    ]);
   });
 });

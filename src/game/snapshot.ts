@@ -67,7 +67,7 @@ export interface ArcadeSnapshot {
   prizes?: PrizeId[];
 }
 
-/** How the running minigame was started (`RunKind` in src/arcade/state.ts). */
+/** How the running minigame was started (`RunKind` in src/arcade/wallet.ts). */
 export type RunKindSnapshot = "paid" | "free" | "direct";
 
 /**
