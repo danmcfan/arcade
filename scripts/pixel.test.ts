@@ -98,7 +98,12 @@ describe("previewOptions", () => {
     const blanked = current.map((row) => row.replaceAll(/[^S.]/gu, "k"));
     const options = await previewOptions({ "src/ui/hubArt.ts:cabinetArt": { Current: current, Blanked: blanked } });
     expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
-    expect(options[0]?.screen).not.toBe(options[1]?.screen);
+    expect(options[0]?.screens).not.toEqual(options[1]?.screens);
+    // The middle cabinet switches on and off: more than one screen, the dark room first and last.
+    const timeline = options[0]?.timeline ?? [];
+    expect(options[0]?.screens.length).toBeGreaterThan(1);
+    expect(timeline.at(0)).toBe(0);
+    expect(timeline.at(-1)).toBe(0);
     expect([...cabinetArt]).toEqual(current);
   });
 

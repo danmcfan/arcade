@@ -284,11 +284,13 @@ export function place(base: PNG, items: readonly { png: PNG; x: number; y: numbe
   return out;
 }
 
-/** One prototype option: its frames, and the game screen drawn with it in place. */
+/** One prototype option: its frames, and the game screen drawn with it in place, tick by tick. */
 export interface PreviewOption {
   label: string;
   frames: string[];
-  screen: string;
+  /** Each distinct screen once; `timeline` is the index into them on each tick. */
+  screens: string[];
+  timeline: number[];
 }
 
 /** Sweetie 16, plus grey for placeholder letters a generator recolours (the cabinets' `1` to `4` and `S`). */
@@ -300,6 +302,12 @@ function thumbPalette(frames: readonly Rows[]): Record<string, string> {
 
 function dataUrl(png: PNG): string {
   return `data:image/png;base64,${PNG.sync.write(png).toString("base64")}`;
+}
+
+/** `ticks` as each distinct image once, and which one shows on each tick. */
+function timeline(ticks: readonly string[]): { screens: string[]; timeline: number[] } {
+  const screens = [...new Set(ticks)];
+  return { screens, timeline: ticks.map((t) => screens.indexOf(t)) };
 }
 
 /** A variants file's options, each swapped into its export and drawn into the scene that shows it. */
@@ -326,7 +334,7 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
         options.push({
           label: specs.length === 1 ? name : `${ts.key ?? ts.name}: ${name}`,
           frames: frames.map((rows) => dataUrl(toPng(rows, thumbPalette(frames)))),
-          screen: dataUrl(scene.render()),
+          ...timeline(scene.render().map((png) => dataUrl(png))),
         });
       }
     } finally {
