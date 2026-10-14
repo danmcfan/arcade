@@ -30,6 +30,10 @@ Any art request (creating, redrawing or specifying art) starts with the owner, w
 
 `bun run check` runs strict tsc, Oxlint, Prettier, knip, tests and the build; fix the code, never the rules. What each tool enforces and the guards around it: `docs/agents/quality-gate.md`.
 
+## Sweet Sam gameplay
+
+Sweet Sam matches the arcade Pac-Man; settle any gameplay question from the Pac-Man Dossier: `docs/sweet-sam-pacman.md`.
+
 ## Review
 
 `CODING_STANDARDS.md` holds the rules for the Standards axis of `/code-review`.
