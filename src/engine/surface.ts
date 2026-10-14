@@ -174,6 +174,21 @@ export class Surface {
     this.blit(source, s.sx, s.sy, s.w, s.h, x, y, opts);
   }
 
+  /** Runs `draw`, clipping everything it draws to the `w × h` rect at `x, y`. */
+  clipped(x: number, y: number, w: number, h: number, draw: () => void): void {
+    const ctx = this.context();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    try {
+      draw();
+    } finally {
+      ctx.restore();
+    }
+  }
+
   /** `DrawImage` with another surface (an offscreen Go `Image`) as source. */
   drawSurface(src: Surface, x: number, y: number, opts?: DrawOpts): void {
     // A surface that was never drawn to is fully transparent.

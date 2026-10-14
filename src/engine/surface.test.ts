@@ -235,3 +235,16 @@ describe("rect primitives", () => {
     expect(s.toPNGDataURL()).toBe("data:image/png;fake,64x80");
   });
 });
+
+describe("clipped", () => {
+  test("draws inside it are cut to the rect; draws after it are not", () => {
+    const { s, ctx } = screen();
+    s.clipped(56, 56, 224, 288, () => {
+      s.draw(sprite, 10, 10);
+      s.fillRect(0, 0, 4, 4, "#ffffff");
+    });
+    s.draw(sprite, 10, 10);
+    const rect = { x: 56, y: 56, w: 224, h: 288 };
+    expect(ctx.ops.map((o) => o.clip)).toEqual([rect, rect, null]);
+  });
+});

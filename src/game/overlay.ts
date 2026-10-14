@@ -1,7 +1,7 @@
 // What the Game draws over a frozen minigame (the minigame pause menu, its
 // controls panel, and the payout) or over the hub (the prize counter menu).
 // They look like the hub pause menu (shared pieces in src/ui/menu.ts),
-// centred on the layout; the prize counter menu fills the hub's playfield
+// centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
 import { tokenOffer, type Wallet } from "../arcade/prizeCounter.ts";
@@ -45,10 +45,7 @@ export interface MenuOverlay {
   /** The player's tokens, tickets and prizes, for the prize counter menu. */
   wallet: Wallet & PrizeWallet;
   tick: number;
-  /** The minigame's layout. */
-  width: number;
-  height: number;
-  /** The part of the layout the minigame paints, dimmed behind the panel. */
+  /** The part of the layout the minigame paints: dimmed, with the panel centred on it. */
   playfield: { x: number; y: number; w: number; h: number };
 }
 
@@ -72,8 +69,8 @@ const counterRowHeight = 10;
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
   dim(screen, x, y, w, h);
-  const centre = Math.trunc(o.width / 2);
-  const middle = Math.trunc(o.height / 2);
+  const centre = x + Math.trunc(w / 2);
+  const middle = y + Math.trunc(h / 2);
   switch (o.menu) {
     case "paused":
       drawPausePanel(screen, minigamePauseMenu, o.cursor, o.tick, centre, middle - pausePanelHeight / 2, {

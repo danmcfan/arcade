@@ -6,7 +6,8 @@
 // second, a lost life, the next stage, and game over opening the payout,
 // which pays the score in tickets. Part 2 writes the new sprite sheets (the
 // hurt Owl and the enemy shot) scaled up. Part 3 records Firefly played with
-// the keyboard. Files go to out/verify/firefly/.
+// the keyboard. Part 1 also reads the canvas to check that an enemy past the
+// screen's edge and the payout never paint over the bezel. Files go to out/verify/firefly/.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -15,6 +16,14 @@ import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
 import { ticketsFor } from "../../src/game/payout.ts";
 import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
+import { decodeDataUrl } from "../browser.ts";
+import {
+  cabinetFrameWidth,
+  cabinetInsetLeft,
+  cabinetInsetTop,
+  cabinetPlayfieldHeight,
+  cabinetPlayfieldWidth,
+} from "../../src/ui/cabinet.ts";
 import { evalJson, isStringArray, isTitleSnapshot, upscale, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
@@ -34,6 +43,42 @@ function game(v: Verify): GameSnapshot {
 
 function firefly(g: GameSnapshot): FireflySnapshot | null {
   return g.software === "firefly" && g.sw !== null && "stageTick" in g.sw ? g.sw : null;
+}
+
+const cabinetStrip = PNG.sync.read(readFileSync(join(import.meta.dir, "../../src/assets/images/cabinet-firefly.png")));
+
+/**
+ * Bezel pixels in the canvas that differ from joystick frame `joystick` of the
+ * cabinet strip: 0 when nothing is drawn over the bezel.
+ */
+function bezelPixelsChanged(v: Verify, joystick: number): number {
+  const png = PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
+  let changed = 0;
+  for (let y = 0; y < png.height; y++) {
+    for (let x = 0; x < png.width; x++) {
+      const onScreen =
+        x >= cabinetInsetLeft &&
+        x < cabinetInsetLeft + cabinetPlayfieldWidth &&
+        y >= cabinetInsetTop &&
+        y < cabinetInsetTop + cabinetPlayfieldHeight;
+      if (onScreen) continue;
+      const i = (y * png.width + x) * 4;
+      const j = (y * cabinetStrip.width + joystick * cabinetFrameWidth + x) * 4;
+      for (let c = 0; c < 4; c++) if (png.data[i + c] !== cabinetStrip.data[j + c]) changed++;
+    }
+  }
+  return changed;
+}
+
+/** An enemy in play with part of its sprite past the screen's edge. */
+function pastEdge(s: FireflySnapshot): boolean {
+  return s.enemies.some((e) => {
+    if (e.state === "waiting" || e.deadFrames > 0) return false;
+    const half = e.kind === "owl" ? 16 : 8;
+    return (
+      e.x - half < 0 || e.x + half > cabinetPlayfieldWidth || e.y - half < 0 || e.y + half > cabinetPlayfieldHeight
+    );
+  });
 }
 
 /** The bot: Space held, dodging shots and divers close above, else steering under the nearest enemy. */
@@ -82,6 +127,11 @@ function playToPayout(v: Verify): void {
     if (s === null) throw new Error(`left Firefly without a payout: ${g.software}`);
     lastScore = s.score;
 
+    if (!seen.has("0-enemy-past-edge") && pastEdge(s)) {
+      const changed = bezelPixelsChanged(v, s.joystick);
+      check(changed === 0, "an enemy past the screen's edge is cut off: the bezel stays the cabinet art", changed);
+      shoot("0-enemy-past-edge", "saw an enemy past the screen's edge");
+    }
     if (s.stage === 1 && s.stageTick === 40) shoot("1-stage-1", "STAGE 1 shows while the enemies wait");
     if (
       s.enemies.length === 40 &&
@@ -120,6 +170,7 @@ function playToPayout(v: Verify): void {
 
   g = game(v);
   for (const name of [
+    "0-enemy-past-edge",
     "1-stage-1",
     "2-formation",
     "3-dive-shots",
@@ -136,6 +187,9 @@ function playToPayout(v: Verify): void {
     g.payout,
   );
   v.frame("9-payout", 2);
+  const sw = firefly(g);
+  const changed = sw === null ? -1 : bezelPixelsChanged(v, sw.joystick);
+  check(changed === 0, "the payout and its dim stay inside the screen: the bezel stays the cabinet art", changed);
   v.tap("space");
   v.step(1);
   v.frame("10-payout-counted", 2);

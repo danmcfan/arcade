@@ -16,7 +16,7 @@ import {
 } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
-import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
+import { cabinetInsetLeft, cabinetInsetTop, drawCabinet, drawOnScreen } from "../ui/cabinet.ts";
 import { drawText, drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
@@ -77,6 +77,12 @@ export interface FireflyView {
 
 export function drawFirefly(screen: Surface, f: FireflyView): void {
   drawCabinet(screen, f.cabinetJoystickFrame, imageCabinetFirefly);
+  drawOnScreen(screen, () => {
+    drawField(screen, f);
+  });
+}
+
+function drawField(screen: Surface, f: FireflyView): void {
   screen.draw(imageFireflyBackground, ox, oy);
 
   for (const e of f.enemies) drawEnemy(screen, e);

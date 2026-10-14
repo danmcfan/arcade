@@ -13,6 +13,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { Game } from "../game/game.ts";
+import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../game/payout.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
@@ -119,6 +120,13 @@ describe("BrassMonkeySoftware", () => {
 });
 
 describe("draw", () => {
+  test("only the cabinet draws outside the 224x288 screen; everything else is clipped to it", () => {
+    const paints = screenPaints((screen) => {
+      new BrassMonkeySoftware().draw(screen, 0);
+    });
+    expectDrawnOnScreen(paints, imageCabinetBrassMonkey);
+  });
+
   test("fills the screen: a band of wall for the scores, then the floor under it, no black bands", () => {
     const g = quiet();
     const { calls, fills } = record(g);

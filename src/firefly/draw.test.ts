@@ -15,6 +15,7 @@ import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
+import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { FireflySoftware } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
@@ -51,6 +52,15 @@ function onlyEnemy(kind: Enemy["kind"], x: number, y: number): { f: FireflySoftw
 }
 
 describe("firefly draw", () => {
+  test("only the cabinet draws outside the 224x288 screen, so an enemy off its edge is cut off", () => {
+    const { f } = onlyEnemy("owl", -12, 300);
+    const paints = screenPaints((screen) => {
+      f.draw(screen, 0);
+    });
+    expectDrawnOnScreen(paints, imageCabinetFirefly);
+    expect(paints.filter((p) => p.sprite?.asset === imageOwl.asset && p.clip !== null)).toHaveLength(1);
+  });
+
   test("the cabinet at 0,0, the night sky inside the insets, then the firefly centred on its position", () => {
     const [cabinet, sky, ...rest] = drawCalls(new FireflySoftware());
     expect(cabinet?.sprite.asset).toBe(imageCabinetFirefly.asset);
