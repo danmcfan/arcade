@@ -28,7 +28,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { sceneFor } from "./pixel-scenes.ts";
+import { sceneFor, type Scene } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
 /** One image to show, with the label it gets on a sheet. */
@@ -310,11 +310,25 @@ function timeline(ticks: readonly string[]): { screens: string[]; timeline: numb
   return { screens, timeline: ticks.map((t) => screens.indexOf(t)) };
 }
 
-/** A variants file's options, each swapped into its export and drawn into the scene that shows it. */
+/** An option's frames: itself when it is rows, its rows entries when it is frames. */
+function optionFrames(option: unknown): Rows[] {
+  if (isRows(option)) return [option];
+  return Array.isArray(option) ? option.filter((f) => isRows(f)) : [];
+}
+
+/** One export a variants file swaps: its rows or frames, as it is now, and its options by label. */
+interface Swap {
+  target: unknown[];
+  original: unknown[];
+  byLabel: Record<string, unknown>;
+}
+
+/**
+ * A variants file's options, one per label: each swaps that label's rows into
+ * every export that has it, and draws the scene that shows them.
+ */
 export async function previewOptions(variants: Record<string, unknown>): Promise<PreviewOption[]> {
-  const options: PreviewOption[] = [];
-  const specs = Object.entries(variants);
-  await inOrder(specs, async ([spec, byLabel]) => {
+  const swaps = await inOrder(Object.entries(variants), async ([spec, byLabel]): Promise<Swap & { scene: Scene }> => {
     const ts = parseSpec(spec);
     if (ts === undefined) throw new Error(`"${spec}" is not path.ts:name[.key]`);
     if (!isRecord(byLabel)) throw new Error(`${spec} has no options`);
@@ -324,24 +338,37 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
     const exported = mod[ts.name];
     const value = ts.key === undefined ? exported : isRecord(exported) ? exported[ts.key] : undefined;
     if (!Array.isArray(value)) throw new Error(`${spec} is not a list of rows or frames`);
-    const target: unknown[] = value;
-    const original = [...target];
-    try {
-      for (const [name, option] of Object.entries(byLabel)) {
-        const frames = isRows(option) ? [option] : Array.isArray(option) ? option.filter((f) => isRows(f)) : [];
-        if (frames.length === 0) throw new Error(`${spec} option "${name}" has no rows`);
-        target.splice(0, target.length, ...(isRows(option) ? option : frames));
-        options.push({
-          label: specs.length === 1 ? name : `${ts.key ?? ts.name}: ${name}`,
-          frames: frames.map((rows) => dataUrl(toPng(rows, thumbPalette(frames)))),
-          ...timeline(scene.render().map((png) => dataUrl(png))),
-        });
-      }
-    } finally {
-      target.splice(0, target.length, ...original);
+    for (const [name, option] of Object.entries(byLabel)) {
+      if (optionFrames(option).length === 0) throw new Error(`${spec} option "${name}" has no rows`);
     }
+    const target: unknown[] = value;
+    return { target, original: [...target], byLabel, scene };
   });
-  return options;
+  const scene = swaps[0]?.scene;
+  if (scene === undefined) return [];
+  if (swaps.some((s) => s.scene !== scene)) throw new Error("a variants file's exports must all show in one scene");
+  const labels = [...new Set(swaps.flatMap((s) => Object.keys(s.byLabel)))];
+  try {
+    return labels.map((name) => {
+      const frames: Rows[] = [];
+      for (const { target, original, byLabel } of swaps) {
+        const option = byLabel[name];
+        // An option that is rows replaces the rows; one that is frames replaces the frames.
+        const swapped = option === undefined ? original : isRows(option) ? option : optionFrames(option);
+        target.splice(0, target.length, ...swapped);
+        if (option !== undefined) frames.push(...optionFrames(option));
+      }
+      const { screens, timeline: ticks } = timeline(scene.render().map((png) => dataUrl(png)));
+      return {
+        label: name,
+        frames: frames.map((rows) => dataUrl(toPng(rows, thumbPalette(frames)))),
+        screens,
+        timeline: ticks,
+      };
+    });
+  } finally {
+    for (const { target, original } of swaps) target.splice(0, target.length, ...original);
+  }
 }
 
 function write(png: PNG, out: string): void {

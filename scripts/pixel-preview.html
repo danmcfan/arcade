@@ -145,7 +145,7 @@
         img.src = o.frames[0];
         img.alt = "";
         const span = document.createElement("span");
-        span.textContent = o.frames.length > 1 ? `${o.label} (${o.frames.length} frames)` : o.label;
+        span.textContent = o.label;
         b.append(img, span);
         b.addEventListener("click", () => pick(i));
         li.append(b);

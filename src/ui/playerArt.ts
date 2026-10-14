@@ -18,16 +18,12 @@ export const playerFrameHeight = 24;
 /** Frames per walk cycle (`Entity.frameTotal`). */
 export const playerFrames = 4;
 
-/** One facing's frames, each a whole 16x24 frame. */
-interface Facing {
-  stand: readonly string[];
-  step: readonly string[];
-  otherStep: readonly string[];
-}
+/** One facing's frames, each a whole 16x24 frame: stand, step, other step. */
+type Facing = string[][];
 
 /** Facing up: the back of the head, the headphone band across the hair. */
-export const up: Facing = {
-  stand: [
+export const up: Facing = [
+  [
     "................",
     "................",
     "................",
@@ -53,7 +49,7 @@ export const up: Facing = {
     "....kk....kk....",
     "................",
   ],
-  step: [
+  [
     "................",
     "................",
     "................",
@@ -79,7 +75,7 @@ export const up: Facing = {
     ".........kwwk...",
     "..........kk....",
   ],
-  otherStep: [
+  [
     "................",
     "................",
     "................",
@@ -105,11 +101,11 @@ export const up: Facing = {
     "...kwwk.........",
     "....kk..........",
   ],
-};
+];
 
 /** Facing down: the face, both ear cups. */
-export const down: Facing = {
-  stand: [
+export const down: Facing = [
+  [
     "................",
     "................",
     "................",
@@ -135,7 +131,7 @@ export const down: Facing = {
     "....kk....kk....",
     "................",
   ],
-  step: [
+  [
     "................",
     "................",
     "................",
@@ -161,7 +157,7 @@ export const down: Facing = {
     "...kwwk.........",
     "....kk..........",
   ],
-  otherStep: [
+  [
     "................",
     "................",
     "................",
@@ -187,11 +183,11 @@ export const down: Facing = {
     ".........kwwk...",
     "..........kk....",
   ],
-};
+];
 
 /** Facing right: one ear cup at the back of the head. Left is this, mirrored. */
-export const right: Facing = {
-  stand: [
+export const right: Facing = [
+  [
     "................",
     "................",
     "................",
@@ -217,7 +213,7 @@ export const right: Facing = {
     ".......kkk......",
     "................",
   ],
-  step: [
+  [
     "................",
     "................",
     "................",
@@ -243,7 +239,7 @@ export const right: Facing = {
     "....kkk.........",
     "................",
   ],
-  otherStep: [
+  [
     "................",
     "................",
     "................",
@@ -269,26 +265,26 @@ export const right: Facing = {
     ".....kk..kk.....",
     "................",
   ],
-};
+];
 
 const mirror = (rows: readonly string[]): string[] =>
   rows.map((r) => Array.from(r, (_, i) => r.charAt(r.length - 1 - i)).join(""));
 
-const left: Facing = {
-  stand: mirror(right.stand),
-  step: mirror(right.step),
-  otherStep: mirror(right.otherStep),
-};
-
 /** Sheet rows top to bottom (`Entity.frameDirection`). */
 export const sheetOrder: readonly Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
 
-const facings: Readonly<Record<Direction, Facing>> = { UP: up, DOWN: down, LEFT: left, RIGHT: right };
+/** Left is right, mirrored, read at call time so an edit to `right` carries over. */
+const facings: Readonly<Record<Direction, () => Facing>> = {
+  UP: () => up,
+  DOWN: () => down,
+  LEFT: () => right.map((rows) => mirror(rows)),
+  RIGHT: () => right,
+};
 
 /** The 4 frames of one facing, left to right: stand, step, stand, other step. */
 export function playerFramesFor(dir: Direction): string[][] {
-  const f = facings[dir];
-  return [f.stand, f.step, f.stand, f.otherStep].map((rows) => rows.slice());
+  const [stand = [], step = [], otherStep = []] = facings[dir]();
+  return [stand, step, stand, otherStep].map((rows) => rows.slice());
 }
 
 /** The whole sheet: `playerFrames` frames across, one row of frames per direction in `sheetOrder`. */

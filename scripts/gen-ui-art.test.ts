@@ -116,8 +116,8 @@ describe("UI art source", () => {
     // Sheet rows follow the player's frameDirection.
     expect(sheetOrder.map((d) => p.frameDirection[d])).toEqual([0, 1, 2, 3]);
     for (const [name, facing] of Object.entries({ up, down, right }))
-      for (const pose of ["stand", "step", "otherStep"] as const)
-        checkRows(`player ${name} ${pose}`, facing[pose], { w: playerFrameWidth, h: playerFrameHeight });
+      for (const [i, frame] of facing.entries())
+        checkRows(`player ${name} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
     for (const dir of sheetOrder) {
       for (const [i, frame] of playerFramesFor(dir).entries())
         checkRows(`player ${dir} ${i}`, frame, { w: playerFrameWidth, h: playerFrameHeight });
