@@ -2,6 +2,23 @@
 // one export's rows with a Sweetie 16 palette, step through its frames, try
 // the agent's variants and save the rows back into the source.
 
+import {
+  createElement,
+  Eraser,
+  FlipHorizontal2,
+  FolderOpen,
+  Grid3x3,
+  type IconNode,
+  Layers,
+  PaintBucket,
+  Pencil,
+  Pipette,
+  Redo2,
+  Save,
+  Undo2,
+  ZoomIn,
+  ZoomOut,
+} from "lucide";
 import type { RowsValue, StudioItem } from "./studio-source.ts";
 
 /** One image: rows of letters, `.` blank, as mutable cells. */
@@ -16,8 +33,9 @@ interface Opened {
 type Tool = "pencil" | "eraser" | "fill" | "eyedropper";
 
 const blank = ".";
-const checkerDark = "#8c8c8c";
-const checkerLight = "#a0a0a0";
+// Blank cells show as a light white and grey checker, as in most editors.
+const checkerDark = "#e4e4e7";
+const checkerLight = "#ffffff";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const node = document.querySelector(`#${id}`);
@@ -195,7 +213,9 @@ function drawFrames(): void {
       c.height = h * 3;
       c.className = i === state.current ? "frame on" : "frame";
       c.title = `frame ${i}`;
-      paintGrid(context(c), g, 3);
+      const ctx = context(c);
+      paintChecker(ctx, w, h, 3);
+      paintGrid(ctx, g, 3);
       c.addEventListener("click", () => {
         state.current = i;
         render();
@@ -275,11 +295,17 @@ window.addEventListener("mouseup", () => {
   drawing = false;
 });
 
-function toggle(label: string, on: boolean, click: () => void, title = ""): HTMLButtonElement {
+/** Put a Lucide icon in `b`, sized by the `.icon` button style. */
+function setIcon(b: HTMLButtonElement, icon: IconNode): void {
+  b.replaceChildren(createElement(icon, { "aria-hidden": "true" }));
+  b.setAttribute("aria-label", b.title);
+}
+
+function toggle(icon: IconNode, on: boolean, click: () => void, title: string): HTMLButtonElement {
   const b = document.createElement("button");
-  b.textContent = label;
   b.title = title;
-  b.className = on ? "on" : "";
+  b.className = on ? "icon on" : "icon";
+  setIcon(b, icon);
   b.addEventListener("click", () => {
     click();
     buildSide();
@@ -288,12 +314,12 @@ function toggle(label: string, on: boolean, click: () => void, title = ""): HTML
   return b;
 }
 
-/** Each tool, its button label and its key. */
-const tools: [Tool, string, string][] = [
-  ["pencil", "Pencil", "b"],
-  ["eraser", "Eraser", "e"],
-  ["fill", "Fill", "g"],
-  ["eyedropper", "Pick", "i"],
+/** Each tool, its name, its key and its icon. */
+const tools: [Tool, string, string, IconNode][] = [
+  ["pencil", "Pencil", "b", Pencil],
+  ["eraser", "Eraser", "e", Eraser],
+  ["fill", "Fill", "g", PaintBucket],
+  ["eyedropper", "Pick", "i", Pipette],
 ];
 
 function zoom(by: number): void {
@@ -302,9 +328,9 @@ function zoom(by: number): void {
 
 function buildSide(): void {
   ui.tools.replaceChildren(
-    ...tools.map(([tool, label, key]) =>
+    ...tools.map(([tool, label, key, icon]) =>
       toggle(
-        label,
+        icon,
         state.tool === tool,
         () => {
           state.tool = tool;
@@ -313,7 +339,7 @@ function buildSide(): void {
       ),
     ),
     toggle(
-      "Mirror X",
+      FlipHorizontal2,
       state.mirror,
       () => {
         state.mirror = !state.mirror;
@@ -322,14 +348,24 @@ function buildSide(): void {
     ),
   );
   ui.view.replaceChildren(
-    toggle("Grid", state.grid, () => {
-      state.grid = !state.grid;
-    }),
-    toggle("Onion", state.onion, () => {
-      state.onion = !state.onion;
-    }),
     toggle(
-      "−",
+      Grid3x3,
+      state.grid,
+      () => {
+        state.grid = !state.grid;
+      },
+      "Grid",
+    ),
+    toggle(
+      Layers,
+      state.onion,
+      () => {
+        state.onion = !state.onion;
+      },
+      "Onion skin",
+    ),
+    toggle(
+      ZoomOut,
       false,
       () => {
         zoom(1 / 2);
@@ -337,7 +373,7 @@ function buildSide(): void {
       "Zoom out (-)",
     ),
     toggle(
-      "+",
+      ZoomIn,
       false,
       () => {
         zoom(2);
@@ -386,8 +422,9 @@ function buildVariants(variants: Opened["variants"], opened: Opened["value"]): v
   if (all.length === 1) ui.variants.append("none in out/studio/variants/");
 }
 
-function showStatus(text: string): void {
+function showStatus(text: string, error = false): void {
   ui.status.textContent = text;
+  ui.status.className = error ? "error" : "";
 }
 
 async function api<T>(path: string, is: (v: unknown) => v is T, init?: RequestInit): Promise<T> {
@@ -464,9 +501,14 @@ function undoRedo(from: Grid[][], to: Grid[][]): void {
 
 function report(p: Promise<void>): void {
   p.catch((e: unknown) => {
-    showStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
+    showStatus(`error: ${e instanceof Error ? e.message : String(e)}`, true);
   });
 }
+
+setIcon(ui.open, FolderOpen);
+setIcon(ui.undo, Undo2);
+setIcon(ui.redo, Redo2);
+setIcon(ui.save, Save);
 
 ui.open.addEventListener("click", () => {
   report(open(ui.spec.value.trim()));
@@ -532,7 +574,9 @@ function animate(): void {
       const { w, h } = size(g);
       canvas.width = w * k;
       canvas.height = h * k;
-      paintGrid(context(canvas), g, k);
+      const ctx = context(canvas);
+      paintChecker(ctx, w, h, k);
+      paintGrid(ctx, g, k);
     }
   }
   requestAnimationFrame(animate);
@@ -561,5 +605,5 @@ async function start(): Promise<void> {
 try {
   await start();
 } catch (e: unknown) {
-  showStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
+  showStatus(`error: ${e instanceof Error ? e.message : String(e)}`, true);
 }

@@ -56,6 +56,12 @@ await verify(
       page.eval("document.querySelectorAll('#palette .swatch').length") === "16",
       "the palette is the 16 Sweetie letters",
     );
+    check(
+      page.eval(
+        "[...document.querySelectorAll('header button, #tools button, #view button')].every((b) => b.querySelector('svg') !== null)",
+      ) === "true",
+      "every tool and header button is an icon",
+    );
     v.screenshot("1-open");
 
     page.eval(
@@ -70,7 +76,7 @@ await verify(
     // The pencil in blue at the cell (8, 0), with mirror X on.
     page.eval(`
     [...document.querySelectorAll('#palette .swatch')].find((b) => b.textContent === 'b').click();
-    [...document.querySelectorAll('#tools button')].find((b) => b.textContent === 'Mirror X').click();
+    [...document.querySelectorAll('#tools button')].find((b) => b.title.startsWith('Mirror X')).click();
     const c = document.querySelector('#editor'), r = c.getBoundingClientRect(), z = r.width / 16;
     const at = { clientX: r.left + 2 * z + 1, clientY: r.top + 1, bubbles: true };
     c.dispatchEvent(new MouseEvent('mousedown', at));
