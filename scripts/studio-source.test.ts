@@ -57,12 +57,9 @@ describe("writeRows", () => {
 });
 
 describe("writeRows on the real art sources", () => {
-  // Computed exports (`Object.keys(...)`, `mirrorX(...)`) are refused, not art to save into.
-  const computed = new Set(["charset", "inkOrder"]);
-  // Their rows are private consts, so these export no rows to save into.
-  const noRows = new Set(["src/ui/deskArt.ts", "src/ui/employeeArt.ts"]);
-
-  test.each(artSources.filter((f) => !noRows.has(f)))("writing back %s's own rows changes nothing", async (file) => {
+  // Computed exports (`Object.keys(...)`, `mirrorX(...)`, frames built from drawn rows) are refused, not art to save into.
+  const computed = new Set(["charset", "inkOrder", "employeeFrames"]);
+  test.each(artSources)("writing back %s's own rows changes nothing", async (file) => {
     const path = join(repoRoot, file);
     const source = readFileSync(path, "utf8");
     const mod: unknown = await import(path);

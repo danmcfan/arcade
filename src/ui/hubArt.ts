@@ -30,7 +30,7 @@ const neonTube = ["k", "B", "c", "B", "n"] as const;
 const skirting = ["p", "r", "k"] as const;
 
 /** One 16x16 tile of the carpet's confetti print; `.` is the navy ground. */
-const carpetTile: readonly string[] = [
+export const carpetTile: readonly string[] = [
   "................",
   "..b.............",
   ".bbb.......p....",

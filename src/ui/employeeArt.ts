@@ -9,7 +9,7 @@ export const employeeWidth = 16;
 export const employeeHeight = 24;
 
 /** The left half, front view: the visor, the face, the vest, the legs. */
-const half: readonly string[] = [
+export const half: readonly string[] = [
   "........",
   "........",
   "........",

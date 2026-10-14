@@ -26,7 +26,7 @@ interface Facing {
 }
 
 /** Facing up: the back of the head, the headphone band across the hair. */
-const up: Facing = {
+export const up: Facing = {
   stand: [
     "................",
     "................",
@@ -108,7 +108,7 @@ const up: Facing = {
 };
 
 /** Facing down: the face, both ear cups. */
-const down: Facing = {
+export const down: Facing = {
   stand: [
     "................",
     "................",
@@ -190,7 +190,7 @@ const down: Facing = {
 };
 
 /** Facing right: one ear cup at the back of the head. Left is this, mirrored. */
-const right: Facing = {
+export const right: Facing = {
   stand: [
     "................",
     "................",
