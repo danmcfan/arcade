@@ -1,0 +1,204 @@
+<!doctype html>
+<!-- The page `bun run pixel preview` fills: the game screen on the left, the
+     options on the right. Arrow keys or a click pick an option. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__TITLE__ prototypes</title>
+    <style>
+      :root {
+        --bg: #f4f4f4;
+        --panel: #ffffff;
+        --ink: #1a1c2c;
+        --muted: #566c86;
+        --line: #94b0c2;
+        --pick: #3b5dc9;
+        --screen: #1a1c2c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #1a1c2c;
+          --panel: #262838;
+          --ink: #f4f4f4;
+          --muted: #94b0c2;
+          --line: #333c57;
+          --pick: #41a6f6;
+          --screen: #000000;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #1a1c2c;
+        --panel: #262838;
+        --ink: #f4f4f4;
+        --muted: #94b0c2;
+        --line: #333c57;
+        --pick: #41a6f6;
+        --screen: #000000;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.4 ui-monospace,
+          Menlo,
+          monospace;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 4px;
+      }
+      .hint {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .screen {
+        background: var(--screen);
+        padding: 8px;
+        border-radius: 6px;
+        position: sticky;
+        top: 16px;
+      }
+      .screen canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        image-rendering: pixelated;
+      }
+      .screen p {
+        color: #f4f4f4;
+        margin: 8px 0 0;
+      }
+      ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+      button {
+        width: 100%;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        text-align: left;
+        padding: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        border: 2px solid var(--line);
+        border-radius: 6px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button[aria-current="true"] {
+        border-color: var(--pick);
+      }
+      button img {
+        flex: none;
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        background: repeating-conic-gradient(#8c8c8c 0 25%, #a0a0a0 0 50%) 0 0 / 8px 8px;
+      }
+      @media (max-width: 640px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+        .screen {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>__TITLE__</h1>
+    <p class="hint">↑ ↓ or click to pick an option; the game screen redraws with it.</p>
+    <main>
+      <div class="screen">
+        <canvas id="screen" role="img"></canvas>
+        <p id="caption"></p>
+      </div>
+      <ol id="options"></ol>
+    </main>
+    <script>
+      const options = "__OPTIONS__";
+      const list = document.getElementById("options");
+      const screen = document.getElementById("screen");
+      const caption = document.getElementById("caption");
+      let picked = 0;
+      const buttons = options.map((o, i) => {
+        const li = document.createElement("li");
+        const b = document.createElement("button");
+        const img = document.createElement("img");
+        img.src = o.frames[0];
+        img.alt = "";
+        const span = document.createElement("span");
+        span.textContent = o.frames.length > 1 ? `${o.label} (${o.frames.length} frames)` : o.label;
+        b.append(img, span);
+        b.addEventListener("click", () => pick(i));
+        li.append(b);
+        list.append(li);
+        return { b, img };
+      });
+      function pick(i) {
+        picked = (i + options.length) % options.length;
+        buttons.forEach(({ b }, j) => b.setAttribute("aria-current", String(j === picked)));
+        caption.textContent = options[picked].label;
+        screen.setAttribute("aria-label", options[picked].label);
+        shown = -1;
+        buttons[picked].b.scrollIntoView({ block: "nearest" });
+      }
+      document.addEventListener("keydown", (e) => {
+        const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+        if (step === undefined) return;
+        e.preventDefault();
+        pick(picked + step);
+      });
+      // The scene plays tick by tick at the game's 60 a second, from images decoded once.
+      const ctx = screen.getContext("2d");
+      const decoded = options.map((o) =>
+        o.screens.map((src) => {
+          const img = new Image();
+          img.src = src;
+          return img;
+        }),
+      );
+      let start = performance.now();
+      let shown = -1;
+      function play(now) {
+        const { timeline } = options[picked];
+        const index = timeline[Math.floor(((now - start) * 60) / 1000) % timeline.length];
+        const img = decoded[picked][index];
+        if (index !== shown && img.complete) {
+          screen.width = img.naturalWidth;
+          screen.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+          shown = index;
+        }
+        requestAnimationFrame(play);
+      }
+      requestAnimationFrame(play);
+      let tick = 0;
+      setInterval(() => {
+        tick++;
+        options.forEach((o, i) => {
+          if (o.frames.length > 1) buttons[i].img.src = o.frames[tick % o.frames.length];
+        });
+      }, 150);
+      pick(0);
+      start = performance.now();
+    </script>
+  </body>
+</html>

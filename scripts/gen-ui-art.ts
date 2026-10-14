@@ -128,7 +128,7 @@ export function renderEmployee(): PNG {
 }
 
 /** Where the hub's machines stand, in their order. */
-function hubCabinets(): CabinetPlace[] {
+export function hubCabinets(): CabinetPlace[] {
   const machines = newMachines(() => {
     throw new Error("the room art builds no software");
   });

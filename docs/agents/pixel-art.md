@@ -6,7 +6,7 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 Every art change, new or redrawn, starts with the owner, before any PR. Ask which of two modes they want:
 
-- **Prototype**: several options for an asset. Write each export's options to `out/studio/variants/<issue>-<slug>.json`: `{ "path.ts:name": { "label": rows } }` (`path.ts:name.key` for an entry of a record; frames for a list of frames). One label per option the issue asks for; anything beyond the issue is an extra, labelled as one. The owner then decides how to compare them: in the studio, or as a sheet from `bun run pixel show`.
+- **Prototype**: several options for an asset. Write each export's options to `out/studio/variants/<issue>-<slug>.json`: `{ "path.ts:name": { "label": rows } }` (`path.ts:name.key` for an entry of a record; frames for a list of frames). One label per option the issue asks for; anything beyond the issue is an extra, labelled as one. Then show them in the game: `bun run pixel preview out/studio/variants/<issue>-<slug>.json` writes an HTML page with the game screen on the left and the options on the right (arrow keys or a click switch them). Publish it with the Artifact tool and give the owner the link; that page is how prototypes reach the owner. When it reports no scene shows the art, add the screen to `scripts/pixel-scenes.ts` first.
 - **Tweak**: small changes to an existing asset. Edit its rows in place, show the result with `bun run pixel before`, and adjust from the owner's notes.
 
 Start the studio only when the owner asks for it: run `bun run studio` and give them the URL, with `?spec=path.ts:name` for the first export. It opens any rows export, lists the variants beside it, and draws with the Sweetie 16 palette, frames, onion skin and an animated preview. Saving writes the rows into the export's array literal, formats the file and runs `bun run art`; read the save back with `git diff`.
@@ -57,6 +57,7 @@ Check art as text first: `bun run pixel rows` and `checkRows` catch size, letter
 | Command                                           | When                                                                                                                  |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `pixel show <image>...`                           | While drawing. `path.ts:name` reads rows straight from the source, so you need no `bun run art`.                      |
+| `pixel preview <variants.json>`                   | Prototypes for the owner: each option drawn into its game screen, as an HTML page to publish                          |
 | `pixel place <base> <image>@x,y...`               | To judge a sprite where it stands, e.g. the player in the hub                                                         |
 | `pixel before <image>...`                         | For the PR: `origin/main`'s version beside yours, at one scale. Works on PNGs and on `path.ts:name` sources           |
 | `pixel rows <image>` / `pixel colours <image>...` | To import art, or to find a stray colour; `rows --nearest` imports art in another palette (the Go game's PICO-8 PNGs) |
