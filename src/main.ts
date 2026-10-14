@@ -20,7 +20,7 @@ import type { SceneName } from "./game/software.ts";
 import { localStorageStore } from "./title/save.ts";
 import { drawNotice, noticeHeight, noticeWidth } from "./ui/notice.ts";
 
-const SCENES: readonly SceneName[] = ["title", "game", "wave", "lumberjack"];
+const SCENES: readonly SceneName[] = ["title", "game"];
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
@@ -58,11 +58,6 @@ async function main(): Promise<void> {
   // The title scene keeps its save in localStorage, also when the test hook loads it.
   const store = localStorageStore();
   const runtime = new Runtime((name, opts) => createScene(name, { store, ...opts }));
-  let unmountOverlay: (() => void) | null = null;
-  runtime.onReplace((next) => {
-    unmountOverlay?.();
-    unmountOverlay = next.mountOverlay?.(document.body) ?? null;
-  });
 
   // A factory error propagates out of main() and the page's top-level await.
   const requested = params.get("scene");

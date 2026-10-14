@@ -31,7 +31,7 @@ describe("fitScale (D1: integer scale in device pixels)", () => {
     expect(fitScale(160, 100, 320, 200, 1).scale).toBe(2);
   });
 
-  test("falls back to a fractional fit-to-viewport downscale when k = 1 does not fit (wave)", () => {
+  test("falls back to a fractional fit-to-viewport downscale when k = 1 does not fit", () => {
     expect(fitScale(2048, 2048, 1280, 800, 1)).toEqual({
       scale: 800 / 2048,
       integer: false,

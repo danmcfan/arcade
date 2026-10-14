@@ -7,15 +7,13 @@ import { addSoundListener, type SoundEvent } from "./audio.ts";
 import * as rng from "./rng.ts";
 import type { Runtime } from "./runtime.ts";
 import { expandSteps } from "../game/script.ts";
-import type { SceneName, SoftwareName, WaveOptions } from "../game/software.ts";
+import type { SceneName, SoftwareName } from "../game/software.ts";
 import type { SceneSnapshot } from "../game/snapshot.ts";
 import type { InputScript } from "../game/script.ts";
 
 export interface LoadOptions {
   /** `game` only: start as `game.New(<software>)`; omit for the hub. */
   software?: SoftwareName;
-  /** `wave` only: pending slider values. */
-  wave?: WaveOptions;
 }
 
 export interface ArcadeTestHook {
@@ -35,8 +33,8 @@ export interface ArcadeTestHook {
   load(scene: SceneName, opts?: LoadOptions): void;
   /** Ticks stepped since the last `load()`. */
   tick(): number;
-  /** The current scene's §4.3 snapshot; `{ full: true }` adds the full grid (as on a trace's last tick). */
-  snapshot(opts?: { full?: boolean }): SceneSnapshot;
+  /** The current scene's §4.3 snapshot. */
+  snapshot(): SceneSnapshot;
   /** `canvas.toDataURL()` at logical resolution. */
   frame(): string;
   layout(): [number, number];
@@ -93,7 +91,7 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
       runtime.load(scene, opts ?? {});
     },
     tick: () => runtime.ticks,
-    snapshot: (opts) => runtime.scene.snapshot(opts),
+    snapshot: () => runtime.scene.snapshot(),
     frame() {
       host.draw();
       return host.frame();

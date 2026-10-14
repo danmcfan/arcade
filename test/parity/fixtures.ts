@@ -18,7 +18,7 @@ export function tracePath(scenario: string): string {
   return `${fixturesDir}traces/${scenario}.jsonl.gz`;
 }
 
-const SCENES: ReadonlySet<unknown> = new Set(["title", "game", "wave", "lumberjack"]);
+const SCENES: ReadonlySet<unknown> = new Set(["title", "game"]);
 const SOFTWARE: ReadonlySet<unknown> = new Set(["sweetSam", "firefly", "brassMonkey"]);
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -27,10 +27,6 @@ function isObject(v: unknown): v is Record<string, unknown> {
 
 function isStep(v: unknown): boolean {
   return isObject(v) && typeof v["ticks"] === "number" && isObject(v["input"]);
-}
-
-function isWave(v: unknown): boolean {
-  return isObject(v) && typeof v["gridSize"] === "number" && typeof v["seconds"] === "number";
 }
 
 function optional(v: unknown, check: (v: unknown) => boolean): boolean {
@@ -44,15 +40,14 @@ function isArrayOf(v: unknown, check: (item: unknown) => boolean): boolean {
 /** Structural check of a parsed §4.2 input script. */
 export function isInputScript(v: unknown): v is InputScript {
   if (!isObject(v)) return false;
-  const { name, scene, software, seed, steps, captureTicks, wave } = v;
+  const { name, scene, software, seed, steps, captureTicks } = v;
   return (
     typeof name === "string" &&
     SCENES.has(scene) &&
     optional(software, (s) => SOFTWARE.has(s)) &&
     typeof seed === "number" &&
     isArrayOf(steps, isStep) &&
-    isArrayOf(captureTicks, (t) => typeof t === "number") &&
-    optional(wave, isWave)
+    isArrayOf(captureTicks, (t) => typeof t === "number")
   );
 }
 

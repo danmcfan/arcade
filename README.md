@@ -47,14 +47,9 @@ The title music and the menu blips are chiptune written as notes in `src/ui/soun
 
 The page opens the `title` scene. `?scene=game` skips the title and starts straight in the hub (as the parity fixtures do).
 
-Two demos are not wired into the arcade hub. Open them with a query parameter:
-
-- `?scene=wave`: wave-function-collapse over grass, sand and water tiles. Use the sliders in the overlay to set the grid size and how many seconds the collapse should take, then press Space to restart with the new settings.
-- `?scene=lumberjack`: walk with the arrow keys and chop trees with Space.
-
 ## Test hook
 
-With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumberjack`), the page exposes `window.__arcade` for deterministic browser checks. It can pause the loop, step fixed ticks with scripted input, seed the RNG, load any scene, and read back the state snapshot, the frame as a PNG data URL at logical resolution, and the sound calls. The full contract is `ArcadeTestHook` in `src/engine/testhook.ts`. Without the parameter the hook is not installed.
+With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=game`), the page exposes `window.__arcade` for deterministic browser checks. It can pause the loop, step fixed ticks with scripted input, seed the RNG, load any scene, and read back the state snapshot, the frame as a PNG data URL at logical resolution, and the sound calls. The full contract is `ArcadeTestHook` in `src/engine/testhook.ts`. Without the parameter the hook is not installed.
 
 ## Verify checks
 
@@ -70,7 +65,6 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=lumber
 | `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                           |
 | `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                                       |
 | `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                          |
-| `src/lab/wave/`, `src/lab/lumberjack/`                               | Lab scenes                                                                                               |
 | `test/fixtures/`                                                     | Recorded input scripts, per-tick traces and golden frames (see below)                                    |
 | `test/parity/`                                                       | Replays every fixture scenario and compares it tick by tick                                              |
 | `scripts/`                                                           | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
@@ -113,7 +107,7 @@ go run ./tools/golden gen                                  # test/fixtures/input
 go run ./tools/golden trace all                            # every trace (or list script paths)
 go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
 go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # sweetSam / firefly / lumberjack coverage
+go run ./tools/golden coverage                             # sweetSam / firefly coverage
 ```
 
 Copy the regenerated `test/fixtures/` back onto the current branch. If you change gameplay on purpose, the affected traces have to be updated with it, and there is no longer a Go reference to capture them from.

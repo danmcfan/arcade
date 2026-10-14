@@ -3,7 +3,7 @@
 // Files live in test/fixtures/inputs/<name>.json.
 
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { SceneName, SoftwareName, WaveOptions } from "./software.ts";
+import type { SceneName, SoftwareName } from "./software.ts";
 
 export interface InputStep {
   /** How many consecutive ticks this input is applied for (≥ 1). */
@@ -28,8 +28,6 @@ export interface InputScript {
   steps: InputStep[];
   /** Ticks (1-based, after that tick's update) at which golden frames are captured. */
   captureTicks: number[];
-  /** `scene: "wave"` only: pending slider values (defaults 128 and 5). */
-  wave?: WaveOptions;
 }
 
 /** Expand steps into one `Input` per tick (index 0 = tick 1). */

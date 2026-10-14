@@ -58,35 +58,6 @@ describe("Surface.draw", () => {
     expect(ctx.ops.map((o) => o.alpha)).toEqual([0.5, 1]);
   });
 
-  test("rotated draws rotate about the pivot with corners on the Go engine's adjusted vertices", () => {
-    const { s, ctx } = screen();
-    s.draw(sprite, 10.25, 20.75, { rotate: { angle: Math.PI, pivotX: 8, pivotY: 8 } });
-    const m = ctx.ops[0]?.m ?? [];
-    // A 180° turn about the sprite's centre: corner (0,0) lands on (26.25, 36.75),
-    // which adjustDestinationPixel moves to (26 + 5/16, 36 + 11/16); the other
-    // corners move the same way, so the sprite still covers columns 10..25.
-    const expected = [-1, 0, 0, -1, 26.3125, 36.6875];
-    expected.forEach((v, i) => {
-      expect(m[i]).toBeCloseTo(v, 6);
-    });
-  });
-
-  test("small rotations (lumberjack tree top) use the adjusted vertices, not the exact affine", () => {
-    const { s, ctx } = screen(512, 288);
-    const angle = 0.030543261909900764;
-    s.draw(sub(whole(sheet), 0, 0, 64, 32), 96, 32, { rotate: { angle, pivotX: 37, pivotY: 58 } });
-    const m = ctx.ops[0]?.m ?? [];
-    // Exact corners (0,0) → (97.788, 30.897), (64,0) → (161.759, 32.852),
-    // (0,32) → (96.811, 62.882); adjustDestinationPixel moves them to
-    // (97 + 11/16, 31), (161 + 11/16, 33), (96 + 11/16, 63).
-    expect(m[4]).toBe(97.6875);
-    expect(m[5]).toBe(31);
-    expect(m[0]).toBe(1);
-    expect(m[1]).toBe(2 / 64);
-    expect(m[2]).toBe(-1 / 32);
-    expect(m[3]).toBe(1);
-  });
-
   test("0x0 sprites (empty sub-images) draw nothing", () => {
     const { s, ctx } = screen();
     s.draw(sub(whole(sheet), 64, 0, 80, 16), 0, 0);
@@ -259,10 +230,8 @@ describe("rect primitives", () => {
     expect(px.size).toBe(12);
   });
 
-  test("clearRect clears a rect; toPNGDataURL reads the canvas", () => {
-    const { s, ctx } = screen(64, 80);
-    s.clearRect(0, 0, 64, 56);
-    expect(ctx.ops[0]).toMatchObject({ op: "clearRect", x: 0, y: 0, w: 64, h: 56 });
+  test("toPNGDataURL reads the canvas", () => {
+    const { s } = screen(64, 80);
     expect(s.toPNGDataURL()).toBe("data:image/png;fake,64x80");
   });
 });

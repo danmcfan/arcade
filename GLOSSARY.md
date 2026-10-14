@@ -104,10 +104,6 @@ _Avoid_: spark (a spark is the firefly's light), fireball
 An item the monkey collects in Brass Monkey for points.
 _Avoid_: coin, pickup
 
-**Lab scene**:
-A demo reachable only by URL (`?scene=wave`, `?scene=lumberjack`), outside the hub and not part of the game.
-_Avoid_: minigame, bonus game
-
 ## Economy
 
 **Token**:

@@ -6,7 +6,7 @@ export type Axis = "VERTICAL" | "HORIZONTAL";
 /**
  * One tick of input. Everything is **held** state except `shiftP`, which is
  * "Shift held and P just pressed this tick". Scenes that need other edges
- * (wave's Space) derive them from the previous tick's `Input`.
+ * derive them from the previous tick's `Input`.
  */
 export interface Input {
   up: boolean;

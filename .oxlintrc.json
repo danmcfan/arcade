@@ -131,7 +131,6 @@
         "src/engine/surface.ts",
         "src/engine/assets.ts",
         "src/title/save.ts",
-        "src/lab/wave/overlay.ts",
         "src/**/*.test.ts",
         "src/**/*.testutil.ts"
       ],

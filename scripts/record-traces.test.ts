@@ -28,7 +28,7 @@ describe("encodeTrace", () => {
   });
 
   test("re-recording an unchanged scenario reproduces its committed trace", () => {
-    const scenario = "lumberjack-chop";
+    const scenario = "arcade-walk";
     const dir = mkdtempSync(join(tmpdir(), "traces-"));
     try {
       const path = join(dir, `${scenario}.jsonl.gz`);
