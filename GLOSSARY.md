@@ -126,6 +126,10 @@ _Avoid_: reward screen, cutscene
 The place in the hub where the player spends tickets on tokens and prizes: the prize desk across the bottom of the room, with its employee, and the menu it opens.
 _Avoid_: shop, store, token exchange, redemption
 
+**Employee**:
+The arcade worker behind the prize counter who serves the player.
+_Avoid_: counter worker, clerk, shopkeeper
+
 **Scoreboard**:
 The LED board on the hub's wall that shows the player's tokens and tickets, and the faced cabinet's name.
 _Avoid_: HUD, status bar
