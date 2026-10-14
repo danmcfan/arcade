@@ -9,16 +9,35 @@ import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
+import { cabinetRects } from "./machine.ts";
 
-export type PrizeId = "honeyJar" | "runningShoes" | "sleepyBees" | "oilCan" | "springBoots" | "pocketWatch";
+export type PrizeId =
+  | "honeyJar"
+  | "runningShoes"
+  | "sleepyBees"
+  | "lantern"
+  | "glowStick"
+  | "wings"
+  | "oilCan"
+  | "springBoots"
+  | "pocketWatch";
 
 /** Tickets each prize costs. */
 export const honeyJarPrice = 25;
 export const runningShoesPrice = 50;
 export const sleepyBeesPrice = 100;
+export const lanternPrice = 25;
+export const glowStickPrice = 50;
+export const wingsPrice = 100;
+
+/** The Firefly cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
+const fireflyCabinet = cabinetRects.firefly;
 export const oilCanPrice = 25;
 export const springBootsPrice = 50;
 export const pocketWatchPrice = 100;
+
+/** The Brass Monkey cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
+const brassCabinet = cabinetRects.brassMonkey;
 
 export interface Prize {
   id: PrizeId;
@@ -77,14 +96,44 @@ export const prizes: readonly Prize[] = [
     x: 74,
     y: 28,
   },
+  // The wall runs 11 px above the Firefly cabinet's top to 13 px below it.
+  // The lantern hangs from its bracket right of the cabinet, the glow stick in
+  // the gap left of it, the wings above it.
+  {
+    id: "lantern",
+    name: "LANTERN",
+    price: lanternPrice,
+    software: "firefly",
+    sprite: decoration("lantern"),
+    x: fireflyCabinet.x + 17,
+    y: fireflyCabinet.y - 4,
+  },
+  {
+    id: "glowStick",
+    name: "GLOW STICK",
+    price: glowStickPrice,
+    software: "firefly",
+    sprite: decoration("glowStick"),
+    x: fireflyCabinet.x - 4,
+    y: fireflyCabinet.y - 6,
+  },
+  {
+    id: "wings",
+    name: "WINGS",
+    price: wingsPrice,
+    software: "firefly",
+    sprite: decoration("wings"),
+    x: fireflyCabinet.x + 2,
+    y: fireflyCabinet.y - 9,
+  },
   {
     id: "oilCan",
     name: "OIL CAN",
     price: oilCanPrice,
     software: "brassMonkey",
     sprite: decoration("oilCan"),
-    x: 35,
-    y: 41,
+    x: brassCabinet.x - 13,
+    y: brassCabinet.y + 1,
   },
   {
     id: "springBoots",
@@ -92,8 +141,8 @@ export const prizes: readonly Prize[] = [
     price: springBootsPrice,
     software: "brassMonkey",
     sprite: decoration("springBoots"),
-    x: 48,
-    y: 27,
+    x: brassCabinet.x,
+    y: brassCabinet.y - 13,
   },
   {
     id: "pocketWatch",
@@ -101,8 +150,8 @@ export const prizes: readonly Prize[] = [
     price: pocketWatchPrice,
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
-    x: 62,
-    y: 28,
+    x: brassCabinet.x + 14,
+    y: brassCabinet.y - 12,
   },
 ];
 

@@ -171,7 +171,7 @@ describe("new game", () => {
       highScore: 900,
       tokens: 0,
       tickets: 88,
-      prizes: ["honeyJar", "runningShoes", "sleepyBees"],
+      prizes: ["honeyJar", "runningShoes", "sleepyBees", "lantern", "glowStick", "wings"],
       player: { x: 50, y: 100, dir: "LEFT" },
     });
     const t = new Title({ store });
@@ -626,6 +626,15 @@ describe("parseSave", () => {
       "honeyJar",
       "runningShoes",
       "sleepyBees",
+    ]);
+  });
+
+  test("keeps the Firefly prizes too, after the Sweet Sam ones", () => {
+    expect(parseSave({ ...ok, prizes: ["wings", "glowStick", "honeyJar", "lantern"] })?.prizes).toEqual([
+      "honeyJar",
+      "lantern",
+      "glowStick",
+      "wings",
     ]);
   });
 

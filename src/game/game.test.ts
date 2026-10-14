@@ -693,7 +693,7 @@ describe("prize counter", () => {
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
     tap(game, "up");
-    expect(snap(game).cursor).toBe(7);
+    expect(snap(game).cursor).toBe(10);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
     expect(snap(game).cursor).toBe(0);
@@ -702,16 +702,16 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move the cursor round the eight items (token, six prizes, CLOSE) with the move blip", () => {
+  test("Up and Down move the cursor round the eleven items (token, nine prizes, CLOSE) with the move blip", () => {
     const { game } = atCounter(5, 0);
     const sounds = heard(game, () => {
       tap(game, "up");
     });
-    expect(snap(game).cursor).toBe(7);
+    expect(snap(game).cursor).toBe(10);
     expect(sounds).toEqual(["rewind:move", "play:move"]);
     tap(game, "down");
     expect(snap(game).cursor).toBe(0);
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 10; i++) {
       tap(game, "down");
       expect(snap(game).cursor).toBe(i);
     }
@@ -775,6 +775,24 @@ describe("prize counter", () => {
     enterSweetSam(free.game);
     expect(snap(free.game).run).toBe("free");
     expect(defined(free.built[0]).prizes).toEqual(["sleepyBees"]);
+  });
+
+  test("a Firefly prize is bought the same way, and goes to the Firefly run", () => {
+    const { game, built } = atPrize(60, 3); // the lantern
+    tap(game, "space");
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
+    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["lantern"] });
+    tap(game, "space");
+    expect(snap(game).arcade.tickets).toBe(35);
+    tap(game, "down"); // glow stick, 50: too few tickets
+    tap(game, "space");
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
+    tap(game, "escape");
+    run(game, 40, { up: true });
+    run(game, 24, { right: true });
+    game.step(input({ up: true, space: true }));
+    expect(snap(game).software).toBe("firefly");
+    expect(defined(built[0]).prizes).toEqual(["lantern"]);
   });
 
   test("with 5 or more tickets, Space buys a token for 5 and the counts update at once", () => {
@@ -846,11 +864,11 @@ describe("progress", () => {
       highScore: 0,
       tokens: 5,
       tickets: 0,
-      prizes: ["sleepyBees", "honeyJar"],
+      prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
       player: { x: 80, y: 92, dir: "UP" },
     });
-    expect(game.progress().prizes).toEqual(["honeyJar", "sleepyBees"]);
-    expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees"]);
+    expect(game.progress().prizes).toEqual(["honeyJar", "sleepyBees", "lantern", "wings"]);
+    expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees", "lantern", "wings"]);
   });
 
   test("a fresh hub owns no prizes, and its snapshot has no prizes key (the parity traces predate prizes)", () => {

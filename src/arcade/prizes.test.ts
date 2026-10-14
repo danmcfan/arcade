@@ -16,6 +16,9 @@ import {
   runningShoesPrice,
   springBootsPrice,
   sleepyBeesPrice,
+  lanternPrice,
+  glowStickPrice,
+  wingsPrice,
 } from "./prizes.ts";
 import type { SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
@@ -24,16 +27,20 @@ import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
 
 describe("prize catalogue", () => {
-  test("three Sweet Sam prizes and three Brass Monkey prizes, 25, 50 and 100 tickets each", () => {
+  test("three prizes each for Sweet Sam, Firefly and Brass Monkey, 25, 50 and 100 tickets each", () => {
     expect(prizes.map((p) => [p.id, p.name, p.price, p.software])).toEqual([
       ["honeyJar", "HONEY JAR", 25, "sweetSam"],
       ["runningShoes", "RUNNING SHOES", 50, "sweetSam"],
       ["sleepyBees", "SLEEPY BEES", 100, "sweetSam"],
+      ["lantern", "LANTERN", 25, "firefly"],
+      ["glowStick", "GLOW STICK", 50, "firefly"],
+      ["wings", "WINGS", 100, "firefly"],
       ["oilCan", "OIL CAN", 25, "brassMonkey"],
       ["springBoots", "SPRING BOOTS", 50, "brassMonkey"],
       ["pocketWatch", "POCKET WATCH", 100, "brassMonkey"],
     ]);
     expect([honeyJarPrice, runningShoesPrice, sleepyBeesPrice]).toEqual([25, 50, 100]);
+    expect([lanternPrice, glowStickPrice, wingsPrice]).toEqual([25, 50, 100]);
     expect([oilCanPrice, springBootsPrice, pocketWatchPrice]).toEqual([25, 50, 100]);
   });
 
@@ -101,6 +108,7 @@ describe("prize catalogue", () => {
 
   test("owned prizes are kept once each, in catalogue order", () => {
     expect(inCatalogueOrder(["sleepyBees", "honeyJar", "sleepyBees"])).toEqual(["honeyJar", "sleepyBees"]);
+    expect(inCatalogueOrder(["wings", "honeyJar", "lantern", "wings"])).toEqual(["honeyJar", "lantern", "wings"]);
   });
 });
 
@@ -139,12 +147,15 @@ describe("buyPrize", () => {
   });
 
   test("prizeOffers lists every prize's offer in catalogue order", () => {
-    expect(prizeOffers({ tickets: 60, prizes: ["honeyJar", "springBoots"] })).toEqual([
+    expect(prizeOffers({ tickets: 60, prizes: ["honeyJar", "glowStick"] })).toEqual([
       "owned",
       "buy",
       "short",
       "buy",
       "owned",
+      "short",
+      "buy",
+      "buy",
       "short",
     ]);
   });
