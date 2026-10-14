@@ -8,6 +8,8 @@
 //   bun run pixel before  <image>... [--ref <rev>]    <rev>'s version beside the working copy (PNG or source)
 //   bun run pixel place   <base> <image>@x,y...       images drawn onto <base> at (x, y)
 //   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
+//                                                     (<variants.json>: { "path.ts:name": { "<label>": rows or frames } };
+//                                                     options sharing a label are one choice)
 //
 // An <image> is one of:
 //   path.png             the whole PNG
