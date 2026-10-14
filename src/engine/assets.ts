@@ -106,7 +106,7 @@ export const images = {
   logo: asset(logoUrl, 100, 17),
   icons: asset(iconsUrl, 23, 9),
   ticker: asset(tickerUrl, 111, 25),
-  employee: asset(employeeUrl, 48, 24),
+  employee: asset(employeeUrl, 16, 24),
   prizes: asset(prizesUrl, 91, 12),
 } as const;
 
@@ -125,7 +125,7 @@ export const imageLogo: Sprite = whole(images.logo);
 export const imageIcons: Sprite = whole(images.icons);
 /** The LED scoreboard's lit letters (src/ui/tickerArt.ts). */
 export const imageTicker: Sprite = whole(images.ticker);
-/** The prize desk's employee, idle frames left to right (src/ui/employeeArt.ts). */
+/** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
 

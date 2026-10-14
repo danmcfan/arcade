@@ -41,7 +41,7 @@ import {
   titleRows,
 } from "../src/ui/glyphs.ts";
 import { newMachines } from "../src/arcade/machine.ts";
-import { employeeSheetRows } from "../src/ui/employeeArt.ts";
+import { employeeHalf } from "../src/ui/employeeArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
 import { mirroredPrizes, prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
@@ -49,7 +49,7 @@ import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/ico
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, mirrorX, paint, plot, toPng } from "./pixel-art.ts";
+import { blank, mirrorX, outline, paint, plot, toPng } from "./pixel-art.ts";
 
 function own<T extends object>(o: T, key: PropertyKey): key is keyof T {
   return Object.hasOwn(o, key);
@@ -123,8 +123,13 @@ export function renderTicker(): PNG {
   return toPng(tickerSheetRows());
 }
 
+/** The employee: their drawn half, mirrored and outlined. */
+export function employeeRows(): string[] {
+  return outline(mirrorX(employeeHalf));
+}
+
 export function renderEmployee(): PNG {
-  return toPng(employeeSheetRows());
+  return toPng(employeeRows());
 }
 
 /** Where the hub's machines stand, in their order. */
