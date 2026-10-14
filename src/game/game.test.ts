@@ -693,7 +693,7 @@ describe("prize counter", () => {
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
     tap(game, "up");
-    expect(snap(game).cursor).toBe(7);
+    expect(snap(game).cursor).toBe(10);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
     expect(snap(game).cursor).toBe(0);
@@ -702,16 +702,16 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move the cursor round the eight items (token, six prizes, CLOSE) with the move blip", () => {
+  test("Up and Down move the cursor round the eleven items (token, nine prizes, CLOSE) with the move blip", () => {
     const { game } = atCounter(5, 0);
     const sounds = heard(game, () => {
       tap(game, "up");
     });
-    expect(snap(game).cursor).toBe(7);
+    expect(snap(game).cursor).toBe(10);
     expect(sounds).toEqual(["rewind:move", "play:move"]);
     tap(game, "down");
     expect(snap(game).cursor).toBe(0);
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 10; i++) {
       tap(game, "down");
       expect(snap(game).cursor).toBe(i);
     }

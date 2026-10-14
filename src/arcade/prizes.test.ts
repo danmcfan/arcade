@@ -9,19 +9,25 @@ import {
   isPrizeId,
   prizeOffer,
   prizeOffers,
+  oilCanPrice,
+  pocketWatchPrice,
+  prize,
   prizes,
   runningShoesPrice,
+  springBootsPrice,
   sleepyBeesPrice,
   lanternPrice,
   glowStickPrice,
   wingsPrice,
 } from "./prizes.ts";
+import type { SoftwareName } from "../game/software.ts";
+import type { ArcadeTitle } from "../game/snapshot.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
 
 describe("prize catalogue", () => {
-  test("three Sweet Sam prizes then three Firefly prizes, each 25, 50 and 100 tickets", () => {
+  test("three prizes each for Sweet Sam, Firefly and Brass Monkey, 25, 50 and 100 tickets each", () => {
     expect(prizes.map((p) => [p.id, p.name, p.price, p.software])).toEqual([
       ["honeyJar", "HONEY JAR", 25, "sweetSam"],
       ["runningShoes", "RUNNING SHOES", 50, "sweetSam"],
@@ -29,20 +35,28 @@ describe("prize catalogue", () => {
       ["lantern", "LANTERN", 25, "firefly"],
       ["glowStick", "GLOW STICK", 50, "firefly"],
       ["wings", "WINGS", 100, "firefly"],
+      ["oilCan", "OIL CAN", 25, "brassMonkey"],
+      ["springBoots", "SPRING BOOTS", 50, "brassMonkey"],
+      ["pocketWatch", "POCKET WATCH", 100, "brassMonkey"],
     ]);
     expect([honeyJarPrice, runningShoesPrice, sleepyBeesPrice]).toEqual([25, 50, 100]);
     expect([lanternPrice, glowStickPrice, wingsPrice]).toEqual([25, 50, 100]);
+    expect([oilCanPrice, springBootsPrice, pocketWatchPrice]).toEqual([25, 50, 100]);
   });
 
-  const cabinetOf = { sweetSam: "sweet", firefly: "firefly", brassMonkey: "brassMonkey" } as const;
+  const cabinetOf: Readonly<Record<SoftwareName, ArcadeTitle>> = {
+    sweetSam: "sweet",
+    brassMonkey: "brassMonkey",
+    firefly: "firefly",
+  };
 
-  test("each decoration is the size of its art and sits beside its minigame's cabinet, clear of the other cabinets and the counter", () => {
+  test("each decoration is the size of its art and sits beside its minigame's cabinet, clear of the cabinets and the counter", () => {
     const machines = newMachines(() => fakeSoftware());
     for (const p of prizes) {
       const own = cabinetOf[p.software];
       const cabinet = defined(machines.find((m) => m.title === own)).rect;
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
-      // Within a cabinet's width of its cabinet, nearer it than any other.
+      // Within a cabinet's width of its own minigame's cabinet, nearer it than any other.
       const centre = r.x + r.w / 2;
       const dist = (m: { x: number; w: number }): number => Math.abs(m.x + m.w / 2 - centre);
       expect({ id: p.id, nearest: machines.reduce((a, b) => (dist(a.rect) <= dist(b.rect) ? a : b)).title }).toEqual({
@@ -59,6 +73,20 @@ describe("prize catalogue", () => {
         });
       }
       expect({ id: p.id, counter: checkCollision(r, counterRect) }).toEqual({ id: p.id, counter: false });
+    }
+  });
+
+  test("decorations don't overlap each other or their own cabinet's art", () => {
+    const rects = prizes.map((p) => ({ id: p.id, x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h }));
+    for (const [i, a] of rects.entries()) {
+      for (const b of rects.slice(i + 1)) {
+        expect({ a: a.id, b: b.id, hit: checkCollision(a, b) }).toEqual({ a: a.id, b: b.id, hit: false });
+      }
+    }
+    // The Brass Monkey cabinet's art is x 48..63, y 40..63: its prizes hang on the wall around it.
+    const brassCabinet = { x: 48, y: 40, w: 16, h: 24 };
+    for (const r of rects.filter((x) => prize(x.id).software === "brassMonkey")) {
+      expect({ id: r.id, hit: checkCollision(r, brassCabinet) }).toEqual({ id: r.id, hit: false });
     }
   });
 
@@ -85,6 +113,16 @@ describe("prize catalogue", () => {
 });
 
 describe("buyPrize", () => {
+  test("buys the Brass Monkey prizes the same way", () => {
+    expect(buyPrize({ tickets: 30, prizes: [] }, "oilCan")).toEqual({ tickets: 5, prizes: ["oilCan"] });
+    expect(buyPrize({ tickets: 175, prizes: ["oilCan", "honeyJar"] }, "pocketWatch")).toEqual({
+      tickets: 75,
+      prizes: ["honeyJar", "oilCan", "pocketWatch"],
+    });
+    expect(buyPrize({ tickets: 49, prizes: [] }, "springBoots")).toBeNull();
+    expect(buyPrize({ tickets: 100, prizes: ["springBoots"] }, "springBoots")).toBeNull();
+  });
+
   test("takes the prize's price once and adds it to the owned prizes", () => {
     expect(buyPrize({ tickets: 25, prizes: [] }, "honeyJar")).toEqual({ tickets: 0, prizes: ["honeyJar"] });
     expect(buyPrize({ tickets: 130, prizes: ["sleepyBees"] }, "runningShoes")).toEqual({
@@ -115,6 +153,9 @@ describe("buyPrize", () => {
       "short",
       "buy",
       "owned",
+      "short",
+      "buy",
+      "buy",
       "short",
     ]);
   });

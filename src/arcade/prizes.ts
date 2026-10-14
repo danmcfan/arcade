@@ -11,7 +11,16 @@ import type { SoftwareName } from "../game/software.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
 import { cabinetRects } from "./machine.ts";
 
-export type PrizeId = "honeyJar" | "runningShoes" | "sleepyBees" | "lantern" | "glowStick" | "wings";
+export type PrizeId =
+  | "honeyJar"
+  | "runningShoes"
+  | "sleepyBees"
+  | "lantern"
+  | "glowStick"
+  | "wings"
+  | "oilCan"
+  | "springBoots"
+  | "pocketWatch";
 
 /** Tickets each prize costs. */
 export const honeyJarPrice = 25;
@@ -23,6 +32,12 @@ export const wingsPrice = 100;
 
 /** The Firefly cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
 const fireflyCabinet = cabinetRects.firefly;
+export const oilCanPrice = 25;
+export const springBootsPrice = 50;
+export const pocketWatchPrice = 100;
+
+/** The Brass Monkey cabinet: its prizes hang on the wall at offsets from it, so they move with it. */
+const brassCabinet = cabinetRects.brassMonkey;
 
 export interface Prize {
   id: PrizeId;
@@ -48,7 +63,10 @@ function decoration(id: PrizeId): Sprite {
  * Every prize, in the order the prize counter menu lists them. The Sweet Sam
  * cabinet's art is x 72..87, y 40..63 of the hub image: the jar and the shoe
  * stand on the floor against either side of it, the picture hangs on the
- * wall above it.
+ * wall above it. The Brass Monkey cabinet's art is x 48..63, y 40..63: the oil
+ * can stands on a shelf on the wall left of it, the spring boots and the
+ * pocket watch hang from pegs on the wall above it (the boots over its left
+ * side, the watch between it and the Sweet Sam picture).
  */
 export const prizes: readonly Prize[] = [
   {
@@ -107,6 +125,33 @@ export const prizes: readonly Prize[] = [
     sprite: decoration("wings"),
     x: fireflyCabinet.x + 2,
     y: fireflyCabinet.y - 9,
+  },
+  {
+    id: "oilCan",
+    name: "OIL CAN",
+    price: oilCanPrice,
+    software: "brassMonkey",
+    sprite: decoration("oilCan"),
+    x: brassCabinet.x - 13,
+    y: brassCabinet.y + 1,
+  },
+  {
+    id: "springBoots",
+    name: "SPRING BOOTS",
+    price: springBootsPrice,
+    software: "brassMonkey",
+    sprite: decoration("springBoots"),
+    x: brassCabinet.x,
+    y: brassCabinet.y - 13,
+  },
+  {
+    id: "pocketWatch",
+    name: "POCKET WATCH",
+    price: pocketWatchPrice,
+    software: "brassMonkey",
+    sprite: decoration("pocketWatch"),
+    x: brassCabinet.x + 14,
+    y: brassCabinet.y - 12,
   },
 ];
 

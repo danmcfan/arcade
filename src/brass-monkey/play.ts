@@ -9,6 +9,7 @@ import type { Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { floors, girderTop, type Floor, type Girder, type Ladder, type Spot } from "./floors.ts";
 import * as t from "./tuning.ts";
+import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** What the run is doing: playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
 export type Phase = "play" | "dying" | "clear" | "escape" | "over";
@@ -103,7 +104,7 @@ function newMonkey(start: Spot): Monkey {
   };
 }
 
-/** One run of Brass Monkey, from 3 lives to game over. */
+/** One run of Brass Monkey, from 3 lives (more with the oil can) to game over. */
 export class Run {
   phase: Phase = "play";
   /** Ticks left in `dying`, `clear` or `escape`. */
@@ -112,7 +113,9 @@ export class Run {
   floor: number;
   /** How many times the monkey has escaped: each loop is harder. */
   loop: number;
-  lives = t.startLives;
+  lives: number;
+  /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
+  readonly advantages: Readonly<BrassMonkeyAdvantages>;
   score = 0;
   bonus = 0;
   bonusTimer = 0;
@@ -129,7 +132,16 @@ export class Run {
   private prevSpace = false;
   private readonly onSound: (s: RunSound) => void;
 
-  constructor(opts: { floor?: number; loop?: number; onSound?: (s: RunSound) => void } = {}) {
+  constructor(
+    opts: {
+      floor?: number;
+      loop?: number;
+      onSound?: (s: RunSound) => void;
+      advantages?: Readonly<BrassMonkeyAdvantages>;
+    } = {},
+  ) {
+    this.advantages = opts.advantages ?? noAdvantages;
+    this.lives = this.advantages.lives;
     this.floor = opts.floor ?? 0;
     this.loop = opts.loop ?? 0;
     this.onSound = opts.onSound ?? ((): void => {});
@@ -210,7 +222,7 @@ export class Run {
     this.hazards = this.hazards.filter((h) => h.x > -8 && h.x < floor.width + 8 && h.y < floor.height + 16);
     this.meet();
     if (this.phase !== "play") return;
-    if (++this.bonusTimer % t.bonusTicks === 0) {
+    if (++this.bonusTimer % this.advantages.bonusTicks === 0) {
       this.bonus = Math.max(0, this.bonus - t.bonusStep);
       if (this.bonus === 0) this.die();
     }
@@ -238,7 +250,7 @@ export class Run {
         const down = i.down ? floor.ladders.find((l) => near(l) && Math.abs(ladderHead(l) - m.y) <= 2) : undefined;
         if (jumpPressed) {
           m.footing = "air";
-          m.vy = -t.jumpSpeed;
+          m.vy = -this.advantages.jumpSpeed;
           m.vx = dir * t.walkSpeed;
           m.airTop = m.y;
           m.jumps++;
