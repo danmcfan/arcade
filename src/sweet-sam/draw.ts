@@ -14,7 +14,7 @@ import {
   imageSweetSamMazeFlash,
 } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
-import { cabinetInsetLeft, cabinetInsetTop, drawCabinet } from "../ui/cabinet.ts";
+import { cabinetInsetLeft, cabinetInsetTop, drawCabinet, drawOnScreen } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerX, flowerY } from "./flower.ts";
@@ -37,7 +37,13 @@ export interface DrawCache {
 /** Go `Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
 export function draw(s: SweetSamSoftware, screen: Surface): void {
   drawCabinet(screen, s.cabinetJoystickFrame, imageCabinet);
+  drawOnScreen(screen, () => {
+    drawScreen(s, screen);
+  });
+}
 
+/** Everything inside the cabinet's screen, shaken by the camera. */
+function drawScreen(s: SweetSamSoftware, screen: Surface): void {
   const [ox, oy] = s.camera.cameraOffset();
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;

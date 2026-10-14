@@ -29,6 +29,7 @@ import {
   cabinetPlayfieldWidth,
   cabinetWidth,
   drawCabinet,
+  drawOnScreen,
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawText, drawTextCentered } from "../ui/text.ts";
@@ -82,6 +83,12 @@ export class BrassMonkeySoftware implements FixedViewport {
   /** A `FixedViewport`: `buffer` is 0. */
   draw(screen: Surface, _buffer: number): void {
     drawCabinet(screen, this.cabinetJoystickFrame, imageCabinetBrassMonkey);
+    drawOnScreen(screen, () => {
+      this.drawScreen(screen);
+    });
+  }
+
+  private drawScreen(screen: Surface): void {
     const left = cabinetInsetLeft;
     const top = cabinetInsetTop + hudHeight;
     this.drawHud(screen, left, cabinetInsetTop);

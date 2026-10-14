@@ -2,6 +2,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
+import { imageCabinet } from "../engine/assets.ts";
+import { screenDraws } from "../ui/cabinet.testutil.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { particleColorCyan } from "./particle.ts";
 
@@ -27,6 +29,10 @@ class Recorder extends Surface {
   }
   override fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
     this.ops.push(["fillPremul", x, y, w, h, c]);
+  }
+  /** The clip is checked with `screenDraws`; here it only runs the draws. */
+  override clipped(_x: number, _y: number, _w: number, _h: number, draw: () => void): void {
+    draw();
   }
 }
 
@@ -258,5 +264,18 @@ describe("SweetSamSoftware.draw", () => {
       ["draw", "digits.png", 0, 0, 8, 8, 0, -p * 8],
       ["draw", "digits.png", 8, 0, 8, 8, 0, (1 - p) * 8],
     ]);
+  });
+});
+
+// Last: its draw takes a scratch cell, and the tests above expect to see "cell0".
+describe("SweetSamSoftware.draw screen", () => {
+  test("only the cabinet draws outside the 224x288 screen; everything else is clipped to it", () => {
+    const s = new SweetSamSoftware(0);
+    const { unclipped, clipped } = screenDraws((screen) => {
+      s.draw(screen, 0);
+    });
+    expect(unclipped.map((sp) => sp.asset)).toEqual([imageCabinet.asset]);
+    expect(clipped.length).toBeGreaterThan(0);
+    for (const c of clipped) expect(c.clip).toEqual([56, 56, 224, 288]);
   });
 });

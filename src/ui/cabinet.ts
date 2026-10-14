@@ -53,3 +53,8 @@ export function drawCabinet(screen: Surface, frame: number, sprite: Sprite): voi
 
   screen.draw(frameImg, 0, 0);
 }
+
+/** Runs `draw` with everything it draws clipped to the cabinet's screen, so no art spills onto the bezel. */
+export function drawOnScreen(screen: Surface, draw: () => void): void {
+  screen.clipped(cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldWidth, cabinetPlayfieldHeight, draw);
+}

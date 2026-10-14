@@ -17,9 +17,18 @@ export interface PaintOp {
   composite: string;
   fill: string;
   smoothing: boolean;
+  /** Device-space clip rect at paint time, `null` when unclipped. */
+  clip: Rect | null;
   /** drawImage only. */
   source?: unknown;
   src?: [number, number, number, number];
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 type M = [number, number, number, number, number, number];
@@ -43,7 +52,16 @@ export class FakeContext {
   fillStyle = "#000000";
   imageSmoothingEnabled = true;
   private m: M = [...IDENTITY];
-  private stack: Array<{ m: M; alpha: number; composite: string; fill: string; smoothing: boolean }> = [];
+  private clipRect: Rect | null = null;
+  private path: Rect[] = [];
+  private stack: Array<{
+    m: M;
+    alpha: number;
+    composite: string;
+    fill: string;
+    smoothing: boolean;
+    clip: Rect | null;
+  }> = [];
 
   readonly canvas: FakeCanvas;
 
@@ -58,6 +76,8 @@ export class FakeContext {
     this.fillStyle = "#000000";
     this.imageSmoothingEnabled = true;
     this.m = [...IDENTITY];
+    this.clipRect = null;
+    this.path = [];
     this.stack = [];
   }
 
@@ -68,6 +88,7 @@ export class FakeContext {
       composite: this.globalCompositeOperation,
       fill: this.fillStyle,
       smoothing: this.imageSmoothingEnabled,
+      clip: this.clipRect,
     });
   }
   restore(): void {
@@ -78,6 +99,32 @@ export class FakeContext {
     this.globalCompositeOperation = s.composite;
     this.fillStyle = s.fill;
     this.imageSmoothingEnabled = s.smoothing;
+    this.clipRect = s.clip;
+  }
+  beginPath(): void {
+    this.path = [];
+  }
+  /** Records the rect in device space; only axis-aligned rect paths are faked. */
+  rect(x: number, y: number, w: number, h: number): void {
+    this.path.push(this.bounds(x, y, w, h));
+  }
+  /** Intersects the clip with the path (one rect; the tests need no more). */
+  clip(): void {
+    const r = this.path[0];
+    if (r === undefined) return;
+    const c = this.clipRect;
+    if (c === null) {
+      this.clipRect = r;
+      return;
+    }
+    const x = Math.max(c.x, r.x);
+    const y = Math.max(c.y, r.y);
+    this.clipRect = {
+      x,
+      y,
+      w: Math.max(0, Math.min(c.x + c.w, r.x + r.w) - x),
+      h: Math.max(0, Math.min(c.y + c.h, r.y + r.h) - y),
+    };
   }
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void {
     this.m = [a, b, c, d, e, f];
@@ -97,7 +144,7 @@ export class FakeContext {
     this.m = mul(this.m, [c, s, -s, c, 0, 0]);
   }
 
-  private bounds(x: number, y: number, w: number, h: number): { x: number; y: number; w: number; h: number } {
+  private bounds(x: number, y: number, w: number, h: number): Rect {
     const pts = [
       [x, y],
       [x + w, y],
@@ -123,6 +170,7 @@ export class FakeContext {
       composite: this.globalCompositeOperation,
       fill: this.fillStyle,
       smoothing: this.imageSmoothingEnabled,
+      clip: this.clipRect,
       ...extra,
     });
   }
@@ -204,5 +252,11 @@ export function fakeCanvas(width?: number, height?: number): { canvas: HTMLCanva
  * calls. Methods left alone need a canvas factory (see `setCanvasFactory`).
  */
 export function stubSurface<K extends keyof Surface>(overrides: Pick<Surface, K>, w = 0, h = 0): Surface {
-  return Object.assign(Surface.offscreen(w, h), overrides);
+  // A clip only runs its draws unless the test overrides it.
+  const passThrough: Pick<Surface, "clipped"> = {
+    clipped: (_x, _y, _w, _h, draw) => {
+      draw();
+    },
+  };
+  return Object.assign(Surface.offscreen(w, h), passThrough, overrides);
 }
