@@ -7,6 +7,8 @@
     --card: #ffffff;
     --line: #94b0c2;
     --accent: #3b5dc9;
+    --ok: #257179;
+    --bad: #b13e53;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -16,6 +18,8 @@
       --card: #262a40;
       --line: #333c57;
       --accent: #73eff7;
+      --ok: #a7f070;
+      --bad: #ef7d57;
       color-scheme: dark;
     }
   }
@@ -26,6 +30,8 @@
     --card: #262a40;
     --line: #333c57;
     --accent: #73eff7;
+    --ok: #a7f070;
+    --bad: #ef7d57;
     color-scheme: dark;
   }
   * {
@@ -40,18 +46,23 @@
       sans-serif;
   }
   main {
-    max-width: 1100px;
+    max-width: 1140px;
     margin: 0 auto;
     padding: 16px;
   }
   h1 {
     font-size: 20px;
     margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: 14px;
+    margin: 20px 0 6px;
   }
   p.lede {
     color: var(--muted);
     margin: 0 0 16px;
-    max-width: 75ch;
+    max-width: 78ch;
   }
   .layout {
     display: flex;
@@ -68,10 +79,27 @@
     display: block;
     max-width: 100%;
     height: auto;
-    background: #000;
   }
   #big {
-    width: 640px;
+    width: 672px;
+    outline: none;
+  }
+  #big:focus-visible {
+    outline: 2px solid var(--accent);
+  }
+  #status,
+  #check {
+    font:
+      12px ui-monospace,
+      monospace;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  #check.ok {
+    color: var(--ok);
+  }
+  #check.bad {
+    color: var(--bad);
   }
   .panel {
     flex: 0 1 380px;
@@ -108,6 +136,10 @@
     background: var(--accent);
     color: var(--bg);
   }
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
   .tag {
     font-size: 10px;
     opacity: 0.7;
@@ -138,6 +170,9 @@
     font-size: 11px;
     color: var(--muted);
   }
+  #sheet {
+    background: #1a1c2c;
+  }
   #picks {
     font:
       11px ui-monospace,
@@ -148,18 +183,28 @@
   }
 </style>
 <main>
-  <h1>Hub frame: wall to the ceiling, HUD in the frame (#72, round 2)</h1>
+  <h1>Hub room: the whole frame (#72 + #75)</h1>
   <p class="lede">
-    The real hub with your round-1 picks (tall room, carpet to the sides and bottom). The wall now runs up to the top
-    edge. The tokens and tickets counts move from the margin into a 10 px sign bar at the top of the frame, where the
-    wall meets the ceiling. The bar replaces the neon tube there. The wall prizes from PRs #73 (Firefly) and #74 (Brass
-    Monkey) hang where those PRs put them, and dashed boxes mark free wall space. Cabinets, collisions and the prize
-    counter art are unchanged; the counter menu (a mock here) opens below the bar.
+    One playground for the finished hub. The room fills the Game Boy screen (the red dashed line is the 160×144 edge;
+    the hatched margin outside it stays empty). The token and ticket counts are part of the room as signs on the wall.
+    All nine wall prizes hang around their cabinets, and the cabinets can spread apart. The #75 prize desk and employee
+    stand at the bottom. Arrow keys or WASD walk the player (click the picture first); Space at the desk or a cabinet
+    opens the menu mock. With no keys pressed, a demo walks the room.
   </p>
   <div class="layout">
     <div class="stage">
-      <canvas id="big" width="160" height="144"></canvas>
+      <canvas
+        id="big"
+        width="192"
+        height="176"
+        tabindex="0"
+        aria-label="Hub room at 1x inside the Game Boy frame"
+      ></canvas>
+      <div id="status">&nbsp;</div>
+      <div id="check">&nbsp;</div>
       <div class="presets" id="presets"></div>
+      <h2>Employees at 4× (front: stand, blink, idle · back: the same)</h2>
+      <canvas id="sheet"></canvas>
     </div>
     <div class="panel">
       <div id="knobs"></div>
@@ -172,64 +217,78 @@
   const D = /*DATA*/ null;
   const W = 160,
     H = 144,
+    M = 16,
     F = { x0: 24, x1: 136, y0: 24, y1: 120 },
     FLOOR_Y = 56,
     SKIRT_Y = 53;
-  const BAR_H = 10; // the HUD bar, y 0..9, then a 1 px shadow line
+  const pal = D.palette;
+  const room = D.room;
+  const px = (x, y) => room[y][x];
+  const mod = (a, n) => ((a % n) + n) % n;
+  const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
+  // ================= knobs =================
   const knobs = {
-    top: {
-      label: "Top edge (y 0..23)",
-      opts: { black: "black border [current]", wall: "wall to the ceiling [round-1 pick]" },
-    },
-    sides: {
-      label: "Left / right edges",
-      opts: { black: "black border [current]", carpet: "wall + carpet run to edge [round-1 pick]" },
-    },
-    bottom: {
-      label: "Bottom edge (y 120..143)",
-      opts: { black: "black border [current]", carpet: "carpet runs to edge [round-1 pick]" },
-    },
-    hud: {
-      label: "HUD bar (tokens and tickets)",
+    counts: {
+      label: "Tokens + tickets on the wall",
       opts: {
-        margin: "in the margin, outside the frame [current]",
-        led: "LED marquee [new]",
-        neon: "neon sign [new]",
-        dark: "plain dark band [new]",
+        signs: "two neon wall signs [new]",
+        marquee: "one marquee sign with lit digits [new]",
+        ticker: "LED scoreboard [new]",
       },
     },
+    spacing: {
+      label: "Cabinet spacing",
+      opts: { current: "x 48 / 72 / 96 [current]", wide: "x 40 / 72 / 104 [new]", wider: "x 32 / 72 / 112 [new]" },
+    },
+    desk: {
+      label: "Prize desk (#75)",
+      opts: {
+        current: "current counter [current]",
+        U: "U-shape [#75]",
+        L: "L-shape [#75]",
+        curve: "long curved, with a flap [#75]",
+      },
+    },
+    employee: {
+      label: "Employee (#75)",
+      opts: {
+        none: "none [current]",
+        stripes: "referee stripes + red cap [#75]",
+        visor: "green visor + red vest [#75]",
+        apron: "blue cap + ticket apron [#75]",
+      },
+    },
+    pose: { label: "Employee faces (#75)", opts: { front: "the camera [#75]", back: "the player [#75]" } },
     neon: {
-      label: "Neon tube (when the HUD is in the margin)",
+      label: "Neon tube",
       opts: {
-        trim: "stays at y 24 [current place]",
-        ceiling: "at the ceiling, y 0 [new]",
-        both: "at the ceiling + a dim trim at y 24 [new]",
+        ceiling: "at the ceiling, y 0 [round 2]",
+        trim: "at y 24 [current place]",
+        both: "ceiling + dim trim at y 24 [round 2]",
       },
     },
-    wallTone: { label: "Wall colour", opts: { dark: "dark grey d [current]", navy: "navy n [new]" } },
+    wallTone: { label: "Wall colour", opts: { dark: "dark grey [current]", navy: "navy [round 2]" } },
     treatment: {
       label: "Wall treatment",
       opts: {
         none: "plain [current]",
-        posters: "arcade posters [new]",
-        stripe: "racing stripe [new]",
-        diamonds: "diamond pattern [new]",
+        posters: "posters on the side walls [round 2]",
+        stripe: "dado stripe [round 2]",
+        diamonds: "diamond pattern [round 2]",
       },
     },
-    tokens: { label: "Sample tokens", opts: { 3: "3", 0: "0 (FREE PLAY)" } },
-    tickets: { label: "Sample tickets", opts: { 12: "12", 1250: "1250" } },
-    menu: { label: "Prize counter menu (mock)", opts: { closed: "closed", open: "open" } },
-    slots: { label: "Show free prize space", opts: { on: "on", off: "off" } },
-    inFlight: { label: "Prizes from #73 / #74", opts: { on: "on", off: "off" } },
-    collisions: { label: "Show collision walls", opts: { off: "off", on: "on" } },
-    player: { label: "Walking player", opts: { on: "on", off: "off" } },
+    tokens: { label: "Sample tokens", opts: { 3: "3", 0: "0 (FREE PLAY)", 12: "12" } },
+    tickets: { label: "Sample tickets", opts: { 7: "7", 125: "125", 1250: "1250", 9999: "9999" } },
+    menu: { label: "Prize menu mock", opts: { closed: "closed", open: "open" } },
+    collisions: { label: "Collisions + Space spots", opts: { off: "off", on: "on" } },
   };
   const picksBase = {
-    top: "wall",
-    sides: "carpet",
-    bottom: "carpet",
-    hud: "led",
+    counts: "signs",
+    spacing: "wide",
+    desk: "U",
+    employee: "stripes",
+    pose: "front",
     neon: "ceiling",
     wallTone: "dark",
     treatment: "none",
@@ -238,135 +297,601 @@
     {
       name: "Current",
       note: "black border, HUD in the margin",
-      v: { ...picksBase, top: "black", sides: "black", bottom: "black", hud: "margin", neon: "trim" },
+      v: {
+        ...picksBase,
+        counts: "none",
+        spacing: "current",
+        desk: "current",
+        employee: "none",
+        neon: "trim",
+        top: "black",
+      },
     },
-    { name: "Your picks · plain", note: "LED bar at the top, plain wall", v: { ...picksBase } },
+    { name: "A · Neon signs", note: "wall signs, wide spacing, U-desk + referee", v: { ...picksBase } },
     {
-      name: "1 · Posters",
-      note: "neon sign bar, an arcade poster per game in the corners",
-      v: { ...picksBase, hud: "neon", treatment: "posters" },
+      name: "B · Marquee",
+      note: "one marquee, current spacing, L-desk + visor",
+      v: { ...picksBase, counts: "marquee", spacing: "current", desk: "L", employee: "visor" },
     },
     {
-      name: "2 · Racing stripe",
-      note: "LED bar, a sunset stripe right across",
-      v: { ...picksBase, treatment: "stripe" },
-    },
-    {
-      name: "3 · Diamonds",
-      note: "plain dark band, faint diamond wallpaper",
-      v: { ...picksBase, hud: "dark", treatment: "diamonds" },
+      name: "C · Scoreboard",
+      note: "LED board, wider spacing, curved desk + apron",
+      v: { ...picksBase, counts: "ticker", spacing: "wider", desk: "curve", employee: "apron", treatment: "diamonds" },
     },
   ];
-  let state = {
-    ...presets[1].v,
-    tokens: "3",
-    tickets: "1250",
-    menu: "closed",
-    slots: "on",
-    inFlight: "on",
-    collisions: "off",
-    player: "on",
-  };
+  let state = { ...picksBase, tokens: "3", tickets: "1250", menu: "closed", collisions: "off" };
 
-  const pal = D.palette;
-  const room = D.room;
-  const px = (x, y) => room[y][x];
-  const mod = (a, n) => ((a % n) + n) % n;
+  // ================= layout: cabinets and prizes =================
+  const spacings = { current: [48, 72, 96], wide: [40, 72, 104], wider: [32, 72, 112] };
+  const CAB_Y = 40;
+  const titles = ["brassMonkey", "sweet", "firefly"];
+  const inF = D.inFlight; // 0 lantern, 1 glow stick, 2 wings (#73) · 3 oil can, 4 spring boots, 5 pocket watch (#74)
+  function prizesFor(v) {
+    const [B, S, Fi] = spacings[v.spacing];
+    const tight = v.spacing === "current";
+    return [
+      { id: "oilCan", rows: inF[3].rows, x: B - 13, y: 41, from: "#74" },
+      { id: "springBoots", rows: inF[4].rows, x: B, y: 27, from: "#74" },
+      { id: "pocketWatch", rows: inF[5].rows, x: B + 14, y: 28, from: "#74" },
+      { id: "sleepyBees", rows: D.prizes.sleepyBees, x: S + 2, y: 28, from: "main" },
+      // Sweet Sam's floor prizes, hung on the wall: above the bees when the cabinets are tight, beside them when spread
+      { id: "honeyJar", rows: D.prizes.honeyJar, x: tight ? S + 1 : S - 9, y: tight ? 18 : 29, from: "#72" },
+      { id: "runningShoes", rows: D.prizes.runningShoes, x: tight ? S + 9 : S + 17, y: tight ? 21 : 31, from: "#72" },
+      { id: "glowStick", rows: inF[1].rows, x: Fi - 4, y: 34, from: "#73" },
+      { id: "wings", rows: inF[2].rows, x: Fi + 2, y: 31, from: "#73" },
+      { id: "lantern", rows: inF[0].rows, x: Fi + 17, y: 36, from: "#73" },
+    ].map((p) => ({ ...p, w: p.rows[0].length, h: p.rows.length }));
+  }
+  const cabinetsFor = (v) => spacings[v.spacing].map((x, i) => ({ title: titles[i], x, y: CAB_Y, w: 16, h: 24 }));
+  const machineRects = (v) => spacings[v.spacing].map((x) => ({ x, y: CAB_Y, w: 16, h: 16 }));
+
+  // ================= neon tube lettering (3x5 strokes) =================
+  const tubeFont = {
+    0: ["###", "#.#", "#.#", "#.#", "###"],
+    1: [".#.", "##.", ".#.", ".#.", "###"],
+    2: ["###", "..#", "###", "#..", "###"],
+    3: ["###", "..#", ".##", "..#", "###"],
+    4: ["#.#", "#.#", "###", "..#", "..#"],
+    5: ["###", "#..", "###", "..#", "###"],
+    6: ["###", "#..", "###", "#.#", "###"],
+    7: ["###", "..#", ".#.", ".#.", ".#."],
+    8: ["###", "#.#", "###", "#.#", "###"],
+    9: ["###", "#.#", "###", "..#", "###"],
+    A: [".#.", "#.#", "###", "#.#", "#.#"],
+    C: ["###", "#..", "#..", "#..", "###"],
+    E: ["###", "#..", "##.", "#..", "###"],
+    F: ["###", "#..", "##.", "#..", "#.."],
+    I: ["###", ".#.", ".#.", ".#.", "###"],
+    K: ["#.#", "#.#", "##.", "#.#", "#.#"],
+    L: ["#..", "#..", "#..", "#..", "###"],
+    N: ["##.", "#.#", "#.#", "#.#", "#.#"],
+    O: [".#.", "#.#", "#.#", "#.#", ".#."],
+    P: ["###", "#.#", "###", "#..", "#.."],
+    R: ["##.", "#.#", "##.", "#.#", "#.#"],
+    S: [".##", "#..", ".#.", "..#", "##."],
+    T: ["###", ".#.", ".#.", ".#.", ".#."],
+    Y: ["#.#", "#.#", ".#.", ".#.", ".#."],
+    D: ["##.", "#.#", "#.#", "#.#", "##."],
+    H: ["#.#", "#.#", "###", "#.#", "#.#"],
+    J: ["..#", "..#", "..#", "#.#", "###"],
+    Z: ["###", "..#", ".#.", "#..", "###"],
+    " ": ["..", "..", "..", "..", ".."],
+  };
+  const glyph = (c) => tubeFont[c] || tubeFont[" "];
+  const tubeWidth = (s) => Array.from(s).reduce((w, c) => w + glyph(c)[0].length + 1, 0) - 1;
+  /** Tube pixels of `s` at x, y as [x, y] points. */
+  function tubePoints(s, x, y) {
+    const pts = [];
+    let cx = x;
+    for (const c of s) {
+      const rows = glyph(c);
+      rows.forEach((r, dy) =>
+        Array.from(r).forEach((p, dx) => {
+          if (p === "#") pts.push([cx + dx, y + dy]);
+        }),
+      );
+      cx += rows[0].length + 1;
+    }
+    return pts;
+  }
+  const coinTube = [".###.", "#...#", "#.#.#", "#...#", ".###."];
+  const ticketTube = ["#######", "#.....#", ".#.#.#.", "#.....#", "#######"];
+  const shapePoints = (rows, x, y) =>
+    rows.flatMap((r, dy) => Array.from(r).flatMap((p, dx) => (p === "#" ? [[x + dx, y + dy]] : [])));
+  /** Neon: lit tubes, a 1 px glow on the wall round them. */
+  function neon(g, pts, tube, glow) {
+    const set = new Set(pts.map(([x, y]) => x + "," + y));
+    // the tube's glow falls on the wall just below it and to its right
+    for (const [x, y] of pts)
+      for (const [dx, dy] of [
+        [1, 1],
+        [0, 1],
+      ]) {
+        const k = x + dx + "," + (y + dy);
+        if (!set.has(k) && g[y + dy] && g[y + dy][x + dx] !== undefined) g[y + dy][x + dx] = glow;
+      }
+    for (const [x, y] of pts) if (g[y] && g[y][x] !== undefined) g[y][x] = tube;
+  }
+  const tokensText = (v) => (+v.tokens > 0 ? String(v.tokens) : "FREE PLAY");
+  const signTop = (v) => (v.neon === "trim" ? 3 : 7);
+
+  /** Each count display: draws into g and returns its rects (for the overlap check). */
+  function drawCounts(g, v, t) {
+    const top = signTop(v),
+      tok = tokensText(v),
+      tix = String(v.tickets);
+    const rects = [];
+    if (v.counts === "signs") {
+      // TOKENS sign: pink lettering over a coin and a cyan count; TICKETS sign mirrored on the right
+      const lx = 4;
+      neon(g, tubePoints("TOKENS", lx, top), "r", "p");
+      neon(g, shapePoints(coinTube, lx, top + 7), "y", "o");
+      neon(g, tubePoints(tok, lx + 7, top + 7), "c", "b");
+      rects.push({
+        id: "tokens sign",
+        x: lx - 1,
+        y: top - 1,
+        w: Math.max(tubeWidth("TOKENS"), 7 + tubeWidth(tok)) + 2,
+        h: 14,
+      });
+      const rw = Math.max(tubeWidth("TICKETS"), 9 + tubeWidth(tix));
+      const rx = W - 4 - rw;
+      neon(g, tubePoints("TICKETS", W - 4 - tubeWidth("TICKETS"), top), "r", "p");
+      neon(g, shapePoints(ticketTube, W - 4 - 9 - tubeWidth(tix), top + 7), "o", "r");
+      neon(g, tubePoints(tix, W - 4 - tubeWidth(tix), top + 7), "c", "b");
+      rects.push({ id: "tickets sign", x: rx - 1, y: top - 1, w: rw + 2, h: 14 });
+    } else if (v.counts === "marquee") {
+      const x0 = 34,
+        x1 = 126,
+        y0 = top - 2,
+        y1 = y0 + 11;
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++) {
+          const edge = y === y0 || y === y1 - 1 || x === x0 || x === x1 - 1;
+          const bulb = edge && (x + y) % 2 === 0;
+          const on = (Math.floor((t || 0) / 250) + x + y) % 4 < 2;
+          g[y][x] = bulb ? (on ? "y" : "o") : edge ? "p" : y === y0 + 1 || y === y1 - 2 ? "k" : "k";
+        }
+      const ty = y0 + 3;
+      shapePoints(coinTube, x0 + 4, ty).forEach(([x, y]) => (g[y][x] = "y"));
+      tubePoints(tok, x0 + 11, ty).forEach(([x, y]) => (g[y][x] = "y"));
+      const tw = tubeWidth(tix);
+      shapePoints(ticketTube, x1 - 5 - tw - 9, ty).forEach(([x, y]) => (g[y][x] = "o"));
+      tubePoints(tix, x1 - 5 - tw, ty).forEach(([x, y]) => (g[y][x] = "y"));
+      rects.push({ id: "marquee", x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    } else if (v.counts === "ticker") {
+      const x0 = 3,
+        x1 = W - 3,
+        y0 = top - 2,
+        y1 = y0 + 11;
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++) {
+          const edge = y === y0 || y === y1 - 1 || x === x0 || x === x1 - 1;
+          g[y][x] = edge ? "m" : (x + y) % 2 === 0 ? "d" : "k";
+        }
+      const ty = y0 + 3;
+      tubePoints("TOKENS " + tok, x0 + 4, ty).forEach(([x, y]) => (g[y][x] = "o"));
+      tubePoints(tok, x0 + 4 + tubeWidth("TOKENS ") + 1, ty).forEach(([x, y]) => (g[y][x] = "y"));
+      const s = "TICKETS " + tix;
+      tubePoints(s, x1 - 4 - tubeWidth(s), ty).forEach(([x, y]) => (g[y][x] = "o"));
+      tubePoints(tix, x1 - 4 - tubeWidth(tix), ty).forEach(([x, y]) => (g[y][x] = "y"));
+      rects.push({ id: "scoreboard", x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    }
+    return rects;
+  }
+
+  // ================= room =================
   function carpet(x, y) {
     if (y === FLOOR_Y) return "k";
     const t = px(F.x0 + mod(x - F.x0, 16), FLOOR_Y + mod(y - FLOOR_Y, 16));
     return t === "k" ? "n" : t;
   }
-  const tube = [0, 1, 2, 3, 4].map((i) => px(30, 24 + i)); // k B c B n
+  const tube = [0, 1, 2, 3, 4].map((i) => px(30, 24 + i));
   const dimTube = ["k", "b", "B", "b", "n"];
-  const cabinets = [48, 72, 96];
-  const onCabinet = (x, y) => y >= 40 && cabinets.some((cx) => x >= cx && x < cx + 16);
-  const barOn = (v) => v.hud !== "margin" && v.top !== "black";
-  /** Where free wall space starts below the ceiling. */
-  const wallTopFree = (v) => (barOn(v) ? BAR_H + 3 : v.neon === "trim" ? 7 : 7);
-
   function wallAt(v, y) {
-    const plain = v.wallTone === "navy" ? "n" : "d";
     if (v.top === "black" && y < 24) return "k";
-    const ceilingTube = !barOn(v) && v.neon !== "trim";
-    const trim =
-      v.top === "black" || (!barOn(v) && v.neon === "trim") ? tube : !barOn(v) && v.neon === "both" ? dimTube : null;
-    if (ceilingTube && y < 5) return tube[y];
-    if (trim && y >= 24 && y < 29) return trim[y - 24];
-    return plain;
+    if (v.neon !== "trim" && y < 5) return tube[y];
+    if (v.neon === "trim" && y >= 24 && y < 29) return tube[y - 24];
+    if (v.neon === "both" && y >= 24 && y < 29) return dimTube[y - 24];
+    return v.wallTone === "navy" ? "n" : "d";
   }
-
-  const freeSlots = (v) => {
-    const y = wallTopFree(v),
-      h = 22 - y + 4;
-    return [
-      [26, y, 20, h],
-      [52, y, 20, h],
-      [88, y, 20, h],
-      [114, y, 20, h],
-      [122, 30, 12, 20],
-    ];
-  };
-
+  function buildRoom(v) {
+    const g = [];
+    const old = v.top === "black";
+    for (let y = 0; y < H; y++) {
+      const row = [];
+      for (let x = 0; x < W; x++) {
+        const inside = x >= F.x0 && x < F.x1 && y >= F.y0 && y < F.y1;
+        if (old && !inside) row.push("k");
+        else if (y < SKIRT_Y) row.push(wallAt(v, y));
+        else if (y < FLOOR_Y) row.push(px(30, y));
+        else row.push(carpet(x, y));
+      }
+      g.push(row);
+    }
+    const wallPx = (x, y) => y < SKIRT_Y && y > 4 && !(old && (x < F.x0 || x >= F.x1 || y < F.y0));
+    if (v.treatment === "stripe")
+      ["p", "r", "o", "r", "p"].forEach((c, i) => {
+        for (let x = 0; x < W; x++) if (wallPx(x, 45 + i)) g[45 + i][x] = c;
+      });
+    if (v.treatment === "diamonds") {
+      const base = v.wallTone === "navy" ? "n" : "d",
+        ink = v.wallTone === "navy" ? "d" : "n";
+      for (let y = 0; y < SKIRT_Y; y++)
+        for (let x = 0; x < W; x++)
+          if (wallPx(x, y) && g[y][x] === base && (mod(x + y, 12) === 0 || mod(x - y, 12) === 0)) g[y][x] = ink;
+    }
+    return g;
+  }
   const posters = [
-    { x: 3, y: 0, ground: "n", trim: "G", art: ["..yy..", ".yooy.", "GGGGGG", "......", "g....g", "gggggg"] },
     { x: 3, y: 31, ground: "p", trim: "o", art: [".yy...", "yooy..", "yooy.w", ".yy.ww", "......", "rrrrrr"] },
-    { x: 143, y: 0, ground: "k", trim: "B", art: ["g.....", "...y..", ".g....", "....g.", "..y...", "tttttt"] },
-    { x: 143, y: 31, ground: "d", trim: "r", art: ["wwwwww", "w.ww.w", "wwwwww", "......", "yy..cc", "yy..cc"] },
+    { x: 145, y: 31, ground: "k", trim: "B", art: ["g.....", "...y..", ".g....", "....g.", "..y...", "tttttt"] },
   ];
-
-  // ---- text and icons, as src/ui/text.ts draws them ----
-  const inkLetter = { white: "w", yellow: "y", orange: "o", blue: "l", grey: "m", dark: "k" };
-  function textWidth(s) {
-    const cs = Array.from(s.toUpperCase()).filter((c) => D.glyphs[c]);
-    return cs.reduce((w, c) => w + D.glyphs[c][0].length, 0) + Math.max(0, cs.length - 1);
-  }
-  function drawText(g, s, x, y, ink) {
-    let cx = x;
-    for (const c of s.toUpperCase()) {
-      const rows = D.glyphs[c];
-      if (!rows) continue;
-      rows.forEach((row, dy) =>
-        Array.from(row).forEach((p, dx) => {
-          if (p === "#" && g[y + dy] && cx + dx < W) g[y + dy][cx + dx] = inkLetter[ink];
+  function drawPosters(g) {
+    const rects = [];
+    for (const p of posters) {
+      for (let y = 0; y < 14; y++)
+        for (let x = 0; x < 12; x++) {
+          const edge = x === 0 || y === 0 || x === 11 || y === 13,
+            rim = x === 1 || y === 1 || x === 10 || y === 12;
+          g[p.y + y][p.x + x] = edge ? "k" : rim ? p.trim : p.ground;
+        }
+      p.art.forEach((row, dy) =>
+        Array.from(row).forEach((c, dx) => {
+          if (c !== ".") g[p.y + 4 + dy][p.x + 3 + dx] = c;
         }),
       );
-      cx += rows[0].length + 1;
+      for (const dx of [3, 4, 6, 7, 8]) g[p.y + 2][p.x + dx] = "w";
+      rects.push({ id: "poster", x: p.x, y: p.y, w: 12, h: 14 });
     }
+    return rects;
   }
 
-  function drawBar(g, v) {
-    const look = v.hud;
-    for (let y = 0; y <= BAR_H; y++)
+  // ================= desks and employees (from #75) =================
+  const FACE = 6;
+  const desks = {
+    current: {},
+    U: {
+      parts: [
+        { x: 56, y: 106, w: 48, h: 8, glass: true },
+        { x: 56, y: 106, w: 9, h: 24 },
+        { x: 95, y: 106, w: 9, h: 24 },
+      ],
+      staff: { x: 72, y: 108 },
+    },
+    L: {
+      parts: [
+        { x: 40, y: 106, w: 64, h: 8, glass: true, round: { tl: 3, bl: 3 } },
+        { x: 95, y: 106, w: 9, h: 24 },
+      ],
+      staff: { x: 66, y: 108 },
+    },
+    curve: {
+      parts: [
+        { x: 32, y: 106, w: 96, h: 8, glass: true, round: { tl: 5, tr: 5 } },
+        { x: 32, y: 108, w: 10, h: 22, round: { bl: 6 } },
+        { x: 118, y: 108, w: 10, h: 22, round: { br: 6 } },
+      ],
+      gap: { x: 104, w: 6 },
+      staff: { x: 72, y: 108 },
+    },
+  };
+  function inPart(p, x, y) {
+    if (x < p.x || x >= p.x + p.w || y < p.y || y >= p.y + p.h) return false;
+    const r = p.round || {};
+    const corner = (rad, cx, cy) => rad && (x - cx) ** 2 + (y - cy) ** 2 > rad * rad;
+    if (r.tl && x < p.x + r.tl && y < p.y + r.tl && corner(r.tl, p.x + r.tl - 0.5, p.y + r.tl - 0.5)) return false;
+    if (r.tr && x >= p.x + p.w - r.tr && y < p.y + r.tr && corner(r.tr, p.x + p.w - r.tr - 0.5, p.y + r.tr - 0.5))
+      return false;
+    if (r.bl && x < p.x + r.bl && y >= p.y + p.h - r.bl && corner(r.bl, p.x + r.bl - 0.5, p.y + p.h - r.bl - 0.5))
+      return false;
+    if (
+      r.br &&
+      x >= p.x + p.w - r.br &&
+      y >= p.y + p.h - r.br &&
+      corner(r.br, p.x + p.w - r.br - 0.5, p.y + p.h - r.br - 0.5)
+    )
+      return false;
+    return true;
+  }
+  const glassRows = D.counter.rows.slice(6, 11).map((r) => r.slice(3, 37));
+  const deskCache = {};
+  function deskPixels(key) {
+    if (deskCache[key]) return deskCache[key];
+    const d = desks[key];
+    const S = (x, y) => !(d.gap && x >= d.gap.x && x < d.gap.x + d.gap.w) && d.parts.some((p) => inPart(p, x, y));
+    const Fc = (x, y) => {
+      if (S(x, y)) return false;
+      for (let k = 1; k <= FACE; k++) if (S(x, y - k)) return k;
+      return false;
+    };
+    const U = (x, y) => S(x, y) || Fc(x, y);
+    const out = [];
+    for (let y = 96; y < H; y++)
       for (let x = 0; x < W; x++) {
+        if (!U(x, y)) continue;
         let c;
-        if (y === BAR_H)
-          c = "k"; // shadow under the bar
-        else if (look === "led") c = y === 0 || y === BAR_H - 1 ? "m" : (x + y) % 2 === 0 ? "d" : "k";
-        else if (look === "neon") c = y === 0 ? "B" : y === BAR_H - 1 ? "c" : y === BAR_H - 2 ? "B" : "n";
-        else c = y === BAR_H - 1 ? "d" : "k";
-        g[y][x] = c;
+        if (!U(x + 1, y) || !U(x - 1, y) || !U(x, y + 1) || !U(x, y - 1)) c = "k";
+        else if (S(x, y)) {
+          c = !U(x, y - 2) ? "y" : "o";
+          const gp = d.parts.find((p) => p.glass && inPart(p, x, y));
+          if (gp && y >= gp.y + 2 && y < gp.y + 7 && x >= gp.x + 3 && x < gp.x + gp.w - 3) {
+            const gx = x - gp.x - 3,
+              gy = y - gp.y - 2;
+            const inner = gx === 0 || gx === gp.w - 7 || gy === 0 || gy === 4;
+            c = inner ? "k" : glassRows[gy][mod(gx, 34)] === "k" ? "n" : glassRows[gy][mod(gx, 34)];
+          }
+        } else {
+          const k = Fc(x, y);
+          c = k === 1 ? "k" : k === FACE - 1 ? "p" : "r";
+        }
+        out.push([x, y, c]);
       }
-    if (look === "led")
-      for (let x = 0; x < W; x += 2) {
-        g[0][x] = "l";
-        g[BAR_H - 1][x] = "l";
-      } // marquee bulbs
-    // counts: coin + tokens on the left, ticket + tickets on the right
-    const inset = 4,
-      gap = 3,
-      ty = 1;
-    const tokens = +v.tokens,
-      tickets = v.tickets;
-    blit(g, D.icons.token, inset, 0);
-    const label = tokens > 0 ? String(tokens) : "FREE PLAY";
-    drawText(g, label, inset + 9 + gap, ty, tokens > 0 ? "yellow" : "orange");
-    const tw = textWidth(tickets);
-    const tx = W - inset - tw;
-    drawText(g, tickets, tx, ty, "yellow");
-    blit(g, D.icons.ticket, tx - gap - 13, 0);
+    if (d.gap)
+      for (let y = 103; y < 107; y++)
+        for (let x = d.gap.x; x < d.gap.x + d.gap.w; x++)
+          out.push([x, y, y === 103 || x === d.gap.x || x === d.gap.x + d.gap.w - 1 ? "k" : "l"]);
+    return (deskCache[key] = out);
+  }
+  function deskRects(key) {
+    const d = desks[key];
+    if (!d.parts) return [{ x: D.counter.x, y: D.counter.y, w: 40, h: 14 }];
+    const rs = [];
+    for (const p of d.parts) {
+      const y1 = Math.min(120, p.y + p.h + FACE);
+      if (y1 <= p.y) continue;
+      if (d.gap && d.gap.x > p.x && d.gap.x + d.gap.w < p.x + p.w) {
+        rs.push({ x: p.x, y: p.y, w: d.gap.x - p.x, h: y1 - p.y });
+        rs.push({ x: d.gap.x + d.gap.w, y: p.y, w: p.x + p.w - d.gap.x - d.gap.w, h: y1 - p.y });
+      } else rs.push({ x: p.x, y: p.y, w: p.w, h: y1 - p.y });
+    }
+    return rs;
+  }
+  function deskBox(key) {
+    if (!desks[key].parts) return { x: D.counter.x, y: D.counter.y, w: 40, h: 14 };
+    const pts = deskPixels(key);
+    const xs = pts.map((p) => p[0]),
+      ys = pts.map((p) => p[1]);
+    const x = Math.min(...xs),
+      y = Math.min(...ys);
+    return { x, y, w: Math.max(...xs) - x + 1, h: Math.max(...ys) - y + 1 };
   }
 
+  const mirror = (half) => half.map((r) => r + Array.from(r).reverse().join(""));
+  const put = (rows, pts) => {
+    const g = rows.map((r) => Array.from(r));
+    for (const [x, y, c] of pts) g[y][x] = c;
+    return g.map((r) => r.join(""));
+  };
+  const face = ["..kpyyyy", "..kyykyy", "..kyyyyy", "...kyyyr", "....kkyy"];
+  const legs = (c) => [`...k${c}${c}kk`, `...kw${c}${c}k`, "...kwwk.", "....kk.."];
+  const blank = ["........", "........", "........"];
+  const E = {
+    stripes: {
+      half: [
+        ...blank,
+        "......kk",
+        "....kkrr",
+        "...krrrr",
+        "...krrrw",
+        "..krrrrr",
+        ".krrrrrr",
+        ".kkkkkkk",
+        ...face,
+        "..kkkwkw",
+        ".kyykwkw",
+        ".kyykwkw",
+        "..kkkwkw",
+        "...kkkkk",
+        ...legs("d"),
+      ].slice(0, 24),
+      badge: [
+        [9, 16, "y"],
+        [10, 16, "y"],
+      ],
+      extra: "bob",
+    },
+    visor: {
+      half: [
+        ...blank,
+        "......kk",
+        "....kkkk",
+        "...kkkpk",
+        "..kkpkkk",
+        "..kGGGGG",
+        ".kGGGGGG",
+        ".kkkkkkk",
+        "..kkyyyy",
+        "..kyykyy",
+        "..kyyyyy",
+        "...kyyyr",
+        "....kkyy",
+        "..kkrrkw",
+        ".kwwkrrw",
+        ".kyykrrw",
+        "..kkrrrw",
+        "...kkkkk",
+        ...legs("b"),
+      ].slice(0, 24),
+      badge: [[10, 16, "y"]],
+      extra: "wave",
+    },
+    apron: {
+      half: [
+        ...blank,
+        "......kk",
+        "....kkbb",
+        "...kbbbb",
+        "...kbbbc",
+        "..kbbbbb",
+        ".kBBBBBB",
+        ".kkkkkkk",
+        ...face,
+        "..kkttww",
+        ".kyyktpp",
+        ".kyykppp",
+        "..kkpppo",
+        "...kpppp",
+        ...legs("b"),
+      ].slice(0, 24),
+      badge: [[5, 16, "y"]],
+      extra: "tickets",
+    },
+  };
+  const backOf = (rows) =>
+    rows.map((r, y) =>
+      y >= 10 && y <= 13 ? r.replace(/[yrw]/g, (c, i) => (i > 2 && i < 13 ? "k" : c)).replace(/k(?=k{3,})/, "p") : r,
+    );
+  function employeeFrames(id, pose) {
+    const e = E[id];
+    let base = mirror(e.half);
+    base = pose === "back" ? backOf(base) : put(base, e.badge);
+    const blink =
+      pose === "back"
+        ? base
+        : put(base, [
+            [5, 11, "y"],
+            [10, 11, "y"],
+            [5, 12, "k"],
+            [10, 12, "k"],
+          ]);
+    const breathe = ["................", ...base.slice(0, 19), ...base.slice(20)];
+    let third;
+    if (e.extra === "bob") third = breathe;
+    else if (e.extra === "wave")
+      third = put(base, [
+        [14, 10, "k"],
+        [14, 11, "y"],
+        [15, 11, "k"],
+        [14, 12, "y"],
+        [15, 12, "k"],
+        [14, 13, "w"],
+        [15, 13, "k"],
+        [14, 14, "w"],
+        [15, 14, "k"],
+        [12, 16, "."],
+        [13, 16, "."],
+        [14, 16, "."],
+        [12, 17, "."],
+        [13, 17, "."],
+        [14, 17, "."],
+        [11, 16, "k"],
+        [11, 17, "k"],
+      ]);
+    else
+      third = put(breathe, [
+        [7, 19, "o"],
+        [8, 20, "y"],
+        [7, 21, "o"],
+      ]);
+    return [base, blink, third];
+  }
+  const idle = [
+    [0, 1400],
+    [1, 140],
+    [0, 900],
+    [2, 300],
+    [0, 300],
+    [2, 300],
+  ];
+  const idleLen = idle.reduce((a, [, ms]) => a + ms, 0);
+  function idleFrame(t) {
+    let m = t % idleLen;
+    for (const [f, ms] of idle) {
+      if (m < ms) return f;
+      m -= ms;
+    }
+    return 0;
+  }
+
+  // ================= player (game rules: centre x/y, 16x24 rect, 1 px a tick) =================
+  const P = { x: D.start.x, y: D.start.y, dir: "DOWN", frame: 0 };
+  const rectAt = (x, y) => ({ x: x - 8, y: y - 12, w: 16, h: 24 });
+  const step = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
+  const solids = (v) => [...D.walls, ...machineRects(v), ...deskRects(v.desk)];
+  const usable = (v) => [...machineRects(v), ...deskRects(v.desk)];
+  const blocked = (r, v) => solids(v).some((w) => hit(r, w));
+  const facingAt = (x, y, dir, v) => {
+    const [dx, dy] = step[dir];
+    return usable(v).some((d) => hit(rectAt(x + dx, y + dy), d));
+  };
+  const keys = new Set();
+  const keyDir = {
+    ArrowUp: "UP",
+    w: "UP",
+    ArrowDown: "DOWN",
+    s: "DOWN",
+    ArrowLeft: "LEFT",
+    a: "LEFT",
+    ArrowRight: "RIGHT",
+    d: "RIGHT",
+  };
+  let lastKey = -1e9,
+    space = false,
+    opened = 0;
+  const bigEl = document.getElementById("big");
+  bigEl.addEventListener("keydown", (e) => {
+    if (keyDir[e.key] || e.key === " ") {
+      e.preventDefault();
+      lastKey = performance.now();
+      if (e.key === " ") space = true;
+      else keys.add(keyDir[e.key]);
+    }
+  });
+  bigEl.addEventListener("keyup", (e) => keys.delete(keyDir[e.key]));
+  const demo = [
+    ["RESET", 1],
+    ["DOWN", 30],
+    ["SPACE", 80],
+    ["UP", 4],
+    ["LEFT", 50],
+    ["UP", 10],
+    ["SPACE", 60],
+    ["RIGHT", 60],
+    ["DOWN", 40],
+    ["RIGHT", 40],
+    ["UP", 30],
+  ];
+  let demoI = 0,
+    demoT = 0;
+  function tick() {
+    let dir = "",
+      sp = space;
+    space = false;
+    if (performance.now() - lastKey < 4000) dir = ["UP", "DOWN", "LEFT", "RIGHT"].find((d) => keys.has(d)) || "";
+    else {
+      const [cmd, n] = demo[demoI];
+      if (cmd === "RESET") Object.assign(P, { x: D.start.x, y: D.start.y, dir: "DOWN" });
+      else if (cmd === "SPACE") sp = demoT === 0;
+      else dir = cmd;
+      if (++demoT >= n) {
+        demoT = 0;
+        demoI = (demoI + 1) % demo.length;
+      }
+    }
+    if (dir) {
+      P.dir = dir;
+      const [dx, dy] = step[dir];
+      if (!blocked(rectAt(P.x + dx, P.y + dy), state)) {
+        P.x += dx;
+        P.y += dy;
+      }
+      P.frame = (P.frame + 0.1) % 4;
+    } else P.frame = 0;
+    if (sp && facingAt(P.x, P.y, P.dir, state)) opened = 90;
+    if (opened > 0) opened--;
+  }
+
+  // ================= scene =================
+  function blit(g, rows, ox, oy) {
+    rows.forEach((row, dy) =>
+      Array.from(row).forEach((c, dx) => {
+        const y = oy + dy,
+          x = ox + dx;
+        if (c !== "." && y >= 0 && y < H && x >= 0 && x < W) g[y][x] = c;
+      }),
+    );
+  }
   const darker = {
     w: "l",
     l: "m",
@@ -385,162 +910,223 @@
     t: "n",
     k: "k",
   };
-  function drawMenu(g, v) {
-    const top = barOn(v) ? BAR_H + 2 : 0;
+  /** The prize menu mock, under the count signs so the counts stay readable. */
+  function drawMenu(g, v, top) {
     for (let y = top; y < H; y++) for (let x = 0; x < W; x++) g[y][x] = darker[darker[g[y][x]]];
-    const x0 = 24,
-      x1 = 136,
-      y0 = top + 4,
-      y1 = y0 + 66;
+    const x0 = 28,
+      x1 = 132,
+      y0 = top + 3,
+      y1 = y0 + 52;
     for (let y = y0; y < y1; y++)
       for (let x = x0; x < x1; x++) {
-        const e = x === x0 || y === y0 || x === x1 - 1 || y === y1 - 1;
-        const e2 = x === x0 + 1 || y === y0 + 1 || x === x1 - 2 || y === y1 - 2;
+        const e = x === x0 || y === y0 || x === x1 - 1 || y === y1 - 1,
+          e2 = x === x0 + 1 || y === y0 + 1 || x === x1 - 2 || y === y1 - 2;
         g[y][x] = e ? "k" : e2 ? "m" : "k";
       }
-    const centre = (s, y, ink) => drawText(g, s, 80 - Math.trunc(textWidth(s) / 2), y, ink);
-    centre("PRIZE COUNTER", y0 + 6, "yellow");
-    drawText(g, "TOKEN", x0 + 14, y0 + 20, "white");
-    drawText(g, "5", x1 - 8 - textWidth("5"), y0 + 20, "yellow");
-    drawText(g, "HONEY JAR", x0 + 14, y0 + 32, "white");
-    drawText(g, "10", x1 - 8 - textWidth("10"), y0 + 32, "yellow");
-    drawText(g, "BACK", x0 + 14, y0 + 44, "white");
-    drawText(g, ">", x0 + 6, y0 + 20, "yellow");
+    const line = (s, y, c) => tubePoints(s, 80 - Math.trunc(tubeWidth(s) / 2), y).forEach(([x, yy]) => (g[yy][x] = c));
+    line("PRIZE DESK", y0 + 5, "y");
+    const row = (l, r, y, sel) => {
+      tubePoints(l, x0 + 10, y).forEach(([x, yy]) => (g[yy][x] = sel ? "w" : "l"));
+      tubePoints(r, x1 - 8 - tubeWidth(r), y).forEach(([x, yy]) => (g[yy][x] = "y"));
+      if (sel)
+        [
+          [x0 + 5, y],
+          [x0 + 5, y + 4],
+          [x0 + 6, y + 1],
+          [x0 + 6, y + 3],
+          [x0 + 7, y + 2],
+        ].forEach(([x, yy]) => (g[yy][x] = "y"));
+    };
+    row("TOKEN", "5", y0 + 15, true);
+    row("HONEY JAR", "10", y0 + 24, false);
+    row("LANTERN", "40", y0 + 33, false);
+    line("TICKETS " + v.tickets, y0 + 43, "o");
+    return { id: "menu", x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
-  function build(v) {
-    const g = room.map((r) => Array.from(r));
-    const inside = (x, y) => x >= F.x0 && x < F.x1 && y >= F.y0 && y < F.y1;
-    const side = (x) => x < F.x0 || x >= F.x1;
-    for (let y = 0; y < H; y++)
-      for (let x = 0; x < W; x++) {
-        const sideBlack = side(x) && v.sides === "black";
-        if (y < SKIRT_Y) {
-          if (onCabinet(x, y)) continue;
-          if (sideBlack) {
-            if (!inside(x, y)) g[y][x] = "k";
-            continue;
-          }
-          g[y][x] = wallAt(v, y);
-        } else if (inside(x, y)) {
-          continue;
-        } else if (y < F.y1) {
-          g[y][x] = sideBlack ? "k" : y < FLOOR_Y ? px(30, y) : carpet(x, y);
-        } else {
-          g[y][x] = v.bottom !== "black" && !sideBlack ? carpet(x, y) : "k";
-        }
+  /** Builds the frame; returns the grid and every placed object's rect. */
+  function scene(v, t, withPlayer) {
+    const g = buildRoom(v);
+    const objs = [];
+    if (v.treatment === "posters" && v.top !== "black") objs.push(...drawPosters(g));
+    if (v.counts !== "none") objs.push(...drawCounts(g, v, t));
+    for (const c of cabinetsFor(v)) {
+      blit(g, D.cabinets[c.title], c.x, c.y);
+      objs.push({ id: c.title + " cabinet", ...c });
+    }
+    for (const p of prizesFor(v)) {
+      blit(g, p.rows, p.x, p.y);
+      objs.push({ id: p.id, x: p.x, y: p.y, w: p.w, h: p.h });
+    }
+    const d = desks[v.desk];
+    if (!d.parts) blit(g, D.counter.rows, D.counter.x, D.counter.y);
+    else for (const [x, y, c] of deskPixels(v.desk)) g[y][x] = c;
+    objs.push({ id: "desk", ...deskBox(v.desk) });
+    if (v.employee !== "none") {
+      const s = d.staff || { x: 72, y: 118 };
+      blit(g, employeeFrames(v.employee, v.pose)[t === undefined ? 0 : idleFrame(t)], s.x, s.y);
+    }
+    if (withPlayer) blit(g, D.walk[P.dir][Math.floor(P.frame)], P.x - 8, P.y - 12);
+    if (withPlayer && (state.menu === "open" || opened > 0)) objs.push(drawMenu(g, v, signTop(v) + 13));
+    return { g, objs };
+  }
+
+  /** Everything inside 160×144, and no two wall things overlapping. */
+  function problems(v) {
+    const { objs } = scene({ ...v, menu: "closed" }, 0, false);
+    const out = [];
+    for (const o of objs)
+      if (o.x < 0 || o.y < 0 || o.x + o.w > W || o.y + o.h > H) out.push(`${o.id} leaves the frame`);
+    for (let i = 0; i < objs.length; i++)
+      for (let j = i + 1; j < objs.length; j++) {
+        const a = objs[i],
+          b = objs[j];
+        if (a.id === "desk" || b.id === "desk" ? hit(a, b) : hit(a, b)) out.push(`${a.id} overlaps ${b.id}`);
       }
-    const free = wallTopFree(v);
-    const wallPx = (x, y) =>
-      y < SKIRT_Y &&
-      y >= free &&
-      !onCabinet(x, y) &&
-      !(side(x) && v.sides === "black") &&
-      !(v.top === "black" && y < 24);
-    if (v.treatment === "stripe") {
-      const y0 = v.top === "black" ? 30 : free;
-      ["p", "r", "o", "y"].forEach((c, i) => {
-        for (let x = 0; x < W; x++) if (wallPx(x, y0 + i)) g[y0 + i][x] = c;
-      });
-      for (let x = 0; x < W; x++) if (wallPx(x, y0 + 5)) g[y0 + 5][x] = "p";
+    // walkable floor stays inside the frame and reachable
+    if (blocked(rectAt(D.start.x, D.start.y), v)) out.push("player start is blocked");
+    return out;
+  }
+  function checkAll() {
+    const combos = [];
+    for (const counts of Object.keys(knobs.counts.opts))
+      for (const spacing of Object.keys(spacings))
+        for (const desk of Object.keys(desks))
+          for (const neon of Object.keys(knobs.neon.opts))
+            for (const treatment of ["none", "posters"])
+              for (const tokens of ["0", "12"])
+                for (const tickets of ["7", "9999"])
+                  combos.push({ ...state, counts, spacing, desk, neon, treatment, tokens, tickets });
+    const bad = [];
+    for (const c of combos) {
+      const p = problems(c);
+      if (p.length)
+        bad.push(`${c.counts}/${c.spacing}/${c.desk}/${c.neon}/${c.treatment}/${c.tokens}/${c.tickets}: ${p[0]}`);
     }
-    if (v.treatment === "diamonds") {
-      const base = v.wallTone === "navy" ? "n" : "d",
-        ink = v.wallTone === "navy" ? "d" : "n";
-      for (let y = 0; y < SKIRT_Y; y++)
-        for (let x = 0; x < W; x++)
-          if (wallPx(x, y) && g[y][x] === base && (mod(x + y, 12) === 0 || mod(x - y, 12) === 0)) g[y][x] = ink;
-    }
-    if (v.treatment === "posters" && v.sides !== "black") {
-      for (const p of posters) {
-        const py = p.y === 0 ? Math.max(free, 9) : p.y;
-        for (let y = 0; y < 14; y++)
-          for (let x = 0; x < 12; x++) {
-            const edge = x === 0 || y === 0 || x === 11 || y === 13;
-            const rim = x === 1 || y === 1 || x === 10 || y === 12;
-            g[py + y][p.x + x] = edge ? "k" : rim ? p.trim : p.ground;
-          }
-        p.art.forEach((row, dy) =>
-          Array.from(row).forEach((c, dx) => {
-            if (c !== ".") g[py + 4 + dy][p.x + 3 + dx] = c;
-          }),
-        );
-        for (const dx of [3, 4, 6, 7, 8]) g[py + 2][p.x + dx] = "w";
-      }
-    }
-    return g;
+    const el = document.getElementById("check");
+    el.className = bad.length ? "bad" : "ok";
+    el.textContent = bad.length
+      ? `Frame check: ${bad.length} of ${combos.length} combinations fail, e.g. ${bad[0]}`
+      : `Frame check: all ${combos.length} layout combinations (widest counts: FREE PLAY, 9999) stay inside 160×144 with nothing overlapping.`;
   }
 
-  function blit(g, rows, ox, oy) {
-    rows.forEach((row, dy) =>
-      Array.from(row).forEach((c, dx) => {
-        const y = oy + dy,
-          x = ox + dx;
-        if (c !== "." && y >= 0 && y < H && x >= 0 && x < W) g[y][x] = c;
-      }),
-    );
-  }
-
-  function paint(canvas, g, extra) {
+  // ================= paint =================
+  function paintGrid(canvas, g, ox, oy) {
     const ctx = canvas.getContext("2d");
     const img = ctx.createImageData(W, H);
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
-        const hex = pal[g[y][x]] || "#ff00ff";
-        const i = (y * W + x) * 4;
+        const hex = pal[g[y][x]] || "#ff00ff",
+          i = (y * W + x) * 4;
         img.data[i] = parseInt(hex.slice(1, 3), 16);
         img.data[i + 1] = parseInt(hex.slice(3, 5), 16);
         img.data[i + 2] = parseInt(hex.slice(5, 7), 16);
         img.data[i + 3] = 255;
       }
-    ctx.putImageData(img, 0, 0);
-    if (extra) extra(ctx);
+    ctx.putImageData(img, ox, oy);
+    return ctx;
   }
-
-  function scene(v, t) {
-    const g = build(v);
-    blit(g, D.counter.rows, D.counter.x, D.counter.y);
-    for (const p of D.prizes) blit(g, p.rows, p.x, p.y);
-    if (state.inFlight === "on" || t === undefined) for (const p of D.inFlight) blit(g, p.rows, p.x, p.y);
-    if (t !== undefined && state.player === "on") {
-      const span = 136 - 24 - 16,
-        step = Math.floor(t / 60) % (span * 2);
-      const dir = step < span ? "RIGHT" : "LEFT";
-      const x = 24 + (step < span ? step : span * 2 - step);
-      blit(g, D.walk[dir][Math.floor(t / 150) % 4], x, 68);
+  function drawMargin(ctx) {
+    ctx.fillStyle = "#0d0e16";
+    ctx.fillRect(0, 0, W + 2 * M, H + 2 * M);
+    ctx.strokeStyle = "#333c57";
+    ctx.lineWidth = 1;
+    for (let k = -(H + 2 * M); k < W + 2 * M; k += 6) {
+      ctx.beginPath();
+      ctx.moveTo(k, 0);
+      ctx.lineTo(k + H + 2 * M, H + 2 * M);
+      ctx.stroke();
     }
-    const counts = { tokens: v.tokens ?? state.tokens, tickets: v.tickets ?? state.tickets };
-    if (barOn(v)) drawBar(g, { ...v, ...counts });
-    if (t !== undefined && state.menu === "open") drawMenu(g, v);
-    return g;
   }
-
-  const walls = [
-    [0, 0, 160, 48],
-    [0, 48, 24, 72],
-    [136, 48, 24, 72],
-    [0, 120, 160, 24],
-  ];
+  function drawFrameEdge(ctx) {
+    ctx.strokeStyle = "#b13e53";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    ctx.strokeRect(M - 0.5, M - 0.5, W + 1, H + 1);
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#b13e53";
+    ctx.font = "7px monospace";
+    ctx.fillText("160×144", M, M - 5);
+  }
+  const zoneCache = {};
+  function zone(v) {
+    const key = v.spacing + v.desk;
+    if (zoneCache[key]) return zoneCache[key];
+    const pts = [];
+    for (let y = 12; y < H - 12; y++)
+      for (let x = 8; x < W - 8; x++) {
+        if (blocked(rectAt(x, y), v)) continue;
+        if (["UP", "DOWN", "LEFT", "RIGHT"].some((d) => facingAt(x, y, d, v))) pts.push([x, y]);
+      }
+    return (zoneCache[key] = pts);
+  }
   function overlay(ctx) {
-    if (state.collisions === "on") {
-      ctx.fillStyle = "rgba(239,125,87,0.35)";
-      for (const [x, y, w, h] of walls) ctx.fillRect(x, y, w, h);
+    if (state.collisions !== "on") return;
+    ctx.save();
+    ctx.translate(M, M);
+    ctx.fillStyle = "rgba(239,125,87,0.35)";
+    for (const w of D.walls) ctx.fillRect(w.x, w.y, w.w, w.h);
+    ctx.fillStyle = "rgba(177,62,83,0.55)";
+    ctx.strokeStyle = "#f4f4f4";
+    ctx.lineWidth = 0.5;
+    for (const r of usable(state)) {
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeRect(r.x + 0.25, r.y + 0.25, r.w - 0.5, r.h - 0.5);
     }
-    if (state.slots === "on" && state.top !== "black" && state.menu !== "open") {
-      ctx.strokeStyle = "rgba(244,244,244,0.75)";
-      ctx.lineWidth = 0.5;
-      ctx.setLineDash([1, 1]);
-      for (const [x, y, w, h] of freeSlots(state)) ctx.strokeRect(x + 0.25, y + 0.25, w - 0.5, h - 0.5);
-      ctx.setLineDash([]);
-    }
+    ctx.fillStyle = "#73eff7";
+    for (const [x, y] of zone(state)) ctx.fillRect(x, y, 1, 1);
+    ctx.strokeStyle = "#a7f070";
+    ctx.strokeRect(P.x - 8 + 0.25, P.y - 12 + 0.25, 15.5, 23.5);
+    ctx.restore();
   }
 
-  const big = document.getElementById("big");
+  const status = document.getElementById("status");
+  let acc = 0,
+    prev = performance.now();
   function frame(t) {
-    paint(big, scene(state, t), overlay);
+    acc += Math.min(100, t - prev);
+    prev = t;
+    while (acc >= 1000 / 60) {
+      tick();
+      acc -= 1000 / 60;
+    }
+    const ctx = bigEl.getContext("2d");
+    drawMargin(ctx);
+    paintGrid(bigEl, scene(state, t, true).g, M, M);
+    drawFrameEdge(ctx);
+    overlay(ctx);
+    status.textContent =
+      (performance.now() - lastKey < 4000 ? "You: " : "Demo: ") +
+      `(${P.x}, ${P.y}) facing ${P.dir}` +
+      (facingAt(P.x, P.y, P.dir, state) ? " · Space opens the menu" : "");
     requestAnimationFrame(frame);
   }
 
+  // ================= employee sheet =================
+  function drawSheet() {
+    const ids = Object.keys(E),
+      cw = 20,
+      rh = 28;
+    const c = document.getElementById("sheet");
+    c.width = 6 * cw;
+    c.height = ids.length * rh;
+    c.style.width = 6 * cw * 4 + "px";
+    const ctx = c.getContext("2d");
+    ids.forEach((id, row) =>
+      [...employeeFrames(id, "front"), ...employeeFrames(id, "back")].forEach((f, i) =>
+        f.forEach((r, dy) =>
+          Array.from(r).forEach((ch, dx) => {
+            if (ch !== ".") {
+              ctx.fillStyle = pal[ch];
+              ctx.fillRect(i * cw + 2 + dx, row * rh + 2 + dy, 1, 1);
+            }
+          }),
+        ),
+      ),
+    );
+  }
+
+  // ================= controls =================
   function renderKnobs() {
     const host = document.getElementById("knobs");
     host.innerHTML = "";
@@ -556,7 +1142,9 @@
         b.innerHTML = m[1] + (m[2] ? `<span class="tag">${m[2]}</span>` : "");
         if (state[k] === val) b.className = "on";
         b.onclick = () => {
+          if (k === "desk" || k === "spacing") Object.assign(P, { x: D.start.x, y: D.start.y, dir: "DOWN" });
           state[k] = val;
+          delete state.top;
           renderKnobs();
         };
         o.appendChild(b);
@@ -566,7 +1154,7 @@
     }
     document.getElementById("picks").textContent = picks();
   }
-  const pickKeys = ["top", "sides", "bottom", "hud", "neon", "wallTone", "treatment"];
+  const pickKeys = ["counts", "spacing", "desk", "employee", "pose", "neon", "wallTone", "treatment"];
   const picks = () => JSON.stringify(Object.fromEntries(pickKeys.map((k) => [k, state[k]])));
   document.getElementById("copy").onclick = async () => {
     try {
@@ -577,23 +1165,40 @@
     }
     setTimeout(() => (document.getElementById("copy").textContent = "Copy my picks"), 1200);
   };
-
   const ph = document.getElementById("presets");
   for (const p of presets) {
     const d = document.createElement("div");
     d.className = "preset";
     const c = document.createElement("canvas");
-    c.width = W;
-    c.height = H;
-    paint(c, scene(p.v));
+    c.width = W + 2 * M;
+    c.height = H + 2 * M;
+    const ctx = c.getContext("2d");
+    drawMargin(ctx);
+    const sc = scene({ ...state, ...p.v }, 0, false);
+    if (p.v.counts === "none") {
+      // today: the HUD sits in the margin, outside the frame
+      ctx.fillStyle = "#ffcd75";
+      ctx.font = "7px monospace";
+      ctx.fillText("● 3", 16, 11);
+      ctx.fillText("1250 ▭", 150, 11);
+    }
+    paintGrid(c, sc.g, M, M);
+    drawFrameEdge(ctx);
     d.append(c);
     d.insertAdjacentHTML("beforeend", `<b>${p.name}</b><span>${p.note}</span>`);
     d.onclick = () => {
+      Object.assign(P, { x: D.start.x, y: D.start.y, dir: "DOWN" });
       Object.assign(state, p.v);
+      if (p.v.counts === "none") {
+        state.counts = "signs";
+      }
+      delete state.top;
       renderKnobs();
     };
     ph.appendChild(d);
   }
+  drawSheet();
   renderKnobs();
+  checkAll();
   requestAnimationFrame(frame);
 </script>
