@@ -14,7 +14,8 @@ import { screenFrame } from "./screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
 
-export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean): void {
+/** `tick` is the Game's tick (in its snapshot): it times the employee's idle animation. */
+export function draw(screen: Surface, s: State, buffer: number, debugMode: boolean, tick: number): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
   s.machines.forEach((m, row) => {
@@ -30,7 +31,7 @@ export function draw(screen: Surface, s: State, buffer: number, debugMode: boole
     drawImage(screen, img, m.rect.x - powerCabinetX + buffer, m.rect.y + buffer);
   });
   // The desk is in the room image; the employee stands in it, out of the player's reach.
-  drawEmployee(screen, s.ticks, buffer);
+  drawEmployee(screen, tick, buffer);
   // Decorations are not solid: the player walks in front of them.
   for (const id of s.prizes) {
     const p = prize(id);

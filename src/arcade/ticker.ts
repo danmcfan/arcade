@@ -47,10 +47,6 @@ export const tokensLabel = "TOKENS";
 export const ticketsLabel = "TICKETS";
 export const freePlay = "FREE PLAY";
 export const pressSpace = "PRESS SPACE TO PLAY";
-/** Where the token count starts: after TOKENS and a space. */
-const tokensX = tickerLeft + 27;
-/** Where TICKETS starts: far enough left for a six-digit count after it. */
-const ticketsX = 100;
 /** The largest count the board shows; more reads as this. */
 export const maxShown = 999_999;
 
@@ -76,6 +72,11 @@ export function tickerText(text: string, ink: TickerInk, x: number): TickerGlyph
   }
   return out;
 }
+
+/** Where the token count starts: after TOKENS and a space. */
+const tokensX = tickerLeft + tickerTextWidth(`${tokensLabel} `) + tickerGap;
+/** Where TICKETS starts: far enough left for the largest count after it. */
+const ticketsX = tickerRight - tickerTextWidth(`${ticketsLabel}  ${maxShown}`);
 
 const shown = (n: number): string => String(Math.min(maxShown, Math.max(0, Math.trunc(n))));
 

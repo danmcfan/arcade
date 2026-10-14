@@ -25,8 +25,6 @@ export class State {
   machines: Machine[];
   /** The prize desk's rects: solid, and faced with Space to open the prize counter menu. */
   counters: Rect[];
-  /** Hub updates so far: times the employee's idle animation. */
-  ticks = 0;
 
   melodyPlaying = false;
   /** Go `imageTitle` (nil → null), by name; the scoreboard shows it while the melody plays. */

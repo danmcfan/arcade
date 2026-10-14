@@ -12,7 +12,6 @@ import { updateScreen } from "./screen.ts";
 import { blocked, type RunKind, type State } from "./state.ts";
 
 export function update(s: State, i: Input): void {
-  s.ticks++;
   applyInput(s, i);
   updatePlayer(s);
 
