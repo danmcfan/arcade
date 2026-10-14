@@ -159,7 +159,7 @@ export const sweetSamImages = {
   digits: asset(digitsUrl, 80, 8),
   points: asset(pointsUrl, 64, 16),
   mazeFlash: asset(sweetSamMazeFlashUrl, 224, 288),
-  flower: asset(flowerUrl, 16, 16),
+  flower: asset(flowerUrl, 16 * 5, 16),
 } as const;
 
 export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
