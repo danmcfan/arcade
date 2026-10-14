@@ -17,9 +17,9 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 
 | Art                              | Source                                                                                       | Generator                         |
 | -------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
-| Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour)                                             | `scripts/gen-ui-art.ts`           |
-| Hub room and cabinets, player    | `src/ui/hubArt.ts`, `playerArt.ts`                                                           | `scripts/gen-ui-art.ts`           |
-| HUD icons, prize counter, prizes | `src/ui/icons.ts`, `counterArt.ts`, `prizeArt.ts`                                            | `scripts/gen-ui-art.ts`           |
+| Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
+| Hub room, cabinets, desk, player | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
+| Scoreboard, menu icons, prizes   | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`                                             | `scripts/gen-ui-art.ts`           |
 | Firefly sprites and sky          | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
 | Brass Monkey characters, items   | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
 | Sweet Sam maze, sprites, text    | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |

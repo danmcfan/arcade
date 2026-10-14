@@ -22,9 +22,9 @@ describe("newMachines", () => {
     const { factory } = recordingFactory();
     const ms = newMachines(factory);
     expect(ms.map((m) => [m.rect, m.title])).toEqual([
-      [{ x: 48, y: 40, w: 16, h: 16 }, "brassMonkey"],
+      [{ x: 32, y: 40, w: 16, h: 16 }, "brassMonkey"],
       [{ x: 72, y: 40, w: 16, h: 16 }, "sweet"],
-      [{ x: 96, y: 40, w: 16, h: 16 }, "firefly"],
+      [{ x: 112, y: 40, w: 16, h: 16 }, "firefly"],
     ]);
   });
 
@@ -53,9 +53,9 @@ describe("findMachine", () => {
   });
 
   test("standing against the top wall under each cabinet", () => {
-    expect(findMachine(playerAt(56, 60), ms)?.title).toBe("brassMonkey");
+    expect(findMachine(playerAt(40, 60), ms)?.title).toBe("brassMonkey");
     expect(findMachine(playerAt(80, 60), ms)?.title).toBe("sweet");
-    expect(findMachine(playerAt(104, 60), ms)?.title).toBe("firefly");
+    expect(findMachine(playerAt(120, 60), ms)?.title).toBe("firefly");
   });
 
   test("one pixel below the cabinets' bottom edge (y = 56) is out of reach", () => {
@@ -63,13 +63,13 @@ describe("findMachine", () => {
     expect(findMachine(playerAt(80, 67), ms)?.title).toBe("sweet");
   });
 
-  test("edges touching is not a hit; the first overlapping machine wins", () => {
-    // Player x range [64, 80) only touches brassMonkey's right edge (64) → sweet only.
-    expect(findMachine(playerAt(72, 60), ms)?.title).toBe("sweet");
-    // Player x range [60, 76) overlaps brassMonkey [48, 64) and sweet [72, 88) → brassMonkey.
-    expect(findMachine(playerAt(68, 60), ms)?.title).toBe("brassMonkey");
-    // Between brassMonkey and sweet with no overlap is impossible (gap 8 < width 16);
-    // left of brassMonkey: player x range [32, 48) touches only.
-    expect(findMachine(playerAt(40, 60), ms)).toBeNull();
+  test("edges touching is not a hit, and the player fits between two cabinets without reaching either", () => {
+    // Player x range [48, 64) touches brassMonkey's right edge (48) only.
+    expect(findMachine(playerAt(56, 60), ms)).toBeNull();
+    // [56, 72) touches sweet's left edge (72) only.
+    expect(findMachine(playerAt(64, 60), ms)).toBeNull();
+    // One pixel either way reaches a cabinet.
+    expect(findMachine(playerAt(55, 60), ms)?.title).toBe("brassMonkey");
+    expect(findMachine(playerAt(65, 60), ms)?.title).toBe("sweet");
   });
 });

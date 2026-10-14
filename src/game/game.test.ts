@@ -112,7 +112,7 @@ function enterSweetSam(game: Game): void {
 /** From spawn, walk to the Brass Monkey cabinet and press Space. */
 function enterBrassMonkey(game: Game): void {
   run(game, 31, { up: true });
-  run(game, 24, { left: true });
+  run(game, 40, { left: true });
   game.step(input({ up: true, space: true }));
 }
 
@@ -789,7 +789,7 @@ describe("prize counter", () => {
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "escape");
     run(game, 40, { up: true });
-    run(game, 24, { right: true });
+    run(game, 40, { right: true });
     game.step(input({ up: true, space: true }));
     expect(snap(game).software).toBe("firefly");
     expect(defined(built[0]).prizes).toEqual(["lantern"]);
@@ -857,6 +857,16 @@ describe("progress", () => {
     });
     games.push(restored);
     expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
+  });
+
+  test("a save from before the prize desk, standing where the desk now is, starts at the start position", () => {
+    // (40, 100) was free floor beside the old counter; the desk now spans the floor there.
+    const restored = new Game(null, {
+      createSoftware: fakes().factory,
+      restore: { highScore: 0, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
+    });
+    games.push(restored);
+    expect(snap(restored).arcade.player).toMatchObject({ x: 80, y: 92 });
   });
 
   test("carries owned prizes, and restore brings them back in catalogue order", () => {

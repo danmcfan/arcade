@@ -66,7 +66,7 @@ function continueWith(v: Verify, tickets: number, prizes: PrizeId[]): void {
 
 /** From the start position, walk left to the Brass Monkey cabinet, up to it and press Space. */
 function startBrassMonkey(v: Verify): void {
-  v.step(24, { left: true });
+  v.step(40, { left: true });
   v.step(40, { up: true });
   v.step(1, { up: true, space: true });
   v.step(1);
@@ -106,9 +106,9 @@ function buyAll(v: Verify): void {
   v.frame("1-hub-no-prizes");
   v.step(4, { down: true });
   v.tap("space");
-  check(game(v).menu === "prizeCounter", "Space facing the counter opens the prize counter menu", game(v).menu);
-  for (let n = 0; n < 4; n++) v.tap("down");
-  check(game(v).cursor === 4, "the oil can is the fifth item", game(v).cursor);
+  check(game(v).menu === "prizeCounter", "Space facing the desk opens the prize counter menu", game(v).menu);
+  for (let n = 0; n < 7; n++) v.tap("down");
+  check(game(v).cursor === 7, "the oil can is the eighth item, after the Firefly prizes", game(v).cursor);
   v.frame("2-menu-oil-can");
   v.tap("space");
   v.tap("down");
@@ -164,7 +164,7 @@ function buyAndPlay(v: Verify): void {
   v.wait(300);
   v.key("Space"); // open
   v.wait(600);
-  for (let n = 0; n < 4; n++) {
+  for (let n = 0; n < 7; n++) {
     v.key("ArrowDown"); // to the oil can
     v.wait(250);
   }
@@ -173,7 +173,7 @@ function buyAndPlay(v: Verify): void {
   v.wait(1200);
   v.key("Escape");
   v.wait(600);
-  v.key("ArrowLeft", 450);
+  v.key("ArrowLeft", 750);
   v.key("ArrowUp", 900); // to the Brass Monkey cabinet, under the oil can
   v.wait(1200);
   v.key("Space"); // start Brass Monkey

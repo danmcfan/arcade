@@ -2,10 +2,10 @@
 
 import type { Software } from "../game/software.ts";
 import type { ArcadeTitle, RunKindSnapshot } from "../game/snapshot.ts";
-import { checkCollision, checkCollisions, newWalls, type Rect } from "./collision.ts";
+import { checkCollisions, newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
-import { counterRect } from "./prizeCounter.ts";
+import { counterRects } from "./desk.ts";
 import type { PrizeId } from "./prizes.ts";
 
 /** Tokens a New game starts with. */
@@ -23,11 +23,13 @@ export class State {
   player: Entity;
   walls: Rect[];
   machines: Machine[];
-  /** The prize counter: solid, and used like a cabinet. */
-  counter: Rect;
+  /** The prize desk's rects: solid, and faced with Space to open the prize counter menu. */
+  counters: Rect[];
+  /** Hub updates so far: times the employee's idle animation. */
+  ticks = 0;
 
   melodyPlaying = false;
-  /** Go `imageTitle` (nil → null), by name; see `titleImages`. */
+  /** Go `imageTitle` (nil → null), by name; the scoreboard shows it while the melody plays. */
   imageTitle: ArcadeTitle | null = null;
   /** Go `LoadedSoftware`: picked up (and cleared) by the Game after each hub update. */
   loadedSoftware: Software | null;
@@ -46,7 +48,7 @@ export class State {
     this.player = newPlayer();
     this.walls = newWalls();
     this.machines = newMachines(factory);
-    this.counter = { ...counterRect };
+    this.counters = counterRects.map(({ x, y, w, h }) => ({ x, y, w, h }));
     this.loadedSoftware = initialSoftware;
     this.loadedRun = initialSoftware === null ? null : "direct";
   }
@@ -56,9 +58,9 @@ export class State {
   }
 }
 
-/** Whether a player rect at `r` would be inside a wall or the prize counter. */
+/** Whether a player rect at `r` would be inside a wall or the prize desk. */
 export function blocked(s: State, r: Rect): boolean {
-  return checkCollisions(r, s.walls) || checkCollision(r, s.counter);
+  return checkCollisions(r, s.walls) || checkCollisions(r, s.counters);
 }
 
 /** Go `arcade.NewState(initialSoftware)`; `factory` builds a machine's software. */

@@ -8,16 +8,14 @@ import type { ArcadeTitle } from "../game/snapshot.ts";
 
 import arcadeUrl from "../assets/images/arcade.png";
 import playerUrl from "../assets/images/player.png";
-import fireflyUrl from "../assets/images/firefly.png";
-import brassMonkeyUrl from "../assets/images/brass-monkey.png";
-import sweetUrl from "../assets/images/sweet.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
 import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
-import counterUrl from "../assets/images/counter.png";
+import tickerUrl from "../assets/images/ticker.png";
+import employeeUrl from "../assets/images/employee.png";
 import prizesUrl from "../assets/images/prizes.png";
 import screensUrl from "../assets/images/screens.png";
 
@@ -109,22 +107,19 @@ export const images = {
   screens: asset(screensUrl, 392, 108),
   player: asset(playerUrl, 64, 96),
 
-  firefly: asset(fireflyUrl, 160, 144),
-  brassMonkey: asset(brassMonkeyUrl, 160, 144),
-  sweet: asset(sweetUrl, 160, 144),
-
   cabinet: asset(cabinetUrl, 1680, 428),
   // Recoloured from cabinet.png by `bun run art` (art/cabinets.json).
   cabinetFirefly: asset(cabinetFireflyUrl, 1680, 428),
   cabinetBrassMonkey: asset(cabinetBrassMonkeyUrl, 1680, 428),
 
-  // Title screen, menus, HUD, the hub's prize counter and prize decorations;
-  // generated from src/ui/glyphs.ts, src/ui/icons.ts, src/ui/counterArt.ts and
+  // Title screen, menus, menu icons, the hub scoreboard, the desk employee and prize decorations;
+  // generated from src/ui/glyphs.ts, icons.ts, tickerArt.ts, employeeArt.ts and
   // src/ui/prizeArt.ts by `bun run art`.
   font: asset(fontUrl, 128, 192),
   logo: asset(logoUrl, 100, 17),
   icons: asset(iconsUrl, 23, 9),
-  counter: asset(counterUrl, 40, 14),
+  ticker: asset(tickerUrl, 111, 25),
+  employee: asset(employeeUrl, 48, 24),
   prizes: asset(prizesUrl, 91, 12),
 } as const;
 
@@ -133,9 +128,6 @@ export const imageArcade: Sprite = whole(images.arcade);
 export const imagePlayer: Sprite = whole(images.player);
 /** The hub's cabinet screens switching on and off (src/ui/hubArt.ts `powerSheetRows`). */
 export const imageScreens: Sprite = whole(images.screens);
-export const imageTitleFirefly: Sprite = whole(images.firefly);
-export const imageTitleBrassMonkey: Sprite = whole(images.brassMonkey);
-export const imageTitleSweet: Sprite = whole(images.sweet);
 
 export const imageCabinet: Sprite = whole(images.cabinet);
 export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
@@ -144,7 +136,10 @@ export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
 export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
 export const imageIcons: Sprite = whole(images.icons);
-export const imageCounter: Sprite = whole(images.counter);
+/** The LED scoreboard's lit letters (src/ui/tickerArt.ts). */
+export const imageTicker: Sprite = whole(images.ticker);
+/** The prize desk's employee, idle frames left to right (src/ui/employeeArt.ts). */
+export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
 
 /**
@@ -198,7 +193,7 @@ export const fireflyImages = {
   background: asset(fireflyBackgroundUrl, 224, 288),
 } as const;
 
-/** The player in Firefly (not the hub title card, `imageTitleFirefly`). */
+/** The player in Firefly. */
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);

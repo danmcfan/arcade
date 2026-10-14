@@ -3,26 +3,29 @@
 // src/ui/sweetie16.ts, `.` is blank).
 // scripts/gen-ui-art.ts writes `roomRows()` to src/assets/images/arcade.png.
 //
-// The room is an arcade at night: a dark wall lit by a cyan neon tube along
-// the top, and a navy arcade carpet with a sparse confetti print. The
+// The room is an arcade at night, filling the whole 160x144 Game Boy frame
+// (#72): a dark wall from the ceiling's cyan neon tube down to the skirting,
+// with the LED scoreboard (src/ui/tickerArt.ts) under the tube, and a navy
+// arcade carpet with a sparse confetti print out to the frame's edges. The
 // cabinets are classic uprights in their minigames' colours, their screens
 // dark glass until the player walks up. Then the screen warms up like a CRT
 // and shows a glimpse of its game, and its light pools on the carpet:
-// `powerSheetRows()`, written to src/assets/images/screens.png. The wall above
-// and beside each cabinet stays empty for prizes (#22).
+// `powerSheetRows()`, written to src/assets/images/screens.png. The wall
+// around each cabinet stays empty for prizes (#22). The prize desk
+// (src/ui/deskArt.ts) stands across the bottom of the floor.
 
 import type { ArcadeTitle } from "../game/snapshot.ts";
+import { deskPixel } from "./deskArt.ts";
+import { tickerBoardPixel, tickerRect } from "./tickerArt.ts";
 
-/** Size of the room image (the hub's logical size less the 16-px margin). */
+/** Size of the room image: the Game Boy's screen. */
 export const roomWidth = 160;
 export const roomHeight = 144;
 
-/** The floor: inside the walls, from the skirting down to the bottom wall. */
+/** The floor the player walks on: inside the walls, from the skirting down to the bottom wall. */
 export const floorRect = { x: 24, y: 56, w: 112, h: 64 } as const;
-/** The visible face of the top wall, above the floor. */
-const wallTop = 24;
 
-/** The wall, top to bottom from `wallTop`: neon tube, plain wall, then the skirting. */
+/** The wall, top to bottom from the ceiling: neon tube, plain wall, then the skirting. */
 const neonTube = ["k", "B", "c", "B", "n"] as const;
 const skirting = ["p", "r", "k"] as const;
 
@@ -144,13 +147,16 @@ export function roomRows(cabinets: readonly CabinetPlace[]): string[] {
 
 function roomPixel(x: number, y: number): string {
   const f = floorRect;
-  if (x < f.x || x >= f.x + f.w || y < wallTop || y >= f.y + f.h) return "k";
-  if (y < wallTop + neonTube.length) return at(neonTube, y - wallTop, "neon row");
+  const desk = deskPixel(x, y);
+  if (desk !== null) return desk;
+  if (y < neonTube.length) return at(neonTube, y, "neon row");
+  const t = tickerRect;
+  if (x >= t.x && x < t.x + t.w && y >= t.y && y < t.y + t.h) return tickerBoardPixel(x, y);
   if (y >= f.y - skirting.length && y < f.y) return at(skirting, y - (f.y - skirting.length), "skirting row");
   if (y < f.y) return "d";
-  // The wall's shadow, then the carpet.
+  // The wall's shadow, then the carpet, its print lined up on the floor's corner.
   if (y === f.y) return "k";
-  const px = at(at(carpetTile, (y - f.y) % 16, "carpet row"), (x - f.x) % 16, "carpet pixel");
+  const px = at(at(carpetTile, (y - f.y) % 16, "carpet row"), (((x - f.x) % 16) + 16) % 16, "carpet pixel");
   return px === "." ? "n" : px;
 }
 

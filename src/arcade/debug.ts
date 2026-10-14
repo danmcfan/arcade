@@ -32,7 +32,9 @@ export function drawDebugOverlay(screen: Surface, s: State, buffer: number): voi
     drawDebugRect(screen, rect, colorMachine);
   }
 
-  drawDebugRect(screen, { ...s.counter, x: s.counter.x + buffer, y: s.counter.y + buffer }, colorMachine);
+  for (const counter of s.counters) {
+    drawDebugRect(screen, { ...counter, x: counter.x + buffer, y: counter.y + buffer }, colorMachine);
+  }
 }
 
 function drawDebugRect(screen: Surface, rect: Rect, clr: PremulColor): void {

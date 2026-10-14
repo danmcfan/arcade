@@ -36,6 +36,8 @@ export interface Bevel {
 }
 
 const imagesDir = join(repoRoot, "src/assets/images");
+/** The hub's old title cards, kept as the source of each marquee's lettering. */
+const titleCardsDir = join(repoRoot, "art/title-cards");
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -151,7 +153,7 @@ interface Lettering {
 
 /** The opaque pixels of the title art's top line of lettering, cropped to their bounds. */
 function titleLettering(file: string): Lettering {
-  const png = PNG.sync.read(readFileSync(join(imagesDir, file)));
+  const png = PNG.sync.read(readFileSync(join(titleCardsDir, file)));
   const lit = (x: number, y: number): boolean => byteAt(png, (y * png.width + x) * 4 + 3) > 0;
   let [x0, y0, x1, y1] = [png.width, titleRows, -1, -1];
   for (let y = 0; y < titleRows; y++) {

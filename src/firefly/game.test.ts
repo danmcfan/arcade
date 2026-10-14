@@ -378,7 +378,7 @@ describe("payout", () => {
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.
     for (let t = 0; t < 31; t++) game.step(held({ up: true }));
-    for (let t = 0; t < 24; t++) game.step(held({ right: true }));
+    for (let t = 0; t < 40; t++) game.step(held({ right: true }));
     game.step(held({ up: true, space: true }));
     expect(game.snapshot().software).toBe("firefly");
 
