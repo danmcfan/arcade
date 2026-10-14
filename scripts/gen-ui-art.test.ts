@@ -99,8 +99,8 @@ describe("UI art source", () => {
     checkRows("room", hubRoomRows(), { w: roomWidth, h: roomHeight });
     checkRows("carpet tile", carpetTile, { w: 16, h: 16 });
     checkRows("desk", deskRows, { w: deskRect.w, h: deskRect.h });
-    // The cabinet template's slots: `1` to `4` its colours, `S` its screen.
-    checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, 1: "", 2: "", 3: "", 4: "", S: "" });
+    // The cabinet template's slots: `1` to `4` its colours, `S` its screen; `k` and `w` are fixed.
+    checkRows("cabinet", cabinetArt, {}, { k: sweetie.k, w: sweetie.w, 1: "", 2: "", 3: "", 4: "", S: "" });
   });
 
   test("screens.png is a row of power frames per cabinet, in Sweetie 16 letters and .", () => {
