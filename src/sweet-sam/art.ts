@@ -468,26 +468,25 @@ export const pointsTop = 4;
 export const pointsFrameSize = 16;
 
 /**
- * The bonus flower (#47), 16×16: the left half of a daisy with a honey
- * centre on a green stem. The generator mirrors it into the right half and
- * outlines it in black (`mirrorX`, `outline`). A candidate until the owner
- * picks one in the flower playground.
+ * The bonus flower (#47), 16×16 and drawn whole, black outline included, so
+ * it can be lopsided like Pac-Man's fruit. A white daisy with a honey centre
+ * on a green stem: a candidate until the owner picks one in the studio (#68).
  */
-export const flowerLeft: readonly string[] = [
-  "........",
-  "......ww",
-  "...ww.ww",
-  "..wwwwww",
-  "..wwwyyy",
-  ".wwwyyoy",
-  ".wwwyyyy",
-  "..wwwyyy",
-  "..wwwwww",
-  "...ww.wG",
-  ".......G",
-  "..GG...G",
-  "...GGG.G",
-  "....GGGG",
-  ".......G",
-  "........",
+export const flower: readonly string[] = [
+  "......kkkk......",
+  "...kkkooookkk...",
+  "..kooooooooook..",
+  ".kooooyyyyooook.",
+  ".koooyyyyyyoook.",
+  ".koooyryyryoook.",
+  ".koooyryyryoook.",
+  ".koooyyyyyyoook.",
+  ".kooooyyyyooook.",
+  "..kooooooooook..",
+  "...kkkkkkkkkk...",
+  "......kGGk......",
+  "...kkkGGGGkkk...",
+  "..kGGGGGGGGGGk..",
+  "...kGGGGGGGGk...",
+  "....kkkGGkkk....",
 ];

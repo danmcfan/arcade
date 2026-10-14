@@ -31,7 +31,7 @@ import {
   dazedFace,
   dazedFaceAt,
   dialDigitsArt,
-  flowerLeft,
+  flower,
   doorBar,
   doorBarRows,
   frameSize,
@@ -69,7 +69,7 @@ import {
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, flipX, mirrorX, outline, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
+import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
 
 const tile = 8;
 
@@ -169,9 +169,6 @@ function mazeImage(letterAt: (x: number, y: number) => SweetieLetter): PNG {
 
 export const renderMaze = (): PNG => mazeImage(mazeLetter);
 export const renderMazeFlash = (): PNG => mazeImage(mazeFlashLetter);
-
-/** The bonus flower: `flowerLeft` mirrored into a whole flower and outlined. */
-export const flowerRows = (): string[] => outline(mirrorX(flowerLeft));
 
 /** A sheet of frames, `frames[row][column]`, each `frameSize` square. */
 function sheet(frames: readonly (readonly Rows[])[]): PNG {
@@ -292,7 +289,7 @@ export const sweetSamArtFiles: readonly { file: string; render: () => PNG }[] = 
   { file: "digits.png", render: () => image(dialDigitsArt) },
   { file: "points.png", render: renderPoints },
   { file: "maze-flash.png", render: renderMazeFlash },
-  { file: "flower.png", render: () => image(flowerRows()) },
+  { file: "flower.png", render: () => image(flower) },
 ];
 
 if (import.meta.main) {

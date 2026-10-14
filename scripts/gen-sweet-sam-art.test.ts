@@ -12,7 +12,7 @@ import {
   beeOrder,
   dazedFace,
   dialDigitsArt,
-  flowerLeft,
+  flower,
   honeyDropArt,
   honeyDropShadow,
   honeyPotArt,
@@ -52,7 +52,6 @@ import {
   isWax,
   mazeLetter,
   mazeTileAt,
-  flowerRows,
   sweetSamArtFiles,
   sweetSamImagesDir,
 } from "./gen-sweet-sam-art.ts";
@@ -107,9 +106,8 @@ describe("Sweet Sam art source", () => {
     expect(beeFrames("teal").map((r) => r.length)).toEqual([4, 4, 4, 4, 4, 4]);
   });
 
-  test("the bonus flower is half a 16×16 sprite, mirrored and outlined", () => {
-    checkRows("flower left half", flowerLeft, { w: 8, h: 16 });
-    checkRows("flower", flowerRows(), { w: 16, h: 16 });
+  test("the bonus flower is a whole 16×16 sprite", () => {
+    checkRows("flower", flower, { w: 16, h: 16 });
   });
 
   test("the honey drop and honey pot fit their 8×12 cells on every bob", () => {
