@@ -10,16 +10,14 @@ import {
   controlsPanelWidth,
   dim,
   drawControlsPanel,
-  drawHints,
   arrowOffset,
   drawPausePanel,
   pausePanelHeight,
   pauseNote,
-  type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth, type Ink } from "../ui/text.ts";
+import { drawPanel, drawText, drawTextCentered, textHeight, textWidth, type Ink } from "../ui/text.ts";
 import type { Menu, MenuItem } from "./menu.ts";
 import { closeCursor, shelf, shelfColumns, shelfRows, tokenCursor } from "./menus.ts";
 import { minigame } from "./minigames.ts";
@@ -41,11 +39,9 @@ export interface MenuOverlay {
 
 export const payoutTitle = "PAYOUT";
 export const freePlayLine = "FREE PLAY: 0 TICKETS";
-export const skipHints: readonly Hint[] = [{ keys: ["SPACE"], label: "SKIP" }];
-export const closeHints: readonly Hint[] = [{ keys: ["SPACE"], label: "OK" }];
 
 const payoutWidth = 152;
-const payoutHeight = 74;
+const payoutHeight = 54;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
@@ -197,7 +193,7 @@ function drawRowItem(
   }
 }
 
-/** The payout panel, top at `y`: the score spinning down, the tickets spinning up, and a key hint. */
+/** The payout panel, top at `y`: the score spinning down, the tickets spinning up. */
 function drawPayout(screen: Surface, p: Payout, centre: number, y: number): void {
   const left = centre - payoutWidth / 2;
   const right = left + payoutWidth - 12;
@@ -211,5 +207,4 @@ function drawPayout(screen: Surface, p: Payout, centre: number, y: number): void
     drawText(screen, "TICKETS", left + 12, y + 38, "white");
     drawReels(screen, p.ticketReels, right, y + 38, "yellow");
   }
-  drawHints(screen, p.counting ? skipHints : closeHints, y + payoutHeight - keyHeight - 6, centre);
 }

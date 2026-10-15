@@ -10,15 +10,13 @@ import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
 import {
   dim,
   dimColour,
-  drawHints,
   drawMenuItems,
   drawPausePanel,
   drawStackedControls,
   drawControlsPanel,
   standardControls,
-  type Hint,
 } from "../ui/menu.ts";
-import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
+import { drawPanel, drawTextCentered } from "../ui/text.ts";
 import type { Title } from "./title.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
@@ -28,22 +26,13 @@ const background = "#1a1c2c";
 const centre = screenWidth / 2;
 
 export const introLines = [
-  "WALK UP TO A CABINET TO SEE",
-  "ITS NAME, THEN INTERACT TO",
-  "PLAY IT. WIN TICKETS ON THE",
-  "MACHINES AND BUY PRIZES. BEAT",
-  "EVERY MACHINE'S HIGH SCORE",
-  "TO WIN!",
+  "PLAY GAMES TO WIN TICKETS.",
+  "SPEND TICKETS TO EARN PRIZES.",
+  "USE PRIZES TO BEAT HIGH SCORES.",
+  "BEAT ALL HIGH SCORES TO WIN!",
 ] as const;
 
-export const menuHints: readonly Hint[] = [
-  { keys: ["↑", "↓"], label: "CHOOSE" },
-  { keys: ["SPACE"], label: "OK" },
-];
-
 export const confirmLines = ["START A NEW GAME?", "THIS DELETES YOUR", "SAVED GAME."] as const;
-
-const hintsTop = screenHeight - keyHeight - 6;
 
 export function draw(screen: Surface, t: Title): void {
   switch (t.phase) {
@@ -140,7 +129,6 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -156,7 +144,6 @@ function drawConfirm(screen: Surface, t: Title): void {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
   });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
-  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 /** Top of the intro's INTERACT TO START prompt. */

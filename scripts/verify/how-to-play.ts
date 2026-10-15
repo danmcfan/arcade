@@ -48,6 +48,12 @@ function hookChecks(v: Verify): void {
   v.tap("space");
   check(v.snapshot(isTitleSnapshot).phase === "controls", "the pause menu opens the controls panel");
   v.frame("4-controls-panel");
+  v.tap("space");
+  check(v.snapshot(isTitleSnapshot).phase === "controls", "Space does not back out of the controls panel");
+  v.tap("escape");
+  check(v.snapshot(isTitleSnapshot).phase === "paused", "Esc backs out of the controls panel");
+  v.openHook();
+  v.frame("0-title-no-hints");
 }
 
 function liveQ(v: Verify): void {

@@ -89,7 +89,7 @@ export class MinigameRun {
       return this.quit;
     }
     if (s.menu === "payout") return this.updatePayout(s.payout, raw, edges);
-    if (edges.space || edges.escape) {
+    if (edges.escape) {
       sounds.select.blip();
       this.state = { menu: "paused", pausedSounds: s.pausedSounds };
     }

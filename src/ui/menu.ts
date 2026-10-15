@@ -1,11 +1,11 @@
 // Menu drawing shared by the title scene (title menu, hub pause menu) and the
 // Game's minigame pause menu and payout: menu items with selection arrows,
-// key hints, the controls table, and the dimmed backdrop behind a panel.
+// the controls table, and the dimmed backdrop behind a panel.
 // Callers pass where to draw, so the same pieces fit the 192x176 hub and the
 // bigger minigame layouts.
 
 import type { Surface } from "../engine/surface.ts";
-import { drawKey, drawPanel, drawText, drawTextCentered, keyHeight, keyWidth, textWidth, type Ink } from "./text.ts";
+import { drawKey, drawPanel, drawText, drawTextCentered, keyWidth, textWidth, type Ink } from "./text.ts";
 
 /** Sweetie 16 #1a1c2c at 75%, premultiplied: darkens what is behind a panel. */
 export const dimColour = { r: 20, g: 21, b: 33, a: 192 };
@@ -47,31 +47,6 @@ export function drawMenuItems(
     drawText(screen, ">", centre - half - 8 - off, y, "yellow");
     drawText(screen, "<", centre - half + textWidth(label) + 4 + off, y, "yellow");
   });
-}
-
-/** A key hint along the bottom of a screen: the keys, then what they do. */
-export interface Hint {
-  keys: readonly string[];
-  label: string;
-}
-
-const hintGap = 12;
-
-/** Width of one hint: its keys 1 px apart, a gap, then its label. */
-function hintWidth(h: Hint): number {
-  return h.keys.reduce((w, k) => w + keyWidth(k) + 1, 0) + 3 + textWidth(h.label);
-}
-
-/** Key hints in a row centred on `centre`, with their key tops at `top`. */
-export function drawHints(screen: Surface, hints: readonly Hint[], top: number, centre: number): void {
-  const width = hints.reduce((w, h) => w + hintWidth(h), 0) + hintGap * (hints.length - 1);
-  let x = centre - Math.trunc(width / 2);
-  for (const h of hints) {
-    for (const key of h.keys) x += drawKey(screen, key, x, top) + 1;
-    x += 3;
-    drawText(screen, h.label, x, top + 2, "white");
-    x += textWidth(h.label) + hintGap;
-  }
 }
 
 /** One row of a controls table: groups of keys, then what they do. */
@@ -119,9 +94,6 @@ export function drawStackedControls(screen: Surface, rows: readonly ControlRow[]
     });
   });
 }
-
-/** Back out of a panel: Space or Esc. */
-export const panelHints: readonly Hint[] = [{ keys: ["SPACE", "ESC"], label: "BACK" }];
 
 /** Width of the pause panels (hub and minigame), without a note. */
 export const pausePanelWidth = 120;
@@ -175,10 +147,10 @@ export const controlsPanelWidth = 184;
 
 /** Height of the controls panel around a table of `rows` rows. */
 export function controlsPanelHeight(rows: number): number {
-  return stackedControlsHeight(rows) + 46;
+  return stackedControlsHeight(rows) + 28;
 }
 
-/** The CONTROLS panel with its left edge at `x` and top at `y`, around a stacked table, and a Back hint. */
+/** The CONTROLS panel with its left edge at `x` and top at `y`, around a stacked table. */
 export function drawControlsPanel(screen: Surface, rows: readonly ControlRow[], x: number, y: number): void {
   const w = controlsPanelWidth;
   const h = controlsPanelHeight(rows.length);
@@ -186,5 +158,4 @@ export function drawControlsPanel(screen: Surface, rows: readonly ControlRow[], 
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");
   drawStackedControls(screen, rows, centre, y + 20);
-  drawHints(screen, panelHints, y + h - keyHeight - 6, centre);
 }
