@@ -12,12 +12,8 @@ export const deskRect: Rect = { x: 36, y: 107, w: 88, h: 37 };
 /** Where the employee stands, top-left of their 16x24 sprite: inside the U, head just under the placemat. */
 export const employeeSpot = { x: 72, y: 116 } as const;
 
-/** The bottom wall's top edge: collision stops there, as the wall below is solid anyway. */
-const bottomWallY = 120;
-
 /**
  * The desk's collision rects, the prize counter the player faces to open the
- * menu: the whole U down to the bottom wall. The back run reaches below the
- * wall, so the inside of the U is never reachable.
+ * menu: the whole U, so the player walks around it but never into it.
  */
-export const counterRects: readonly Rect[] = [{ ...deskRect, h: bottomWallY - deskRect.y }];
+export const counterRects: readonly Rect[] = [deskRect];

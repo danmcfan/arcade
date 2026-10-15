@@ -6,10 +6,11 @@
 // Part 2 Continues a save that owns all three prizes: every decoration shows,
 // none blocks the player, and Sweet Sam starts with 4 lives, the faster bear
 // and longer power pellets. Part 3 records the honey jar purchase and the run
-// it helps. Files go to out/verify/prizes/.
+// it helps. Part 4 owns all nine and shows each cabinet's arc (#93). Files
+// go to out/verify/prizes/.
 
 import type { GameSnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
-import { isPrizeId, type PrizeId } from "../../src/arcade/prizes.ts";
+import { isPrizeId, prizes as catalogue, type PrizeId } from "../../src/arcade/prizes.ts";
 import { saveKey } from "../../src/title/save.ts";
 import { isRecord } from "../browser.ts";
 import { evalJson, isStringArray, isTitleSnapshot, verify, type Verify } from "../harness.ts";
@@ -174,6 +175,20 @@ function allPrizes(v: Verify): void {
   v.frame("8-sweet-sam-all-prizes");
 }
 
+/** Every prize on the wall (#93): each cabinet's three hang on a clock-face arc round its top. */
+function everyPrize(v: Verify): void {
+  console.log("every prize on the wall (title scene):");
+  const every = catalogue.map((p) => p.id);
+  continueWith(v, 0, every);
+  check(
+    JSON.stringify(game(v).arcade.prizes) === JSON.stringify(every),
+    "Continue restores all nine prizes",
+    game(v).arcade.prizes,
+  );
+  v.step(4, { up: true });
+  v.frame("9-hub-every-prize");
+}
+
 /** Walk down to the counter, buy the honey jar, walk up and start Sweet Sam. */
 function buyAndPlay(v: Verify): void {
   v.wait(800);
@@ -222,6 +237,7 @@ function videos(v: Verify): void {
 await verify("prizes", (v) => {
   buyHoneyJar(v);
   allPrizes(v);
+  everyPrize(v);
   videos(v);
   v.assertNoErrors();
   console.log(`\n${checks} checks passed.`);

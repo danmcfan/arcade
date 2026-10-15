@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { checkCollision, checkCollisions, newWalls, type Rect } from "./collision.ts";
 
 describe("newWalls", () => {
-  test("four walls in tile units (tileSize 8), as collision.go", () => {
+  test("the back wall, then the frame's left, right and bottom edges, just outside it", () => {
     expect(newWalls()).toEqual([
       { x: 0, y: 0, w: 160, h: 48 },
-      { x: 0, y: 48, w: 24, h: 72 },
-      { x: 136, y: 48, w: 24, h: 72 },
-      { x: 0, y: 120, w: 160, h: 24 },
+      { x: -8, y: 0, w: 8, h: 144 },
+      { x: 160, y: 0, w: 8, h: 144 },
+      { x: 0, y: 144, w: 160, h: 8 },
     ]);
   });
 
@@ -50,12 +50,12 @@ describe("checkCollisions against the hub walls", () => {
     ["spawn point (80, 92)", 80, 92, false],
     ["top wall face: y = 60 is clear", 80, 60, false],
     ["top wall face: y = 59 collides", 80, 59, true],
-    ["left wall face: x = 32 is clear", 32, 92, false],
-    ["left wall face: x = 31 collides", 31, 92, true],
-    ["right wall face: x = 128 is clear", 128, 92, false],
-    ["right wall face: x = 129 collides", 129, 92, true],
-    ["bottom wall face: y = 108 is clear", 80, 108, false],
-    ["bottom wall face: y = 109 collides", 80, 109, true],
+    ["left edge: x = 8 is clear", 8, 92, false],
+    ["left edge: x = 7 collides", 7, 92, true],
+    ["right edge: x = 152 is clear", 152, 92, false],
+    ["right edge: x = 153 collides", 153, 92, true],
+    ["bottom edge: y = 132 is clear", 80, 132, false],
+    ["bottom edge: y = 133 collides", 80, 133, true],
   ];
   for (const [name, x, y, want] of cases) {
     test(name, () => {
