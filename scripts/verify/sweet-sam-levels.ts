@@ -11,6 +11,7 @@
 import type { SoundEvent } from "../../src/engine/audio.ts";
 import type { InputScript } from "../../src/game/script.ts";
 import type { GameSnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
+import { flowerPoints } from "../../src/sweet-sam/flower.ts";
 import { levelValues } from "../../src/sweet-sam/levels.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { isRecord } from "../browser.ts";
@@ -114,7 +115,7 @@ const levelStops: Stop[] = [
     name: "05-flower-eaten",
     shows: "the flower eaten: 300 in the pixel font where it stood",
     expect: (s, sounds) => {
-      check(s.flowerPopup?.points === levelValues(1).flowerPoints, "it scores level 1's points", s.flowerPopup);
+      check(s.flowerPopup?.points === flowerPoints(1), "it scores level 1's points", s.flowerPopup);
       check(s.flower.ticks === 0, "and is gone");
       check(sounds.includes("play:sweetFlower"), "with its sparkle", sounds);
     },
