@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { isRecord } from "./pixel.ts";
-import { artSources, asRowsValue, writeRows } from "./studio-source.ts";
+import { sweetie } from "../src/ui/sweetie16.ts";
+import { artSources, asRowsValue, fromStrip, toStrip, writeRows } from "./art-source.ts";
+import { plot } from "./pixel-art.ts";
 
 const fixture = `// A fixture art source.
 import { mirrorX } from "./pixel-art.ts";
@@ -76,5 +78,46 @@ describe("writeRows on the real art sources", () => {
       }
     }
     expect(written).toBeGreaterThan(0);
+  });
+});
+
+describe("toStrip and fromStrip", () => {
+  const frames = [
+    ["k.", "rr"],
+    ["rr", ".k"],
+  ];
+
+  test("a strip read back with no edits gives the same frames", () => {
+    const png = toStrip("walk", frames);
+    expect([png.width, png.height]).toEqual([4, 2]);
+    expect(fromStrip("walk", png, frames)).toEqual(frames);
+  });
+
+  test("an edit to one frame changes only that frame", () => {
+    const png = toStrip("walk", frames);
+    plot(png, 3, 0, sweetie.g);
+    expect(fromStrip("walk", png, frames)).toEqual([
+      ["k.", "rr"],
+      ["rg", ".k"],
+    ]);
+  });
+
+  test("one image stays one image", () => {
+    expect(fromStrip("pot", toStrip("pot", ["yo"]), ["yo"])).toEqual(["yo"]);
+  });
+
+  test("glyph rows go out in white and come back as #", () => {
+    const glyph = ["#.", ".#"];
+    expect(fromStrip("A", toStrip("A", glyph), glyph)).toEqual(glyph);
+  });
+
+  test("refuses a strip of the wrong size", () => {
+    expect(() => fromStrip("walk", toStrip("pot", ["yo"]), frames)).toThrow(/strip is 4x2; the PNG is 2x1/u);
+  });
+
+  test("refuses a colour outside Sweetie 16", () => {
+    const png = toStrip("walk", frames);
+    plot(png, 1, 1, "#123456");
+    expect(() => fromStrip("walk", png, frames)).toThrow(/frame 0: .*#123456, not in the palette/u);
   });
 });

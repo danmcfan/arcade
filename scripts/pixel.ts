@@ -10,6 +10,10 @@
 //   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
 //                                                     (<variants.json>: { "path.ts:name": { "<label>": rows or frames } };
 //                                                     options sharing a label are one choice)
+//   bun run pixel export  <path.ts:name>...           each export's frames as a PNG strip in out/aseprite/,
+//                                                     to edit in Aseprite
+//   bun run pixel import  <png> <path.ts:name>        an edited strip written back into the export's rows,
+//                                                     then `bun run art`
 //
 // An <image> is one of:
 //   path.png             the whole PNG
@@ -20,7 +24,7 @@
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
 // Options: --scale N (default: fits each image to about 256 px, at most 8x),
-// --out <file> (show, before, place and preview), --ref <rev> (before; default
+// --out <file> (show, before, place, preview and export with one export), --ref <rev> (before; default
 // origin/main), --nearest (rows: letter each colour as the nearest Sweetie 16
 // one, to import art drawn in another palette).
 
@@ -30,6 +34,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
+import { asRowsValue, fromStrip, isRows, toStrip, writeRows, type RowsValue } from "./art-source.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
@@ -64,10 +69,6 @@ function parseArea(area: string): [number, number, number, number] {
     throw new Error(`area "${area}" is not x,y,w,h`);
   }
   return [x, y, w, h];
-}
-
-export function isRows(v: unknown): v is Rows {
-  return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
 export function isRecord(v: unknown): v is Record<string, unknown> {
@@ -128,7 +129,7 @@ export function parseSpec(spec: string): SourceSpec | undefined {
 
 /**
  * The value `spec` names, read from the file as it is on disk now, past the
- * import cache (`bun run studio` after a save); throws when it is missing.
+ * import cache (after an import wrote it); throws when it is missing.
  */
 export async function exportValue({ file, name, key }: SourceSpec): Promise<unknown> {
   const mod = await importCopy(file, readFileSync(resolve(file)));
@@ -373,6 +374,36 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
   }
 }
 
+/** The rows or frames `spec` names now; throws when it names anything else. */
+async function rowsAt(spec: string): Promise<{ source: SourceSpec; value: RowsValue }> {
+  const source = parseSpec(spec);
+  if (source === undefined) throw new Error(`"${spec}" is not path.ts:name[.key]`);
+  const value = asRowsValue(await exportValue(source));
+  if (value === undefined) throw new Error(`${spec} is not rows or a list of frames; name one entry with .key`);
+  return { source, value };
+}
+
+function run(cmd: string[]): void {
+  const r = Bun.spawnSync(cmd, { cwd: repoRoot, stdout: "inherit", stderr: "inherit" });
+  if (r.exitCode !== 0) throw new Error(`${cmd.join(" ")} failed`);
+}
+
+/**
+ * Write the strip at `png` into `spec`'s rows literal, then regenerate the art.
+ * Prettier tidies the block only when the file was Prettier-clean before, so
+ * nothing outside the block changes.
+ */
+async function importStrip(png: string, spec: string): Promise<void> {
+  const { source, value } = await rowsAt(spec);
+  const rows = fromStrip(spec, PNG.sync.read(readFileSync(resolve(png))), value);
+  const path = join(repoRoot, source.file);
+  const wasClean = Bun.spawnSync(["bunx", "prettier", "--check", source.file], { cwd: repoRoot }).exitCode === 0;
+  writeFileSync(path, writeRows(readFileSync(path, "utf8"), source.name, source.key, rows));
+  if (wasClean) run(["bunx", "prettier", "--write", source.file]);
+  run(["bun", "run", "art"]);
+  console.log(`wrote ${spec}; read it back with git diff and bun run pixel before ${spec}`);
+}
+
 function write(png: PNG, out: string): void {
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, PNG.sync.write(png));
@@ -488,6 +519,22 @@ async function main(argv: string[]): Promise<void> {
       console.log(
         `wrote ${relative(process.cwd(), html)} (${options.length} options); publish it with the Artifact tool`,
       );
+      return;
+    }
+    case "export": {
+      if (opts["out"] !== undefined && specs.length > 1) throw new Error("--out names one file; export one spec");
+      await inOrder(specs, async (spec) => {
+        const { value } = await rowsAt(spec);
+        const name = spec.slice(spec.indexOf(":") + 1);
+        const file = resolve(opts["out"] ?? join(repoRoot, "out/aseprite", `${name}.png`));
+        write(toStrip(spec, value), file);
+      });
+      return;
+    }
+    case "import": {
+      const [png, spec] = specs;
+      if (png === undefined || spec === undefined || specs.length !== 2) usage();
+      await importStrip(png, spec);
       return;
     }
     default:

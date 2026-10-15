@@ -1,9 +1,11 @@
-// Write rows back into an art source (`bun run studio`'s save): find one
-// export's array literal, or one entry of it, and replace only that span, so
-// every other byte of the file stays as it was.
+// Round-trip an art source through Aseprite (`bun run pixel export` and
+// `import`): draw one export's frames as a PNG strip, read an edited strip back
+// as rows, and write rows into the export's array literal, replacing only that
+// span so every other byte of the file stays as it was.
 
-import type { Rows } from "./pixel-art.ts";
-import { isRows } from "./pixel.ts";
+import type { PNG } from "pngjs";
+import { sweetie } from "../src/ui/sweetie16.ts";
+import { blank, checkRows, paint, toRows, type Rows } from "./pixel-art.ts";
 
 /** Rows, or a list of frames of rows. */
 export type RowsValue = Rows | readonly Rows[];
@@ -23,11 +25,9 @@ export const artSources = [
   "src/sweet-sam/art.ts",
 ];
 
-/** One export the studio can open: its spec, and whether it is frames and glyph rows. */
-export interface StudioItem {
-  spec: string;
-  frames: boolean;
-  glyph: boolean;
+/** True for one image's rows. */
+export function isRows(v: unknown): v is Rows {
+  return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
 /** True for a list of frames, false for one image. */
@@ -38,6 +38,55 @@ export function isFrames(v: unknown): v is readonly Rows[] {
 /** `v` as rows or frames, or undefined when it is neither. */
 export function asRowsValue(v: unknown): RowsValue | undefined {
   return isRows(v) || isFrames(v) ? v : undefined;
+}
+
+/** `value`'s frames: itself when it is one image. */
+function framesOf(value: RowsValue): readonly Rows[] {
+  return isFrames(value) ? value : [value];
+}
+
+/** Glyph rows draw in `#`; the font is the one source that uses them. They go to Aseprite in white. */
+function paletteFor(value: RowsValue): Record<string, string> {
+  return framesOf(value).some((rows) => rows.some((row) => row.includes("#"))) ? { "#": sweetie.w } : sweetie;
+}
+
+/** `value`'s frames left to right in one PNG, in Sweetie 16, for Aseprite to open. */
+export function toStrip(label: string, value: RowsValue): PNG {
+  const frames = framesOf(value);
+  const palette = paletteFor(value);
+  const [first] = frames;
+  const w = first?.[0]?.length ?? 0;
+  const h = first?.length ?? 0;
+  const png = blank(w * frames.length, h);
+  frames.forEach((rows, i) => {
+    checkRows(`${label} frame ${i}`, rows, { w, h }, palette);
+    paint(png, rows, palette, i * w, 0);
+  });
+  return png;
+}
+
+/**
+ * The rows in `png`, a strip `toStrip` drew from `before` and someone edited:
+ * the same shape and size as `before`. Throws on a size that does not match or
+ * a colour outside the palette.
+ */
+export function fromStrip(label: string, png: PNG, before: RowsValue): RowsValue {
+  const frames = framesOf(before);
+  const w = frames[0]?.[0]?.length ?? 0;
+  const h = frames[0]?.length ?? 0;
+  if (png.width !== w * frames.length || png.height !== h) {
+    throw new Error(
+      `${label} is ${frames.length} frame(s) of ${w}x${h}, so its strip is ${w * frames.length}x${h}; the PNG is ${png.width}x${png.height}`,
+    );
+  }
+  const after = frames.map((_, i) => {
+    try {
+      return toRows(png, paletteFor(before), i * w, 0, w, h);
+    } catch (e: unknown) {
+      throw new Error(`${label} frame ${i}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
+    }
+  });
+  return isFrames(before) ? after : (after[0] ?? []);
 }
 
 const printWidth = 120;
@@ -157,23 +206,13 @@ function format(value: RowsValue, indent: number, column: number): string {
 /**
  * `source` with export `name` (its entry `key` when given) replaced by
  * `value`. Throws when the export or entry is missing, or is not written out
- * as rows (a call such as `mirrorX(...)` cannot be saved into).
+ * as rows (a call such as `mirrorX(...)` cannot be written into).
  */
 export function writeRows(source: string, name: string, key: string | undefined, value: RowsValue): string {
   const [start, end] = rowsSpan(source, name, key);
   const lineStart = source.lastIndexOf("\n", start) + 1;
   const indent = /^ */u.exec(source.slice(lineStart))?.[0].length ?? 0;
   return source.slice(0, start) + format(value, indent, start - lineStart) + source.slice(end);
-}
-
-/** Whether `writeRows` can save into export `name` (entry `key`): it is written out as rows. */
-export function isSaveable(source: string, name: string, key: string | undefined): boolean {
-  try {
-    rowsSpan(source, name, key);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** The [start, end) span of export `name`'s (entry `key`'s) rows literal; throws as `writeRows` says. */
