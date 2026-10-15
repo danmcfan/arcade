@@ -327,16 +327,22 @@ export class FireflySoftware implements FixedViewport {
       );
       if (e === undefined) return true;
       e.hp--;
-      if (e.hp === 0) this.kill(e);
+      if (e.hp === 0) this.shootDown(e);
       play(sounds.hit);
       return false;
     });
   }
 
-  private kill(e: Enemy): void {
+  /** A shot kills the enemy and scores it. */
+  private shootDown(e: Enemy): void {
+    this.destroy(e);
+    this.points += points(e.kind, e.outOfFormation);
+  }
+
+  /** The enemy bursts and is gone, scoring nothing. */
+  private destroy(e: Enemy): void {
     e.hp = 0;
     e.deadFrames = hitEffectTicks;
-    this.points += points(e.kind, e.outOfFormation);
   }
 
   private hitPlayer(): void {
@@ -350,7 +356,8 @@ export class FireflySoftware implements FixedViewport {
     );
     const shot = this.shots.find((s) => Math.abs(s.x - p.x) < 5 && Math.abs(s.y - p.y) < 7);
     if (body === undefined && shot === undefined) return;
-    if (body !== undefined) this.kill(body);
+    // A rammed enemy dies with the firefly but scores nothing.
+    if (body !== undefined) this.destroy(body);
     if (shot !== undefined) this.shots = this.shots.filter((s) => s !== shot);
     this.loseLife();
   }
