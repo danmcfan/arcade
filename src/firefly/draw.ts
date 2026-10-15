@@ -1,6 +1,6 @@
 // Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
 // effects), enemy shots, sparks, the firefly (or its death effect), the
-// score and spare lives, and "STAGE n" while a stage opens.
+// score, high score and spare lives, and "STAGE n" while a stage opens.
 
 import {
   imageCabinetFirefly,
@@ -71,6 +71,7 @@ export interface FireflyView {
   sparks: readonly Spark[];
   enemies: readonly Enemy[];
   shots: readonly Shot[];
+  highScore: number;
   score(): number;
 }
 
@@ -96,6 +97,8 @@ function drawField(screen: Surface, f: FireflyView): void {
   }
 
   drawText(screen, `${f.score()}`, ox + 4, oy + 4);
+  // The high score follows the score once the score passes it, as in Sweet Sam.
+  drawTextCentered(screen, `${Math.max(f.score(), f.highScore)}`, ox + fieldWidth / 2, oy + 4);
   drawLives(screen, Math.max(0, f.lives - 1));
 
   if (f.stageTick <= stageIntroTicks) {

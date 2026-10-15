@@ -17,7 +17,8 @@ import { defined } from "../engine/defined.testutil.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
-import { FireflySoftware } from "./game.ts";
+import { drawTextCentered } from "../ui/text.ts";
+import { FireflySoftware, newFireflySoftware } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 interface DrawCall {
@@ -40,6 +41,20 @@ function drawCalls(f: FireflySoftware): DrawCall[] {
 
 const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 const of = (calls: DrawCall[], asset: Sprite): DrawCall[] => calls.filter((c) => c.sprite.asset === asset.asset);
+
+/** The font calls `drawTextCentered` makes for `text` centred along the top row. */
+function topRowCentered(text: string): DrawCall[] {
+  const calls: DrawCall[] = [];
+  drawTextCentered(stubSurface({ draw: (sprite, x, y) => void calls.push({ sprite, x, y }) }), text, 8 + 112, 8 + 4);
+  return calls;
+}
+
+/** Whether every call in `want` is among `calls`. */
+function includesAll(calls: DrawCall[], want: DrawCall[]): boolean {
+  return want.every((w) =>
+    calls.some((c) => c.x === w.x && c.y === w.y && rect(c.sprite).join() === rect(w.sprite).join()),
+  );
+}
 
 /** A software past its intro whose only enemy is `kind`, at (x, y). */
 function onlyEnemy(kind: Enemy["kind"], x: number, y: number): { f: FireflySoftware; e: Enemy } {
@@ -88,7 +103,22 @@ describe("firefly draw", () => {
       [8 + 224 - 36, 10],
     ]);
     f.stageTick = stageIntroTicks + 1;
-    expect(of(drawCalls(f), imageFont).length).toBe(1);
+    expect(of(drawCalls(f), imageFont).length).toBe(2); // the score "0" and the high score "0"
+  });
+
+  test("the high score the software was made with shows centred along the top row", () => {
+    const f = newFireflySoftware(12340);
+    f.stageTick = stageIntroTicks + 1;
+    expect(includesAll(of(drawCalls(f), imageFont), topRowCentered("12340"))).toBe(true);
+  });
+
+  test("once the score passes the high score, the high score shown follows it", () => {
+    const f = newFireflySoftware(12340);
+    f.stageTick = stageIntroTicks + 1;
+    f.points = 12500;
+    const font = of(drawCalls(f), imageFont);
+    expect(includesAll(font, topRowCentered("12500"))).toBe(true);
+    expect(includesAll(font, topRowCentered("12340"))).toBe(false);
   });
 
   test("an enemy in formation faces down: row 2 of its sheet, centred on it", () => {

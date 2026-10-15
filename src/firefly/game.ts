@@ -130,7 +130,11 @@ export class FireflySoftware implements FixedViewport {
   /** What the player's prizes change in this run (./advantages.ts). */
   readonly advantages: Readonly<FireflyAdvantages>;
 
-  constructor(advantages: Readonly<FireflyAdvantages> = noAdvantages) {
+  /** The hub high score this run is chasing; HI shows it until the score passes it. */
+  readonly highScore: number;
+
+  constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
+    this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
   }
@@ -436,7 +440,10 @@ export class FireflySoftware implements FixedViewport {
   }
 }
 
-/** A new run, with the advantages of the player's prizes (none by default). */
-export function newFireflySoftware(advantages: Readonly<FireflyAdvantages> = noAdvantages): FireflySoftware {
-  return new FireflySoftware(advantages);
+/** A new run chasing `highScore`, with the advantages of the player's prizes (none by default). */
+export function newFireflySoftware(
+  highScore = 0,
+  advantages: Readonly<FireflyAdvantages> = noAdvantages,
+): FireflySoftware {
+  return new FireflySoftware(highScore, advantages);
 }
