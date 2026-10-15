@@ -5,7 +5,7 @@
 // paint the title's rainbow sweep over them (src/title/draw.ts).
 //
 // The small font copies the 7-px lettering on the hub title cards
-// ("PRESS SPACE TO PLAY"): thin strokes with the corners knocked off. The
+// ("INTERACT TO PLAY"): thin strokes with the corners knocked off. The
 // logo letters are cut from the display font of the Go port's original Brass
 // Monkey title card.
 

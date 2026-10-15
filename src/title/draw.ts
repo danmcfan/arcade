@@ -14,9 +14,8 @@ import {
   drawMenuItems,
   drawPausePanel,
   drawStackedControls,
-  drawStackedControlsPanel,
-  moveControl,
-  type ControlRow,
+  drawControlsPanel,
+  standardControls,
   type Hint,
 } from "../ui/menu.ts";
 import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
@@ -36,13 +35,6 @@ export const introLines = [
   "EVERY MACHINE'S HIGH SCORE",
   "TO WIN!",
 ] as const;
-
-/** One row of the controls table: the keys, then what they do. */
-export const controls: readonly ControlRow[] = [
-  moveControl,
-  { keys: [["E"], ["SPACE"], ["ENTER"]], label: "PLAY / ACTION" },
-  { keys: [["Q"], ["ESC"], ["BACKSPACE"]], label: "BACK / PAUSE" },
-];
 
 export const menuHints: readonly Hint[] = [
   { keys: ["↑", "↓"], label: "CHOOSE" },
@@ -75,7 +67,7 @@ export function draw(screen: Surface, t: Title): void {
     case "controls":
       t.hostedGame().draw(screen);
       dimHub(screen);
-      drawStackedControlsPanel(screen, controls, 4, 30);
+      drawControlsPanel(screen, standardControls, 4, 30);
   }
 }
 
@@ -167,14 +159,17 @@ function drawConfirm(screen: Surface, t: Title): void {
   drawHints(screen, menuHints, hintsTop, centre);
 }
 
+/** Top of the intro's INTERACT TO START prompt. */
+export const introPromptTop = 156;
+
 function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
   introLines.forEach((line, i) => {
     drawTextCentered(screen, line, centre, 24 + i * 10, "white");
   });
-  drawStackedControls(screen, controls, centre, 86);
-  if (blinkOn(t.tick)) drawTextCentered(screen, "INTERACT TO START", centre, 156, "yellow");
+  drawStackedControls(screen, standardControls, centre, 86);
+  if (blinkOn(t.tick)) drawTextCentered(screen, "INTERACT TO START", centre, introPromptTop, "yellow");
 }
 
 /** The Game's margin around the hub image, which stays transparent. */

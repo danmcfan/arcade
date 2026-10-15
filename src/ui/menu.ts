@@ -80,36 +80,17 @@ export interface ControlRow {
   label: string;
 }
 
-const controlsRowHeight = 14;
-
 /** The MOVE row every controls table starts with, so its key caps match everywhere. */
 export const moveControl: ControlRow = { keys: [["↑", "←", "↓", "→"], ["WASD"]], label: "MOVE" };
 
-/** Height of a controls table with `rows` rows. */
-export function controlsHeight(rows: number): number {
-  return rows * controlsRowHeight - (controlsRowHeight - keyHeight);
-}
-
-/** A controls table with its keys from `left`, its labels from `labelX` and its top edge at `top`. */
-export function drawControls(
-  screen: Surface,
-  rows: readonly ControlRow[],
-  left: number,
-  labelX: number,
-  top: number,
-): void {
-  rows.forEach((row, r) => {
-    const y = top + r * controlsRowHeight;
-    let x = left;
-    row.keys.forEach((group, g) => {
-      if (g > 0) x += 4;
-      for (const key of group) x += drawKey(screen, key, x, y) + 1;
-    });
-    drawText(screen, row.label, labelX, y + 2, "white");
-  });
-}
-
 const stackedRowHeight = 22;
+
+/** The controls every screen shows, with the same labels everywhere. */
+export const standardControls: readonly ControlRow[] = [
+  moveControl,
+  { keys: [["E"], ["SPACE"], ["ENTER"]], label: "PLAY / ACTION" },
+  { keys: [["Q"], ["ESC"], ["BACKSPACE"]], label: "BACK / PAUSE" },
+];
 
 /** Height of a stacked controls table with `rows` rows. */
 export function stackedControlsHeight(rows: number): number {
@@ -194,24 +175,13 @@ export const controlsPanelWidth = 184;
 
 /** Height of the controls panel around a table of `rows` rows. */
 export function controlsPanelHeight(rows: number): number {
-  return controlsHeight(rows) + 46;
+  return stackedControlsHeight(rows) + 46;
 }
 
-/** The CONTROLS panel with its left edge at `x` and top at `y`, and a Back hint. */
+/** The CONTROLS panel with its left edge at `x` and top at `y`, around a stacked table, and a Back hint. */
 export function drawControlsPanel(screen: Surface, rows: readonly ControlRow[], x: number, y: number): void {
   const w = controlsPanelWidth;
   const h = controlsPanelHeight(rows.length);
-  const centre = x + w / 2;
-  drawPanel(screen, x, y, w, h);
-  drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");
-  drawControls(screen, rows, x + 8, x + 100, y + 20);
-  drawHints(screen, panelHints, y + h - keyHeight - 6, centre);
-}
-
-/** The CONTROLS panel around a stacked table (`drawStackedControls`), left edge at `x`, top at `y`. */
-export function drawStackedControlsPanel(screen: Surface, rows: readonly ControlRow[], x: number, y: number): void {
-  const w = controlsPanelWidth;
-  const h = stackedControlsHeight(rows.length) + 46;
   const centre = x + w / 2;
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");

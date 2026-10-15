@@ -52,16 +52,19 @@ function hookChecks(v: Verify): void {
 
 function liveQ(v: Verify): void {
   console.log("real Q key (screenshots):");
-  v.open();
+  v.openHook();
   v.page.eval("localStorage.clear()");
-  v.open();
+  v.openHook();
+  v.page.eval("window.__arcade.resume()");
   dismissNotice(v);
   v.key("Space");
   v.screenshot("5-live-intro");
   v.key("Space");
   v.key("KeyQ");
+  check(v.snapshot(isTitleSnapshot).phase === "paused", "a real Q keydown opens the pause menu");
   v.screenshot("6-live-q-pause");
   v.key("KeyQ");
+  check(v.snapshot(isTitleSnapshot).phase === "playing", "a second real Q backs out of the pause menu");
   v.screenshot("7-live-q-resume");
 }
 

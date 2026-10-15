@@ -11,8 +11,8 @@ import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
-import { panelHints } from "../ui/menu.ts";
-import { confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
+import { panelHints, standardControls } from "../ui/menu.ts";
+import { confirmLines, introLines, introPromptTop, menuHints, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { Title } from "./title.ts";
 
@@ -890,7 +890,7 @@ describe("drawing", () => {
       "CONTROLS",
       "QUIT TO MENU",
       ...introLines,
-      ...controls.map((c) => c.label),
+      ...standardControls.map((c) => c.label),
       ...hints.flatMap((h) => h.keys.concat(h.label)),
       "GAMES WITHIN A GAME",
       "INTERACT TO START",
@@ -1008,7 +1008,7 @@ describe("drawing", () => {
     const all = r.text();
     expect(all).toContain("HOW TO PLAY");
     expect(all).toContain("WALK UP TO A CABINET");
-    for (const c of controls) expect(all).toContain(c.label);
+    for (const c of standardControls) expect(all).toContain(c.label);
     expect(all).toContain("BUY PRIZES");
     expect(all).toContain("EVERY MACHINE");
     expect(all).toContain("THEN INTERACT TO");
@@ -1041,7 +1041,7 @@ describe("drawing", () => {
     for (const k of r.keys()) {
       expect(k.x).toBeGreaterThanOrEqual(0);
       expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
-      expect(k.y + 11).toBeLessThan(154); // above INTERACT TO START
+      expect(k.y + keyHeight).toBeLessThan(introPromptTop); // above INTERACT TO START
     }
     for (const g of r.glyphs) expect(g.x).toBeLessThan(screenWidth);
   });
