@@ -5,3 +5,4 @@ art/
 bun.lock
 .claude/
 test/fixtures/
+.sandcastle/logs
