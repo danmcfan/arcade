@@ -10,11 +10,12 @@ Your issue:
 
 You are on branch `{{TARGET_BRANCH}}`, with dependencies installed.
 
-1. Build issue #{{ISSUE_NUMBER}}, following `docs/agents/delivery.md` steps 2–4. Commit as you go, in the style of `git log`.
-2. `bun run check` must pass before you stop.
+1. Build issue #{{ISSUE_NUMBER}}. Use the `/tdd` skill: work test-first wherever the code has a seam a test can drive.
+2. Commit as you go, in the style of `git log`.
 3. For any change the player can see or hear, write and run a verify check (`docs/agents/visual-verification.md`). Commit the check; leave its output in `out/verify/`.
+4. `bun run check` must pass before you stop.
 
-Do not push, open a PR or merge. The owner opens the PR from your commits.
+Another agent reviews your work after you, so do not review it yourself. Do not push, open a PR or merge.
 
 # Done
 
