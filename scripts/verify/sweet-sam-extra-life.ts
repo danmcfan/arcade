@@ -23,14 +23,6 @@ function sweetSam(v: Verify): SweetSamSnapshot {
   return g.sw;
 }
 
-/** See sweet-sam-sleepy-timer.ts: a key press dismisses the touch notice only while the loop runs. */
-function dismissNotice(v: Verify): void {
-  v.page.eval("window.__arcade.resume()");
-  v.key("KeyZ");
-  v.wait(100);
-  v.page.eval("window.__arcade.pause()");
-}
-
 const seed = 2;
 const afterTicks = 240;
 // Script ticks: tick 1 is a hub tick, then one bot input per tick.
@@ -53,7 +45,7 @@ const end = run.ticks + 1;
 
 await verify("sweet-sam-extra-life", (v) => {
   v.openHook("scene=game");
-  dismissNotice(v);
+  v.dismissNotice();
   loadFixture(v, script);
 
   skipTo(v, script, 0, crossing - 1);
@@ -77,7 +69,7 @@ await verify("sweet-sam-extra-life", (v) => {
   v.record(
     "extra-life",
     () => {
-      dismissNotice(v);
+      v.dismissNotice();
       loadFixture(v, script);
       skipTo(v, script, 0, crossing - 180);
       replayLive(v, script, crossing - 180, end);
