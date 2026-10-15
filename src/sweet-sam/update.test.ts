@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import type { Direction } from "../engine/input.ts";
-import { Entity, newCorners, noUpTiles, newEnemies, newPlayer, type Tile } from "./entity.ts";
+import { Entity, cornerRowOffset, newCorners, noUpTiles, newEnemies, newPlayer, type Tile } from "./entity.ts";
 import { findTarget, resetEnemy, updateBlue, updateDirection, updateFrame, updatePosition } from "./update.ts";
 import { modeChase, modeScatter, modeSequence } from "./levels.ts";
 
@@ -129,7 +129,7 @@ describe("updateDirection", () => {
   ];
 
   test("noUpTiles names the four Pac-Man no-up junctions", () => {
-    expect(noUpTiles).toEqual(noUp.map(([x, y]) => ({ x, y: y + 3 })));
+    expect(noUpTiles).toEqual(noUp.map(([x, y]) => ({ x, y: y + cornerRowOffset })));
   });
 
   test.each(noUp)("a chasing bee at (%i, %i) never picks UP, even when closest", (tx, ty) => {

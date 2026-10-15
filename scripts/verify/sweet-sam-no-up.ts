@@ -8,7 +8,7 @@
 
 import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
-import { distance, noUpTiles, pointToTile, tileEq, type Tile } from "../../src/sweet-sam/entity.ts";
+import { cornerRowOffset, distance, noUpTiles, pointToTile, tileEq, type Tile } from "../../src/sweet-sam/entity.ts";
 import { elroyStep } from "../../src/sweet-sam/release.ts";
 import { findTarget } from "../../src/sweet-sam/update.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
@@ -37,7 +37,7 @@ interface Stop {
 /** The first tick an awake bee wants UP at each no-up tile, and one sleepy bee going up from one. */
 const awake: Stop[] = [];
 let sleepy: Stop | undefined;
-const seed = 11;
+const seed = 4;
 let tick = 0;
 const run = play(seed, 1, (s) => {
   tick++; // the script tick this state follows (tick 1 is the hub tick)
@@ -76,7 +76,7 @@ await verify("sweet-sam-no-up", (v) => {
   v.dismissNotice();
   loadFixture(v, script);
   console.log(`bot seed ${seed}, ${run.ticks} ticks`);
-  check(awake.length > 0, "an awake bee reached a no-up junction wanting UP", awake);
+  check(awake.length === 4, "an awake bee reached each of the four no-up junctions wanting UP", awake);
 
   let from = 0;
   for (const st of awake) {
@@ -85,10 +85,10 @@ await verify("sweet-sam-no-up", (v) => {
     const e = sweetSam(v).enemies[st.bee];
     check(
       e !== undefined && e.blue === 0 && e.dir !== "UP",
-      `tick ${st.tick}: the ${e?.kind} bee at (${st.tile.x}, ${st.tile.y - 3}) wants UP but flies ${e?.dir}`,
+      `tick ${st.tick}: the ${e?.kind} bee at (${st.tile.x}, ${st.tile.y - cornerRowOffset}) wants UP but flies ${e?.dir}`,
       e,
     );
-    v.frame(`${st.tick}-${e?.kind}-at-${st.tile.x}-${st.tile.y - 3}`, 2);
+    v.frame(`${st.tick}-${e?.kind}-at-${st.tile.x}-${st.tile.y - cornerRowOffset}`, 2);
   }
   if (sleepy === undefined) throw new Error("FAILED: no sleepy bee turned up at a no-up junction in this run");
   const st = sleepy;
@@ -97,7 +97,7 @@ await verify("sweet-sam-no-up", (v) => {
   const e = sweetSam(v).enemies[st.bee];
   check(
     e !== undefined && e.blue > 0 && e.dir === "UP",
-    `tick ${st.tick}: a sleepy ${e?.kind} bee turns UP at (${st.tile.x}, ${st.tile.y - 3})`,
+    `tick ${st.tick}: a sleepy ${e?.kind} bee turns UP at (${st.tile.x}, ${st.tile.y - cornerRowOffset})`,
     e,
   );
   v.frame(`${st.tick}-sleepy-${e?.kind}-up`, 2);

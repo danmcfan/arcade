@@ -325,6 +325,9 @@ function newPower(tx: number, ty: number): Entity {
   return e;
 }
 
+/** Rows pointToTile sits below the corner-grid row. */
+export const cornerRowOffset = 3;
+
 /**
  * The junctions where a bee in scatter or chase may not choose UP (Pac-Man
  * Dossier, "Areas To Exploit"): the two T-junctions above the home and the two
