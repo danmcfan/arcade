@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Direction } from "../engine/input.ts";
-import { newCorners, newPlayer, type Entity } from "./entity.ts";
-import { steer, updatePosition } from "./update.ts";
+import { newCorners, newEnemies, newPlayer, type Entity } from "./entity.ts";
+import { steer, updateDirection, updatePosition } from "./update.ts";
 
 const corners = newCorners();
 
@@ -87,5 +87,24 @@ describe("what the bear's cornering leaves alone", () => {
         }
       }
     }
+  });
+});
+
+describe("bees do not pre-turn", () => {
+  test("a bee 3 px before a junction keeps its direction, then turns at the centre", () => {
+    const e = newEnemies().find((b) => b.kind === "red");
+    if (e === undefined) throw new Error("red");
+    e.home = false;
+    e.x = crossX + 3;
+    e.y = crossY;
+    e.direction = "LEFT";
+    e.velocity = 1;
+    // Straight up from the junction.
+    const target = { x: 6, y: 0 };
+    updateDirection(e, corners, target);
+    expect([e.direction, e.x]).toEqual(["LEFT", crossX + 3]);
+    for (let t = 0; t < 3; t++) updatePosition(e, corners);
+    updateDirection(e, corners, target);
+    expect([e.direction, e.x, e.y]).toEqual(["UP", crossX, crossY]);
   });
 });
