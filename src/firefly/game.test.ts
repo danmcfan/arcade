@@ -373,14 +373,12 @@ describe("stages", () => {
     expect([f.over, f.stage]).toEqual([true, 1]);
   });
 
-  test("with lives left, a rammed last enemy starts the next stage once the firefly is back", () => {
+  test("with lives left, a rammed last enemy still starts the next stage", () => {
     const { f } = withOnly("wasp", { x: 112, y: playerY });
     f.lives = 2;
     f.update(NO_INPUT);
-    run(f, respawnTicks - 2);
-    expect([f.respawn, f.stage]).toEqual([1, 1]);
-    f.update(NO_INPUT);
-    expect([f.respawn, f.stage, f.over]).toEqual([0, 2, false]);
+    run(f, respawnTicks);
+    expect([f.respawn, f.lives, f.stage, f.over]).toEqual([0, 1, 2, false]);
   });
 
   test("on the last life, shooting the last enemy on the tick the firefly is hit still ends the run on stage 1", () => {
