@@ -3,7 +3,8 @@
 // option into its export and calls the scene again. A scene is one image per
 // game tick (60 a second), so its animations play in the preview as in the
 // game. Add a scene here when prototyped art belongs to a screen none of these
-// draw.
+// draw. A scene with `play` also opens in the real game from `bun run pixel
+// play` (scripts/pixel-play.ts).
 
 import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
@@ -15,6 +16,7 @@ import { blank, paint, toPng } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
+import { saveKey, saveVersion } from "../src/title/save.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
 export interface Scene {
@@ -23,6 +25,8 @@ export interface Scene {
   sources: readonly string[];
   /** The screen on each tick of one loop. */
   render: () => PNG[];
+  /** Where the playable game opens: its query after `?debug&`, and the localStorage it starts with. */
+  play?: { query: string; storage: Readonly<Record<string, string>> };
 }
 
 /** Ticks per walk frame: the player's `frameIncrement` of 0.1 (src/arcade/entity.ts). */
@@ -98,6 +102,21 @@ export const scenes: readonly Scene[] = [
       "src/ui/playerArt.ts",
     ],
     render: hubFrames,
+    // Continue (Space) stands the player above the prize desk, facing it, with
+    // enough tickets that Space again opens the prize counter with every prize in reach.
+    play: {
+      query: "scene=title",
+      storage: {
+        [saveKey]: JSON.stringify({
+          v: saveVersion,
+          highScore: 0,
+          tokens: 3,
+          tickets: 500,
+          prizes: [],
+          player: { x: 80, y: 95, dir: "DOWN" },
+        }),
+      },
+    },
   },
   { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
 ];

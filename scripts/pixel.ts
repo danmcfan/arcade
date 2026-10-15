@@ -10,6 +10,9 @@
 //   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
 //                                                     (<variants.json>: { "path.ts:name": { "<label>": rows or frames } };
 //                                                     options sharing a label are one choice)
+//   bun run pixel play    <variants.json> [--port N]  the preview page served (default port 3300), with a Play
+//                                                     link per option that builds it and opens the real game
+//                                                     on its screen (scripts/pixel-play.ts)
 //   bun run pixel export  <path.ts:name>...           one PNG sheet in out/aseprite/ to edit in Aseprite: a row
 //                                                     per export (a record, e.g. bearWalk, is a row per entry),
 //                                                     its frames left to right
@@ -295,6 +298,8 @@ export interface PreviewOption {
   /** Each distinct screen once; `timeline` is the index into them on each tick. */
   screens: string[];
   timeline: number[];
+  /** Where its Play link goes, when `bun run pixel play` serves the page. */
+  play?: string;
 }
 
 /** Sweetie 16, plus grey for placeholder letters a generator recolours (the cabinets' `1` to `4` and `S`). */
@@ -373,6 +378,26 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
   } finally {
     for (const { target, original } of swaps) target.splice(0, target.length, ...original);
   }
+}
+
+/**
+ * The preview page for the variants file at `file`: its options, each with a
+ * Play link to `<playBase>/<n>/` when `playBase` is given.
+ */
+export async function previewPage(
+  file: string,
+  variants: Record<string, unknown>,
+  playBase?: string,
+): Promise<{ html: string; count: number }> {
+  const options = await previewOptions(variants);
+  if (playBase !== undefined) {
+    for (const [i, o] of options.entries()) o.play = `${playBase}/${i}/`;
+  }
+  const title = basename(file, ".json");
+  const html = readFileSync(join(import.meta.dir, "pixel-preview.html"), "utf8")
+    .replaceAll("__TITLE__", title)
+    .replace('"__OPTIONS__"', () => JSON.stringify(options));
+  return { html, count: options.length };
 }
 
 /** One rows or frames export (or record entry) to put on an Aseprite sheet. */
@@ -542,17 +567,20 @@ async function main(argv: string[]): Promise<void> {
       if (file === undefined) usage();
       const parsed: unknown = JSON.parse(readFileSync(resolve(file), "utf8"));
       if (!isRecord(parsed)) throw new Error(`${file} is not a variants object`);
-      const options = await previewOptions(parsed);
-      const title = basename(file, ".json");
-      const page = readFileSync(join(import.meta.dir, "pixel-preview.html"), "utf8")
-        .replaceAll("__TITLE__", title)
-        .replace('"__OPTIONS__"', () => JSON.stringify(options));
-      const html = resolve(opts["out"] ?? join(outDir, `${title}.html`));
+      const { html: page, count } = await previewPage(file, parsed);
+      const html = resolve(opts["out"] ?? join(outDir, `${basename(file, ".json")}.html`));
       mkdirSync(dirname(html), { recursive: true });
       writeFileSync(html, page);
-      console.log(
-        `wrote ${relative(process.cwd(), html)} (${options.length} options); publish it with the Artifact tool`,
-      );
+      console.log(`wrote ${relative(process.cwd(), html)} (${count} options); publish it with the Artifact tool`);
+      return;
+    }
+    case "play": {
+      const [file] = specs;
+      if (file === undefined) usage();
+      const port = Number(opts["port"] ?? 3300);
+      const { servePlay } = await import("./pixel-play.ts");
+      const server = await servePlay(file, port);
+      console.log(`serving ${file} at ${server.url.href}; each Play link builds that option into out/pixel/play/`);
       return;
     }
     case "export": {

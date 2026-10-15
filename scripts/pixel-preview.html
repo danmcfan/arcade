@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- The page `bun run pixel preview` fills: the game screen on the left, the
-     options on the right. Arrow keys or a click pick an option. -->
+     options on the right. Arrow keys or a click pick an option. Served by
+     `bun run pixel play`, each option also has a Play link into the real game. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -93,6 +94,21 @@
         font: inherit;
         cursor: pointer;
       }
+      li {
+        display: flex;
+        gap: 8px;
+      }
+      li a {
+        flex: none;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        background: var(--pick);
+        color: #ffffff;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+      }
       button[aria-current="true"] {
         border-color: var(--pick);
       }
@@ -138,6 +154,14 @@
         b.append(img, span);
         b.addEventListener("click", () => pick(i));
         li.append(b);
+        if (o.play) {
+          const a = document.createElement("a");
+          a.href = o.play;
+          a.target = "_blank";
+          a.textContent = "Play";
+          a.title = `Build "${o.label}" and play it`;
+          li.append(a);
+        }
         list.append(li);
         return { b, img };
       });
