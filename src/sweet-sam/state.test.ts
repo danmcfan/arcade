@@ -537,7 +537,7 @@ describe("clearing a level", () => {
     step(s, levelBannerTicks);
     snap = s.snapshot();
     expect([snap.state, snap.levelBannerTicks, snap.startTicks]).toEqual(["START", 0, 120]);
-    step(s, 121);
+    step(s, 122);
     expect(s.snapshot().state).toBe("PLAY");
   });
 
@@ -649,5 +649,50 @@ describe("the extra life at 10,000 points (#154)", () => {
     bearOnFlower(s);
     step(s);
     expect([s.scoreValue, s.lives]).toEqual([10_000 + flowerPoints(1) - 50, 4]);
+  });
+});
+
+/** Leaves `left` honey drops in the maze, none of them near the bear. */
+function dropsLeft(s: SweetSamSoftware, left: number): void {
+  let kept = 0;
+  s.items = s.items.map((it) => (it !== null && Math.abs(it.y - s.player.y) > 16 && kept++ < left ? it : null));
+  expect(s.items.filter((it) => it !== null).length).toBe(left);
+}
+
+describe("Cruise Elroy (#156)", () => {
+  test("on level 1 red speeds up at 20 drops left, then again at 10; the others don't", () => {
+    const s = playing();
+    dropsLeft(s, 21);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.9375, 0.9375]);
+    dropsLeft(s, 20);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.96875, 0.9375]);
+    dropsLeft(s, 10);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
+  });
+
+  test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    enemy(s, 0).blueFrames = 300;
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(0.625);
+  });
+
+  test("after a lost life Elroy stays off until orange has left the home", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    step(s, 122);
+    expect(s.snapshot().state).toBe("PLAY");
+    const orange = enemy(s, 3);
+    expect(orange.home).toBe(true);
+    expect(enemy(s, 0).velocity).toBe(0.9375);
+    orange.home = false;
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(1);
   });
 });

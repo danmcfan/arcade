@@ -5,7 +5,7 @@
 // too long without eating.
 
 import { newEnemies, type Entity } from "./entity.ts";
-import type { LevelValues } from "./levels.ts";
+import type { ElroyStep, LevelValues } from "./levels.ts";
 
 /** Global drop counts at which pink, teal and orange leave after a death. */
 export const globalDotLimits = { pink: 7, teal: 17, orange: 32 } as const;
@@ -15,11 +15,13 @@ export interface Release {
   globalDots: number | null;
   /** Ticks since the last drop was eaten. */
   idleTicks: number;
+  /** Cruise Elroy is off after a death until orange leaves the home. */
+  elroySuspended: boolean;
 }
 
 /** Personal counters, as at the start of a level. */
 export function newRelease(): Release {
-  return { globalDots: null, idleTicks: 0 };
+  return { globalDots: null, idleTicks: 0, elroySuspended: false };
 }
 
 const order = ["pink", "teal", "orange"] as const;
@@ -52,6 +54,7 @@ export function afterDeath(r: Release, old: readonly Entity[]): Entity[] {
   }
   r.globalDots = 0;
   r.idleTicks = 0;
+  r.elroySuspended = true;
   return bees;
 }
 
@@ -80,4 +83,22 @@ export function noDropEaten(r: Release, bees: readonly Entity[], values: Readonl
   r.idleTicks = 0;
   const e = preferred(bees);
   if (e !== undefined) free(e);
+}
+
+/**
+ * Red's Cruise Elroy step with `dropsLeft` honey drops in the maze, or null
+ * (Dossier, "Cruise Elroy"). After a death it stays off until orange is out.
+ */
+export function elroyStep(
+  r: Release,
+  bees: readonly Entity[],
+  values: Readonly<LevelValues>,
+  dropsLeft: number,
+): ElroyStep | null {
+  if (r.elroySuspended && bees.some((e) => e.kind === "orange" && e.home)) return null;
+  r.elroySuspended = false;
+  const [first, second] = values.elroy;
+  if (dropsLeft <= second.dropsLeft) return second;
+  if (dropsLeft <= first.dropsLeft) return first;
+  return null;
 }
