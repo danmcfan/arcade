@@ -185,6 +185,18 @@ describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", (
   });
 });
 
+describe("Sweet Sam end state of the seed 8 run (TypeScript regression lock)", () => {
+  // The Go end state no longer applies (#152); this pins what the TypeScript run reaches.
+  test("rng, score and items hash at tick 6000", () => {
+    const last = trace.at(-1);
+    expect({
+      rng: last?.rng,
+      score: last?.sw.score,
+      itemsHash: last?.sw.itemsHash,
+    }).toEqual<unknown>({ rng: 2545826085, score: 2110, itemsHash: 3988072839 });
+  });
+});
+
 describe("Sweet Sam invariants over a scripted run", () => {
   test("snapshot has exactly the §4.3 Sweet Sam keys", () => {
     const sw = trace[0]?.sw;

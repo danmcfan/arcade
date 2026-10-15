@@ -43,6 +43,11 @@ export interface Tile {
 }
 
 /** Go compares `tile` structs by value; never use `===` on tiles. */
+/** A sleepy bee (blue after a honey pot): it can be eaten and holds the scatter/chase timer. */
+export function isSleepy(e: { blueFrames: number }): boolean {
+  return e.blueFrames > 0;
+}
+
 export function tileEq(a: Tile, b: Tile): boolean {
   return a.x === b.x && a.y === b.y;
 }

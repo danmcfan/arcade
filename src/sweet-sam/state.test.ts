@@ -165,6 +165,11 @@ describe("PLAY modes", () => {
     step(s, 50);
     expect(enemy(s, 3).blueFrames).toBeGreaterThan(0);
     expect([s.modeTicks, s.modeIndex]).toEqual([before, 1]);
+
+    // Not vacuous: with no sleepy bee the same 50 ticks run the timer down.
+    const awake = playing();
+    step(awake, 50);
+    expect(awake.modeTicks).toBe(before - 50);
   });
 
   test("after sleepy time the timer resumes from where it held and the sequence continues", () => {

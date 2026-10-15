@@ -24,6 +24,7 @@ import {
   spawnBonusEatIndicator,
 } from "./bonusEat.ts";
 import {
+  isSleepy,
   newItems,
   pointToTile,
   tunnelLeftX,
@@ -189,7 +190,7 @@ export class PlayState implements State {
   update(i: Input): StateID {
     const s = this.s;
     // Sleepy time pauses the scatter/chase timer (Pac-Man Dossier).
-    const sleepy = s.enemies.some((e) => e.blueFrames > 0);
+    const sleepy = s.enemies.some(isSleepy);
     if (!sleepy && s.modeTicks === 0) {
       const modes = s.values().modeSequence;
       const modeConfig = modes[s.modeIndex];
@@ -218,7 +219,7 @@ export class PlayState implements State {
     const { beeVelocity } = s.values();
     for (const e of s.enemies) {
       e.velocity = beeVelocity;
-      if (e.blueFrames > 0) {
+      if (isSleepy(e)) {
         s.player.velocity = velocityPlayerPower;
         e.velocity = velocityEnemyPower;
       }
@@ -242,7 +243,7 @@ export class PlayState implements State {
 
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
-      if (e.blueFrames > 0) {
+      if (isSleepy(e)) {
         playSound(sounds.sweetBee);
 
         s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
