@@ -4,7 +4,9 @@
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
-import { imageSweetSamMaze } from "../engine/assets.ts";
+import { imageSweetSamMaze, sounds } from "../engine/assets.ts";
+import { playSound } from "../engine/audio.ts";
+import { extraLifeScore } from "./constants.ts";
 import { fnv1a32 } from "../engine/gomath.ts";
 import type { FixedViewport } from "../game/software.ts";
 import type { SweetSamDialSnapshot, SweetSamSnapshot } from "../game/snapshot.ts";
@@ -129,6 +131,19 @@ export class SweetSamSoftware implements FixedViewport {
     restartRound(this);
 
     this.stateMachine.changeState(stateIDStart);
+  }
+
+  /**
+   * Adds points to the score. The first time a run reaches 10,000 it also
+   * adds a life, once per run (Pac-Man's extra life, #154).
+   */
+  addScore(points: number): void {
+    const before = this.scoreValue;
+    this.scoreValue += points;
+    if (before < extraLifeScore && this.scoreValue >= extraLifeScore) {
+      this.lives++;
+      playSound(sounds.ticket);
+    }
   }
 
   /** Go `Score()`. */

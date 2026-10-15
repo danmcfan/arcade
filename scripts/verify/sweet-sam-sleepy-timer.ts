@@ -21,24 +21,13 @@ function sweetSam(v: Verify): SweetSamSnapshot {
   return g.sw;
 }
 
-/**
- * A headless browser can look touch-first. A key press dismisses the "needs a keyboard" notice,
- * but only a running loop clears it, so run the loop around the press.
- */
-function dismissNotice(v: Verify): void {
-  v.page.eval("window.__arcade.resume()");
-  v.key("KeyZ");
-  v.wait(100);
-  v.page.eval("window.__arcade.pause()");
-}
-
 const sleepy = (s: SweetSamSnapshot): boolean => s.enemies.some((e) => e.blue > 0);
 
 const levels = loadScript(inputPath("sweet-sam-levels"));
 
 await verify("sweet-sam-sleepy-timer", (v) => {
   v.openHook("scene=game");
-  dismissNotice(v);
+  v.dismissNotice();
   loadFixture(v, levels);
 
   skipTo(v, levels, 0, 695);
@@ -75,7 +64,7 @@ await verify("sweet-sam-sleepy-timer", (v) => {
   v.record(
     "sleepy-stretch",
     () => {
-      dismissNotice(v);
+      v.dismissNotice();
       loadFixture(v, levels);
       skipTo(v, levels, 0, 640);
       replayLive(v, levels, 640, 1420);
