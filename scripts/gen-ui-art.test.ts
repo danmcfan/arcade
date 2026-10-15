@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { glyphHeight, glyphs, inks, logoLetters, titleLetters } from "../src/ui/glyphs.ts";
+import { glyphHeight, glyphs, inks, titleLetters } from "../src/ui/glyphs.ts";
 import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
@@ -33,21 +33,21 @@ import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
+import {
+  titleBar,
+  titleCabinet,
+  titleLogoHeight,
+  titleLogoWidth,
+  titleScreenFrames,
+  titleScreenHeight,
+  titleScreenWidth,
+  titleWord,
+} from "../src/ui/titleArt.ts";
 
 describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
     for (const [ch, rows] of Object.entries(glyphs))
       checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
-  });
-
-  test("every logo letter is 14x15", () => {
-    for (const [ch, rows] of Object.entries(logoLetters)) {
-      expect({ ch, rows: rows.length, widths: [...new Set(rows.map((r) => r.length))] }).toEqual({
-        ch,
-        rows: 15,
-        widths: [14],
-      });
-    }
   });
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
@@ -102,6 +102,17 @@ describe("UI art source", () => {
   test("every prize decoration is rows of one width, in Sweetie 16 letters and ., and every prize has one", () => {
     expect(Object.keys(prizeArt).toSorted()).toEqual(prizes.map((p) => p.id).toSorted());
     for (const [id, rows] of Object.entries(prizeArt)) checkRows(id, rows);
+  });
+
+  test("every title logo layer fits the logo, and every screen frame is the screen's size, in Sweetie 16 letters", () => {
+    for (const [name, layer] of Object.entries({ titleCabinet, titleBar, titleWord })) {
+      checkRows(name, layer.rows);
+      expect(layer.x + (layer.rows[0]?.length ?? 0)).toBeLessThanOrEqual(titleLogoWidth);
+      expect(layer.y + layer.rows.length).toBeLessThanOrEqual(titleLogoHeight);
+    }
+    titleScreenFrames.forEach((frame, i) => {
+      checkRows(`title screen ${i}`, frame, { w: titleScreenWidth, h: titleScreenHeight });
+    });
   });
 
   test("every title letter is 11x15 (the space only sets a width)", () => {

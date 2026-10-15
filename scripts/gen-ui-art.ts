@@ -1,10 +1,9 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, ticker.png, employee.png, prizes.png, arcade.png, screens.png, player.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, employee.png, prizes.png, arcade.png, screens.png, player.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
-// `bandRows` rows of `sheetColumns` cells. logo.png is "ARCADE" in the
-// title-card display font with a drop shadow. icons.png is the menu icons from
+// `bandRows` rows of `sheetColumns` cells. icons.png is the menu icons from
 // src/ui/icons.ts. ticker.png is the hub scoreboard's lit letters from
 // src/ui/tickerArt.ts, employee.png the prize desk's employee from
 // src/ui/employeeArt.ts, prizes.png the hub's prize decorations from
@@ -28,14 +27,6 @@ import {
   glyphs,
   inkOrder,
   inks,
-  logoBands,
-  logoGap,
-  logoHeight,
-  logoLetters,
-  logoShadow,
-  logoShadowColor,
-  logoWidth,
-  logoWord,
   sheetColumns,
   titleCards,
   titleRows,
@@ -56,6 +47,7 @@ import {
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
+import { titleBar, titleCabinet, titleLogoHeight, titleLogoWidth, titleWord } from "../src/ui/titleArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, mirrorX, outline, paint, plot, recolour, toPng } from "./pixel-art.ts";
@@ -91,22 +83,10 @@ export function renderFont(): PNG {
   return png;
 }
 
-export function renderLogo(): PNG {
-  const png = blank(logoWidth, logoHeight);
-  const letter = (dx: number, dy: number, color: (y: number) => string): void => {
-    let ox = 0;
-    for (const ch of logoWord) {
-      const rows = glyphRows(logoLetters, ch);
-      plotLit(png, rows, ox + dx, dy, color);
-      ox += (rows[0]?.length ?? 0) + logoGap;
-    }
-  };
-  letter(logoShadow[0], logoShadow[1], () => logoShadowColor);
-  letter(0, 0, (y) => {
-    const band = logoBands.find((b) => y < b.until);
-    if (band === undefined) throw new Error(`logo row ${y} is below every colour band`);
-    return band.color;
-  });
+/** The title logo: the cabinet, then the bar, then the word over both. */
+export function renderTitleLogo(): PNG {
+  const png = blank(titleLogoWidth, titleLogoHeight);
+  for (const layer of [titleCabinet, titleBar, titleWord]) paint(png, layer.rows, sweetie, layer.x, layer.y);
   return png;
 }
 
@@ -193,7 +173,7 @@ const imagesDir = "src/assets/images";
 /** Every generated UI image: its file, its size and how to draw it. Title cards are 160×144. */
 export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
-  imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
+  imageOutput(join(imagesDir, "title-logo.png"), titleLogoWidth, titleLogoHeight, renderTitleLogo),
   imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
   imageOutput(join(imagesDir, "ticker.png"), 129, 25, renderTicker),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
