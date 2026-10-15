@@ -154,7 +154,16 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "release",
       ].toSorted(),
     );
-    expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);
+    expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual([
+      "cornering",
+      "dir",
+      "frame",
+      "hidden",
+      "turn",
+      "velocity",
+      "x",
+      "y",
+    ]);
     expect(Object.keys(sw?.enemies[0] ?? {}).toSorted()).toEqual(
       [
         "kind",

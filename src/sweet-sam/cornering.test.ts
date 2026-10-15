@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Direction } from "../engine/input.ts";
+import { opposite, type Direction } from "../engine/input.ts";
 import { newCorners, newEnemies, newPlayer, type Entity } from "./entity.ts";
 import { steer, updateDirection, updatePosition } from "./update.ts";
 
@@ -82,7 +82,12 @@ describe("what the bear's cornering leaves alone", () => {
             e.y = c.y + (from === "UP" ? -px : from === "DOWN" ? px : 0);
             run(e, to, 1);
             run(e, "", 8);
-            expect(e.x === c.x || e.y === c.y).toBe(true);
+            if (to === from || to === opposite(from)) {
+              expect(e.x === c.x || e.y === c.y).toBe(true);
+            } else {
+              expect(e.direction).toBe(to);
+              expect(to === "UP" || to === "DOWN" ? e.x : e.y).toBe(to === "UP" || to === "DOWN" ? c.x : c.y);
+            }
           }
         }
       }

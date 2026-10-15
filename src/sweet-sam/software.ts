@@ -209,7 +209,16 @@ export class SweetSamSoftware implements FixedViewport {
     const p = this.player;
     return {
       state,
-      player: { x: p.x, y: p.y, dir: realDir(p.direction), frame: p.frame, hidden: p.hidden, velocity: p.velocity },
+      player: {
+        x: p.x,
+        y: p.y,
+        dir: realDir(p.direction),
+        frame: p.frame,
+        hidden: p.hidden,
+        velocity: p.velocity,
+        turn: p.turn,
+        cornering: p.cornering !== null,
+      },
       enemies: this.enemies.map((e) => ({
         kind: realKind(e.kind),
         x: e.x,

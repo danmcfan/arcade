@@ -149,6 +149,10 @@ export interface SweetSamPlayerSnapshot {
   hidden: boolean;
   /** `Entity.Velocity`. */
   velocity: number;
+  /** The tapped turn waiting for a junction's cornering window ("" when none). */
+  turn: Direction | "";
+  /** Whether the bear is cornering round a junction. */
+  cornering: boolean;
 }
 
 export interface SweetSamEnemySnapshot {
