@@ -10,7 +10,7 @@ import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
 import type { Software } from "../game/software.ts";
 import { updateScreen } from "./screen.ts";
-import type { Faced } from "./ticker.ts";
+import type { ArcadeTitle } from "../game/snapshot.ts";
 import { blocked, type State } from "./state.ts";
 
 /** What a hub tick asks of the Game: start a cabinet's software, or open the prize counter menu. */
@@ -68,8 +68,12 @@ function facesCounter(s: State): boolean {
   return s.counters.some((r) => facing(s.player, r));
 }
 
-/** What the LED scoreboard names (src/arcade/ticker.ts): the cabinet whose screen is on, or the prize desk. */
-export function faced(s: State): Faced | null {
+/** What the player faces that the action key works: a cabinet, by title, or the prize desk. */
+export type Faced = ArcadeTitle | "prizeCounter";
+
+/** What the LED scoreboard names (src/arcade/ticker.ts): the cabinet whose screen is on, or the prize desk; nothing while the prize counter menu is open. */
+export function faced(s: State, menuOpen: boolean): Faced | null {
+  if (menuOpen) return null;
   if (s.melodyPlaying) return s.imageTitle;
   return facesCounter(s) ? "prizeCounter" : null;
 }

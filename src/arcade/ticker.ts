@@ -10,7 +10,7 @@ import { imageTicker } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { minigameTitled } from "../game/minigames.ts";
-import type { ArcadeTitle } from "../game/snapshot.ts";
+import type { Faced } from "./update.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import {
   bulbLit,
@@ -35,9 +35,6 @@ export interface TickerGlyph {
   x: number;
   y: number;
 }
-
-/** What the player faces that the action key works: a cabinet, by title, or the prize desk. */
-export type Faced = ArcadeTitle | "prizeCounter";
 
 /** What the board shows: the counts, or what the player faces. */
 export interface TickerView {

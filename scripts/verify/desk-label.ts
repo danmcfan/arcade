@@ -20,6 +20,12 @@ function menu(v: Verify): string | null {
   return g.menu;
 }
 
+function faced(v: Verify): string | null {
+  const g = v.snapshot(isTitleSnapshot).game;
+  if (g === null) throw new Error("no game running");
+  return g.arcade.faced;
+}
+
 /** A save at the hub start position (80, 92), facing down, 2 px short of the desk. */
 const save = JSON.stringify({ v: 2, highScore: 0, tokens: 2, tickets: 12, player: { x: 80, y: 92, dir: "DOWN" } });
 
@@ -32,14 +38,18 @@ await verify("desk-label", (v) => {
 
   v.step(10, { down: true });
   v.step(20);
+  check(faced(v) === "prizeCounter", "the board names the prize counter at the desk", faced(v));
 
   v.tap("space");
   check(menu(v) === "prizeCounter", "the action key opens the prize counter", menu(v));
+  check(faced(v) === null, "the board shows the counts with the menu open", faced(v));
 
   v.tap("escape");
   check(menu(v) === null, "Esc closes it", menu(v));
+  check(faced(v) === "prizeCounter", "the label is back after Esc", faced(v));
 
   v.step(10, { up: true });
+  check(faced(v) === null, "the board shows the counts after walking away", faced(v));
 
   // Stills from the real loop: under the paused hook a touch-first browser's keyboard notice never clears.
   v.open();

@@ -278,18 +278,24 @@ describe("the faced interactable", () => {
       const s = newState(fakeFactory);
       s.player.x = x;
       run(s, 100, { down: true });
-      expect(faced(s)).toBe("prizeCounter");
+      expect(faced(s, false)).toBe("prizeCounter");
     }
+  });
+
+  test("nothing is named while the prize counter menu is open", () => {
+    const s = newState(fakeFactory);
+    run(s, 100, { down: true });
+    expect(faced(s, true)).toBeNull();
   });
 
   test("facing away from the desk, short of it, or a cabinet is not", () => {
     const s = newState(fakeFactory);
-    expect(faced(s)).toBeNull(); // start: facing down, 2 px short
+    expect(faced(s, false)).toBeNull(); // start: facing down, 2 px short
     run(s, 100, { down: true });
     run(s, 1, { left: true });
-    expect(faced(s)).toBeNull(); // touching it, facing left
+    expect(faced(s, false)).toBeNull(); // touching it, facing left
     run(s, 40, { up: true });
-    expect(faced(s)).toBe("sweet");
+    expect(faced(s, false)).toBe("sweet");
   });
 });
 
