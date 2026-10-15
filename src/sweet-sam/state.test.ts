@@ -173,11 +173,11 @@ describe("PLAY modes", () => {
     for (const e of s.enemies) e.blueFrames = 20;
     step(s, 20);
     expect(s.enemies.every((e) => e.blueFrames === 0)).toBe(true);
-    expect([s.modeTicks, s.modeIndex, s.modeCurrent]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode]);
+    expect([s.modeTicks, s.modeIndex, s.modeCurrent]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode ?? -1]);
     step(s, 2);
     expect(s.modeTicks).toBe(3);
     step(s, 4);
-    expect([s.modeIndex, s.modeCurrent]).toEqual([2, levelValues(1).modeSequence[1]?.mode]);
+    expect([s.modeIndex, s.modeCurrent]).toEqual([2, levelValues(1).modeSequence[1]?.mode ?? -1]);
   });
 });
 
