@@ -1,12 +1,10 @@
 // Drawing for the title scene: the title menu and its New game check, the
 // intro, and the pause and controls panels drawn over the hub. Everything is
-// pixel art: font.png and logo.png (src/ui/glyphs.ts).
+// pixel art: font.png (src/ui/glyphs.ts) and title-logo.png (src/ui/titleArt.ts).
 
-import { imageArcade, imageLogo } from "../engine/assets.ts";
-import { sub } from "../engine/image.ts";
+import { imageArcade, imageTitleLogo } from "../engine/assets.ts";
 import type { Surface } from "../engine/surface.ts";
 import { blinkOn } from "../ui/blink.ts";
-import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
 import {
   dim,
   dimColour,
@@ -17,6 +15,7 @@ import {
   standardControls,
 } from "../ui/menu.ts";
 import { drawPanel, drawTextCentered } from "../ui/text.ts";
+import { backLights, logoOverlay } from "./logo.ts";
 import type { Title } from "./title.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
@@ -64,67 +63,21 @@ function fillBackground(screen: Surface): void {
   screen.fillRect(0, 0, screenWidth, screenHeight, background);
 }
 
-/** The rows of logo letter `ch`; every letter of `logoWord` has them. */
-function letterRows(ch: string): readonly string[] {
-  const rows = logoLetters[ch];
-  if (rows === undefined) throw new Error(`no logo letter "${ch}"`);
-  return rows;
-}
-
-function firstRowWidth(rows: readonly string[]): number {
-  const row = rows[0];
-  if (row === undefined) throw new Error("logo letter has no rows");
-  return row.length;
-}
-
-const logoLetterWidth = firstRowWidth(letterRows("A"));
-/** Ticks between the starts of two rainbow sweeps across the logo. */
-const sweepPeriod = 180;
-/** Ticks the sweep takes to cross the logo; it starts off the left edge. */
-const sweepTicks = 70;
-/** The sweep's diagonal stripes, leading edge first (Sweetie 16), each `stripeWidth` px wide. */
-const sweepColours = ["#41a6f6", "#73eff7", "#f4f4f4", "#a7f070", "#38b764"] as const;
-const stripeWidth = 2;
-
-/** Each logo letter's rise above its resting row, a wave running left to right. */
-export function logoBob(tick: number, letter: number): number {
-  return Math.round(Math.sin(tick * 0.07 - letter * 0.7) * 1.4);
-}
-
-/**
- * ARCADE with each letter bobbing on a wave, and every few seconds a rainbow
- * of diagonal stripes sweeping across the letters (not their shadow).
- */
+/** The title logo with its animation on `tick` (src/title/logo.ts), its top-left at (left, top), the back lights behind it. */
 function drawLogo(screen: Surface, left: number, top: number, tick: number): void {
-  const phase = tick % sweepPeriod;
-  // Leading stripe's diagonal (x + y); off the logo between sweeps.
-  const band = sweepColours.length * stripeWidth;
-  const span = imageLogo.w + 15 + band;
-  const lead = phase < sweepTicks ? Math.trunc((phase * span) / sweepTicks) : -1;
-  Array.from(logoWord).forEach((ch, i) => {
-    const ox = i * (logoLetterWidth + logoGap);
-    const x = left + ox;
-    const y = top - logoBob(tick, i);
-    screen.draw(sub(imageLogo, ox, 0, ox + logoLetterWidth + logoShadow[0], imageLogo.h), x, y);
-    if (lead < 0) return;
-    letterRows(ch).forEach((row, ry) => {
-      Array.from(row).forEach((px, rx) => {
-        const d = lead - (ox + rx + ry);
-        const colour = sweepColours[Math.trunc(d / stripeWidth)];
-        if (px === "#" && d >= 0 && colour !== undefined) screen.fillRect(x + rx, y + ry, 1, 1, colour);
-      });
-    });
-  });
+  for (const p of backLights(tick)) screen.fillRect(p.x, p.y, 1, 1, p.colour);
+  screen.draw(imageTitleLogo, left, top);
+  for (const p of logoOverlay(tick)) screen.fillRect(left + p.x, top + p.y, 1, 1, p.colour);
 }
 
 /** The logo, the tagline, the title menu with `cursor` selected and the saved high score. */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
-  drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
-  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
+  drawLogo(screen, centre - Math.trunc(imageTitleLogo.w / 2), 2, t.tick);
+  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 80, "blue");
+  drawMenuItems(screen, t.menuItems(), cursor, 98, t.tick, centre);
   const highScore = t.savedHighScore;
-  if (highScore !== null && highScore !== 0) drawTextCentered(screen, `HIGH SCORE ${highScore}`, centre, 122, "orange");
+  if (highScore !== null && highScore !== 0) drawTextCentered(screen, `HIGH SCORE ${highScore}`, centre, 130, "orange");
 }
 
 function drawMenu(screen: Surface, t: Title): void {

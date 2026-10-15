@@ -19,7 +19,8 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 
 | Art                                                   | Source                                                                                       | Generator                         |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
-| Font, logo, title-card lettering                      | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
+| Font, title-card lettering                            | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
+| Title logo                                            | `src/ui/titleArt.ts` (layers; animated by `src/title/logo.ts`)                               | `scripts/gen-ui-art.ts`           |
 | Hub room, cabinets, desk, player                      | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
 | Scoreboard, menu icons, prizes, panel and card frames | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`, `panelArt.ts`                              | `scripts/gen-ui-art.ts`           |
 | Firefly sprites and sky                               | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |

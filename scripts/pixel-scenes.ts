@@ -12,7 +12,7 @@ import { employeeSpot } from "../src/arcade/desk.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { blank, paint, toPng } from "./pixel-art.ts";
+import { blank, paint, plot, toPng } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -30,6 +30,8 @@ import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt
 import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
 import { mirrorX, recolour, type Rows } from "./pixel-art.ts";
+import { titleBar, titleCabinet, titleWord } from "../src/ui/titleArt.ts";
+import { backLights, logoOverlay, sheenPeriod } from "../src/title/logo.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
 export interface Scene {
@@ -196,6 +198,22 @@ function prizeCounterFrames(): PNG[] {
   return frames;
 }
 
+/** The title screen's top: the logo on the background, animating through one sheen (src/title/draw.ts). */
+function titleTop(): PNG[] {
+  return Array.from({ length: sheenPeriod }, (_, tick) => {
+    const png = blank(192, 80);
+    paint(
+      png,
+      Array.from({ length: 80 }, () => "k".repeat(192)),
+      sweetie,
+    );
+    for (const p of backLights(tick)) plot(png, p.x, p.y, p.colour);
+    for (const layer of [titleCabinet, titleBar, titleWord]) paint(png, layer.rows, sweetie, layer.x, layer.y + 2);
+    for (const p of logoOverlay(tick)) plot(png, p.x, p.y + 2, p.colour);
+    return png;
+  });
+}
+
 export const scenes: readonly Scene[] = [
   {
     name: "hub",
@@ -243,6 +261,7 @@ export const scenes: readonly Scene[] = [
       },
     },
   },
+  { name: "title", sources: ["src/ui/titleArt.ts"], render: titleTop },
   { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
 ];
 
