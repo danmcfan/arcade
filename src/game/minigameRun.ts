@@ -9,7 +9,7 @@ import type { Sound } from "../engine/audio.ts";
 import type { Input, MenuEdges, MenuKeys } from "../engine/input.ts";
 import { channels } from "../engine/sounds.generated.ts";
 import type { RunKind, Wallet } from "../arcade/wallet.ts";
-import { minigamePauseMenu, quitGameIndex } from "./menus.ts";
+import { controlsIndex, minigamePauseMenu, quitGameIndex } from "./menus.ts";
 import { Payout } from "./payout.ts";
 import type { GameSnapshot } from "./snapshot.ts";
 import type { Software } from "./software.ts";
@@ -48,10 +48,10 @@ export class MinigameRun {
     return this.state.menu;
   }
 
-  /** Selected item of the pause menu; 1 (CONTROLS) in the controls, 0 otherwise. */
+  /** Selected item of the pause menu; CONTROLS in the controls, 0 otherwise. */
   get cursor(): number {
     if (this.state.menu === "paused") return this.state.cursor;
-    return this.state.menu === "controls" ? 1 : 0;
+    return this.state.menu === "controls" ? controlsIndex : 0;
   }
 
   get payout(): Payout | null {
@@ -66,7 +66,7 @@ export class MinigameRun {
     if (s.menu === "payout") return this.updatePayout(s.payout, raw, edges);
     if (edges.space || edges.escape) {
       sounds.select.blip();
-      this.state = { menu: "paused", cursor: 1, pausedSounds: s.pausedSounds };
+      this.state = { menu: "paused", cursor: controlsIndex, pausedSounds: s.pausedSounds };
     }
     return false;
   }
