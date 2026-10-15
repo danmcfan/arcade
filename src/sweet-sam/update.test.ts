@@ -156,7 +156,7 @@ describe("updateDirection", () => {
     const e = at(bee(), 9, 20); // UP, LEFT, RIGHT, like the no-up tiles
     e.direction = "RIGHT";
     updateDirection(e, corners, { x: 9, y: 0 });
-    expect(e.direction).toBe("UP");
+    expect<Direction>(e.direction).toBe("UP");
   });
 
   test("all-equal distances resolve Up first", () => {
