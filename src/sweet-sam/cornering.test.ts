@@ -102,9 +102,9 @@ describe("bees do not pre-turn", () => {
     // Straight up from the junction.
     const target = { x: 6, y: 0 };
     updateDirection(e, corners, target);
-    expect([e.direction, e.x]).toEqual(["LEFT", crossX + 3]);
+    expect([e.direction, e.x]).toEqual<unknown>(["LEFT", crossX + 3]);
     for (let t = 0; t < 3; t++) updatePosition(e, corners);
     updateDirection(e, corners, target);
-    expect([e.direction, e.x, e.y]).toEqual(["UP", crossX, crossY]);
+    expect([e.direction, e.x, e.y]).toEqual<unknown>(["UP", crossX, crossY]);
   });
 });
