@@ -57,7 +57,9 @@ export function draw(
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
 
-  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named }, tick, buffer);
+  const machine = s.machines.find((m) => m.title === named);
+  const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);
+  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi }, tick, buffer);
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);

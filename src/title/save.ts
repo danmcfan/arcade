@@ -1,23 +1,25 @@
-// The save behind "Continue": the hub high score, tokens, tickets and owned
+// The save behind "Continue": the player's high score on each machine, tokens, tickets and owned
 // prizes, and where the player stood. Minigame progress is not saved. The title scene talks to a `SaveStore`
 // so it stays DOM-free (D12); main.ts passes `localStorageStore()`, tests
 // pass `memoryStore()`.
 
 import type { Direction } from "../engine/input.ts";
 import { isPrizeId, type PrizeId } from "../arcade/prizes.ts";
-import { startingTokens, Wallet } from "../arcade/wallet.ts";
+import { eachMachine, noHighScores, startingTokens, Wallet, type HighScores } from "../arcade/wallet.ts";
 import type { Progress } from "../game/game.ts";
 
 export interface SaveData extends Progress {
   /**
    * Format version. Older saves are upgraded on load: `v: 1` (no tokens,
-   * tickets or prizes) and `v: 2` (no prizes). Any other `v` is ignored.
+   * tickets or prizes), `v: 2` (no prizes) and `v: 3`. Before `v: 4` every
+   * machine shared one `highScore`; no one machine can claim it, so it is
+   * dropped and each machine starts at 0. Any other `v` is ignored.
    */
-  v: 3;
+  v: 4;
 }
 
 /** The current format version. */
-export const saveVersion = 3;
+export const saveVersion = 4;
 
 /** What a `v: 1` save gets on upgrade: a New game's tokens and tickets. */
 const v1Upgrade = { tokens: startingTokens, tickets: 0 };
@@ -47,24 +49,37 @@ function count(v: unknown): v is number {
   return typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 }
 
+function highScores(v: unknown): HighScores | null {
+  if (!isRecord(v)) return null;
+  if (!Object.keys(noHighScores).every((name) => score(v[name]))) return null;
+  return eachMachine((name) => Number(v[name]));
+}
+
+function score(v: unknown): v is number {
+  return finite(v) && v >= 0;
+}
+
 /** Validate untrusted JSON (from storage) as a save; null if it is not one. */
 export function parseSave(raw: unknown): SaveData | null {
   if (!isRecord(raw)) return null;
   const o = raw;
-  if ((o["v"] !== 1 && o["v"] !== 2 && o["v"] !== 3) || !finite(o["highScore"]) || o["highScore"] < 0) return null;
+  const v = o["v"];
+  if (v !== 1 && v !== 2 && v !== 3 && v !== 4) return null;
+  const scores = v === 4 ? highScores(o["highScores"]) : noHighScores;
+  if (scores === null) return null;
   const p = o["player"];
   if (!isRecord(p)) return null;
   const dir = p["dir"];
   if (!finite(p["x"]) || !finite(p["y"]) || !isDirection(dir)) return null;
-  const tokens = o["v"] === 1 ? v1Upgrade.tokens : o["tokens"];
-  const tickets = o["v"] === 1 ? v1Upgrade.tickets : o["tickets"];
+  const tokens = v === 1 ? v1Upgrade.tokens : o["tokens"];
+  const tickets = v === 1 ? v1Upgrade.tickets : o["tickets"];
   if (!count(tokens) || !count(tickets)) return null;
   // v1 and v2 saves own no prizes.
-  const prizes = o["v"] === 3 ? o["prizes"] : [];
+  const prizes = v >= 3 ? o["prizes"] : [];
   if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
-  const wallet = new Wallet({ highScore: o["highScore"], tokens, tickets, prizes });
+  const wallet = new Wallet({ highScores: scores, tokens, tickets, prizes });
   return {
-    v: 3,
+    v: 4,
     ...wallet.toProgress(),
     player: { x: p["x"], y: p["y"], dir },
   };

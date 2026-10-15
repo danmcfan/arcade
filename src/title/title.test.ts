@@ -6,6 +6,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { Surface } from "../engine/surface.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { Game } from "../game/game.ts";
+import { noHighScores } from "../arcade/wallet.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
@@ -59,8 +60,8 @@ function atCabinet(): SaveData {
   g.dispose();
   expect(s.arcade.title).toBe("sweet");
   return {
-    v: 3,
-    highScore: 0,
+    v: 4,
+    highScores: noHighScores,
     tokens: 5,
     tickets: 0,
     prizes: [],
@@ -115,8 +116,8 @@ describe("new game", () => {
 
   test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
     const save: SaveData = {
-      v: 3,
-      highScore: 900,
+      v: 4,
+      highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -138,8 +139,8 @@ describe("new game", () => {
 
   test("Yes, then Space on the intro, starts a fresh hub and replaces the old save", () => {
     const store = spyStore({
-      v: 3,
-      highScore: 900,
+      v: 4,
+      highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -157,8 +158,8 @@ describe("new game", () => {
     expect(game(t).arcade).toEqual(fresh.arcade);
     expect(game(t).software).toBeNull();
     expect(store.load()).toEqual({
-      v: 3,
-      highScore: 0,
+      v: 4,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -168,8 +169,8 @@ describe("new game", () => {
 
   test("New game removes every prize", () => {
     const store = memoryStore({
-      v: 3,
-      highScore: 900,
+      v: 4,
+      highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 0,
       tickets: 88,
       prizes: ["honeyJar", "runningShoes", "sleepyBees", "lantern", "glowStick", "wings"],
@@ -187,8 +188,8 @@ describe("new game", () => {
 
   test("New game resets tokens and tickets", () => {
     const store = memoryStore({
-      v: 3,
-      highScore: 900,
+      v: 4,
+      highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 0,
       tickets: 88,
       prizes: [],
@@ -200,7 +201,7 @@ describe("new game", () => {
     tap(t, "down");
     tap(t, "space");
     tap(t, "space");
-    expect(game(t).arcade).toMatchObject({ tokens: 5, tickets: 0, highScore: 0 });
+    expect(game(t).arcade).toMatchObject({ tokens: 5, tickets: 0, highScores: noHighScores });
     expect(store.load()).toMatchObject({ tokens: 5, tickets: 0 });
   });
 });
@@ -209,8 +210,8 @@ describe("continue", () => {
   test("restores the player's position, facing and the high score", () => {
     const t = new Title({
       store: memoryStore({
-        v: 3,
-        highScore: 120,
+        v: 4,
+        highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 5,
         tickets: 0,
         prizes: [],
@@ -220,7 +221,7 @@ describe("continue", () => {
     tap(t, "space");
     expect(t.phase).toBe("playing");
     expect(game(t).arcade.player).toMatchObject({ x: 50, y: 90, dir: "LEFT" });
-    expect(game(t).arcade.highScore).toBe(120);
+    expect(game(t).arcade.highScores.sweetSam).toBe(120);
   });
 
   test("the Space that chose Continue does not also start the cabinet in front", () => {
@@ -243,8 +244,8 @@ describe("continue", () => {
     ] as const) {
       const t = new Title({
         store: memoryStore({
-          v: 3,
-          highScore: 0,
+          v: 4,
+          highScores: noHighScores,
           tokens: 5,
           tickets: 0,
           prizes: [],
@@ -315,8 +316,8 @@ describe("pause menu", () => {
   test("restores tokens and tickets", () => {
     const t = new Title({
       store: memoryStore({
-        v: 3,
-        highScore: 120,
+        v: 4,
+        highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 2,
         tickets: 37,
         prizes: [],
@@ -324,7 +325,7 @@ describe("pause menu", () => {
       }),
     });
     tap(t, "space");
-    expect(game(t).arcade).toMatchObject({ highScore: 120, tokens: 2, tickets: 37 });
+    expect(game(t).arcade).toMatchObject({ highScores: { ...noHighScores, sweetSam: 120 }, tokens: 2, tickets: 37 });
   });
 });
 
@@ -420,14 +421,14 @@ describe("saving when the wallet changes", () => {
   test("a payout saves at once, while the payout is still counting", () => {
     const store = spyStore();
     endedRun(store, 5, 1420);
-    expect(store.load()).toMatchObject({ tokens: 4, tickets: 14, highScore: 1420 });
+    expect(store.load()).toMatchObject({ tokens: 4, tickets: 14, highScores: { ...noHighScores, sweetSam: 1420 } });
   });
 
   test("a free play run that only sets a new high score saves it at once", () => {
     const store = spyStore();
     const t = endedRun(store, 0, 900);
     const saves = store.saves;
-    expect(store.load()).toMatchObject({ tokens: 0, tickets: 0, highScore: 900 });
+    expect(store.load()).toMatchObject({ tokens: 0, tickets: 0, highScores: { ...noHighScores, sweetSam: 900 } });
     t.step(NO_INPUT);
     expect(store.saves).toBe(saves); // nothing changed since: no save
   });
@@ -435,7 +436,7 @@ describe("saving when the wallet changes", () => {
 
 /** Continue from a save at the start position with these counts, then open the prize counter. */
 function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: SaveData["prizes"] = []): Title {
-  store.save({ v: 3, highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+  store.save({ v: 4, highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
   const t = new Title({ store });
   tap(t, "space"); // Continue
   hold(t, { down: true }, 3);
@@ -478,8 +479,8 @@ describe("prize counter inside the title scene", () => {
     expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["honeyJar"] });
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toEqual({
-      v: 3,
-      highScore: 0,
+      v: 4,
+      highScores: noHighScores,
       tokens: 3,
       tickets: 15,
       prizes: ["honeyJar"],
@@ -493,7 +494,7 @@ describe("prize counter inside the title scene", () => {
     again.dispose();
   });
 
-  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v3", () => {
+  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v4", () => {
     const store = memoryStore();
     const raw = { v: 2, highScore: 40, tokens: 2, tickets: 30, player: { x: 80, y: 92, dir: "DOWN" } };
     const parsed = parseSave(raw);
@@ -501,12 +502,12 @@ describe("prize counter inside the title scene", () => {
     store.save(parsed);
     const t = new Title({ store });
     tap(t, "space"); // Continue
-    expect(game(t).arcade).toMatchObject({ highScore: 40, tokens: 2, tickets: 30 });
+    expect(game(t).arcade).toMatchObject({ highScores: noHighScores, tokens: 2, tickets: 30 });
     expect(game(t).arcade.prizes).toBeUndefined();
     t.persist();
     expect(store.load()).toEqual({
-      v: 3,
-      highScore: 40,
+      v: 4,
+      highScores: noHighScores,
       tokens: 2,
       tickets: 30,
       prizes: [],
@@ -539,8 +540,8 @@ describe("sounds", () => {
   test("the title music starts on the first tick and plays through the New game check and intro", () => {
     const t = new Title({
       store: memoryStore({
-        v: 3,
-        highScore: 0,
+        v: 4,
+        highScores: noHighScores,
         tokens: 5,
         tickets: 0,
         prizes: [],
@@ -602,8 +603,8 @@ describe("sounds", () => {
   test("moving the cursor blips; a choice or Back chirps; nothing else does", () => {
     const t = new Title({
       store: memoryStore({
-        v: 3,
-        highScore: 0,
+        v: 4,
+        highScores: noHighScores,
         tokens: 5,
         tickets: 0,
         prizes: [],
@@ -672,15 +673,15 @@ describe("sounds", () => {
 
 describe("parseSave", () => {
   const ok: SaveData = {
-    v: 3,
-    highScore: 3,
+    v: 4,
+    highScores: { sweetSam: 3, firefly: 0, brassMonkey: 7 },
     tokens: 4,
     tickets: 12,
     prizes: ["honeyJar", "sleepyBees"],
     player: { x: 1, y: 2, dir: "UP" },
   };
 
-  test("accepts a v3 save with its owned prizes", () => {
+  test("accepts a v4 save with its player high scores and owned prizes", () => {
     expect(parseSave(ok)).toEqual(ok);
     const empty: SaveData = { ...ok, tokens: 0, tickets: 0, prizes: [] };
     expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual(empty);
@@ -712,11 +713,11 @@ describe("parseSave", () => {
     ]);
   });
 
-  test("upgrades a v2 save: same counts and position, and no prizes", () => {
+  test("upgrades a v2 save: same counts and position, no prizes and no player high scores", () => {
     const v2 = { v: 2, highScore: 3, tokens: 4, tickets: 12, player: { x: 1, y: 2, dir: "UP" } };
     expect(parseSave(v2)).toEqual({
-      v: 3,
-      highScore: 3,
+      v: 4,
+      highScores: noHighScores,
       tokens: 4,
       tickets: 12,
       prizes: [],
@@ -732,8 +733,8 @@ describe("parseSave", () => {
     const raw =
       '{"v":3,"highScore":2470,"tokens":2,"tickets":9,"prizes":["honeyJar","runningShoes","sleepyBees"],"player":{"x":70,"y":53,"dir":"UP"}}';
     expect(parseSave(JSON.parse(raw))).toEqual({
-      v: 3,
-      highScore: 2470,
+      v: 4,
+      highScores: noHighScores,
       tokens: 2,
       tickets: 9,
       prizes: ["honeyJar", "runningShoes", "sleepyBees"],
@@ -741,11 +742,11 @@ describe("parseSave", () => {
     });
   });
 
-  test("upgrades a v1 save: same high score and position, plus 5 tokens, 0 tickets and no prizes", () => {
+  test("upgrades a v1 save: same position, no player high scores, plus 5 tokens, 0 tickets and no prizes", () => {
     const v1 = { v: 1, highScore: 3, player: { x: 1, y: 2, dir: "UP" } };
     expect(parseSave(v1)).toEqual({
-      v: 3,
-      highScore: 3,
+      v: 4,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -754,18 +755,26 @@ describe("parseSave", () => {
     expect(parseSave({ ...v1, player: null })).toBeNull();
   });
 
+  test("an old save's one shared high score is dropped: no machine can claim it", () => {
+    const v3 = { v: 3, highScore: 99999, tokens: 1, tickets: 0, prizes: [], player: { x: 1, y: 2, dir: "UP" } };
+    expect(parseSave(v3)?.highScores).toEqual({ sweetSam: 0, firefly: 0, brassMonkey: 0 });
+  });
+
   test("rejects anything else", () => {
     for (const bad of [
       null,
       1,
       "x",
       {},
-      { ...ok, v: 4 },
+      { ...ok, v: 5 },
       { ...ok, v: 0 },
       { ...ok, prizes: undefined },
       { ...ok, prizes: "honeyJar" },
       { ...ok, prizes: ["goldenTrophy"] },
-      { ...ok, highScore: -1 },
+      { ...ok, highScores: undefined },
+      { ...ok, highScores: { sweetSam: 1, firefly: 2 } },
+      { ...ok, highScores: { ...ok.highScores, firefly: -1 } },
+      { ...ok, highScores: { ...ok.highScores, firefly: Number.NaN } },
       { ...ok, tokens: -1 },
       { ...ok, tokens: 1.5 },
       { ...ok, tickets: Number.POSITIVE_INFINITY },
@@ -882,8 +891,8 @@ function recordingSurface(): {
 const withSave = (): Title =>
   new Title({
     store: memoryStore({
-      v: 3,
-      highScore: 0,
+      v: 4,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -966,8 +975,8 @@ describe("drawing", () => {
   test("with a save that holds a high score, the menu does not show it", () => {
     const t = new Title({
       store: memoryStore({
-        v: 3,
-        highScore: 120,
+        v: 4,
+        highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 5,
         tickets: 0,
         prizes: [],
