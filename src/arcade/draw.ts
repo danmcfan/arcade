@@ -13,8 +13,17 @@ import { drawTicker } from "./ticker.ts";
 import { screenFrame } from "./screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
+import type { Faced } from "./update.ts";
 
-export function draw(screen: Surface, s: State, tick: number, buffer: number, debugMode: boolean): void {
+/** Draw the hub; the scoreboard names `named` (see `faced`), or shows the counts when null. */
+export function draw(
+  screen: Surface,
+  s: State,
+  tick: number,
+  buffer: number,
+  debugMode: boolean,
+  named: Faced | null,
+): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
   s.machines.forEach((m, row) => {
@@ -48,12 +57,7 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
 
-  drawTicker(
-    screen,
-    { tokens: s.wallet.tokens, tickets: s.wallet.tickets, title: s.melodyPlaying ? s.imageTitle : null },
-    tick,
-    buffer,
-  );
+  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named }, tick, buffer);
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);
