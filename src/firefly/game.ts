@@ -4,7 +4,7 @@
 // 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
 import { noAdvantages, type FireflyAdvantages } from "./advantages.ts";
-import { soundHit, soundLifeLost, soundSpark, soundStage } from "../engine/assets.ts";
+import { sounds } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
 import type { Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
@@ -153,7 +153,7 @@ export class FireflySoftware implements FixedViewport {
   update(i: Input): void {
     if (this.over) return;
 
-    if (this.stageTick === 0) play(soundStage);
+    if (this.stageTick === 0) play(sounds.stage);
     this.stageTick++;
     this.ticks++;
 
@@ -182,7 +182,7 @@ export class FireflySoftware implements FixedViewport {
     if (i.space && this.fireDelay === 0 && this.sparks.length < this.advantages.maxSparks) {
       this.sparks.push({ x: this.player.x, y: this.player.y - 10 });
       this.fireDelay = sparkCooldown;
-      play(soundSpark);
+      play(sounds.spark);
     }
     if (this.fireDelay > 0) this.fireDelay--;
   }
@@ -324,7 +324,7 @@ export class FireflySoftware implements FixedViewport {
       if (e === undefined) return true;
       e.hp--;
       if (e.hp === 0) this.kill(e);
-      play(soundHit);
+      play(sounds.hit);
       return false;
     });
   }
@@ -355,7 +355,7 @@ export class FireflySoftware implements FixedViewport {
   loseLife(): void {
     this.lives--;
     this.respawn = respawnTicks;
-    play(soundLifeLost);
+    play(sounds.lifeLost);
   }
 
   private endHitEffects(): void {

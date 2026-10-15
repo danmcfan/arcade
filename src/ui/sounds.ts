@@ -1,20 +1,58 @@
-// Chiptune source for the title music, the hub song, the cabinets' attract
-// loops and the menu sounds. Notes are MIDI numbers (69 = A4), lengths are in
-// eighth notes. scripts/gen-ui-sounds.ts synthesises these into the WAVs in
-// src/assets/sounds/; the runtime only plays the WAVs.
+// Chiptune source for every sound: the title music, the hub song, the
+// cabinets' attract loops, the menu sounds and the minigames' sounds. Notes are
+// MIDI numbers (69 = A4), lengths are in eighth notes. Each sound is declared
+// once, next to its notes, with `defineSound`. scripts/gen-ui-sounds.ts
+// synthesises them into the WAVs in src/assets/sounds/ and writes
+// src/engine/sounds.generated.ts; the runtime only plays the WAVs.
 
 /** Samples per second of every generated sound. */
 export const sampleRate = 22050;
 
-/** Title music tempo: eighth notes per minute (140 bpm). */
-export const eighthsPerMinute = 280;
-
 /** A note (or a rest, `null`) held for `len` eighth notes. */
 export type Note = readonly [midi: number | null, len: number];
 
+/**
+ * A sound's Channel: `minigame` sounds stop when the minigame pause menu
+ * opens (Resume restarts the ones that were playing); `arcade` sounds play on.
+ */
+export type Channel = "minigame" | "arcade";
+
+/** What `bun run sounds` synthesises a sound from. */
+export type SoundSource =
+  { song: Song } | { tune: Tune } | { effect: Effect } | { blip: readonly Note[] } | { screenOn: ScreenOnSound };
+
+/** One sound, as `defineSound` declared it. */
+export interface SoundDeclaration {
+  /** camelCase; its WAV is src/assets/sounds/<kebab-case name>.wav. */
+  readonly name: string;
+  readonly source: SoundSource;
+  readonly channel: Channel;
+  /** Loops (the songs and attract loops) or plays once. */
+  readonly loop: boolean;
+  /** 0 to 1: how loud the browser plays it. */
+  readonly volume: number;
+}
+
+const declarations: SoundDeclaration[] = [];
+
+/** Every sound `defineSound` declared, in order. */
+export const soundDeclarations: readonly SoundDeclaration[] = declarations;
+
+/**
+ * Declare a sound: `bun run sounds` renders `source` to its WAV and adds it
+ * to src/engine/sounds.generated.ts as `sounds[name]`.
+ */
+function defineSound(
+  name: string,
+  source: SoundSource,
+  opts: { channel: Channel; loop?: boolean; volume?: number },
+): void {
+  declarations.push({ name, source, channel: opts.channel, loop: opts.loop ?? false, volume: opts.volume ?? 1 });
+}
+
 /** Am – F – C – G, twice: the bass plays the root in octaves on every eighth. */
 const roots = [45, 41, 48, 43, 45, 41, 48, 43] as const;
-export const bass: readonly Note[] = roots.flatMap((r) =>
+const bass: readonly Note[] = roots.flatMap((r) =>
   Array.from({ length: 8 }, (_, i): Note => [i % 2 === 0 ? r : r + 12, 1]),
 );
 
@@ -25,11 +63,11 @@ const chords = [
   [67, 72, 76, 79],
   [67, 71, 74, 79],
 ] as const;
-export const arpeggio: readonly Note[] = [...chords, ...chords].flatMap(([a, b, c, d]) =>
+const arpeggio: readonly Note[] = [...chords, ...chords].flatMap(([a, b, c, d]) =>
   [a, b, c, b, a, b, c, d].map((n): Note => [n, 1]),
 );
 
-export const melody: readonly Note[] = [
+const melody: readonly Note[] = [
   [76, 4],
   [74, 2],
   [72, 2],
@@ -55,23 +93,45 @@ export const melody: readonly Note[] = [
   [71, 2],
 ];
 
+/** The title music: 140 bpm. */
+export const titleSong: Song = { eighthsPerMinute: 280, bass, arpeggio, melody, hats: 0.05 };
+defineSound("title", { song: titleSong }, { channel: "arcade", loop: true });
+
 /** Cursor moved: one short square-wave blip. */
-export const moveBlip: readonly Note[] = [[84, 1]];
+defineSound("move", { blip: [[84, 1]] }, { channel: "arcade" });
 /** Choice made: a quick rising pair. */
-export const selectChirp: readonly Note[] = [
-  [79, 1],
-  [91, 2],
-];
+defineSound(
+  "select",
+  {
+    blip: [
+      [79, 1],
+      [91, 2],
+    ],
+  },
+  { channel: "arcade" },
+);
 /** One ticket paid out: a short bright two-note ding. */
-export const ticketDing: readonly Note[] = [
-  [88, 1],
-  [93, 1],
-];
+defineSound(
+  "ticket",
+  {
+    blip: [
+      [88, 1],
+      [93, 1],
+    ],
+  },
+  { channel: "arcade" },
+);
 /** A choice that can't be made (a token the player can't afford): a low falling pair. */
-export const denyBuzz: readonly Note[] = [
-  [50, 2],
-  [45, 3],
-];
+defineSound(
+  "deny",
+  {
+    blip: [
+      [50, 2],
+      [45, 3],
+    ],
+  },
+  { channel: "arcade" },
+);
 /**
  * Firefly's sounds: the notes and the length of one eighth, in seconds.
  * `bun run sounds` writes each as a square-wave chiptune WAV.
@@ -80,54 +140,6 @@ export interface Effect {
   notes: readonly Note[];
   eighth: number;
 }
-
-export const fireflyEffects = {
-  /** The firefly shoots a spark: a quick chirp up. */
-  spark: {
-    notes: [
-      [84, 1],
-      [91, 1],
-      [96, 1],
-    ],
-    eighth: 0.02,
-  },
-  /** A spark hits an enemy: a short crunch falling away. */
-  hit: {
-    notes: [
-      [64, 1],
-      [57, 1],
-      [52, 1],
-      [45, 2],
-    ],
-    eighth: 0.03,
-  },
-  /** The firefly is eaten or shot: a long slide down. */
-  lifeLost: {
-    notes: [
-      [76, 2],
-      [72, 2],
-      [69, 2],
-      [64, 2],
-      [60, 2],
-      [57, 2],
-      [52, 4],
-    ],
-    eighth: 0.06,
-  },
-  /** STAGE n: a little fanfare. */
-  stage: {
-    notes: [
-      [72, 1],
-      [76, 1],
-      [79, 1],
-      [84, 2],
-      [null, 1],
-      [79, 1],
-      [84, 4],
-    ],
-    eighth: 0.09,
-  },
-} as const satisfies Record<string, Effect>;
 
 /** Length of one eighth note in the menu sounds, in seconds. */
 export const blipEighth = 0.035;
@@ -217,6 +229,7 @@ export const hubSong: Song = {
   ],
   hats: 0.03,
 };
+defineSound("hub", { song: hubSong }, { channel: "arcade", loop: true, volume: 0.3 });
 
 /** A short single-voice tune: its notes, the length of an eighth in seconds, and its wave. */
 export interface Tune {
@@ -279,6 +292,9 @@ export const attractLoops = {
     wave: "triangle",
   },
 } as const satisfies Record<string, Tune>;
+for (const [name, tune] of Object.entries(attractLoops)) {
+  defineSound(`attract${capitalized(name)}`, { tune }, { channel: "arcade", loop: true, volume: 0.35 });
+}
 
 /** A cabinet screen switching on: a low thunk (eighths of `thunkEighth` s), then the tube's whine rising (Hz). */
 export interface ScreenOnSound {
@@ -290,14 +306,20 @@ export interface ScreenOnSound {
   whineGain: number;
 }
 
-export const screenOn: ScreenOnSound = {
-  thunk: [[33, 1]],
-  thunkEighth: 0.05,
-  seconds: 0.35,
-  whineFrom: 2000,
-  whineTo: 5000,
-  whineGain: 0.03,
-};
+defineSound(
+  "screenOn",
+  {
+    screenOn: {
+      thunk: [[33, 1]],
+      thunkEighth: 0.05,
+      seconds: 0.35,
+      whineFrom: 2000,
+      whineTo: 5000,
+      whineGain: 0.03,
+    },
+  },
+  { channel: "arcade", volume: 0.5 },
+);
 
 /**
  * Sweet Sam's sounds (#47), each played once. The start jingle fits inside
@@ -399,14 +421,70 @@ export const sweetSamTunes = {
     wave: "square",
   },
 } as const satisfies Record<string, Tune>;
+for (const [name, tune] of Object.entries(sweetSamTunes)) {
+  defineSound(`sweet${capitalized(name)}`, { tune }, { channel: "minigame" });
+}
+
+/** Firefly's sounds. */
+const fireflyEffects = {
+  /** The firefly shoots a spark: a quick chirp up. */
+  spark: {
+    notes: [
+      [84, 1],
+      [91, 1],
+      [96, 1],
+    ],
+    eighth: 0.02,
+  },
+  /** A spark hits an enemy: a short crunch falling away. */
+  hit: {
+    notes: [
+      [64, 1],
+      [57, 1],
+      [52, 1],
+      [45, 2],
+    ],
+    eighth: 0.03,
+  },
+  /** The firefly is eaten or shot: a long slide down. */
+  lifeLost: {
+    notes: [
+      [76, 2],
+      [72, 2],
+      [69, 2],
+      [64, 2],
+      [60, 2],
+      [57, 2],
+      [52, 4],
+    ],
+    eighth: 0.06,
+  },
+  /** STAGE n: a little fanfare. */
+  stage: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [84, 2],
+      [null, 1],
+      [79, 1],
+      [84, 4],
+    ],
+    eighth: 0.09,
+  },
+} as const satisfies Record<string, Effect>;
+for (const [name, effect] of Object.entries(fireflyEffects)) defineSound(name, { effect }, { channel: "minigame" });
 
 /** Seconds a tune lasts. */
 export function tuneSeconds(t: Tune): number {
   return t.notes.reduce((sum, [, len]) => sum + len, 0) * t.eighth;
 }
 
-/** Brass Monkey's sound effects (#39), one WAV each: monkey-<name>.wav. */
-export const brassMonkeyJingles = {
+/**
+ * Brass Monkey's sound effects (#39), `monkey<Name>` each. They play on when
+ * the minigame pause menu opens, as they always have.
+ */
+const brassMonkeyJingles = {
   /** A jump: a quick upward slide. */
   jump: {
     notes: [
@@ -478,3 +556,10 @@ export const brassMonkeyJingles = {
     eighth: 0.12,
   },
 } as const satisfies Record<string, Effect>;
+for (const [name, effect] of Object.entries(brassMonkeyJingles)) {
+  defineSound(`monkey${capitalized(name)}`, { effect }, { channel: "arcade" });
+}
+
+function capitalized(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}

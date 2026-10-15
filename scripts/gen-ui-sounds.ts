@@ -1,36 +1,27 @@
-// Synthesise the title music, the hub song, the cabinets' attract loops, the
-// menu sounds and Firefly's sounds from src/ui/sounds.ts:
+// Synthesise every sound declared with `defineSound` in src/ui/sounds.ts, and
+// write the sound table the game imports:
 //
-//   bun run sounds   # writes title.wav, hub.wav, attract-*.wav, screen-on.wav, move.wav, select.wav, ticket.wav, deny.wav,
-//                    spark.wav, hit.wav, life-lost.wav, stage.wav, monkey-*.wav, sweet-sam-*.wav
+//   bun run sounds   # writes src/assets/sounds/<name>.wav for each sound, and src/engine/sounds.generated.ts
 //
 // Songs are a square-wave lead and arpeggio over a triangle bass, with a soft
 // noise hi-hat on the off-beats. Output is 8-bit mono PCM to keep the files small.
-// gen-ui-sounds.test.ts fails when the committed WAVs no longer match the
-// source.
+// gen-ui-sounds.test.ts fails when the committed WAVs or the sound table no
+// longer match the source.
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { format, resolveConfig } from "prettier";
 import {
-  arpeggio,
-  attractLoops,
-  bass,
   blipEighth,
-  brassMonkeyJingles,
-  denyBuzz,
-  eighthsPerMinute,
-  fireflyEffects,
-  hubSong,
-  melody,
-  moveBlip,
   sampleRate,
-  screenOn,
-  selectChirp,
-  sweetSamTunes,
-  ticketDing,
+  soundDeclarations,
+  type Channel,
   type Effect,
   type Note,
+  type ScreenOnSound,
   type Song,
+  type SoundDeclaration,
+  type SoundSource,
   type Tune,
 } from "../src/ui/sounds.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
@@ -127,9 +118,6 @@ function renderSong(song: Song): Buffer {
   return wav(out);
 }
 
-export const renderTitle = (): Buffer => renderSong({ eighthsPerMinute, bass, arpeggio, melody, hats: 0.05 });
-export const renderHub = (): Buffer => renderSong(hubSong);
-
 function renderTune(loop: Tune): Buffer {
   const out = new Float64Array(Math.round(eighths(loop.notes) * loop.eighth * sampleRate));
   if (loop.wave === "square") voice(out, loop.notes, loop.eighth, square(0.25), 0.2, 0.4);
@@ -137,13 +125,8 @@ function renderTune(loop: Tune): Buffer {
   return wav(out);
 }
 
-export const renderAttractBrassMonkey = (): Buffer => renderTune(attractLoops.brassMonkey);
-export const renderAttractSweet = (): Buffer => renderTune(attractLoops.sweet);
-export const renderAttractFirefly = (): Buffer => renderTune(attractLoops.firefly);
-
 /** The thunk, then a sine whine sweeping up that swells in and dies away. */
-export function renderScreenOn(): Buffer {
-  const s = screenOn;
+function renderScreenOn(s: ScreenOnSound): Buffer {
   const out = new Float64Array(Math.round(s.seconds * sampleRate));
   voice(out, s.thunk, s.thunkEighth, square(0.5), 0.25, 0.3);
   for (let i = 0; i < out.length; i++) {
@@ -166,68 +149,78 @@ function effect({ notes, eighth }: Effect): Buffer {
   return wav(out);
 }
 
-export const renderSpark = (): Buffer => effect(fireflyEffects.spark);
-export const renderHit = (): Buffer => effect(fireflyEffects.hit);
-export const renderLifeLost = (): Buffer => effect(fireflyEffects.lifeLost);
-export const renderStage = (): Buffer => effect(fireflyEffects.stage);
-
-export const renderMove = (): Buffer => blip(moveBlip);
-export const renderSelect = (): Buffer => blip(selectChirp);
-export const renderTicket = (): Buffer => blip(ticketDing);
-export const renderDeny = (): Buffer => blip(denyBuzz);
-
-const dir = join(repoRoot, "src/assets/sounds");
-
-/** Sweet Sam's sounds: `sweet-sam-<name>.wav` for each of `sweetSamTunes`. */
-export const sweetSamSoundFiles: readonly (readonly [path: string, render: () => Buffer])[] = Object.entries(
-  sweetSamTunes,
-).map(([name, tune]) => [join(dir, `sweet-sam-${kebab(name)}.wav`), () => renderTune(tune)] as const);
+/** The WAV for `source`. */
+export function render(source: SoundSource): Buffer {
+  if ("song" in source) return renderSong(source.song);
+  if ("tune" in source) return renderTune(source.tune);
+  if ("effect" in source) return effect(source.effect);
+  if ("blip" in source) return blip(source.blip);
+  return renderScreenOn(source.screenOn);
+}
 
 function kebab(name: string): string {
   return name.replaceAll(/[A-Z]/gu, (c) => `-${c.toLowerCase()}`);
 }
 
-/** Brass Monkey's sound effects: where each is written and how to render it. */
-export const brassMonkeySoundFiles: readonly { path: string; render: () => Buffer }[] = Object.entries(
-  brassMonkeyJingles,
-).map(([name, jingle]) => ({ path: join(dir, `monkey-${name}.wav`), render: () => effect(jingle) }));
+/** Where `sound`'s WAV is committed. */
+export const wavPath = (sound: SoundDeclaration): string =>
+  join(repoRoot, "src/assets/sounds", `${kebab(sound.name)}.wav`);
 
-export const titlePath = join(dir, "title.wav");
-export const hubPath = join(dir, "hub.wav");
-export const screenOnPath = join(dir, "screen-on.wav");
-export const attractBrassMonkeyPath = join(dir, "attract-brass-monkey.wav");
-export const attractSweetPath = join(dir, "attract-sweet.wav");
-export const attractFireflyPath = join(dir, "attract-firefly.wav");
-export const movePath = join(dir, "move.wav");
-export const selectPath = join(dir, "select.wav");
-export const ticketPath = join(dir, "ticket.wav");
-export const denyPath = join(dir, "deny.wav");
-export const sparkPath = join(dir, "spark.wav");
-export const hitPath = join(dir, "hit.wav");
-export const lifeLostPath = join(dir, "life-lost.wav");
-export const stagePath = join(dir, "stage.wav");
+/** The sound table the game imports, written by `bun run sounds`. */
+export const tablePath = join(repoRoot, "src/engine/sounds.generated.ts");
+
+const channels: readonly Channel[] = ["minigame", "arcade"];
+
+/** The sounds' names, each a camelCase identifier used once; throws naming the first that is not. */
+export function checkNames(sounds: readonly SoundDeclaration[]): void {
+  const seen = new Set<string>();
+  for (const { name } of sounds) {
+    if (!/^[a-z][A-Za-z0-9]*$/u.test(name)) throw new Error(`sound name ${JSON.stringify(name)} is not camelCase`);
+    if (seen.has(name)) throw new Error(`sound ${name} is declared twice`);
+    seen.add(name);
+  }
+}
+
+/** src/engine/sounds.generated.ts for `sounds`, formatted as Prettier would. */
+export async function soundTable(sounds: readonly SoundDeclaration[] = soundDeclarations): Promise<string> {
+  checkNames(sounds);
+  const lines = [
+    "// Generated by `bun run sounds` (scripts/gen-ui-sounds.ts) from the `defineSound` calls in src/ui/sounds.ts.",
+    "// Do not edit: declare or change a sound there and run `bun run sounds`.",
+    "",
+    'import type { Channel } from "../ui/sounds.ts";',
+    "",
+    ...sounds.map((s) => `import ${s.name}Url from "../assets/sounds/${kebab(s.name)}.wav";`),
+    "",
+    `export type SoundName = ${sounds.map((s) => JSON.stringify(s.name)).join(" | ")};`,
+    "",
+    "/** Every sound, made by `make` from its name, WAV URL, whether it loops and its volume (0 to 1). */",
+    "export function soundTable<S>(make: (name: SoundName, url: string, loop: boolean, volume: number) => S): Record<SoundName, S> {",
+    "  return {",
+    ...sounds.map((s) => `    ${s.name}: make("${s.name}", ${s.name}Url, ${s.loop}, ${s.volume}),`),
+    "  };",
+    "}",
+    "",
+    "/** The sounds on each Channel. */",
+    "export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {",
+    ...channels.map(
+      (c) =>
+        `  ${c}: [${sounds
+          .filter((s) => s.channel === c)
+          .map((s) => JSON.stringify(s.name))
+          .join(", ")}],`,
+    ),
+    "};",
+  ];
+  return format(lines.join("\n"), { ...(await resolveConfig(tablePath)), filepath: tablePath });
+}
 
 if (import.meta.main) {
-  for (const [path, render] of [
-    [titlePath, renderTitle],
-    [hubPath, renderHub],
-    [screenOnPath, renderScreenOn],
-    [attractBrassMonkeyPath, renderAttractBrassMonkey],
-    [attractSweetPath, renderAttractSweet],
-    [attractFireflyPath, renderAttractFirefly],
-    [movePath, renderMove],
-    [selectPath, renderSelect],
-    [ticketPath, renderTicket],
-    [denyPath, renderDeny],
-    ...sweetSamSoundFiles,
-    [sparkPath, renderSpark],
-    [hitPath, renderHit],
-    [lifeLostPath, renderLifeLost],
-    [stagePath, renderStage],
-    ...brassMonkeySoundFiles.map((f) => [f.path, f.render] as const),
-  ] as const) {
-    const data = render();
-    writeFileSync(path, data);
-    console.log(`wrote ${path} (${data.length} bytes)`);
+  for (const sound of soundDeclarations) {
+    const data = render(sound.source);
+    writeFileSync(wavPath(sound), data);
+    console.log(`wrote ${wavPath(sound)} (${data.length} bytes)`);
   }
+  writeFileSync(tablePath, await soundTable());
+  console.log(`wrote ${tablePath}`);
 }

@@ -28,6 +28,10 @@ _Avoid_: hub melody, background music
 A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
 _Avoid_: level, mode, sub-game
 
+**Channel**:
+Which group a sound belongs to, declared with it in `defineSound`: `minigame` sounds stop when the minigame pause menu opens and resume when it closes; `arcade` sounds (menu blips, the hub song, attract loops) do not.
+_Avoid_: bus, mixer group
+
 **Sweet Sam**:
 The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `sweetSam` (`src/sweet-sam/`).
 _Avoid_: bear game

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { sweetSamSounds } from "../engine/assets.ts";
+import { sounds as soundTable } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
@@ -70,8 +70,8 @@ function fakes(): Fakes {
   const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     let sw: FakeSoftware;
     if (name === "sweetSam") {
-      sweetSamSounds.start.rewind();
-      sweetSamSounds.start.play();
+      soundTable.sweetStart.rewind();
+      soundTable.sweetStart.play();
       sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"), prizes);
     } else if (name === "firefly") {
       sw = new FakeSoftware(name, highScore, makeSolid(224, 288, "#000"), prizes);
@@ -483,7 +483,7 @@ describe("minigame pause menu", () => {
     enterSweetSam(game);
     const fakeElement = { paused: false };
     if (!standsInForAudio(fakeElement)) throw new Error("fake element lacks paused");
-    sweetSamSounds.bee.element = fakeElement;
+    soundTable.sweetBee.element = fakeElement;
     try {
       tap(game, "escape");
       expect(
@@ -492,7 +492,7 @@ describe("minigame pause menu", () => {
         }),
       ).toEqual(["rewind:select", "play:select", "play:sweetBee"]);
     } finally {
-      sweetSamSounds.bee.element = null;
+      soundTable.sweetBee.element = null;
     }
   });
 
@@ -908,7 +908,7 @@ describe("dispose", () => {
   test("stops recording sounds", () => {
     const { game } = newGame();
     game.dispose();
-    sweetSamSounds.start.play();
+    soundTable.sweetStart.play();
     game.step(input());
     expect(snap(game).sounds).toEqual([]);
   });
