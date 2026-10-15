@@ -81,7 +81,7 @@ describe("prize catalogue", () => {
   });
 
   test("decorations do not block movement: owning every prize changes nothing that is solid", () => {
-    const s = newState(null, () => fakeSoftware());
+    const s = newState(() => fakeSoftware());
     s.wallet = new Wallet({ highScore: 0, tokens: 0, tickets: 0, prizes: prizes.map((p) => p.id) });
     for (const p of prizes) {
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };

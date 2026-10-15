@@ -27,7 +27,7 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 | Sweet Sam maze, sprites, text    | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
 | Cabinet strips                   | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
 
-`bun run art` writes the PNGs. Commit the source and the PNGs together: the drift tests fail when they differ. A PNG in `src/assets/images` that no generator writes is hand-made; most came from the Go game.
+Each generator declares its outputs once (`imageOutput(file, width, height, render)`, `scripts/image-outputs.ts`), and `bun run art` (`scripts/gen-art.ts`) writes every PNG and the image table `src/engine/images.generated.ts` from them. A new image is a new declaration, then `bun run art`. Commit the source, the PNGs and the table together: `scripts/gen-art.test.ts` fails when they differ, or when `src/assets/images` holds a PNG nothing declares.
 
 ## Import before you draw
 

@@ -1,7 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PNG } from "pngjs";
 import {
   bolt,
   boltGlints,
@@ -25,11 +22,10 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, glint, outline, toRows, type Rows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, type Rows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
-  brassMonkeyImagesDir,
   conveyorFrames,
   doorFrame,
   emberFills,
@@ -185,17 +181,8 @@ describe("generated frames", () => {
   });
 });
 
-describe("committed Brass Monkey PNGs match src/brass-monkey/art.ts (run `bun run art` after editing it)", () => {
-  test("src/assets/images/brass-monkey holds exactly the generated files", () => {
-    expect(readdirSync(brassMonkeyImagesDir).toSorted()).toEqual(brassMonkeyArtFiles.map((f) => f.file).toSorted());
-  });
-
+describe("generated Brass Monkey PNGs", () => {
   for (const { file, render } of brassMonkeyArtFiles) {
-    test(file, () => {
-      const onDisk = PNG.sync.read(readFileSync(join(brassMonkeyImagesDir, file)));
-      expect(toRows(onDisk)).toEqual(toRows(render()));
-    });
-
     test(`${file} is only Sweetie 16 colours`, () => {
       const allowed = new Set<string>([...sweetie16, "transparent"]);
       for (const c of colours(render()).keys())

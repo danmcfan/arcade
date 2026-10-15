@@ -8,10 +8,14 @@ import { attractSounds, sounds } from "../engine/assets.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
+import type { Software } from "../game/software.ts";
 import { updateScreen } from "./screen.ts";
 import { blocked, type State } from "./state.ts";
 
-export function update(s: State, i: Input): void {
+/** What a hub tick asks of the Game: start a cabinet's software, or open the prize counter menu. */
+export type HubEvent = { start: Software; run: "paid" | "free" } | { openCounter: true } | null;
+
+export function update(s: State, i: Input): HubEvent {
   applyInput(s, i);
   updatePlayer(s);
 
@@ -23,6 +27,7 @@ export function update(s: State, i: Input): void {
   };
   const machine = findMachine(newRect, s.machines);
   const ok = machine !== null;
+  let event: HubEvent = null;
 
   if (ok && s.player.direction === "UP") {
     if (!s.melodyPlaying) {
@@ -40,15 +45,13 @@ export function update(s: State, i: Input): void {
     // Go leaves imageTitle set here; only melodyPlaying is cleared (D11).
     stopMelody(s);
 
-    s.loadedRun = s.wallet.startRun();
-    s.loadedSoftware = machine.newSoftware(s.wallet.highScore, s.wallet.prizes);
-  }
-
-  if (i.space && s.counters.some((r) => facing(s.player, r))) {
-    s.counterOpened = true;
+    event = { run: s.wallet.startRun(), start: machine.newSoftware(s.wallet.highScore, s.wallet.prizes) };
+  } else if (i.space && s.counters.some((r) => facing(s.player, r))) {
+    event = { openCounter: true };
   }
 
   for (const m of s.machines) updateScreen(m.screen, s.melodyPlaying && s.imageTitle === m.title);
+  return event;
 }
 
 /** Stop the playing cabinet's attract loop, from the top next time. */

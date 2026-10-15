@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { PNG } from "pngjs";
-import { glyphHeight, glyphs, inks, logoLetters, titleCards, titleLetters } from "../src/ui/glyphs.ts";
+import { glyphHeight, glyphs, inks, logoLetters, titleLetters } from "../src/ui/glyphs.ts";
 import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
@@ -33,31 +31,7 @@ import { images } from "../src/engine/assets.ts";
 import { prizeArt } from "../src/ui/prizeArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
-import {
-  employeePath,
-  employeeRows,
-  fontPath,
-  hubPowerRows,
-  hubRoomRows,
-  iconsPath,
-  logoPath,
-  playerPath,
-  prizesPath,
-  renderEmployee,
-  renderFont,
-  renderIcons,
-  renderLogo,
-  renderPlayer,
-  renderPrizes,
-  renderRoom,
-  renderScreens,
-  renderTicker,
-  renderTitleCard,
-  roomPath,
-  screensPath,
-  tickerPath,
-  titleCardPath,
-} from "./gen-ui-art.ts";
+import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
 
 describe("UI art source", () => {
@@ -140,31 +114,4 @@ describe("UI art source", () => {
       });
     }
   });
-});
-
-describe("committed PNGs match src/ui/glyphs.ts, icons.ts, tickerArt.ts, employeeArt.ts, prizeArt.ts, hubArt.ts and playerArt.ts (run `bun run art` after editing them)", () => {
-  const pngs: [name: string, path: string, render: () => PNG][] = [
-    ["font.png", fontPath, renderFont],
-    ["logo.png", logoPath, renderLogo],
-    ["icons.png", iconsPath, renderIcons],
-    ["ticker.png", tickerPath, renderTicker],
-    ["employee.png", employeePath, renderEmployee],
-    ["arcade.png", roomPath, renderRoom],
-    ["screens.png", screensPath, renderScreens],
-    ["player.png", playerPath, renderPlayer],
-    ["prizes.png", prizesPath, renderPrizes],
-    ...titleCards.map((card): [string, string, () => PNG] => [
-      card.file,
-      titleCardPath(card.file),
-      () => renderTitleCard(card),
-    ]),
-  ];
-  for (const [name, path, render] of pngs) {
-    test(name, () => {
-      const onDisk = PNG.sync.read(readFileSync(path));
-      const fresh = render();
-      expect([onDisk.width, onDisk.height]).toEqual([fresh.width, fresh.height]);
-      expect(Buffer.compare(onDisk.data, fresh.data)).toBe(0);
-    });
-  }
 });

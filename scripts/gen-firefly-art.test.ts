@@ -1,7 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PNG } from "pngjs";
 import {
   backgroundHeight,
   backgroundWidth,
@@ -23,15 +20,7 @@ import {
 import { frameAngle } from "../src/firefly/entity.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours } from "./pixel-art.ts";
-import {
-  fireflyArtFiles,
-  fireflyImagesDir,
-  mirrorQuarter,
-  rotate,
-  rotationSheet,
-  scale2x,
-  skyColor,
-} from "./gen-firefly-art.ts";
+import { fireflyArtFiles, mirrorQuarter, rotate, rotationSheet, scale2x, skyColor } from "./gen-firefly-art.ts";
 
 function size(rows: readonly string[]): [number, number] {
   return [rows[0]?.length ?? 0, rows.length];
@@ -130,19 +119,8 @@ describe("rotation frames", () => {
   });
 });
 
-describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` after editing it)", () => {
-  test("src/assets/images/firefly holds exactly the generated files", () => {
-    expect(readdirSync(fireflyImagesDir).toSorted()).toEqual(fireflyArtFiles.map((f) => f.file).toSorted());
-  });
-
+describe("generated Firefly PNGs", () => {
   for (const { file, render } of fireflyArtFiles) {
-    test(file, () => {
-      const onDisk = PNG.sync.read(readFileSync(join(fireflyImagesDir, file)));
-      const fresh = render();
-      expect([onDisk.width, onDisk.height]).toEqual([fresh.width, fresh.height]);
-      expect(Buffer.compare(onDisk.data, fresh.data)).toBe(0);
-    });
-
     test(`${file} is only Sweetie 16 colours`, () => {
       const allowed = new Set<string>([...sweetie16, "transparent"]);
       for (const c of colours(render()).keys())
@@ -151,7 +129,7 @@ describe("committed Firefly PNGs match src/firefly/art.ts (run `bun run art` aft
   }
 
   test("the background is opaque: no cabinet shows through", () => {
-    const background = fireflyArtFiles.find((f) => f.file === "background.png");
+    const background = fireflyArtFiles.find((f) => f.file.endsWith("/background.png"));
     if (background === undefined) throw new Error("background.png is not a generated file");
     const bg = background.render();
     expect([bg.width, bg.height]).toEqual([backgroundWidth, backgroundHeight]);
