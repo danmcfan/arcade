@@ -91,6 +91,8 @@ export async function startServer(command: ServerCommand = devServer): Promise<S
 export interface RecordOptions {
   /** Scene to record (default: the title). */
   scene?: SceneName;
+  /** The game's page, relative to the server root (default: the root), e.g. an option `bun run pixel play` built. */
+  path?: string;
   /** localStorage entries to set, then the scene is rebuilt so it reads them. */
   storage?: Record<string, string>;
 }
@@ -305,10 +307,10 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
   const cleanups: (() => void)[] = [];
 
   /** Start recording `<name>.webm` on a fresh load of `scene` with the test hook. */
-  const startRecording = (n: string, scene?: SceneName): string => {
+  const startRecording = (n: string, scene?: SceneName, path = ""): string => {
     const webm = file(n, "webm");
     rmSync(webm, { force: true });
-    page.run("record", "start", webm, `${url}/${scene ? `?debug&scene=${scene}` : "?debug"}`);
+    page.run("record", "start", webm, `${url}/${path}${scene ? `?debug&scene=${scene}` : "?debug"}`);
     waitCanvas();
     page.run("wait", "--fn", "window.__arcade !== undefined");
     return webm;
@@ -396,7 +398,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
       return path;
     },
     record(n, play, opts = {}) {
-      const webm = startRecording(n, opts.scene);
+      const webm = startRecording(n, opts.scene, opts.path);
       // No navigation once recording starts (it freezes the video), so record
       // the final URL with the hook installed and seed storage through it.
       if (opts.storage) {
@@ -406,7 +408,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
       return finishRecording(n, webm, play);
     },
     async recordPhone(n, play, opts = {}) {
-      const webm = startRecording(n, opts.scene);
+      const webm = startRecording(n, opts.scene, opts.path);
       if (opts.storage) seedStorage(opts.storage);
       // The recording's fresh context drops the emulation, and the page reads
       // the device only on load, so emulate and reload once. This one reload
