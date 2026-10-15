@@ -189,6 +189,13 @@ describe("the loop", () => {
     expect(words(g)).toContain("LOOP 2");
   });
 
+  test("the HUD's LOOP is drawn over the floor, not under it", () => {
+    const { calls } = record(quiet());
+    const floor = calls.findIndex((c) => c.sprite.asset === imageGirderFloor.asset);
+    const loop = calls.findLastIndex((c) => c.sprite.asset === imageFont.asset);
+    expect(loop).toBeGreaterThan(floor);
+  });
+
   test("the escaped scene shows the lap coming next", () => {
     const g = quiet();
     g.run.phase = "escape";
