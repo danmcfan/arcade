@@ -165,7 +165,7 @@ export function play(seed: number, react = 1, stop: (s: SweetSamSoftware) => boo
 }
 
 /** Runs of equal inputs as script steps. */
-function compress(inputs: readonly Input[]): InputStep[] {
+export function compress(inputs: readonly Input[]): InputStep[] {
   const out: InputStep[] = [];
   for (const i of inputs) {
     const keys: Partial<Input> = {};
