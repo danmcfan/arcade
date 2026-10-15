@@ -131,7 +131,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3757,
+    tick: 4189,
     name: "07-level-clear-flash",
     shows: "the last honey drop eaten: everything stops, the bees leave and the maze flashes",
     expect: (s, sounds) => {
@@ -141,7 +141,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3872,
+    tick: 4305,
     name: "08-level-2-banner",
     shows: "LEVEL 2 before READY, the maze full again, everyone home",
     expect: (s) => {
@@ -150,7 +150,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4072,
+    tick: 4505,
     name: "09-level-2-faster-bees",
     shows: "level 2 playing: the bees fly faster than on level 1",
     expect: (s) => {
@@ -220,8 +220,8 @@ function video(v: Verify): void {
       loadFixture(v, levels);
       skipTo(v, levels, 0, 2200);
       replayLive(v, levels, 2200, 2900);
-      skipTo(v, levels, 2900, 3620);
-      replayLive(v, levels, 3620, 4150);
+      skipTo(v, levels, 2900, 4060);
+      replayLive(v, levels, 4060, 4590);
       v.wait(500);
     },
     { scene: "game" },

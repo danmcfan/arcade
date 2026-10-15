@@ -108,6 +108,15 @@ describe("findTarget", () => {
     t.x = 99;
     expect(red.target).toEqual({ x: 2, y: 0 });
   });
+
+  test("scatter in Cruise Elroy: red targets the player's tile, the others still their corners", () => {
+    expect(enemies.map((e) => findTarget(e, enemies, player, modeScatter, true))).toEqual([
+      { x: 14, y: 26 },
+      { x: 25, y: 0 },
+      { x: 0, y: 34 },
+      { x: 27, y: 34 },
+    ]);
+  });
 });
 
 describe("updateDirection", () => {

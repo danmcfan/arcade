@@ -43,6 +43,21 @@ export interface LevelValues {
   dotMinimums: DotMinimums;
   /** Ticks without an eaten drop before the preferred bee leaves the home. */
   idleReleaseTicks: number;
+  /** Cruise Elroy: red's two speed-ups as the honey drops run out. */
+  elroy: readonly [ElroyStep, ElroyStep];
+}
+
+/** Red flies at `velocity` once `dropsLeft` or fewer honey drops remain. */
+export interface ElroyStep {
+  readonly dropsLeft: number;
+  readonly velocity: number;
+}
+
+function elroy(drops1: number, velocity1: number, velocity2: number): [ElroyStep, ElroyStep] {
+  return [
+    { dropsLeft: drops1, velocity: velocity1 },
+    { dropsLeft: drops1 / 2, velocity: velocity2 },
+  ];
 }
 
 /**
@@ -64,6 +79,9 @@ function modes(
 // `distanceThreshold` (0.5 px) of every corner, and steps over 0.5 px leave
 // it on the next tick, so a bee neither misses a turn nor turns twice.
 // levels.test.ts and corners.test.ts check every value against the maze.
+// Elroy's thresholds are Pac-Man's (Dossier, Table A.1); its speeds add
+// 1/32 and 1/16 px/tick (Pac-Man's +5%/+10% steps, scaled) but stop at 1, so from level 3 the
+// second step changes only red's scatter target, and on level 5 both do.
 
 // Tuned with scripts/sweet-sam-bot.ts (#47): with a fifth of a second's
 // reaction time, a good run (the top quarter of 200 seeds) scores about what
@@ -78,6 +96,7 @@ const levels: readonly LevelValues[] = [
     modeSequence,
     dotMinimums: goDotMinimums,
     idleReleaseTicks: framesPerSecond * 4,
+    elroy: elroy(20, 0.96875, 1),
   },
   {
     beeVelocity: 0.953125,
@@ -85,6 +104,7 @@ const levels: readonly LevelValues[] = [
     modeSequence: modes([7, 6, 5, 4], [20, 21, 22]),
     dotMinimums: { pink: 0, teal: 25, orange: 50 },
     idleReleaseTicks: framesPerSecond * 4,
+    elroy: elroy(30, 0.984375, 1),
   },
   {
     beeVelocity: 0.96875,
@@ -92,6 +112,7 @@ const levels: readonly LevelValues[] = [
     modeSequence: modes([7, 6, 4, 3], [21, 22, 24]),
     dotMinimums: { pink: 0, teal: 20, orange: 40 },
     idleReleaseTicks: framesPerSecond * 4,
+    elroy: elroy(40, 1, 1),
   },
   {
     beeVelocity: 0.984375,
@@ -99,6 +120,7 @@ const levels: readonly LevelValues[] = [
     modeSequence: modes([7, 5, 4, 2], [21, 23, 26]),
     dotMinimums: { pink: 0, teal: 15, orange: 30 },
     idleReleaseTicks: framesPerSecond * 4,
+    elroy: elroy(40, 1, 1),
   },
   {
     beeVelocity: 1,
@@ -106,6 +128,7 @@ const levels: readonly LevelValues[] = [
     modeSequence: modes([7, 5, 3, 1], [22, 24, 28]),
     dotMinimums: { pink: 0, teal: 10, orange: 20 },
     idleReleaseTicks: framesPerSecond * 3,
+    elroy: elroy(40, 1, 1),
   },
 ];
 

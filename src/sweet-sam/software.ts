@@ -234,7 +234,11 @@ export class SweetSamSoftware implements FixedViewport {
       modeIndex: this.modeIndex,
       mode: this.modeCurrent,
       modeTicks: this.modeTicks,
-      release: { globalDots: this.release.globalDots, idleTicks: this.release.idleTicks },
+      release: {
+        globalDots: this.release.globalDots,
+        idleTicks: this.release.idleTicks,
+        elroySuspended: this.release.elroySuspended,
+      },
       pauseTicks: this.pauseTicks,
       startTicks: this.startTicks,
       respawnBlinkRemaining: this.startState.respawnBlinkRemaining,

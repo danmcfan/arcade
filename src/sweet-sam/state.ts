@@ -1,6 +1,6 @@
 // Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
-import { dropEaten, noDropEaten } from "./release.ts";
+import { dropEaten, elroyStep, noDropEaten } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import { sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
@@ -219,8 +219,9 @@ export class PlayState implements State {
 
     s.player.velocity = s.advantages.playerVelocity;
     const { beeVelocity } = s.values();
+    const elroy = elroyStep(s.release, s.values(), s.items.filter((it) => it !== null).length);
     for (const e of s.enemies) {
-      e.velocity = beeVelocity;
+      e.velocity = e.kind === "red" && !e.home && elroy !== null ? elroy.velocity : beeVelocity;
       if (isSleepy(e)) {
         s.player.velocity = velocityPlayerPower;
         e.velocity = velocityEnemyPower;
@@ -236,7 +237,7 @@ export class PlayState implements State {
     for (const e of s.enemies) {
       updateBlue(e);
 
-      const target = findTarget(e, s.enemies, s.player, s.modeCurrent);
+      const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
       updateDirection(e, s.corners, target);
 
       if (!collideWithDistance(e, s.player, 1.0)) {

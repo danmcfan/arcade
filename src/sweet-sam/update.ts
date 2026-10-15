@@ -323,8 +323,9 @@ export function collideWithDistance(a: Entity, b: Entity, dist: number): boolean
   return Math.abs(a.x - b.x) <= dist && Math.abs(a.y - b.y) <= dist;
 }
 
-export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity, mode: Mode): Tile {
-  if (mode === modeScatter) {
+/** In Cruise Elroy (`elroy`), red chases the player during scatter too. */
+export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity, mode: Mode, elroy = false): Tile {
+  if (mode === modeScatter && !(elroy && e.kind === "red")) {
     return { ...e.target };
   }
 
