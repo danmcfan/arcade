@@ -9,8 +9,8 @@ import { $ } from "bun";
 //   implement (Opus) → review (Opus) → fix (Sonnet) → check, refixing up to 3 times → PR body (Sonnet)
 // then this script pushes the branch and opens the PR. It is a draft if the check is still red.
 const MAX_FIX_ROUNDS = 3;
-const OPUS = claudeCode("claude-opus-5-5");
-const SONNET = claudeCode("claude-sonnet-5-5");
+const OPUS = claudeCode("claude-opus-5-5", { effort: "low" });
+const SONNET = claudeCode("claude-sonnet-5-5", { effort: "low" });
 
 const issue =
   process.argv[2] ??
