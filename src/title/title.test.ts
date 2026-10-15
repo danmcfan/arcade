@@ -11,8 +11,8 @@ import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
-import { panelHints } from "../ui/menu.ts";
-import { backHints, confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
+import { standardControls } from "../ui/menu.ts";
+import { confirmLines, introLines, introPromptTop, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { Title } from "./title.ts";
 
@@ -279,7 +279,7 @@ describe("pause menu", () => {
     expect(t.phase).toBe("playing");
   });
 
-  test("Resume and Controls; Space or Esc leaves Controls", () => {
+  test("Resume and Controls; Esc leaves Controls, Space does not", () => {
     const t = playing();
     tap(t, "escape");
     tap(t, "space");
@@ -293,6 +293,8 @@ describe("pause menu", () => {
     tap(t, "space");
     expect(t.phase).toBe("controls");
     tap(t, "space");
+    expect(t.phase).toBe("controls");
+    tap(t, "escape");
     expect(t.snapshot()).toMatchObject({ phase: "paused", cursor: 1 });
   });
 
@@ -879,7 +881,6 @@ function recordingSurface(): {
 
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
-    const hints = [...menuHints, ...backHints, ...panelHints];
     const strings = [
       "CONTINUE",
       "NEW GAME",
@@ -889,15 +890,18 @@ describe("drawing", () => {
       "RESUME",
       "CONTROLS",
       "QUIT TO MENU",
-      ...introLines,
-      ...controls.map((c) => c.label),
-      ...hints.flatMap((h) => h.keys.concat(h.label)),
+      ...standardControls.map((c) => c.label),
       "GAMES WITHIN A GAME",
-      "PRESS SPACE TO START",
+      "INTERACT TO START",
     ];
     for (const s of strings) {
       expect({ s, ok: canDraw(s) }).toEqual({ s, ok: true });
       expect(textWidth(s)).toBeLessThanOrEqual(screenWidth - 8);
+    }
+    // How to Play's lines are the owner's exact copy; the widest leaves 2 px each side.
+    for (const s of introLines) {
+      expect({ s, ok: canDraw(s) }).toEqual({ s, ok: true });
+      expect(textWidth(s)).toBeLessThanOrEqual(screenWidth - 4);
     }
   });
 
@@ -913,20 +917,14 @@ describe("drawing", () => {
     expect(r.text("orange")).toBe("");
   });
 
-  test("the menu's choose and select hints are key caps, as in the controls table", () => {
+  test("the menu shows no key hints: controls live only in Controls and How to Play", () => {
     const t = new Title();
     const r = recordingSurface();
     t.draw(r.surface);
-    const keys = r.keys();
-    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
-    // One row, below everything else on the menu.
-    expect(new Set(keys.map((k) => k.y)).size).toBe(1);
-    expect(r.text("white")).toContain("CHOOSE");
-    expect(r.text("white")).toContain("OK");
-    expect(r.text()).not.toContain("↑↓ CHOOSE");
+    expect(r.keys()).toEqual([]);
   });
 
-  test("the New game check draws its warning, No and Yes, and key hints", () => {
+  test("the New game check draws its warning, No and Yes, and no key hints", () => {
     const t = new Title({
       store: memoryStore({
         v: 3,
@@ -941,9 +939,9 @@ describe("drawing", () => {
     tap(t, "space");
     const r = recordingSurface();
     t.draw(r.surface);
-    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓SPACECHOOSEOK`);
+    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES`);
     expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
-    expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
+    expect(r.keys()).toEqual([]);
   });
 
   test("with a save, the menu shows the saved high score (when there is one)", () => {
@@ -1007,13 +1005,39 @@ describe("drawing", () => {
     t.draw(r.surface);
     const all = r.text();
     expect(all).toContain("HOW TO PLAY");
-    expect(all).toContain("WALK UP TO A CABINET");
-    for (const c of controls) expect(all).toContain(c.label);
-    expect(all).toContain("↑←↓→WASD");
-    expect(r.text("yellow")).toContain("PRESS SPACE TO START");
-    hold(t, {}, 45);
+    expect(all).toContain(introLines.join(""));
+    for (const c of standardControls) expect(all).toContain(c.label);
+    expect(all).not.toContain("SPACE TO");
+    expect(r.keys().map((k) => k.label)).toEqual([
+      "↑",
+      "←",
+      "↓",
+      "→",
+      "WASD",
+      "E",
+      "SPACE",
+      "ENTER",
+      "Q",
+      "ESC",
+      "BACKSPACE",
+    ]);
+    expect(r.text("yellow")).toContain("INTERACT TO START");
+    hold(t, {}, 95);
     const off = recordingSurface();
     t.draw(off.surface);
-    expect(off.text("yellow")).not.toContain("PRESS SPACE TO START");
+    expect(off.text("yellow")).not.toContain("INTERACT TO START");
+  });
+
+  test("nothing on the intro runs off the screen or into the prompt", () => {
+    const t = new Title();
+    tap(t, "space");
+    const r = recordingSurface();
+    t.draw(r.surface);
+    for (const k of r.keys()) {
+      expect(k.x).toBeGreaterThanOrEqual(0);
+      expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
+      expect(k.y + keyHeight).toBeLessThan(introPromptTop); // above INTERACT TO START
+    }
+    for (const g of r.glyphs) expect(g.x).toBeLessThan(screenWidth);
   });
 });
