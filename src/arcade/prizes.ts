@@ -8,6 +8,7 @@
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
+import type { ArcadeTitle } from "../game/snapshot.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
 import { cabinetRects } from "./machine.ts";
 
@@ -33,10 +34,40 @@ export const oilCanPrice = 25;
 export const springBootsPrice = 50;
 export const pocketWatchPrice = 100;
 
-// Every prize hangs on the wall at an offset from its own cabinet, so it moves with it.
-const sweetCabinet = cabinetRects.sweet;
-const fireflyCabinet = cabinetRects.firefly;
-const brassCabinet = cabinetRects.brassMonkey;
+/** Every decoration's art is one box this many pixels square (src/ui/prizeArt.ts). */
+export const prizeBox = 16;
+
+/** Where a prize hangs around its cabinet. */
+type Spot = "left" | "above" | "right";
+
+/**
+ * How a cabinet's side prizes hang: an arch drops them level with the
+ * cabinet's top, a rainbow keeps them up by the prize above it.
+ */
+type Shape = "arch" | "rainbow";
+
+/** The middle cabinet's prizes make a rainbow, the outer cabinets' arches. */
+const shapes: Readonly<Record<ArcadeTitle, Shape>> = { brassMonkey: "arch", sweet: "rainbow", firefly: "arch" };
+
+/** Pixels between a side prize's box and its cabinet. */
+const sideGap = 4;
+/** Pixels between the box above a cabinet and the cabinet's top. */
+const aboveGap = 2;
+/** How far a rainbow's sides sit below the box above the cabinet. */
+const rainbowDrop = 2;
+
+/**
+ * The top-left of a prize's box at `spot` around `cabinet`, so it moves with
+ * the cabinet. Each gap between cabinets (24 px) holds the middle cabinet's
+ * rainbow side above its neighbour's arch side.
+ */
+function hang(cabinet: ArcadeTitle, spot: Spot): { x: number; y: number } {
+  const c = cabinetRects[cabinet];
+  const above = c.y - aboveGap - prizeBox;
+  if (spot === "above") return { x: c.x, y: above };
+  const x = spot === "left" ? c.x - sideGap - prizeBox : c.x + c.w + sideGap;
+  return { x, y: shapes[cabinet] === "arch" ? c.y : above + rainbowDrop };
+}
 
 export interface Prize {
   id: PrizeId;
@@ -60,11 +91,8 @@ function decoration(id: PrizeId): Sprite {
 
 /**
  * Every prize, in the order the prize counter menu lists them, each hung on
- * the wall around its cabinet (a cabinet's art is 16x24 from its rect's
- * top-left, `cabinetRects`). Sweet Sam: the picture above the cabinet, the
- * jar and the shoes either side of the picture. Brass Monkey: the oil can on a
- * shelf left of the cabinet, the spring boots and the pocket watch on pegs
- * above it. Firefly: see below.
+ * the wall around its cabinet (`hang`): the 100-ticket prize above it, the
+ * others either side.
  */
 export const prizes: readonly Prize[] = [
   {
@@ -73,8 +101,7 @@ export const prizes: readonly Prize[] = [
     price: honeyJarPrice,
     software: "sweetSam",
     sprite: decoration("honeyJar"),
-    x: sweetCabinet.x - 9,
-    y: sweetCabinet.y - 11,
+    ...hang("sweet", "left"),
   },
   {
     id: "runningShoes",
@@ -82,8 +109,7 @@ export const prizes: readonly Prize[] = [
     price: runningShoesPrice,
     software: "sweetSam",
     sprite: decoration("runningShoes"),
-    x: sweetCabinet.x + 17,
-    y: sweetCabinet.y - 9,
+    ...hang("sweet", "right"),
   },
   {
     id: "sleepyBees",
@@ -91,20 +117,15 @@ export const prizes: readonly Prize[] = [
     price: sleepyBeesPrice,
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
-    x: sweetCabinet.x + 2,
-    y: sweetCabinet.y - 12,
+    ...hang("sweet", "above"),
   },
-  // The wall runs 11 px above the Firefly cabinet's top to 13 px below it.
-  // The lantern hangs from its bracket right of the cabinet, the glow stick in
-  // the gap left of it, the wings above it.
   {
     id: "lantern",
     name: "LANTERN",
     price: lanternPrice,
     software: "firefly",
     sprite: decoration("lantern"),
-    x: fireflyCabinet.x + 17,
-    y: fireflyCabinet.y - 4,
+    ...hang("firefly", "right"),
   },
   {
     id: "glowStick",
@@ -112,8 +133,7 @@ export const prizes: readonly Prize[] = [
     price: glowStickPrice,
     software: "firefly",
     sprite: decoration("glowStick"),
-    x: fireflyCabinet.x - 4,
-    y: fireflyCabinet.y - 6,
+    ...hang("firefly", "left"),
   },
   {
     id: "wings",
@@ -121,8 +141,7 @@ export const prizes: readonly Prize[] = [
     price: wingsPrice,
     software: "firefly",
     sprite: decoration("wings"),
-    x: fireflyCabinet.x + 2,
-    y: fireflyCabinet.y - 9,
+    ...hang("firefly", "above"),
   },
   {
     id: "oilCan",
@@ -130,8 +149,7 @@ export const prizes: readonly Prize[] = [
     price: oilCanPrice,
     software: "brassMonkey",
     sprite: decoration("oilCan"),
-    x: brassCabinet.x - 13,
-    y: brassCabinet.y + 1,
+    ...hang("brassMonkey", "left"),
   },
   {
     id: "springBoots",
@@ -139,8 +157,7 @@ export const prizes: readonly Prize[] = [
     price: springBootsPrice,
     software: "brassMonkey",
     sprite: decoration("springBoots"),
-    x: brassCabinet.x,
-    y: brassCabinet.y - 13,
+    ...hang("brassMonkey", "above"),
   },
   {
     id: "pocketWatch",
@@ -148,8 +165,7 @@ export const prizes: readonly Prize[] = [
     price: pocketWatchPrice,
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
-    x: brassCabinet.x + 14,
-    y: brassCabinet.y - 12,
+    ...hang("brassMonkey", "right"),
   },
 ];
 

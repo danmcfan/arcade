@@ -8,11 +8,13 @@
 import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
 import { employeeSpot } from "../src/arcade/desk.ts";
+import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { paint, toPng } from "./pixel-art.ts";
+import { mirrorX, paint, toPng } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
+import { mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
@@ -46,7 +48,7 @@ const hubLoop = { off: 40, on: 80, after: 40 } as const;
  * switches on and off on the game's own timing (src/arcade/screen.ts), drawn
  * from screens.png's frames (`powerSheetRows`).
  */
-function hubFrames(): PNG[] {
+function hubFrames(decorate: (room: PNG) => void = () => {}): PNG[] {
   const cabinets = hubCabinets();
   const room = hubRoomRows();
   const sheet = powerSheetRows(cabinets);
@@ -66,9 +68,18 @@ function hubFrames(): PNG[] {
         .map((r) => r.slice(column * powerFrameWidth, (column + 1) * powerFrameWidth));
       paint(png, cell, sweetie, cabinet.rect.x - powerCabinetX, cabinet.rect.y);
     }
+    decorate(png);
     frames.push(withPlayer(png, tick));
   }
   return frames;
+}
+
+/** Every prize's decoration on the wall where it hangs, as if the player owned them all. */
+function paintPrizes(room: PNG): void {
+  for (const p of prizes) {
+    const rows = prizeArt[p.id];
+    paint(room, mirroredPrizes.has(p.id) ? mirrorX(rows) : rows, sweetie, p.x, p.y);
+  }
 }
 
 export const scenes: readonly Scene[] = [
@@ -81,8 +92,9 @@ export const scenes: readonly Scene[] = [
       "src/ui/employeeArt.ts",
       "src/ui/playerArt.ts",
     ],
-    render: hubFrames,
+    render: () => hubFrames(),
   },
+  { name: "hub with every prize", sources: ["src/ui/prizeArt.ts"], render: () => hubFrames(paintPrizes) },
 ];
 
 /** The scene that shows `file`'s art; throws naming this file when none does. */
