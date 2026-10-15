@@ -13,7 +13,7 @@ import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
 import { standardControls } from "../ui/menu.ts";
-import { confirmLines, introLines, introPromptTop, screenWidth } from "./draw.ts";
+import { confirmLines, introLines, introPromptTop, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { Title } from "./title.ts";
 
@@ -888,6 +888,18 @@ function recordingSurface(): {
   return { surface, sprites, glyphs, text, over, keys };
 }
 
+const withSave = (): Title =>
+  new Title({
+    store: memoryStore({
+      v: 4,
+      highScores: noHighScores,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 80, y: 92, dir: "UP" },
+    }),
+  });
+
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
     const strings = [
@@ -926,48 +938,41 @@ describe("drawing", () => {
     expect(r.text("orange")).toBe("");
   });
 
-  test("the menu shows no key hints: controls live only in Controls and How to Play", () => {
-    const t = new Title();
-    const r = recordingSurface();
-    t.draw(r.surface);
-    expect(r.keys()).toEqual([]);
+  test("the title menu, its New game check and the hub pause menu draw no key hints", () => {
+    const menu = recordingSurface();
+    new Title().draw(menu.surface);
+    expect(menu.keys()).toEqual([]);
+
+    const confirm = withSave();
+    tap(confirm, "down");
+    tap(confirm, "space");
+    const c = recordingSurface();
+    confirm.draw(c.surface);
+    expect(c.over()).toBe(`${confirmLines.join("")}>NO<YES`);
+    expect(c.over("yellow")).toBe("START A NEW GAME?>NO<");
+    expect(c.keys()).toEqual([]);
+
+    const paused = withSave();
+    tap(paused, "space");
+    tap(paused, "escape");
+    expect(paused.phase).toBe("paused");
+    const p = recordingSurface();
+    paused.draw(p.surface);
+    expect(p.keys()).toEqual([]);
   });
 
-  test("the New game check draws its warning, No and Yes, and no key hints", () => {
-    const t = new Title({
-      store: memoryStore({
-        v: 4,
-        highScores: noHighScores,
-        tokens: 5,
-        tickets: 0,
-        prizes: [],
-        player: { x: 80, y: 92, dir: "UP" },
-      }),
-    });
-    tap(t, "down");
-    tap(t, "space");
-    const r = recordingSurface();
-    t.draw(r.surface);
-    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES`);
-    expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
-    expect(r.keys()).toEqual([]);
+  test("the logo, tagline and menu sit centred on the screen, with or without Continue", () => {
+    for (const t of [new Title(), withSave()]) {
+      const r = recordingSurface();
+      t.draw(r.surface);
+      const top = Math.min(...r.sprites.map(([, , y]) => y));
+      const bottom = Math.max(...r.glyphs.map((g) => g.y)) + 7;
+      // The logo bobs a pixel either way, so allow 2 px of slack.
+      expect(Math.abs(top - (screenHeight - bottom))).toBeLessThanOrEqual(2);
+    }
   });
 
-  test("with a save, the menu shows the saved high score (when there is one)", () => {
-    const zero = new Title({
-      store: memoryStore({
-        v: 4,
-        highScores: noHighScores,
-        tokens: 5,
-        tickets: 0,
-        prizes: [],
-        player: { x: 80, y: 92, dir: "UP" },
-      }),
-    });
-    const r0 = recordingSurface();
-    zero.draw(r0.surface);
-    expect(r0.text("orange")).toBe("");
-
+  test("with a save that holds a high score, the menu does not show it", () => {
     const t = new Title({
       store: memoryStore({
         v: 4,
@@ -981,7 +986,8 @@ describe("drawing", () => {
     const r = recordingSurface();
     t.draw(r.surface);
     expect(r.text("yellow")).toBe(">CONTINUE<");
-    expect(r.text("orange")).toBe("HIGH SCORE 120");
+    expect(r.text()).not.toContain("HIGH SCORE");
+    expect(r.text()).not.toContain("120");
   });
 
   test("the selection arrows move in and out", () => {

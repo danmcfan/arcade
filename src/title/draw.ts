@@ -14,7 +14,7 @@ import {
   drawControlsPanel,
   standardControls,
 } from "../ui/menu.ts";
-import { drawPanel, drawTextCentered } from "../ui/text.ts";
+import { drawPanel, drawTextCentered, textHeight } from "../ui/text.ts";
 import { backLights, logoOverlay } from "./logo.ts";
 import type { Title } from "./title.ts";
 
@@ -70,14 +70,26 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
   for (const p of logoOverlay(tick)) screen.fillRect(left + p.x, top + p.y, 1, 1, p.colour);
 }
 
-/** The logo, the tagline, the title menu with `cursor` selected and the saved high score. */
+/** Pixels from the logo to the tagline, and from the tagline to the menu. */
+const taglineGap = 8;
+const menuGap = 16;
+/** Pixels from one menu item's top to the next (drawMenuItems). */
+const menuRow = 12;
+
+/**
+ * The logo, the tagline and the title menu with `cursor` selected, as one
+ * block centred on the screen both ways.
+ */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
-  drawLogo(screen, centre - Math.trunc(imageTitleLogo.w / 2), 2, t.tick);
-  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 80, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 98, t.tick, centre);
-  const highScore = t.savedHighScore;
-  if (highScore !== null && highScore !== 0) drawTextCentered(screen, `HIGH SCORE ${highScore}`, centre, 130, "orange");
+  const items = t.menuItems();
+  const menuHeight = (items.length - 1) * menuRow + textHeight;
+  const height = imageTitleLogo.h + taglineGap + textHeight + menuGap + menuHeight;
+  const top = Math.trunc((screenHeight - height) / 2);
+  const tagline = top + imageTitleLogo.h + taglineGap;
+  drawLogo(screen, centre - Math.trunc(imageTitleLogo.w / 2), top, t.tick);
+  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, tagline, "blue");
+  drawMenuItems(screen, items, cursor, tagline + textHeight + menuGap, t.tick, centre);
 }
 
 function drawMenu(screen: Surface, t: Title): void {
@@ -91,7 +103,7 @@ function drawConfirm(screen: Surface, t: Title): void {
   const w = 152;
   const h = 76;
   const x = centre - w / 2;
-  const y = 40;
+  const y = (screenHeight - h) / 2;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
