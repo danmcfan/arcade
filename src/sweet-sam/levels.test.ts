@@ -42,7 +42,6 @@ describe("levelValues", () => {
       });
       expect(cur.dotMinimums.teal).toBeLessThanOrEqual(prev.dotMinimums.teal);
       expect(cur.dotMinimums.orange).toBeLessThanOrEqual(prev.dotMinimums.orange);
-      expect(cur.flowerPoints).toBeGreaterThan(prev.flowerPoints);
     }
     expect(levelValues(2).beeVelocity).toBeGreaterThan(levelValues(1).beeVelocity);
   });

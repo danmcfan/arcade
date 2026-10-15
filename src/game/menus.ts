@@ -3,27 +3,39 @@
 // (a shelf of prizes, then BUY TOKEN and CLOSE) over the hub. (The title scene's menus are in
 // src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
-import { prizes, type Prize, type PrizeId } from "../arcade/prizes.ts";
-import { ticketsPerToken, type TokenOffer } from "../arcade/wallet.ts";
+import { prizes, type Prize } from "../arcade/prizes.ts";
+import { ticketsPerToken, type TokenOffer, type Wallet } from "../arcade/wallet.ts";
+import type { MenuItem } from "./menu.ts";
 import { minigames } from "./minigames.ts";
 import type { SoftwareName } from "./software.ts";
 
-export const minigamePauseMenu = ["RESUME", "CONTROLS", "QUIT GAME"] as const;
-/** Index of QUIT GAME in `minigamePauseMenu`. */
-export const quitGameIndex = 2;
-/** Index of CONTROLS in `minigamePauseMenu`. */
-export const controlsIndex = 1;
 /** Drawn beside QUIT GAME: quitting pays nothing for the run. */
 export const quitGameNote = "NO TICKETS";
 
-/** The prize counter's token item for each offer, its label and price; "short" is the normal price, greyed out. */
-export const tokenItems: Readonly<Record<TokenOffer, { label: string; value: string }>> = {
-  token: { label: "BUY TOKEN", value: `${ticketsPerToken}` },
-  lastChance: { label: "LAST CHANCE", value: "ALL" },
-  short: { label: "BUY TOKEN", value: `${ticketsPerToken}` },
+/** The token item for each offer: its label, price and what it does; "short" is the normal price, greyed out. */
+const tokenItems: Readonly<Record<TokenOffer, { label: string; value: string; note: string }>> = {
+  token: { label: "BUY TOKEN", value: `${ticketsPerToken}`, note: "ONE PLAY ON A CABINET" },
+  lastChance: { label: "LAST CHANCE", value: "ALL", note: "ALL TICKETS FOR 1 TOKEN" },
+  short: { label: "BUY TOKEN", value: `${ticketsPerToken}`, note: "ONE PLAY ON A CABINET" },
 };
 
 export const closeItem = "CLOSE";
+
+/** What the Game does for the minigame pause menu's items. */
+export interface MinigamePauseActions {
+  resume: () => void;
+  controls: () => void;
+  quit: () => void;
+}
+
+/** The minigame pause menu: Resume, Controls, and Quit game (with NO TICKETS beside it). */
+export function minigamePauseItems(a: MinigamePauseActions): MenuItem[] {
+  return [
+    { label: "RESUME", enabled: true, choose: a.resume },
+    { label: "CONTROLS", enabled: true, choose: a.controls },
+    { label: "QUIT GAME", note: quitGameNote, enabled: true, choose: a.quit },
+  ];
+}
 
 /** The cabinets left to right as the hub shows them: the prize shelf's columns. */
 export const shelfColumns: readonly SoftwareName[] = minigames
@@ -34,8 +46,9 @@ export const shelfRows = 3;
 
 /**
  * The prize shelf, row by row: each column is one cabinet's prizes in
- * reverse catalogue order (the dearest at the top, the cheapest at the bottom). Cursor `row * columns + column`
- * selects a prize; the row below holds BUY TOKEN then CLOSE.
+ * reverse catalogue order (the dearest at the top, the cheapest at the
+ * bottom). Cursor `row * columns + column` selects a prize; the row below
+ * holds BUY TOKEN then CLOSE.
  */
 export const shelf: readonly Prize[] = Array.from({ length: shelfRows * shelfColumns.length }, (_, i) => {
   const software = shelfColumns[i % shelfColumns.length];
@@ -43,34 +56,11 @@ export const shelf: readonly Prize[] = Array.from({ length: shelfRows * shelfCol
   if (found === undefined) throw new Error(`prize shelf: no prize at cell ${i}`);
   return found;
 });
-/** Where cursor `i` sits on the shelf: its row and column, and the prize there. */
-export function shelfCell(i: number): { row: number; col: number; prize: Prize } {
-  const prize = shelf[i];
-  if (prize === undefined) throw new Error(`prize shelf: no cell ${i}`);
-  return { row: Math.trunc(i / shelfColumns.length), col: i % shelfColumns.length, prize };
-}
 
 /** The cursor on BUY TOKEN, where the prize counter opens. */
 export const tokenCursor = shelf.length;
 /** The cursor on CLOSE. */
 export const closeCursor = shelf.length + 1;
-
-/** What the prize counter cursor is on. */
-export type CounterSlot = { prize: Prize } | "token" | "close";
-
-export function counterSlot(cursor: number): CounterSlot {
-  if (cursor === tokenCursor) return "token";
-  if (cursor === closeCursor) return "close";
-  const prize = shelf[cursor];
-  if (prize === undefined) throw new Error(`prize counter: no item at cursor ${cursor}`);
-  return { prize };
-}
-
-/** What SPACE buys on `slot`; null on CLOSE. */
-export function counterBuyId(slot: CounterSlot): "token" | PrizeId | null {
-  if (slot === "close") return null;
-  return slot === "token" ? "token" : slot.prize.id;
-}
 
 /**
  * Where the prize counter cursor goes from `cursor` (dx, dy: -1, 0 or 1).
@@ -93,4 +83,36 @@ export function moveCounterCursor(cursor: number, dx: number, dy: number): numbe
   const next = (row + dy + shelfRows + 1) % (shelfRows + 1);
   if (next < shelfRows) return next * cols + col;
   return col === cols - 1 ? closeCursor : tokenCursor;
+}
+
+/**
+ * The prize counter menu, in cursor order: the shelf's prizes (each with its
+ * price or OWNED, and what it does as its note), then BUY TOKEN and CLOSE.
+ * Each item asks the Wallet whether it can be bought, and choosing it buys
+ * it; an owned prize is inert, so Space on it does nothing.
+ */
+export function prizeCounterItems(wallet: Wallet, close: () => void): MenuItem[] {
+  return [
+    ...shelf.map((p) => {
+      const owned = wallet.owns(p.id);
+      return {
+        label: p.name,
+        value: owned ? "OWNED" : `${p.price}`,
+        note: p.effect,
+        enabled: wallet.canBuy(p.id),
+        inert: owned,
+        choose: (): void => {
+          wallet.buy(p.id);
+        },
+      };
+    }),
+    {
+      ...tokenItems[wallet.counter().token],
+      enabled: wallet.canBuy("token"),
+      choose: (): void => {
+        wallet.buy("token");
+      },
+    },
+    { label: closeItem, value: "", note: "BACK TO THE ARCADE", enabled: true, choose: close },
+  ];
 }

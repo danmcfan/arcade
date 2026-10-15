@@ -4,8 +4,6 @@
 // centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
-import { prizes } from "../arcade/prizes.ts";
-import { type PrizeOffer, type TokenOffer, type Wallet } from "../arcade/wallet.ts";
 import type { Surface } from "../engine/surface.ts";
 import {
   controlsPanelHeight,
@@ -16,26 +14,14 @@ import {
   arrowOffset,
   drawPausePanel,
   pausePanelHeight,
+  pauseNote,
   type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth, type Ink } from "../ui/text.ts";
-import {
-  closeCursor,
-  closeItem,
-  counterSlot,
-  minigamePauseMenu,
-  quitGameIndex,
-  quitGameNote,
-  shelf,
-  shelfCell,
-  shelfColumns,
-  shelfRows,
-  tokenCursor,
-  tokenItems,
-  type CounterSlot,
-} from "./menus.ts";
+import type { Menu, MenuItem } from "./menu.ts";
+import { closeCursor, shelf, shelfColumns, shelfRows, tokenCursor } from "./menus.ts";
 import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
@@ -45,10 +31,9 @@ export interface MenuOverlay {
   menu: GameMenu;
   /** The minigame under the menu; null over the hub. */
   software: SoftwareName | null;
-  cursor: number;
+  /** The pause or prize counter menu; null for the payout. */
+  list: Menu | null;
   payout: Payout | null;
-  /** The player's wallet, for the prize counter menu. */
-  wallet: Wallet;
   tick: number;
   /** The part of the layout the minigame paints: dimmed, with the panel centred on it. */
   playfield: { x: number; y: number; w: number; h: number };
@@ -68,13 +53,20 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const centre = x + Math.trunc(w / 2);
   const middle = y + Math.trunc(h / 2);
   switch (o.menu) {
-    case "paused":
-      drawPausePanel(screen, minigamePauseMenu, o.cursor, o.tick, centre, middle - pausePanelHeight / 2, {
-        item: quitGameIndex,
-        text: quitGameNote,
-        ink: "orange",
-      });
+    case "paused": {
+      if (o.list === null) return;
+      const items = o.list.items();
+      drawPausePanel(
+        screen,
+        items.map((i) => i.label),
+        o.list.cursor,
+        o.tick,
+        centre,
+        middle - Math.trunc(pausePanelHeight(items.length) / 2),
+        pauseNote(items),
+      );
       return;
+    }
     case "controls": {
       if (o.software === null) return;
       const rows = minigame(o.software).controls;
@@ -90,7 +82,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       if (o.payout !== null) drawPayout(screen, o.payout, centre, middle - payoutHeight / 2);
       return;
     case "prizeCounter":
-      drawPrizeCounter(screen, o.wallet, o.cursor, o.tick, o.playfield);
+      if (o.list !== null) drawPrizeCounter(screen, o.list, o.tick, o.playfield);
   }
 }
 
@@ -99,23 +91,6 @@ const pictureHeight = 12;
 /** A prize card: its picture over its price, inside a 1 px border. */
 const cardWidth = 42;
 const cardHeight = 2 + pictureHeight + 1 + textHeight + 2;
-
-/** What each token offer does, for the info panel. */
-const tokenEffects: Readonly<Record<TokenOffer, string>> = {
-  token: "ONE PLAY ON A CABINET",
-  lastChance: "ALL TICKETS FOR 1 TOKEN",
-  short: "ONE PLAY ON A CABINET",
-};
-
-/** The info panel's lines for what the cursor is on: a name, a price, what it does. */
-function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; price: string; effect: string } {
-  if (slot === "close") return { name: closeItem, price: "", effect: "BACK TO THE ARCADE" };
-  if (slot === "token") {
-    const { label, value } = tokenItems[token];
-    return { name: label, price: value, effect: tokenEffects[token] };
-  }
-  return { name: slot.prize.name, price: `${slot.prize.price}`, effect: slot.prize.effect };
-}
 
 /**
  * The prize counter panel, filling `area` but for a 1-2 px border: the prize
@@ -127,11 +102,17 @@ function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; pric
  */
 function drawPrizeCounter(
   screen: Surface,
-  w: Wallet,
-  cursor: number,
+  menu: Menu,
   tick: number,
   area: { x: number; y: number; w: number; h: number },
 ): void {
+  const { cursor } = menu;
+  const items = menu.items();
+  const item = (i: number): MenuItem => {
+    const found = items[i];
+    if (found === undefined) throw new Error(`prize counter: no item at ${i}`);
+    return found;
+  };
   const x = area.x + 2;
   const y = area.y + 1;
   const width = area.w - 4;
@@ -144,16 +125,17 @@ function drawPrizeCounter(
   const gap = Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight) / 6);
   const top = y + 3 + Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight - 6 * gap) / 2) + gap;
 
-  const offers = w.counter();
   const cols = shelfColumns.length;
   const colGap = Math.trunc((width - 6 - cols * cardWidth) / (cols + 1));
   const left = x + 3 + Math.trunc((width - 6 - cols * cardWidth - (cols + 1) * colGap) / 2) + colGap;
   for (let i = 0; i < shelf.length; i++) {
-    const { row, col, prize: p } = shelfCell(i);
+    const p = shelf[i];
+    if (p === undefined) throw new Error(`prize shelf: no cell ${i}`);
+    const [row, col] = [Math.trunc(i / cols), i % cols];
+    const it = item(i);
+    const offer = cardOffer(it);
     const cx = left + col * (cardWidth + colGap);
     const cy = top + row * (cardHeight + gap);
-    const offer = offers.prizes[prizes.indexOf(p)];
-    if (offer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
     const look = cardLooks[offer];
     const selected = i === cursor;
     screen.fillRect(cx, cy, cardWidth, cardHeight, selected ? look.border : look.edge);
@@ -161,30 +143,38 @@ function drawPrizeCounter(
     const centre = cx + cardWidth / 2;
     const picture = offer === "owned" ? p.greySprite : p.sprite;
     screen.draw(picture, centre - Math.trunc(picture.w / 2), cy + 2 + pictureHeight - picture.h);
-    const label = offer === "owned" ? "OWNED" : `${p.price}`;
-    drawTextCentered(screen, label, centre, cy + 2 + pictureHeight + 1, look.ink);
+    drawTextCentered(screen, it.value ?? "", centre, cy + 2 + pictureHeight + 1, look.ink);
   }
 
   const rowY = top + shelfRows * cardHeight + (shelfRows - 1) * gap + gap;
-  const token = tokenItems[offers.token];
-  const tokenGrey = offers.token === "short";
+  const token = item(tokenCursor);
+  const tokenGrey = !token.enabled;
   const tokenCentre = left + cardWidth + colGap / 2;
   const closeCentre = left + (cols - 1) * (cardWidth + colGap) + cardWidth / 2;
   drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
-  drawRowItem(screen, closeItem, closeCentre, rowY, cursor === closeCursor, false, tick);
+  drawRowItem(screen, item(closeCursor).label, closeCentre, rowY, cursor === closeCursor, false, tick);
 
   const infoTop = rowY + textHeight + gap;
-  const info = counterInfo(counterSlot(cursor), offers.token);
-  drawText(screen, info.name, x + 7, infoTop, "white");
-  drawText(screen, info.price, x + width - 7 - textWidth(info.price), infoTop, "white");
-  drawText(screen, info.effect, x + 7, infoTop + textHeight + 2, "white");
+  const info = item(cursor);
+  const price = info.value ?? "";
+  drawText(screen, info.label, x + 7, infoTop, "white");
+  drawText(screen, price, x + width - 7 - textWidth(price), infoTop, "white");
+  drawText(screen, info.note ?? "", x + 7, infoTop + textHeight + 2, "white");
+}
+
+/** How a prize card looks: owned (inert), too dear (disabled), or for sale. */
+type CardOffer = "buy" | "short" | "owned";
+
+function cardOffer(i: MenuItem): CardOffer {
+  if (i.inert === true) return "owned";
+  return i.enabled ? "buy" : "short";
 }
 
 /**
  * A prize card's colours by offer: its edge and fill, and the yellow-edged,
  * brighter fill it takes when selected; and its price's ink.
  */
-const cardLooks: Readonly<Record<PrizeOffer, { edge: string; fill: string; border: string; lit: string; ink: Ink }>> = {
+const cardLooks: Readonly<Record<CardOffer, { edge: string; fill: string; border: string; lit: string; ink: Ink }>> = {
   buy: { edge: sweetie.m, fill: sweetie.n, border: sweetie.y, lit: sweetie.b, ink: "yellow" },
   short: { edge: sweetie.r, fill: sweetie.p, border: sweetie.y, lit: sweetie.r, ink: "white" },
   owned: { edge: sweetie.m, fill: sweetie.d, border: sweetie.y, lit: sweetie.m, ink: "blue" },

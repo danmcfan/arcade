@@ -6,7 +6,7 @@ import { SweetSamSoftware } from "./software.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
-import { flowerDrops, flowerTicks, flowerX, flowerY } from "./flower.ts";
+import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { deathRoundDelayTicks } from "./update.ts";
 import type { Entity } from "./entity.ts";
@@ -381,19 +381,23 @@ describe("bonus flower", () => {
     eatUpTo(s, flowerDrops[0] - 1);
     expect(s.snapshot().flower).toEqual({ ticks: 0, shown: 0 });
     eatUpTo(s, flowerDrops[0]);
-    expect(s.snapshot().flower).toEqual({ ticks: flowerTicks, shown: 1 });
-    expect(flowerTicks).toBe(600);
+    const first = s.snapshot().flower;
+    expect(first.shown).toBe(1);
+    expect(first.ticks).toBeGreaterThanOrEqual(flowerStayMin);
+    expect(first.ticks).toBeLessThanOrEqual(flowerStayMax);
+    expect([flowerStayMin, flowerStayMax]).toEqual([540, 600]);
     expect([flowerX, flowerY]).toEqual([112, 164]);
     s.flowerTicks = 0;
     eatUpTo(s, flowerDrops[1]);
-    expect(s.snapshot().flower).toEqual({ ticks: flowerTicks, shown: 2 });
+    expect(s.snapshot().flower.shown).toBe(2);
+    expect(s.snapshot().flower.ticks).toBeGreaterThanOrEqual(flowerStayMin);
   });
 
   test("leaves after its time when the bear doesn't eat it", () => {
     const s = playing();
     eatUpTo(s, flowerDrops[0]);
     for (const e of s.enemies) e.dotMinimum = 1_000; // keep the bees home
-    step(s, flowerTicks - 1);
+    step(s, s.flowerTicks - 1);
     expect(s.snapshot().flower.ticks).toBe(1);
     step(s);
     expect(s.snapshot().flower).toEqual({ ticks: 0, shown: 1 });
@@ -407,9 +411,9 @@ describe("bonus flower", () => {
     bearOnFlower(s);
     step(s);
     const snap = s.snapshot();
-    expect(snap.score - before).toBe(levelValues(1).flowerPoints);
+    expect(snap.score - before).toBe(flowerPoints(1));
     expect(snap.flower).toEqual({ ticks: 0, shown: 1 });
-    expect(snap.flowerPopup).toEqual({ points: levelValues(1).flowerPoints, ticks: flowerPopupTicks - 1 });
+    expect(snap.flowerPopup).toEqual({ points: flowerPoints(1), ticks: flowerPopupTicks - 1 });
     expect(sounds).toEqual(["rewind:sweetFlower", "play:sweetFlower"]);
   });
 
@@ -420,8 +424,8 @@ describe("bonus flower", () => {
     const before = s.scoreValue;
     bearOnFlower(s);
     step(s);
-    expect(s.scoreValue - before).toBe(levelValues(3).flowerPoints);
-    expect(levelValues(3).flowerPoints).toBeGreaterThan(levelValues(1).flowerPoints);
+    expect(s.scoreValue - before).toBe(flowerPoints(3));
+    expect(flowerPoints(3)).toBeGreaterThan(flowerPoints(1));
   });
 
   test("a lost life takes the flower away", () => {

@@ -186,14 +186,19 @@ describe("SweetSamSoftware.draw", () => {
     expect(Math.abs(left + right - 2 * (112 + 8))).toBeLessThanOrEqual(1);
   });
 
-  test("each level has its own flower; the last holds from level 5 on", () => {
+  test("each level shows its flower kind (Pac-Man's fruit table); the last holds from level 13 on", () => {
     const s = new SweetSamSoftware(0);
     s.flowerTicks = 100;
     for (const [level, frame] of [
       [1, 0],
       [2, 1],
-      [5, 4],
-      [9, 4],
+      [4, 2],
+      [5, 3],
+      [8, 4],
+      [9, 5],
+      [12, 6],
+      [13, 7],
+      [40, 7],
     ] as const) {
       s.level = level;
       expect(flowerFrames(render(s)).at(-1)).toBe(frame);
@@ -208,7 +213,7 @@ describe("SweetSamSoftware.draw", () => {
     expect(ops.map((o) => o[6])).toEqual([160 + 8, 176 + 8, 192 + 8]);
     s.level = 12;
     ops = render(s).filter((o) => name(o) === "draw:flower.png");
-    expect(flowerFrames(ops)).toEqual([4, 4, 4, 4, 4, 4, 4]);
+    expect(flowerFrames(ops)).toEqual([3, 4, 4, 5, 5, 6, 6]);
     expect(ops.at(-1)?.[6]).toBe(192 + 8);
   });
 

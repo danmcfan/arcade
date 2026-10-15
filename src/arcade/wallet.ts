@@ -129,6 +129,11 @@ export class Wallet {
     return { token: this.tokenOffer(), prizes: prizes.map((p) => this.prizeOffer(p.id)) };
   }
 
+  /** Whether `buy(item)` would succeed: the prize counter greys out the rest. */
+  canBuy(item: "token" | PrizeId): boolean {
+    return item === "token" ? this.tokenOffer() !== "short" : this.prizeOffer(item) === "buy";
+  }
+
   /** Buy a token or a prize at the counter; false when it can't be bought. */
   buy(item: "token" | PrizeId): boolean {
     if (item === "token") {

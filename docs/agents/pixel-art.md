@@ -6,10 +6,10 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 Every art change, new or redrawn, starts with the owner, before any PR. Ask which of two modes they want:
 
-- **Prototype**: a few options for an asset, each built from the art the issue names to start from: its references, or the existing art. Put them in a variants file (`bun run pixel` has the format) under `out/studio/variants/`, run `bun run pixel preview <file>` and publish the page with the Artifact tool. That link is how the owner sees prototypes.
+- **Prototype**: a few options for an asset, each built from the art the issue names to start from: its references, or the existing art. Put them in a variants file (`bun run pixel` has the format) under `out/pixel/variants/`, run `bun run pixel preview <file>` and publish the page with the Artifact tool. That link is how the owner sees prototypes.
 - **Tweak**: small changes to an existing asset. Edit its rows in place, show the result with `bun run pixel before`, and adjust from the owner's notes.
 
-Start the studio only when the owner asks for it: run `bun run studio` and give them the URL, with `?spec=path.ts:name` for the first export. It opens any rows export, lists the variants beside it, and draws with the Sweetie 16 palette, frames, onion skin and an animated preview. Saving writes the rows into the export's array literal, formats the file and runs `bun run art`; read the save back with `git diff`.
+The owner edits art in Aseprite. `bun run pixel export <path.ts:name>...` writes one PNG sheet to `out/aseprite/`: a row per export, its frames left to right. A record such as `src/sweet-sam/art.ts:bearWalk` is a row per entry, so a character's animations go on one sheet. It prints each row's frame count and size, for Aseprite's Import Sprite Sheet. The owner edits the sheet and saves it as a PNG of the same size. `bun run pixel import <png> <path.ts:name>...`, with the same exports in the same order, writes the rows back and runs `bun run art`; read the change with `git diff` and `bun run pixel before`. Only exports written out as rows can be imported: a derived export, such as `mirrorX(...)`, is edited at the rows it comes from.
 
 The owner's picks are the brief either way: finish the change around them, and name them in the PR.
 
@@ -43,12 +43,11 @@ Give each sprite its own export, so a change is an `Edit` of a short block of ro
 
 Check art as text first: `bun run pixel rows` and `checkRows` catch size, letters and stray colours without an image. Read a PNG only to judge the look, once per change; every image you read is paid for again on each later call. `bun run pixel` writes a small labelled sheet to `out/pixel/` and prints its path; pass `--scale` only when you need it bigger.
 
-`show` while drawing, `place` to judge a sprite where it stands, `preview` for the owner, `before` for the PR, `rows` and `colours` to import art or find a stray colour. Run `bun run pixel` alone for the usage.
+Run `bun run pixel` alone for its commands.
 
 In the running game, the verify check shows the art (`docs/agents/visual-verification.md`). `pixel` is for the drawing loop before that.
 
 ## The bar
 
 - **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the verify check's screenshots, so the owner judges the change at a glance.
-- **The owner's picks.** The art matches what the owner picked (Work it out with the owner), and nothing more.
 - **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the prototypes should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.

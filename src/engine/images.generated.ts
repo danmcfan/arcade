@@ -99,5 +99,5 @@ export const sweetSamImages = {
   digits: imageAsset(sweetSamDigitsUrl, 80, 8),
   points: imageAsset(sweetSamPointsUrl, 64, 16),
   mazeFlash: imageAsset(sweetSamMazeFlashUrl, 224, 288),
-  flower: imageAsset(sweetSamFlowerUrl, 80, 16),
+  flower: imageAsset(sweetSamFlowerUrl, 128, 16),
 } as const;

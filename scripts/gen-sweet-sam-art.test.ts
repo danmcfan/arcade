@@ -38,7 +38,7 @@ import {
   tunnelRowY,
   type Entity,
 } from "../src/sweet-sam/entity.ts";
-import { levelCap } from "../src/sweet-sam/levels.ts";
+import { flowerKinds } from "../src/sweet-sam/flower.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, flipX } from "./pixel-art.ts";
 import {
@@ -103,8 +103,8 @@ describe("Sweet Sam art source", () => {
     expect(beeFrames("teal").map((r) => r.length)).toEqual([4, 4, 4, 4, 4, 4]);
   });
 
-  test("one 16×16 bonus flower per level up to levelCap", () => {
-    expect(flowers.length).toBe(levelCap);
+  test("one 16×16 bonus flower per flower kind", () => {
+    expect(flowers.length).toBe(flowerKinds);
     flowers.forEach((f, i) => {
       checkRows(`flower ${i + 1}`, f, { w: 16, h: 16 });
       // Drawn on the frame's bottom row: the flower stands on the corridor's wall, and the counter's on the screen's edge.
