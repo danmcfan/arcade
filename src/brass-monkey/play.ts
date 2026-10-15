@@ -113,6 +113,8 @@ export class Run {
   floor: number;
   /** How many times the monkey has escaped: each loop is harder. */
   loop: number;
+  /** Ticks left showing the new lap's number over its first floor. */
+  lapBanner = 0;
   lives: number;
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
   readonly advantages: Readonly<BrassMonkeyAdvantages>;
@@ -182,6 +184,7 @@ export class Run {
     this.ticks++;
     const jumpPressed = i.space && !this.prevSpace;
     this.prevSpace = i.space;
+    if (this.lapBanner > 0) this.lapBanner--;
     switch (this.phase) {
       case "play":
         this.play(i, jumpPressed);
@@ -207,6 +210,7 @@ export class Run {
         this.loop++;
         this.floor = 0;
         this.startFloor();
+        this.lapBanner = t.lapBannerTicks;
         break;
       case "over":
         break;

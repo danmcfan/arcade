@@ -31,7 +31,7 @@ import {
   drawOnScreen,
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawText, drawTextCentered } from "../ui/text.ts";
+import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
@@ -101,6 +101,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     const run = this.run;
     if (run.phase === "escape") {
       drawEscape(screen, left, top, escapeTicks - run.phaseTicks);
+      drawTextCentered(screen, lapLabel(run.loop + 1), left + cabinetPlayfieldWidth / 2, top + 84, "dark");
       return;
     }
     const floor = run.currentFloor();
@@ -117,6 +118,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     // The monkey blinks while it loses a life.
     if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
     for (let n = 0; n < run.lives; n++) screen.draw(frame(imageMonkey, 0, 16, 16), left + 4 + n * 14, top + 2);
+    if (run.lapBanner > 0) drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "over") drawTextCentered(screen, "GAME OVER", left + cabinetPlayfieldWidth / 2, top + 20);
   }
@@ -130,6 +132,10 @@ export class BrassMonkeySoftware implements FixedViewport {
     drawTextCentered(screen, digits(this.highScore, 6), left + w / 2, top + 17);
     drawText(screen, "BONUS", left + w - 38, top + 6, "orange");
     drawText(screen, digits(this.run.bonus, 4), left + w - 38, top + 17, "yellow");
+    // Under the HUD band, across from the lives.
+    const lap = lapLabel(this.run.loop);
+    if (this.run.phase !== "escape")
+      drawText(screen, lap, left + w - 4 - textWidth(lap), top + hudHeight + 6, "orange");
   }
 
   gameOver(): boolean {
@@ -165,6 +171,11 @@ export class BrassMonkeySoftware implements FixedViewport {
       emberTimer: run.emberTimer,
     };
   }
+}
+
+/** The lap as the player counts it, from 1: `run.loop` counts escapes. */
+function lapLabel(loop: number): string {
+  return `LOOP ${loop + 1}`;
 }
 
 export function newBrassMonkeySoftware(

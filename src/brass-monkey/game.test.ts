@@ -3,6 +3,7 @@ import {
   imageCabinetBrassMonkey,
   imageConveyorFloor,
   imageGirderFloor,
+  imageFont,
   imageGnome,
   imageMonkey,
   imageWall,
@@ -20,6 +21,7 @@ import { isFixedViewport } from "../game/software.ts";
 import { BrassMonkeySoftware } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
+import { bandRows, cell, charset, sheetColumns } from "../ui/glyphs.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
 
@@ -52,6 +54,24 @@ function record(g: BrassMonkeySoftware): { calls: DrawCall[]; fills: number } {
     0,
   );
   return { calls, fills };
+}
+
+/** The words drawn in the font, read back from the glyphs: one per run of glyphs on a line. */
+function words(g: BrassMonkeySoftware): string[] {
+  const glyphs = record(g)
+    .calls.filter((c) => c.sprite.asset === imageFont.asset)
+    .map((c) => {
+      const row = Math.trunc(c.sprite.sy / cell) % bandRows;
+      return Object.assign(c, { ch: charset[row * sheetColumns + Math.trunc(c.sprite.sx / cell)] ?? "?" });
+    });
+  const out: string[] = [];
+  let prev: (DrawCall & { ch: string }) | undefined;
+  for (const c of glyphs) {
+    if (prev !== undefined && c.y === prev.y && c.x - prev.x < 10) out[out.length - 1] += c.ch;
+    else out.push(c.ch);
+    prev = c;
+  }
+  return out;
 }
 
 const unsubscribe: (() => void)[] = [];
@@ -158,6 +178,38 @@ describe("draw", () => {
     g.run.phase = "escape";
     g.run.phaseTicks = t.escapeTicks;
     expect(record(g).fills).toBeGreaterThan(0);
+  });
+});
+
+describe("the loop", () => {
+  test("the HUD shows LOOP 1 on a new run and LOOP 2 after one escape", () => {
+    const g = quiet();
+    expect(words(g)).toContain("LOOP 1");
+    g.run.loop = 1;
+    expect(words(g)).toContain("LOOP 2");
+  });
+
+  test("the escaped scene shows the lap coming next", () => {
+    const g = quiet();
+    g.run.phase = "escape";
+    g.run.phaseTicks = t.escapeTicks;
+    expect(words(g)).toContain("ESCAPED!");
+    expect(words(g)).toContain("LOOP 2");
+  });
+
+  test("a new lap opens with its number in the middle of the floor, then it goes", () => {
+    const g = quiet();
+    g.run.phase = "escape";
+    g.run.phaseTicks = 1;
+    g.update(NO_INPUT);
+    expect(g.run.loop).toBe(1);
+    expect(words(g).filter((w) => w === "LOOP 2")).toHaveLength(2);
+    for (let n = 0; n < t.lapBannerTicks; n++) g.update(NO_INPUT);
+    expect(words(g).filter((w) => w === "LOOP 2")).toHaveLength(1);
+  });
+
+  test("the first lap opens without a banner", () => {
+    expect(words(quiet()).filter((w) => w === "LOOP 1")).toHaveLength(1);
   });
 });
 
