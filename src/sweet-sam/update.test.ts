@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import type { Direction } from "../engine/input.ts";
-import { Entity, newCorners, newEnemies, newPlayer, type Tile } from "./entity.ts";
+import { Entity, newCorners, noUpTiles, newEnemies, newPlayer, type Tile } from "./entity.ts";
 import { findTarget, resetEnemy, updateBlue, updateDirection, updateFrame, updatePosition } from "./update.ts";
 import { modeChase, modeScatter, modeSequence } from "./levels.ts";
 
@@ -120,6 +120,45 @@ describe("findTarget", () => {
 });
 
 describe("updateDirection", () => {
+  // Corners (12, 11), (15, 11), (12, 23), (15, 23): above the home and the bear's start.
+  const noUp: [number, number][] = [
+    [12, 11],
+    [15, 11],
+    [12, 23],
+    [15, 23],
+  ];
+
+  test("noUpTiles names the four Pac-Man no-up junctions", () => {
+    expect(noUpTiles).toEqual(noUp.map(([x, y]) => ({ x, y: y + 3 })));
+  });
+
+  test.each(noUp)("a chasing bee at (%i, %i) never picks UP, even when closest", (tx, ty) => {
+    const e = at(bee(), tx, ty);
+    e.direction = "RIGHT";
+    updateDirection(e, corners, { x: tx, y: 0 });
+    expect(e.direction).toBe("RIGHT");
+  });
+
+  test.each(noUp)("a sleepy bee at (%i, %i) can still pick UP", (tx, ty) => {
+    const picks = new Set<Direction>();
+    for (let seed = 0; seed < 50; seed++) {
+      rng.seed(seed);
+      const e = at(bee(), tx, ty);
+      e.direction = "RIGHT";
+      e.blueFrames = 100;
+      updateDirection(e, corners, { x: tx, y: 0 });
+      picks.add(e.direction);
+    }
+    expect(picks.has("UP")).toBe(true);
+  });
+
+  test("elsewhere UP is still picked when closest", () => {
+    const e = at(bee(), 9, 20); // UP, LEFT, RIGHT, like the no-up tiles
+    e.direction = "RIGHT";
+    updateDirection(e, corners, { x: 9, y: 0 });
+    expect(e.direction).toBe("UP");
+  });
+
   test("all-equal distances resolve Up first", () => {
     const e = atCross("RIGHT");
     updateDirection(e, corners, { x: 6, y: 8 });

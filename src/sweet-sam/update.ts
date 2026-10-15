@@ -14,6 +14,7 @@ import {
   Entity,
   newEnemies,
   newPlayer,
+  noUpTiles,
   pointToTile,
   tileEq,
   tileSize,
@@ -269,12 +270,17 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     return;
   }
 
+  // None of these junctions opens downward, so no bee arrives heading up.
+  const choices = noUpTiles.some((t) => tileEq(t, tileCorner))
+    ? validDirections.filter((d) => d !== "UP")
+    : validDirections;
+
   // Go stores these in a map, but only membership matters: the tie-break is
   // the fixed priority Up, Left, Down, Right.
   const distances = new Map<Direction, number>();
 
   let minDistance = Number.MAX_VALUE;
-  for (const dir of validDirections) {
+  for (const dir of choices) {
     const tileNext = { ...tileCorner };
     switch (dir) {
       case "UP":
