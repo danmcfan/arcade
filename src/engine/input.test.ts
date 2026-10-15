@@ -34,6 +34,12 @@ describe("readInput", () => {
     expect(readInput(new Set(["Space", "Escape"]), new Set())).toEqual(held({ space: true, escape: true }));
   });
 
+  test("Enter and E work as Space, Backspace as Escape", () => {
+    for (const code of ["Enter", "NumpadEnter", "KeyE"])
+      expect(readInput(new Set([code]), new Set())).toEqual(held({ space: true }));
+    expect(readInput(new Set(["Backspace"]), new Set())).toEqual(held({ escape: true }));
+  });
+
   test("shiftP needs Shift held and P just pressed this tick", () => {
     expect(readInput(new Set(["ShiftLeft", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);
     expect(readInput(new Set(["ShiftRight", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);

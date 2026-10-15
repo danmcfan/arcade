@@ -50,8 +50,8 @@ function shelf(v: Verify): void {
   check(g.menu === "prizeCounter" && g.cursor === 9, "the prize counter opens with BUY TOKEN selected", g);
   v.frame("1-shelf-buy-token");
 
-  v.tap("down");
-  check(game(v).cursor === 0, "Down from BUY TOKEN: the oil can, top of the left column", game(v).cursor);
+  v.tap("up");
+  check(game(v).cursor === 6, "Up from BUY TOKEN: the oil can, bottom of the left column", game(v).cursor);
   sounds(v);
   v.tap("space");
   check(
@@ -62,9 +62,9 @@ function shelf(v: Verify): void {
   v.frame("2-shelf-oil-can-owned");
 
   v.tap("right");
-  v.tap("down");
-  v.tap("down");
-  check(game(v).cursor === 7, "Right then Down twice: the sleepy bees, bottom of the middle column", game(v).cursor);
+  v.tap("up");
+  v.tap("up");
+  check(game(v).cursor === 1, "Right then Up twice: the sleepy bees, top of the middle column", game(v).cursor);
   v.tap("space");
   check(
     sounds(v).includes("play:deny") && game(v).arcade.tickets === 60,
@@ -73,9 +73,9 @@ function shelf(v: Verify): void {
   );
   v.frame("3-shelf-sleepy-bees-unaffordable");
 
-  v.tap("up");
+  v.tap("down");
   v.tap("right");
-  check(game(v).cursor === 5, "Up then Right: the glow stick", game(v).cursor);
+  check(game(v).cursor === 5, "Down then Right: the glow stick", game(v).cursor);
   v.tap("space");
   g = game(v);
   check(
@@ -106,11 +106,11 @@ function video(v: Verify): void {
       v.wait(600);
       v.key("Space"); // open
       v.wait(900);
-      for (const key of ["ArrowDown", "Space", "ArrowRight", "ArrowDown", "ArrowDown", "Space"]) {
+      for (const key of ["ArrowUp", "Space", "ArrowRight", "ArrowUp", "ArrowUp", "Space"]) {
         v.key(key);
         v.wait(600);
       }
-      for (const key of ["ArrowUp", "ArrowRight", "Space", "ArrowLeft", "ArrowUp", "ArrowDown", "ArrowDown"]) {
+      for (const key of ["ArrowDown", "ArrowRight", "Space", "ArrowLeft", "ArrowUp", "ArrowDown", "ArrowDown"]) {
         v.key(key);
         v.wait(600);
       }

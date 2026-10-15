@@ -719,7 +719,7 @@ function shelfPictures(r: Recording): [PrizeId, boolean][] {
     .map((c) => [defined(prizeIds.find((id) => prizeRects[id].x === c[2])), c[3] === prizeGreyY]);
 }
 
-/** A drawn picture's bottom edge: the shelf stands each row's pictures on one plank. */
+/** A drawn picture's bottom edge: the shelf lines up each row's pictures along it. */
 function bottom(c: Call): number {
   return Number(c[7]) + Number(c[5]);
 }
@@ -738,34 +738,34 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(2, 120).draw(r.surface);
     expect(shelfPictures(r)).toEqual([
-      ["oilCan", false],
-      ["honeyJar", false],
-      ["lantern", false],
-      ["springBoots", false],
-      ["runningShoes", false],
-      ["glowStick", false],
       ["pocketWatch", false],
       ["sleepyBees", false],
       ["wings", false],
+      ["springBoots", false],
+      ["runningShoes", false],
+      ["glowStick", false],
+      ["oilCan", false],
+      ["honeyJar", false],
+      ["lantern", false],
     ]);
-    // The title, the ticket count, the prices row by row, then the selected BUY TOKEN and its price.
-    expect(r.text("yellow")).toBe("PRIZE COUNTER120252525505050100100100>BUY TOKEN");
+    // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, then the selected BUY TOKEN.
+    expect(r.text("yellow")).toBe("100100100505050252525>BUY TOKEN");
     expect(r.text("red")).toBe("");
-    expect(r.icons.map((i) => i.name)).toEqual(["ticket"]);
+    expect(r.icons).toEqual([]);
   });
 
   test("the info panel describes what the cursor is on, and changes as it moves", () => {
     const game = atCounter(2, 120);
     let r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("CLOSEBUY TOKEN5ONE PLAY ON A CABINETSPACEESCOKBACK");
-    for (const key of ["down", "right"] as const) {
+    expect(r.text("white")).toBe("CLOSEBUY TOKEN5ONE PLAY ON A CABINET");
+    for (const key of ["up", "right"] as const) {
       game.step(input({ [key]: true }));
       game.step(input());
     }
     r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAMSPACEESCOKBACK");
+    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
   });
 
   test("an owned prize is greyed out and reads OWNED; one the player can't afford keeps its colour, its price red", () => {
@@ -796,7 +796,7 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
     expect(r.text("grey")).toBe("BUY TOKEN");
-    expect(r.text("red")).toBe("252525505050100100100");
+    expect(r.text("red")).toBe("100100100505050252525");
   });
 
   test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {

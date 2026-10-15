@@ -16,8 +16,6 @@ export const controlsIndex = 1;
 /** Drawn beside QUIT GAME: quitting pays nothing for the run. */
 export const quitGameNote = "NO TICKETS";
 
-export const prizeCounterTitle = "PRIZE COUNTER";
-
 /** The prize counter's token item for each offer, its label and price; "short" is the normal price, greyed out. */
 export const tokenItems: Readonly<Record<TokenOffer, { label: string; value: string }>> = {
   token: { label: "BUY TOKEN", value: `${ticketsPerToken}` },
@@ -36,12 +34,12 @@ export const shelfRows = 3;
 
 /**
  * The prize shelf, row by row: each column is one cabinet's prizes in
- * catalogue order (cheapest at the top). Cursor `row * columns + column`
+ * reverse catalogue order (the dearest at the top, the cheapest at the bottom). Cursor `row * columns + column`
  * selects a prize; the row below holds BUY TOKEN then CLOSE.
  */
 export const shelf: readonly Prize[] = Array.from({ length: shelfRows * shelfColumns.length }, (_, i) => {
   const software = shelfColumns[i % shelfColumns.length];
-  const found = prizes.filter((p) => p.software === software)[Math.trunc(i / shelfColumns.length)];
+  const found = prizes.filter((p) => p.software === software)[shelfRows - 1 - Math.trunc(i / shelfColumns.length)];
   if (found === undefined) throw new Error(`prize shelf: no prize at cell ${i}`);
   return found;
 });

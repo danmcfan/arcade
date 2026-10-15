@@ -107,13 +107,13 @@ function buyAll(v: Verify): void {
   v.step(4, { down: true });
   v.tap("space");
   check(game(v).menu === "prizeCounter", "Space facing the desk opens the prize counter menu", game(v).menu);
-  v.tap("down");
-  check(game(v).cursor === 0, "Down from BUY TOKEN selects the oil can, top of the left column", game(v).cursor);
+  v.tap("up");
+  check(game(v).cursor === 6, "Up from BUY TOKEN selects the oil can, bottom of the left column", game(v).cursor);
   v.frame("2-menu-oil-can");
   v.tap("space");
-  v.tap("down");
+  v.tap("up");
   v.tap("space");
-  v.tap("down");
+  v.tap("up");
   v.tap("space");
   const a = game(v).arcade;
   check(
@@ -164,7 +164,7 @@ function buyAndPlay(v: Verify): void {
   v.wait(300);
   v.key("Space"); // open
   v.wait(600);
-  v.key("ArrowDown"); // to the oil can
+  v.key("ArrowUp"); // to the oil can
   v.wait(500);
   v.key("Space"); // buy
   v.wait(1200);

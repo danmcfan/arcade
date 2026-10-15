@@ -78,8 +78,8 @@ export function readInput(pressed: ReadonlySet<string>, justPressed: ReadonlySet
     down: pressed.has("KeyS") || pressed.has("ArrowDown"),
     left: pressed.has("KeyA") || pressed.has("ArrowLeft"),
     right: pressed.has("KeyD") || pressed.has("ArrowRight"),
-    space: pressed.has("Space"),
-    escape: pressed.has("Escape"),
+    space: pressed.has("Space") || pressed.has("Enter") || pressed.has("NumpadEnter") || pressed.has("KeyE"),
+    escape: pressed.has("Escape") || pressed.has("Backspace"),
     shiftP: (pressed.has("ShiftLeft") || pressed.has("ShiftRight")) && justPressed.has("KeyP"),
   };
 }

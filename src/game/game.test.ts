@@ -514,15 +514,15 @@ function wallet(game: Game): { tokens: number; tickets: number } {
 
 /** Each prize's shelf cell (row * 3 + column): a column per cabinet in hub order, cheapest at the top. */
 const shelfCell: Record<PrizeId, number> = {
-  oilCan: 0,
-  honeyJar: 1,
-  lantern: 2,
+  pocketWatch: 0,
+  sleepyBees: 1,
+  wings: 2,
   springBoots: 3,
   runningShoes: 4,
   glowStick: 5,
-  pocketWatch: 6,
-  sleepyBees: 7,
-  wings: 8,
+  oilCan: 6,
+  honeyJar: 7,
+  lantern: 8,
 };
 /** The cursor on BUY TOKEN and on CLOSE, the row below the shelf. */
 const tokenCursor = 9;
@@ -704,7 +704,7 @@ describe("prize counter", () => {
     expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "space");
     expect(snap(game).arcade.tickets).toBe(35);
-    tap(game, "down"); // glow stick, 50: too few tickets
+    tap(game, "up"); // glow stick, 50: too few tickets
     expect(snap(game).cursor).toBe(shelfCell.glowStick);
     tap(game, "space");
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
