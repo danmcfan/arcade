@@ -327,16 +327,19 @@ export class FireflySoftware implements FixedViewport {
       );
       if (e === undefined) return true;
       e.hp--;
-      if (e.hp === 0) {
-        this.destroy(e);
-        this.points += points(e.kind, e.outOfFormation);
-      }
+      if (e.hp === 0) this.shootDown(e);
       play(sounds.hit);
       return false;
     });
   }
 
-  /** The enemy bursts and is gone; any points are the caller's to award. */
+  /** A shot kills the enemy and scores it. */
+  private shootDown(e: Enemy): void {
+    this.destroy(e);
+    this.points += points(e.kind, e.outOfFormation);
+  }
+
+  /** The enemy bursts and is gone, scoring nothing. */
   private destroy(e: Enemy): void {
     e.hp = 0;
     e.deadFrames = hitEffectTicks;

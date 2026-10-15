@@ -25,6 +25,16 @@ import {
   type EnemyKind,
 } from "./rules.ts";
 
+/** Puts an Owl on a degenerate dive path that stays at (x, y), with one hit point. */
+function divingAt(e: Enemy, x: number, y: number): void {
+  const p = { x, y };
+  e.state = "diving";
+  e.outOfFormation = true;
+  e.path = { p0: p, p1: p, p2: p, p3: p };
+  e.tStep = 0.001;
+  e.hp = 1;
+}
+
 describe("angle", () => {
   const tests = [
     { direction: { x: 0, y: 0 }, angle: 0 },
@@ -324,16 +334,7 @@ describe("lives", () => {
 
   test("a diving Owl ramming the firefly leaves the score unchanged", () => {
     const { f, e } = withOnly("owl", { x: 112, y: playerY });
-    e.state = "diving";
-    e.outOfFormation = true;
-    e.path = {
-      p0: { x: 112, y: playerY },
-      p1: { x: 112, y: playerY },
-      p2: { x: 112, y: playerY },
-      p3: { x: 112, y: playerY },
-    };
-    e.tStep = 0.001;
-    e.hp = 1;
+    divingAt(e, 112, playerY);
     f.points = 1234;
     f.update(NO_INPUT);
     expect([f.score(), f.lives, e.hp]).toEqual([1234, startLives - 1, 0]);
@@ -341,11 +342,7 @@ describe("lives", () => {
 
   test("shooting a diving Owl still scores 400", () => {
     const { f, e } = withOnly("owl", { x: 100, y: 100 });
-    e.state = "diving";
-    e.outOfFormation = true;
-    e.path = { p0: { x: 100, y: 100 }, p1: { x: 100, y: 100 }, p2: { x: 100, y: 100 }, p3: { x: 100, y: 100 } };
-    e.tStep = 0.001;
-    e.hp = 1;
+    divingAt(e, 100, 100);
     sparkAt(f, 100, 100);
     f.update(NO_INPUT);
     expect(f.score()).toBe(400);
