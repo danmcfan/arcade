@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { isRecord } from "./pixel.ts";
-import { artSources, asRowsValue, writeRows } from "./studio-source.ts";
+import { sweetie } from "../src/ui/sweetie16.ts";
+import { artSources, asRowsValue, fromSheet, toSheet, writeRows } from "./art-source.ts";
+import { plot } from "./pixel-art.ts";
 
 const fixture = `// A fixture art source.
 import { mirrorX } from "./pixel-art.ts";
@@ -76,5 +78,55 @@ describe("writeRows on the real art sources", () => {
       }
     }
     expect(written).toBeGreaterThan(0);
+  });
+});
+
+describe("toSheet and fromSheet", () => {
+  const walk = {
+    label: "walk",
+    value: [
+      ["k.", "rr"],
+      ["rr", ".k"],
+    ],
+  };
+  const pot = { label: "pot", value: ["yo"] };
+
+  test("a sheet read back with no edits gives the same rows", () => {
+    const png = toSheet([walk, pot]);
+    expect([png.width, png.height]).toEqual([4, 3]);
+    expect(fromSheet(png, [walk, pot])).toEqual([walk.value, pot.value]);
+  });
+
+  test("an edit to one frame changes only that frame", () => {
+    const png = toSheet([walk, pot]);
+    plot(png, 3, 0, sweetie.g);
+    expect(fromSheet(png, [walk, pot])).toEqual([
+      [
+        ["k.", "rr"],
+        ["rg", ".k"],
+      ],
+      pot.value,
+    ]);
+  });
+
+  test("glyph rows go out in white and come back as #", () => {
+    const glyph = { label: "A", value: ["#.", ".#"] };
+    expect(fromSheet(toSheet([glyph]), [glyph])).toEqual([glyph.value]);
+  });
+
+  test("refuses a sheet of the wrong size", () => {
+    expect(() => fromSheet(toSheet([pot]), [walk])).toThrow(/is 4x2; the PNG is 2x1/u);
+  });
+
+  test("refuses a colour outside Sweetie 16", () => {
+    const png = toSheet([walk]);
+    plot(png, 1, 1, "#123456");
+    expect(() => fromSheet(png, [walk])).toThrow(/walk frame 0: .*#123456, not in the palette/u);
+  });
+
+  test("refuses a pixel drawn outside every frame", () => {
+    const png = toSheet([walk, pot]);
+    plot(png, 3, 2, sweetie.k);
+    expect(() => fromSheet(png, [walk, pot])).toThrow(/\(3, 2\) is outside every frame/u);
   });
 });

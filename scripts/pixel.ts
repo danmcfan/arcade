@@ -10,6 +10,11 @@
 //   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
 //                                                     (<variants.json>: { "path.ts:name": { "<label>": rows or frames } };
 //                                                     options sharing a label are one choice)
+//   bun run pixel export  <path.ts:name>...           one PNG sheet in out/aseprite/ to edit in Aseprite: a row
+//                                                     per export (a record, e.g. bearWalk, is a row per entry),
+//                                                     its frames left to right
+//   bun run pixel import  <png> <path.ts:name>...     an edited sheet written back into the same exports' rows,
+//                                                     then `bun run art`
 //
 // An <image> is one of:
 //   path.png             the whole PNG
@@ -20,7 +25,7 @@
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
 // Options: --scale N (default: fits each image to about 256 px, at most 8x),
-// --out <file> (show, before, place and preview), --ref <rev> (before; default
+// --out <file> (show, before, place, preview and export), --ref <rev> (before; default
 // origin/main), --nearest (rows: letter each colour as the nearest Sweetie 16
 // one, to import art drawn in another palette).
 
@@ -30,6 +35,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
+import { asRowsValue, fromSheet, isRows, toSheet, writeRows, type SheetEntry } from "./art-source.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
@@ -64,10 +70,6 @@ function parseArea(area: string): [number, number, number, number] {
     throw new Error(`area "${area}" is not x,y,w,h`);
   }
   return [x, y, w, h];
-}
-
-export function isRows(v: unknown): v is Rows {
-  return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
 export function isRecord(v: unknown): v is Record<string, unknown> {
@@ -128,7 +130,7 @@ export function parseSpec(spec: string): SourceSpec | undefined {
 
 /**
  * The value `spec` names, read from the file as it is on disk now, past the
- * import cache (`bun run studio` after a save); throws when it is missing.
+ * import cache (after an import wrote it); throws when it is missing.
  */
 export async function exportValue({ file, name, key }: SourceSpec): Promise<unknown> {
   const mod = await importCopy(file, readFileSync(resolve(file)));
@@ -373,6 +375,69 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
   }
 }
 
+/** One rows or frames export (or record entry) to put on an Aseprite sheet. */
+interface SheetSource extends SheetEntry {
+  source: SourceSpec;
+}
+
+/**
+ * The rows or frames `spec` names now: one, or each entry of a record such as
+ * `bearWalk`. Throws when it names anything else.
+ */
+async function sheetSources(spec: string): Promise<SheetSource[]> {
+  const source = parseSpec(spec);
+  if (source === undefined) throw new Error(`"${spec}" is not path.ts:name[.key]`);
+  const exported = await exportValue(source);
+  const value = asRowsValue(exported);
+  if (value !== undefined) return [{ label: spec, value, source }];
+  const entries =
+    source.key === undefined && isRecord(exported) && !Array.isArray(exported) ? Object.entries(exported) : [];
+  const found = entries.flatMap(([key, entry]) => {
+    const rows = asRowsValue(entry);
+    return rows === undefined ? [] : [{ label: `${spec}.${key}`, value: rows, source: { ...source, key } }];
+  });
+  if (found.length === 0) throw new Error(`${spec} is not rows, a list of frames, or a record of them`);
+  return found;
+}
+
+/** Every export `specs` name, in order: the rows of one sheet. */
+async function sheetOf(specs: readonly string[]): Promise<SheetSource[]> {
+  return (await inOrder(specs, sheetSources)).flat();
+}
+
+function run(cmd: string[]): void {
+  const r = Bun.spawnSync(cmd, { cwd: repoRoot, stdout: "inherit", stderr: "inherit" });
+  if (r.exitCode !== 0) throw new Error(`${cmd.join(" ")} failed`);
+}
+
+/**
+ * Write the sheet at `png` back into the rows literals of the exports `specs`
+ * name, then regenerate the art. Prettier tidies each file only when it was
+ * Prettier-clean before, so nothing outside the blocks changes.
+ */
+async function importSheet(png: string, specs: readonly string[]): Promise<void> {
+  const sheetEntries = await sheetOf(specs);
+  const values = fromSheet(PNG.sync.read(readFileSync(resolve(png))), sheetEntries);
+  const files = [...new Set(sheetEntries.map((e) => e.source.file))];
+  const clean = files.filter(
+    (file) => Bun.spawnSync(["bunx", "prettier", "--check", file], { cwd: repoRoot }).exitCode === 0,
+  );
+  for (const file of files) {
+    const path = join(repoRoot, file);
+    let text = readFileSync(path, "utf8");
+    sheetEntries.forEach(({ source }, i) => {
+      const value = values[i];
+      if (source.file === file && value !== undefined) text = writeRows(text, source.name, source.key, value);
+    });
+    writeFileSync(path, text);
+  }
+  if (clean.length > 0) run(["bunx", "prettier", "--write", ...clean]);
+  run(["bun", "run", "art"]);
+  console.log(
+    `wrote ${sheetEntries.map((e) => e.label).join(", ")}; read it back with git diff and bun run pixel before`,
+  );
+}
+
 function write(png: PNG, out: string): void {
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, PNG.sync.write(png));
@@ -488,6 +553,25 @@ async function main(argv: string[]): Promise<void> {
       console.log(
         `wrote ${relative(process.cwd(), html)} (${options.length} options); publish it with the Artifact tool`,
       );
+      return;
+    }
+    case "export": {
+      const sheetEntries = await sheetOf(specs);
+      const name = (specs[0] ?? "").slice((specs[0] ?? "").indexOf(":") + 1);
+      write(toSheet(sheetEntries), resolve(opts["out"] ?? join(repoRoot, "out/aseprite", `${name}.png`)));
+      for (const { label: entry, value } of sheetEntries) {
+        const frames = isRows(value) ? [value] : value;
+        console.log(
+          `  ${entry}: ${frames.length} frame(s) of ${frames[0]?.[0]?.length ?? 0}x${frames[0]?.length ?? 0}`,
+        );
+      }
+      console.log(`import it back with: bun run pixel import <png> ${specs.join(" ")}`);
+      return;
+    }
+    case "import": {
+      const [png, ...rest] = specs;
+      if (png === undefined || rest.length === 0) usage();
+      await importSheet(png, rest);
       return;
     }
     default:
