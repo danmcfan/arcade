@@ -2,8 +2,8 @@
 // pixels are attached later, in the browser only.
 
 /**
- * A loadable image. `width`/`height` are hard-coded in `assets.ts` (checked
- * against the PNG headers by a unit test) so layout and game code can read
+ * A loadable image. `width`/`height` are hard-coded in each image's declaration
+ * (scripts/image-outputs.ts; checked against the PNG headers by a unit test) so layout and game code can read
  * sizes under `bun test`, which has no DOM.
  *
  * `image` is `null` until `loadImages()` decodes it in the browser. It is

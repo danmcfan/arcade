@@ -9,13 +9,14 @@
 // swapped through the palette. Each cabinet's `bevel` gives the screen's lip a
 // shaded and a lit edge (`bevelColour`), so the screen sits in. The marquee
 // and the joystick fall outside the crop. Recolouring later means editing
-// cabinets.json and rerunning. gen-cabinets.test.ts fails when the committed
-// PNGs drift from the sources.
+// cabinets.json and rerunning. gen-art.test.ts fails when the committed PNGs
+// drift from the sources.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import { repoRoot } from "../test/parity/fixtures.ts";
+import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 
 export interface CabinetSource {
   /** Software name. */
@@ -33,7 +34,7 @@ export interface Bevel {
   dark: string;
 }
 
-const imagesDir = join(repoRoot, "src/assets/images");
+const imagesDir = "src/assets/images";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -91,10 +92,6 @@ export function bevelColour(bevel: Bevel, x: number, y: number): string | undefi
   const inLip = x >= screen.x0 - w && x <= screen.x1 + w && y >= screen.y0 - w && y <= screen.y1 + w;
   if (!inLip) return undefined;
   return x < screen.x0 || y < screen.y0 ? bevel.dark : bevel.light;
-}
-
-export function cabinetPath(c: CabinetSource): string {
-  return join(imagesDir, c.file);
 }
 
 export function sourceCabinet(): PNG {
@@ -155,9 +152,7 @@ export function renderCabinet(c: CabinetSource): PNG {
   return out;
 }
 
-if (import.meta.main) {
-  for (const c of cabinets) {
-    writeFileSync(cabinetPath(c), PNG.sync.write(renderCabinet(c)));
-    console.log(`wrote ${cabinetPath(c)}`);
-  }
-}
+/** Every cabinet outline: its file, its size (the crop) and how to draw it. */
+export const cabinetFiles: readonly ImageOutput[] = cabinets.map((c) =>
+  imageOutput(join(imagesDir, c.file), 240, 304, () => renderCabinet(c)),
+);

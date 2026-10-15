@@ -14,9 +14,8 @@
 // 9, 8×8 each. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // maze-flash.png is the maze with its wax in the level-clear flash colours,
 // and flower.png the bonus flowers, one 16×16 frame per level (#47, #68).
-// gen-sweet-sam-art.test.ts fails when the committed PNGs drift.
+// gen-art.test.ts fails when the committed PNGs drift.
 
-import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
@@ -68,7 +67,7 @@ import {
 } from "../src/sweet-sam/art.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
 
 const tile = 8;
@@ -276,27 +275,18 @@ export function renderPoints(): PNG {
   return png;
 }
 
-export const sweetSamImagesDir = join(repoRoot, "src/assets/images/sweet-sam");
+export const sweetSamImagesDir = "src/assets/images/sweet-sam";
 
-/** Every generated Sweet Sam image: its file in src/assets/images/sweet-sam and how to draw it. */
-export const sweetSamArtFiles: readonly { file: string; render: () => PNG }[] = [
-  { file: "maze.png", render: renderMaze },
-  { file: "bear.png", render: () => sheet(bearFrames()) },
-  { file: "bees.png", render: () => sheet(beeOrder.flatMap((kind) => beeFrames(kind))) },
-  { file: "honey-drop.png", render: renderHoneyDrop },
-  { file: "honey-pot.png", render: renderHoneyPot },
-  { file: "ready.png", render: () => image(readyArt) },
-  { file: "digits.png", render: () => image(dialDigitsArt) },
-  { file: "points.png", render: renderPoints },
-  { file: "maze-flash.png", render: renderMazeFlash },
-  { file: "flower.png", render: () => sheet([flowers]) },
+/** Every generated Sweet Sam image: its file, its size and how to draw it. */
+export const sweetSamArtFiles: readonly ImageOutput[] = [
+  imageOutput(join(sweetSamImagesDir, "maze.png"), 224, 288, renderMaze),
+  imageOutput(join(sweetSamImagesDir, "bear.png"), 64, 80, () => sheet(bearFrames())),
+  imageOutput(join(sweetSamImagesDir, "bees.png"), 64, 384, () => sheet(beeOrder.flatMap((kind) => beeFrames(kind)))),
+  imageOutput(join(sweetSamImagesDir, "honey-drop.png"), 32, 12, renderHoneyDrop),
+  imageOutput(join(sweetSamImagesDir, "honey-pot.png"), 32, 12, renderHoneyPot),
+  imageOutput(join(sweetSamImagesDir, "ready.png"), 48, 8, () => image(readyArt)),
+  imageOutput(join(sweetSamImagesDir, "digits.png"), 80, 8, () => image(dialDigitsArt)),
+  imageOutput(join(sweetSamImagesDir, "points.png"), 64, 16, renderPoints),
+  imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
+  imageOutput(join(sweetSamImagesDir, "flower.png"), 80, 16, () => sheet([flowers])),
 ];
-
-if (import.meta.main) {
-  mkdirSync(sweetSamImagesDir, { recursive: true });
-  for (const { file, render } of sweetSamArtFiles) {
-    const png = render();
-    writeFileSync(join(sweetSamImagesDir, file), PNG.sync.write(png));
-    console.log(`wrote ${join(sweetSamImagesDir, file)} (${png.width}x${png.height})`);
-  }
-}

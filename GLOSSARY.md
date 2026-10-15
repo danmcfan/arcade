@@ -32,6 +32,10 @@ _Avoid_: level, mode, sub-game
 Which group a sound belongs to, declared with it in `defineSound`: `minigame` sounds stop when the minigame pause menu opens and resume when it closes; `arcade` sounds (menu blips, the hub song, attract loops) do not.
 _Avoid_: bus, mixer group
 
+**Image output**:
+One PNG an art generator declares with `imageOutput`: its file, its hard-coded size and how to draw it. `bun run art` writes every image output, and the image table from those under `src/assets/images`.
+_Avoid_: art file, sprite file
+
 **Sweet Sam**:
 The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `sweetSam` (`src/sweet-sam/`).
 _Avoid_: bear game

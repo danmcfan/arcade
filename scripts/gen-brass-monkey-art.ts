@@ -14,10 +14,9 @@
 // foot) and wall.png (32×32), none outlined but the door. girder-floor.png
 // and conveyor-floor.png (224×256) are the two floors drawn from them, laid
 // out by src/brass-monkey/floors.ts (the conveyors in their first frame; the
-// game moves them). gen-brass-monkey-art.test.ts fails when the
+// game moves them). gen-art.test.ts fails when the
 // committed PNGs drift.
 
-import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
@@ -44,7 +43,7 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
@@ -181,29 +180,20 @@ function sheet(frames: readonly Rows[]): PNG {
   return png;
 }
 
-export const brassMonkeyImagesDir = join(repoRoot, "src/assets/images/brass-monkey");
+export const brassMonkeyImagesDir = "src/assets/images/brass-monkey";
 
-/** Every generated Brass Monkey image: its file in src/assets/images/brass-monkey and how to draw it. */
-export const brassMonkeyArtFiles: readonly { file: string; render: () => PNG }[] = [
-  { file: "monkey.png", render: () => sheet(monkeyFrames()) },
-  { file: "gnome.png", render: () => sheet(gnomeFrames()) },
-  { file: "gear.png", render: () => sheet(gearFrames()) },
-  { file: "ember.png", render: () => sheet(emberFrames()) },
-  { file: "bolt.png", render: () => sheet(boltFrames()) },
-  { file: "girder.png", render: () => sheet([girder]) },
-  { file: "ladder.png", render: () => sheet([ladder]) },
-  { file: "conveyor.png", render: () => sheet(conveyorFrames()) },
-  { file: "door.png", render: () => sheet([doorFrame()]) },
-  { file: "wall.png", render: () => sheet([wallPanel]) },
-  { file: "girder-floor.png", render: () => sheet([girderFloorRows()]) },
-  { file: "conveyor-floor.png", render: () => sheet([conveyorFloorRows()]) },
+/** Every generated Brass Monkey image: its file, its size and how to draw it. */
+export const brassMonkeyArtFiles: readonly ImageOutput[] = [
+  imageOutput(join(brassMonkeyImagesDir, "monkey.png"), 96, 16, () => sheet(monkeyFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
+  imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),
+  imageOutput(join(brassMonkeyImagesDir, "conveyor.png"), 96, 8, () => sheet(conveyorFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "door.png"), 16, 24, () => sheet([doorFrame()])),
+  imageOutput(join(brassMonkeyImagesDir, "wall.png"), 32, 32, () => sheet([wallPanel])),
+  imageOutput(join(brassMonkeyImagesDir, "girder-floor.png"), 224, 256, () => sheet([girderFloorRows()])),
+  imageOutput(join(brassMonkeyImagesDir, "conveyor-floor.png"), 224, 256, () => sheet([conveyorFloorRows()])),
 ];
-
-if (import.meta.main) {
-  mkdirSync(brassMonkeyImagesDir, { recursive: true });
-  for (const { file, render } of brassMonkeyArtFiles) {
-    const png = render();
-    writeFileSync(join(brassMonkeyImagesDir, file), PNG.sync.write(png));
-    console.log(`wrote ${join(brassMonkeyImagesDir, file)} (${png.width}x${png.height})`);
-  }
-}

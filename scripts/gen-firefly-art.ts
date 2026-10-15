@@ -9,9 +9,8 @@
 // with Scale2x, rotate, sample back down), which keeps the outlines whole and
 // adds no colours. hit.png is the hit frames, each mirrored from its quarter.
 // background.png is the dithered sky, the stars and the grass tiled along the
-// bottom. gen-firefly-art.test.ts fails when the committed PNGs drift.
+// bottom. gen-art.test.ts fails when the committed PNGs drift.
 
-import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
@@ -34,7 +33,7 @@ import {
   waspArt,
 } from "../src/firefly/art.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, empty, mirrorX, mirrorY, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 
 function at(rows: Rows, x: number, y: number): string {
@@ -175,26 +174,17 @@ export function renderBackground(): PNG {
   return png;
 }
 
-export const fireflyImagesDir = join(repoRoot, "src/assets/images/firefly");
+export const fireflyImagesDir = "src/assets/images/firefly";
 
-/** Every generated Firefly image: its file in src/assets/images/firefly and how to draw it. */
-export const fireflyArtFiles: readonly { file: string; render: () => PNG }[] = [
-  { file: "firefly.png", render: () => toPng(fireflyArt) },
-  { file: "spark.png", render: () => toPng(sparkArt) },
-  { file: "moth.png", render: () => rotationSheet(mothArt) },
-  { file: "wasp.png", render: () => rotationSheet(waspArt) },
-  { file: "owl.png", render: () => rotationSheet(owlArt) },
-  { file: "owl-hurt.png", render: () => rotationSheet(recolour(owlArt, owlHurtColours)) },
-  { file: "shot.png", render: () => toPng(shotArt) },
-  { file: "hit.png", render: renderHit },
-  { file: "background.png", render: renderBackground },
+/** Every generated Firefly image: its file, its size and how to draw it. */
+export const fireflyArtFiles: readonly ImageOutput[] = [
+  imageOutput(join(fireflyImagesDir, "firefly.png"), 16, 16, () => toPng(fireflyArt)),
+  imageOutput(join(fireflyImagesDir, "spark.png"), 8, 8, () => toPng(sparkArt)),
+  imageOutput(join(fireflyImagesDir, "moth.png"), 96, 64, () => rotationSheet(mothArt)),
+  imageOutput(join(fireflyImagesDir, "wasp.png"), 96, 64, () => rotationSheet(waspArt)),
+  imageOutput(join(fireflyImagesDir, "owl.png"), 192, 128, () => rotationSheet(owlArt)),
+  imageOutput(join(fireflyImagesDir, "owl-hurt.png"), 192, 128, () => rotationSheet(recolour(owlArt, owlHurtColours))),
+  imageOutput(join(fireflyImagesDir, "shot.png"), 4, 8, () => toPng(shotArt)),
+  imageOutput(join(fireflyImagesDir, "hit.png"), 160, 32, renderHit),
+  imageOutput(join(fireflyImagesDir, "background.png"), 224, 288, renderBackground),
 ];
-
-if (import.meta.main) {
-  mkdirSync(fireflyImagesDir, { recursive: true });
-  for (const { file, render } of fireflyArtFiles) {
-    const png = render();
-    writeFileSync(join(fireflyImagesDir, file), PNG.sync.write(png));
-    console.log(`wrote ${join(fireflyImagesDir, file)} (${png.width}x${png.height})`);
-  }
-}
