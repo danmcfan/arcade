@@ -18,7 +18,7 @@ import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { drawTextCentered } from "../ui/text.ts";
-import { FireflySoftware, newFireflySoftware } from "./game.ts";
+import { FireflySoftware, newFireflySoftware, playerY } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 interface DrawCall {
@@ -183,6 +183,6 @@ describe("firefly draw", () => {
     f.respawn = 1;
     f.update(NO_INPUT);
     expect(f.over).toBe(false);
-    expect(of(drawCalls(f), imageFirefly)).toContainEqual({ sprite: imageFirefly, x: 112 + 8 - 8, y: 264 + 8 - 8 });
+    expect(of(drawCalls(f), imageFirefly)).toContainEqual({ sprite: imageFirefly, x: f.player.x, y: playerY });
   });
 });
