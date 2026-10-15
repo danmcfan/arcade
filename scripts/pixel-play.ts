@@ -1,6 +1,6 @@
 // `bun run pixel play <variants.json>`: the preview page, served, with a Play
 // link on each option. A click builds that option into its own copy of the
-// working tree under out/pixel/play/<n>/ (its rows written into the art
+// working tree in the system temp folder (its rows written into the art
 // source, then `bun run art` and the build), and opens the real game there on
 // its scene's `play` screen with `?debug`. The repo's own source and assets are
 // never written; each click copies the working tree again, so edits since the
@@ -17,13 +17,15 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, normalize, relative, resolve } from "node:path";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { asRowsValue, writeRows } from "./art-source.ts";
 import { isRecord, parseSpec, previewPage } from "./pixel.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";
 
-const playDir = join(repoRoot, "out/pixel/play");
+// Outside the repo, so bun test, tsc and the linters never see the copies.
+const playDir = join(tmpdir(), `arcade-pixel-play-${Bun.hash(repoRoot).toString(36)}`);
 
 /** Top-level entries a game build does not need; node_modules is linked, not copied. */
 const skipped = new Set([".git", ".claude", ".sandcastle", "node_modules", "out", "dist"]);
@@ -61,7 +63,6 @@ function run(cmd: string[], cwd: string): void {
 export function buildOption(variants: Record<string, unknown>, label: string, dir: string): string {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  // Entry by entry: the copy lives under out/, inside the tree it copies.
   for (const entry of readdirSync(repoRoot)) {
     if (!skipped.has(entry)) cpSync(join(repoRoot, entry), join(dir, entry), { recursive: true });
   }
@@ -133,7 +134,7 @@ export async function servePlay(file: string, port: number): Promise<ReturnType<
           const build = queue.then(() => buildOption(variants, label, dir));
           queue = build.catch(() => null);
           await build;
-          console.log(`built option ${n} (${label}) into ${relative(process.cwd(), dir)}`);
+          console.log(`built option ${n} (${label}) into ${dir}`);
           return new Response(launcher(scene.play), { headers: { "content-type": "text/html; charset=utf-8" } });
         }
         const served = rest.startsWith("game/") ? fileUnder(join(dir, "dist"), rest.slice("game/".length)) : undefined;

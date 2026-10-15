@@ -580,7 +580,9 @@ async function main(argv: string[]): Promise<void> {
       const port = Number(opts["port"] ?? 3300);
       const { servePlay } = await import("./pixel-play.ts");
       const server = await servePlay(file, port);
-      console.log(`serving ${file} at ${server.url.href}; each Play link builds that option into out/pixel/play/`);
+      console.log(
+        `serving ${file} at ${server.url.href}; each Play link builds that option into a copy in the temp folder`,
+      );
       return;
     }
     case "export": {
