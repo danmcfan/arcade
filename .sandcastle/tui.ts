@@ -4,7 +4,7 @@ import type { AgentStreamEvent, IterationUsage } from "@ai-hero/sandcastle";
 // progress bar, and the latest agent activity under it. It redraws the whole screen on a timer,
 // so stray output from Sandcastle or Docker is painted over rather than tearing the layout.
 
-type State = "waiting" | "running" | "done" | "failed";
+type State = "waiting" | "running" | "done" | "skipped" | "stopped" | "failed";
 
 interface Step {
   readonly name: string;
@@ -16,14 +16,31 @@ interface Step {
 }
 
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const ICON: Record<Exclude<State, "running">, string> = { waiting: "·", done: "✓", failed: "✗" };
-const COLOUR: Record<State, string> = { waiting: "2", running: "36", done: "32", failed: "31" };
+const ICON: Record<Exclude<State, "running">, string> = {
+  waiting: "·",
+  done: "✓",
+  skipped: "↷",
+  stopped: "■",
+  failed: "✗",
+};
+const COLOUR: Record<State, string> = {
+  waiting: "2",
+  running: "36",
+  done: "32",
+  skipped: "2",
+  stopped: "33",
+  failed: "31",
+};
 const ACTIVITY_KEPT = 200;
 
 export interface Tui {
   /** Mark a step running, with an optional note shown beside it (e.g. "round 2"). */
   start: (step: string, note?: string) => void;
   done: (step: string, note?: string) => void;
+  /** Mark a step finished by an earlier run of the same issue. */
+  skip: (step: string, note?: string) => void;
+  /** Mark a step stopped by Ctrl-C. */
+  stop: (step: string, note?: string) => void;
   fail: (step: string, note?: string) => void;
   /** Add an iteration's token usage to a step. */
   tokens: (step: string, usage: IterationUsage | undefined) => void;
@@ -57,7 +74,7 @@ export function createTui(title: string, names: readonly string[]): Tui {
   const render = (): void => {
     const width = process.stdout.columns || 100;
     const height = process.stdout.rows || 30;
-    const finished = steps.filter((s) => s.state === "done").length;
+    const finished = steps.filter((s) => s.state === "done" || s.state === "skipped").length;
     const current = steps.find((s) => s.state === "running");
     const barWidth = Math.max(10, Math.min(40, width - 30));
     const filled = Math.round((finished / steps.length) * barWidth);
@@ -91,10 +108,6 @@ export function createTui(title: string, names: readonly string[]): Tui {
     frame++;
     render();
   }, 100);
-  process.on("SIGINT", () => {
-    exit();
-    process.exit(130);
-  });
 
   const activity = (line: string): void => {
     const time = new Date().toTimeString().slice(0, 8);
@@ -111,6 +124,12 @@ export function createTui(title: string, names: readonly string[]): Tui {
     },
     done(name, note = "") {
       Object.assign(find(name), { state: "done", note, ended: Date.now() });
+    },
+    skip(name, note = "") {
+      Object.assign(find(name), { state: "skipped", note });
+    },
+    stop(name, note = "") {
+      Object.assign(find(name), { state: "stopped", note, ended: Date.now() });
     },
     fail(name, note = "") {
       Object.assign(find(name), { state: "failed", note, ended: Date.now() });
