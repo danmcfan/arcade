@@ -67,58 +67,9 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
     run.onStep?.(name);
   };
 
-  // Rejects as soon as the run is aborted, for work that takes no AbortSignal of its own.
-  const interruptible = async <T>(work: Promise<T>): Promise<T> => {
-    const settled = await Promise.race([
-      work,
-      new Promise<never>((_, reject) => {
-        if (signal.aborted) reject(asError(signal.reason));
-        signal.addEventListener(
-          "abort",
-          () => {
-            reject(asError(signal.reason));
-          },
-          { once: true },
-        );
-      }),
-    ]);
-    return settled;
-  };
-
   enter("setup");
   tui.start("setup", "container and bun install");
-  // Sandcastle adds SIGINT/SIGTERM listeners that remove the container and exit(1) at once,
-  // before the caller can close its progress view or say how to carry on. Its exit listener
-  // stays, so a crash still removes the container.
-  const listening = {
-    SIGINT: new Set(process.listeners("SIGINT")),
-    SIGTERM: new Set(process.listeners("SIGTERM")),
-  };
-  const create = async (): ReturnType<typeof createSandbox> => {
-    const created = await createSandbox({
-      branch,
-      baseBranch: base,
-      sandbox: docker(),
-      hooks: { sandbox: { onSandboxReady: [{ command: "bun install --frozen-lockfile" }] } },
-    });
-    return created;
-  };
-  const creating = run.serialize ? run.serialize(create) : create();
-  let started: Awaited<typeof creating>;
-  try {
-    started = await interruptible(creating);
-  } catch (error) {
-    // Stopped during setup: let the container come up, then remove it.
-    const [late] = await Promise.allSettled([creating]);
-    if (late?.status === "fulfilled") await late.value.close();
-    throw error;
-  }
-  await using sandbox = started;
-  for (const signalName of ["SIGINT", "SIGTERM"] as const) {
-    for (const listener of process.listeners(signalName)) {
-      if (!listening[signalName].has(listener)) process.off(signalName, listener);
-    }
-  }
+  await using sandbox = await openSandbox(branch, base, run);
   const out = `${sandbox.worktreePath}/out`;
   if (existsSync(savedOut)) cpSync(savedOut, out, { recursive: true, force: false });
   tui.done("setup");
@@ -178,7 +129,7 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
   // The fix agent is told to leave the check green; this makes sure, and refixes if not.
   const checkGreen = async (round: number): Promise<boolean> => {
     tui.start("check", round === 1 ? "bun run check" : `bun run check, after fix round ${round - 1}`);
-    const check = await interruptible(sandbox.exec("bun run check"));
+    const check = await untilAborted(sandbox.exec("bun run check"), signal);
     if (check.exitCode === 0) return true;
     tui.activity(`\u001B[31mbun run check failed\u001B[0m (round ${round})`);
     if (round > MAX_FIX_ROUNDS) return false;
@@ -237,6 +188,93 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
     }
   }
   return progress;
+}
+
+// Rejects as soon as `signal` aborts, for work that takes no AbortSignal of its own.
+async function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  const settled = await Promise.race([
+    work,
+    new Promise<never>((_, reject) => {
+      if (signal.aborted) reject(asError(signal.reason));
+      signal.addEventListener(
+        "abort",
+        () => {
+          reject(asError(signal.reason));
+        },
+        { once: true },
+      );
+    }),
+  ]);
+  return settled;
+}
+
+// The container for `branch` (cut from `base` if the branch is new), with dependencies installed.
+async function openSandbox(
+  branch: string,
+  base: string,
+  run: Pick<IssueRun, "signal" | "serialize">,
+): ReturnType<typeof createSandbox> {
+  // Sandcastle adds SIGINT/SIGTERM listeners that remove the container and exit(1) at once,
+  // before the caller can close its progress view or say how to carry on. Its exit listener
+  // stays, so a crash still removes the container.
+  const listening = {
+    SIGINT: new Set(process.listeners("SIGINT")),
+    SIGTERM: new Set(process.listeners("SIGTERM")),
+  };
+  const create = async (): ReturnType<typeof createSandbox> => {
+    const created = await createSandbox({
+      branch,
+      baseBranch: base,
+      sandbox: docker(),
+      hooks: { sandbox: { onSandboxReady: [{ command: "bun install --frozen-lockfile" }] } },
+    });
+    return created;
+  };
+  const creating = run.serialize ? run.serialize(create) : create();
+  let started: Awaited<typeof creating>;
+  try {
+    started = await untilAborted(creating, run.signal);
+  } catch (error) {
+    // Stopped during setup: let the container come up, then remove it.
+    const [late] = await Promise.allSettled([creating]);
+    if (late?.status === "fulfilled") await late.value.close();
+    throw error;
+  }
+  for (const signalName of ["SIGINT", "SIGTERM"] as const) {
+    for (const listener of process.listeners(signalName)) {
+      if (!listening[signalName].has(listener)) process.off(signalName, listener);
+    }
+  }
+  return started;
+}
+
+/**
+ * Merges origin/main into the issue's pushed branch, with an agent resolving the conflicts
+ * (sync.md), and pushes the merge once `bun run check` passes. Throws if any of that fails.
+ */
+export async function resolveConflicts(run: Omit<IssueRun, "base" | "fresh" | "onStep">): Promise<void> {
+  const { issue, reporter: tui, signal, runs } = run;
+  const branch = `agent/${issue}`;
+  const logs = logsFor(issue);
+  await $`git fetch -q origin main ${branch}`.quiet();
+  // The local branch may lag the pushed one; the merge must build on what the PR holds.
+  await $`git branch -f ${branch} origin/${branch}`.quiet();
+  await using sandbox = await openSandbox(branch, "origin/main", run);
+  const name = `sync-${Date.now()}`;
+  const result = await sandbox.run({
+    name,
+    agent: OPUS,
+    promptFile: "./.sandcastle/sync.md",
+    promptArgs: { ISSUE_NUMBER: issue },
+    logging: { type: "file", path: `${logs}/${name}.log`, onAgentStreamEvent: tui.event },
+    signal,
+  });
+  runs.push({ step: `#${issue} sync`, result });
+  const merged = await $`git merge-base --is-ancestor origin/main ${branch}`.nothrow().quiet();
+  if (merged.exitCode !== 0) throw new Error("the agent did not merge origin/main");
+  const check = await untilAborted(sandbox.exec("bun run check"), signal);
+  if (check.exitCode !== 0) throw new Error("bun run check fails after the merge");
+  await $`git push -q origin ${branch}`.quiet();
 }
 
 /** One line saying what a finished run left behind. */
