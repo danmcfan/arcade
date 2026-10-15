@@ -36,36 +36,24 @@ export const pocketWatchPrice = 100;
 /** Every decoration's art is one box this many pixels square (src/ui/prizeArt.ts). */
 export const prizeBox = 8;
 
-/** Where a prize hangs around its cabinet. */
-type Spot = "left" | "above" | "right";
+/**
+ * The circle a cabinet's prizes hang on: centred over the cabinet, this far
+ * below its top, this many pixels out to each prize's centre.
+ */
+const arcDrop = 4;
+const arcRadius = 15;
 
 /**
- * How a cabinet's side prizes hang: an arch drops them level with the
- * cabinet's top, a rainbow keeps them up by the prize above it.
+ * The top-left of a prize's box at `hour` on a clock face round `cabinet`'s
+ * top (12 straight above, 9 to its left, 3 to its right), so it moves with
+ * the cabinet.
  */
-type Shape = "arch" | "rainbow";
-
-/** The middle cabinet's prizes make a rainbow, the outer cabinets' arches. */
-const shapes: Readonly<Record<SoftwareName, Shape>> = { brassMonkey: "arch", sweetSam: "rainbow", firefly: "arch" };
-
-/** Pixels between a side prize's box and its cabinet. */
-const sideGap = 4;
-/** Pixels between the box above a cabinet and the cabinet's top. */
-const aboveGap = 2;
-/** How far a rainbow's sides sit below the box above the cabinet. */
-const rainbowDrop = 2;
-
-/**
- * The top-left of a prize's box at `spot` around `cabinet`, so it moves with
- * the cabinet. Each gap between cabinets (24 px) holds the middle cabinet's
- * rainbow side above its neighbour's arch side.
- */
-function hang(cabinet: SoftwareName, spot: Spot): { x: number; y: number } {
+function hang(cabinet: SoftwareName, hour: number): { x: number; y: number } {
   const c = minigame(cabinet).hubRect;
-  const above = c.y - aboveGap - prizeBox;
-  if (spot === "above") return { x: c.x + (c.w - prizeBox) / 2, y: above };
-  const x = spot === "left" ? c.x - sideGap - prizeBox : c.x + c.w + sideGap;
-  return { x, y: shapes[cabinet] === "arch" ? c.y : above + rainbowDrop };
+  const angle = (hour / 12) * 2 * Math.PI;
+  const cx = c.x + c.w / 2 + arcRadius * Math.sin(angle);
+  const cy = c.y + arcDrop - arcRadius * Math.cos(angle);
+  return { x: Math.round(cx - prizeBox / 2), y: Math.round(cy - prizeBox / 2) };
 }
 
 export interface Prize {
@@ -94,8 +82,9 @@ function decoration(id: PrizeId, y = 0): Sprite {
 
 /**
  * Every prize, in the order the prize counter menu lists them, each hung on
- * the wall around its cabinet (`hang`): the 100-ticket prize above it, the
- * others either side.
+ * the wall around its cabinet (`hang`): the 100-ticket prize at 12 o'clock.
+ * Brass Monkey's arc runs 9 to 12, Firefly's 3 to 12, and Sweet Sam's
+ * rainbow 10 to 2.
  */
 export const prizes: readonly Prize[] = [
   {
@@ -106,7 +95,7 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("honeyJar"),
     greySprite: decoration("honeyJar", prizeGreyY),
-    ...hang("sweetSam", "left"),
+    ...hang("sweetSam", 10),
   },
   {
     id: "runningShoes",
@@ -116,7 +105,7 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("runningShoes"),
     greySprite: decoration("runningShoes", prizeGreyY),
-    ...hang("sweetSam", "right"),
+    ...hang("sweetSam", 2),
   },
   {
     id: "sleepyBees",
@@ -126,7 +115,7 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
     greySprite: decoration("sleepyBees", prizeGreyY),
-    ...hang("sweetSam", "above"),
+    ...hang("sweetSam", 12),
   },
   {
     id: "lantern",
@@ -136,7 +125,7 @@ export const prizes: readonly Prize[] = [
     software: "firefly",
     sprite: decoration("lantern"),
     greySprite: decoration("lantern", prizeGreyY),
-    ...hang("firefly", "right"),
+    ...hang("firefly", 3),
   },
   {
     id: "glowStick",
@@ -146,7 +135,7 @@ export const prizes: readonly Prize[] = [
     software: "firefly",
     sprite: decoration("glowStick"),
     greySprite: decoration("glowStick", prizeGreyY),
-    ...hang("firefly", "left"),
+    ...hang("firefly", 1.5),
   },
   {
     id: "wings",
@@ -156,7 +145,7 @@ export const prizes: readonly Prize[] = [
     software: "firefly",
     sprite: decoration("wings"),
     greySprite: decoration("wings", prizeGreyY),
-    ...hang("firefly", "above"),
+    ...hang("firefly", 12),
   },
   {
     id: "oilCan",
@@ -166,7 +155,7 @@ export const prizes: readonly Prize[] = [
     software: "brassMonkey",
     sprite: decoration("oilCan"),
     greySprite: decoration("oilCan", prizeGreyY),
-    ...hang("brassMonkey", "left"),
+    ...hang("brassMonkey", 9),
   },
   {
     id: "springBoots",
@@ -176,7 +165,7 @@ export const prizes: readonly Prize[] = [
     software: "brassMonkey",
     sprite: decoration("springBoots"),
     greySprite: decoration("springBoots", prizeGreyY),
-    ...hang("brassMonkey", "above"),
+    ...hang("brassMonkey", 12),
   },
   {
     id: "pocketWatch",
@@ -186,7 +175,7 @@ export const prizes: readonly Prize[] = [
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
     greySprite: decoration("pocketWatch", prizeGreyY),
-    ...hang("brassMonkey", "right"),
+    ...hang("brassMonkey", 10.5),
   },
 ];
 

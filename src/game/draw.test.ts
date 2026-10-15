@@ -299,9 +299,9 @@ describe("hub draw", () => {
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
       ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // The jar left of the picture, the shoes right of it, the picture above the cabinet; + the buffer.
-      ["draw", "prizes", r.honeyJar.x, 0, 8, 8, 76, 48],
-      ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 108, 48],
-      ["draw", "prizes", r.sleepyBees.x, 0, 8, 8, 92, 46],
+      ["draw", "prizes", r.honeyJar.x, 0, 8, 8, 79, 49],
+      ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 105, 49],
+      ["draw", "prizes", r.sleepyBees.x, 0, 8, 8, 92, 41],
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
     // On the wall: above the skirting (y 53), clear of the floor.
@@ -316,9 +316,9 @@ describe("hub draw", () => {
     const r = prizeRects;
     // The lantern right of the cabinet, the glow stick left of it, the wings above it; + the buffer.
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", r.lantern.x, 0, 8, 8, 148, 56],
-      ["draw", "prizes", r.glowStick.x, 0, 8, 8, 116, 56],
-      ["draw", "prizes", r.wings.x, 0, 8, 8, 132, 46],
+      ["draw", "prizes", r.lantern.x, 0, 8, 8, 147, 56],
+      ["draw", "prizes", r.glowStick.x, 0, 8, 8, 143, 45],
+      ["draw", "prizes", r.wings.x, 0, 8, 8, 132, 41],
     ]);
   });
 
@@ -329,9 +329,9 @@ describe("hub draw", () => {
     const r = prizeRects;
     // The oil can on a shelf left of the cabinet, the boots and the watch on pegs above it; + the buffer.
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", r.oilCan.x, 0, 8, 8, 36, 56],
-      ["draw", "prizes", r.springBoots.x, 0, 8, 8, 52, 46],
-      ["draw", "prizes", r.pocketWatch.x, 0, 8, 8, 68, 56],
+      ["draw", "prizes", r.oilCan.x, 0, 8, 8, 37, 56],
+      ["draw", "prizes", r.springBoots.x, 0, 8, 8, 52, 41],
+      ["draw", "prizes", r.pocketWatch.x, 0, 8, 8, 41, 45],
     ]);
   });
 
@@ -340,7 +340,7 @@ describe("hub draw", () => {
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", prizeRects.runningShoes.x, 0, 8, 8, 108, 48],
+      ["draw", "prizes", prizeRects.runningShoes.x, 0, 8, 8, 105, 49],
     ]);
   });
 
