@@ -930,8 +930,8 @@ describe("drawing", () => {
     const t = new Title();
     const r = recordingSurface();
     t.draw(r.surface);
-    // One slice of logo.png per letter of ARCADE, so each can bob.
-    expect(r.sprites.map(([name]) => name)).toEqual(Array.from({ length: 6 }, () => "logo"));
+    // title-logo.png once; its animation is painted over it (src/title/logo.test.ts).
+    expect(r.sprites.map(([name]) => name)).toEqual(["titleLogo"]);
     expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
     expect(r.text("white")).not.toContain("CONTINUE");
@@ -990,7 +990,7 @@ describe("drawing", () => {
     expect(r.text()).not.toContain("120");
   });
 
-  test("the logo's letters bob on a wave and the selection arrows move in and out", () => {
+  test("the selection arrows move in and out", () => {
     const t = new Title();
     const frames = Array.from({ length: 60 }, () => {
       const r = recordingSurface();
@@ -998,11 +998,6 @@ describe("drawing", () => {
       hold(t, {}, 1);
       return r;
     });
-    const letterTops = frames.map((r) => r.sprites.map(([, , y]) => y).join());
-    expect(new Set(letterTops).size).toBeGreaterThan(1);
-    // Mid-wave, neighbouring letters sit at different heights.
-    expect(new Set(frames[10]?.sprites.map(([, , y]) => y)).size).toBeGreaterThan(1);
-
     const gaps = frames.map((r) => {
       const [left, first] = r.glyphs.filter((g) => g.ink === "yellow").toSorted((a, b) => a.x - b.x);
       if (left === undefined || first === undefined) throw new Error("no selection arrow drawn");

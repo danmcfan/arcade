@@ -1,13 +1,12 @@
-// Pixel-art source for the UI text font and the title logo. Each glyph is
-// drawn as rows of `#` (ink) and `.` (blank). scripts/gen-ui-art.ts turns
-// these into src/assets/images/font.png and logo.png; the runtime reads the
-// glyph widths from here (src/ui/text.ts) and the logo letters' pixels only to
-// paint the title's rainbow sweep over them (src/title/draw.ts).
+// Pixel-art source for the UI text font. Each glyph is drawn as rows of `#`
+// (ink) and `.` (blank). scripts/gen-ui-art.ts turns these into
+// src/assets/images/font.png; the runtime reads the glyph widths from here
+// (src/ui/text.ts).
 //
 // The small font copies the 7-px lettering on the hub title cards
 // ("INTERACT TO PLAY"): thin strokes with the corners knocked off. The
-// logo letters are cut from the display font of the Go port's original Brass
-// Monkey title card.
+// title logo's letters (src/ui/titleArt.ts) were doubled from the display
+// font of the Go port's original Brass Monkey title card.
 
 /** Height of every small-font glyph. */
 export const glyphHeight = 7;
@@ -97,96 +96,6 @@ export const inkOrder: readonly Ink[] = Object.keys(inks).filter((k): k is Ink =
 export const bandRows = Math.ceil(charset.length / sheetColumns);
 export const fontSheetWidth = sheetColumns * cell;
 export const fontSheetHeight = bandRows * cell * inkOrder.length;
-
-/** Logo letters (15 px tall), cut from the Go port's original Brass Monkey title card. */
-export const logoLetters: Readonly<Record<string, readonly string[]>> = {
-  A: [
-    "..##########..",
-    ".############.",
-    "####......####",
-    "###........###",
-    "###........###",
-    "###........###",
-    "####......####",
-    "##############",
-    "##############",
-    "##############",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###........###",
-    "##..........##",
-  ],
-  R: [
-    "############..",
-    "#############.",
-    "##############",
-    "###.......####",
-    "###.......####",
-    "###.......####",
-    "#############.",
-    "############..",
-    "###....###....",
-    "###.....###...",
-    "###.....###...",
-    "###......###..",
-    "###......###..",
-    "###.......###.",
-    "###.......###.",
-  ],
-  // That card's G with the inner bar and right side removed.
-  C: [
-    ".############.",
-    "##############",
-    "##############",
-    "###........###",
-    "###...........",
-    "###...........",
-    "###...........",
-    "###...........",
-    "###...........",
-    "###...........",
-    "###...........",
-    "###........###",
-    "##############",
-    "##############",
-    ".############.",
-  ],
-  D: [
-    "###########...",
-    "#############.",
-    "#############.",
-    "###.......####",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###........###",
-    "###.......####",
-    "#############.",
-    "#############.",
-    "###########...",
-  ],
-  E: [
-    "..##########..",
-    "##############",
-    "##############",
-    "###...........",
-    "##............",
-    "##............",
-    "##########....",
-    "##########....",
-    "##########....",
-    "##............",
-    "##............",
-    "###...........",
-    "##############",
-    "##############",
-    "..##########..",
-  ],
-};
 
 /**
  * Title-card letters (15 px tall, like the cards' display font) for a name
@@ -392,22 +301,6 @@ export function titleRows(text: string): string[] {
   }
   return rows;
 }
-
-export const logoWord = "ARCADE";
-export const logoGap = 3;
-/** Drop shadow offset of the logo, in pixels. */
-export const logoShadow: readonly [number, number] = [1, 2];
-/** Logo fill by row band (top to bottom), then the shadow colour. */
-export const logoBands: readonly { until: number; color: string }[] = [
-  { until: 5, color: "#ffcd75" },
-  { until: 10, color: "#ef7d57" },
-  { until: 15, color: "#b13e53" },
-];
-export const logoShadowColor = "#5d275d";
-
-const logoLetterWidth = 14;
-export const logoWidth = logoWord.length * logoLetterWidth + (logoWord.length - 1) * logoGap + logoShadow[0];
-export const logoHeight = 15 + logoShadow[1];
 
 /** Pixel width of a glyph (the width of its rows). */
 export function glyphWidth(ch: string): number {
