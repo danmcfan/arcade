@@ -94,12 +94,11 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   }
 }
 
-/** Each shelf column's width; the shelf is centred in the panel. */
-const shelfColumnWidth = 52;
-/** Each shelf row's height: a picture, its price under it. */
-const shelfRowHeight = 23;
-/** The tallest picture a shelf cell holds. */
+/** The tallest picture a prize card holds. */
 const pictureHeight = 12;
+/** A prize card: its picture over its price, inside a 1 px border. */
+const cardWidth = 42;
+const cardHeight = 2 + pictureHeight + 1 + textHeight + 2;
 
 /** What each token offer does, for the info panel. */
 const tokenEffects: Readonly<Record<TokenOffer, string>> = {
@@ -118,15 +117,13 @@ function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; pric
   return { name: slot.prize.name, price: `${slot.prize.price}`, effect: slot.prize.effect };
 }
 
-/** The gap between the shelf, the BUY TOKEN row and the info panel. */
-const sectionGap = 6;
-
 /**
- * The prize counter panel, filling `area` but for a 1-2 px border, with its
- * contents centred in it: the prize shelf (a column per cabinet, each picture
- * over its price: red when the player is short, OWNED and the picture greyed
- * out once bought), BUY TOKEN and CLOSE under it, and an info panel for what
- * the cursor is on. The tickets show in the HUD, so the panel doesn't repeat them.
+ * The prize counter panel, filling `area` but for a 1-2 px border: the prize
+ * shelf (a card per prize, a column per cabinet; a card is red when the
+ * player is short, grey and reading OWNED once bought, and lit up when
+ * selected), BUY TOKEN and CLOSE under it, and an info panel for what the
+ * cursor is on. The tickets show on the scoreboard, so the panel doesn't
+ * repeat them. The rows sit at even gaps down the panel.
  */
 function drawPrizeCounter(
   screen: Surface,
@@ -141,60 +138,57 @@ function drawPrizeCounter(
   const height = area.h - 2;
   drawPanel(screen, x, y, width, height);
 
+  // Five rows (three of cards, BUY TOKEN, the info panel) inside the 3 px frame, with six even gaps.
   const infoHeight = 2 * textHeight + 2;
-  const contentHeight = shelfRows * shelfRowHeight + sectionGap + textHeight + sectionGap + infoHeight;
+  const inner = height - 6;
+  const gap = Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight) / 6);
+  const top = y + 3 + Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight - 6 * gap) / 2) + gap;
+
   const offers = w.counter();
   const cols = shelfColumns.length;
-  const shelfLeft = x + Math.trunc((width - cols * shelfColumnWidth) / 2);
-  const shelfTop = y + Math.trunc((height - contentHeight) / 2);
+  const colGap = Math.trunc((width - 6 - cols * cardWidth) / (cols + 1));
+  const left = x + 3 + Math.trunc((width - 6 - cols * cardWidth - (cols + 1) * colGap) / 2) + colGap;
   for (let i = 0; i < shelf.length; i++) {
     const { row, col, prize: p } = shelfCell(i);
-    const centre = shelfLeft + col * shelfColumnWidth + shelfColumnWidth / 2;
-    const top = shelfTop + row * shelfRowHeight;
+    const cx = left + col * (cardWidth + colGap);
+    const cy = top + row * (cardHeight + gap);
     const offer = offers.prizes[prizes.indexOf(p)];
     if (offer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
+    const look = cardLooks[offer];
+    const selected = i === cursor;
+    screen.fillRect(cx, cy, cardWidth, cardHeight, selected ? look.border : look.edge);
+    screen.fillRect(cx + 1, cy + 1, cardWidth - 2, cardHeight - 2, selected ? look.lit : look.fill);
+    const centre = cx + cardWidth / 2;
     const picture = offer === "owned" ? p.greySprite : p.sprite;
-    const px = centre - Math.trunc(picture.w / 2);
-    const py = top + pictureHeight - picture.h;
-    screen.draw(picture, px, py);
+    screen.draw(picture, centre - Math.trunc(picture.w / 2), cy + 2 + pictureHeight - picture.h);
     const label = offer === "owned" ? "OWNED" : `${p.price}`;
-    drawTextCentered(screen, label, centre, top + pictureHeight + 2, priceInk[offer]);
-    if (i === cursor) drawCellCursor(screen, centre - 18, top - 2, 36, pictureHeight + textHeight + 6, tick);
+    drawTextCentered(screen, label, centre, cy + 2 + pictureHeight + 1, look.ink);
   }
 
-  const rowY = shelfTop + shelfRows * shelfRowHeight + sectionGap;
+  const rowY = top + shelfRows * cardHeight + (shelfRows - 1) * gap + gap;
   const token = tokenItems[offers.token];
   const tokenGrey = offers.token === "short";
-  const tokenCentre = shelfLeft + shelfColumnWidth;
-  const closeCentre = shelfLeft + (cols - 0.5) * shelfColumnWidth;
+  const tokenCentre = left + cardWidth + colGap / 2;
+  const closeCentre = left + (cols - 1) * (cardWidth + colGap) + cardWidth / 2;
   drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
   drawRowItem(screen, closeItem, closeCentre, rowY, cursor === closeCursor, false, tick);
 
-  const infoTop = rowY + textHeight + sectionGap;
+  const infoTop = rowY + textHeight + gap;
   const info = counterInfo(counterSlot(cursor), offers.token);
   drawText(screen, info.name, x + 7, infoTop, "white");
   drawText(screen, info.price, x + width - 7 - textWidth(info.price), infoTop, "white");
   drawText(screen, info.effect, x + 7, infoTop + textHeight + 2, "white");
 }
 
-/** A shelf price's ink: yellow, red when the player is short, grey once owned. */
-const priceInk: Readonly<Record<PrizeOffer, Ink>> = { buy: "yellow", short: "red", owned: "grey" };
-
-/** The shelf cursor: yellow corner brackets round a cell, pulsing out a pixel with the menu arrows. */
-function drawCellCursor(screen: Surface, x: number, y: number, w: number, h: number, tick: number): void {
-  const o = Math.min(1, arrowOffset(tick));
-  const [l, t, r, b] = [x - o, y - o, x + w - 1 + o, y + h - 1 + o];
-  const ink = sweetie.y;
-  for (const [cx, cy, dx, dy] of [
-    [l, t, 1, 1],
-    [r, t, -1, 1],
-    [l, b, 1, -1],
-    [r, b, -1, -1],
-  ] as const) {
-    screen.fillRect(Math.min(cx, cx + dx * 2), cy, 3, 1, ink);
-    screen.fillRect(cx, Math.min(cy, cy + dy * 2), 1, 3, ink);
-  }
-}
+/**
+ * A prize card's colours by offer: its edge and fill, and the yellow-edged,
+ * brighter fill it takes when selected; and its price's ink.
+ */
+const cardLooks: Readonly<Record<PrizeOffer, { edge: string; fill: string; border: string; lit: string; ink: Ink }>> = {
+  buy: { edge: sweetie.m, fill: sweetie.n, border: sweetie.y, lit: sweetie.b, ink: "yellow" },
+  short: { edge: sweetie.r, fill: sweetie.p, border: sweetie.y, lit: sweetie.r, ink: "white" },
+  owned: { edge: sweetie.m, fill: sweetie.d, border: sweetie.y, lit: sweetie.m, ink: "blue" },
+};
 
 /** BUY TOKEN or CLOSE centred on `centre`: yellow after an arrow when selected, grey when it can't be chosen. */
 function drawRowItem(

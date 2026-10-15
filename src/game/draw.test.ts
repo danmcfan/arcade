@@ -768,13 +768,13 @@ describe("prize counter menu", () => {
     expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
   });
 
-  test("an owned prize is greyed out and reads OWNED; one the player can't afford keeps its colour, its price red", () => {
+  test("an owned prize is greyed out and reads OWNED; on a grey card; one the player can't afford is on a red card, its price white", () => {
     const r = recordingSurface();
     atCounter(1, 60, ["honeyJar"]).draw(r.surface);
     const pictures = shelfPictures(r);
     expect(pictures.filter(([, grey]) => grey).map(([id]) => id)).toEqual(["honeyJar"]);
-    expect(r.text("red")).toBe("100100100");
-    expect(r.text("grey")).toBe("OWNED");
+    expect(r.text("white")).toMatch(/^100100100/u);
+    expect(r.text("blue")).toBe("OWNED");
   });
 
   test("a bought token shows on the scoreboard at once", () => {
@@ -796,7 +796,7 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
     expect(r.text("grey")).toBe("BUY TOKEN");
-    expect(r.text("red")).toBe("100100100505050252525");
+    expect(r.text("white")).toMatch(/^100100100505050252525/u);
   });
 
   test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {
