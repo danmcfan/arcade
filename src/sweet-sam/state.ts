@@ -1,5 +1,6 @@
 // Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
+import { dropEaten, noDropEaten } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import { sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
@@ -283,6 +284,7 @@ export class PlayState implements State {
     }
 
     // At most one item is eaten per tick.
+    let ate = false;
     for (let idx = 0; idx < s.items.length; idx++) {
       const item = s.items[idx];
       if (item === null || item === undefined) {
@@ -323,13 +325,12 @@ export class PlayState implements State {
         }
       }
 
-      for (const e of s.enemies) {
-        if (e.dotMinimum > 0) {
-          e.dotMinimum--;
-        }
-      }
-
+      dropEaten(s.release, s.enemies);
+      ate = true;
       break;
+    }
+    if (!ate) {
+      noDropEaten(s.release, s.enemies, s.values());
     }
 
     updateFlower(s);
@@ -382,7 +383,7 @@ export class DeathWaitState implements State {
       this.s.pauseTicks--;
       return stateIDDeathWait;
     }
-    restartRound(this.s);
+    restartRound(this.s, true);
     return stateIDStart;
   }
 

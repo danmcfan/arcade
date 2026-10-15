@@ -41,6 +41,8 @@ export interface LevelValues {
   /** Scatter and chase phases, in order; the last never ends. */
   modeSequence: readonly ModeConfig[];
   dotMinimums: DotMinimums;
+  /** Ticks without an eaten drop before the preferred bee leaves the home. */
+  idleReleaseTicks: number;
 }
 
 /**
@@ -75,30 +77,35 @@ const levels: readonly LevelValues[] = [
     sleepyFrames: blueFramesDuration,
     modeSequence,
     dotMinimums: goDotMinimums,
+    idleReleaseTicks: framesPerSecond * 4,
   },
   {
     beeVelocity: 0.953125,
     sleepyFrames: framesPerSecond * 9,
     modeSequence: modes([7, 6, 5, 4], [20, 21, 22]),
     dotMinimums: { pink: 0, teal: 25, orange: 50 },
+    idleReleaseTicks: framesPerSecond * 4,
   },
   {
     beeVelocity: 0.96875,
     sleepyFrames: framesPerSecond * 8,
     modeSequence: modes([7, 6, 4, 3], [21, 22, 24]),
     dotMinimums: { pink: 0, teal: 20, orange: 40 },
+    idleReleaseTicks: framesPerSecond * 4,
   },
   {
     beeVelocity: 0.984375,
     sleepyFrames: framesPerSecond * 7,
     modeSequence: modes([7, 5, 4, 2], [21, 23, 26]),
     dotMinimums: { pink: 0, teal: 15, orange: 30 },
+    idleReleaseTicks: framesPerSecond * 4,
   },
   {
     beeVelocity: 1,
     sleepyFrames: framesPerSecond * 6,
     modeSequence: modes([7, 5, 3, 1], [22, 24, 28]),
     dotMinimums: { pink: 0, teal: 10, orange: 20 },
+    idleReleaseTicks: framesPerSecond * 3,
   },
 ];
 

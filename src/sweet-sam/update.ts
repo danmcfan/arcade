@@ -1,5 +1,6 @@
 // Port of the Go Sweet Sam minigame's update.go (docs/port-notes.md gives its old Go name).
 
+import { afterDeath, newRelease } from "./release.ts";
 import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
@@ -121,7 +122,7 @@ export function updateBlue(e: Entity): void {
 }
 
 export function updatePosition(e: Entity, cs: readonly Entity[]): void {
-  if (e.dotMinimum > 0) {
+  if (e.dotMinimum > 0 || e.held) {
     return;
   }
 
@@ -265,11 +266,18 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
 
 /**
  * Go `restartRound`. Leaves camera, particles, items and
- * `modeCurrent` alone (D11).
+ * `modeCurrent` alone (D11). After a lost life the bees keep their personal
+ * counters and wait on the global one (release.ts); otherwise they start
+ * the level's.
  */
-export function restartRound(s: SweetSamSoftware): void {
+export function restartRound(s: SweetSamSoftware, lostLife = false): void {
   s.player = newPlayer();
-  s.enemies = newEnemies(levelValues(s.level).dotMinimums);
+  if (lostLife) {
+    s.enemies = afterDeath(s.release, s.enemies);
+  } else {
+    s.release = newRelease();
+    s.enemies = newEnemies(levelValues(s.level).dotMinimums);
+  }
 
   s.modeIndex = 0;
   s.modeTicks = 0;
@@ -293,6 +301,7 @@ export function resetEnemy(e: Entity): void {
   e.flash = false;
   e.home = true;
   e.dotMinimum = 0;
+  e.held = false;
 }
 
 export function findCorner(e: Entity, cs: readonly Entity[]): Entity | null {

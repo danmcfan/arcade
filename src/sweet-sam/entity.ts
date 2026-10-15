@@ -123,6 +123,8 @@ export class Entity {
 
   home = false;
   dotMinimum = 0;
+  /** Held in the home by the global drop counter after a death (release.ts). */
+  held = false;
 
   blueFrames = 0;
   flashFrames = 0;

@@ -456,6 +456,20 @@ describe("bonus flower", () => {
     expect(flowerPoints(3)).toBeGreaterThan(flowerPoints(1));
   });
 
+  test("after a lost life the bees wait on the global drop counter, keeping their personal ones (#155)", () => {
+    const s = playing();
+    eatUpTo(s, 10);
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    expect(s.release.globalDots).toBe(0);
+    expect(s.enemies.map((e) => [e.kind, e.held, e.dotMinimum])).toEqual([
+      ["red", false, 0],
+      ["pink", true, 0],
+      ["teal", true, 29],
+      ["orange", true, 60],
+    ]);
+  });
+
   test("a lost life takes the flower away", () => {
     const s = playing();
     eatUpTo(s, flowerDrops[0]);
