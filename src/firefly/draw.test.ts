@@ -18,7 +18,7 @@ import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { drawTextCentered } from "../ui/text.ts";
-import { FireflySoftware, newFireflySoftware } from "./game.ts";
+import { FireflySoftware, newFireflySoftware, playerY } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 interface DrawCall {
@@ -163,5 +163,26 @@ describe("firefly draw", () => {
     expect(of(calls, imageHit).map((c) => [c.sprite.sx, c.x, c.y])).toEqual([[0, 112 + 8 - 16, 264 + 8 - 16]]);
     // Only the spare lives are left.
     expect(of(calls, imageFirefly).length).toBe(2);
+  });
+
+  test("after the last life the firefly is not drawn again", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.lives = 0;
+    f.respawn = 1;
+    f.update(NO_INPUT);
+    expect(f.over).toBe(true);
+    expect(f.respawn).toBe(0);
+    expect(of(drawCalls(f), imageFirefly)).toEqual([]);
+  });
+
+  test("a respawn with lives left draws the firefly at its start", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.lives = 1;
+    f.respawn = 1;
+    f.update(NO_INPUT);
+    expect(f.over).toBe(false);
+    expect(of(drawCalls(f), imageFirefly)).toContainEqual({ sprite: imageFirefly, x: f.player.x, y: playerY });
   });
 });
