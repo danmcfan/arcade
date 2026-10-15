@@ -89,8 +89,9 @@ function buyHoneyJar(v: Verify): void {
   v.step(4, { down: true });
   v.tap("space");
   check(game(v).menu === "prizeCounter", "Space facing the counter opens the prize counter menu", game(v).menu);
-  v.tap("down");
-  check(game(v).cursor === 1, "Down selects the honey jar", game(v).cursor);
+  v.tap("up");
+  v.tap("right");
+  check(game(v).cursor === 7, "Up then Right select the honey jar, bottom of the middle column", game(v).cursor);
   v.frame("2-menu-prizes");
 
   sounds(v);
@@ -113,11 +114,11 @@ function buyHoneyJar(v: Verify): void {
   v.tap("space");
   a = game(v).arcade;
   check(
-    a.tickets === 35 && sounds(v).includes("play:deny"),
-    "Space on the owned honey jar plays the no sound and takes nothing",
+    a.tickets === 35 && !sounds(v).some((name) => name.startsWith("play:")),
+    "Space on the owned honey jar plays no sound and takes nothing",
     a,
   );
-  v.tap("down");
+  v.tap("up");
   v.tap("space");
   check(
     game(v).arcade.tickets === 35 && sounds(v).includes("play:deny"),
@@ -182,7 +183,9 @@ function buyAndPlay(v: Verify): void {
   v.wait(300);
   v.key("Space"); // open
   v.wait(800);
-  v.key("ArrowDown"); // honey jar
+  v.key("ArrowUp"); // the oil can
+  v.wait(300);
+  v.key("ArrowRight"); // honey jar
   v.wait(800);
   v.key("Space"); // buy
   v.wait(1200);

@@ -16,6 +16,8 @@ export interface MenuItem {
   note?: string;
   /** False when it can't be chosen right now: drawn grey, Space plays the deny sound. */
   enabled: boolean;
+  /** True when Space does nothing and plays no sound, e.g. a prize already owned. */
+  inert?: boolean;
   choose: () => void;
 }
 
@@ -26,28 +28,37 @@ export class Menu {
   cursor = 0;
   readonly items: () => readonly MenuItem[];
   private readonly back: (() => void) | undefined;
+  private readonly move: ((cursor: number, dx: number, dy: number) => number) | undefined;
 
   /**
    * `items` is called each step and draw, so labels and enabled states follow
    * the game (a save appearing, the Wallet changing). `back` is what Esc does;
-   * without it Esc is ignored.
+   * without it Esc is ignored. `move` lays the items out as a grid: it is
+   * where the cursor goes for each arrow (dx, dy: -1, 0 or 1); without it the
+   * items are a list that Up and Down wrap round, and Left and Right are ignored.
    */
-  constructor(items: () => readonly MenuItem[], back?: () => void) {
+  constructor(
+    items: () => readonly MenuItem[],
+    back?: () => void,
+    move?: (cursor: number, dx: number, dy: number) => number,
+  ) {
     this.items = items;
     this.back = back;
+    this.move = move;
   }
 
-  /** Put the cursor back on the first item, as when the menu opens. */
-  open(): void {
-    this.cursor = 0;
+  /** Put the cursor on item `at` (the first by default), as when the menu opens. */
+  open(at = 0): void {
+    this.cursor = at;
   }
 
   step(edges: MenuEdges): MenuStep {
     const items = this.items();
     let result: MenuStep = null;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta !== 0) {
-      this.cursor = (this.cursor + delta + items.length) % items.length;
+    const dy = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
+    const dx = this.move ? (edges.right ? 1 : 0) - (edges.left ? 1 : 0) : 0;
+    if (dx !== 0 || dy !== 0) {
+      this.cursor = this.move ? this.move(this.cursor, dx, dy) : (this.cursor + dy + items.length) % items.length;
       sounds.move.blip();
       result = "moved";
     }
@@ -59,6 +70,7 @@ export class Menu {
     if (!edges.space) return result;
     const item = items[this.cursor];
     if (item === undefined) throw new Error(`menu: no item at ${this.cursor}`);
+    if (item.inert === true) return result;
     if (!item.enabled) {
       sounds.deny.blip();
       return "denied";

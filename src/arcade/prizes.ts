@@ -8,7 +8,7 @@
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
-import { prizeRects } from "../ui/prizeArt.ts";
+import { prizeGreyY, prizeRects } from "../ui/prizeArt.ts";
 import { minigame } from "../game/minigames.ts";
 
 export type PrizeId =
@@ -44,18 +44,22 @@ export interface Prize {
   name: string;
   /** Tickets it costs. */
   price: number;
+  /** What it does, as the prize counter's info panel says it. */
+  effect: string;
   /** The minigame it gives an advantage in. */
   software: SoftwareName;
   /** Its decoration in the hub. */
   sprite: Sprite;
+  /** The decoration greyed out, for the prize counter's owned prizes. */
+  greySprite: Sprite;
   /** Top-left of the decoration, in hub-image coordinates. It is not solid. */
   x: number;
   y: number;
 }
 
-function decoration(id: PrizeId): Sprite {
+function decoration(id: PrizeId, y = 0): Sprite {
   const r = prizeRects[id];
-  return sub(imagePrizes, r.x, 0, r.x + r.w, r.h);
+  return sub(imagePrizes, r.x, y, r.x + r.w, y + r.h);
 }
 
 /**
@@ -71,8 +75,10 @@ export const prizes: readonly Prize[] = [
     id: "honeyJar",
     name: "HONEY JAR",
     price: honeyJarPrice,
+    effect: "+1 LIFE IN SWEET SAM",
     software: "sweetSam",
     sprite: decoration("honeyJar"),
+    greySprite: decoration("honeyJar", prizeGreyY),
     x: sweetCabinet.x - 9,
     y: sweetCabinet.y - 11,
   },
@@ -80,8 +86,10 @@ export const prizes: readonly Prize[] = [
     id: "runningShoes",
     name: "RUNNING SHOES",
     price: runningShoesPrice,
+    effect: "SAM RUNS FASTER",
     software: "sweetSam",
     sprite: decoration("runningShoes"),
+    greySprite: decoration("runningShoes", prizeGreyY),
     x: sweetCabinet.x + 17,
     y: sweetCabinet.y - 9,
   },
@@ -89,8 +97,10 @@ export const prizes: readonly Prize[] = [
     id: "sleepyBees",
     name: "SLEEPY BEES",
     price: sleepyBeesPrice,
+    effect: "BEES SLEEP LONGER",
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
+    greySprite: decoration("sleepyBees", prizeGreyY),
     x: sweetCabinet.x + 2,
     y: sweetCabinet.y - 12,
   },
@@ -101,8 +111,10 @@ export const prizes: readonly Prize[] = [
     id: "lantern",
     name: "LANTERN",
     price: lanternPrice,
+    effect: "+1 LIFE IN FIREFLY",
     software: "firefly",
     sprite: decoration("lantern"),
+    greySprite: decoration("lantern", prizeGreyY),
     x: fireflyCabinet.x + 17,
     y: fireflyCabinet.y - 4,
   },
@@ -110,8 +122,10 @@ export const prizes: readonly Prize[] = [
     id: "glowStick",
     name: "GLOW STICK",
     price: glowStickPrice,
+    effect: "3 SPARKS AT ONCE",
     software: "firefly",
     sprite: decoration("glowStick"),
+    greySprite: decoration("glowStick", prizeGreyY),
     x: fireflyCabinet.x - 4,
     y: fireflyCabinet.y - 6,
   },
@@ -119,8 +133,10 @@ export const prizes: readonly Prize[] = [
     id: "wings",
     name: "WINGS",
     price: wingsPrice,
+    effect: "FIREFLY FLIES FASTER",
     software: "firefly",
     sprite: decoration("wings"),
+    greySprite: decoration("wings", prizeGreyY),
     x: fireflyCabinet.x + 2,
     y: fireflyCabinet.y - 9,
   },
@@ -128,8 +144,10 @@ export const prizes: readonly Prize[] = [
     id: "oilCan",
     name: "OIL CAN",
     price: oilCanPrice,
+    effect: "+1 LIFE IN BRASS MONKEY",
     software: "brassMonkey",
     sprite: decoration("oilCan"),
+    greySprite: decoration("oilCan", prizeGreyY),
     x: brassCabinet.x - 13,
     y: brassCabinet.y + 1,
   },
@@ -137,8 +155,10 @@ export const prizes: readonly Prize[] = [
     id: "springBoots",
     name: "SPRING BOOTS",
     price: springBootsPrice,
+    effect: "JUMP HIGHER",
     software: "brassMonkey",
     sprite: decoration("springBoots"),
+    greySprite: decoration("springBoots", prizeGreyY),
     x: brassCabinet.x,
     y: brassCabinet.y - 13,
   },
@@ -146,8 +166,10 @@ export const prizes: readonly Prize[] = [
     id: "pocketWatch",
     name: "POCKET WATCH",
     price: pocketWatchPrice,
+    effect: "SLOWER BONUS",
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
+    greySprite: decoration("pocketWatch", prizeGreyY),
     x: brassCabinet.x + 14,
     y: brassCabinet.y - 12,
   },

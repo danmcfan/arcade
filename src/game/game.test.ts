@@ -512,13 +512,33 @@ function wallet(game: Game): { tokens: number; tickets: number } {
   return { tokens: a.tokens, tickets: a.tickets };
 }
 
-/** The prize counter menu with the cursor on prize `n` (0 = honey jar). */
-function atPrize(tickets: number, n: number, prizes: PrizeId[] = []): Harness {
+/** Each prize's shelf cell (row * 3 + column): a column per cabinet in hub order, cheapest at the top. */
+const shelfCell: Record<PrizeId, number> = {
+  pocketWatch: 0,
+  sleepyBees: 1,
+  wings: 2,
+  springBoots: 3,
+  runningShoes: 4,
+  glowStick: 5,
+  oilCan: 6,
+  honeyJar: 7,
+  lantern: 8,
+};
+/** The cursor on BUY TOKEN and on CLOSE, the row below the shelf. */
+const tokenCursor = 9;
+const closeCursor = 10;
+
+/** The prize counter with the cursor on prize `id`. */
+function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness {
   const g = newGame(null, { highScore: 0, tokens: 5, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
-  for (let i = 0; i <= n; i++) tap(g.game, "down");
+  const cell = shelfCell[id];
+  tap(g.game, "up"); // BUY TOKEN up: the bottom of the left column
+  for (let row = 2; row > Math.trunc(cell / 3); row--) tap(g.game, "up");
+  for (let col = 0; col < cell % 3; col++) tap(g.game, "right");
+  expect(snap(g.game).cursor).toBe(cell);
   return g;
 }
 
@@ -531,7 +551,7 @@ describe("prize counter", () => {
     });
     const s = snap(game);
     expect(s.menu).toBe("prizeCounter");
-    expect(s.cursor).toBe(0);
+    expect(s.cursor).toBe(tokenCursor);
     expect(s.software).toBeNull();
     expect(s.run).toBeNull();
     expect(built).toEqual([]);
@@ -566,8 +586,8 @@ describe("prize counter", () => {
 
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
-    tap(game, "up");
-    expect(snap(game).cursor).toBe(10);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(closeCursor);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
     expect(snap(game).cursor).toBe(0);
@@ -576,23 +596,67 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move the cursor round the eleven items (token, nine prizes, CLOSE) with the move blip", () => {
+  test("Up and Down move within a cabinet's column, through the token row, with the move blip", () => {
     const { game } = atCounter(5, 0);
     const sounds = heard(game, () => {
       tap(game, "up");
     });
-    expect(snap(game).cursor).toBe(10);
     expect(sounds).toEqual(["rewind:move", "play:move"]);
+    const seen = [snap(game).cursor];
+    for (let i = 0; i < 3; i++) {
+      tap(game, "up");
+      seen.push(snap(game).cursor);
+    }
+    expect(seen).toEqual([6, 3, 0, tokenCursor]);
     tap(game, "down");
     expect(snap(game).cursor).toBe(0);
-    for (let i = 1; i <= 10; i++) {
+    tap(game, "right");
+    for (const want of [4, 7, tokenCursor]) {
       tap(game, "down");
-      expect(snap(game).cursor).toBe(i);
+      expect(snap(game).cursor).toBe(want);
     }
   });
 
+  test("the right column's foot is CLOSE, and Up from CLOSE climbs it", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "right");
+    tap(game, "up");
+    expect(snap(game).cursor).toBe(8);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(closeCursor);
+  });
+
+  test("Left and Right move between columns round the shelf, and between BUY TOKEN and CLOSE", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(tokenCursor);
+    tap(game, "left");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "left");
+    tap(game, "up"); // pocket watch
+    const seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      tap(game, "right");
+      seen.push(snap(game).cursor);
+    }
+    expect(seen).toEqual([7, 8, 6]);
+    tap(game, "left");
+    expect(snap(game).cursor).toBe(8);
+  });
+
+  test("an owned prize can't be chosen: no sound, nothing taken", () => {
+    const { game } = atPrize(200, "honeyJar", ["honeyJar"]);
+    const sounds = heard(game, () => {
+      tap(game, "space");
+    });
+    expect(sounds).toEqual([]);
+    expect(snap(game).arcade).toMatchObject({ tickets: 200, prizes: ["honeyJar"] });
+  });
+
   test("Space on a prize the player can afford buys it: its price comes off once and it is owned", () => {
-    const { game } = atPrize(60, 0);
+    const { game } = atPrize(60, "honeyJar");
     const sounds = heard(game, () => {
       tap(game, "space");
     });
@@ -603,7 +667,7 @@ describe("prize counter", () => {
   });
 
   test("an unaffordable prize can't be bought: the no sound, nothing taken", () => {
-    const { game } = atPrize(99, 2);
+    const { game } = atPrize(99, "sleepyBees");
     const sounds = heard(game, () => {
       tap(game, "space");
     });
@@ -613,7 +677,7 @@ describe("prize counter", () => {
   });
 
   test("owned prizes go to every minigame the player starts, paid or free play", () => {
-    const { game, built } = atPrize(60, 0);
+    const { game, built } = atPrize(60, "honeyJar");
     tap(game, "space");
     tap(game, "escape");
     run(game, 40, { up: true });
@@ -634,13 +698,14 @@ describe("prize counter", () => {
   });
 
   test("a Firefly prize is bought the same way, and goes to the Firefly run", () => {
-    const { game, built } = atPrize(60, 3); // the lantern
+    const { game, built } = atPrize(60, "lantern");
     tap(game, "space");
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "space");
     expect(snap(game).arcade.tickets).toBe(35);
-    tap(game, "down"); // glow stick, 50: too few tickets
+    tap(game, "up"); // glow stick, 50: too few tickets
+    expect(snap(game).cursor).toBe(shelfCell.glowStick);
     tap(game, "space");
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "escape");

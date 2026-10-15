@@ -88,6 +88,7 @@ export const inks = {
   blue: "#94b0c2",
   grey: "#566c86",
   dark: "#1a1c2c",
+  red: "#b13e53",
 } as const;
 export type Ink = keyof typeof inks;
 export const inkOrder: readonly Ink[] = Object.keys(inks).filter((k): k is Ink => k in inks);

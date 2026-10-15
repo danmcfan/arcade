@@ -19,7 +19,7 @@ import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
 import { Menu } from "./menu.ts";
-import { prizeCounterItems } from "./menus.ts";
+import { moveCounterCursor, prizeCounterItems, tokenCursor } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -66,6 +66,7 @@ export class Game implements Scene {
     () => {
       this.closeCounter();
     },
+    moveCounterCursor,
   );
   /**
    * Menu key presses, and keys held when a menu closes: those are hidden
@@ -219,7 +220,7 @@ export class Game implements Scene {
     }
     sounds.select.blip();
     this.counterOpen = true;
-    this.counterMenu.open();
+    this.counterMenu.open(tokenCursor);
   }
 
   /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
@@ -247,7 +248,6 @@ export class Game implements Scene {
           software: software.name,
           list: this.run.pauseMenu,
           payout: this.run.payout,
-          tickets: this.arcade.wallet.tickets,
           tick: this.tick,
           playfield,
         };
@@ -270,7 +270,6 @@ export class Game implements Scene {
         software: null,
         list: this.counterMenu,
         payout: null,
-        tickets: this.arcade.wallet.tickets,
         tick: this.tick,
         playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });

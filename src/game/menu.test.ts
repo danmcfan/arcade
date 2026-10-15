@@ -3,7 +3,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { MenuEdges } from "../engine/input.ts";
 import { Menu, type MenuItem } from "./menu.ts";
 
-const none: MenuEdges = { up: false, down: false, space: false, escape: false };
+const none: MenuEdges = { up: false, down: false, left: false, right: false, space: false, escape: false };
 const press = (k: keyof MenuEdges): MenuEdges => ({ ...none, [k]: true });
 
 let heard: SoundEvent[] = [];
@@ -85,5 +85,46 @@ describe("Menu", () => {
     m.step(press("down"));
     m.open();
     expect(m.cursor).toBe(0);
+  });
+
+  test("open(at) puts the cursor on item at", () => {
+    const m = new Menu(() => [item("A", []), item("B", [])]);
+    m.open(1);
+    expect(m.cursor).toBe(1);
+  });
+
+  test("Left and Right do nothing in a list", () => {
+    const m = new Menu(() => [item("A", []), item("B", [])]);
+    expect(m.step(press("right"))).toBeNull();
+    expect(m.cursor).toBe(0);
+    expect(heard).toEqual([]);
+  });
+
+  test("with a move function the arrows go where it says, with a blip", () => {
+    const moves: [number, number, number][] = [];
+    const m = new Menu(
+      () => [item("A", []), item("B", []), item("C", [])],
+      undefined,
+      (cursor, dx, dy) => {
+        moves.push([cursor, dx, dy]);
+        return 2;
+      },
+    );
+    expect(m.step(press("left"))).toBe("moved");
+    expect(m.cursor).toBe(2);
+    m.step(press("up"));
+    expect(moves).toEqual([
+      [0, -1, 0],
+      [2, 0, -1],
+    ]);
+    expect(heard).toEqual(["play:move", "play:move"]);
+  });
+
+  test("Space on an inert item does nothing and plays no sound", () => {
+    const chosen: string[] = [];
+    const m = new Menu(() => [{ ...item("A", chosen), inert: true }]);
+    expect(m.step(press("space"))).toBeNull();
+    expect(chosen).toEqual([]);
+    expect(heard).toEqual([]);
   });
 });

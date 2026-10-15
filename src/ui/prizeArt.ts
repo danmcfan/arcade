@@ -6,6 +6,7 @@
 // the sheet from here (src/arcade/prizes.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
+import { sweetie } from "./sweetie16.ts";
 import { stripRects } from "./strip.ts";
 
 export const prizeArt = {
@@ -122,4 +123,14 @@ export const prizeRects: Readonly<Record<PrizeId, { x: number; w: number; h: num
 );
 
 export const prizeSheetWidth = Object.values(prizeRects).reduce((w, r) => Math.max(w, r.x + r.w), 0);
-export const prizeSheetHeight = Math.max(...Object.values(prizeRects).map((r) => r.h));
+const prizeRowHeight = Math.max(...Object.values(prizeRects).map((r) => r.h));
+/** The sheet has two rows: the decorations, then each one greyed out for the prize counter's owned prizes. */
+export const prizeGreyY = prizeRowHeight;
+export const prizeSheetHeight = prizeRowHeight * 2;
+
+/** The grey a decoration's colours become: white to light grey, the rest to mid grey; the outline stays black. */
+export const greyLetters: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.keys(sweetie)
+    .filter((c) => c !== "k")
+    .map((c) => [c, c === "w" ? "l" : "m"]),
+);

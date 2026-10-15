@@ -102,19 +102,21 @@ function prizeCounter(v: Verify): void {
   v.step(4, { down: true });
   press(v, "space");
   check(game(v).menu === "prizeCounter", "Space at the desk opens the prize counter");
+  check(game(v).cursor === 9, "the prize counter opens on BUY TOKEN");
   v.frame("08-counter-token");
-  press(v, "down");
+  press(v, "up");
+  press(v, "right");
   press(v, "space");
   check(game(v).arcade.tickets === 60, "the owned honey jar can't be bought");
   v.frame("09-counter-owned");
-  press(v, "down");
+  press(v, "up");
   press(v, "space");
   check(game(v).arcade.tickets === 10, "the running shoes cost 50 tickets");
   v.frame("10-counter-bought");
-  press(v, "up");
-  press(v, "up");
-  press(v, "up");
-  check(game(v).cursor === 10, "Up from the token wraps to CLOSE");
+  press(v, "right");
+  press(v, "down");
+  press(v, "down");
+  check(game(v).cursor === 10, "Down from the foot of the right column reaches CLOSE");
   v.frame("11-counter-close");
   press(v, "space");
   check(game(v).menu === null, "CLOSE goes back to the hub");
@@ -164,7 +166,7 @@ function video(v: Verify): void {
       v.key("ArrowDown", 300);
       v.key("Space");
       v.wait(600);
-      for (const k of ["ArrowDown", "ArrowDown", "Space", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"]) {
+      for (const k of ["ArrowUp", "ArrowRight", "ArrowUp", "Space", "ArrowRight", "ArrowDown", "ArrowDown"]) {
         v.key(k);
         v.wait(300);
       }

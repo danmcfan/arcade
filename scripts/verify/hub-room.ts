@@ -106,9 +106,9 @@ function room(v: Verify): void {
   check(game(v).menu === "prizeCounter", "Space facing the desk opens the prize counter menu", game(v).menu);
   v.frame("2-desk-menu");
   check(marginPixels(v)[0] === 0, "the menu stays inside the frame, under the scoreboard");
-  for (let i = 0; i < 10; i++) v.tap("down");
-  check(game(v).cursor === 10, "Down scrolls the menu to CLOSE", game(v).cursor);
-  v.frame("3-desk-menu-scrolled");
+  v.tap("right");
+  check(game(v).cursor === 10, "Right moves from BUY TOKEN to CLOSE", game(v).cursor);
+  v.frame("3-desk-menu-close");
   v.tap("escape");
   check(game(v).menu === null, "Esc closes it", game(v).menu);
 

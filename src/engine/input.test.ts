@@ -34,6 +34,12 @@ describe("readInput", () => {
     expect(readInput(new Set(["Space", "Escape"]), new Set())).toEqual(held({ space: true, escape: true }));
   });
 
+  test("Enter and E work as Space, Backspace as Escape", () => {
+    for (const code of ["Enter", "NumpadEnter", "KeyE"])
+      expect(readInput(new Set([code]), new Set())).toEqual(held({ space: true }));
+    expect(readInput(new Set(["Backspace"]), new Set())).toEqual(held({ escape: true }));
+  });
+
   test("shiftP needs Shift held and P just pressed this tick", () => {
     expect(readInput(new Set(["ShiftLeft", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);
     expect(readInput(new Set(["ShiftRight", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);
@@ -68,12 +74,21 @@ describe("direction helpers", () => {
 describe("MenuKeys", () => {
   test("reports menu keys on the tick they go down, not while held", () => {
     const keys = new MenuKeys();
-    expect(keys.read(held({ space: true })).edges).toEqual({ up: false, down: false, space: true, escape: false });
+    expect(keys.read(held({ space: true })).edges).toEqual({
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      space: true,
+      escape: false,
+    });
     expect(keys.read(held({ space: true })).edges.space).toBe(false);
     expect(keys.read(NO_INPUT).edges.space).toBe(false);
     expect(keys.read(held({ escape: true, down: true })).edges).toEqual({
       up: false,
       down: true,
+      left: false,
+      right: false,
       space: false,
       escape: true,
     });
