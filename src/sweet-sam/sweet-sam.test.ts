@@ -1,4 +1,4 @@
-// Sweet Sam self-check: drive `createSweetSam` directly (no hub) with scripted
+// Sweet Sam self-check: drive Sweet Sam's `create` (src/game/minigames.ts) directly (no hub) with scripted
 // inputs and compare against values captured from the Go original.
 //
 // test/fixtures/sweet-sam.goReference.json (provenance in test/fixtures/README.md)
@@ -16,7 +16,7 @@ import * as rng from "../engine/rng.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Input } from "../engine/input.ts";
 import type { SweetSamSnapshot } from "../game/snapshot.ts";
-import { createSweetSam } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import { SweetSamSoftware } from "./software.ts";
 import reference from "../../test/fixtures/sweet-sam.goReference.json";
 
@@ -99,8 +99,8 @@ function run(seed: number, ticks: number): Tick[] {
   });
   try {
     rng.seed(seed);
-    const s = createSweetSam(seed * 100);
-    if (!(s instanceof SweetSamSoftware)) throw new Error("createSweetSam must build a SweetSamSoftware");
+    const s = minigame("sweetSam").create({ highScore: seed * 100, prizes: [] });
+    if (!(s instanceof SweetSamSoftware)) throw new Error("Sweet Sam's create must build a SweetSamSoftware");
     const next = makeGenerator(seed);
     const out: Tick[] = [];
     for (let t = 1; t <= ticks; t++) {

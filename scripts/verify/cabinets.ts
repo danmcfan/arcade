@@ -20,7 +20,12 @@ import {
   cabinetPlayfieldWidth,
   cabinetWidth,
 } from "../../src/ui/cabinet.ts";
+import type { Rect } from "../../src/arcade/collision.ts";
+import { newPlayer } from "../../src/arcade/entity.ts";
+import { minigames } from "../../src/game/minigames.ts";
+import type { ArcadeTitle } from "../../src/game/snapshot.ts";
 import type { SoftwareName } from "../../src/game/software.ts";
+import { cabinets } from "../gen-cabinets.ts";
 import { decodeDataUrl } from "../browser.ts";
 import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
 
@@ -37,12 +42,35 @@ function canvas(v: Verify): PNG {
   return PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
 }
 
+/** The way from the hub spawn to a cabinet: none when it stands over the spawn, else left or right. */
+function sidewaysTo(rect: Readonly<Rect>): Partial<Input> | null {
+  const spawnX = newPlayer().x;
+  if (rect.x + rect.w <= spawnX) return { left: true };
+  if (rect.x > spawnX) return { right: true };
+  return null;
+}
+
+/** A minigame's cabinet outline in src/assets/images (art/cabinets.json). */
+function outlineFile(name: SoftwareName): string {
+  const c = cabinets.find((source) => source.name === name);
+  if (c === undefined) throw new Error(`art/cabinets.json has no cabinet for ${name}`);
+  return c.file;
+}
+
 /** How to walk from the hub spawn to each cabinet (as in the arcade-enter-* fixtures), and its outline art. */
-const walks: { name: SoftwareName; label: string; sideways: Partial<Input> | null; outline: string }[] = [
-  { name: "sweetSam", label: "sweet-sam", sideways: null, outline: "cabinet.png" },
-  { name: "firefly", label: "firefly", sideways: { right: true }, outline: "cabinet-firefly.png" },
-  { name: "brassMonkey", label: "brass-monkey", sideways: { left: true }, outline: "cabinet-brass-monkey.png" },
-];
+const walks: {
+  name: SoftwareName;
+  title: ArcadeTitle;
+  label: string;
+  sideways: Partial<Input> | null;
+  outline: string;
+}[] = minigames.map((m) => ({
+  name: m.name,
+  title: m.title,
+  label: m.name.replaceAll(/[A-Z]/gu, (c) => `-${c.toLowerCase()}`),
+  sideways: sidewaysTo(m.hubRect),
+  outline: outlineFile(m.name),
+}));
 
 /** Windows to play in, and the whole-number scale the cabinet gets in each. */
 const windows: [number, number, number][] = [
@@ -90,7 +118,7 @@ function enterCabinet(v: Verify, w: (typeof walks)[number]): Shot {
   v.step(32, { up: true });
   let s = v.snapshot(isGameSnapshot);
   check(
-    s.software === null && s.arcade.title === (w.name === "sweetSam" ? "sweet" : w.name),
+    s.software === null && s.arcade.title === w.title,
     `facing its hub cabinet shows the ${w.label} title`,
     s.arcade.title,
   );

@@ -9,7 +9,7 @@ import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
 import { FireflySoftware, playerY } from "./game.ts";
-import { createFirefly } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
   enemyHp,
@@ -100,7 +100,7 @@ function sparkAt(f: FireflySoftware, x: number, y: number): void {
 
 describe("a new run", () => {
   test("is Firefly on the night sky: stage 1, 3 lives, no score, not over", () => {
-    const f = createFirefly();
+    const f = minigame("firefly").create({ highScore: 0, prizes: [] });
     expect(f.name).toBe("firefly");
     expect(f.background()).toBe(imageFireflyBackground);
     expect(f.gameOver()).toBe(false);
@@ -111,7 +111,7 @@ describe("a new run", () => {
   });
 
   test("is a FixedViewport the size of the cabinet", () => {
-    const f = createFirefly();
+    const f = minigame("firefly").create({ highScore: 0, prizes: [] });
     expect(isFixedViewport(f)).toBe(true);
     if (isFixedViewport(f)) expect(f.fixedViewportSize()).toEqual([240, 304]);
   });
