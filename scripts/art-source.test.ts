@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { isRecord } from "./pixel.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
-import { artSources, asRowsValue, fromStrip, toStrip, writeRows } from "./art-source.ts";
+import { artSources, asRowsValue, fromSheet, toSheet, writeRows } from "./art-source.ts";
 import { plot } from "./pixel-art.ts";
 
 const fixture = `// A fixture art source.
@@ -81,43 +81,52 @@ describe("writeRows on the real art sources", () => {
   });
 });
 
-describe("toStrip and fromStrip", () => {
-  const frames = [
-    ["k.", "rr"],
-    ["rr", ".k"],
-  ];
+describe("toSheet and fromSheet", () => {
+  const walk = {
+    label: "walk",
+    value: [
+      ["k.", "rr"],
+      ["rr", ".k"],
+    ],
+  };
+  const pot = { label: "pot", value: ["yo"] };
 
-  test("a strip read back with no edits gives the same frames", () => {
-    const png = toStrip("walk", frames);
-    expect([png.width, png.height]).toEqual([4, 2]);
-    expect(fromStrip("walk", png, frames)).toEqual(frames);
+  test("a sheet read back with no edits gives the same rows", () => {
+    const png = toSheet([walk, pot]);
+    expect([png.width, png.height]).toEqual([4, 3]);
+    expect(fromSheet(png, [walk, pot])).toEqual([walk.value, pot.value]);
   });
 
   test("an edit to one frame changes only that frame", () => {
-    const png = toStrip("walk", frames);
+    const png = toSheet([walk, pot]);
     plot(png, 3, 0, sweetie.g);
-    expect(fromStrip("walk", png, frames)).toEqual([
-      ["k.", "rr"],
-      ["rg", ".k"],
+    expect(fromSheet(png, [walk, pot])).toEqual([
+      [
+        ["k.", "rr"],
+        ["rg", ".k"],
+      ],
+      pot.value,
     ]);
   });
 
-  test("one image stays one image", () => {
-    expect(fromStrip("pot", toStrip("pot", ["yo"]), ["yo"])).toEqual(["yo"]);
-  });
-
   test("glyph rows go out in white and come back as #", () => {
-    const glyph = ["#.", ".#"];
-    expect(fromStrip("A", toStrip("A", glyph), glyph)).toEqual(glyph);
+    const glyph = { label: "A", value: ["#.", ".#"] };
+    expect(fromSheet(toSheet([glyph]), [glyph])).toEqual([glyph.value]);
   });
 
-  test("refuses a strip of the wrong size", () => {
-    expect(() => fromStrip("walk", toStrip("pot", ["yo"]), frames)).toThrow(/strip is 4x2; the PNG is 2x1/u);
+  test("refuses a sheet of the wrong size", () => {
+    expect(() => fromSheet(toSheet([pot]), [walk])).toThrow(/is 4x2; the PNG is 2x1/u);
   });
 
   test("refuses a colour outside Sweetie 16", () => {
-    const png = toStrip("walk", frames);
+    const png = toSheet([walk]);
     plot(png, 1, 1, "#123456");
-    expect(() => fromStrip("walk", png, frames)).toThrow(/frame 0: .*#123456, not in the palette/u);
+    expect(() => fromSheet(png, [walk])).toThrow(/walk frame 0: .*#123456, not in the palette/u);
+  });
+
+  test("refuses a pixel drawn outside every frame", () => {
+    const png = toSheet([walk, pot]);
+    plot(png, 3, 2, sweetie.k);
+    expect(() => fromSheet(png, [walk, pot])).toThrow(/\(3, 2\) is outside every frame/u);
   });
 });

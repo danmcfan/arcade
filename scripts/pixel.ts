@@ -10,9 +10,10 @@
 //   bun run pixel preview <variants.json>             an HTML page: each option drawn into its game screen
 //                                                     (<variants.json>: { "path.ts:name": { "<label>": rows or frames } };
 //                                                     options sharing a label are one choice)
-//   bun run pixel export  <path.ts:name>...           each export's frames as a PNG strip in out/aseprite/,
-//                                                     to edit in Aseprite
-//   bun run pixel import  <png> <path.ts:name>        an edited strip written back into the export's rows,
+//   bun run pixel export  <path.ts:name>...           one PNG sheet in out/aseprite/ to edit in Aseprite: a row
+//                                                     per export (a record, e.g. bearWalk, is a row per entry),
+//                                                     its frames left to right
+//   bun run pixel import  <png> <path.ts:name>...     an edited sheet written back into the same exports' rows,
 //                                                     then `bun run art`
 //
 // An <image> is one of:
@@ -24,7 +25,7 @@
 //   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
 //
 // Options: --scale N (default: fits each image to about 256 px, at most 8x),
-// --out <file> (show, before, place, preview and export with one export), --ref <rev> (before; default
+// --out <file> (show, before, place, preview and export), --ref <rev> (before; default
 // origin/main), --nearest (rows: letter each colour as the nearest Sweetie 16
 // one, to import art drawn in another palette).
 
@@ -34,7 +35,7 @@ import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { asRowsValue, fromStrip, isRows, toStrip, writeRows, type RowsValue } from "./art-source.ts";
+import { asRowsValue, fromSheet, isRows, toSheet, writeRows, type SheetEntry } from "./art-source.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";
 
@@ -374,13 +375,34 @@ export async function previewOptions(variants: Record<string, unknown>): Promise
   }
 }
 
-/** The rows or frames `spec` names now; throws when it names anything else. */
-async function rowsAt(spec: string): Promise<{ source: SourceSpec; value: RowsValue }> {
+/** One rows or frames export (or record entry) to put on an Aseprite sheet. */
+interface SheetSource extends SheetEntry {
+  source: SourceSpec;
+}
+
+/**
+ * The rows or frames `spec` names now: one, or each entry of a record such as
+ * `bearWalk`. Throws when it names anything else.
+ */
+async function sheetSources(spec: string): Promise<SheetSource[]> {
   const source = parseSpec(spec);
   if (source === undefined) throw new Error(`"${spec}" is not path.ts:name[.key]`);
-  const value = asRowsValue(await exportValue(source));
-  if (value === undefined) throw new Error(`${spec} is not rows or a list of frames; name one entry with .key`);
-  return { source, value };
+  const exported = await exportValue(source);
+  const value = asRowsValue(exported);
+  if (value !== undefined) return [{ label: spec, value, source }];
+  const entries =
+    source.key === undefined && isRecord(exported) && !Array.isArray(exported) ? Object.entries(exported) : [];
+  const found = entries.flatMap(([key, entry]) => {
+    const rows = asRowsValue(entry);
+    return rows === undefined ? [] : [{ label: `${spec}.${key}`, value: rows, source: { ...source, key } }];
+  });
+  if (found.length === 0) throw new Error(`${spec} is not rows, a list of frames, or a record of them`);
+  return found;
+}
+
+/** Every export `specs` name, in order: the rows of one sheet. */
+async function sheetOf(specs: readonly string[]): Promise<SheetSource[]> {
+  return (await inOrder(specs, sheetSources)).flat();
 }
 
 function run(cmd: string[]): void {
@@ -389,19 +411,31 @@ function run(cmd: string[]): void {
 }
 
 /**
- * Write the strip at `png` into `spec`'s rows literal, then regenerate the art.
- * Prettier tidies the block only when the file was Prettier-clean before, so
- * nothing outside the block changes.
+ * Write the sheet at `png` back into the rows literals of the exports `specs`
+ * name, then regenerate the art. Prettier tidies each file only when it was
+ * Prettier-clean before, so nothing outside the blocks changes.
  */
-async function importStrip(png: string, spec: string): Promise<void> {
-  const { source, value } = await rowsAt(spec);
-  const rows = fromStrip(spec, PNG.sync.read(readFileSync(resolve(png))), value);
-  const path = join(repoRoot, source.file);
-  const wasClean = Bun.spawnSync(["bunx", "prettier", "--check", source.file], { cwd: repoRoot }).exitCode === 0;
-  writeFileSync(path, writeRows(readFileSync(path, "utf8"), source.name, source.key, rows));
-  if (wasClean) run(["bunx", "prettier", "--write", source.file]);
+async function importSheet(png: string, specs: readonly string[]): Promise<void> {
+  const sheetEntries = await sheetOf(specs);
+  const values = fromSheet(PNG.sync.read(readFileSync(resolve(png))), sheetEntries);
+  const files = [...new Set(sheetEntries.map((e) => e.source.file))];
+  const clean = files.filter(
+    (file) => Bun.spawnSync(["bunx", "prettier", "--check", file], { cwd: repoRoot }).exitCode === 0,
+  );
+  for (const file of files) {
+    const path = join(repoRoot, file);
+    let text = readFileSync(path, "utf8");
+    sheetEntries.forEach(({ source }, i) => {
+      const value = values[i];
+      if (source.file === file && value !== undefined) text = writeRows(text, source.name, source.key, value);
+    });
+    writeFileSync(path, text);
+  }
+  if (clean.length > 0) run(["bunx", "prettier", "--write", ...clean]);
   run(["bun", "run", "art"]);
-  console.log(`wrote ${spec}; read it back with git diff and bun run pixel before ${spec}`);
+  console.log(
+    `wrote ${sheetEntries.map((e) => e.label).join(", ")}; read it back with git diff and bun run pixel before`,
+  );
 }
 
 function write(png: PNG, out: string): void {
@@ -522,19 +556,22 @@ async function main(argv: string[]): Promise<void> {
       return;
     }
     case "export": {
-      if (opts["out"] !== undefined && specs.length > 1) throw new Error("--out names one file; export one spec");
-      await inOrder(specs, async (spec) => {
-        const { value } = await rowsAt(spec);
-        const name = spec.slice(spec.indexOf(":") + 1);
-        const file = resolve(opts["out"] ?? join(repoRoot, "out/aseprite", `${name}.png`));
-        write(toStrip(spec, value), file);
-      });
+      const sheetEntries = await sheetOf(specs);
+      const name = (specs[0] ?? "").slice((specs[0] ?? "").indexOf(":") + 1);
+      write(toSheet(sheetEntries), resolve(opts["out"] ?? join(repoRoot, "out/aseprite", `${name}.png`)));
+      for (const { label: entry, value } of sheetEntries) {
+        const frames = isRows(value) ? [value] : value;
+        console.log(
+          `  ${entry}: ${frames.length} frame(s) of ${frames[0]?.[0]?.length ?? 0}x${frames[0]?.length ?? 0}`,
+        );
+      }
+      console.log(`import it back with: bun run pixel import <png> ${specs.join(" ")}`);
       return;
     }
     case "import": {
-      const [png, spec] = specs;
-      if (png === undefined || spec === undefined || specs.length !== 2) usage();
-      await importStrip(png, spec);
+      const [png, ...rest] = specs;
+      if (png === undefined || rest.length === 0) usage();
+      await importSheet(png, rest);
       return;
     }
     default:

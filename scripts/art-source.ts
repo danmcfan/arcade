@@ -50,43 +50,74 @@ function paletteFor(value: RowsValue): Record<string, string> {
   return framesOf(value).some((rows) => rows.some((row) => row.includes("#"))) ? { "#": sweetie.w } : sweetie;
 }
 
-/** `value`'s frames left to right in one PNG, in Sweetie 16, for Aseprite to open. */
-export function toStrip(label: string, value: RowsValue): PNG {
-  const frames = framesOf(value);
-  const palette = paletteFor(value);
-  const [first] = frames;
-  const w = first?.[0]?.length ?? 0;
-  const h = first?.length ?? 0;
-  const png = blank(w * frames.length, h);
-  frames.forEach((rows, i) => {
-    checkRows(`${label} frame ${i}`, rows, { w, h }, palette);
-    paint(png, rows, palette, i * w, 0);
+/** One export (or record entry) on a sheet: its name and its rows or frames. */
+export interface SheetEntry {
+  label: string;
+  value: RowsValue;
+}
+
+/** Where each entry sits on a sheet: one row of the sheet each, top to bottom, frames left to right. */
+function layout(entries: readonly SheetEntry[]): {
+  width: number;
+  height: number;
+  rows: { frames: number; w: number; h: number; y: number }[];
+} {
+  let y = 0;
+  const rows = entries.map(({ value }) => {
+    const frames = framesOf(value);
+    const row = { frames: frames.length, w: frames[0]?.[0]?.length ?? 0, h: frames[0]?.length ?? 0, y };
+    y += row.h;
+    return row;
+  });
+  return { width: Math.max(0, ...rows.map((r) => r.w * r.frames)), height: y, rows };
+}
+
+/** The entries as one PNG in Sweetie 16, for Aseprite to open: one row each, its frames left to right. */
+export function toSheet(entries: readonly SheetEntry[]): PNG {
+  const { width, height, rows } = layout(entries);
+  const png = blank(width, height);
+  entries.forEach(({ label, value }, e) => {
+    const { w, h, y } = rows[e] ?? { w: 0, h: 0, y: 0 };
+    framesOf(value).forEach((frame, i) => {
+      checkRows(`${label} frame ${i}`, frame, { w, h }, paletteFor(value));
+      paint(png, frame, paletteFor(value), i * w, y);
+    });
   });
   return png;
 }
 
 /**
- * The rows in `png`, a strip `toStrip` drew from `before` and someone edited:
- * the same shape and size as `before`. Throws on a size that does not match or
- * a colour outside the palette.
+ * Each entry's rows read back from `png`, a sheet `toSheet` drew from the same
+ * entries and someone edited: each the same shape and size as before. Throws
+ * on a sheet size that does not match, a colour outside the palette, or a
+ * pixel drawn outside every frame.
  */
-export function fromStrip(label: string, png: PNG, before: RowsValue): RowsValue {
-  const frames = framesOf(before);
-  const w = frames[0]?.[0]?.length ?? 0;
-  const h = frames[0]?.length ?? 0;
-  if (png.width !== w * frames.length || png.height !== h) {
+export function fromSheet(png: PNG, entries: readonly SheetEntry[]): RowsValue[] {
+  const { width, height, rows } = layout(entries);
+  if (png.width !== width || png.height !== height) {
     throw new Error(
-      `${label} is ${frames.length} frame(s) of ${w}x${h}, so its strip is ${w * frames.length}x${h}; the PNG is ${png.width}x${png.height}`,
+      `the sheet for ${entries.map((e) => e.label).join(", ")} is ${width}x${height}; the PNG is ${png.width}x${png.height}`,
     );
   }
-  const after = frames.map((_, i) => {
-    try {
-      return toRows(png, paletteFor(before), i * w, 0, w, h);
-    } catch (e: unknown) {
-      throw new Error(`${label} frame ${i}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
+  for (const { frames, w, h, y } of rows) {
+    for (let Y = y; Y < y + h; Y++) {
+      for (let X = frames * w; X < width; X++) {
+        if (png.data[(Y * width + X) * 4 + 3] !== 0)
+          throw new Error(`pixel (${X}, ${Y}) is outside every frame; leave it blank`);
+      }
     }
+  }
+  return entries.map(({ label, value }, e) => {
+    const { w, h, y } = rows[e] ?? { w: 0, h: 0, y: 0 };
+    const after = framesOf(value).map((_, i) => {
+      try {
+        return toRows(png, paletteFor(value), i * w, y, w, h);
+      } catch (err: unknown) {
+        throw new Error(`${label} frame ${i}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      }
+    });
+    return isFrames(value) ? after : (after[0] ?? []);
   });
-  return isFrames(before) ? after : (after[0] ?? []);
 }
 
 const printWidth = 120;
