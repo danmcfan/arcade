@@ -188,7 +188,9 @@ export class PlayState implements State {
 
   update(i: Input): StateID {
     const s = this.s;
-    if (s.modeTicks === 0) {
+    // Sleepy time pauses the scatter/chase timer (Pac-Man Dossier).
+    const sleepy = s.enemies.some((e) => e.blueFrames > 0);
+    if (!sleepy && s.modeTicks === 0) {
       const modes = s.values().modeSequence;
       const modeConfig = modes[s.modeIndex];
       if (modeConfig === undefined) {
@@ -204,7 +206,7 @@ export class PlayState implements State {
       }
     }
 
-    if (s.modeTicks > 0) {
+    if (!sleepy && s.modeTicks > 0) {
       s.modeTicks--;
     }
 
