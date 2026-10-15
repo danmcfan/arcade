@@ -63,22 +63,22 @@ describe("prize catalogue", () => {
         .filter((p) => cabinetOf[p.software] === title)
         .map((p) => ({ id: p.id, dx: p.x - c.x, dy: p.y - c.y }));
     };
-    // The sides are 4 px clear of the cabinet, the box above 2 px clear of its top.
+    // The sides are 4 px clear of the cabinet, the box above centred and 2 px clear of its top.
     // An arch drops its sides level with the cabinet's top; a rainbow keeps them 2 px below the box above.
     expect(placed("brassMonkey")).toEqual([
-      { id: "oilCan", dx: -20, dy: 0 },
-      { id: "springBoots", dx: 0, dy: -18 },
+      { id: "oilCan", dx: -12, dy: 0 },
+      { id: "springBoots", dx: 4, dy: -10 },
       { id: "pocketWatch", dx: 20, dy: 0 },
     ]);
     expect(placed("sweet")).toEqual([
-      { id: "honeyJar", dx: -20, dy: -16 },
-      { id: "runningShoes", dx: 20, dy: -16 },
-      { id: "sleepyBees", dx: 0, dy: -18 },
+      { id: "honeyJar", dx: -12, dy: -8 },
+      { id: "runningShoes", dx: 20, dy: -8 },
+      { id: "sleepyBees", dx: 4, dy: -10 },
     ]);
     expect(placed("firefly")).toEqual([
       { id: "lantern", dx: 20, dy: 0 },
-      { id: "glowStick", dx: -20, dy: 0 },
-      { id: "wings", dx: 0, dy: -18 },
+      { id: "glowStick", dx: -12, dy: 0 },
+      { id: "wings", dx: 4, dy: -10 },
     ]);
   });
 

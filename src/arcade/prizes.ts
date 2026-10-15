@@ -34,7 +34,7 @@ export const springBootsPrice = 50;
 export const pocketWatchPrice = 100;
 
 /** Every decoration's art is one box this many pixels square (src/ui/prizeArt.ts). */
-export const prizeBox = 16;
+export const prizeBox = 8;
 
 /** Where a prize hangs around its cabinet. */
 type Spot = "left" | "above" | "right";
@@ -63,7 +63,7 @@ const rainbowDrop = 2;
 function hang(cabinet: SoftwareName, spot: Spot): { x: number; y: number } {
   const c = minigame(cabinet).hubRect;
   const above = c.y - aboveGap - prizeBox;
-  if (spot === "above") return { x: c.x, y: above };
+  if (spot === "above") return { x: c.x + (c.w - prizeBox) / 2, y: above };
   const x = spot === "left" ? c.x - sideGap - prizeBox : c.x + c.w + sideGap;
   return { x, y: shapes[cabinet] === "arch" ? c.y : above + rainbowDrop };
 }
