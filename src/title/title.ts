@@ -21,13 +21,7 @@ import { draw, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, saveVersion, type SaveData, type SaveStore } from "./save.ts";
 
 import { Menu, type MenuItem } from "../game/menu.ts";
-import { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
-
-export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
-
-const [continueLabel, newGameLabel] = titleMenu;
-const [noLabel, yesLabel] = confirmMenu;
-const [resumeLabel, controlsLabel, quitLabel] = pauseMenu;
+import { confirmItems, hubPauseItems, titleItems } from "./menus.ts";
 
 /** Phases the title music plays in: everything before the Game starts. */
 const MUSIC_PHASES: ReadonlySet<string> = new Set<TitlePhase>(["menu", "confirm", "intro"]);
@@ -60,46 +54,31 @@ export class Title implements Scene {
   private musicOn = false;
 
   /** The title menu: Continue is only listed when there is a save. Esc does nothing here. */
-  private readonly titleMenu = new Menu((): MenuItem[] => {
-    const newGame: MenuItem = {
-      label: newGameLabel,
-      enabled: true,
-      choose: (): void => {
+  private readonly titleMenu = new Menu((): MenuItem[] =>
+    titleItems({
+      newGame: (): void => {
         if (this.canContinue) this.show("confirm");
         else this.show("intro");
       },
-    };
-    if (!this.canContinue) return [newGame];
-    return [
-      {
-        label: continueLabel,
-        enabled: true,
-        choose: (): void => {
-          this.startGame(this.saved ?? undefined);
-        },
-      },
-      newGame,
-    ];
-  });
+      continueGame: this.canContinue
+        ? (): void => {
+            this.startGame(this.saved ?? undefined);
+          }
+        : null,
+    }),
+  );
 
   /** Asked before New game replaces a save; No (back to the title menu) is first. */
   private readonly confirmMenu = new Menu(
-    (): MenuItem[] => [
-      {
-        label: noLabel,
-        enabled: true,
-        choose: (): void => {
+    (): MenuItem[] =>
+      confirmItems({
+        no: (): void => {
           this.show("menu");
         },
-      },
-      {
-        label: yesLabel,
-        enabled: true,
-        choose: (): void => {
+        yes: (): void => {
           this.show("intro");
         },
-      },
-    ],
+      }),
     (): void => {
       this.show("menu");
     },
@@ -107,29 +86,18 @@ export class Title implements Scene {
 
   /** The hub pause menu; Esc resumes. */
   private readonly pauseMenu = new Menu(
-    (): MenuItem[] => [
-      {
-        label: resumeLabel,
-        enabled: true,
-        choose: (): void => {
+    (): MenuItem[] =>
+      hubPauseItems({
+        resume: (): void => {
           this.resume();
         },
-      },
-      {
-        label: controlsLabel,
-        enabled: true,
-        choose: (): void => {
+        controls: (): void => {
           this.phase = "controls";
         },
-      },
-      {
-        label: quitLabel,
-        enabled: true,
-        choose: (): void => {
+        quit: (): void => {
           this.quitToMenu();
         },
-      },
-    ],
+      }),
     (): void => {
       this.resume();
     },

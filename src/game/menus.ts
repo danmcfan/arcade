@@ -3,7 +3,7 @@
 // (a token, the prizes, CLOSE) over the hub. (The title scene's menus are in
 // src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
-import { prizes, type PrizeId } from "../arcade/prizes.ts";
+import { prizes } from "../arcade/prizes.ts";
 import { ticketsPerToken, type TokenOffer, type Wallet } from "../arcade/wallet.ts";
 import type { MenuItem } from "./menu.ts";
 
@@ -43,16 +43,13 @@ export function minigamePauseItems(a: MinigamePauseActions): MenuItem[] {
  * bought, and choosing it buys it.
  */
 export function prizeCounterItems(wallet: Wallet, close: () => void): MenuItem[] {
-  const buy = (item: "token" | PrizeId): void => {
-    wallet.buy(item);
-  };
   const token = tokenItems[wallet.counter().token];
   return [
     {
       ...token,
       enabled: wallet.canBuy("token"),
       choose: (): void => {
-        buy("token");
+        wallet.buy("token");
       },
     },
     ...prizes.map((p) => ({
@@ -60,7 +57,7 @@ export function prizeCounterItems(wallet: Wallet, close: () => void): MenuItem[]
       value: wallet.owns(p.id) ? "OWNED" : `${p.price}`,
       enabled: wallet.canBuy(p.id),
       choose: (): void => {
-        buy(p.id);
+        wallet.buy(p.id);
       },
     })),
     { label: closeItem, value: "", enabled: true, choose: close },

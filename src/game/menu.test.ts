@@ -74,9 +74,9 @@ describe("Menu", () => {
     expect(heard).toEqual([]);
   });
 
-  test("greyed lists the disabled items; labels lists every label", () => {
+  test("labels lists every label, disabled or not", () => {
     const m = new Menu(() => [item("A", []), item("B", [], false), item("C", [], false)]);
-    expect(m.greyed()).toEqual([1, 2]);
+    expect(m.items().map((i) => i.enabled)).toEqual([true, false, false]);
     expect(m.labels()).toEqual(["A", "B", "C"]);
   });
 

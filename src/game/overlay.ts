@@ -70,7 +70,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       const items = o.list.items();
       drawPausePanel(
         screen,
-        o.list.labels(),
+        items.map((i) => i.label),
         o.list.cursor,
         o.tick,
         centre,
@@ -131,7 +131,6 @@ function drawPrizeCounter(
   drawText(screen, count, left + icon.w + 3, y + 17, "yellow");
   const { cursor } = menu;
   const items = menu.items();
-  const greyed = menu.greyed();
   const start = counterWindowStart(cursor, items.length);
   const top = y + 31;
   const nameX = x + 14;
@@ -139,7 +138,7 @@ function drawPrizeCounter(
   items.slice(start, start + counterVisibleItems).forEach((item, row) => {
     const i = start + row;
     const rowY = top + row * counterRowHeight;
-    const grey = greyed.includes(i);
+    const grey = !item.enabled;
     const ink = grey ? "grey" : i === cursor ? "yellow" : "white";
     drawText(screen, item.label, nameX, rowY, ink);
     const value = item.value ?? "";

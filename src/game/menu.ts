@@ -71,9 +71,4 @@ export class Menu {
   labels(): string[] {
     return this.items().map((i) => i.label);
   }
-
-  /** Indexes of the items that can't be chosen right now. */
-  greyed(): number[] {
-    return this.items().flatMap((item, i) => (item.enabled ? [] : [i]));
-  }
 }
