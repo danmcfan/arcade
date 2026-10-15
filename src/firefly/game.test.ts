@@ -315,6 +315,42 @@ describe("lives", () => {
     expect(e.hp).toBe(0);
   });
 
+  test("a formation Moth ramming the firefly dies but scores nothing", () => {
+    const { f, e } = withOnly("moth", { x: 112, y: playerY });
+    f.update(NO_INPUT);
+    expect([f.score(), f.lives]).toEqual([0, startLives - 1]);
+    expect(e.deadFrames).toBeGreaterThan(0);
+  });
+
+  test("a diving Owl ramming the firefly leaves the score unchanged", () => {
+    const { f, e } = withOnly("owl", { x: 112, y: playerY });
+    e.state = "diving";
+    e.outOfFormation = true;
+    e.path = {
+      p0: { x: 112, y: playerY },
+      p1: { x: 112, y: playerY },
+      p2: { x: 112, y: playerY },
+      p3: { x: 112, y: playerY },
+    };
+    e.tStep = 0.001;
+    e.hp = 1;
+    f.points = 1234;
+    f.update(NO_INPUT);
+    expect([f.score(), f.lives, e.hp]).toEqual([1234, startLives - 1, 0]);
+  });
+
+  test("shooting a diving Owl still scores 400", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 100 });
+    e.state = "diving";
+    e.outOfFormation = true;
+    e.path = { p0: { x: 100, y: 100 }, p1: { x: 100, y: 100 }, p2: { x: 100, y: 100 }, p3: { x: 100, y: 100 } };
+    e.tStep = 0.001;
+    e.hp = 1;
+    sparkAt(f, 100, 100);
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(400);
+  });
+
   test("the third lost life ends the run once the firefly's burst has played", () => {
     const { f } = withOnly("moth", { x: 30, y: 40 });
     f.points = 1234;
