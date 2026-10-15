@@ -5,7 +5,7 @@
 // screenshot and a short video, go to out/verify/title-hints/.
 
 import { saveKey } from "../../src/title/save.ts";
-import { isTitleSnapshot, verify, type Verify } from "../harness.ts";
+import { isTitleSnapshot, verify } from "../harness.ts";
 
 const save = {
   v: 3,
@@ -17,25 +17,12 @@ const save = {
 };
 const storage = { [saveKey]: JSON.stringify(save) };
 
-/**
- * A headless browser can look touch-first (no pointer, small viewport), which
- * puts up the "needs a keyboard" notice; any keydown dismisses it, unseen by
- * the title. Under the hook the loop is paused, and only a real loop tick
- * clears a dismissed notice, so run the loop for a moment.
- */
-function dismissNotice(v: Verify): void {
-  v.page.eval(`window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftLeft", key: "Shift" })); "ok"`);
-  v.page.eval(`window.dispatchEvent(new KeyboardEvent("keyup", { code: "ShiftLeft", key: "Shift" })); "ok"`);
-  v.page.eval("window.__arcade.resume(); 'ok'");
-  v.wait(200);
-  v.page.eval("window.__arcade.pause(); 'ok'");
-}
-
 await verify("title-hints", (v) => {
+  // A desktop viewport: a headless browser that reports no pointer would otherwise get the keyboard notice.
+  v.page.run("set", "viewport", "1280", "900");
   v.openHook();
   v.page.eval(`localStorage.setItem(${JSON.stringify(saveKey)}, ${JSON.stringify(storage[saveKey])}); "ok"`);
   v.openHook();
-  dismissNotice(v);
   let s = v.snapshot(isTitleSnapshot);
   if (s.phase !== "menu" || !s.canContinue)
     throw new Error(`expected the title menu with Continue: ${JSON.stringify(s)}`);
@@ -56,13 +43,11 @@ await verify("title-hints", (v) => {
   v.frame("3-pause");
 
   v.open();
-  v.key("ShiftLeft");
   v.screenshot("4-live-menu");
 
   v.record(
     "menu",
     () => {
-      v.key("ShiftLeft");
       v.wait(800);
       v.key("KeyS");
       v.wait(500);

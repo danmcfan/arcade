@@ -70,12 +70,18 @@ export function draw(screen: Surface, t: Title): void {
       t.hostedGame().draw(screen);
       dimHub(screen);
       drawPausePanel(screen, t.items(), t.cursor, t.tick, centre, 56);
+      drawMenuHints(screen);
       return;
     case "controls":
       t.hostedGame().draw(screen);
       dimHub(screen);
       drawControlsPanel(screen, controls, 4, 40);
   }
+}
+
+/** The menu hints, wrapped to fit the screen. */
+function drawMenuHints(screen: Surface): void {
+  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
 }
 
 /** Blinking prompts show for 40 of every 60 ticks. */
@@ -150,7 +156,7 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
+  drawMenuHints(screen);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -166,7 +172,7 @@ function drawConfirm(screen: Surface, t: Title): void {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
   });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
-  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
+  drawMenuHints(screen);
 }
 
 function drawIntro(screen: Surface, t: Title): void {

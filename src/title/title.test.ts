@@ -926,6 +926,10 @@ describe("drawing", () => {
       expect(k.x).toBeGreaterThanOrEqual(0);
       expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
     }
+    // The hint rows sit below the last menu item.
+    const top = Math.min(...keys.map((k) => k.y));
+    const above = r.glyphs.filter((g) => g.y < top - 1);
+    expect(Math.max(...above.map((g) => g.y)) + 7).toBeLessThanOrEqual(top);
     expect(r.text("white")).toContain("CHOOSE");
     expect(r.text("white")).toContain("OK");
     expect(r.text()).not.toContain("↑↓ CHOOSE");
@@ -949,6 +953,30 @@ describe("drawing", () => {
     expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓WSCHOOSEESPACEENTEROK`);
     expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
     expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
+    // Clear of the confirm panel (y 40, 76 tall).
+    expect(Math.min(...r.keys().map((k) => k.y))).toBeGreaterThan(40 + 76);
+  });
+
+  test("the hub pause menu shows the same hints, on two rows inside the screen", () => {
+    const t = new Title({
+      store: memoryStore({
+        v: 3,
+        highScore: 0,
+        tokens: 5,
+        tickets: 0,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      }),
+    });
+    tap(t, "space");
+    tap(t, "escape");
+    expect(t.phase).toBe("paused");
+    const r = recordingSurface();
+    t.draw(r.surface);
+    const keys = r.keys();
+    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
+    expect([...new Set(keys.map((k) => k.y))]).toHaveLength(2);
+    for (const k of keys) expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
   });
 
   test("with a save that holds a high score, the menu does not show it", () => {
