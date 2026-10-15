@@ -106,7 +106,7 @@ function buyHoneyJar(v: Verify): void {
   const s = stored(v);
   check(
     s?.v === 4 && s.tickets === 35 && JSON.stringify(s.prizes) === '["honeyJar"]',
-    "the purchase is saved at once, as a v3 save",
+    "the purchase is saved at once, as a v4 save",
     s,
   );
   v.frame("3-menu-honey-jar-owned");

@@ -5,7 +5,7 @@
 
 import type { Direction } from "../engine/input.ts";
 import { isPrizeId, type PrizeId } from "../arcade/prizes.ts";
-import { noHighScores, startingTokens, Wallet, type HighScores } from "../arcade/wallet.ts";
+import { eachMachine, noHighScores, startingTokens, Wallet, type HighScores } from "../arcade/wallet.ts";
 import type { Progress } from "../game/game.ts";
 
 export interface SaveData extends Progress {
@@ -51,9 +51,8 @@ function count(v: unknown): v is number {
 
 function highScores(v: unknown): HighScores | null {
   if (!isRecord(v)) return null;
-  const { sweetSam, firefly, brassMonkey } = v;
-  if (!score(sweetSam) || !score(firefly) || !score(brassMonkey)) return null;
-  return { sweetSam, firefly, brassMonkey };
+  if (!Object.keys(noHighScores).every((name) => score(v[name]))) return null;
+  return eachMachine((name) => Number(v[name]));
 }
 
 function score(v: unknown): v is number {

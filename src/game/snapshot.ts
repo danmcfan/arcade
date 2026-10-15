@@ -18,6 +18,7 @@ import type { Direction } from "../engine/input.ts";
 import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import type { HighScores } from "../arcade/wallet.ts";
 
 /** Fields every top-level scene snapshot carries. */
 export interface SceneSnapshotBase {
@@ -54,7 +55,7 @@ export interface ArcadeSnapshot {
    */
   title: ArcadeTitle | null;
   /** The player's high score on each machine (Go had one `State.HighScore`). */
-  highScores: { sweetSam: number; firefly: number; brassMonkey: number };
+  highScores: HighScores;
   /** Tokens left (no Go original); 0 means the next cabinet start is free play. */
   tokens: number;
   /** Tickets won so far (no Go original). */

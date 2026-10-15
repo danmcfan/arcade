@@ -205,8 +205,10 @@ function upgradeV1(v: Verify): void {
   v.tap("space"); // Continue
   const g = game(v);
   check(
-    g.arcade.highScores.sweetSam === 0 && g.arcade.player.x === 60 && g.arcade.player.dir === "LEFT",
-    "Continue from a v: 1 save keeps its position; its one shared high score is dropped",
+    Object.values(g.arcade.highScores).every((s) => s === 0) &&
+      g.arcade.player.x === 60 &&
+      g.arcade.player.dir === "LEFT",
+    "Continue from a v: 1 save keeps its position; its one shared high score is dropped (every machine resets to 0)",
     g.arcade,
   );
   check(g.arcade.tokens === 5 && g.arcade.tickets === 0, "and adds 5 tokens and 0 tickets", g.arcade);

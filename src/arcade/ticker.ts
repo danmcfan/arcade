@@ -41,8 +41,8 @@ export interface TickerView {
   tokens: number;
   tickets: number;
   title: ArcadeTitle | null;
-  /** The faced cabinet's HI once it is beaten; absent or null while it is not. */
-  beatenHi?: number | null;
+  /** The faced cabinet's HI once it is beaten; null while it is not. */
+  beatenHi: number | null;
 }
 
 export const tokensLabel = "TOKENS";
@@ -89,7 +89,7 @@ export function tickerLetters(v: TickerView): TickerGlyph[] {
   if (v.title !== null) {
     const t = minigameTitled(v.title).titleCard;
     const name = tickerText(t.text, t.ink, tickerLeft);
-    if (v.beatenHi === undefined || v.beatenHi === null) {
+    if (v.beatenHi === null) {
       return [...name, ...tickerText(pressSpace, "white", tickerRight - tickerTextWidth(pressSpace))];
     }
     const hi = shown(v.beatenHi);

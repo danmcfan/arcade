@@ -56,7 +56,7 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
 
   const title = s.melodyPlaying ? s.imageTitle : null;
   const faced = s.machines.find((m) => m.title === title);
-  const beatenHi = faced !== undefined && s.wallet.beaten(faced.name) ? s.wallet.highScore(faced.name) : null;
+  const beatenHi = faced === undefined ? null : s.wallet.beatenHighScore(faced.name);
   drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, title, beatenHi }, tick, buffer);
 
   if (debugMode) {

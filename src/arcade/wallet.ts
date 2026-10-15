@@ -15,6 +15,11 @@ export const startingTokens = 5;
 /** A high score per machine. */
 export type HighScores = Readonly<Record<SoftwareName, number>>;
 
+/** A high score per machine, each one `of` its machine. */
+export function eachMachine(of: (machine: SoftwareName) => number): HighScores {
+  return { sweetSam: of("sweetSam"), firefly: of("firefly"), brassMonkey: of("brassMonkey") };
+}
+
 /**
  * Each machine's house high score: fixed by the arcade, the same for every
  * save. A strong run with no prizes falls short; one with that machine's
@@ -23,7 +28,7 @@ export type HighScores = Readonly<Record<SoftwareName, number>>;
 export const houseHighScores: HighScores = { sweetSam: 15000, firefly: 15000, brassMonkey: 15000 };
 
 /** A New game's player high scores. */
-export const noHighScores: HighScores = { sweetSam: 0, firefly: 0, brassMonkey: 0 };
+export const noHighScores: HighScores = eachMachine(() => 0);
 
 /** Tickets one token costs at the normal price. */
 export const ticketsPerToken = 5;
@@ -95,6 +100,11 @@ export class Wallet {
   /** The player's high score on `machine`. */
   highScore(machine: SoftwareName): number {
     return this._highScores[machine];
+  }
+
+  /** The player's high score on `machine` once it beats the house high score; null while it does not. */
+  beatenHighScore(machine: SoftwareName): number | null {
+    return this.beaten(machine) ? this._highScores[machine] : null;
   }
 
   /** Beaten: the player's high score on `machine` is above its house high score. */

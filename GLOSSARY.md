@@ -158,6 +158,10 @@ _Avoid_: free credit, bonus play
 A machine's fixed high score, set by the arcade, that the player must beat.
 _Avoid_: target score, par
 
+**Beaten**:
+A machine is beaten when the player's high score on it is above its house high score. Its cabinet then shows a star, and its HI shows the player's score instead of the house's.
+_Avoid_: cleared, conquered
+
 **Score**:
 Points earned inside one minigame run. The wallet keeps the player's high score for each machine.
 _Avoid_: tickets (they are separate)
