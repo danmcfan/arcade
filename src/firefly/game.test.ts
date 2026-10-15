@@ -388,6 +388,7 @@ describe("stages", () => {
     f.shots.push({ x: 112, y: playerY - 3, dx: 0, dy: 0 });
     f.update(NO_INPUT);
     expect(f.lives).toBe(0);
+    expect(f.enemies.every((e) => e.deadFrames > 0)).toBe(true);
     run(f, respawnTicks + hitEffectTicks);
     expect([f.over, f.stage]).toEqual([true, 1]);
   });

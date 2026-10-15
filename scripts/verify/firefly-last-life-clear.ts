@@ -7,6 +7,7 @@
 
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
+import { stageIntroTicks } from "../../src/firefly/rules.ts";
 import { isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 function check(ok: boolean, what: string, got?: unknown): void {
@@ -69,6 +70,11 @@ function findLastLifeClear(v: Verify): boolean {
         v.frame("2-game-over", 3);
         v.step(60);
         check(firefly(v)?.stage === 1, "the stage stays 1 under GAME OVER", firefly(v)?.stage);
+        check(
+          (firefly(v)?.stageTick ?? 0) > stageIntroTicks,
+          "no STAGE text is drawn under GAME OVER",
+          firefly(v)?.stageTick,
+        );
         v.frame("3-still-game-over", 3);
         return true;
       }
