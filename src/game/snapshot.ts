@@ -225,7 +225,7 @@ export interface SweetSamSnapshot {
   /** `SweetSamSoftware.modeTicks`. */
   modeTicks: number;
   /** `SweetSamSoftware.release`. */
-  release: { globalDots: number | null; idleTicks: number };
+  release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
   /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
   /** `SweetSamSoftware.startTicks`. */

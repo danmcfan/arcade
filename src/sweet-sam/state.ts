@@ -219,7 +219,7 @@ export class PlayState implements State {
 
     s.player.velocity = s.advantages.playerVelocity;
     const { beeVelocity } = s.values();
-    const elroy = elroyStep(s.release, s.enemies, s.values(), s.items.filter((it) => it !== null).length);
+    const elroy = elroyStep(s.release, s.values(), s.items.filter((it) => it !== null).length);
     for (const e of s.enemies) {
       e.velocity = e.kind === "red" && !e.home && elroy !== null ? elroy.velocity : beeVelocity;
       if (isSleepy(e)) {

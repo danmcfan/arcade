@@ -3,6 +3,7 @@ import * as rng from "../engine/rng.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
+import { dropEaten } from "./release.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
 import { sweetSamAdvantages } from "./advantages.ts";
@@ -691,8 +692,17 @@ describe("Cruise Elroy (#156)", () => {
     const orange = enemy(s, 3);
     expect(orange.home).toBe(true);
     expect(enemy(s, 0).velocity).toBe(0.9375);
-    orange.home = false;
+    s.release.globalDots = 31;
+    dropEaten(s.release, s.enemies);
     step(s);
     expect(enemy(s, 0).velocity).toBe(1);
+  });
+
+  test("a red bee in the home or flying home ignores Elroy's speed", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    enemy(s, 0).home = true;
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(levelValues(1).beeVelocity);
   });
 });

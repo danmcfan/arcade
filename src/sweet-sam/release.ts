@@ -40,7 +40,8 @@ function preferred(bees: readonly Entity[]): Entity | undefined {
   return undefined;
 }
 
-function free(e: Entity): void {
+function free(r: Release, e: Entity): void {
+  if (e.kind === "orange") r.elroySuspended = false;
   e.dotMinimum = 0;
   e.held = false;
 }
@@ -68,7 +69,7 @@ export function dropEaten(r: Release, bees: readonly Entity[]): void {
   r.globalDots++;
   for (const kind of order) {
     const e = bees.find((b) => b.kind === kind);
-    if (e !== undefined && e.home && r.globalDots === globalDotLimits[kind]) free(e);
+    if (e !== undefined && e.home && r.globalDots === globalDotLimits[kind]) free(r, e);
   }
   const orange = bees.find((b) => b.kind === "orange");
   if (r.globalDots === globalDotLimits.orange && orange?.home === true) {
@@ -82,21 +83,15 @@ export function noDropEaten(r: Release, bees: readonly Entity[], values: Readonl
   if (r.idleTicks < values.idleReleaseTicks) return;
   r.idleTicks = 0;
   const e = preferred(bees);
-  if (e !== undefined) free(e);
+  if (e !== undefined) free(r, e);
 }
 
 /**
  * Red's Cruise Elroy step with `dropsLeft` honey drops in the maze, or null
  * (Dossier, "Cruise Elroy"). After a death it stays off until orange is out.
  */
-export function elroyStep(
-  r: Release,
-  bees: readonly Entity[],
-  values: Readonly<LevelValues>,
-  dropsLeft: number,
-): ElroyStep | null {
-  if (r.elroySuspended && bees.some((e) => e.kind === "orange" && e.home)) return null;
-  r.elroySuspended = false;
+export function elroyStep(r: Release, values: Readonly<LevelValues>, dropsLeft: number): ElroyStep | null {
+  if (r.elroySuspended) return null;
   const [first, second] = values.elroy;
   if (dropsLeft <= second.dropsLeft) return second;
   if (dropsLeft <= first.dropsLeft) return first;

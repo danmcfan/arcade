@@ -80,7 +80,7 @@ function modes(
 // it on the next tick, so a bee neither misses a turn nor turns twice.
 // levels.test.ts and corners.test.ts check every value against the maze.
 // Elroy's thresholds are Pac-Man's (Dossier, Table A.1); its speeds add
-// Pac-Man's 5% and 10% of top speed but stop at 1, so from level 3 the
+// 1/32 and 1/16 px/tick (Pac-Man's +5%/+10% steps, scaled) but stop at 1, so from level 3 the
 // second step changes only red's scatter target, and on level 5 both do.
 
 // Tuned with scripts/sweet-sam-bot.ts (#47): with a fifth of a second's
