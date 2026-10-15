@@ -25,6 +25,7 @@ export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
 
 export const imageFont: Sprite = whole(images.font);
 export const imageLogo: Sprite = whole(images.logo);
+export const imageTitleLogo: Sprite = whole(images.titleLogo);
 /** The LED scoreboard's lit letters (src/ui/tickerArt.ts). */
 export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */

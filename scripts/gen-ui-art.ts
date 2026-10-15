@@ -56,6 +56,7 @@ import {
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
+import { titleBar, titleCabinet, titleLogoHeight, titleLogoWidth, titleWord } from "../src/ui/titleArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, mirrorX, outline, paint, plot, recolour, toPng } from "./pixel-art.ts";
@@ -107,6 +108,13 @@ export function renderLogo(): PNG {
     if (band === undefined) throw new Error(`logo row ${y} is below every colour band`);
     return band.color;
   });
+  return png;
+}
+
+/** The title logo: the cabinet, then the bar, then the word over both. */
+export function renderTitleLogo(): PNG {
+  const png = blank(titleLogoWidth, titleLogoHeight);
+  for (const layer of [titleCabinet, titleBar, titleWord]) paint(png, layer.rows, sweetie, layer.x, layer.y);
   return png;
 }
 
@@ -194,6 +202,7 @@ const imagesDir = "src/assets/images";
 export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
   imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
+  imageOutput(join(imagesDir, "title-logo.png"), titleLogoWidth, titleLogoHeight, renderTitleLogo),
   imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
   imageOutput(join(imagesDir, "ticker.png"), 111, 25, renderTicker),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
