@@ -113,11 +113,6 @@ export class Title implements Scene {
     return this.saved !== null;
   }
 
-  /** High score in the save, shown on the title menu; null without a save. */
-  get savedHighScore(): number | null {
-    return this.saved?.highScore ?? null;
-  }
-
   /** The title menu's labels, also drawn (dimmed) behind the New game check. */
   menuItems(): readonly string[] {
     return this.titleMenu.labels();

@@ -43,8 +43,8 @@ export const controls: readonly ControlRow[] = [
 ];
 
 export const menuHints: readonly Hint[] = [
-  { keys: ["↑", "↓"], label: "CHOOSE" },
-  { keys: ["SPACE"], label: "OK" },
+  { keys: ["↑", "↓", "W", "S"], label: "CHOOSE" },
+  { keys: ["E", "SPACE", "ENTER"], label: "OK" },
 ];
 export const backHints: readonly Hint[] = [{ keys: ["ESC"], label: "BACK" }];
 
@@ -140,19 +140,17 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
   });
 }
 
-/** The logo, the tagline, the title menu with `cursor` selected and the saved high score. */
+/** The logo, the tagline, the title menu with `cursor` selected. */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
   drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
   drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
   drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
-  const highScore = t.savedHighScore;
-  if (highScore !== null && highScore !== 0) drawTextCentered(screen, `HIGH SCORE ${highScore}`, centre, 122, "orange");
 }
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints, hintsTop, centre);
+  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -168,7 +166,7 @@ function drawConfirm(screen: Surface, t: Title): void {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
   });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
-  drawHints(screen, menuHints, hintsTop, centre);
+  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
 }
 
 function drawIntro(screen: Surface, t: Title): void {

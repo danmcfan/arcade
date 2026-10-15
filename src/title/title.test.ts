@@ -918,9 +918,14 @@ describe("drawing", () => {
     const r = recordingSurface();
     t.draw(r.surface);
     const keys = r.keys();
-    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
-    // One row, below everything else on the menu.
-    expect(new Set(keys.map((k) => k.y)).size).toBe(1);
+    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
+    // Too wide for one row at 192 px, so CHOOSE and OK each get a row.
+    expect([...new Set(keys.map((k) => k.y))]).toHaveLength(2);
+    // Below everything else on the menu, and inside the screen.
+    for (const k of keys) {
+      expect(k.x).toBeGreaterThanOrEqual(0);
+      expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
+    }
     expect(r.text("white")).toContain("CHOOSE");
     expect(r.text("white")).toContain("OK");
     expect(r.text()).not.toContain("↑↓ CHOOSE");
@@ -941,26 +946,12 @@ describe("drawing", () => {
     tap(t, "space");
     const r = recordingSurface();
     t.draw(r.surface);
-    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓SPACECHOOSEOK`);
+    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓WSCHOOSEESPACEENTEROK`);
     expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
-    expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "SPACE"]);
+    expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
   });
 
-  test("with a save, the menu shows the saved high score (when there is one)", () => {
-    const zero = new Title({
-      store: memoryStore({
-        v: 3,
-        highScore: 0,
-        tokens: 5,
-        tickets: 0,
-        prizes: [],
-        player: { x: 80, y: 92, dir: "UP" },
-      }),
-    });
-    const r0 = recordingSurface();
-    zero.draw(r0.surface);
-    expect(r0.text("orange")).toBe("");
-
+  test("with a save that holds a high score, the menu does not show it", () => {
     const t = new Title({
       store: memoryStore({
         v: 3,
@@ -974,7 +965,8 @@ describe("drawing", () => {
     const r = recordingSurface();
     t.draw(r.surface);
     expect(r.text("yellow")).toBe(">CONTINUE<");
-    expect(r.text("orange")).toBe("HIGH SCORE 120");
+    expect(r.text()).not.toContain("HIGH SCORE");
+    expect(r.text()).not.toContain("120");
   });
 
   test("the logo's letters bob on a wave and the selection arrows move in and out", () => {
