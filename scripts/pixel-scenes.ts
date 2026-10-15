@@ -11,8 +11,9 @@ import { employeeSpot } from "../src/arcade/desk.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { paint, toPng } from "./pixel-art.ts";
+import { blank, paint, toPng } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
+import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
@@ -71,6 +72,21 @@ function hubFrames(): PNG[] {
   return frames;
 }
 
+/** Sweet Sam's level counter on the black maze: every bonus flower in level order, one frame, 8 px apart. */
+function flowerRow(): PNG[] {
+  const gap = 8;
+  const png = blank(gap + flowers.length * (16 + gap), 32);
+  paint(
+    png,
+    Array.from({ length: 32 }, () => "k".repeat(png.width)),
+    sweetie,
+  );
+  flowers.forEach((f, i) => {
+    paint(png, f, sweetie, gap + i * (16 + gap), 8);
+  });
+  return [png];
+}
+
 export const scenes: readonly Scene[] = [
   {
     name: "hub",
@@ -83,6 +99,7 @@ export const scenes: readonly Scene[] = [
     ],
     render: hubFrames,
   },
+  { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
 ];
 
 /** The scene that shows `file`'s art; throws naming this file when none does. */
