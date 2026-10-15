@@ -160,7 +160,11 @@ positions, a `Snapshot()` emitting the §4.3 keys, built with
 `CGO_ENABLED=1 GOARCH=amd64`. The full per-tick traces matched the TS port
 bit for bit at the time.
 
-That harness was never committed, so **this file cannot be regenerated**.
+That harness was never committed, so the Go capture cannot be regenerated.
+#151 re-recorded it from the TypeScript game (same seed, generator and
+ticks): a honey pot makes the bees in the home sleepy too, so the run
+plays differently from the first honey pot on. The `snaps` keys are now the
+first death (610), the first bee-eaten pause (1688) and game over (3386).
 It is kept as a cheap Sweet Sam regression check (`sweet-sam.test.ts` imports
 it; it is test-only and not in the bundle). The full `sweet-sam-*` traces above
 supersede it for regression purposes: if the two ever disagree, the traces
@@ -228,6 +232,7 @@ Re-recorded from TypeScript so far:
 | `arcade-walk`, `sweet-sam-fuzz-1`..`3`, `sweet-sam-clear` (traces); `arcade-walk` (every frame), `arcade-enter-*` (the hub frame after Quit game: 408, 408, 368), `sweet-sam-clear` (9180), `sweet-sam-highscore` (2943, 3158) | #88: the prize desk is redrawn as a U after the Celadon Dept Store 4F counter, its top edge at y 107 instead of 106, so walking down stops the player at y 95 instead of 94. Traces re-recorded; inputs unchanged. The hub frames were re-captured: they differ in the desk and employee (x 48..143, y 119..159), and also pick up the scoreboard lettering from the #72/#75 review fixes, which landed after those frames were recorded (44 pixels round x 112..142, y 24..30) |
 | every scenario but the frame-only ones | #148: the hub snapshot's one `highScore` became `highScores`, a player high score per machine, and a run from a cabinet boots with that machine's house high score (Sweet Sam 30000, Firefly 40000, Brass Monkey 25000) until it is beaten, so `arcade-enter-sweet-sam`, `arcade-enter-brass-monkey` and `sweet-sam-highscore` show that HI in their minigame. Traces re-recorded; inputs unchanged. Golden frames not re-captured |
 | every scenario but `arcade-walk` (traces); every minigame frame (51) | #113: minigames play inside a 240×304 cabinet outline (the screen plus 8 px of the cabinet art), not the 336×428 cabinet, and the joystick is gone. Inputs unchanged. Traces re-recorded: each is the old one with `sw.joystick` dropped and nothing else changed. Every frame that shows a minigame was re-recorded at 240×304; hub frames were not touched |
+| `sweet-sam-fuzz-2`..`4`, `sweet-sam-modes`, `sweet-sam-clear`, `sweet-sam-levels` | #151: a honey pot makes every bee sleepy, the ones still in the home too (Pac-Man), so each run plays differently from its first honey pot on. `sweet-sam-fuzz-2`..`4` and `sweet-sam-modes` keep their inputs; traces re-recorded and the changed frames re-captured. `sweet-sam-clear` and `sweet-sam-levels` no longer cleared level 1 (the bear died), so their inputs were re-planned from the first tick their old run would have lost a life (920 and 1060): the old key presses up to there, then a search that clears level 1, then the old key presses after the old clear. Their captures moved to the same moments (clear: the flash 6831, LEVEL 2 6966, READY 7076, the death animation 8188, the last tick 10316 and the hub 10317; levels: the flash 5067, LEVEL 2 5182, level 2 playing 5382). Traces and frames re-recorded |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end

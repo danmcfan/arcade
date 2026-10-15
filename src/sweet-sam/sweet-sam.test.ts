@@ -10,6 +10,8 @@
 // per-tick traces matched bit for bit; this file keeps state transitions, a
 // few complete snapshots and the end state as a regression lock until the
 // real golden fixtures (test/parity/sweet-sam.test.ts) take over.
+// #151 re-recorded it from this TS game: a honey pot makes the bees in the
+// home sleepy too, so the run differs from the first honey pot on.
 
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
