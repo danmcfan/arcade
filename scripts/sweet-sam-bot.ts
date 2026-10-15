@@ -28,13 +28,16 @@ import { pointToTile, tileHeight, tileWidth, type Tile } from "../src/sweet-sam/
 import { SweetSamSoftware } from "../src/sweet-sam/software.ts";
 import { inputPath } from "../test/parity/fixtures.ts";
 
-const steps: Record<Direction, Tile> = {
+export const steps: Record<Direction, Tile> = {
   UP: { x: 0, y: -1 },
   LEFT: { x: -1, y: 0 },
   DOWN: { x: 0, y: 1 },
   RIGHT: { x: 1, y: 0 },
 };
 const order: readonly Direction[] = ["UP", "LEFT", "DOWN", "RIGHT"];
+
+/** The tile one step on from `t` along `d`, without wrapping. */
+export const stepFrom = (t: Tile, d: Direction): Tile => ({ x: t.x + steps[d].x, y: t.y + steps[d].y });
 
 /** Awake bees within this many tiles (Manhattan) block the way. */
 const dangerRadius = 3;
