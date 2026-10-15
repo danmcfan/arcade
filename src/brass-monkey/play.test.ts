@@ -296,17 +296,17 @@ describe("the escape and the next loop", () => {
     }
   });
 
-  test("the first three loops are as fast as they always were", () => {
-    for (const floor of [0, 1]) {
+  test("loops 0-2 keep their speeds, except ember climb, which hits its cap at loop 2", () => {
+    for (const [floor, base] of t.floorTunings.entries()) {
       for (const loop of [0, 1, 2]) {
         const tuning = t.tuningFor(floor, loop);
         const uncapped = t.loopSpeedFactor ** loop;
-        expect(tuning.gearSpeed).toBe(1 * uncapped);
-        expect(tuning.emberWalkSpeed).toBe(0.5 * uncapped);
-        // 0.9 of the monkey's climb is reached at loop 2 (0.72 uncapped).
-        expect(tuning.emberClimbSpeed).toBe(Math.min(t.maxEmberClimbSpeed, 0.5 * uncapped));
+        expect(tuning.gearSpeed).toBe(base.gearSpeed * uncapped);
+        expect(tuning.emberWalkSpeed).toBe(base.emberWalkSpeed * uncapped);
       }
-      expect(t.tuningFor(floor, 1).emberClimbSpeed).toBeLessThan(t.maxEmberClimbSpeed);
+      expect(t.tuningFor(floor, 1).emberClimbSpeed).toBe(base.emberClimbSpeed * t.loopSpeedFactor);
+      // The issue's two criteria conflict here: "loops 0-2 unchanged" would give 0.72 at loop 2,
+      // but "ember climb at most 0.9 x the monkey's climb" caps it at 0.675. The cap wins.
       expect(t.tuningFor(floor, 2).emberClimbSpeed).toBe(t.maxEmberClimbSpeed);
     }
   });
