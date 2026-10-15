@@ -2,9 +2,11 @@
 // come from font.png (generated from ./glyphs.ts); boxes are plain filled
 // rects in the Sweetie 16 palette.
 
-import { imageFont } from "../engine/assets.ts";
+import { imageFont, imagePanel } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { drawNineSlice } from "./nineSlice.ts";
+import { panelCorner } from "./panelArt.ts";
 import { bandRows, cell, charset, glyphHeight, glyphWidth, inkOrder, sheetColumns, type Ink } from "./glyphs.ts";
 
 export type { Ink } from "./glyphs.ts";
@@ -68,21 +70,9 @@ export function drawTextCentered(screen: Surface, text: string, cx: number, y: n
   drawText(screen, text, cx - Math.trunc(textWidth(text) / 2), y, ink);
 }
 
-const panelFill = "#1a1c2c";
-const panelEdge = "#94b0c2";
-const panelInner = "#333c57";
-
-/** A framed box: light edge with the corners knocked off, dark inner line. */
+/** A framed box: `panelFrame` (src/ui/panelArt.ts) drawn at this size. */
 export function drawPanel(screen: Surface, x: number, y: number, w: number, h: number): void {
-  screen.fillRect(x + 1, y + 1, w - 2, h - 2, panelFill);
-  screen.fillRect(x + 1, y, w - 2, 1, panelEdge);
-  screen.fillRect(x + 1, y + h - 1, w - 2, 1, panelEdge);
-  screen.fillRect(x, y + 1, 1, h - 2, panelEdge);
-  screen.fillRect(x + w - 1, y + 1, 1, h - 2, panelEdge);
-  screen.fillRect(x + 2, y + 2, w - 4, 1, panelInner);
-  screen.fillRect(x + 2, y + h - 3, w - 4, 1, panelInner);
-  screen.fillRect(x + 2, y + 3, 1, h - 6, panelInner);
-  screen.fillRect(x + w - 3, y + 3, 1, h - 6, panelInner);
+  drawNineSlice(screen, imagePanel, panelCorner, x, y, w, h);
 }
 
 /** Height of a key cap drawn by `drawKey`. */

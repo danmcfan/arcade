@@ -5,6 +5,7 @@ import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
+import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
 import {
   cabinetArt,
   carpetTile,
@@ -52,6 +53,15 @@ describe("UI art source", () => {
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
     for (const [name, rows] of Object.entries(icons)) checkRows(name, rows);
+  });
+
+  test("the panel and card frames are Sweetie 16 rows with a middle between their corners", () => {
+    checkRows("panelFrame", panelFrame, { w: panelFrame.length });
+    expect(panelFrame.length).toBeGreaterThan(2 * panelCorner);
+    for (const [look, rows] of Object.entries(cardArt)) {
+      checkRows(`card ${look}`, rows);
+      expect(Math.min(rows.length, rows[0]?.length ?? 0)).toBeGreaterThan(2 * cardCorner);
+    }
   });
 
   test("every scoreboard glyph is 5 rows of one width, made of # and .", () => {

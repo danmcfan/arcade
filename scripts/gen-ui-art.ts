@@ -1,12 +1,13 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, ticker.png, employee.png, prizes.png, arcade.png, screens.png, player.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, arcade.png, screens.png, player.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. logo.png is "ARCADE" in the
 // title-card display font with a drop shadow. icons.png is the menu icons from
 // src/ui/icons.ts. ticker.png is the hub scoreboard's lit letters from
-// src/ui/tickerArt.ts, employee.png the prize desk's employee from
+// src/ui/tickerArt.ts, panel.png and cards.png the menu panel and prize
+// counter card frames from src/ui/panelArt.ts, employee.png the prize desk's employee from
 // src/ui/employeeArt.ts, prizes.png the hub's prize decorations from
 // src/ui/prizeArt.ts. arcade.png is the hub room with its cabinets, scoreboard
 // and prize desk (src/ui/hubArt.ts), screens.png the cabinets' screens
@@ -54,6 +55,7 @@ import {
   prizeSheetWidth,
 } from "../src/ui/prizeArt.ts";
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
+import { cardArt, cardRects, cardSheetHeight, cardSheetWidth, panelFrame } from "../src/ui/panelArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
@@ -115,6 +117,19 @@ export function renderIcons(): PNG {
   for (const [name, rows] of Object.entries(icons)) {
     if (!own(iconRects, name)) throw new Error(`icon ${name} has no sheet rect`);
     paint(png, rows, sweetie, iconRects[name].x, 0);
+  }
+  return png;
+}
+
+export function renderPanel(): PNG {
+  return toPng(panelFrame);
+}
+
+export function renderCards(): PNG {
+  const png = blank(cardSheetWidth, cardSheetHeight);
+  for (const [look, rows] of Object.entries(cardArt)) {
+    if (!own(cardRects, look)) throw new Error(`card ${look} has no sheet rect`);
+    paint(png, rows, sweetie, cardRects[look].x, 0);
   }
   return png;
 }
@@ -195,7 +210,9 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
   imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
   imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
-  imageOutput(join(imagesDir, "ticker.png"), 111, 25, renderTicker),
+  imageOutput(join(imagesDir, "ticker.png"), tickerSheetRows()[0]?.length ?? 0, tickerSheetRows().length, renderTicker),
+  imageOutput(join(imagesDir, "panel.png"), panelFrame[0]?.length ?? 0, panelFrame.length, renderPanel),
+  imageOutput(join(imagesDir, "cards.png"), cardSheetWidth, cardSheetHeight, renderCards),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
   imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),

@@ -30,6 +30,9 @@ export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
+/** The menu panel's nine-slice frame and the prize counter's card frames (src/ui/panelArt.ts). */
+export const imagePanel: Sprite = whole(images.panel);
+export const imageCards: Sprite = whole(images.cards);
 
 // Sweet Sam's sprites, from src/sweet-sam/art.ts. Sprite frames are 16×16; bees.png is one 64×96 sheet per bee
 // (`beeOrder`), the honey drop and honey pot are 4 frames of 8×12, and the points are 4 popup frames of 16×16.
