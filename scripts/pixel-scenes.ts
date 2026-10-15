@@ -17,6 +17,18 @@ import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { saveKey, saveVersion } from "../src/title/save.ts";
+import { Wallet } from "../src/arcade/wallet.ts";
+import { cardHeight, cardWidth, counterLayout, pictureHeight } from "../src/game/counterLayout.ts";
+import { closeCursor, prizeCounterItems, shelf, tokenCursor } from "../src/game/menus.ts";
+import { cardInks } from "../src/game/overlay.ts";
+import { glyphs, glyphWidth, inks, type Ink } from "../src/ui/glyphs.ts";
+import { arrowOffset } from "../src/ui/menu.ts";
+import { textWidth } from "../src/ui/text.ts";
+import { nineSlice } from "../src/ui/nineSlice.ts";
+import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
+import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
+import { tickerRect } from "../src/ui/tickerArt.ts";
+import { mirrorX, recolour, type Rows } from "./pixel-art.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
 export interface Scene {
@@ -91,6 +103,87 @@ function flowerRow(): PNG[] {
   return [png];
 }
 
+/** `frame` (rows with `corner` px corners) painted at (x, y), `w`×`h`, as the game's nine-slice draws it. */
+function paintNineSlice(png: PNG, frame: Rows, corner: number, x: number, y: number, w: number, h: number): void {
+  for (const c of nineSlice(frame[0]?.length ?? 0, frame.length, corner, w, h)) {
+    const cell = frame.slice(c.sy, c.sy + c.h).map((r) => r.slice(c.sx, c.sx + c.w));
+    paint(png, cell, sweetie, x + c.dx, y + c.dy);
+  }
+}
+
+/** `text` in the game font and `ink`, top left at (x, y), as drawText draws it. */
+function paintText(png: PNG, text: string, x: number, y: number, ink: Ink): number {
+  let cx = x;
+  for (const ch of text.toUpperCase()) {
+    const rows = glyphs[ch];
+    if (rows === undefined) continue;
+    paint(png, rows, { "#": inks[ink] }, cx, y);
+    cx += glyphWidth(ch) + 1;
+  }
+  return cx - x - 1;
+}
+
+/** Ticks the prize counter's cursor rests on each item. */
+const ticksPerItem = 30;
+
+/**
+ * The prize counter menu over the hub, as the game draws it (src/game/overlay.ts,
+ * `counterLayout`), for a player with 75 tickets who owns one 25-ticket prize:
+ * cards for sale, too dear and owned. The cursor rests on each card, then
+ * BUY TOKEN and CLOSE.
+ */
+function prizeCounterFrames(): PNG[] {
+  const owned = shelf.at(-1)?.id;
+  const wallet = new Wallet({ highScore: 0, tokens: 3, tickets: 75, prizes: owned === undefined ? [] : [owned] });
+  const items = prizeCounterItems(wallet, () => {
+    // The scene never chooses CLOSE.
+  });
+  const below = tickerRect.y + tickerRect.h;
+  const layout = counterLayout({ x: 0, y: below, w: 160, h: 144 - below });
+  const { panel } = layout;
+  const frames: PNG[] = [];
+  for (let tick = 0; tick < items.length * ticksPerItem; tick++) {
+    const cursor = Math.trunc(tick / ticksPerItem);
+    const png = toPng(hubRoomRows());
+    paintNineSlice(png, panelFrame, panelCorner, panel.x, panel.y, panel.w, panel.h);
+    layout.cards.forEach((card, i) => {
+      const prize = shelf[i];
+      const item = items[i];
+      if (prize === undefined || item === undefined) return;
+      const offer = item.inert === true ? "owned" : item.enabled ? "buy" : "short";
+      paintNineSlice(png, cardArt[offer], cardCorner, card.x, card.y, cardWidth, cardHeight);
+      if (i === cursor) paintNineSlice(png, cardArt.cursor, cardCorner, card.x, card.y, cardWidth, cardHeight);
+      const rows = mirroredPrizes.has(prize.id) ? mirrorX(prizeArt[prize.id]) : prizeArt[prize.id];
+      const picture = offer === "owned" ? recolour(rows, greyLetters) : rows;
+      const centre = card.x + cardWidth / 2;
+      const w = picture[0]?.length ?? 0;
+      paint(png, picture, sweetie, centre - Math.trunc(w / 2), card.y + 2 + pictureHeight - picture.length);
+      const price = item.value ?? "";
+      paintText(png, price, centre - Math.trunc(textWidth(price) / 2), card.y + 2 + pictureHeight + 1, cardInks[offer]);
+    });
+    for (const [at, centre] of [
+      [tokenCursor, layout.tokenCentre],
+      [closeCursor, layout.closeCentre],
+    ] as const) {
+      const item = items[at];
+      if (item === undefined) continue;
+      const left = Math.round(centre - Math.trunc(textWidth(item.label) / 2));
+      const ink: Ink = item.enabled ? (cursor === at ? "yellow" : "white") : "grey";
+      paintText(png, item.label, left, layout.rowY, ink);
+      if (cursor === at) paintText(png, ">", left - 8 + arrowOffset(tick) - 1, layout.rowY, "yellow");
+    }
+    const info = items[cursor];
+    if (info !== undefined) {
+      const price = info.value ?? "";
+      paintText(png, info.label, layout.infoLeft, layout.infoTop, "white");
+      paintText(png, price, layout.infoRight - textWidth(price), layout.infoTop, "white");
+      paintText(png, info.note ?? "", layout.infoLeft, layout.infoTop + 9, "white");
+    }
+    frames.push(png);
+  }
+  return frames;
+}
+
 export const scenes: readonly Scene[] = [
   {
     name: "hub",
@@ -113,6 +206,26 @@ export const scenes: readonly Scene[] = [
           tokens: 3,
           tickets: 500,
           prizes: [],
+          player: { x: 80, y: 95, dir: "DOWN" },
+        }),
+      },
+    },
+  },
+  {
+    name: "prize counter",
+    sources: ["src/ui/panelArt.ts"],
+    render: prizeCounterFrames,
+    // Continue (Space) stands the player at the prize desk; Space again opens the menu, with
+    // 75 tickets and the last shelf prize owned, so cards for sale, too dear and owned all show.
+    play: {
+      query: "scene=title",
+      storage: {
+        [saveKey]: JSON.stringify({
+          v: saveVersion,
+          highScore: 0,
+          tokens: 3,
+          tickets: 75,
+          prizes: [shelf.at(-1)?.id],
           player: { x: 80, y: 95, dir: "DOWN" },
         }),
       },

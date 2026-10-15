@@ -17,15 +17,15 @@ The owner's picks are the brief either way: finish the change around them, and n
 
 Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one letter map, `sweetie` in `src/ui/sweetie16.ts`. The font is the exception: its glyphs are `#` rows drawn in an ink colour.
 
-| Art                              | Source                                                                                       | Generator                         |
-| -------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
-| Font, logo, title-card lettering | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
-| Hub room, cabinets, desk, player | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
-| Scoreboard, menu icons, prizes   | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`                                             | `scripts/gen-ui-art.ts`           |
-| Firefly sprites and sky          | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
-| Brass Monkey characters, items   | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
-| Sweet Sam maze, sprites, text    | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
-| Cabinet strips                   | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
+| Art                                                   | Source                                                                                       | Generator                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
+| Font, logo, title-card lettering                      | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
+| Hub room, cabinets, desk, player                      | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
+| Scoreboard, menu icons, prizes, panel and card frames | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`, `panelArt.ts`                              | `scripts/gen-ui-art.ts`           |
+| Firefly sprites and sky                               | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
+| Brass Monkey characters, items                        | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
+| Sweet Sam maze, sprites, text                         | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
+| Cabinet strips                                        | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
 
 Each generator declares its outputs once (`imageOutput(file, width, height, render)`, `scripts/image-outputs.ts`), and `bun run art` (`scripts/gen-art.ts`) writes every PNG and the image table `src/engine/images.generated.ts` from them. A new image is a new declaration, then `bun run art`. Commit the source, the PNGs and the table together: `scripts/gen-art.test.ts` fails when they differ, or when `src/assets/images` holds a PNG nothing declares.
 

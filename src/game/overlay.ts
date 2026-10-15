@@ -4,7 +4,12 @@
 // centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
+import { imageCards } from "../engine/assets.ts";
+import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { drawNineSlice } from "../ui/nineSlice.ts";
+import { cardCorner, cardRects, type CardLook } from "../ui/panelArt.ts";
+import { cardHeight, cardWidth, counterLayout, pictureHeight } from "./counterLayout.ts";
 import {
   controlsPanelHeight,
   controlsPanelWidth,
@@ -18,10 +23,9 @@ import {
   type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
-import { sweetie } from "../ui/sweetie16.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth, type Ink } from "../ui/text.ts";
 import type { Menu, MenuItem } from "./menu.ts";
-import { closeCursor, shelf, shelfColumns, shelfRows, tokenCursor } from "./menus.ts";
+import { closeCursor, shelf, tokenCursor } from "./menus.ts";
 import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
@@ -86,19 +90,14 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   }
 }
 
-/** The tallest picture a prize card holds. */
-const pictureHeight = 12;
-/** A prize card: its picture over its price, inside a 1 px border. */
-const cardWidth = 42;
-const cardHeight = 2 + pictureHeight + 1 + textHeight + 2;
-
 /**
  * The prize counter panel, filling `area` but for a 1-2 px border: the prize
  * shelf (a card per prize, a column per cabinet; a card is red when the
- * player is short, grey and reading OWNED once bought, and lit up when
+ * player is short, grey and reading OWNED once bought, and ringed when
  * selected), BUY TOKEN and CLOSE under it, and an info panel for what the
  * cursor is on. The tickets show on the scoreboard, so the panel doesn't
- * repeat them. The rows sit at even gaps down the panel.
+ * repeat them. Where each goes is `counterLayout`; the frames are
+ * src/ui/panelArt.ts.
  */
 function drawPrizeCounter(
   screen: Surface,
@@ -113,53 +112,39 @@ function drawPrizeCounter(
     if (found === undefined) throw new Error(`prize counter: no item at ${i}`);
     return found;
   };
-  const x = area.x + 2;
-  const y = area.y + 1;
-  const width = area.w - 4;
-  const height = area.h - 2;
-  drawPanel(screen, x, y, width, height);
+  const layout = counterLayout(area);
+  const { panel } = layout;
+  drawPanel(screen, panel.x, panel.y, panel.w, panel.h);
 
-  // Five rows (three of cards, BUY TOKEN, the info panel) inside the 3 px frame, with six even gaps.
-  const infoHeight = 2 * textHeight + 2;
-  const inner = height - 6;
-  const gap = Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight) / 6);
-  const top = y + 3 + Math.trunc((inner - shelfRows * cardHeight - textHeight - infoHeight - 6 * gap) / 2) + gap;
-
-  const cols = shelfColumns.length;
-  const colGap = Math.trunc((width - 6 - cols * cardWidth) / (cols + 1));
-  const left = x + 3 + Math.trunc((width - 6 - cols * cardWidth - (cols + 1) * colGap) / 2) + colGap;
-  for (let i = 0; i < shelf.length; i++) {
+  layout.cards.forEach((card, i) => {
     const p = shelf[i];
     if (p === undefined) throw new Error(`prize shelf: no cell ${i}`);
-    const [row, col] = [Math.trunc(i / cols), i % cols];
     const it = item(i);
     const offer = cardOffer(it);
-    const cx = left + col * (cardWidth + colGap);
-    const cy = top + row * (cardHeight + gap);
-    const look = cardLooks[offer];
-    const selected = i === cursor;
-    screen.fillRect(cx, cy, cardWidth, cardHeight, selected ? look.border : look.edge);
-    screen.fillRect(cx + 1, cy + 1, cardWidth - 2, cardHeight - 2, selected ? look.lit : look.fill);
-    const centre = cx + cardWidth / 2;
+    drawCard(screen, offer, card.x, card.y);
+    if (i === cursor) drawCard(screen, "cursor", card.x, card.y);
+    const centre = card.x + cardWidth / 2;
     const picture = offer === "owned" ? p.greySprite : p.sprite;
-    screen.draw(picture, centre - Math.trunc(picture.w / 2), cy + 2 + pictureHeight - picture.h);
-    drawTextCentered(screen, it.value ?? "", centre, cy + 2 + pictureHeight + 1, look.ink);
-  }
+    screen.draw(picture, centre - Math.trunc(picture.w / 2), card.y + 2 + pictureHeight - picture.h);
+    drawTextCentered(screen, it.value ?? "", centre, card.y + 2 + pictureHeight + 1, cardInks[offer]);
+  });
 
-  const rowY = top + shelfRows * cardHeight + (shelfRows - 1) * gap + gap;
   const token = item(tokenCursor);
-  const tokenGrey = !token.enabled;
-  const tokenCentre = left + cardWidth + colGap / 2;
-  const closeCentre = left + (cols - 1) * (cardWidth + colGap) + cardWidth / 2;
-  drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
-  drawRowItem(screen, item(closeCursor).label, closeCentre, rowY, cursor === closeCursor, false, tick);
+  drawRowItem(screen, token.label, layout.tokenCentre, layout.rowY, cursor === tokenCursor, !token.enabled, tick);
+  drawRowItem(screen, item(closeCursor).label, layout.closeCentre, layout.rowY, cursor === closeCursor, false, tick);
 
-  const infoTop = rowY + textHeight + gap;
   const info = item(cursor);
   const price = info.value ?? "";
-  drawText(screen, info.label, x + 7, infoTop, "white");
-  drawText(screen, price, x + width - 7 - textWidth(price), infoTop, "white");
-  drawText(screen, info.note ?? "", x + 7, infoTop + textHeight + 2, "white");
+  drawText(screen, info.label, layout.infoLeft, layout.infoTop, "white");
+  drawText(screen, price, layout.infoRight - textWidth(price), layout.infoTop, "white");
+  drawText(screen, info.note ?? "", layout.infoLeft, layout.infoTop + textHeight + 2, "white");
+}
+
+/** A card frame from cards.png, at the card size. */
+function drawCard(screen: Surface, look: CardLook, x: number, y: number): void {
+  const r = cardRects[look];
+  const frame = sub(imageCards, r.x, 0, r.x + r.w, r.h);
+  drawNineSlice(screen, frame, cardCorner, x, y, cardWidth, cardHeight);
 }
 
 /** How a prize card looks: owned (inert), too dear (disabled), or for sale. */
@@ -170,15 +155,8 @@ function cardOffer(i: MenuItem): CardOffer {
   return i.enabled ? "buy" : "short";
 }
 
-/**
- * A prize card's colours by offer: its edge and fill, and the yellow-edged,
- * brighter fill it takes when selected; and its price's ink.
- */
-const cardLooks: Readonly<Record<CardOffer, { edge: string; fill: string; border: string; lit: string; ink: Ink }>> = {
-  buy: { edge: sweetie.m, fill: sweetie.n, border: sweetie.y, lit: sweetie.b, ink: "yellow" },
-  short: { edge: sweetie.r, fill: sweetie.p, border: sweetie.y, lit: sweetie.r, ink: "white" },
-  owned: { edge: sweetie.m, fill: sweetie.d, border: sweetie.y, lit: sweetie.m, ink: "blue" },
-};
+/** A card's price ink, by offer. */
+export const cardInks: Readonly<Record<CardOffer, Ink>> = { buy: "yellow", short: "white", owned: "blue" };
 
 /** BUY TOKEN or CLOSE centred on `centre`: yellow after an arrow when selected, grey when it can't be chosen. */
 function drawRowItem(

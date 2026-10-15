@@ -7,6 +7,8 @@ import fontUrl from "../assets/images/font.png";
 import logoUrl from "../assets/images/logo.png";
 import iconsUrl from "../assets/images/icons.png";
 import tickerUrl from "../assets/images/ticker.png";
+import panelUrl from "../assets/images/panel.png";
+import cardsUrl from "../assets/images/cards.png";
 import employeeUrl from "../assets/images/employee.png";
 import prizesUrl from "../assets/images/prizes.png";
 import arcadeUrl from "../assets/images/arcade.png";
@@ -52,6 +54,8 @@ export const images = {
   logo: imageAsset(logoUrl, 100, 17),
   icons: imageAsset(iconsUrl, 23, 9),
   ticker: imageAsset(tickerUrl, 111, 25),
+  panel: imageAsset(panelUrl, 16, 16),
+  cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
   prizes: imageAsset(prizesUrl, 91, 24),
   arcade: imageAsset(arcadeUrl, 160, 144),
