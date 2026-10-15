@@ -19,7 +19,7 @@ import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type RunKind, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
-import { createSoftware } from "./softwareFactories.ts";
+import { createSoftware } from "./minigames.ts";
 import {
   closeItemIndex,
   firstPrizeIndex,
@@ -49,7 +49,7 @@ const minigameSounds: readonly Sound[] = channels.minigame.map((name) => sounds[
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
-  /** Builds a machine's software; default: `createSoftware` from ./softwareFactories.ts. */
+  /** Builds a machine's software; default: `createSoftware` from ./minigames.ts. */
   createSoftware?: SoftwareFactory;
   /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
   debugPrint?: DebugPrinter;

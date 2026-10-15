@@ -16,8 +16,7 @@ import {
   glowStickPrice,
   wingsPrice,
 } from "./prizes.ts";
-import type { SoftwareName } from "../game/software.ts";
-import type { ArcadeTitle } from "../game/snapshot.ts";
+import { minigame } from "../game/minigames.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { newState, blocked } from "./state.ts";
@@ -41,16 +40,10 @@ describe("prize catalogue", () => {
     expect([oilCanPrice, springBootsPrice, pocketWatchPrice]).toEqual([25, 50, 100]);
   });
 
-  const cabinetOf: Readonly<Record<SoftwareName, ArcadeTitle>> = {
-    sweetSam: "sweet",
-    brassMonkey: "brassMonkey",
-    firefly: "firefly",
-  };
-
   test("each decoration is the size of its art and sits beside its minigame's cabinet, clear of the cabinets and the counter", () => {
     const machines = newMachines(() => fakeSoftware());
     for (const p of prizes) {
-      const own = cabinetOf[p.software];
+      const own = minigame(p.software).title;
       const cabinet = defined(machines.find((m) => m.title === own)).rect;
       const r = { x: p.x, y: p.y, w: p.sprite.w, h: p.sprite.h };
       // Within a cabinet's width of its own minigame's cabinet, nearer it than any other.

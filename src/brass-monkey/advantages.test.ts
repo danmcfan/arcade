@@ -11,7 +11,7 @@ import {
 } from "./advantages.ts";
 import { floors, girderTop } from "./floors.ts";
 import { BrassMonkeySoftware } from "./game.ts";
-import { createBrassMonkey } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import { Run } from "./play.ts";
 import * as t from "./tuning.ts";
 
@@ -72,7 +72,7 @@ describe("oil can", () => {
   test("a run starts with 4 lives", () => {
     expect(oilCanExtraLives).toBe(1);
     expect(quiet(["oilCan"]).lives).toBe(4);
-    const sw = createBrassMonkey(0, ["oilCan"]);
+    const sw = minigame("brassMonkey").create({ highScore: 0, prizes: ["oilCan"] });
     expect(sw instanceof BrassMonkeySoftware && sw.run.lives).toBe(4);
   });
 });

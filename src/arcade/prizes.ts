@@ -9,7 +9,7 @@ import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
 import { prizeRects } from "../ui/prizeArt.ts";
-import { cabinetRects } from "./machine.ts";
+import { minigame } from "../game/minigames.ts";
 
 export type PrizeId =
   | "honeyJar"
@@ -34,9 +34,9 @@ export const springBootsPrice = 50;
 export const pocketWatchPrice = 100;
 
 // Every prize hangs on the wall at an offset from its own cabinet, so it moves with it.
-const sweetCabinet = cabinetRects.sweet;
-const fireflyCabinet = cabinetRects.firefly;
-const brassCabinet = cabinetRects.brassMonkey;
+const sweetCabinet = minigame("sweetSam").hubRect;
+const fireflyCabinet = minigame("firefly").hubRect;
+const brassCabinet = minigame("brassMonkey").hubRect;
 
 export interface Prize {
   id: PrizeId;
@@ -61,7 +61,7 @@ function decoration(id: PrizeId): Sprite {
 /**
  * Every prize, in the order the prize counter menu lists them, each hung on
  * the wall around its cabinet (a cabinet's art is 16x24 from its rect's
- * top-left, `cabinetRects`). Sweet Sam: the picture above the cabinet, the
+ * top-left, `hubRect` in src/game/minigames.ts). Sweet Sam: the picture above the cabinet, the
  * jar and the shoes either side of the picture. Brass Monkey: the oil can on a
  * shelf left of the cabinet, the spring boots and the pocket watch on pegs
  * above it. Firefly: see below.

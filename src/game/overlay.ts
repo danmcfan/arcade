@@ -23,7 +23,6 @@ import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
 import {
   firstPrizeIndex,
-  minigameControls,
   minigamePauseMenu,
   prizeCounterItems,
   prizeCounterTitle,
@@ -31,6 +30,7 @@ import {
   quitGameNote,
   tokenItemIndex,
 } from "./menus.ts";
+import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
 import type { SoftwareName } from "./software.ts";
@@ -80,7 +80,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       return;
     case "controls": {
       if (o.software === null) return;
-      const rows = minigameControls[o.software];
+      const rows = minigame(o.software).controls;
       drawControlsPanel(
         screen,
         rows,
