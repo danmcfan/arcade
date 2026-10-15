@@ -190,3 +190,134 @@ function truncate(text: string, width: number): string {
 
 const fit = (left: string, right: string, width: number): string =>
   `${left}${" ".repeat(Math.max(1, width - visible(left) - visible(right)))}${right}`;
+
+export interface BatchTui {
+  /** A Reporter for one issue's pipeline run, drawn as that issue's row. */
+  reporter: (issue: string) => Omit<Tui, "close">;
+  /** Set an issue's row outside the pipeline (merge, the outcome). */
+  set: (issue: string, state: State, step: string, note?: string) => void;
+  activity: (line: string) => void;
+  close: (summary: string[]) => void;
+}
+
+// The batch view: one row per issue with its current step, time and tokens, then the latest
+// activity from every issue, prefixed with its number.
+export function createBatchTui(title: string, issues: readonly { issue: string; tag: string }[]): BatchTui {
+  const begun = Date.now();
+  interface Row {
+    issue: string;
+    tag: string;
+    state: State;
+    step: string;
+    note: string;
+    started: number;
+    ended: number;
+    tokens: { input: number; output: number };
+  }
+  const rows = issues.map(({ issue, tag }): Row => ({
+    issue,
+    tag,
+    state: "waiting",
+    step: "",
+    note: "",
+    started: 0,
+    ended: 0,
+    tokens: { input: 0, output: 0 },
+  }));
+  const lines: string[] = [];
+  let frame = 0;
+
+  const find = (issue: string): Row => {
+    const row = rows.find((r) => r.issue === issue);
+    if (!row) throw new Error(`Unknown batch issue: ${issue}`);
+    return row;
+  };
+  const activity = (line: string): void => {
+    const time = new Date().toTimeString().slice(0, 8);
+    lines.push(`\u001B[2m${time}\u001B[0m ${line}`);
+    if (lines.length > ACTIVITY_KEPT) lines.shift();
+  };
+  const set = (issue: string, state: State, step: string, note = ""): void => {
+    const row = find(issue);
+    if (row.started === 0 && state === "running") row.started = Date.now();
+    if (state !== "running" && state !== "waiting") row.ended = Date.now();
+    Object.assign(row, { state, step, note });
+  };
+
+  const render = (): void => {
+    const width = process.stdout.columns || 100;
+    const height = process.stdout.rows || 30;
+    const finished = rows.filter((r) => r.state !== "waiting" && r.state !== "running").length;
+    const out = [
+      fit(
+        `\u001B[1m${title}\u001B[0m  ${finished}/${rows.length} finished`,
+        `\u001B[2m${clock(Date.now() - begun)}\u001B[0m`,
+        width,
+      ),
+      "",
+      ...rows.map((r) => {
+        const icon = r.state === "running" ? (SPINNER[frame % SPINNER.length] ?? "") : ICON[r.state];
+        const time = r.started === 0 ? "" : clock((r.ended || Date.now()) - r.started);
+        const tokens =
+          r.tokens.input + r.tokens.output === 0 ? "" : `in ${count(r.tokens.input)}  out ${count(r.tokens.output)}`;
+        const row = ` \u001B[${COLOUR[r.state]}m${icon}\u001B[0m #${r.issue.padEnd(5)} \u001B[2m${r.tag.padEnd(5)}\u001B[0m ${r.step.padEnd(10)} ${time.padStart(6)}  \u001B[2m${tokens.padEnd(22)}\u001B[0m ${r.note}`;
+        return truncate(row, width);
+      }),
+      "",
+      `\u001B[2m${"─".repeat(Math.min(width, 60))}\u001B[0m`,
+    ];
+    const room = Math.max(0, height - out.length - 1);
+    out.push(...lines.slice(-room).map((line) => truncate(line, width)));
+    process.stdout.write(`\u001B[H\u001B[2J${out.join("\n")}`);
+  };
+
+  process.stdout.write("\u001B[?1049h\u001B[?25l");
+  const timer = setInterval(() => {
+    frame++;
+    render();
+  }, 100);
+
+  return {
+    reporter(issue) {
+      const row = find(issue);
+      const say = (line: string): void => {
+        activity(`\u001B[1m#${issue}\u001B[0m ${line}`);
+      };
+      return {
+        start(step, note = "") {
+          set(issue, "running", step, note);
+          say(`\u001B[1m▶ ${step}\u001B[0m ${note}`);
+        },
+        done(step, note = "") {
+          set(issue, "running", step, note);
+        },
+        skip(step, note = "") {
+          set(issue, "running", step, note);
+        },
+        stop(step, note = "") {
+          set(issue, "stopped", step, note);
+        },
+        fail(step, note = "") {
+          set(issue, "failed", step, note);
+        },
+        tokens(_step, usage) {
+          if (!usage) return;
+          row.tokens.input += usage.inputTokens + usage.cacheCreationInputTokens + usage.cacheReadInputTokens;
+          row.tokens.output += usage.outputTokens;
+        },
+        activity: say,
+        event(event) {
+          if (event.type === "toolCall") say(`\u001B[33m${event.name}\u001B[0m ${oneLine(event.formattedArgs)}`);
+          if (event.type === "text" && event.message.trim() !== "") say(oneLine(event.message));
+        },
+      };
+    },
+    set,
+    activity,
+    close(summary) {
+      clearInterval(timer);
+      process.stdout.write("\u001B[?25h\u001B[?1049l");
+      process.stdout.write(`${summary.join("\n")}\n`);
+    },
+  };
+}

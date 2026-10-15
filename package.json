@@ -22,7 +22,8 @@
     "lint": "oxlint --type-aware --deny-warnings --report-unused-disable-directives && bun scripts/lint-guards.ts",
     "lint:fix": "oxlint --type-aware --fix",
     "knip": "knip --no-progress",
-    "sandcastle": "bun .sandcastle/main.ts"
+    "sandcastle": "bun .sandcastle/main.ts",
+    "sandcastle:batch": "bun .sandcastle/batch.ts"
   },
   "devDependencies": {
     "@ai-hero/sandcastle": "0.12.0",
