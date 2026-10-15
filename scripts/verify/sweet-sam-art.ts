@@ -25,10 +25,10 @@ import {
   cabinetPlayfieldWidth,
 } from "../../src/ui/cabinet.ts";
 import { inputPath, loadScript, repoRoot } from "../../test/parity/fixtures.ts";
-import { decodeDataUrl, isRecord } from "../browser.ts";
+import { decodeDataUrl } from "../browser.ts";
 import { planCaptures } from "../capture-frames.ts";
 import { isWax, sweetSamArtFiles, sweetSamImagesDir } from "../gen-sweet-sam-art.ts";
-import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, sweetSamIn, upscale, verify, type Verify } from "../harness.ts";
 import { loadFixture, replayLive, runSteps, skipTo } from "../fixture-replay.ts";
 
 let checks = 0;
@@ -63,14 +63,8 @@ function canvas(v: Verify): PNG {
   return PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
 }
 
-function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
-  return isRecord(x) && Array.isArray(x["enemies"]) && isRecord(x["player"]) && typeof x["lives"] === "number";
-}
-
 function sweetSam(v: Verify): SweetSamSnapshot {
-  const g = v.snapshot(isGameSnapshot);
-  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
-  return g.sw;
+  return sweetSamIn(v.snapshot(isGameSnapshot));
 }
 
 const px = (png: PNG, x: number, y: number): number => png.data.readUInt32BE((y * png.width + x) * 4);

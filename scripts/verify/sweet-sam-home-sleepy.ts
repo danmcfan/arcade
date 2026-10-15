@@ -7,9 +7,8 @@
 
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
-import { isRecord } from "../browser.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, sweetSamIn, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -19,14 +18,8 @@ function check(ok: boolean, what: string, got?: unknown): void {
   console.log(`  ok  ${what}`);
 }
 
-function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
-  return isRecord(x) && typeof x["level"] === "number" && Array.isArray(x["enemies"]);
-}
-
 function sweetSam(v: Verify): SweetSamSnapshot {
-  const g = v.snapshot(isGameSnapshot);
-  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
-  return g.sw;
+  return sweetSamIn(v.snapshot(isGameSnapshot));
 }
 
 const script = loadScript(inputPath("sweet-sam-clear"));

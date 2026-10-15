@@ -12,7 +12,15 @@ import type { GameSnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts"
 import { isPrizeId, type PrizeId } from "../../src/arcade/prizes.ts";
 import { saveKey } from "../../src/title/save.ts";
 import { isRecord } from "../browser.ts";
-import { evalJson, isStringArray, isTitleSnapshot, verify, type Verify } from "../harness.ts";
+import {
+  evalJson,
+  isStringArray,
+  isSweetSamSnapshot,
+  isTitleSnapshot,
+  sweetSamIn,
+  verify,
+  type Verify,
+} from "../harness.ts";
 
 let checks = 0;
 
@@ -30,9 +38,7 @@ function game(v: Verify): GameSnapshot {
 }
 
 function sweetSam(v: Verify): SweetSamSnapshot {
-  const g = game(v);
-  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
-  return g.sw;
+  return sweetSamIn(game(v));
 }
 
 type Stored = { v: number; tickets: number; prizes: PrizeId[] } | null;
@@ -42,10 +48,6 @@ function isStored(x: unknown): x is Stored {
   if (!isRecord(x) || typeof x["v"] !== "number" || typeof x["tickets"] !== "number") return false;
   const prizes = x["prizes"];
   return Array.isArray(prizes) && prizes.every((p) => isPrizeId(p));
-}
-
-function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
-  return isRecord(x) && typeof x["lives"] === "number" && Array.isArray(x["enemies"]) && isRecord(x["player"]);
 }
 
 function stored(v: Verify): Stored {
