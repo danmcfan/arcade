@@ -18,7 +18,8 @@ import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { saveKey, saveVersion } from "../src/title/save.ts";
 import { Wallet } from "../src/arcade/wallet.ts";
-import { cardHeight, cardWidth, counterLayout, pictureHeight } from "../src/game/counterLayout.ts";
+import { tickerText, tickerTextWidth } from "../src/arcade/ticker.ts";
+import { cardHeight, cardPriceY, cardTop, cardWidth, counterLayout, pictureHeight } from "../src/game/counterLayout.ts";
 import { closeCursor, prizeCounterItems, shelf, tokenCursor } from "../src/game/menus.ts";
 import { cardInks } from "../src/game/overlay.ts";
 import { glyphs, glyphWidth, inks, type Ink } from "../src/ui/glyphs.ts";
@@ -27,7 +28,7 @@ import { textWidth } from "../src/ui/text.ts";
 import { nineSlice } from "../src/ui/nineSlice.ts";
 import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
 import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
-import { tickerRect } from "../src/ui/tickerArt.ts";
+import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
 import { mirrorX, recolour, type Rows } from "./pixel-art.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
@@ -157,9 +158,15 @@ function prizeCounterFrames(): PNG[] {
       const picture = offer === "owned" ? recolour(rows, greyLetters) : rows;
       const centre = card.x + cardWidth / 2;
       const w = picture[0]?.length ?? 0;
-      paint(png, picture, sweetie, centre - Math.trunc(w / 2), card.y + 2 + pictureHeight - picture.length);
-      const price = item.value ?? "";
-      paintText(png, price, centre - Math.trunc(textWidth(price) / 2), card.y + 2 + pictureHeight + 1, cardInks[offer]);
+      paint(png, picture, sweetie, centre - Math.trunc(w / 2), card.y + cardTop + pictureHeight - picture.length);
+      for (const g of tickerText(
+        item.value ?? "",
+        cardInks[offer],
+        centre - Math.trunc(tickerTextWidth(item.value ?? "") / 2),
+      )) {
+        const glyph = tickerGlyphs[g.ch] ?? [];
+        paint(png, glyph, { "#": sweetie[tickerInks[g.ink]] }, g.x, card.y + cardPriceY);
+      }
     });
     for (const [at, centre] of [
       [tokenCursor, layout.tokenCentre],

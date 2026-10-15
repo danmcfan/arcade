@@ -210,7 +210,7 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
   imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
   imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
-  imageOutput(join(imagesDir, "ticker.png"), 111, 25, renderTicker),
+  imageOutput(join(imagesDir, "ticker.png"), tickerSheetRows()[0]?.length ?? 0, tickerSheetRows().length, renderTicker),
   imageOutput(join(imagesDir, "panel.png"), panelFrame[0]?.length ?? 0, panelFrame.length, renderPanel),
   imageOutput(join(imagesDir, "cards.png"), cardSheetWidth, cardSheetHeight, renderCards),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),

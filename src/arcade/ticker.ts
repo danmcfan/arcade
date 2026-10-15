@@ -106,12 +106,21 @@ export function litBulbs(tick: number): Bulb[] {
   return tickerBulbs.filter((_, i) => (i + phase) % 3 !== 0);
 }
 
+/** One lit letter, top left at (x, y). */
+function drawGlyph(screen: Surface, ch: string, ink: TickerInk, x: number, y: number): void {
+  const sx = tickerGlyphX[ch] ?? 0;
+  const sy = tickerInkOrder.indexOf(ink) * tickerGlyphHeight;
+  screen.draw(sub(imageTicker, sx, sy, sx + glyphWidth(ch), sy + tickerGlyphHeight), x, y);
+}
+
 /** Light the board's letters and bulbs on `tick`, the hub image drawn at (`buffer`, `buffer`). */
 export function drawTicker(screen: Surface, v: TickerView, tick: number, buffer: number): void {
   for (const b of litBulbs(tick)) screen.fillRect(b.x + buffer, b.y + buffer, 1, 1, sweetie[bulbLit]);
-  for (const g of tickerLetters(v)) {
-    const sx = tickerGlyphX[g.ch] ?? 0;
-    const sy = tickerInkOrder.indexOf(g.ink) * tickerGlyphHeight;
-    screen.draw(sub(imageTicker, sx, sy, sx + glyphWidth(g.ch), sy + tickerGlyphHeight), g.x + buffer, g.y + buffer);
-  }
+  for (const g of tickerLetters(v)) drawGlyph(screen, g.ch, g.ink, g.x + buffer, g.y + buffer);
+}
+
+/** `text` in the board's letters, horizontally centred on `cx`, top at `y`: the prize counter cards' prices. */
+export function drawTickerTextCentered(screen: Surface, text: string, ink: TickerInk, cx: number, y: number): void {
+  for (const g of tickerText(text, ink, cx - Math.trunc(tickerTextWidth(text) / 2)))
+    drawGlyph(screen, g.ch, ink, g.x, y);
 }

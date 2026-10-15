@@ -4,13 +4,19 @@
 // counter scene (scripts/pixel-scenes.ts).
 
 import { textHeight } from "../ui/text.ts";
+import { tickerGlyphHeight } from "../ui/tickerArt.ts";
 import { shelf, shelfColumns, shelfRows } from "./menus.ts";
 
 /** The tallest picture a prize card holds. */
 export const pictureHeight = 12;
-/** A prize card: its picture over its price, 2 px inside its frame. */
-export const cardWidth = 42;
-export const cardHeight = 2 + pictureHeight + 1 + textHeight + 2;
+/** Room above a card's picture and below its price, inside its frame's 2 px edge. */
+export const cardTop = 2;
+const cardBottom = 3;
+/** A prize card: its picture over its price, in the scoreboard's letters (src/ui/tickerArt.ts). */
+export const cardWidth = 40;
+export const cardHeight = cardTop + pictureHeight + 1 + tickerGlyphHeight + cardBottom;
+/** A card's price, from its top. */
+export const cardPriceY = cardTop + pictureHeight + 1;
 
 export interface CounterLayout {
   panel: { x: number; y: number; w: number; h: number };

@@ -9,7 +9,9 @@ import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawNineSlice } from "../ui/nineSlice.ts";
 import { cardCorner, cardRects, type CardLook } from "../ui/panelArt.ts";
-import { cardHeight, cardWidth, counterLayout, pictureHeight } from "./counterLayout.ts";
+import { drawTickerTextCentered } from "../arcade/ticker.ts";
+import type { TickerInk } from "../ui/tickerArt.ts";
+import { cardHeight, cardPriceY, cardTop, cardWidth, counterLayout, pictureHeight } from "./counterLayout.ts";
 import {
   controlsPanelHeight,
   controlsPanelWidth,
@@ -23,7 +25,7 @@ import {
   type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
-import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth, type Ink } from "../ui/text.ts";
+import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
 import type { Menu, MenuItem } from "./menu.ts";
 import { closeCursor, shelf, tokenCursor } from "./menus.ts";
 import { minigame } from "./minigames.ts";
@@ -125,8 +127,8 @@ function drawPrizeCounter(
     if (i === cursor) drawCard(screen, "cursor", card.x, card.y);
     const centre = card.x + cardWidth / 2;
     const picture = offer === "owned" ? p.greySprite : p.sprite;
-    screen.draw(picture, centre - Math.trunc(picture.w / 2), card.y + 2 + pictureHeight - picture.h);
-    drawTextCentered(screen, it.value ?? "", centre, card.y + 2 + pictureHeight + 1, cardInks[offer]);
+    screen.draw(picture, centre - Math.trunc(picture.w / 2), card.y + cardTop + pictureHeight - picture.h);
+    drawTickerTextCentered(screen, it.value ?? "", cardInks[offer], centre, card.y + cardPriceY);
   });
 
   const token = item(tokenCursor);
@@ -156,7 +158,7 @@ function cardOffer(i: MenuItem): CardOffer {
 }
 
 /** A card's price ink, by offer. */
-export const cardInks: Readonly<Record<CardOffer, Ink>> = { buy: "yellow", short: "white", owned: "blue" };
+export const cardInks: Readonly<Record<CardOffer, TickerInk>> = { buy: "yellow", short: "white", owned: "pale" };
 
 /** BUY TOKEN or CLOSE centred on `centre`: yellow after an arrow when selected, grey when it can't be chosen. */
 function drawRowItem(
