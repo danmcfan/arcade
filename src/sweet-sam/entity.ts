@@ -118,6 +118,13 @@ export class Entity {
   directions: Direction[] = [];
   velocity = 0;
 
+  /** The bear's turn waiting for a junction's cornering window (update.ts `steer`). */
+  turn: Direction | "" = "";
+  /** Whether the bear was inside a cornering window last tick. */
+  inWindow = false;
+  /** The junction the bear is cornering round: it closes the gap to its centre line. */
+  cornering: Entity | null = null;
+
   reverseDirection = false;
   reverseTile: Tile = { x: 0, y: 0 };
 

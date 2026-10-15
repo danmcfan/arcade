@@ -62,37 +62,90 @@ export function winner(s: SweetSamSoftware): boolean {
 }
 
 export function applyInput(s: SweetSamSoftware, i: Input): void {
-  const newDirection = direction(i);
-  const corner = findCorner(s.player, s.corners);
+  steer(s.player, s.corners, direction(i));
+}
+
+/** Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it (Dossier, "Cornering"). */
+export const corneringBefore = 4;
+export const corneringAfter = 3;
+
+/**
+ * The bear's input for one tick. A reversal applies at once; a perpendicular
+ * turn waits, even after the key is released, until the bear is inside a
+ * junction's cornering window, and is forgotten when it leaves that window.
+ */
+export function steer(e: Entity, cs: readonly Entity[], held: Direction | ""): void {
+  if (held !== "") {
+    e.turn = held;
+  }
+  const want = e.turn;
+  if (want === "" || want === e.direction) {
+    e.turn = "";
+    return;
+  }
+
+  if (e.direction === "" || dirAxis(e.direction) === dirAxis(want)) {
+    const corner = findCorner(e, cs);
+    if (corner === null || corner.directions.includes(want)) {
+      e.direction = want;
+    }
+    e.turn = "";
+    return;
+  }
+
+  const corner = cornerWindow(e, cs);
   if (corner === null) {
-    let validDirections: Direction[] = [];
-    switch (dirAxis(s.player.direction)) {
-      case "VERTICAL":
-        validDirections = ["UP", "DOWN"];
-        break;
-      case "HORIZONTAL":
-        validDirections = ["LEFT", "RIGHT"];
-        break;
+    if (e.inWindow) {
+      e.turn = "";
     }
-
-    if (newDirection === "" || !validDirections.includes(newDirection)) {
-      return;
-    }
-
-    s.player.direction = newDirection;
+    e.inWindow = false;
+    return;
+  }
+  e.inWindow = true;
+  if (!corner.directions.includes(want)) {
     return;
   }
 
-  if (newDirection === "" || !corner.directions.includes(newDirection)) {
+  e.direction = want;
+  e.turn = "";
+  e.inWindow = false;
+  e.cornering = corner;
+}
+
+/** The junction on the bear's line whose cornering window it is in, if any. */
+function cornerWindow(e: Entity, cs: readonly Entity[]): Entity | null {
+  const [dx, dy] = dirSteps[e.direction];
+  for (const c of cs) {
+    const ahead = (c.x - e.x) * dx + (c.y - e.y) * dy;
+    const across = (c.x - e.x) * dy + (c.y - e.y) * dx;
+    if (Math.abs(across) <= distanceThreshold && ahead <= corneringBefore && ahead >= -corneringAfter) {
+      return c;
+    }
+  }
+  return null;
+}
+
+const dirSteps: Record<Direction | "", [number, number]> = {
+  UP: [0, -1],
+  DOWN: [0, 1],
+  LEFT: [-1, 0],
+  RIGHT: [1, 0],
+  "": [0, 0],
+};
+
+/** Moves `e` toward the centre line of the junction it is cornering round. */
+function closeCorner(e: Entity): void {
+  const c = e.cornering;
+  if (c === null) {
     return;
   }
-
-  if (dirAxis(s.player.direction) !== dirAxis(newDirection)) {
-    s.player.x = corner.x;
-    s.player.y = corner.y;
+  if (dirAxis(e.direction) === "VERTICAL") {
+    e.x += Math.max(-e.velocity, Math.min(e.velocity, c.x - e.x));
+    if (e.x === c.x) e.cornering = null;
+  } else {
+    e.y += Math.max(-e.velocity, Math.min(e.velocity, c.y - e.y));
+    if (e.y === c.y) e.cornering = null;
   }
-
-  s.player.direction = newDirection;
 }
 
 export function updateFrame(e: Entity): void {
@@ -151,6 +204,8 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   if (corner !== null) {
     validDirections = corner.directions;
   }
+
+  closeCorner(e);
 
   if (validDirections.includes(e.direction)) {
     switch (e.direction) {

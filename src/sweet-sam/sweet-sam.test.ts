@@ -1,15 +1,9 @@
 // Sweet Sam self-check: drive Sweet Sam's `create` (src/game/minigames.ts) directly (no hub) with scripted
-// inputs and compare against values captured from the Go original.
+// inputs, pin where the TypeScript run ends and check invariants along it.
 //
-// test/fixtures/sweet-sam.goReference.json (provenance in test/fixtures/README.md)
-// was produced during T5 by a throwaway Go harness: a
-// copy of the Go Sweet Sam package with `math/rand` swapped for the same mulberry32 as
-// src/engine/rng.ts (same call positions), a Snapshot() emitting the §4.3
-// keys, built with CGO_ENABLED=1 GOARCH=amd64 and fed the exact input stream
-// the generator below produces (seed 8, "greedy", 6000 ticks). The full
-// per-tick traces matched bit for bit; this file keeps state transitions, a
-// few complete snapshots and the end state as a regression lock until the
-// real golden fixtures (test/parity/sweet-sam.test.ts) take over.
+// It once compared against a trimmed Go reference (seed 8, "greedy", 6000 ticks); since #157 the bear
+// pre-turns as in Pac-Man and leaves Go's path within its first turns, so that reference was retired.
+// The golden fixtures (test/parity/sweet-sam.test.ts) cover the full traces.
 
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
@@ -18,7 +12,6 @@ import type { Input } from "../engine/input.ts";
 import type { SweetSamSnapshot } from "../game/snapshot.ts";
 import { minigame } from "../game/minigames.ts";
 import { SweetSamSoftware } from "./software.ts";
-import reference from "../../test/fixtures/sweet-sam.goReference.json";
 
 interface Tick {
   tick: number;
@@ -115,110 +108,15 @@ function run(seed: number, ticks: number): Tick[] {
 
 const trace = run(8, 6000);
 
-/** Snapshot keys added after the Go capture (#47: levels, the bonus flower, the death animation). */
-const keysSinceGo = [
-  "level",
-  "levelBannerTicks",
-  "mazeFlash",
-  "flower",
-  "flowerPopup",
-  "deathFrame",
-  "release",
-] as const;
-
-/** Go snapshot keys dropped since (#113: the cabinet outline has no joystick). */
-const keysDroppedSinceGo = ["joystick"] as const;
-
-/**
- * Bees without `dotMin` and `held`: since #155 only the preferred bee in the home counts eaten drops, where Go
- * counted them for every bee. The bees still move as in Go until the first sleepy tick.
- */
-function withoutDotMin(enemies: unknown): unknown {
-  if (!Array.isArray(enemies)) return enemies;
-  return enemies.map((e: unknown) => {
-    if (typeof e !== "object" || e === null) return e;
-    const rest: Record<string, unknown> = { ...e };
-    delete rest["dotMin"];
-    delete rest["held"];
-    return rest;
-  });
-}
-
-/** A Go reference snapshot without the keys dropped since. */
-function withoutDropped(want: object): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...want };
-  const sw: unknown = out["sw"];
-  if (typeof sw === "object" && sw !== null) {
-    const kept: Record<string, unknown> = { ...sw };
-    for (const k of keysDroppedSinceGo) delete kept[k];
-    kept["enemies"] = withoutDotMin(kept["enemies"]);
-    out["sw"] = kept;
-  }
-  return out;
-}
-
-/** Sounds by their Go names; the ones Go never had (#47) are dropped. */
-const goSoundNames: Partial<Record<string, string>> = { sweetStart: "start", sweetBee: "power", sweetDeath: "death" };
-
-/** A tick as the Go reference recorded it: without the keys and sounds added since (ADR 0004). */
-function goView(t: Tick | undefined): unknown {
-  if (t === undefined) return undefined;
-  const sw: Record<string, unknown> = { ...t.sw };
-  for (const k of keysSinceGo) delete sw[k];
-  sw["enemies"] = withoutDotMin(sw["enemies"]);
-  const sounds = t.sounds.flatMap((e) => {
-    const [action, name] = e.split(":");
-    const goName = goSoundNames[name ?? ""];
-    return goName === undefined ? [] : [`${action}:${goName}`];
-  });
-  return { tick: t.tick, rng: t.rng, sounds, sw };
-}
-
-/**
- * The first tick a bee is sleepy. From then on the run leaves the Go reference: since #152 sleepy time
- * pauses the scatter/chase timer, which Go kept counting. The reference cannot be regenerated, so it is
- * only compared before this tick; the parity traces cover the rest.
- */
-const firstSleepyTick = trace.find((t) => t.sw.enemies.some((e) => e.blue > 0))?.tick ?? Infinity;
-
-/** Rows keyed by tick (first element), only those before the first sleepy tick. */
-function before(rows: readonly (readonly unknown[])[]): unknown[] {
-  return rows.filter((r) => Number(r[0]) < firstSleepyTick);
-}
-
-describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", () => {
-  test("state transitions happen on the same ticks with the same rng state", () => {
-    const trans: [number, string, number][] = [];
-    let prev = "";
-    for (const t of trace) {
-      if (t.sw.state !== prev) {
-        trans.push([t.tick, t.sw.state, t.rng]);
-        prev = t.sw.state;
-      }
-    }
-    expect(before(trans)).toEqual(before(reference.trans));
-    expect(before(trans).length).toBeGreaterThan(2);
-  });
-
-  test("full snapshots match at the first death", () => {
-    for (const [tick, want] of Object.entries(reference.snaps).filter(([k]) => Number(k) < firstSleepyTick)) {
-      expect(goView(trace[Number(tick) - 1])).toEqual<unknown>({
-        tick: Number(tick),
-        ...withoutDropped(want),
-      });
-    }
-  });
-});
-
 describe("Sweet Sam end state of the seed 8 run (TypeScript regression lock)", () => {
-  // The Go end state no longer applies (#152, #155); this pins what the TypeScript run reaches.
+  // This pins what the TypeScript run reaches (re-pinned for #157's cornering).
   test("rng, score and items hash at tick 6000", () => {
     const last = trace.at(-1);
     expect({
       rng: last?.rng,
       score: last?.sw.score,
       itemsHash: last?.sw.itemsHash,
-    }).toEqual<unknown>({ rng: 1338519642, score: 3490, itemsHash: 3752454137 });
+    }).toEqual<unknown>({ rng: 3553732637, score: 2130, itemsHash: 3456050023 });
   });
 });
 
@@ -247,10 +145,25 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "particlesActive",
         "pelletAnimTick",
         "dials",
-        ...keysSinceGo,
+        "level",
+        "levelBannerTicks",
+        "mazeFlash",
+        "flower",
+        "flowerPopup",
+        "deathFrame",
+        "release",
       ].toSorted(),
     );
-    expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual(["dir", "frame", "hidden", "velocity", "x", "y"]);
+    expect(Object.keys(sw?.player ?? {}).toSorted()).toEqual([
+      "cornering",
+      "dir",
+      "frame",
+      "hidden",
+      "turn",
+      "velocity",
+      "x",
+      "y",
+    ]);
     expect(Object.keys(sw?.enemies[0] ?? {}).toSorted()).toEqual(
       [
         "kind",
