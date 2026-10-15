@@ -18,7 +18,7 @@ import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { BrassMonkeySoftware } from "./game.ts";
-import { createBrassMonkey } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
@@ -61,7 +61,7 @@ afterEach(() => {
 
 describe("BrassMonkeySoftware", () => {
   test("is the brassMonkey software in its cabinet", () => {
-    const g = createBrassMonkey();
+    const g = minigame("brassMonkey").create({ highScore: 0, prizes: [] });
     expect(g.name).toBe("brassMonkey");
     expect(isFixedViewport(g) && g.fixedViewportSize()).toEqual([240, 304]);
   });

@@ -1,31 +1,16 @@
-// Labels for the menus the Game draws: the minigame pause menu and its
-// controls panel, and the prize counter menu (a token, the prizes, CLOSE)
-// over the hub. (The title
-// scene's menus are in src/title/menus.ts; the drawing is in src/ui/menu.ts.)
+// Labels for the menus the Game draws: the minigame pause menu (each
+// minigame's controls panel is in ./minigames.ts), and the prize counter menu
+// (a token, the prizes, CLOSE) over the hub. (The title scene's menus are in
+// src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
 import { prizes, type Prize } from "../arcade/prizes.ts";
 import { ticketsPerToken, type CounterOffers, type PrizeOffer, type TokenOffer } from "../arcade/wallet.ts";
-import { moveControl, type ControlRow } from "../ui/menu.ts";
-import type { SoftwareName } from "./software.ts";
 
 export const minigamePauseMenu = ["RESUME", "CONTROLS", "QUIT GAME"] as const;
 /** Index of QUIT GAME in `minigamePauseMenu`. */
 export const quitGameIndex = 2;
 /** Drawn beside QUIT GAME: quitting pays nothing for the run. */
 export const quitGameNote = "NO TICKETS";
-
-const standardControls: readonly ControlRow[] = [
-  moveControl,
-  { keys: [["SPACE"]], label: "ACTION" },
-  { keys: [["ESC"]], label: "PAUSE" },
-];
-
-/** Each minigame's controls panel. For now every minigame has the same three rows. */
-export const minigameControls: Readonly<Record<SoftwareName, readonly ControlRow[]>> = {
-  sweetSam: standardControls,
-  firefly: standardControls,
-  brassMonkey: standardControls,
-};
 
 export const prizeCounterTitle = "PRIZE COUNTER";
 

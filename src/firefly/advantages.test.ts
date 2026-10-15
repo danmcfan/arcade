@@ -11,7 +11,7 @@ import {
   wingsPlayerSpeed,
 } from "./advantages.ts";
 import { FireflySoftware } from "./game.ts";
-import { createFirefly } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import { maxSparks, playerSpeed, startLives } from "./rules.ts";
 
 let unsubscribe = (): void => {};
@@ -24,8 +24,8 @@ afterEach(() => {
 });
 
 function run(prizes: readonly PrizeId[]): FireflySoftware {
-  const f = createFirefly(prizes);
-  if (!(f instanceof FireflySoftware)) throw new Error("createFirefly did not return a FireflySoftware");
+  const f = minigame("firefly").create({ highScore: 0, prizes });
+  if (!(f instanceof FireflySoftware)) throw new Error("Firefly's create did not return a FireflySoftware");
   return f;
 }
 

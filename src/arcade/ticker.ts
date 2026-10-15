@@ -8,6 +8,7 @@
 import { imageTicker } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { minigameTitled } from "../game/minigames.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import {
@@ -40,13 +41,6 @@ export interface TickerView {
   tickets: number;
   title: ArcadeTitle | null;
 }
-
-/** The cabinets' names on the board, in their lit colours. */
-export const tickerTitles: Readonly<Record<ArcadeTitle, { text: string; ink: TickerInk }>> = {
-  brassMonkey: { text: "BRASS MONKEY", ink: "green" },
-  sweet: { text: "SWEET SAM", ink: "yellow" },
-  firefly: { text: "FIREFLY", ink: "cyan" },
-};
 
 export const tokensLabel = "TOKENS";
 export const ticketsLabel = "TICKETS";
@@ -88,7 +82,7 @@ const shown = (n: number): string => String(Math.min(maxShown, Math.max(0, Math.
 /** Every lit letter on the board for `v`. */
 export function tickerLetters(v: TickerView): TickerGlyph[] {
   if (v.title !== null) {
-    const t = tickerTitles[v.title];
+    const t = minigameTitled(v.title).titleCard;
     return [
       ...tickerText(t.text, t.ink, tickerLeft),
       ...tickerText(pressSpace, "white", tickerRight - tickerTextWidth(pressSpace)),

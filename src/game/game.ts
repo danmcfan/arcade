@@ -11,15 +11,10 @@ import {
   imageArcade,
   attractSounds,
   soundDeny,
-  soundHit,
   soundHub,
-  soundLifeLost,
   soundMove,
   soundSelect,
-  soundSpark,
-  soundStage,
   soundTicket,
-  sweetSamSounds,
 } from "../engine/assets.ts";
 import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
@@ -31,7 +26,7 @@ import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type RunKind, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
-import { createSoftware } from "./softwareFactories.ts";
+import { createSoftware, minigames } from "./minigames.ts";
 import {
   closeItemIndex,
   firstPrizeIndex,
@@ -57,17 +52,11 @@ export interface Progress extends WalletProgress {
 }
 
 /** The minigames' sounds: paused with the minigame pause menu. */
-const minigameSounds: readonly Sound[] = [
-  ...Object.values(sweetSamSounds),
-  soundSpark,
-  soundHit,
-  soundLifeLost,
-  soundStage,
-];
+const minigameSounds: readonly Sound[] = minigames.flatMap((m) => m.sounds);
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
-  /** Builds a machine's software; default: `createSoftware` from ./softwareFactories.ts. */
+  /** Builds a machine's software; default: `createSoftware` from ./minigames.ts. */
   createSoftware?: SoftwareFactory;
   /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
   debugPrint?: DebugPrinter;

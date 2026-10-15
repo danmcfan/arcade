@@ -8,7 +8,8 @@ import {
   tickerRight,
   tickerTextY,
 } from "../ui/tickerArt.ts";
-import { litBulbs, maxShown, tickerLetters, tickerTextWidth, tickerTitles, type TickerView } from "./ticker.ts";
+import { litBulbs, maxShown, tickerLetters, tickerTextWidth, type TickerView } from "./ticker.ts";
+import { minigames } from "../game/minigames.ts";
 
 const text = (v: TickerView, ink?: string): string =>
   tickerLetters(v)
@@ -70,8 +71,7 @@ describe("LED scoreboard", () => {
   });
 
   test("facing a cabinet, it shows the cabinet's name in its colour and PRESS SPACE TO PLAY", () => {
-    for (const title of ["brassMonkey", "sweet", "firefly"] as const) {
-      const t = tickerTitles[title];
+    for (const { title, titleCard: t } of minigames) {
       const v = { tokens: 3, tickets: 1250, title };
       expect(text(v, t.ink)).toBe(t.text.replaceAll(" ", ""));
       expect(text(v, "white")).toBe("PRESSSPACETOPLAY");

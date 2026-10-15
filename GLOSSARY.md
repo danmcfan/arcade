@@ -25,7 +25,7 @@ The music that loops, quietly, the whole time the player is in the hub, prize co
 _Avoid_: hub melody, background music
 
 **Minigame**:
-A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
+A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`; each is described once, cabinet and all, by its `Minigame` entry in `minigames` (`src/game/minigames.ts`).
 _Avoid_: level, mode, sub-game
 
 **Sweet Sam**:
