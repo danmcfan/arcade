@@ -12,6 +12,8 @@ export interface MenuItem {
   label: string;
   /** Drawn on the right, e.g. a price; prize counter only. */
   value?: string;
+  /** Drawn beside the label, e.g. NO TICKETS beside QUIT GAME. */
+  note?: string;
   /** False when it can't be chosen right now: drawn grey, Space plays the deny sound. */
   enabled: boolean;
   choose: () => void;

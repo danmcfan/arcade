@@ -4,7 +4,6 @@
 // centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
-import type { Wallet } from "../arcade/wallet.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawIcon } from "../ui/hud.ts";
 import { iconRects } from "../ui/icons.ts";
@@ -17,19 +16,13 @@ import {
   arrowOffset,
   drawPausePanel,
   pausePanelHeight,
+  pauseNote,
   type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
-import {
-  firstPrizeIndex,
-  minigamePauseMenu,
-  prizeCounterItems,
-  prizeCounterTitle,
-  quitGameIndex,
-  quitGameNote,
-  tokenItemIndex,
-} from "./menus.ts";
+import type { Menu } from "./menu.ts";
+import { prizeCounterTitle } from "./menus.ts";
 import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
@@ -39,10 +32,11 @@ export interface MenuOverlay {
   menu: GameMenu;
   /** The minigame under the menu; null over the hub. */
   software: SoftwareName | null;
-  cursor: number;
+  /** The pause or prize counter menu; null for the payout. */
+  list: Menu | null;
   payout: Payout | null;
-  /** The player's wallet, for the prize counter menu. */
-  wallet: Wallet;
+  /** The player's tickets, shown on the prize counter menu. */
+  tickets: number;
   tick: number;
   /** The part of the layout the minigame paints: dimmed, with the panel centred on it. */
   playfield: { x: number; y: number; w: number; h: number };
@@ -71,13 +65,20 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const centre = x + Math.trunc(w / 2);
   const middle = y + Math.trunc(h / 2);
   switch (o.menu) {
-    case "paused":
-      drawPausePanel(screen, minigamePauseMenu, o.cursor, o.tick, centre, middle - pausePanelHeight / 2, {
-        item: quitGameIndex,
-        text: quitGameNote,
-        ink: "orange",
-      });
+    case "paused": {
+      if (o.list === null) return;
+      const items = o.list.items();
+      drawPausePanel(
+        screen,
+        o.list.labels(),
+        o.list.cursor,
+        o.tick,
+        centre,
+        middle - Math.trunc(pausePanelHeight(items.length) / 2),
+        pauseNote(items),
+      );
       return;
+    }
     case "controls": {
       if (o.software === null) return;
       const rows = minigame(o.software).controls;
@@ -93,7 +94,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
       if (o.payout !== null) drawPayout(screen, o.payout, centre, middle - payoutHeight / 2);
       return;
     case "prizeCounter":
-      drawPrizeCounter(screen, o.wallet, o.cursor, o.tick, o.playfield);
+      if (o.list !== null) drawPrizeCounter(screen, o.list, o.tickets, o.tick, o.playfield);
   }
 }
 
@@ -111,8 +112,8 @@ export function counterWindowStart(cursor: number, n: number): number {
  */
 function drawPrizeCounter(
   screen: Surface,
-  w: Wallet,
-  cursor: number,
+  menu: Menu,
+  tickets: number,
   tick: number,
   area: { x: number; y: number; w: number; h: number },
 ): void {
@@ -123,17 +124,14 @@ function drawPrizeCounter(
   const centre = x + Math.trunc(width / 2);
   drawPanel(screen, x, y, width, height);
   drawTextCentered(screen, prizeCounterTitle, centre, y + 6, "yellow");
-  const count = `${w.tickets}`;
+  const count = `${tickets}`;
   const icon = iconRects.ticket;
   const left = centre - Math.trunc((icon.w + 3 + textWidth(count)) / 2);
   drawIcon(screen, "ticket", left, y + 17 - (icon.h - textHeight) / 2);
   drawText(screen, count, left + icon.w + 3, y + 17, "yellow");
-  const offers = w.counter();
-  const greyed = new Set(offers.token === "short" ? [tokenItemIndex] : []);
-  offers.prizes.forEach((o, i) => {
-    if (o !== "buy") greyed.add(firstPrizeIndex + i);
-  });
-  const items = prizeCounterItems(offers);
+  const { cursor } = menu;
+  const items = menu.items();
+  const greyed = menu.greyed();
   const start = counterWindowStart(cursor, items.length);
   const top = y + 31;
   const nameX = x + 14;
@@ -141,10 +139,11 @@ function drawPrizeCounter(
   items.slice(start, start + counterVisibleItems).forEach((item, row) => {
     const i = start + row;
     const rowY = top + row * counterRowHeight;
-    const grey = greyed.has(i);
+    const grey = greyed.includes(i);
     const ink = grey ? "grey" : i === cursor ? "yellow" : "white";
     drawText(screen, item.label, nameX, rowY, ink);
-    drawText(screen, item.value, valueRight - textWidth(item.value), rowY, grey ? "grey" : "yellow");
+    const value = item.value ?? "";
+    drawText(screen, value, valueRight - textWidth(value), rowY, grey ? "grey" : "yellow");
     if (i === cursor) drawText(screen, ">", x + 5 + arrowOffset(tick) - 1, rowY, "yellow");
   });
   // More items above or below the window.
