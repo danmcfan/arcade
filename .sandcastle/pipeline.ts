@@ -42,6 +42,8 @@ export interface IssueRun {
   signal: AbortSignal;
   /** Every agent session run, for the usage report. */
   runs: { step: string; result: SandboxRunResult }[];
+  /** Runs container setup in turn with other runs' setups, for callers that run issues in parallel. */
+  serialize?: <T>(work: () => Promise<T>) => Promise<T>;
   /** Called with the step about to run, so a caller can say where a run stopped. */
   onStep?: (step: string) => void;
 }
@@ -92,12 +94,16 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
     SIGINT: new Set(process.listeners("SIGINT")),
     SIGTERM: new Set(process.listeners("SIGTERM")),
   };
-  const creating = createSandbox({
-    branch,
-    baseBranch: base,
-    sandbox: docker(),
-    hooks: { sandbox: { onSandboxReady: [{ command: "bun install --frozen-lockfile" }] } },
-  });
+  const create = async (): ReturnType<typeof createSandbox> => {
+    const created = await createSandbox({
+      branch,
+      baseBranch: base,
+      sandbox: docker(),
+      hooks: { sandbox: { onSandboxReady: [{ command: "bun install --frozen-lockfile" }] } },
+    });
+    return created;
+  };
+  const creating = run.serialize ? run.serialize(create) : create();
   let started: Awaited<typeof creating>;
   try {
     started = await interruptible(creating);

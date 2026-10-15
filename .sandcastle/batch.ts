@@ -78,6 +78,16 @@ const interrupt = (): void => {
 process.on("SIGINT", interrupt);
 process.on("SIGTERM", interrupt);
 
+// Workers start their containers one at a time: creating git worktrees in the same repo at once
+// can trip over git's lock files.
+let setups: Promise<unknown> = Promise.resolve();
+async function serialize<T>(work: () => Promise<T>): Promise<T> {
+  const turn = setups.then(work);
+  setups = turn.catch(() => null);
+  const result = await turn;
+  return result;
+}
+
 // Waits for the PR's CI to finish; true when every check passed.
 async function ciPasses(url: string, attempt = 1): Promise<boolean> {
   if (stop.signal.aborted) return false;
@@ -102,6 +112,7 @@ async function runOne(issue: string, bug: boolean): Promise<void> {
       fresh,
       reporter,
       signal: stop.signal,
+      serialize,
       runs,
       onStep: (step) => {
         current = step;
@@ -115,8 +126,11 @@ async function runOne(issue: string, bug: boolean): Promise<void> {
     }
     current = "merge";
     tui.set(issue, "running", "merge", "waiting for CI");
-    const state = (await $`gh pr view ${url} --json state --jq .state`.quiet().text()).trim();
-    if (state !== "MERGED") {
+    const merged = async (): Promise<boolean> =>
+      (await $`gh pr view ${url} --json state --jq .state`.quiet().text()).trim() === "MERGED";
+    if (!(await merged())) {
+      // CI ran on this commit; the merge is refused if the branch has moved on since.
+      const head = (await $`gh pr view ${url} --json headRefOid --jq .headRefOid`.quiet().text()).trim();
       if (!(await ciPasses(url))) {
         if (stop.signal.aborted) throw new Error("Interrupted");
         tui.set(issue, "failed", "merge", "CI red; PR left open");
@@ -124,8 +138,10 @@ async function runOne(issue: string, bug: boolean): Promise<void> {
         return;
       }
       tui.set(issue, "running", "merge", "gh pr merge --squash");
-      const merge = await $`gh pr merge ${url} --squash --delete-branch`.nothrow().quiet();
-      if (merge.exitCode !== 0) {
+      const merge = await $`gh pr merge ${url} --squash --delete-branch --match-head-commit ${head}`.nothrow().quiet();
+      // gh can merge and then fail to delete the local branch (say, a kept worktree still has it),
+      // so the PR's state decides, not the exit code.
+      if (merge.exitCode !== 0 && !(await merged())) {
         tui.set(issue, "failed", "merge", "merge refused; PR left open");
         results.set(issue, `PR left open, merge refused (${merge.stderr.toString().trim()}): ${url}`);
         return;
