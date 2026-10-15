@@ -20,9 +20,14 @@ import type { Scene } from "../game/software.ts";
 import { draw, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, saveVersion, type SaveData, type SaveStore } from "./save.ts";
 
+import { Menu, type MenuItem } from "../game/menu.ts";
 import { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
 
 export { confirmMenu, pauseMenu, titleMenu } from "./menus.ts";
+
+const [continueLabel, newGameLabel] = titleMenu;
+const [noLabel, yesLabel] = confirmMenu;
+const [resumeLabel, controlsLabel, quitLabel] = pauseMenu;
 
 /** Phases the title music plays in: everything before the Game starts. */
 const MUSIC_PHASES: ReadonlySet<string> = new Set<TitlePhase>(["menu", "confirm", "intro"]);
@@ -38,7 +43,6 @@ export class Title implements Scene {
   readonly name = "title";
 
   phase: TitlePhase = "menu";
-  cursor = 0;
   /** Ticks since construction; drives blinking text. */
   tick = 0;
   game: Game | null = null;
@@ -55,6 +59,82 @@ export class Title implements Scene {
   /** Whether the title music was started and not stopped since. */
   private musicOn = false;
 
+  /** The title menu: Continue is only listed when there is a save. Esc does nothing here. */
+  private readonly titleMenu = new Menu((): MenuItem[] => {
+    const newGame: MenuItem = {
+      label: newGameLabel,
+      enabled: true,
+      choose: (): void => {
+        if (this.canContinue) this.show("confirm");
+        else this.show("intro");
+      },
+    };
+    if (!this.canContinue) return [newGame];
+    return [
+      {
+        label: continueLabel,
+        enabled: true,
+        choose: (): void => {
+          this.startGame(this.saved ?? undefined);
+        },
+      },
+      newGame,
+    ];
+  });
+
+  /** Asked before New game replaces a save; No (back to the title menu) is first. */
+  private readonly confirmMenu = new Menu(
+    (): MenuItem[] => [
+      {
+        label: noLabel,
+        enabled: true,
+        choose: (): void => {
+          this.show("menu");
+        },
+      },
+      {
+        label: yesLabel,
+        enabled: true,
+        choose: (): void => {
+          this.show("intro");
+        },
+      },
+    ],
+    (): void => {
+      this.show("menu");
+    },
+  );
+
+  /** The hub pause menu; Esc resumes. */
+  private readonly pauseMenu = new Menu(
+    (): MenuItem[] => [
+      {
+        label: resumeLabel,
+        enabled: true,
+        choose: (): void => {
+          this.resume();
+        },
+      },
+      {
+        label: controlsLabel,
+        enabled: true,
+        choose: (): void => {
+          this.phase = "controls";
+        },
+      },
+      {
+        label: quitLabel,
+        enabled: true,
+        choose: (): void => {
+          this.quitToMenu();
+        },
+      },
+    ],
+    (): void => {
+      this.resume();
+    },
+  );
+
   constructor(deps: TitleDeps = {}) {
     this.store = deps.store ?? memoryStore();
     this.createGame = deps.createGame ?? ((restore): Game => new Game(null, restore ? { restore } : {}));
@@ -70,17 +150,32 @@ export class Title implements Scene {
     return this.saved?.highScore ?? null;
   }
 
-  /** The title menu: Continue is only listed when there is a save. */
+  /** The title menu's labels, also drawn (dimmed) behind the New game check. */
   menuItems(): readonly string[] {
-    return this.canContinue ? titleMenu : titleMenu.slice(1);
+    return this.titleMenu.labels();
+  }
+
+  /** The title menu's selected item. */
+  get menuCursor(): number {
+    return this.titleMenu.cursor;
+  }
+
+  /** The menu on screen; the controls panel belongs to the pause menu. */
+  private activeMenu(): Menu | null {
+    if (this.phase === "menu") return this.titleMenu;
+    if (this.phase === "confirm") return this.confirmMenu;
+    if (this.phase === "paused" || this.phase === "controls") return this.pauseMenu;
+    return null;
   }
 
   /** The labels of the menu on screen, or [] when there is none. */
   items(): readonly string[] {
-    if (this.phase === "menu") return this.menuItems();
-    if (this.phase === "confirm") return confirmMenu;
-    if (this.phase === "paused") return pauseMenu;
-    return [];
+    return this.phase === "controls" ? [] : (this.activeMenu()?.labels() ?? []);
+  }
+
+  /** The selected item of the menu on screen; 0 without one. */
+  get cursor(): number {
+    return this.activeMenu()?.cursor ?? 0;
   }
 
   step(i: Input): void {
@@ -91,25 +186,17 @@ export class Title implements Scene {
   }
 
   private stepPhase(i: Input, edges: MenuEdges): void {
-    // Every choice or Back chirps (Esc does nothing on the title menu itself).
-    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) sounds.select.blip();
-
     switch (this.phase) {
       case "menu":
-        this.moveCursor(edges);
-        if (edges.space) {
-          if (this.cursor !== this.newGameIndex) this.startGame(this.saved ?? undefined);
-          else if (this.canContinue) this.show("confirm", 0);
-          else this.show("intro", 0);
-        }
-        break;
       case "confirm":
-        this.moveCursor(edges);
-        if (edges.escape || (edges.space && this.cursor === 0)) this.show("menu", this.newGameIndex);
-        else if (edges.space) this.show("intro", 0);
+        this.activeMenu()?.step(edges);
+        break;
+      case "paused":
+        this.pauseMenu.step(edges);
         break;
       case "intro":
-        if (edges.escape) this.show("menu", this.newGameIndex);
+        if (edges.space || edges.escape) sounds.select.blip();
+        if (edges.escape) this.show("menu");
         else if (edges.space) {
           this.store.clear();
           this.saved = null;
@@ -119,27 +206,13 @@ export class Title implements Scene {
       case "playing":
         this.stepGame(i, edges.escape);
         break;
-      case "paused":
-        this.moveCursor(edges);
-        if (edges.escape) this.resume(i);
-        else if (edges.space) {
-          if (this.cursor === 0) this.resume(i);
-          else if (this.cursor === 1) this.phase = "controls";
-          else this.quitToMenu();
+      case "controls":
+        if (edges.space || edges.escape) {
+          sounds.select.blip();
+          this.phase = "paused";
         }
         break;
-      case "controls":
-        if (edges.space || edges.escape) this.phase = "paused";
-        break;
     }
-  }
-
-  private moveCursor(edges: MenuEdges): void {
-    const n = this.items().length;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta === 0) return;
-    this.cursor = (this.cursor + delta + n) % n;
-    sounds.move.blip();
   }
 
   /**
@@ -159,20 +232,15 @@ export class Title implements Scene {
     }
   }
 
-  private show(phase: TitlePhase, cursor: number): void {
+  /** Show a phase; a menu opened from the title menu starts on its first item, which keeps its own cursor. */
+  private show(phase: TitlePhase): void {
     this.phase = phase;
-    this.cursor = cursor;
-  }
-
-  /** Index of NEW GAME on the title menu: Continue is only listed above it with a save. */
-  get newGameIndex(): number {
-    return this.canContinue ? 1 : 0;
+    if (phase === "confirm") this.confirmMenu.open();
   }
 
   private startGame(restore?: Progress): void {
     this.game = this.createGame(restore);
     this.phase = "playing";
-    this.cursor = 0;
     this.keys.maskHeld();
     this.persist();
   }
@@ -183,7 +251,7 @@ export class Title implements Scene {
       sounds.select.blip();
       game.pauseAudio();
       this.phase = "paused";
-      this.cursor = 0;
+      this.pauseMenu.open();
       return;
     }
     const wasInHub = game.inHub();
@@ -195,10 +263,10 @@ export class Title implements Scene {
     if (wasInHub !== game.inHub() || before !== game.walletVersion()) this.persist();
   }
 
-  private resume(i: Input): void {
+  /** Back to the hub, with the keys that chose this hidden until released. */
+  private resume(): void {
     this.phase = "playing";
-    this.cursor = 0;
-    this.keys.maskHeld(i);
+    this.keys.maskHeld();
     this.hostedGame().resumeAudio();
   }
 
@@ -208,7 +276,8 @@ export class Title implements Scene {
     game.stopAudio();
     game.dispose();
     this.game = null;
-    this.show("menu", 0);
+    this.titleMenu.open();
+    this.show("menu");
   }
 
   /** The hosted Game; only called in phases that have one. */

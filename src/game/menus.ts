@@ -48,12 +48,20 @@ export function prizeCounterItems(wallet: Wallet, close: () => void): MenuItem[]
   };
   const token = tokenItems[wallet.counter().token];
   return [
-    { ...token, enabled: wallet.canBuy("token"), choose: (): void =>{  buy("token"); } },
+    {
+      ...token,
+      enabled: wallet.canBuy("token"),
+      choose: (): void => {
+        buy("token");
+      },
+    },
     ...prizes.map((p) => ({
       label: p.name,
       value: wallet.owns(p.id) ? "OWNED" : `${p.price}`,
       enabled: wallet.canBuy(p.id),
-      choose: (): void =>{  buy(p.id); },
+      choose: (): void => {
+        buy(p.id);
+      },
     })),
     { label: closeItem, value: "", enabled: true, choose: close },
   ];

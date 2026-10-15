@@ -64,7 +64,9 @@ export class Game implements Scene {
   private readonly pauseMenu = new Menu(
     () =>
       minigamePauseItems({
-        resume: () =>{  this.resumeMinigame(); },
+        resume: () => {
+          this.resumeMinigame();
+        },
         controls: () => {
           this.menu = "controls";
         },
@@ -72,14 +74,22 @@ export class Game implements Scene {
           // Quit game: the token stays spent, no tickets, no payout.
           this.pausedSounds = [];
           this.leaveMinigame();
+          this.keys.maskHeld();
         },
       }),
-    () =>{  this.resumeMinigame(); },
+    () => {
+      this.resumeMinigame();
+    },
   );
   /** The prize counter menu over the hub; CLOSE and Esc go back to the hub. */
   private readonly counterMenu = new Menu(
-    () => prizeCounterItems(this.arcade.wallet, () =>{  this.closeCounter(); }),
-    () =>{  this.closeCounter(); },
+    () =>
+      prizeCounterItems(this.arcade.wallet, () => {
+        this.closeCounter();
+      }),
+    () => {
+      this.closeCounter();
+    },
   );
   private payout: Payout | null = null;
   /** Minigame sounds that were playing when the pause menu opened; Resume restarts them. */
@@ -214,7 +224,7 @@ export class Game implements Scene {
     const input = this.keys.unmasked(raw);
 
     if (this.software === null) {
-      if (this.menu === "prizeCounter") this.updatePrizeCounter(raw, edges);
+      if (this.menu === "prizeCounter") this.counterMenu.step(edges);
       else this.updateHub(input);
       return;
     }
@@ -223,7 +233,7 @@ export class Game implements Scene {
         this.updateMinigame(this.software, input, edges);
         return;
       case "paused":
-        this.updatePauseMenu(raw, edges);
+        this.pauseMenu.step(edges);
         return;
       case "controls":
         if (edges.space || edges.escape) {
@@ -257,13 +267,10 @@ export class Game implements Scene {
     }
   }
 
-  private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
-    this.counterMenu.step(edges);
-    if (this.menu === null) this.keys.maskHeld(raw);
-  }
-
+  /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
   private closeCounter(): void {
     this.menu = null;
+    this.keys.maskHeld();
     this.counterMenu.open();
   }
 
@@ -296,15 +303,11 @@ export class Game implements Scene {
     this.pauseMenu.open();
   }
 
-  private updatePauseMenu(raw: Input, edges: MenuEdges): void {
-    this.pauseMenu.step(edges);
-    if (this.menu !== "paused" && this.menu !== "controls") this.keys.maskHeld(raw);
-  }
-
   /** Resume: the minigame carries on from this tick. */
   private resumeMinigame(): void {
     this.menu = null;
     this.pauseMenu.open();
+    this.keys.maskHeld();
     for (const s of this.pausedSounds) s.play();
     this.pausedSounds = [];
   }
