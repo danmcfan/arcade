@@ -646,12 +646,12 @@ describe("prize counter", () => {
     expect(snap(game).cursor).toBe(8);
   });
 
-  test("an owned prize can't be bought again: the no sound, nothing taken", () => {
+  test("an owned prize can't be chosen: no sound, nothing taken", () => {
     const { game } = atPrize(200, "honeyJar", ["honeyJar"]);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
-    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+    expect(sounds).toEqual([]);
     expect(snap(game).arcade).toMatchObject({ tickets: 200, prizes: ["honeyJar"] });
   });
 

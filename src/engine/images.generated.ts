@@ -53,7 +53,7 @@ export const images = {
   icons: imageAsset(iconsUrl, 23, 9),
   ticker: imageAsset(tickerUrl, 111, 25),
   employee: imageAsset(employeeUrl, 16, 24),
-  prizes: imageAsset(prizesUrl, 91, 12),
+  prizes: imageAsset(prizesUrl, 91, 24),
   arcade: imageAsset(arcadeUrl, 160, 144),
   screens: imageAsset(screensUrl, 392, 108),
   player: imageAsset(playerUrl, 64, 96),

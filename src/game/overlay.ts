@@ -32,6 +32,7 @@ import {
   quitGameIndex,
   quitGameNote,
   shelf,
+  shelfCell,
   shelfColumns,
   shelfRows,
   tokenCursor,
@@ -60,6 +61,10 @@ export const payoutTitle = "PAYOUT";
 export const freePlayLine = "FREE PLAY: 0 TICKETS";
 export const skipHints: readonly Hint[] = [{ keys: ["SPACE"], label: "SKIP" }];
 export const closeHints: readonly Hint[] = [{ keys: ["SPACE"], label: "OK" }];
+export const counterHints: readonly Hint[] = [
+  { keys: ["SPACE"], label: "OK" },
+  { keys: ["ESC"], label: "BACK" },
+];
 
 const payoutWidth = 152;
 const payoutHeight = 74;
@@ -99,19 +104,23 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
 /** Each shelf column's width; the shelf is centred in the panel. */
 const shelfColumnWidth = 52;
 /** Each shelf row's height: a picture standing on its plank, its price under it. */
-const shelfRowHeight = 24;
+const shelfRowHeight = 21;
 /** The tallest picture a shelf cell holds. */
 const pictureHeight = 12;
-/** A greyed-out (owned) picture's alpha. */
-const ownedAlpha = 0.45;
+
+/** What each token offer does, for the info panel. */
+const tokenEffects: Readonly<Record<TokenOffer, string>> = {
+  token: "ONE PLAY ON A CABINET",
+  lastChance: "ALL TICKETS FOR 1 TOKEN",
+  short: "ONE PLAY ON A CABINET",
+};
 
 /** The info panel's lines for what the cursor is on: a name, a price, what it does. */
 function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; price: string; effect: string } {
   if (slot === "close") return { name: closeItem, price: "", effect: "BACK TO THE ARCADE" };
   if (slot === "token") {
-    return token === "lastChance"
-      ? { name: "LAST CHANCE", price: "ALL", effect: "ALL TICKETS FOR 1 TOKEN" }
-      : { name: "TOKEN", price: tokenItems.token.value, effect: "ONE PLAY ON A CABINET" };
+    const { label, value } = tokenItems[token];
+    return { name: label, price: value, effect: tokenEffects[token] };
   }
   return { name: slot.prize.name, price: `${slot.prize.price}`, effect: slot.prize.effect };
 }
@@ -145,25 +154,28 @@ function drawPrizeCounter(
   const offers = w.counter();
   const cols = shelfColumns.length;
   const shelfLeft = x + Math.trunc((width - cols * shelfColumnWidth) / 2);
-  const shelfTop = y + 16;
-  shelf.forEach((p, i) => {
-    const centre = shelfLeft + (i % cols) * shelfColumnWidth + shelfColumnWidth / 2;
-    const top = shelfTop + Math.trunc(i / cols) * shelfRowHeight;
-    const offer = offers.prizes[prizes.indexOf(p)] ?? "buy";
-    const px = centre - Math.trunc(p.sprite.w / 2);
-    const py = top + pictureHeight - p.sprite.h;
-    screen.draw(p.sprite, px, py, offer === "owned" ? { alpha: ownedAlpha } : undefined);
+  const shelfTop = y + 14;
+  for (let i = 0; i < shelf.length; i++) {
+    const { row, col, prize: p } = shelfCell(i);
+    const centre = shelfLeft + col * shelfColumnWidth + shelfColumnWidth / 2;
+    const top = shelfTop + row * shelfRowHeight;
+    const offer = offers.prizes[prizes.indexOf(p)];
+    if (offer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
+    const picture = offer === "owned" ? p.greySprite : p.sprite;
+    const px = centre - Math.trunc(picture.w / 2);
+    const py = top + pictureHeight - picture.h;
+    screen.draw(picture, px, py);
     const label = offer === "owned" ? "OWNED" : `${p.price}`;
-    drawTextCentered(screen, label, centre, top + pictureHeight + 3, priceInk[offer]);
+    drawTextCentered(screen, label, centre, top + pictureHeight + 2, priceInk[offer]);
     if (i === cursor) drawCellCursor(screen, centre - 18, top - 2, 36, shelfRowHeight - 2, tick);
-  });
+  }
   // The planks the pictures stand on.
   for (let row = 0; row < shelfRows; row++) {
     const plankY = shelfTop + row * shelfRowHeight + pictureHeight + 1;
     screen.fillRect(shelfLeft + 2, plankY, cols * shelfColumnWidth - 4, 1, sweetie.l);
   }
 
-  const rowY = shelfTop + shelfRows * shelfRowHeight - 1;
+  const rowY = shelfTop + shelfRows * shelfRowHeight + 1;
   const token = tokenItems[offers.token];
   const tokenGrey = offers.token === "short";
   const tokenCentre = shelfLeft + shelfColumnWidth;
@@ -171,13 +183,14 @@ function drawPrizeCounter(
   drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
   drawRowItem(screen, closeItem, closeCentre, rowY, cursor === closeCursor, false, tick);
 
-  const infoTop = rowY + 10;
-  const infoHeight = y + height - 3 - infoTop;
+  const infoTop = rowY + 9;
+  const hintsTop = y + height - keyHeight - 2;
   screen.fillRect(x + 4, infoTop, width - 8, 1, sweetie.d);
   const info = counterInfo(counterSlot(cursor), offers.token);
-  drawText(screen, info.name, x + 7, infoTop + 3, "white");
-  drawText(screen, info.price, x + width - 7 - textWidth(info.price), infoTop + 3, "white");
-  drawText(screen, info.effect, x + 7, infoTop + infoHeight - textHeight - 1, "white");
+  drawText(screen, info.name, x + 7, infoTop + 2, "white");
+  drawText(screen, info.price, x + width - 7 - textWidth(info.price), infoTop + 2, "white");
+  drawText(screen, info.effect, x + 7, infoTop + 2 + textHeight + 1, "white");
+  drawHints(screen, counterHints, hintsTop, x + Math.trunc(width / 2));
 }
 
 /** A shelf price's ink: yellow, red when the player is short, grey once owned. */

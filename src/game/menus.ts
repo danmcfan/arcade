@@ -3,7 +3,7 @@
 // (a shelf of prizes, then BUY TOKEN and CLOSE) over the hub. (The title scene's menus are in
 // src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
-import { prizes, type Prize } from "../arcade/prizes.ts";
+import { prizes, type Prize, type PrizeId } from "../arcade/prizes.ts";
 import { ticketsPerToken, type TokenOffer } from "../arcade/wallet.ts";
 import { minigames } from "./minigames.ts";
 import type { SoftwareName } from "./software.ts";
@@ -45,6 +45,13 @@ export const shelf: readonly Prize[] = Array.from({ length: shelfRows * shelfCol
   if (found === undefined) throw new Error(`prize shelf: no prize at cell ${i}`);
   return found;
 });
+/** Where cursor `i` sits on the shelf: its row and column, and the prize there. */
+export function shelfCell(i: number): { row: number; col: number; prize: Prize } {
+  const prize = shelf[i];
+  if (prize === undefined) throw new Error(`prize shelf: no cell ${i}`);
+  return { row: Math.trunc(i / shelfColumns.length), col: i % shelfColumns.length, prize };
+}
+
 /** The cursor on BUY TOKEN, where the prize counter opens. */
 export const tokenCursor = shelf.length;
 /** The cursor on CLOSE. */
@@ -59,6 +66,12 @@ export function counterSlot(cursor: number): CounterSlot {
   const prize = shelf[cursor];
   if (prize === undefined) throw new Error(`prize counter: no item at cursor ${cursor}`);
   return { prize };
+}
+
+/** What SPACE buys on `slot`; null on CLOSE. */
+export function counterBuyId(slot: CounterSlot): "token" | PrizeId | null {
+  if (slot === "close") return null;
+  return slot === "token" ? "token" : slot.prize.id;
 }
 
 /**

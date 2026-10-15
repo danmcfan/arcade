@@ -9,7 +9,7 @@ import type { DrawOpts, PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
-import { prizeRects } from "../ui/prizeArt.ts";
+import { prizeGreyY, prizeRects } from "../ui/prizeArt.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import {
   tickerBulbs,
@@ -712,11 +712,11 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
 const prizeIds = catalogue.map((p) => p.id);
 
 /** The prize pictures drawn, in reading order, each with its alpha (1 when drawn plain). */
-function shelfPictures(r: Recording): [PrizeId, number][] {
+function shelfPictures(r: Recording): [PrizeId, boolean][] {
   return r.calls
     .filter((c) => c[0] === "draw" && c[1] === "prizes")
     .toSorted((a, b) => bottom(a) - bottom(b) || Number(a[6]) - Number(b[6]))
-    .map((c) => [defined(prizeIds.find((id) => prizeRects[id].x === c[2])), typeof c[8] === "number" ? c[8] : 1]);
+    .map((c) => [defined(prizeIds.find((id) => prizeRects[id].x === c[2])), c[3] === prizeGreyY]);
 }
 
 /** A drawn picture's bottom edge: the shelf stands each row's pictures on one plank. */
@@ -738,15 +738,15 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(2, 120).draw(r.surface);
     expect(shelfPictures(r)).toEqual([
-      ["oilCan", 1],
-      ["honeyJar", 1],
-      ["lantern", 1],
-      ["springBoots", 1],
-      ["runningShoes", 1],
-      ["glowStick", 1],
-      ["pocketWatch", 1],
-      ["sleepyBees", 1],
-      ["wings", 1],
+      ["oilCan", false],
+      ["honeyJar", false],
+      ["lantern", false],
+      ["springBoots", false],
+      ["runningShoes", false],
+      ["glowStick", false],
+      ["pocketWatch", false],
+      ["sleepyBees", false],
+      ["wings", false],
     ]);
     // The title, the ticket count, the prices row by row, then the selected BUY TOKEN and its price.
     expect(r.text("yellow")).toBe("PRIZE COUNTER120252525505050100100100>BUY TOKEN");
@@ -758,21 +758,21 @@ describe("prize counter menu", () => {
     const game = atCounter(2, 120);
     let r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("CLOSETOKEN5ONE PLAY ON A CABINET");
+    expect(r.text("white")).toBe("CLOSEBUY TOKEN5ONE PLAY ON A CABINETSPACEESCOKBACK");
     for (const key of ["down", "right"] as const) {
       game.step(input({ [key]: true }));
       game.step(input());
     }
     r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
+    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAMSPACEESCOKBACK");
   });
 
   test("an owned prize is greyed out and reads OWNED; one the player can't afford keeps its colour, its price red", () => {
     const r = recordingSurface();
     atCounter(1, 60, ["honeyJar"]).draw(r.surface);
     const pictures = shelfPictures(r);
-    expect(pictures.filter(([, alpha]) => alpha < 1).map(([id]) => id)).toEqual(["honeyJar"]);
+    expect(pictures.filter(([, grey]) => grey).map(([id]) => id)).toEqual(["honeyJar"]);
     expect(r.text("red")).toBe("100100100");
     expect(r.text("grey")).toBe("OWNED");
   });

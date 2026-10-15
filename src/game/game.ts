@@ -18,7 +18,7 @@ import { Wallet, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
-import { counterSlot, moveCounterCursor, tokenCursor } from "./menus.ts";
+import { counterBuyId, counterSlot, moveCounterCursor, tokenCursor } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -221,8 +221,11 @@ export class Game implements Scene {
       sounds.move.blip();
     }
     const slot = counterSlot(at);
-    if (edges.space && slot !== "close") {
-      (wallet.buy(slot === "token" ? "token" : slot.prize.id) ? sounds.select : sounds.deny).blip();
+    const item = counterBuyId(slot);
+    if (edges.space && item !== null) {
+      // An owned prize can't be chosen: no sound, nothing bought.
+      if (item !== "token" && wallet.owns(item)) return;
+      (wallet.buy(item) ? sounds.select : sounds.deny).blip();
       return;
     }
     if (!edges.space && !edges.escape) return;

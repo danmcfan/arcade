@@ -2,7 +2,7 @@
 // Continues a save with 60 tickets that owns the honey jar and the oil can,
 // opens the prize counter and checks the 3x3 shelf: the cursor opens on BUY
 // TOKEN, moves up and down a cabinet's column and across the columns, an owned
-// prize can't be bought again, a 100-ticket prize plays the no sound, and an
+// prize can't be chosen (no sound), a 100-ticket prize plays the no sound, and an
 // affordable one is bought. Frames show the shelf at each step; the video walks
 // the same path in real time. Files go to out/verify/prize-shelf/.
 
@@ -55,8 +55,8 @@ function shelf(v: Verify): void {
   sounds(v);
   v.tap("space");
   check(
-    sounds(v).includes("play:deny") && game(v).arcade.tickets === 60,
-    "the owned oil can can't be bought: the no sound, nothing taken",
+    !sounds(v).some((s) => s.startsWith("play:")) && game(v).arcade.tickets === 60,
+    "the owned oil can can't be chosen: no sound, nothing taken",
     game(v).arcade,
   );
   v.frame("2-shelf-oil-can-owned");
