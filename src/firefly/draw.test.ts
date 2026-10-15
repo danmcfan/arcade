@@ -164,4 +164,25 @@ describe("firefly draw", () => {
     // Only the spare lives are left.
     expect(of(calls, imageFirefly).length).toBe(2);
   });
+
+  test("after the last life the firefly is not drawn again", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.lives = 0;
+    f.respawn = 1;
+    f.update(NO_INPUT);
+    expect(f.over).toBe(true);
+    expect(f.respawn).toBe(0);
+    expect(of(drawCalls(f), imageFirefly)).toEqual([]);
+  });
+
+  test("a respawn with lives left draws the firefly at its start", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.lives = 1;
+    f.respawn = 1;
+    f.update(NO_INPUT);
+    expect(f.over).toBe(false);
+    expect(of(drawCalls(f), imageFirefly)).toContainEqual({ sprite: imageFirefly, x: 112 + 8 - 8, y: 264 + 8 - 8 });
+  });
 });
