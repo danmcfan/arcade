@@ -8,13 +8,13 @@
 
 import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
-import { distance, pointToTile, type Tile } from "../../src/sweet-sam/entity.ts";
+import { distance, pointToTile } from "../../src/sweet-sam/entity.ts";
 import { modeChase } from "../../src/sweet-sam/levels.ts";
 import { findTarget } from "../../src/sweet-sam/update.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
-import { compress, play } from "../sweet-sam-bot.ts";
+import { compress, stepFrom, play } from "../sweet-sam-bot.ts";
 
 function check(ok: boolean, what: string, got?: unknown): void {
   if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
@@ -27,13 +27,8 @@ function sweetSam(v: Verify): SweetSamSnapshot {
   return g.sw;
 }
 
-const step: Record<Direction, Tile> = {
-  UP: { x: 0, y: -1 },
-  DOWN: { x: 0, y: 1 },
-  LEFT: { x: -1, y: 0 },
-  RIGHT: { x: 1, y: 0 },
-};
-const next = (t: Tile, d: Direction): Tile => ({ x: t.x + step[d].x, y: t.y + step[d].y });
+/** The up overflow moves pink's target this many tiles left (teal's pivot 2, so its target 4). */
+const overflowShift = 4;
 
 interface Stop {
   tick: number;
@@ -61,11 +56,11 @@ const run = play(seed, 1, (s) => {
     if (stops.has(bee) || e.home || e.blueFrames > 0 || s.modeCurrent !== modeChase) continue;
     if (s.player.direction !== "UP" || was === undefined || was === dir) continue;
     const target = findTarget(e, s.enemies, s.player, s.modeCurrent);
-    // Undo the left shift: pink's target moved 4 left, teal's pivot 2 (so its target 4).
-    const unshifted = { x: target.x + 4, y: target.y };
+    // Undo the left shift.
+    const unshifted = { x: target.x + overflowShift, y: target.y };
     const tile = pointToTile(e.x, e.y);
-    const now = next(tile, dir);
-    const straight = next(tile, was);
+    const now = stepFrom(tile, dir);
+    const straight = stepFrom(tile, was);
     if (
       distance(now, target) < distance(straight, target) &&
       distance(now, unshifted) > distance(straight, unshifted)

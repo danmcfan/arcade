@@ -384,6 +384,23 @@ export function collideWithDistance(a: Entity, b: Entity, dist: number): boolean
   return Math.abs(a.x - b.x) <= dist && Math.abs(a.y - b.y) <= dist;
 }
 
+/** `n` tiles ahead of `tile` along `dir`; facing up also shifts left, as Pac-Man's overflow bug does. */
+export function tilesAhead(tile: Tile, dir: Direction | "", n: number): Tile {
+  switch (dir) {
+    case "UP":
+      return { x: tile.x - n, y: tile.y - n };
+    case "DOWN":
+      return { x: tile.x, y: tile.y + n };
+    case "LEFT":
+      return { x: tile.x - n, y: tile.y };
+    case "RIGHT":
+      return { x: tile.x + n, y: tile.y };
+    case "":
+      break;
+  }
+  return { ...tile };
+}
+
 /** In Cruise Elroy (`elroy`), red chases the player during scatter too. */
 export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity, mode: Mode, elroy = false): Tile {
   if (mode === modeScatter && !(elroy && e.kind === "red")) {
@@ -396,25 +413,7 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
     case "red":
       return tilePlayer;
     case "pink":
-      switch (player.direction) {
-        case "UP":
-          // Pac-Man's overflow bug: facing up also shifts the target left.
-          tilePlayer.y -= 4;
-          tilePlayer.x -= 4;
-          break;
-        case "DOWN":
-          tilePlayer.y += 4;
-          break;
-        case "LEFT":
-          tilePlayer.x -= 4;
-          break;
-        case "RIGHT":
-          tilePlayer.x += 4;
-          break;
-        case "":
-          break;
-      }
-      return tilePlayer;
+      return tilesAhead(tilePlayer, player.direction, 4);
     case "teal": {
       const enemyRed = getEnemy(enemies, "red");
       if (enemyRed === null) {
@@ -423,32 +422,9 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
       }
       const tileRed = pointToTile(enemyRed.x, enemyRed.y);
 
-      switch (player.direction) {
-        case "UP":
-          // Pac-Man's overflow bug: facing up also shifts the pivot left.
-          tilePlayer.y -= 2;
-          tilePlayer.x -= 2;
-          break;
-        case "DOWN":
-          tilePlayer.y += 2;
-          break;
-        case "LEFT":
-          tilePlayer.x -= 2;
-          break;
-        case "RIGHT":
-          tilePlayer.x += 2;
-          break;
-        case "":
-          break;
-      }
+      const pivot = tilesAhead(tilePlayer, player.direction, 2);
 
-      const dx = tilePlayer.x - tileRed.x;
-      const dy = tilePlayer.y - tileRed.y;
-
-      tilePlayer.x += dx;
-      tilePlayer.y += dy;
-
-      return tilePlayer;
+      return { x: pivot.x * 2 - tileRed.x, y: pivot.y * 2 - tileRed.y };
     }
     case "orange": {
       const d = distance(pointToTile(e.x, e.y), tilePlayer);
