@@ -8,18 +8,18 @@
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import { imageArcade, attractSounds, sounds } from "../engine/assets.ts";
-import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
+import { MenuKeys, type Direction, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
-import { prizes } from "../arcade/prizes.ts";
 import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
-import { closeItemIndex, firstPrizeIndex, prizeCounterItems, tokenItemIndex } from "./menus.ts";
+import { Menu } from "./menu.ts";
+import { prizeCounterItems } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -55,8 +55,18 @@ export class Game implements Scene {
   private run: MinigameRun | null = null;
   /** Go `game.New(software)`'s software: it starts, outside the economy, after the first hub tick. */
   private initialSoftware: Software | null;
-  /** Selected item of the prize counter menu while it is open over the hub; null when closed. */
-  private counterCursor: number | null = null;
+  /** Whether the prize counter menu is open over the hub. */
+  private counterOpen = false;
+  /** The prize counter menu; CLOSE and Esc go back to the hub. */
+  private readonly counterMenu = new Menu(
+    () =>
+      prizeCounterItems(this.arcade.wallet, () => {
+        this.closeCounter();
+      }),
+    () => {
+      this.closeCounter();
+    },
+  );
   /**
    * Menu key presses, and keys held when a menu closes: those are hidden
    * until released, so the Space that chose Resume does not also fire in the
@@ -117,7 +127,7 @@ export class Game implements Scene {
 
   /** True while the hub is running: not in a minigame, its pause menu, the payout or the prize counter menu. */
   inHub(): boolean {
-    return this.run === null && this.counterCursor === null;
+    return this.run === null && !this.counterOpen;
   }
 
   progress(): Progress {
@@ -191,8 +201,8 @@ export class Game implements Scene {
       if (this.run.update(raw, input, edges)) this.run = null;
       return;
     }
-    if (this.counterCursor !== null) {
-      this.updatePrizeCounter(this.counterCursor, raw, edges);
+    if (this.counterOpen) {
+      this.counterMenu.step(edges);
       return;
     }
 
@@ -208,34 +218,14 @@ export class Game implements Scene {
       return;
     }
     sounds.select.blip();
-    this.counterCursor = 0;
+    this.counterOpen = true;
+    this.counterMenu.open();
   }
 
-  private updatePrizeCounter(cursor: number, raw: Input, edges: MenuEdges): void {
-    const wallet = this.arcade.wallet;
-    const n = prizeCounterItems(wallet.counter()).length;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    let at = cursor;
-    if (delta !== 0) {
-      at = (cursor + delta + n) % n;
-      this.counterCursor = at;
-      sounds.move.blip();
-    }
-    if (edges.space && at === tokenItemIndex) {
-      (wallet.buy("token") ? sounds.select : sounds.deny).blip();
-      return;
-    }
-    if (edges.space && at >= firstPrizeIndex && at < closeItemIndex) {
-      const prize = prizes[at - firstPrizeIndex];
-      if (prize === undefined) throw new Error(`prize counter: no prize at item ${at}`);
-      (wallet.buy(prize.id) ? sounds.select : sounds.deny).blip();
-      return;
-    }
-    if (!edges.space && !edges.escape) return;
-    // CLOSE or Esc: back to the hub.
-    sounds.select.blip();
-    this.counterCursor = null;
-    this.keys.maskHeld(raw);
+  /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
+  private closeCounter(): void {
+    this.counterOpen = false;
+    this.keys.maskHeld();
   }
 
   draw(screen: Surface): void {
@@ -255,9 +245,9 @@ export class Game implements Scene {
         const overlay = {
           menu,
           software: software.name,
-          cursor: this.run.cursor,
+          list: this.run.pauseMenu,
           payout: this.run.payout,
-          wallet: this.arcade.wallet,
+          tickets: this.arcade.wallet.tickets,
           tick: this.tick,
           playfield,
         };
@@ -272,15 +262,15 @@ export class Game implements Scene {
     drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode);
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
-    if (this.counterCursor !== null) {
+    if (this.counterOpen) {
       // The menu fills the room under the scoreboard, so the counts stay readable and change as tokens are bought.
       const below = tickerRect.y + tickerRect.h;
       drawMenuOverlay(screen, {
         menu: "prizeCounter",
         software: null,
-        cursor: this.counterCursor,
+        list: this.counterMenu,
         payout: null,
-        wallet: this.arcade.wallet,
+        tickets: this.arcade.wallet.tickets,
         tick: this.tick,
         playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });
@@ -316,8 +306,8 @@ export class Game implements Scene {
     const p = this.arcade.player;
     const hubRun = {
       run: null,
-      menu: this.counterCursor === null ? null : "prizeCounter",
-      cursor: this.counterCursor ?? 0,
+      menu: this.counterOpen ? "prizeCounter" : null,
+      cursor: this.counterOpen ? this.counterMenu.cursor : 0,
       payout: null,
       sw: null,
     } as const;

@@ -9,7 +9,8 @@ import type { Sound } from "../engine/audio.ts";
 import type { Input, MenuEdges, MenuKeys } from "../engine/input.ts";
 import { channels } from "../engine/sounds.generated.ts";
 import type { RunKind, Wallet } from "../arcade/wallet.ts";
-import { controlsIndex, minigamePauseMenu, quitGameIndex } from "./menus.ts";
+import { Menu } from "./menu.ts";
+import { minigamePauseItems } from "./menus.ts";
 import { Payout } from "./payout.ts";
 import type { GameSnapshot } from "./snapshot.ts";
 import type { Software } from "./software.ts";
@@ -21,8 +22,8 @@ const minigameSounds: readonly Sound[] = channels.minigame.map((name) => sounds[
 type RunMenu =
   | { menu: null }
   /** `pausedSounds`: minigame sounds that were playing when it opened; Resume restarts them. */
-  | { menu: "paused"; cursor: number; pausedSounds: Sound[] }
-  /** Reached from CONTROLS, so the cursor stays on it. */
+  | { menu: "paused"; pausedSounds: Sound[] }
+  /** Reached from CONTROLS, so the pause menu's cursor stays on it. */
   | { menu: "controls"; pausedSounds: Sound[] }
   | { menu: "payout"; payout: Payout };
 
@@ -36,6 +37,28 @@ export class MinigameRun {
   /** The Game's menu keys: a closing menu hides the keys still held. */
   private readonly keys: MenuKeys;
   private state: RunMenu = { menu: null };
+  /** The pause menu (Resume / Controls / Quit game); its cursor stays put while the controls are open. */
+  readonly pauseMenu = new Menu(
+    () =>
+      minigamePauseItems({
+        resume: () => {
+          this.resume();
+        },
+        controls: () => {
+          if (this.state.menu === "paused") this.state = { menu: "controls", pausedSounds: this.state.pausedSounds };
+        },
+        quit: () => {
+          // Quit game: the token stays spent, no tickets, no payout.
+          this.quit = true;
+          this.keys.maskHeld();
+        },
+      }),
+    () => {
+      this.resume();
+    },
+  );
+  /** Set by Quit game: the next `update` return ends the run. */
+  private quit = false;
 
   constructor(software: Software, kind: RunKind, wallet: Wallet, keys: MenuKeys) {
     this.software = software;
@@ -48,10 +71,9 @@ export class MinigameRun {
     return this.state.menu;
   }
 
-  /** Selected item of the pause menu; CONTROLS in the controls, 0 otherwise. */
+  /** Selected item of the pause menu while it or the controls are open, 0 otherwise. */
   get cursor(): number {
-    if (this.state.menu === "paused") return this.state.cursor;
-    return this.state.menu === "controls" ? controlsIndex : 0;
+    return this.state.menu === "paused" || this.state.menu === "controls" ? this.pauseMenu.cursor : 0;
   }
 
   get payout(): Payout | null {
@@ -62,11 +84,14 @@ export class MinigameRun {
   update(raw: Input, input: Input, edges: MenuEdges): boolean {
     const s = this.state;
     if (s.menu === null) return this.play(input, edges);
-    if (s.menu === "paused") return this.updatePauseMenu(s, raw, edges);
+    if (s.menu === "paused") {
+      this.pauseMenu.step(edges);
+      return this.quit;
+    }
     if (s.menu === "payout") return this.updatePayout(s.payout, raw, edges);
     if (edges.space || edges.escape) {
       sounds.select.blip();
-      this.state = { menu: "paused", cursor: controlsIndex, pausedSounds: s.pausedSounds };
+      this.state = { menu: "paused", pausedSounds: s.pausedSounds };
     }
     return false;
   }
@@ -76,7 +101,8 @@ export class MinigameRun {
       sounds.select.blip();
       const pausedSounds = minigameSounds.filter((s) => s.playing);
       for (const s of minigameSounds) s.pause();
-      this.state = { menu: "paused", cursor: 0, pausedSounds };
+      this.state = { menu: "paused", pausedSounds };
+      this.pauseMenu.open();
       return false;
     }
 
@@ -90,29 +116,12 @@ export class MinigameRun {
     return false;
   }
 
-  private updatePauseMenu(s: { cursor: number; pausedSounds: Sound[] }, raw: Input, edges: MenuEdges): boolean {
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta !== 0) {
-      const n = minigamePauseMenu.length;
-      s.cursor = (s.cursor + delta + n) % n;
-      sounds.move.blip();
-    }
-    if (!edges.space && !edges.escape) return false;
-    sounds.select.blip();
-    if (edges.escape || s.cursor === 0) {
-      // Resume: the minigame carries on from this tick.
-      this.state = { menu: null };
-      for (const sound of s.pausedSounds) sound.play();
-      this.keys.maskHeld(raw);
-      return false;
-    }
-    if (s.cursor === quitGameIndex) {
-      // Quit game: the token stays spent, no tickets, no payout.
-      this.keys.maskHeld(raw);
-      return true;
-    }
-    this.state = { menu: "controls", pausedSounds: s.pausedSounds };
-    return false;
+  /** Resume: the minigame carries on from this tick. */
+  private resume(): void {
+    if (this.state.menu !== "paused") return;
+    for (const sound of this.state.pausedSounds) sound.play();
+    this.state = { menu: null };
+    this.keys.maskHeld();
   }
 
   private updatePayout(payout: Payout, raw: Input, edges: MenuEdges): boolean {

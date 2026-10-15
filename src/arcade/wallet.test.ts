@@ -181,6 +181,18 @@ describe("prizes at the counter", () => {
   });
 });
 
+describe("canBuy", () => {
+  test("says whether the counter would sell an item", () => {
+    const w = wallet({ tokens: 1, tickets: 60, prizes: ["honeyJar"] });
+    expect(w.canBuy("token")).toBe(true);
+    expect(w.canBuy("honeyJar")).toBe(false);
+    expect(w.canBuy("glowStick")).toBe(true);
+    expect(wallet({ tokens: 1, tickets: 3 }).canBuy("token")).toBe(false);
+    expect(wallet({ tokens: 0, tickets: 3 }).canBuy("token")).toBe(true);
+    expect(wallet({ tickets: 0 }).canBuy("glowStick")).toBe(false);
+  });
+});
+
 describe("version", () => {
   test("goes up on every change and only then", () => {
     const w = wallet({ tokens: 1, tickets: 30 });

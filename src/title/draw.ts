@@ -157,7 +157,7 @@ function drawMenu(screen: Surface, t: Title): void {
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
 function drawConfirm(screen: Surface, t: Title): void {
-  drawMenuBody(screen, t, t.newGameIndex);
+  drawMenuBody(screen, t, t.menuCursor);
   screen.fillPremul(0, 0, screenWidth, screenHeight, dimColour);
   const w = 152;
   const h = 76;
