@@ -10,7 +10,11 @@ Commits under review:
 
 1. Use the `/code-review` skill with fixed point `main`. The spec is issue #{{ISSUE_NUMBER}}: read it with `gh issue view {{ISSUE_NUMBER}} --comments`. Do not ask the user anything; nobody is there to answer.
 2. On the Standards axis, also use the `/codebase-design` skill's vocabulary: flag shallow modules, leaky seams and interfaces that could be deeper.
-3. Write the report to `out/pipeline/review.md`, with the `## Standards` and `## Spec` headings from the skill. Number every finding (S1, S2, … and P1, P2, …), and give each its file, line and a one-line fix. If there are no findings, write `No findings.` as the whole file.
+3. Decide what happens to each finding. A cheaper agent applies the fixes and follows your verdicts, so commit to one per finding; do not hedge with "judgement call":
+   - **must fix**: a bug, a spec gap, or a finding that undercuts what the issue is for.
+   - **should fix**: worth the change in this PR.
+   - **won't fix: <reason>**: wrong, not worth the change, or belongs to another issue (name it).
+4. Write the report to `out/pipeline/review.md`, with the `## Standards` and `## Spec` headings from the skill. Number every finding (S1, S2, … and P1, P2, …), and give each its verdict, file, line and a one-line fix. If there are no findings, write `No findings.` as the whole file.
 
 # Done
 
