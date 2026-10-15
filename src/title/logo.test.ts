@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { sweetie } from "../ui/sweetie16.ts";
-import { titleBar, titleScreenSpot, titleWord } from "../ui/titleArt.ts";
+import { titleBar, titleScreenHeight, titleScreenSpot, titleScreenWidth, titleWord } from "../ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod, pulsePeriod } from "./logo.ts";
 
 const inLayer = (layer: typeof titleWord, x: number, y: number): string =>
@@ -19,8 +19,8 @@ function screenAt(tick: number): string {
       (p) =>
         p.x >= titleScreenSpot.x &&
         p.y >= titleScreenSpot.y &&
-        p.x < titleScreenSpot.x + 15 &&
-        p.y < titleScreenSpot.y + 9,
+        p.x < titleScreenSpot.x + titleScreenWidth &&
+        p.y < titleScreenSpot.y + titleScreenHeight,
     )
     .map((p) => `${p.x},${p.y},${p.colour}`)
     .join();

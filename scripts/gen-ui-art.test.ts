@@ -39,6 +39,8 @@ import {
   titleLogoHeight,
   titleLogoWidth,
   titleScreenFrames,
+  titleScreenHeight,
+  titleScreenWidth,
   titleWord,
 } from "../src/ui/titleArt.ts";
 
@@ -102,14 +104,14 @@ describe("UI art source", () => {
     for (const [id, rows] of Object.entries(prizeArt)) checkRows(id, rows);
   });
 
-  test("every title logo layer fits the logo, and every screen frame is 15x9, in Sweetie 16 letters", () => {
+  test("every title logo layer fits the logo, and every screen frame is the screen's size, in Sweetie 16 letters", () => {
     for (const [name, layer] of Object.entries({ titleCabinet, titleBar, titleWord })) {
       checkRows(name, layer.rows);
       expect(layer.x + (layer.rows[0]?.length ?? 0)).toBeLessThanOrEqual(titleLogoWidth);
       expect(layer.y + layer.rows.length).toBeLessThanOrEqual(titleLogoHeight);
     }
     titleScreenFrames.forEach((frame, i) => {
-      checkRows(`title screen ${i}`, frame, { w: 15, h: 9 });
+      checkRows(`title screen ${i}`, frame, { w: titleScreenWidth, h: titleScreenHeight });
     });
   });
 
