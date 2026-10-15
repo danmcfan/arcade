@@ -19,6 +19,7 @@ import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import type { HighScores } from "../arcade/wallet.ts";
+import type { Faced } from "../arcade/update.ts";
 
 /** Fields every top-level scene snapshot carries. */
 export interface SceneSnapshotBase {
@@ -49,6 +50,8 @@ export interface ArcadeSnapshot {
   player: ArcadePlayerSnapshot;
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
+  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", or null for the counts. */
+  faced: Faced | null;
   /**
    * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.

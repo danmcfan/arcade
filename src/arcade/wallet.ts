@@ -25,7 +25,7 @@ export function eachMachine(of: (machine: SoftwareName) => number): HighScores {
  * save. A strong run with no prizes falls short; one with that machine's
  * prizes beats it.
  */
-export const houseHighScores: HighScores = { sweetSam: 15000, firefly: 15000, brassMonkey: 15000 };
+export const houseHighScores: HighScores = { sweetSam: 30000, firefly: 40000, brassMonkey: 25000 };
 
 /** A New game's player high scores. */
 export const noHighScores: HighScores = eachMachine(() => 0);

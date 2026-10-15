@@ -130,6 +130,7 @@ describe("snapshot", () => {
       arcade: {
         player: { x: 79, y: 92, dir: "LEFT", frame: 0.1 },
         melodyPlaying: false,
+        faced: null,
         title: null,
         highScores: noHighScores,
         tokens: 5,

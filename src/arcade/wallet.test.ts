@@ -93,14 +93,14 @@ describe("settleRun", () => {
 
 describe("the house high score", () => {
   test("is fixed per machine, the same for every wallet", () => {
-    expect(houseHighScores).toEqual({ sweetSam: 15000, firefly: 15000, brassMonkey: 15000 });
+    expect(houseHighScores).toEqual({ sweetSam: 30000, firefly: 40000, brassMonkey: 25000 });
   });
 
   test("a machine is beaten only once its player high score is above the house high score", () => {
     const w = wallet();
-    w.settleRun("brassMonkey", 15000, "paid");
+    w.settleRun("brassMonkey", 25000, "paid");
     expect(w.beaten("brassMonkey")).toBe(false);
-    w.settleRun("brassMonkey", 15001, "paid");
+    w.settleRun("brassMonkey", 25001, "paid");
     expect(w.beaten("brassMonkey")).toBe(true);
     expect(w.beaten("sweetSam")).toBe(false);
   });
@@ -108,9 +108,9 @@ describe("the house high score", () => {
   test("HI shows the house high score until the machine is beaten, then the player's", () => {
     const w = wallet();
     w.settleRun("firefly", 3000, "paid");
-    expect(w.shownHighScore("firefly")).toBe(15000);
-    w.settleRun("firefly", 15200, "paid");
-    expect(w.shownHighScore("firefly")).toBe(15200);
+    expect(w.shownHighScore("firefly")).toBe(40000);
+    w.settleRun("firefly", 40200, "paid");
+    expect(w.shownHighScore("firefly")).toBe(40200);
   });
 });
 

@@ -341,13 +341,13 @@ describe("hub draw", () => {
     expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
-  test("while the melody plays, the scoreboard shows the cabinet's name and PRESS SPACE TO PLAY", () => {
+  test("while the melody plays, the scoreboard shows the cabinet's name and INTERACT TO PLAY", () => {
     const game = newGame();
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
     const { board, surface } = recordingSurface();
     game.draw(surface);
     expect(board("yellow")).toBe("SWEETSAM");
-    expect(board("white")).toBe("PRESSSPACETOPLAY");
+    expect(board("white")).toBe("INTERACTTOPLAY");
     expect(board("orange")).toBe("");
   });
 
@@ -675,7 +675,7 @@ describe("menus over a minigame", () => {
     let r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("yellow")).toBe("PAYOUT0");
-    expect(r.text("white")).toBe("SCORE1420TICKETSSPACESKIP");
+    expect(r.text("white")).toBe("SCORE1420TICKETS");
 
     // Mid-spin, digits are cut: the old one leaving, the new one arriving.
     for (let t = 0; t < 25; t++) game.step(input());
@@ -687,7 +687,7 @@ describe("menus over a minigame", () => {
     r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("yellow")).toBe("PAYOUT14");
-    expect(r.text("white")).toBe("SCORE0TICKETSSPACEOK");
+    expect(r.text("white")).toBe("SCORE0TICKETS");
   });
 
   test("after free play the payout reads FREE PLAY: 0 TICKETS", () => {
@@ -699,7 +699,7 @@ describe("menus over a minigame", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("orange")).toBe("FREE PLAY: 0 TICKETS");
-    expect(r.text("white")).toBe("SCORE1420SPACEOK");
+    expect(r.text("white")).toBe("SCORE1420");
   });
 });
 

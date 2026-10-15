@@ -9,13 +9,21 @@ import type { Surface } from "../engine/surface.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { drawEmployee } from "./employee.ts";
 import { prize } from "./prizes.ts";
-import { drawMarqueeStar, drawTicker, starWidth } from "./ticker.ts";
-import { tickerGlyphHeight } from "../ui/tickerArt.ts";
+import { drawTicker } from "./ticker.ts";
 import { screenFrame } from "./screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.ts";
 import type { State } from "./state.ts";
+import type { Faced } from "./update.ts";
 
-export function draw(screen: Surface, s: State, tick: number, buffer: number, debugMode: boolean): void {
+/** Draw the hub; the scoreboard names `named` (see `faced`), or shows the counts when null. */
+export function draw(
+  screen: Surface,
+  s: State,
+  tick: number,
+  buffer: number,
+  debugMode: boolean,
+  named: Faced | null,
+): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
   s.machines.forEach((m, row) => {
@@ -30,11 +38,6 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
     );
     drawImage(screen, img, m.rect.x - powerCabinetX + buffer, m.rect.y + buffer);
   });
-  // A beaten cabinet wears a gold star, standing on its marquee's top edge.
-  for (const m of s.machines) {
-    if (!s.wallet.beaten(m.name)) continue;
-    drawMarqueeStar(screen, m.rect.x + Math.floor((m.rect.w - starWidth) / 2), m.rect.y - tickerGlyphHeight, buffer);
-  }
   // The desk is in the room image; the employee stands in it, out of the player's reach.
   drawEmployee(screen, buffer);
   // Decorations are not solid: the player walks in front of them.
@@ -54,10 +57,9 @@ export function draw(screen: Surface, s: State, tick: number, buffer: number, de
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
 
-  const title = s.melodyPlaying ? s.imageTitle : null;
-  const faced = s.machines.find((m) => m.title === title);
-  const beatenHi = faced === undefined ? null : s.wallet.beatenHighScore(faced.name);
-  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, title, beatenHi }, tick, buffer);
+  const machine = s.machines.find((m) => m.title === named);
+  const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);
+  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi }, tick, buffer);
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);

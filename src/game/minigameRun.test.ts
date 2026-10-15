@@ -173,7 +173,7 @@ describe("minigame pause menu", () => {
     }
   });
 
-  test("Controls shows the controls, keeping the cursor; Esc or Space backs out to the menu", () => {
+  test("Controls shows the controls, keeping the cursor; Esc backs out to the menu, Space does not", () => {
     const { run, tap } = newRun();
     tap("escape");
     tap("down");
@@ -184,6 +184,8 @@ describe("minigame pause menu", () => {
     tap("space");
     expect(run.menu).toBe("controls");
     tap("space");
+    expect(run.menu).toBe("controls");
+    tap("escape");
     expect(run.menu).toBe("paused");
   });
 

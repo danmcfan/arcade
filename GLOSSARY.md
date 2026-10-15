@@ -159,7 +159,7 @@ A machine's fixed high score, set by the arcade, that the player must beat.
 _Avoid_: target score, par
 
 **Beaten**:
-A machine is beaten when the player's high score on it is above its house high score. Its cabinet then shows a star, and its HI shows the player's score instead of the house's.
+A machine is beaten when the player's high score on it is above its house high score. Facing its cabinet, the scoreboard then shows its HI and a gold star, and its HI shows the player's score instead of the house's.
 _Avoid_: cleared, conquered
 
 **Score**:

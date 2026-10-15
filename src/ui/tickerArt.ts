@@ -50,8 +50,10 @@ export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   R: ["##.", "#.#", "##.", "#.#", "#.#"],
   S: [".##", "#..", ".#.", "..#", "##."],
   T: ["###", ".#.", ".#.", ".#.", ".#."],
+  U: ["#.#", "#.#", "#.#", "#.#", "###"],
   W: ["#...#", "#...#", "#.#.#", "##.##", "#...#"],
   Y: ["#.#", "#.#", ".#.", ".#.", ".#."],
+  Z: ["###", "..#", ".#.", "#..", "###"],
   H: ["#.#", "#.#", "###", "#.#", "#.#"],
   /** The gold star of a beaten machine (#148). */
   "*": ["..#..", "#####", ".###.", ".#.#.", "#...#"],
@@ -68,7 +70,7 @@ export const tickerInks = {
   orange: "o",
   /** Counts, and a beaten machine's star. */
   yellow: "y",
-  /** PRESS SPACE TO PLAY, and HI. */
+  /** INTERACT TO PLAY, INTERACT, and HI. */
   white: "w",
   /** The cabinets' names, in their lit colours (src/ui/hubArt.ts `cabinetColours`). */
   green: "g",

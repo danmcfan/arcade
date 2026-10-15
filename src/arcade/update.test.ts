@@ -5,7 +5,7 @@ import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import { counterRects, deskRect } from "./desk.ts";
 import { formatFloat0, newState, type State } from "./state.ts";
-import { update, type HubEvent } from "./update.ts";
+import { faced, update, type HubEvent } from "./update.ts";
 import { houseHighScores, noHighScores, startingTokens, Wallet } from "./wallet.ts";
 
 /** The high score each fake was constructed with. */
@@ -283,6 +283,33 @@ describe("prize desk", () => {
     expect(update(s, input({ space: true }))).toBeNull(); // touching it, facing left
     run(s, 30, { up: true });
     expect(update(s, input({ space: true }))).not.toEqual({ openCounter: true });
+  });
+});
+
+describe("the faced interactable", () => {
+  test("facing the desk from above is the prize counter, anywhere along it", () => {
+    for (const x of [32, 80, 128]) {
+      const s = newState(fakeFactory);
+      s.player.x = x;
+      run(s, 100, { down: true });
+      expect(faced(s, false)).toBe("prizeCounter");
+    }
+  });
+
+  test("nothing is named while the prize counter menu is open", () => {
+    const s = newState(fakeFactory);
+    run(s, 100, { down: true });
+    expect(faced(s, true)).toBeNull();
+  });
+
+  test("facing away from the desk, short of it, or a cabinet is not", () => {
+    const s = newState(fakeFactory);
+    expect(faced(s, false)).toBeNull(); // start: facing down, 2 px short
+    run(s, 100, { down: true });
+    run(s, 1, { left: true });
+    expect(faced(s, false)).toBeNull(); // touching it, facing left
+    run(s, 40, { up: true });
+    expect(faced(s, false)).toBe("sweet");
   });
 });
 
