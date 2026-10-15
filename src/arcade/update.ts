@@ -4,7 +4,7 @@
 // the faced cabinet's own attract loop.
 
 import { direction, type Direction, type Input } from "../engine/input.ts";
-import { attractSounds, soundScreenOn } from "../engine/assets.ts";
+import { attractSounds, sounds } from "../engine/assets.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
@@ -29,7 +29,7 @@ export function update(s: State, i: Input): void {
       s.imageTitle = machine.title;
       s.melodyPlaying = true;
       attractSounds[machine.title].play();
-      soundScreenOn.blip();
+      sounds.screenOn.blip();
     }
   } else if (s.melodyPlaying) {
     stopMelody(s);

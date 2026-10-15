@@ -7,15 +7,8 @@
 // tickets buy tokens and prizes.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
-import {
-  imageArcade,
-  attractSounds,
-  soundDeny,
-  soundHub,
-  soundMove,
-  soundSelect,
-  soundTicket,
-} from "../engine/assets.ts";
+import { imageArcade, attractSounds, sounds } from "../engine/assets.ts";
+import { channels } from "../engine/sounds.generated.ts";
 import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -26,7 +19,7 @@ import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type RunKind, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
-import { createSoftware, minigames } from "./minigames.ts";
+import { createSoftware } from "./minigames.ts";
 import {
   closeItemIndex,
   firstPrizeIndex,
@@ -51,8 +44,8 @@ export interface Progress extends WalletProgress {
   player: { x: number; y: number; dir: Direction };
 }
 
-/** The minigames' sounds: paused with the minigame pause menu. */
-const minigameSounds: readonly Sound[] = minigames.flatMap((m) => m.sounds);
+/** The minigame Channel's sounds: paused with the minigame pause menu. */
+const minigameSounds: readonly Sound[] = channels.minigame.map((name) => sounds[name]);
 
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
@@ -162,21 +155,21 @@ export class Game implements Scene {
 
   /** Silence the hub song and the faced cabinet while a menu covers the game. */
   pauseAudio(): void {
-    if (this.hubSongOn) soundHub.pause();
+    if (this.hubSongOn) sounds.hub.pause();
     this.attract()?.pause();
   }
 
   /** Undo `pauseAudio`. */
   resumeAudio(): void {
-    if (this.hubSongOn) soundHub.play();
+    if (this.hubSongOn) sounds.hub.play();
     this.attract()?.play();
   }
 
   /** Stop the hub's sounds for good (leaving the game). */
   stopAudio(): void {
     this.hubSongOn = false;
-    soundHub.pause();
-    soundHub.rewind();
+    sounds.hub.pause();
+    sounds.hub.rewind();
     const attract = this.attract();
     attract?.pause();
     attract?.rewind();
@@ -195,8 +188,8 @@ export class Game implements Scene {
     const want = this.software === null;
     if (want === this.hubSongOn) return;
     this.hubSongOn = want;
-    if (want) soundHub.play();
-    else soundHub.pause();
+    if (want) sounds.hub.play();
+    else sounds.hub.pause();
   }
 
   /** Go `Game.Update` with the input already read. */
@@ -222,7 +215,7 @@ export class Game implements Scene {
         return;
       case "controls":
         if (edges.space || edges.escape) {
-          soundSelect.blip();
+          sounds.select.blip();
           this.menu = "paused";
         }
         return;
@@ -246,7 +239,7 @@ export class Game implements Scene {
 
     if (this.arcade.counterOpened) {
       this.arcade.counterOpened = false;
-      soundSelect.blip();
+      sounds.select.blip();
       this.menu = "prizeCounter";
       this.cursor = 0;
     }
@@ -258,21 +251,21 @@ export class Game implements Scene {
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta !== 0) {
       this.cursor = (this.cursor + delta + n) % n;
-      soundMove.blip();
+      sounds.move.blip();
     }
     if (edges.space && this.cursor === tokenItemIndex) {
-      (wallet.buy("token") ? soundSelect : soundDeny).blip();
+      (wallet.buy("token") ? sounds.select : sounds.deny).blip();
       return;
     }
     if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
       const prize = prizes[this.cursor - firstPrizeIndex];
       if (prize === undefined) throw new Error(`prize counter: no prize at item ${this.cursor}`);
-      (wallet.buy(prize.id) ? soundSelect : soundDeny).blip();
+      (wallet.buy(prize.id) ? sounds.select : sounds.deny).blip();
       return;
     }
     if (!edges.space && !edges.escape) return;
     // CLOSE or Esc: back to the hub.
-    soundSelect.blip();
+    sounds.select.blip();
     this.menu = null;
     this.cursor = 0;
     this.keys.maskHeld(raw);
@@ -300,7 +293,7 @@ export class Game implements Scene {
   }
 
   private openPauseMenu(): void {
-    soundSelect.blip();
+    sounds.select.blip();
     this.pausedSounds = minigameSounds.filter((s) => s.playing);
     for (const s of minigameSounds) s.pause();
     this.menu = "paused";
@@ -312,10 +305,10 @@ export class Game implements Scene {
     if (delta !== 0) {
       const n = minigamePauseMenu.length;
       this.cursor = (this.cursor + delta + n) % n;
-      soundMove.blip();
+      sounds.move.blip();
     }
     if (!edges.space && !edges.escape) return;
-    soundSelect.blip();
+    sounds.select.blip();
     if (edges.escape || this.cursor === 0) {
       // Resume: the minigame carries on from this tick.
       this.menu = null;
@@ -334,8 +327,8 @@ export class Game implements Scene {
   }
 
   private updatePayout(payout: Payout, raw: Input, edges: MenuEdges): void {
-    if (edges.space) soundSelect.blip();
-    if (payout.step(edges.space)) soundTicket.blip();
+    if (edges.space) sounds.select.blip();
+    if (payout.step(edges.space)) sounds.ticket.blip();
     if (payout.done) {
       this.leaveMinigame();
       this.keys.maskHeld(raw);

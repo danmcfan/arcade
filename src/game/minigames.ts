@@ -1,6 +1,7 @@
 // Every minigame, described once (#51): its names, where its cabinet stands
-// in the hub, its title card, its cabinet strip, its controls panel, the
-// sounds the minigame pause menu silences and how to start a run. The hub's
+// in the hub, its title card, its cabinet strip, its controls panel and how
+// to start a run (the sounds the minigame pause menu silences are its Channel,
+// declared with each sound in src/ui/sounds.ts). The hub's
 // machines, the scoreboard, the pause menu and the verify cabinet walks all
 // read this list; adding a minigame means a new entry here plus its own
 // module. The snapshot names (`SoftwareName`, `ArcadeTitle`) stay hand-written
@@ -10,17 +11,7 @@
 import type { Rect } from "../arcade/collision.ts";
 import { tileSize } from "../arcade/collision.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
-import {
-  imageCabinet,
-  imageCabinetBrassMonkey,
-  imageCabinetFirefly,
-  soundHit,
-  soundLifeLost,
-  soundSpark,
-  soundStage,
-  sweetSamSounds,
-} from "../engine/assets.ts";
-import type { Sound } from "../engine/audio.ts";
+import { imageCabinet, imageCabinetBrassMonkey, imageCabinetFirefly } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { brassMonkeyAdvantages } from "../brass-monkey/advantages.ts";
 import { newBrassMonkeySoftware } from "../brass-monkey/game.ts";
@@ -57,8 +48,6 @@ export interface Minigame {
   readonly cabinetStrip: Sprite;
   /** Its controls panel in the minigame pause menu. */
   readonly controls: readonly ControlRow[];
-  /** Its sounds: the minigame pause menu pauses those playing, and Resume restarts them. */
-  readonly sounds: readonly Sound[];
   /** A new run; a `FixedViewport` (its cabinet outline, drawn with `buffer` 0). */
   create(start: MinigameStart): Software;
 }
@@ -86,7 +75,6 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(9),
     cabinetStrip: imageCabinet,
     controls: standardControls,
-    sounds: Object.values(sweetSamSounds),
     // Go's Sweet Sam constructor; it enters START, which plays "rewind:start" then "play:start".
     create: ({ highScore, prizes }) => new SweetSamSoftware(highScore, sweetSamAdvantages(prizes)),
   },
@@ -97,7 +85,6 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(14),
     cabinetStrip: imageCabinetFirefly,
     controls: standardControls,
-    sounds: [soundSpark, soundHit, soundLifeLost, soundStage],
     // Firefly takes no high score, as in Go.
     create: ({ prizes }) => newFireflySoftware(fireflyAdvantages(prizes)),
   },
@@ -108,8 +95,6 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(4),
     cabinetStrip: imageCabinetBrassMonkey,
     controls: standardControls,
-    // The pause menu has never silenced Brass Monkey's sounds.
-    sounds: [],
     create: ({ highScore, prizes }) => newBrassMonkeySoftware(highScore, brassMonkeyAdvantages(prizes)),
   },
 };

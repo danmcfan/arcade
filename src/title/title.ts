@@ -10,7 +10,7 @@
 // The Game runs unchanged inside this scene, so `?scene=game` and the parity
 // fixtures still start straight in the hub.
 
-import { soundMove, soundSelect, soundTitleMusic } from "../engine/assets.ts";
+import { sounds } from "../engine/assets.ts";
 import { MenuKeys, type Input, type MenuEdges } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -92,7 +92,7 @@ export class Title implements Scene {
 
   private stepPhase(i: Input, edges: MenuEdges): void {
     // Every choice or Back chirps (Esc does nothing on the title menu itself).
-    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) soundSelect.blip();
+    if (this.phase !== "playing" && (edges.space || (edges.escape && this.phase !== "menu"))) sounds.select.blip();
 
     switch (this.phase) {
       case "menu":
@@ -139,7 +139,7 @@ export class Title implements Scene {
     const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     if (delta === 0) return;
     this.cursor = (this.cursor + delta + n) % n;
-    soundMove.blip();
+    sounds.move.blip();
   }
 
   /**
@@ -149,13 +149,13 @@ export class Title implements Scene {
    */
   private updateMusic(anyPressed: boolean): void {
     const wanted = MUSIC_PHASES.has(this.phase);
-    if (wanted && (!this.musicOn || (anyPressed && !soundTitleMusic.playing))) {
+    if (wanted && (!this.musicOn || (anyPressed && !sounds.title.playing))) {
       this.musicOn = true;
-      soundTitleMusic.play();
+      sounds.title.play();
     } else if (!wanted && this.musicOn) {
       this.musicOn = false;
-      soundTitleMusic.pause();
-      soundTitleMusic.rewind();
+      sounds.title.pause();
+      sounds.title.rewind();
     }
   }
 
@@ -180,7 +180,7 @@ export class Title implements Scene {
   private stepGame(i: Input, escapePressed: boolean): void {
     const game = this.hostedGame();
     if (game.inHub() && escapePressed) {
-      soundSelect.blip();
+      sounds.select.blip();
       game.pauseAudio();
       this.phase = "paused";
       this.cursor = 0;
@@ -245,8 +245,8 @@ export class Title implements Scene {
 
   dispose(): void {
     if (this.musicOn) {
-      soundTitleMusic.pause();
-      soundTitleMusic.rewind();
+      sounds.title.pause();
+      sounds.title.rewind();
     }
     this.game?.dispose();
   }

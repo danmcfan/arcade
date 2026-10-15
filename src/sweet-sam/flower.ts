@@ -3,7 +3,7 @@
 // `flowerTicks` unless the bear eats it first. Eating it scores the level's
 // `flowerPoints`, shown in the pixel font where it stood.
 
-import { sweetSamSounds } from "../engine/assets.ts";
+import { sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
 import { framesPerSecond } from "./constants.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
@@ -37,7 +37,7 @@ export function updateFlower(s: SweetSamSoftware): void {
       s.scoreValue += points;
       s.flowerPopup = { points, ticks: flowerPopupTicks };
       s.flowerTicks = 0;
-      playSound(sweetSamSounds.flower);
+      playSound(sounds.sweetFlower);
     } else {
       s.flowerTicks--;
     }
