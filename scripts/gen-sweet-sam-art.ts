@@ -13,7 +13,7 @@
 // ready.png is READY!, six 8×8 letters. digits.png is the score dials' 0 to
 // 9, 8×8 each. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // maze-flash.png is the maze with its wax in the level-clear flash colours,
-// and flower.png the bonus flowers, one 16×16 frame per level (#47, #68).
+// and flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68).
 // gen-art.test.ts fails when the committed PNGs drift.
 
 import { join } from "node:path";
@@ -288,5 +288,5 @@ export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "digits.png"), 80, 8, () => image(dialDigitsArt)),
   imageOutput(join(sweetSamImagesDir, "points.png"), 64, 16, renderPoints),
   imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
-  imageOutput(join(sweetSamImagesDir, "flower.png"), 80, 16, () => sheet([flowers])),
+  imageOutput(join(sweetSamImagesDir, "flower.png"), 16 * flowers.length, 16, () => sheet([flowers])),
 ];

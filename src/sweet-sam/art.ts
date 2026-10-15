@@ -468,9 +468,9 @@ export const pointsTop = 4;
 export const pointsFrameSize = 16;
 
 /**
- * The bonus flowers (#47, #68), one per level up to `levelCap`, like Pac-Man's
- * fruit: the flower for level n is `flowers[n - 1]`, and the last one holds
- * from `levelCap` on. 16×16 with no outline: the maze is black, so an outline
+ * The bonus flowers (#47, #68), one per kind on Pac-Man's fruit table, in
+ * order of points (`flowerKind` in flower.ts picks the level's): violet,
+ * tulip, sunflower, coral daisy, forget-me-not, daisy, bluebell, golden rose. 16×16 with no outline: the maze is black, so an outline
  * would not show. They also make the level counter, a row of the levels' flowers.
  */
 export const flowers: readonly (readonly string[])[] = [
@@ -562,6 +562,60 @@ export const flowers: readonly (readonly string[])[] = [
     "..GG...GG...GG..",
     "...GGG.GG.GGG...",
     "....GGGGGGGG....",
+    ".......GG.......",
+  ],
+  [
+    "................",
+    "................",
+    "....w.w..w.w....",
+    "..w.wlwwwwlw.w..",
+    "..wwwwwwwwwwww..",
+    ".wwwwwyyyywwwww.",
+    ".lwwwyyoyyywwwl.",
+    ".wwwwyyyyoywwww.",
+    "..wwwwyyyywwww..",
+    "...wlwwwwwwlw...",
+    ".....w.ww.w.....",
+    ".......GG.......",
+    "..GG...GG...GG..",
+    "..GGG..GG..GGG..",
+    "...GGGGGGGGGG...",
+    ".......GG.......",
+  ],
+  [
+    "................",
+    "................",
+    "......cccc......",
+    "....ccBBBBcc....",
+    "...cBBBBBBBBc...",
+    "..cBBBBwwBBBBc..",
+    "..cBBBwyywBBBc..",
+    "..cBBBBwwBBBBc..",
+    "..cBBBBBBBBBBc..",
+    "...cBcBBBBcBc...",
+    "....c.c..c.c....",
+    ".......GG.......",
+    "..GG...GG...GG..",
+    "..GGG..GG..GGG..",
+    "...GGGGGGGGGG...",
+    ".......GG.......",
+  ],
+  [
+    "................",
+    "................",
+    ".....oooooo.....",
+    "...ooyyyyyyoo...",
+    "..oyyoooooyyyo..",
+    ".oyyoyyyyyoyyyo.",
+    ".oyoyyoooyyoyyo.",
+    ".oyoyoyywyoyyyo.",
+    ".oyyoyooooyyyo..",
+    "..oyyoyyyyyoo...",
+    "...oooooooo.....",
+    ".......GG.......",
+    "..GG...GG...GG..",
+    "..GGG..GG..GGG..",
+    "...GGGGGGGGGG...",
     ".......GG.......",
   ],
 ];
