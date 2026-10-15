@@ -109,14 +109,14 @@ function run(seed: number, ticks: number): Tick[] {
 const trace = run(8, 6000);
 
 describe("Sweet Sam end state of the seed 8 run (TypeScript regression lock)", () => {
-  // This pins what the TypeScript run reaches (re-pinned for #157's cornering).
+  // This pins what the TypeScript run reaches (re-pinned for #157's cornering and #158's no-up junctions).
   test("rng, score and items hash at tick 6000", () => {
     const last = trace.at(-1);
     expect({
       rng: last?.rng,
       score: last?.sw.score,
       itemsHash: last?.sw.itemsHash,
-    }).toEqual<unknown>({ rng: 3553732637, score: 2130, itemsHash: 3456050023 });
+    }).toEqual<unknown>({ rng: 123636899, score: 2960, itemsHash: 3949193264 });
   });
 });
 
