@@ -27,3 +27,4 @@ Every change ships as a pull request that the repo owner reviews and merges on G
 ## Boundaries
 
 - Work reaches `main` only through a PR the owner merges. Leave `gh pr merge` and pushes to `main` to the owner, even when asked to "push" (push the branch and update the PR).
+- The one exception is the Sandcastle batch runner (`bun run sandcastle:batch`), which merges green `bug` PRs itself (ADR 0009). It does not extend to any other agent or flow.
