@@ -10,7 +10,8 @@ export function seed(s: number): void {
   a = s >>> 0;
 }
 
-/** Current uint32 state; exposed as `rng` in every scene snapshot (§4.3). */
+/** Current uint32 state; exposed as `rng` in every scene snapshot (§4.3). The one gameplay reader is `flowerStayTicks`, which
+ * reads it without drawing to keep the Go trace in step. */
 export function state(): number {
   return a;
 }
