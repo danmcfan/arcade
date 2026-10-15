@@ -19,22 +19,33 @@ export const flowerDrops = [70, 170] as const;
 export const flowerStayMin = framesPerSecond * 9;
 export const flowerStayMax = framesPerSecond * 10;
 
-/** Points per flower kind; kind k is frame k of flower.png. */
-const kindPoints = [100, 300, 500, 700, 1000, 2000, 3000, 5000] as const;
-/** The first level of each kind after the first: 2, 3–4, 5–6, 7–8, 9–10, 11–12, 13 on. */
-const kindFirstLevel = [2, 3, 5, 7, 9, 11, 13] as const;
-export const flowerKinds = kindPoints.length;
+/**
+ * Pac-Man's fruit table: the first level of each flower kind and its points;
+ * kind k is frame k of flower.png. Levels 1, 2, 3–4, 5–6, 7–8, 9–10, 11–12, 13 on.
+ */
+const flowerTable = [
+  { firstLevel: 1, points: 100 },
+  { firstLevel: 2, points: 300 },
+  { firstLevel: 3, points: 500 },
+  { firstLevel: 5, points: 700 },
+  { firstLevel: 7, points: 1000 },
+  { firstLevel: 9, points: 2000 },
+  { firstLevel: 11, points: 3000 },
+  { firstLevel: 13, points: 5000 },
+] as const;
+export const flowerKinds = flowerTable.length;
 
 /** The flower kind (0-based frame) for `level` (1-based). */
 export function flowerKind(level: number): number {
-  return kindFirstLevel.filter((first) => level >= first).length;
+  return Math.max(
+    0,
+    flowerTable.findLastIndex((row) => level >= row.firstLevel),
+  );
 }
 
 /** Points for eating the flower on `level`. */
 export function flowerPoints(level: number): number {
-  const points = kindPoints[flowerKind(level)];
-  if (points === undefined) throw new Error(`sweetSam: no flower for level ${level}`);
-  return points;
+  return flowerTable.findLast((row) => level >= row.firstLevel)?.points ?? flowerTable[0].points;
 }
 
 /**

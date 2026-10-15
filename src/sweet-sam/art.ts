@@ -470,8 +470,9 @@ export const pointsFrameSize = 16;
 /**
  * The bonus flowers (#47, #68), one per kind on Pac-Man's fruit table, in
  * order of points (`flowerKind` in flower.ts picks the level's): violet,
- * tulip, sunflower, coral daisy, forget-me-not, daisy, bluebell, golden rose. 16×16 with no outline: the maze is black, so an outline
- * would not show. They also make the level counter, a row of the levels' flowers.
+ * tulip, sunflower, coral daisy, forget-me-not, daisy, bluebell, golden rose.
+ * 16×16 with no outline: the maze is black, so an outline would not show.
+ * They also make the level counter, a row of the levels' flowers.
  */
 export const flowers: readonly (readonly string[])[] = [
   [
