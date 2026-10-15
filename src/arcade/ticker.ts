@@ -1,6 +1,7 @@
 // The hub's LED scoreboard (#72): the token and ticket counts as part of the
 // room, on the board under the ceiling's neon tube. While a cabinet's screen
-// is on, the board shows that cabinet's name and INTERACT TO PLAY instead;
+// is on, the board shows that cabinet's name and INTERACT TO PLAY instead,
+// or, once the cabinet is beaten, its HI and a gold star at the top right;
 // facing the prize desk, it shows PRIZE COUNTER and INTERACT (#136).
 // The board itself is in the room image; this lays out and draws its lit
 // letters, and lights its marquee's bulbs in a chase (#92)
@@ -41,6 +42,8 @@ export interface TickerView {
   tokens: number;
   tickets: number;
   faced: Faced | null;
+  /** The faced cabinet's HI once it is beaten; null while it is not. */
+  beatenHi: number | null;
 }
 
 export const tokensLabel = "TOKENS";
@@ -49,6 +52,8 @@ export const freePlay = "FREE PLAY";
 export const playPrompt = "INTERACT TO PLAY";
 export const prizeCounterLabel = "PRIZE COUNTER";
 export const interactPrompt = "INTERACT";
+export const star = "*";
+export const hiLabel = "HI";
 /** The largest count the board shows; more reads as this. */
 export const maxShown = 999_999;
 
@@ -87,7 +92,16 @@ export function tickerLetters(v: TickerView): TickerGlyph[] {
   if (v.faced === "prizeCounter") return named(prizeCounterLabel, "orange", interactPrompt);
   if (v.faced !== null) {
     const t = minigameTitled(v.faced).titleCard;
-    return named(t.text, t.ink, playPrompt);
+    if (v.beatenHi === null) return named(t.text, t.ink, playPrompt);
+    const starX = tickerRight - tickerTextWidth(star);
+    const hi = shown(v.beatenHi);
+    const hiX = starX - tickerSpace - tickerGap - tickerTextWidth(hi);
+    return [
+      ...tickerText(t.text, t.ink, tickerLeft),
+      ...tickerText(hiLabel, "white", hiX - tickerSpace - tickerGap - tickerTextWidth(hiLabel)),
+      ...tickerText(hi, "yellow", hiX),
+      ...tickerText(star, "yellow", starX),
+    ];
   }
   const tickets = shown(v.tickets);
   return [
@@ -115,9 +129,11 @@ export function litBulbs(tick: number): Bulb[] {
 /** Light the board's letters and bulbs on `tick`, the hub image drawn at (`buffer`, `buffer`). */
 export function drawTicker(screen: Surface, v: TickerView, tick: number, buffer: number): void {
   for (const b of litBulbs(tick)) screen.fillRect(b.x + buffer, b.y + buffer, 1, 1, sweetie[bulbLit]);
-  for (const g of tickerLetters(v)) {
-    const sx = tickerGlyphX[g.ch] ?? 0;
-    const sy = tickerInkOrder.indexOf(g.ink) * tickerGlyphHeight;
-    screen.draw(sub(imageTicker, sx, sy, sx + glyphWidth(g.ch), sy + tickerGlyphHeight), g.x + buffer, g.y + buffer);
-  }
+  for (const g of tickerLetters(v)) drawGlyph(screen, g, buffer);
+}
+
+function drawGlyph(screen: Surface, g: TickerGlyph, buffer: number): void {
+  const sx = tickerGlyphX[g.ch] ?? 0;
+  const sy = tickerInkOrder.indexOf(g.ink) * tickerGlyphHeight;
+  screen.draw(sub(imageTicker, sx, sy, sx + glyphWidth(g.ch), sy + tickerGlyphHeight), g.x + buffer, g.y + buffer);
 }

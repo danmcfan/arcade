@@ -12,10 +12,12 @@ import { checkCollision, type Rect } from "./collision.ts";
 import type { PrizeId } from "./prizes.ts";
 import { newScreen, type Screen } from "./screen.ts";
 
-/** Builds a minigame for a run: the hub high score and the prizes the player owns. */
+/** Builds a minigame for a run: the high score its HI shows and the prizes the player owns. */
 export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
 
 export interface Machine {
+  /** Its minigame: whose high scores it keeps. */
+  name: SoftwareName;
   rect: Rect;
   /** Go `imageTitle`, by name; the LED scoreboard shows its name (src/arcade/ticker.ts). */
   title: ArcadeTitle;
@@ -32,6 +34,7 @@ export function newMachines(factory: SoftwareFactory): Machine[] {
   return minigames
     .toSorted((a, b) => a.hubRect.x - b.hubRect.x)
     .map((m) => ({
+      name: m.name,
       rect: { ...m.hubRect },
       title: m.title,
       newSoftware: (highScore, prizes) => factory(m.name, highScore, prizes),

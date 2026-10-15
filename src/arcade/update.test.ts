@@ -6,7 +6,7 @@ import type { Software, SoftwareName } from "../game/software.ts";
 import { counterRects, deskRect } from "./desk.ts";
 import { formatFloat0, newState, type State } from "./state.ts";
 import { faced, update, type HubEvent } from "./update.ts";
-import { startingTokens, Wallet } from "./wallet.ts";
+import { houseHighScores, noHighScores, startingTokens, Wallet } from "./wallet.ts";
 
 /** The high score each fake was constructed with. */
 const highScores = new WeakMap<Software, number>();
@@ -51,7 +51,7 @@ describe("newState", () => {
     expect(s.player.frame).toBe(0);
     expect(s.melodyPlaying).toBe(false);
     expect(s.imageTitle).toBeNull();
-    expect(s.wallet.highScore).toBe(0);
+    expect(s.wallet.toProgress().highScores).toEqual(noHighScores);
   });
 });
 
@@ -73,7 +73,7 @@ describe("tokens and tickets", () => {
 
   test("with 0 tokens the minigame still starts, as free play", () => {
     const s = newState(fakeFactory);
-    s.wallet = new Wallet({ highScore: 0, tokens: 0, tickets: 0, prizes: [] });
+    s.wallet = new Wallet({ highScores: noHighScores, tokens: 0, tickets: 0, prizes: [] });
     run(s, 31, { up: true });
     const e = update(s, input({ up: true, space: true }));
     expect(startedBy(e)?.name).toBe("sweetSam");
@@ -176,16 +176,30 @@ describe("melody and title", () => {
 });
 
 describe("entering a machine", () => {
-  test("Space facing up at a cabinet loads its software with the high score", () => {
+  test("Space facing up at a cabinet loads its software with the house high score while it is unbeaten", () => {
     const s = newState(fakeFactory);
-    s.wallet = new Wallet({ highScore: 777, tokens: startingTokens, tickets: 0, prizes: [] });
+    s.wallet = new Wallet({
+      highScores: { ...noHighScores, sweetSam: 777, firefly: 99999 },
+      tokens: startingTokens,
+      tickets: 0,
+      prizes: [],
+    });
     run(s, 31, { up: true });
     sounds.length = 0;
     const sw = startedBy(update(s, input({ up: true, space: true })));
     expect(sw?.name).toBe("sweetSam");
-    expect(sw === null ? undefined : highScores.get(sw)).toBe(777);
+    expect(sw === null ? undefined : highScores.get(sw)).toBe(houseHighScores.sweetSam);
     expect(s.melodyPlaying).toBe(false);
     expect(sounds).toEqual(["pause:attractSweet", "rewind:attractSweet"]);
+  });
+
+  test("a beaten cabinet loads its software with the player's high score", () => {
+    const s = newState(fakeFactory);
+    const best = houseHighScores.sweetSam + 1;
+    s.wallet = new Wallet({ highScores: { ...noHighScores, sweetSam: best }, tokens: 1, tickets: 0, prizes: [] });
+    run(s, 31, { up: true });
+    const sw = startedBy(update(s, input({ up: true, space: true })));
+    expect(sw === null ? undefined : highScores.get(sw)).toBe(best);
   });
 
   test("Go quirk: the title is not cleared on entry (only melodyPlaying is)", () => {

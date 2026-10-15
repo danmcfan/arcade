@@ -4,7 +4,7 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import * as rng from "../engine/rng.ts";
 import { Game } from "../game/game.ts";
-import { ticketsFor } from "../arcade/wallet.ts";
+import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
@@ -362,7 +362,7 @@ describe("payout", () => {
   test("a paid run played to game over pays its score in tickets", () => {
     rng.seed(1);
     const game = new Game(null, {
-      restore: { highScore: 0, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      restore: { highScores: noHighScores, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
     });
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.

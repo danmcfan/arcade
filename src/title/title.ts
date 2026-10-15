@@ -113,9 +113,9 @@ export class Title implements Scene {
     return this.saved !== null;
   }
 
-  /** High score in the save, shown on the title menu; null without a save. */
+  /** The player's Sweet Sam high score in the save, shown on the title menu; null without a save. */
   get savedHighScore(): number | null {
-    return this.saved?.highScore ?? null;
+    return this.saved === null ? null : this.saved.highScores.sweetSam;
   }
 
   /** The title menu's labels, also drawn (dimmed) behind the New game check. */

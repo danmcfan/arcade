@@ -11,6 +11,7 @@ import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snap
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 
 class FakeSoftware implements Software {
   updates: Input[] = [];
@@ -131,7 +132,7 @@ describe("snapshot", () => {
         melodyPlaying: false,
         faced: null,
         title: null,
-        highScore: 0,
+        highScores: noHighScores,
         tokens: 5,
         tickets: 0,
       },
@@ -305,7 +306,7 @@ describe("entering and leaving software", () => {
     if (sw === undefined) throw new Error("sweetSam not built");
     sw.points = 500;
     quitGame(game);
-    expect(snap(game).arcade.highScore).toBe(0);
+    expect(snap(game).arcade.highScores.sweetSam).toBe(0);
   });
 
   test("a direct start (game.New(software)) that ends goes straight back to the hub: no payout", () => {
@@ -318,36 +319,36 @@ describe("entering and leaving software", () => {
     const s = snap(game);
     expect(s.software).toBeNull();
     expect(s.menu).toBeNull();
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
     expect([s.arcade.tokens, s.arcade.tickets]).toEqual([5, 0]);
     expect(first.updates.length).toBe(1);
   });
 
-  test("on gameOver the high score becomes max(high score, score); the next machine gets it", () => {
+  test("on gameOver its machine's player high score becomes max(high score, score); unbeaten, the next run shows the house HI", () => {
     const { game, built } = newGame();
     enterSweetSam(game);
     const first = built[0];
     if (first === undefined) throw new Error("sweetSam not built");
     first.points = 500;
     run(game, 2);
-    expect(snap(game).arcade.highScore).toBe(0); // not over yet
+    expect(snap(game).arcade.highScores.sweetSam).toBe(0); // not over yet
     first.over = true;
     game.step(input());
     let s = snap(game);
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
     expect(first.updates.length).toBe(3); // updated on the game-over tick
     closePayout(game);
 
-    // A lower score does not lower it; the next machine gets the high score.
+    // A lower score does not lower it; 500 does not beat the house, so the next run shows the house high score.
     game.step(input({ space: true, up: true }));
     const second = built[1];
     if (second === undefined) throw new Error("second sweetSam not built");
-    expect(second.highScore).toBe(500);
+    expect(second.highScore).toBe(houseHighScores.sweetSam);
     second.points = 200;
     second.over = true;
     game.step(input());
     s = snap(game);
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
   });
 });
 
@@ -435,7 +436,7 @@ describe("minigame pause menu", () => {
     expect(s.software).toBeNull();
     expect(s.menu).toBeNull();
     expect(s.payout).toBeNull();
-    expect([s.arcade.tokens, s.arcade.tickets, s.arcade.highScore]).toEqual([4, 0, 0]);
+    expect([s.arcade.tokens, s.arcade.tickets, s.arcade.highScores.sweetSam]).toEqual([4, 0, 0]);
     expect(game.inHub()).toBe(true);
     // Still facing the cabinet with Space held: it does not start again until Space is pressed anew.
     run(game, 5, { space: true, up: true });
@@ -449,7 +450,13 @@ describe("minigame pause menu", () => {
 });
 
 function endRun(points: number, tokens = 5): Harness & { sw: FakeSoftware } {
-  const g = newGame(null, { highScore: 0, tokens, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets: 0,
+    prizes: [],
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   enterSweetSam(g.game);
   const sw = defined(g.built[0]);
   sw.points = points;
@@ -465,7 +472,7 @@ describe("payout", () => {
     expect(s.menu).toBe("payout");
     expect(s.software).toBe("sweetSam");
     expect(s.run).toBe("paid");
-    expect(s.arcade.highScore).toBe(1420);
+    expect(s.arcade.highScores.sweetSam).toBe(1420);
     expect(s.arcade.tickets).toBe(14);
     expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true });
     expect(game.inHub()).toBe(false);
@@ -501,7 +508,13 @@ describe("payout", () => {
 
 /** A hub with these counts; the player walks down to the counter and presses Space. */
 function atCounter(tokens: number, tickets: number): Harness {
-  const g = newGame(null, { highScore: 0, tokens, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets,
+    prizes: [],
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
@@ -531,7 +544,13 @@ const closeCursor = 10;
 
 /** The prize counter with the cursor on prize `id`. */
 function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness {
-  const g = newGame(null, { highScore: 0, tokens: 5, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens: 5,
+    tickets,
+    prizes,
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
@@ -687,7 +706,7 @@ describe("prize counter", () => {
     expect(defined(built[0]).prizes).toEqual(["honeyJar"]);
 
     const free = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 0,
       tickets: 0,
       prizes: ["sleepyBees"],
@@ -757,17 +776,27 @@ describe("progress", () => {
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 0 });
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScore: 9, tokens: 2, tickets: 31, prizes: [], player: { x: 80, y: 92, dir: "UP" } },
+      restore: {
+        highScores: { ...noHighScores, sweetSam: 9 },
+        tokens: 2,
+        tickets: 31,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      },
     });
     games.push(restored);
-    expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
+    expect(snap(restored).arcade).toMatchObject({
+      highScores: { ...noHighScores, sweetSam: 9 },
+      tokens: 2,
+      tickets: 31,
+    });
   });
 
   test("a save from before the prize desk, standing where the desk now is, starts at the start position", () => {
     // (40, 100) was free floor beside the old counter; the desk now spans the floor there.
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScore: 0, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
+      restore: { highScores: noHighScores, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
     });
     games.push(restored);
     expect(snap(restored).arcade.player).toMatchObject({ x: 80, y: 92 });
@@ -775,7 +804,7 @@ describe("progress", () => {
 
   test("carries owned prizes, and restore brings them back in catalogue order", () => {
     const { game } = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
@@ -798,7 +827,7 @@ describe("progress", () => {
 
   test("a saved position inside the prize counter keeps the start position", () => {
     const { game } = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],

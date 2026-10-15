@@ -1,3 +1,4 @@
+import { noHighScores } from "../arcade/wallet.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { images } from "../engine/assets.ts";
@@ -221,7 +222,13 @@ const factory = (name: SoftwareName): Software => {
 
 const games: { dispose(): void }[] = [];
 function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []): Game {
-  const restore = { highScore: 0, tokens, tickets: 0, prizes, player: { x: 80, y: 92, dir: "DOWN" as const } };
+  const restore = {
+    highScores: noHighScores,
+    tokens,
+    tickets: 0,
+    prizes,
+    player: { x: 80, y: 92, dir: "DOWN" as const },
+  };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
   games.push(g);
   return g;
@@ -485,7 +492,7 @@ describe("hub scoreboard", () => {
       const g = new Game(null, {
         createSoftware: factory,
         debugPrint,
-        restore: { highScore: 0, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+        restore: { highScores: noHighScores, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
       });
       games.push(g);
       const r = recordingSurface();
@@ -700,7 +707,7 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
   const g = new Game(null, {
     createSoftware: factory,
     debugPrint,
-    restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
+    restore: { highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
   });
   games.push(g);
   for (let t = 0; t < 3; t++) g.step(input({ down: true }));
