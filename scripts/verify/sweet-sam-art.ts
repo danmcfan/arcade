@@ -3,7 +3,7 @@
 // fixture (seed 11, a bot clearing the maze) through the `?debug` test hook
 // and stops where the art matters: the start (the bear, the four bees, honey
 // drops, honey pots, READY!), a honey pot eaten, a sleepy bee eaten with its
-// points, sleepy bees, a lost life and the waking flash. At each stop it
+// points, sleepy bees, the waking flash and a lost life. At each stop it
 // checks the bear and every bee on the canvas against the generated sheets,
 // in the frame the game picks for them, that the wax shows wherever no
 // sprite is, and that "1UP" and "HIGH SCORE" show as maze.png has them. Part 2 writes every generated sheet scaled up, the bear's death
@@ -48,14 +48,14 @@ const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
-/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace; 7930 is on level 2 since #47). */
+/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #155). */
 const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
-  { tick: 382, name: "2-honey-pot-eaten", shows: "a honey pot eaten: the bees out of the home fall asleep" },
-  { tick: 387, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
-  { tick: 1239, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
-  { tick: 4879, name: "5-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
-  { tick: 7930, name: "6-waking-flash", shows: "sleepy bees flashing awake" },
+  { tick: 696, name: "2-honey-pot-eaten", shows: "a honey pot eaten: the bees out of the home fall asleep" },
+  { tick: 1103, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
+  { tick: 1300, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
+  { tick: 1834, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
+  { tick: 3278, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -237,6 +237,7 @@ function plan(): { tick: number; steps: InputStep[] }[] {
 
 function play(v: Verify): void {
   v.openHook("scene=game");
+  v.dismissNotice();
   loadFixture(v, script);
   const steps = plan();
   stops.forEach((stop, i) => {
@@ -251,19 +252,19 @@ function play(v: Verify): void {
       );
       check(s.items === 244, "every honey drop and honey pot is out", s.items);
     }
-    if (stop.tick === 382) {
+    if (stop.tick === 696) {
       const out = s.enemies.filter((e) => !e.home);
       check(out.length > 0 && out.every((e) => e.blue > 0), "a honey pot eaten: every bee out of the home is sleepy");
     }
-    if (stop.tick === 387) {
+    if (stop.tick === 1103) {
       check(s.popups.length === 1 && s.popups[0]?.frameIdx === 0, "a sleepy bee eaten: 200 points float above it");
       check(s.particlesActive > 0, "and a burst of particles", s.particlesActive);
     }
-    if (stop.tick === 1239)
+    if (stop.tick === 1300)
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
-    if (stop.tick === 4879)
+    if (stop.tick === 3278)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick === 7930)
+    if (stop.tick === 1834)
       check(
         s.enemies.some((e) => e.flash),
         "a sleepy bee flashes awake",
@@ -295,12 +296,12 @@ function video(v: Verify): void {
       v.wait(600);
       // The start, READY!, the first honey pot, a sleepy bee eaten, more honey.
       replayLive(v, script, 1, 1300);
-      // A life lost.
-      skipTo(v, script, 1300, 4800);
-      replayLive(v, script, 4800, 4960);
       // Sleepy bees flashing awake.
-      skipTo(v, script, 4960, 7850);
-      replayLive(v, script, 7850, 7990);
+      skipTo(v, script, 1300, 1780);
+      replayLive(v, script, 1780, 1960);
+      // A life lost.
+      skipTo(v, script, 1960, 3200);
+      replayLive(v, script, 3200, 3360);
       v.wait(500);
     },
     { scene: "game" },

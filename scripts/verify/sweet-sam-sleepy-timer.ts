@@ -41,19 +41,19 @@ await verify("sweet-sam-sleepy-timer", (v) => {
   const held = start.modeTicks;
   v.frame("2-sleepy", 2);
 
-  skipTo(v, levels, 700, 1357);
+  skipTo(v, levels, 700, 1857);
   const end = sweetSam(v);
-  check(sleepy(end), "tick 1357: still sleepy");
+  check(sleepy(end), "tick 1857: still sleepy");
   check(
     end.modeTicks === held && end.modeIndex === start.modeIndex,
-    `modeTicks held at ${held} through 657 sleepy ticks`,
+    `modeTicks held at ${held} through 1157 sleepy ticks`,
     [end.modeIndex, end.modeTicks],
   );
   v.frame("3-sleepy-ending", 2);
 
-  skipTo(v, levels, 1357, 1400);
+  skipTo(v, levels, 1857, 1900);
   const after = sweetSam(v);
-  check(!sleepy(after), "tick 1400: sleepy time is over");
+  check(!sleepy(after), "tick 1900: sleepy time is over");
   check(
     after.modeIndex === start.modeIndex && after.mode === start.mode && after.modeTicks < held,
     `the timer counts down again in the same mode (${held} → ${after.modeTicks})`,
@@ -67,7 +67,7 @@ await verify("sweet-sam-sleepy-timer", (v) => {
       v.dismissNotice();
       loadFixture(v, levels);
       skipTo(v, levels, 0, 640);
-      replayLive(v, levels, 640, 1420);
+      replayLive(v, levels, 640, 1920);
       v.wait(500);
     },
     { scene: "game" },
