@@ -9,6 +9,8 @@ import { ticketsPerToken, type CounterOffers, type PrizeOffer, type TokenOffer }
 export const minigamePauseMenu = ["RESUME", "CONTROLS", "QUIT GAME"] as const;
 /** Index of QUIT GAME in `minigamePauseMenu`. */
 export const quitGameIndex = 2;
+/** Index of CONTROLS in `minigamePauseMenu`. */
+export const controlsIndex = 1;
 /** Drawn beside QUIT GAME: quitting pays nothing for the run. */
 export const quitGameNote = "NO TICKETS";
 

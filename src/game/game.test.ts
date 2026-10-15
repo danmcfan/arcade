@@ -367,11 +367,6 @@ function closePayout(game: Game): void {
   tap(game, "space");
   tap(game, "space");
 }
-/** Lets a bare `{ paused }` stand in for the DOM audio element; Sound only reads `paused` here. */
-function standsInForAudio(x: object): x is HTMLAudioElement {
-  return "paused" in x;
-}
-
 /** Sound events heard while `fn` runs. */
 function heard(game: Game, fn: () => void): string[] {
   const out: string[] = [];
@@ -407,6 +402,7 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:stage",
 ];
 
+// The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.
 describe("minigame pause menu", () => {
   test("Esc opens it over the minigame: no update that tick, the tick still counts, sounds pause", () => {
     const { game, built } = newGame();
@@ -423,92 +419,6 @@ describe("minigame pause menu", () => {
     expect(s.sounds).toEqual(["rewind:select", "play:select", ...minigameSoundPauses]);
     expect(built[0]?.updates.length).toBe(3);
     expect(game.inHub()).toBe(false);
-  });
-
-  test("the minigame does not advance while the menu is open, and held Esc does not close it", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    run(game, 3);
-    run(game, 30, { escape: true });
-    run(game, 30, { left: true });
-    expect(snap(game).menu).toBe("paused");
-    expect(built[0]?.updates.length).toBe(3);
-  });
-
-  test("Up and Down move the cursor with the move blip, wrapping", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    expect(
-      heard(game, () => {
-        tap(game, "down");
-      }),
-    ).toEqual(["rewind:move", "play:move"]);
-    expect(snap(game).cursor).toBe(1);
-    tap(game, "down");
-    tap(game, "down");
-    expect(snap(game).cursor).toBe(0);
-    tap(game, "up");
-    expect(snap(game).cursor).toBe(2);
-  });
-
-  test("Space on Resume carries on from the same tick; the held Space is hidden until released", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    run(game, 3);
-    tap(game, "escape");
-    game.step(input({ space: true }));
-    expect(snap(game).menu).toBeNull();
-    expect(built[0]?.updates.length).toBe(3);
-    game.step(input({ space: true, left: true }));
-    expect(built[0]?.updates).toHaveLength(4);
-    expect(built[0]?.updates[3]).toEqual(input({ left: true }));
-    game.step(input());
-    game.step(input({ space: true }));
-    expect(built[0]?.updates[5]).toEqual(input({ space: true }));
-  });
-
-  test("a second Esc resumes too", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    tap(game, "escape");
-    expect(snap(game).menu).toBeNull();
-    game.step(input());
-    expect(built[0]?.updates.length).toBe(2);
-  });
-
-  test("Resume restarts only the minigame sounds that were playing", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    const fakeElement = { paused: false };
-    if (!standsInForAudio(fakeElement)) throw new Error("fake element lacks paused");
-    soundTable.sweetBee.element = fakeElement;
-    try {
-      tap(game, "escape");
-      expect(
-        heard(game, () => {
-          tap(game, "escape");
-        }),
-      ).toEqual(["rewind:select", "play:select", "play:sweetBee"]);
-    } finally {
-      soundTable.sweetBee.element = null;
-    }
-  });
-
-  test("Controls shows the controls; Esc or Space backs out to the menu", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    tap(game, "down");
-    tap(game, "space");
-    expect(snap(game).menu).toBe("controls");
-    tap(game, "escape");
-    expect([snap(game).menu, snap(game).cursor]).toEqual(["paused", 1]);
-    tap(game, "space");
-    expect(snap(game).menu).toBe("controls");
-    tap(game, "space");
-    expect(snap(game).menu).toBe("paused");
   });
 
   test("Quit game returns to the hub: the token stays spent, no tickets, no payout", () => {
@@ -585,25 +495,6 @@ describe("payout", () => {
     expect(game.layout()).toEqual([192, 176]);
     run(game, 3, { space: true, up: true });
     expect(snap(game).software).toBeNull(); // the closing Space does not start the cabinet again
-  });
-
-  test("free play shows the score, adds no tickets, and one Space closes it", () => {
-    const { game } = endRun(1420, 0);
-    let s = snap(game);
-    expect(s.run).toBe("free");
-    expect(s.arcade.tokens).toBe(0);
-    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false });
-    expect(s.arcade.tickets).toBe(0);
-    tap(game, "space");
-    s = snap(game);
-    expect(s.software).toBeNull();
-    expect(s.arcade.tickets).toBe(0);
-  });
-
-  test("Esc does nothing in the payout", () => {
-    const { game } = endRun(1420);
-    tap(game, "escape");
-    expect(snap(game).menu).toBe("payout");
   });
 });
 
