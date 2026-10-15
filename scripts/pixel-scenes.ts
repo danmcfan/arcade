@@ -17,7 +17,7 @@ import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { saveKey, saveVersion } from "../src/title/save.ts";
-import { Wallet } from "../src/arcade/wallet.ts";
+import { noHighScores, Wallet } from "../src/arcade/wallet.ts";
 import { tickerText, tickerTextWidth } from "../src/arcade/ticker.ts";
 import { cardHeight, cardPriceY, cardTop, cardWidth, counterLayout, pictureHeight } from "../src/game/counterLayout.ts";
 import { closeCursor, prizeCounterItems, shelf, tokenCursor } from "../src/game/menus.ts";
@@ -135,7 +135,12 @@ const ticksPerItem = 30;
  */
 function prizeCounterFrames(): PNG[] {
   const owned = shelf.at(-1)?.id;
-  const wallet = new Wallet({ highScore: 0, tokens: 3, tickets: 75, prizes: owned === undefined ? [] : [owned] });
+  const wallet = new Wallet({
+    highScores: noHighScores,
+    tokens: 3,
+    tickets: 75,
+    prizes: owned === undefined ? [] : [owned],
+  });
   const items = prizeCounterItems(wallet, () => {
     // The scene never chooses CLOSE.
   });
@@ -209,7 +214,7 @@ export const scenes: readonly Scene[] = [
       storage: {
         [saveKey]: JSON.stringify({
           v: saveVersion,
-          highScore: 0,
+          highScores: noHighScores,
           tokens: 3,
           tickets: 500,
           prizes: [],
@@ -229,7 +234,7 @@ export const scenes: readonly Scene[] = [
       storage: {
         [saveKey]: JSON.stringify({
           v: saveVersion,
-          highScore: 0,
+          highScores: noHighScores,
           tokens: 3,
           tickets: 75,
           prizes: [shelf.at(-1)?.id],

@@ -10,6 +10,7 @@ import { createTui } from "./tui.ts";
 // One container, one branch (agent/<issue>, cut from the branch you have checked out):
 //   implement (Opus) → review and triage (Opus) → fix (Sonnet) → check, refixing up to 3 times → PR body (Sonnet)
 // then this script pushes the branch and opens the PR. It is a draft if the check is still red.
+// A branch with no commits (an audit that only filed issues) gets the PR body as an issue comment instead.
 // The terminal shows a progress view; each agent's full output goes to .sandcastle/logs/<issue>/.
 //
 // Ctrl-C stops the agent and removes the container; a second Ctrl-C force-removes it and quits.
@@ -40,6 +41,8 @@ interface Progress {
   done: string[];
   green?: boolean;
   url?: string;
+  // publish found no commits and commented on the issue instead of opening a PR
+  commented?: boolean;
 }
 if (fresh) rmSync(savedOut, { recursive: true, force: true });
 const stored: unknown = !fresh && existsSync(stateFile) ? await Bun.file(stateFile).json() : undefined;
@@ -211,29 +214,40 @@ try {
     const pipeline = `${out}/pipeline`;
     const pr: unknown = await Bun.file(`${pipeline}/pr.json`).json();
     if (!isPrSpec(pr)) throw new Error(`${pipeline}/pr.json is not {"title": string, "attach": string[]}`);
-    const attachments = pr.attach.flatMap((path) => ["--attach", path]);
-    await $`git push -q -u origin ${branch}`.quiet();
-    // A run stopped after gh pr create but before recording it has already opened the PR.
-    const existing = (await $`gh pr view ${branch} --json url --jq .url`.nothrow().quiet().text()).trim();
-    const draft = green ? [] : ["--draft"];
-    const url =
-      existing ||
-      (
-        await $`gh pr create --head ${branch} --title ${pr.title} --body-file ${pipeline}/pr-body.md ${draft} ${attachments}`
-          .cwd(sandbox.worktreePath)
-          .quiet()
-          .text()
-      ).trim();
-    tui.done("publish", url);
-    await record("publish", { url });
+    // An audit can end with only follow-up issues and no commits, and GitHub refuses a PR with no
+    // commits, so the PR body goes on the issue as a comment instead. HEAD here is the branch the
+    // run was cut from.
+    const commits = Number((await $`git rev-list --count HEAD..${branch}`.quiet().text()).trim());
+    if (commits === 0) {
+      const url = (await $`gh issue comment ${issue} --body-file ${pipeline}/pr-body.md`.quiet().text()).trim();
+      tui.done("publish", url);
+      await record("publish", { url, commented: true });
+    } else {
+      const attachments = pr.attach.flatMap((path) => ["--attach", path]);
+      await $`git push -q -u origin ${branch}`.quiet();
+      // A run stopped after gh pr create but before recording it has already opened the PR.
+      const existing = (await $`gh pr view ${branch} --json url --jq .url`.nothrow().quiet().text()).trim();
+      const draft = green ? [] : ["--draft"];
+      const url =
+        existing ||
+        (
+          await $`gh pr create --head ${branch} --title ${pr.title} --body-file ${pipeline}/pr-body.md ${draft} ${attachments}`
+            .cwd(sandbox.worktreePath)
+            .quiet()
+            .text()
+        ).trim();
+      tui.done("publish", url);
+      await record("publish", { url });
+    }
   }
 
-  tui.close([
-    `${green ? "PR" : "Draft PR (check failing)"}: ${progress.url ?? ""}`,
-    `Logs: ${logs}/`,
-    "",
-    ...usageReport(),
-  ]);
+  const outcome =
+    progress.commented === true
+      ? "No commits, so no PR; the PR body is a comment on the issue"
+      : green
+        ? "PR"
+        : "Draft PR (check failing)";
+  tui.close([`${outcome}: ${progress.url ?? ""}`, `Logs: ${logs}/`, "", ...usageReport()]);
 } catch (error) {
   if (!stop.signal.aborted) {
     tui.fail(current, "failed");

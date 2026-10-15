@@ -100,7 +100,7 @@ describe("playing", () => {
     sw.over = true;
     expect(step()).toBe(true);
     expect(run.snapshot().payout).toBeNull();
-    expect([wallet.highScore, wallet.tickets, wallet.tokens]).toEqual([500, 0, 5]);
+    expect([wallet.highScore("sweetSam"), wallet.tickets, wallet.tokens]).toEqual([500, 0, 5]);
   });
 });
 
@@ -173,7 +173,7 @@ describe("minigame pause menu", () => {
     }
   });
 
-  test("Controls shows the controls, keeping the cursor; Esc or Space backs out to the menu", () => {
+  test("Controls shows the controls, keeping the cursor; Esc backs out to the menu, Space does not", () => {
     const { run, tap } = newRun();
     tap("escape");
     tap("down");
@@ -184,6 +184,8 @@ describe("minigame pause menu", () => {
     tap("space");
     expect(run.menu).toBe("controls");
     tap("space");
+    expect(run.menu).toBe("controls");
+    tap("escape");
     expect(run.menu).toBe("paused");
   });
 
@@ -194,7 +196,7 @@ describe("minigame pause menu", () => {
     tap("down");
     tap("down");
     expect(step({ space: true })).toBe(true);
-    expect([wallet.tickets, wallet.highScore]).toEqual([0, 0]);
+    expect([wallet.tickets, wallet.highScore("sweetSam")]).toEqual([0, 0]);
     expect(keys.unmasked(input({ space: true })).space).toBe(false);
   });
 });
@@ -207,7 +209,7 @@ describe("payout", () => {
       menu: "payout",
       payout: { score: 1420, tickets: 0, total: 14, freePlay: false, counting: true },
     });
-    expect([wallet.highScore, wallet.tickets]).toEqual([1420, 14]);
+    expect([wallet.highScore("sweetSam"), wallet.tickets]).toEqual([1420, 14]);
     heard = [];
     for (let t = 0; t < 14 * 20 + 40; t++) expect(step()).toBe(false);
     expect(heard.filter((e) => e === "play:ticket")).toHaveLength(14);

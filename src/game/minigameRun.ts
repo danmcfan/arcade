@@ -89,7 +89,7 @@ export class MinigameRun {
       return this.quit;
     }
     if (s.menu === "payout") return this.updatePayout(s.payout, raw, edges);
-    if (edges.space || edges.escape) {
+    if (edges.escape) {
       sounds.select.blip();
       this.state = { menu: "paused", pausedSounds: s.pausedSounds };
     }
@@ -110,7 +110,7 @@ export class MinigameRun {
     if (!this.software.gameOver()) return false;
     const score = this.software.score();
     // Paid out at once, so a save taken during the count keeps them.
-    const tickets = this.wallet.settleRun(score, this.kind);
+    const tickets = this.wallet.settleRun(this.software.name, score, this.kind);
     if (this.kind === "direct") return true;
     this.state = { menu: "payout", payout: new Payout(score, tickets, this.kind === "free") };
     return false;
