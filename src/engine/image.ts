@@ -19,6 +19,11 @@ export interface ImageAsset {
   readonly solid?: string;
 }
 
+/** An image at `url`, `width`×`height`, not yet decoded. */
+export function imageAsset(url: string, width: number, height: number): ImageAsset {
+  return { url, width, height, image: null };
+}
+
 /**
  * The TS equivalent of a Go `*Image` used as a draw source: an asset plus
  * a source rectangle in the asset's (root) pixel coordinates.

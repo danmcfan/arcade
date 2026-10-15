@@ -182,12 +182,12 @@ const imagesDir = "src/assets/images";
 
 /** Every generated UI image: its file, its size and how to draw it. Title cards are 160×144. */
 export const uiArtFiles: readonly ImageOutput[] = [
-  imageOutput(join(imagesDir, "font.png"), 128, 192, renderFont),
-  imageOutput(join(imagesDir, "logo.png"), 100, 17, renderLogo),
-  imageOutput(join(imagesDir, "icons.png"), 23, 9, renderIcons),
+  imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
+  imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
+  imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
   imageOutput(join(imagesDir, "ticker.png"), 111, 25, renderTicker),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
-  imageOutput(join(imagesDir, "prizes.png"), 91, 12, renderPrizes),
+  imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),
   imageOutput(join(imagesDir, "screens.png"), 392, 108, renderScreens),
   imageOutput(join(imagesDir, "player.png"), 64, 96, renderPlayer),

@@ -15,6 +15,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
+import { cabinetHeight, cabinetWidth } from "../src/ui/cabinet.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 
@@ -154,5 +155,5 @@ export function renderCabinet(c: CabinetSource): PNG {
 
 /** Every cabinet outline: its file, its size (the crop) and how to draw it. */
 export const cabinetFiles: readonly ImageOutput[] = cabinets.map((c) =>
-  imageOutput(join(imagesDir, c.file), 240, 304, () => renderCabinet(c)),
+  imageOutput(join(imagesDir, c.file), cabinetWidth, cabinetHeight, () => renderCabinet(c)),
 );

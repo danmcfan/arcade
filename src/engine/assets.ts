@@ -2,7 +2,7 @@
 // from the outputs each art source declares (scripts/gen-art.ts); its sizes are hard-coded there and checked against
 // the PNG headers, so code can read them with no DOM.
 
-import { whole, type ImageAsset, type Sprite } from "./image.ts";
+import { imageAsset, whole, type ImageAsset, type Sprite } from "./image.ts";
 import { Sound } from "./audio.ts";
 import { soundTable } from "./sounds.generated.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
@@ -10,10 +10,6 @@ import type { ArcadeTitle } from "../game/snapshot.ts";
 import { brassMonkeyImages, fireflyImages, images, sweetSamImages } from "./images.generated.ts";
 
 import debugFontUrl from "./debugfont.png";
-
-function asset(url: string, width: number, height: number): ImageAsset {
-  return { url, width, height, image: null };
-}
 
 export { brassMonkeyImages, fireflyImages, images, sweetSamImages };
 
@@ -90,7 +86,7 @@ export const imageWall: Sprite = whole(brassMonkeyImages.wall);
  * debugfont.LICENSE.txt): 6×16 glyphs indexed by code point. Drawn by
  * `debugPrint` in text.ts (D14).
  */
-export const debugFont: ImageAsset = asset(debugFontUrl, 192, 128);
+export const debugFont: ImageAsset = imageAsset(debugFontUrl, 192, 128);
 
 /** Every image to decode before the first tick (D5). */
 export const allImages: readonly ImageAsset[] = [
