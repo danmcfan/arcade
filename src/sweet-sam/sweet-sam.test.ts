@@ -149,6 +149,18 @@ function goView(t: Tick | undefined): unknown {
   return { tick: t.tick, rng: t.rng, sounds, sw };
 }
 
+/**
+ * The first tick a bee is sleepy. From then on the run leaves the Go reference: since #152 sleepy time
+ * pauses the scatter/chase timer, which Go kept counting. The reference cannot be regenerated, so it is
+ * only compared before this tick; the parity traces cover the rest.
+ */
+const firstSleepyTick = trace.find((t) => t.sw.enemies.some((e) => e.blue > 0))?.tick ?? Infinity;
+
+/** Rows keyed by tick (first element), only those before the first sleepy tick. */
+function before(rows: readonly (readonly unknown[])[]): unknown[] {
+  return rows.filter((r) => Number(r[0]) < firstSleepyTick);
+}
+
 describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", () => {
   test("state transitions happen on the same ticks with the same rng state", () => {
     const trans: [number, string, number][] = [];
@@ -159,23 +171,17 @@ describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", (
         prev = t.sw.state;
       }
     }
-    expect(trans).toEqual<unknown>(reference.trans);
+    expect(before(trans)).toEqual(before(reference.trans));
+    expect(before(trans).length).toBeGreaterThan(2);
   });
 
-  test("full snapshots match at the first death, the bee-eaten pause and game over", () => {
-    for (const [tick, want] of Object.entries(reference.snaps)) {
+  test("full snapshots match at the first death", () => {
+    for (const [tick, want] of Object.entries(reference.snaps).filter(([k]) => Number(k) < firstSleepyTick)) {
       expect(goView(trace[Number(tick) - 1])).toEqual<unknown>({
         tick: Number(tick),
         ...withoutDropped(want),
       });
     }
-  });
-
-  test("end state matches", () => {
-    const last = trace.at(-1);
-    expect({ rng: last?.rng, score: last?.sw.score, items: last?.sw.items, itemsHash: last?.sw.itemsHash }).toEqual(
-      reference.final,
-    );
   });
 });
 
