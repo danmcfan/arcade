@@ -52,6 +52,9 @@ export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   T: ["###", ".#.", ".#.", ".#.", ".#."],
   W: ["#...#", "#...#", "#.#.#", "##.##", "#...#"],
   Y: ["#.#", "#.#", ".#.", ".#.", ".#."],
+  H: ["#.#", "#.#", "###", "#.#", "#.#"],
+  /** The gold star of a beaten machine (#148). */
+  "*": ["..#..", "#####", ".###.", ".#.#.", "#...#"],
 };
 
 /** Width of a space between words. */
@@ -63,9 +66,9 @@ export const tickerGap = 1;
 export const tickerInks = {
   /** Labels, and FREE PLAY. */
   orange: "o",
-  /** Counts. */
+  /** Counts, and a beaten machine's star. */
   yellow: "y",
-  /** PRESS SPACE TO PLAY. */
+  /** PRESS SPACE TO PLAY, and HI. */
   white: "w",
   /** The cabinets' names, in their lit colours (src/ui/hubArt.ts `cabinetColours`). */
   green: "g",

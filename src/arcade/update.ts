@@ -45,7 +45,10 @@ export function update(s: State, i: Input): HubEvent {
     // Go leaves imageTitle set here; only melodyPlaying is cleared (D11).
     stopMelody(s);
 
-    event = { run: s.wallet.startRun(), start: machine.newSoftware(s.wallet.highScore, s.wallet.prizes) };
+    event = {
+      run: s.wallet.startRun(),
+      start: machine.newSoftware(s.wallet.shownHighScore(machine.name), s.wallet.prizes),
+    };
   } else if (i.space && s.counters.some((r) => facing(s.player, r))) {
     event = { openCounter: true };
   }

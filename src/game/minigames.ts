@@ -24,7 +24,7 @@ import type { TickerInk } from "../ui/tickerArt.ts";
 import type { ArcadeTitle } from "./snapshot.ts";
 import type { Software, SoftwareName } from "./software.ts";
 
-/** What a run starts from: the hub high score and the prizes the player owns. */
+/** What a run starts from: the high score its HI shows and the prizes the player owns. */
 export interface MinigameStart {
   highScore: number;
   prizes: readonly PrizeId[];

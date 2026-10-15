@@ -105,7 +105,7 @@ function buyHoneyJar(v: Verify): void {
   check(sounds(v).includes("play:select"), "the purchase chirps");
   const s = stored(v);
   check(
-    s?.v === 3 && s.tickets === 35 && JSON.stringify(s.prizes) === '["honeyJar"]',
+    s?.v === 4 && s.tickets === 35 && JSON.stringify(s.prizes) === '["honeyJar"]',
     "the purchase is saved at once, as a v3 save",
     s,
   );

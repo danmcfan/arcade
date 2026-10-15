@@ -79,6 +79,16 @@ describe("LED scoreboard", () => {
     }
   });
 
+  test("facing a beaten cabinet, it shows the cabinet's name, a gold star and its HI in place of PRESS SPACE TO PLAY", () => {
+    for (const { title, titleCard: t } of minigames) {
+      const v = { tokens: 3, tickets: 1250, title, beatenHi: 123_450 };
+      expect(text(v)).toBe(`${t.text.replaceAll(" ", "")}*HI123450`);
+      expect(text(v, "white")).toBe("HI");
+      expect(tickerLetters(v).find((g) => g.ch === "*")?.ink).toBe("yellow");
+      onBoard(v);
+    }
+  });
+
   test("spaces are 2 px and letters 1 px apart", () => {
     expect(tickerTextWidth("A")).toBe(3);
     expect(tickerTextWidth("AA")).toBe(7);

@@ -53,8 +53,8 @@ export interface ArcadeSnapshot {
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
    */
   title: ArcadeTitle | null;
-  /** `State.HighScore`. */
-  highScore: number;
+  /** The player's high score on each machine (Go had one `State.HighScore`). */
+  highScores: { sweetSam: number; firefly: number; brassMonkey: number };
   /** Tokens left (no Go original); 0 means the next cabinet start is free play. */
   tokens: number;
   /** Tickets won so far (no Go original). */

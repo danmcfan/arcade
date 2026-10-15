@@ -115,7 +115,7 @@ _Avoid_: coin, pickup
 ## Economy
 
 **Wallet**:
-What the player has: their tokens, tickets and owned prizes, and the hub high score. It holds every rule that changes them: what a cabinet start costs, what a run pays, and what the prize counter sells. The save and the scoreboard's counts come from it. In code, `Wallet` (`src/arcade/wallet.ts`).
+What the player has: their tokens, tickets and owned prizes, and the player's high score on each machine. It holds every rule that changes them: what a cabinet start costs, what a run pays, and what the prize counter sells. The save and the scoreboard's counts come from it. In code, `Wallet` (`src/arcade/wallet.ts`).
 _Avoid_: purse, bank, inventory, account
 
 **Token**:
@@ -151,11 +151,15 @@ A decoration bought with tickets that shows in the hub and gives the player an a
 _Avoid_: power-up, upgrade, item, reward
 
 **Free play**:
-A play that costs nothing because the player's wallet has no tokens. It pays no tickets, but can still set the high score.
+A play that costs nothing because the player's wallet has no tokens. It pays no tickets, but can still set the player's high score.
 _Avoid_: free credit, bonus play
 
+**House high score**:
+A machine's fixed high score, set by the arcade, that the player must beat.
+_Avoid_: target score, par
+
 **Score**:
-Points earned inside one minigame run. The hub keeps the high score.
+Points earned inside one minigame run. The wallet keeps the player's high score for each machine.
 _Avoid_: tickets (they are separate)
 
 ## Menus and progress
@@ -165,7 +169,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the wallet (the hub high score, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
+What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

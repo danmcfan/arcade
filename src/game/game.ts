@@ -139,7 +139,7 @@ export class Game implements Scene {
     };
   }
 
-  /** Goes up whenever tokens, tickets, prizes or the high score change. */
+  /** Goes up whenever tokens, tickets, prizes or a player high score change. */
   walletVersion(): number {
     return this.arcade.wallet.version;
   }
@@ -332,9 +332,9 @@ export class Game implements Scene {
   }
 
   /** The wallet as the `arcade` snapshot shows it: `prizes` is absent while none is owned (ADR-0004). */
-  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScore" | "tokens" | "tickets" | "prizes"> {
-    const { highScore, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
-    return { highScore, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
+  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScores" | "tokens" | "tickets" | "prizes"> {
+    const { highScores, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
+    return { highScores, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
   }
 
   dispose(): void {

@@ -1,15 +1,29 @@
 // The Wallet: the arcade's economy in one place. It owns the player's tokens,
-// tickets, owned prizes and the hub high score, and every rule that changes
+// tickets, owned prizes and the player's high score on each machine, and every rule that changes
 // them: what a cabinet start costs, what a run pays, and what the prize
 // counter sells. Nothing else changes those numbers; the snapshot and the
 // save are projections of `toProgress()`, and `version` tells the title scene
 // when to save.
 
 import type { RunKindSnapshot } from "../game/snapshot.ts";
+import type { SoftwareName } from "../game/software.ts";
 import { prize, prizes, type PrizeId } from "./prizes.ts";
 
 /** Tokens a New game starts with. */
 export const startingTokens = 5;
+
+/** A high score per machine. */
+export type HighScores = Readonly<Record<SoftwareName, number>>;
+
+/**
+ * Each machine's house high score: fixed by the arcade, the same for every
+ * save. A strong run with no prizes falls short; one with that machine's
+ * prizes beats it.
+ */
+export const houseHighScores: HighScores = { sweetSam: 15000, firefly: 15000, brassMonkey: 15000 };
+
+/** A New game's player high scores. */
+export const noHighScores: HighScores = { sweetSam: 0, firefly: 0, brassMonkey: 0 };
 
 /** Tickets one token costs at the normal price. */
 export const ticketsPerToken = 5;
@@ -48,14 +62,15 @@ export interface CounterOffers {
 
 /** What the Wallet holds, as saved and restored. */
 export interface WalletProgress {
-  highScore: number;
+  /** The player's high score on each machine. */
+  highScores: HighScores;
   tokens: number;
   tickets: number;
   /** Owned prizes, in catalogue order. */
   prizes: PrizeId[];
 }
 
-const newGame: WalletProgress = { highScore: 0, tokens: startingTokens, tickets: 0, prizes: [] };
+const newGame: WalletProgress = { highScores: noHighScores, tokens: startingTokens, tickets: 0, prizes: [] };
 
 /** `ids` without repeats, in catalogue order: how owned prizes are kept. */
 function inCatalogueOrder(ids: readonly PrizeId[]): PrizeId[] {
@@ -63,7 +78,7 @@ function inCatalogueOrder(ids: readonly PrizeId[]): PrizeId[] {
 }
 
 export class Wallet {
-  private _highScore: number;
+  private _highScores: Record<SoftwareName, number>;
   private _tokens: number;
   private _tickets: number;
   private _prizes: PrizeId[];
@@ -71,14 +86,25 @@ export class Wallet {
 
   /** A New game's wallet, or one restored from a save. */
   constructor(from: WalletProgress = newGame) {
-    this._highScore = from.highScore;
+    this._highScores = { ...from.highScores };
     this._tokens = from.tokens;
     this._tickets = from.tickets;
     this._prizes = inCatalogueOrder(from.prizes);
   }
 
-  get highScore(): number {
-    return this._highScore;
+  /** The player's high score on `machine`. */
+  highScore(machine: SoftwareName): number {
+    return this._highScores[machine];
+  }
+
+  /** Beaten: the player's high score on `machine` is above its house high score. */
+  beaten(machine: SoftwareName): boolean {
+    return this._highScores[machine] > houseHighScores[machine];
+  }
+
+  /** What the machine's HI shows: the house high score until it is beaten, then the player's. */
+  shownHighScore(machine: SoftwareName): number {
+    return this.beaten(machine) ? this._highScores[machine] : houseHighScores[machine];
   }
 
   get tokens(): number {
@@ -112,14 +138,14 @@ export class Wallet {
   }
 
   /**
-   * A run that ended (not quit): keep the best score as the high score, and
-   * pay `ticketsFor(score)` for a paid run.
+   * A run on `machine` that ended (not quit): keep the best score as the
+   * player's high score on that machine, and pay `ticketsFor(score)` for a paid run.
    * Returns the tickets paid.
    */
-  settleRun(score: number, run: RunKind): number {
+  settleRun(machine: SoftwareName, score: number, run: RunKind): number {
     const tickets = run === "paid" ? ticketsFor(score) : 0;
-    if (score > this._highScore || tickets > 0) this._version++;
-    this._highScore = Math.max(this._highScore, score);
+    if (score > this._highScores[machine] || tickets > 0) this._version++;
+    this._highScores[machine] = Math.max(this._highScores[machine], score);
     this._tickets += tickets;
     return tickets;
   }
@@ -159,7 +185,12 @@ export class Wallet {
   }
 
   toProgress(): WalletProgress {
-    return { highScore: this._highScore, tokens: this._tokens, tickets: this._tickets, prizes: [...this._prizes] };
+    return {
+      highScores: { ...this._highScores },
+      tokens: this._tokens,
+      tickets: this._tickets,
+      prizes: [...this._prizes],
+    };
   }
 
   private tokenOffer(): TokenOffer {
