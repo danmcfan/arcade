@@ -386,14 +386,14 @@ describe("hub draw", () => {
     expect(calls.slice(3)).toEqual([
       ["strokeRect", 88, 96, 15, 23, green],
       ["strokeRect", 16, 16, 159, 47, red],
-      ["strokeRect", 16, 64, 23, 71, red],
-      ["strokeRect", 152, 64, 23, 71, red],
-      ["strokeRect", 16, 136, 159, 23, red],
+      ["strokeRect", 8, 16, 7, 143, red],
+      ["strokeRect", 176, 16, 7, 143, red],
+      ["strokeRect", 16, 160, 159, 7, red],
       ["strokeRect", 48, 56, 15, 15, yellow],
       ["strokeRect", 88, 56, 15, 15, yellow],
       ["strokeRect", 128, 56, 15, 15, yellow],
-      // The prize desk: the whole U, from its top down to the bottom wall.
-      ["strokeRect", 52, 123, 87, 12, yellow],
+      // The prize desk: the whole U.
+      ["strokeRect", 52, 123, 87, 36, yellow],
       ["fillPremul", 192, 0, 120, 176, { r: 20, g: 20, b: 20, a: 200 }],
     ]);
     expect(printed).toEqual([["Player: (80,92)", 200, 8]]);

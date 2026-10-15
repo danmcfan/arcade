@@ -238,7 +238,7 @@ describe("continue", () => {
   test("a saved position in or beyond a wall falls back to the start position", () => {
     for (const [x, y] of [
       [-500, -500],
-      [10, 92],
+      [5, 92],
       [80, 20],
       [80, 500],
     ] as const) {
