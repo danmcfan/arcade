@@ -82,9 +82,9 @@ function decoration(id: PrizeId, y = 0): Sprite {
 
 /**
  * Every prize, in the order the prize counter menu lists them, each hung on
- * the wall around its cabinet (`hang`): the 100-ticket prize at 12 o'clock.
- * Brass Monkey's arc runs 9 to 12, Firefly's 3 to 12, and Sweet Sam's
- * rainbow 10:15 to 1:45.
+ * the wall on a clock face round its cabinet's top (`hang`): Brass Monkey's
+ * at 9, 10:30 and 12, Firefly's at 3, 1:30 and 12, and Sweet Sam's in a
+ * rainbow at 10:15, 12 and 1:45.
  */
 export const prizes: readonly Prize[] = [
   {
