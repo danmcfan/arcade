@@ -20,6 +20,7 @@ export const artSources = [
   "src/ui/tickerArt.ts",
   "src/ui/icons.ts",
   "src/ui/prizeArt.ts",
+  "src/ui/panelArt.ts",
   "src/firefly/art.ts",
   "src/brass-monkey/art.ts",
   "src/sweet-sam/art.ts",

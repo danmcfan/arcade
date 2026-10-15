@@ -23,7 +23,7 @@ export const tickerRight = tickerFace.x + tickerFace.w - 5;
 /** Height of a glyph. */
 export const tickerGlyphHeight = 5;
 
-/** The LED glyphs: what the board can say. */
+/** The LED glyphs: what the board can say, and the prize counter cards' prices. */
 export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   "0": ["###", "#.#", "#.#", "#.#", "###"],
   "1": [".#.", "##.", ".#.", ".#.", "###"],
@@ -38,6 +38,7 @@ export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   A: [".#.", "#.#", "###", "#.#", "#.#"],
   B: ["##.", "#.#", "##.", "#.#", "##."],
   C: ["###", "#..", "#..", "#..", "###"],
+  D: ["##.", "#.#", "#.#", "#.#", "##."],
   E: ["###", "#..", "##.", "#..", "###"],
   F: ["###", "#..", "##.", "#..", "#.."],
   I: ["###", ".#.", ".#.", ".#.", "###"],
@@ -75,9 +76,11 @@ export const tickerInks = {
   /** The cabinets' names, in their lit colours (src/ui/hubArt.ts `cabinetColours`). */
   green: "g",
   cyan: "c",
+  /** Prize counter: an owned prize's OWNED. */
+  pale: "l",
 } as const;
 export type TickerInk = keyof typeof tickerInks;
-export const tickerInkOrder: readonly TickerInk[] = ["orange", "yellow", "white", "green", "cyan"];
+export const tickerInkOrder: readonly TickerInk[] = ["orange", "yellow", "white", "green", "cyan", "pale"];
 
 /** Each glyph's column in ticker.png, left to right with a 1 px gap. */
 export const tickerGlyphX: Readonly<Record<string, number>> = (() => {

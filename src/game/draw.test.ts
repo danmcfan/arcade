@@ -76,6 +76,8 @@ interface Recording {
   lit: Lit[];
   /** The scoreboard's letters left to right, optionally of one ink. */
   board: (ink?: TickerInk) => string;
+  /** The scoreboard letters below the board (the prize counter cards' prices), in reading order. */
+  cards: (ink?: TickerInk) => string;
   /** Every rect drawn or filled: [x, y, w, h]. */
   boxes: [number, number, number, number][];
   text: (ink?: Ink) => string;
@@ -159,10 +161,18 @@ function recordingSurface(): Recording {
       .toSorted((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
+  // The hub draws at the 16 px buffer.
+  const onBoard = (g: Lit): boolean => g.y < 16 + tickerRect.y + tickerRect.h;
   const board = (ink?: TickerInk): string =>
     lit
-      .filter((g) => ink === undefined || g.ink === ink)
+      .filter((g) => onBoard(g) && (ink === undefined || g.ink === ink))
       .toSorted((a, b) => a.x - b.x)
+      .map((g) => g.ch)
+      .join("");
+  const cards = (ink?: TickerInk): string =>
+    lit
+      .filter((g) => !onBoard(g) && (ink === undefined || g.ink === ink))
+      .toSorted((a, b) => a.y - b.y || a.x - b.x)
       .map((g) => g.ch)
       .join("");
   return {
@@ -171,6 +181,7 @@ function recordingSurface(): Recording {
     icons,
     lit,
     board,
+    cards,
     boxes,
     text,
     surface,
@@ -755,8 +766,10 @@ describe("prize counter menu", () => {
       ["honeyJar", false],
       ["lantern", false],
     ]);
-    // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, then the selected BUY TOKEN.
-    expect(r.text("yellow")).toBe("100100100505050252525>BUY TOKEN");
+    // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, in the
+    // scoreboard's small letters, then the selected BUY TOKEN.
+    expect(r.cards("yellow")).toBe("100100100505050252525");
+    expect(r.text("yellow")).toBe(">BUY TOKEN");
     expect(r.text("red")).toBe("");
     expect(r.icons).toEqual([]);
   });
@@ -780,8 +793,8 @@ describe("prize counter menu", () => {
     atCounter(1, 60, ["honeyJar"]).draw(r.surface);
     const pictures = shelfPictures(r);
     expect(pictures.filter(([, grey]) => grey).map(([id]) => id)).toEqual(["honeyJar"]);
-    expect(r.text("white")).toMatch(/^100100100/u);
-    expect(r.text("blue")).toBe("OWNED");
+    expect(r.cards("white")).toBe("100100100");
+    expect(r.cards("pale")).toBe("OWNED");
   });
 
   test("a bought token shows on the scoreboard at once", () => {
@@ -803,7 +816,7 @@ describe("prize counter menu", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
     expect(r.text("grey")).toBe("BUY TOKEN");
-    expect(r.text("white")).toMatch(/^100100100505050252525/u);
+    expect(r.cards("white")).toBe("100100100505050252525");
   });
 
   test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {

@@ -6,7 +6,7 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 Every art change, new or redrawn, starts with the owner, before any PR. Ask which of two modes they want:
 
-- **Prototype**: a few options for an asset, each built from the art the issue names to start from: its references, or the existing art. Put them in a variants file (`bun run pixel` has the format) under `out/pixel/variants/`, run `bun run pixel preview <file>` and publish the page with the Artifact tool. That link is how the owner sees prototypes.
+- **Prototype**: a few options for an asset, each built from the art the issue names to start from: its references, or the existing art. Put them in a variants file (`bun run pixel` has the format) under `out/pixel/variants/`, run `bun run pixel preview <file>` and publish the page with the Artifact tool. That link is how the owner sees prototypes. To play an option in the real game, `bun run pixel play <file>` serves the same page at http://localhost:3300 with a Play link on each option. A click builds that option into a copy of the working tree in the system temp folder and opens the game on its scene's `play` screen (`scripts/pixel-scenes.ts`). For the hub, Continue stands the player at the prize desk. The repo's source and assets are not touched.
 - **Tweak**: small changes to an existing asset. Edit its rows in place, show the result with `bun run pixel before`, and adjust from the owner's notes.
 
 The owner edits art in Aseprite. `bun run pixel export <path.ts:name>...` writes one PNG sheet to `out/aseprite/`: a row per export, its frames left to right. A record such as `src/sweet-sam/art.ts:bearWalk` is a row per entry, so a character's animations go on one sheet. It prints each row's frame count and size, for Aseprite's Import Sprite Sheet. The owner edits the sheet and saves it as a PNG of the same size. `bun run pixel import <png> <path.ts:name>...`, with the same exports in the same order, writes the rows back and runs `bun run art`; read the change with `git diff` and `bun run pixel before`. Only exports written out as rows can be imported: a derived export, such as `mirrorX(...)`, is edited at the rows it comes from.
@@ -17,16 +17,16 @@ The owner's picks are the brief either way: finish the change around them, and n
 
 Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one letter map, `sweetie` in `src/ui/sweetie16.ts`. The font is the exception: its glyphs are `#` rows drawn in an ink colour.
 
-| Art                              | Source                                                                                       | Generator                         |
-| -------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
-| Font, title-card lettering       | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
-| Title logo                       | `src/ui/titleArt.ts` (layers; animated by `src/title/logo.ts`)                               | `scripts/gen-ui-art.ts`           |
-| Hub room, cabinets, desk, player | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
-| Scoreboard, menu icons, prizes   | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`                                             | `scripts/gen-ui-art.ts`           |
-| Firefly sprites and sky          | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
-| Brass Monkey characters, items   | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
-| Sweet Sam maze, sprites, text    | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
-| Cabinet strips                   | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
+| Art                                                   | Source                                                                                       | Generator                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
+| Font, title-card lettering                            | `src/ui/glyphs.ts` (`#` rows plus an ink colour); the cards are in `art/title-cards/`        | `scripts/gen-ui-art.ts`           |
+| Title logo                                            | `src/ui/titleArt.ts` (layers; animated by `src/title/logo.ts`)                               | `scripts/gen-ui-art.ts`           |
+| Hub room, cabinets, desk, player                      | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
+| Scoreboard, menu icons, prizes, panel and card frames | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`, `panelArt.ts`                              | `scripts/gen-ui-art.ts`           |
+| Firefly sprites and sky                               | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
+| Brass Monkey characters, items                        | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
+| Sweet Sam maze, sprites, text                         | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |
+| Cabinet strips                                        | `art/cabinet.png` (hand-drawn in Aseprite, `cabinet.ase`), recoloured by `art/cabinets.json` | `scripts/gen-cabinets.ts`         |
 
 Each generator declares its outputs once (`imageOutput(file, width, height, render)`, `scripts/image-outputs.ts`), and `bun run art` (`scripts/gen-art.ts`) writes every PNG and the image table `src/engine/images.generated.ts` from them. A new image is a new declaration, then `bun run art`. Commit the source, the PNGs and the table together: `scripts/gen-art.test.ts` fails when they differ, or when `src/assets/images` holds a PNG nothing declares.
 

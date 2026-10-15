@@ -7,6 +7,8 @@ import fontUrl from "../assets/images/font.png";
 import titleLogoUrl from "../assets/images/title-logo.png";
 import iconsUrl from "../assets/images/icons.png";
 import tickerUrl from "../assets/images/ticker.png";
+import panelUrl from "../assets/images/panel.png";
+import cardsUrl from "../assets/images/cards.png";
 import employeeUrl from "../assets/images/employee.png";
 import prizesUrl from "../assets/images/prizes.png";
 import arcadeUrl from "../assets/images/arcade.png";
@@ -51,7 +53,9 @@ export const images = {
   font: imageAsset(fontUrl, 128, 224),
   titleLogo: imageAsset(titleLogoUrl, 192, 72),
   icons: imageAsset(iconsUrl, 23, 9),
-  ticker: imageAsset(tickerUrl, 129, 25),
+  ticker: imageAsset(tickerUrl, 133, 30),
+  panel: imageAsset(panelUrl, 16, 16),
+  cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
   prizes: imageAsset(prizesUrl, 91, 24),
   arcade: imageAsset(arcadeUrl, 160, 144),
