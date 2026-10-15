@@ -12,7 +12,7 @@ import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
 import { panelHints } from "../ui/menu.ts";
-import { backHints, confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
+import { backHints, confirmLines, controls, introLines, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { Title } from "./title.ts";
 
@@ -877,9 +877,21 @@ function recordingSurface(): {
   return { surface, sprites, glyphs, text, over, keys };
 }
 
+const withSave = (): Title =>
+  new Title({
+    store: memoryStore({
+      v: 3,
+      highScore: 0,
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      player: { x: 80, y: 92, dir: "UP" },
+    }),
+  });
+
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
-    const hints = [...menuHints, ...backHints, ...panelHints];
+    const hints = [...backHints, ...panelHints];
     const strings = [
       "CONTINUE",
       "NEW GAME",
@@ -913,70 +925,38 @@ describe("drawing", () => {
     expect(r.text("orange")).toBe("");
   });
 
-  test("the menu's choose and select hints are key caps, as in the controls table", () => {
-    const t = new Title();
-    const r = recordingSurface();
-    t.draw(r.surface);
-    const keys = r.keys();
-    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
-    // Too wide for one row at 192 px, so CHOOSE and OK each get a row.
-    expect([...new Set(keys.map((k) => k.y))]).toHaveLength(2);
-    // Below everything else on the menu, and inside the screen.
-    for (const k of keys) {
-      expect(k.x).toBeGreaterThanOrEqual(0);
-      expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
+  test("the title menu, its New game check and the hub pause menu draw no key hints", () => {
+    const menu = recordingSurface();
+    new Title().draw(menu.surface);
+    expect(menu.keys()).toEqual([]);
+
+    const confirm = withSave();
+    tap(confirm, "down");
+    tap(confirm, "space");
+    const c = recordingSurface();
+    confirm.draw(c.surface);
+    expect(c.over()).toBe(`${confirmLines.join("")}>NO<YES`);
+    expect(c.over("yellow")).toBe("START A NEW GAME?>NO<");
+    expect(c.keys()).toEqual([]);
+
+    const paused = withSave();
+    tap(paused, "space");
+    tap(paused, "escape");
+    expect(paused.phase).toBe("paused");
+    const p = recordingSurface();
+    paused.draw(p.surface);
+    expect(p.keys()).toEqual([]);
+  });
+
+  test("the logo, tagline and menu sit centred on the screen, with or without Continue", () => {
+    for (const t of [new Title(), withSave()]) {
+      const r = recordingSurface();
+      t.draw(r.surface);
+      const top = Math.min(...r.sprites.map(([, , y]) => y));
+      const bottom = Math.max(...r.glyphs.map((g) => g.y)) + 7;
+      // The logo bobs a pixel either way, so allow 2 px of slack.
+      expect(Math.abs(top - (screenHeight - bottom))).toBeLessThanOrEqual(2);
     }
-    // The hint rows sit below the last menu item.
-    const top = Math.min(...keys.map((k) => k.y));
-    const above = r.glyphs.filter((g) => g.y < top - 1);
-    expect(Math.max(...above.map((g) => g.y)) + 7).toBeLessThanOrEqual(top);
-    expect(r.text("white")).toContain("CHOOSE");
-    expect(r.text("white")).toContain("OK");
-    expect(r.text()).not.toContain("↑↓ CHOOSE");
-  });
-
-  test("the New game check draws its warning, No and Yes, and key hints", () => {
-    const t = new Title({
-      store: memoryStore({
-        v: 3,
-        highScore: 0,
-        tokens: 5,
-        tickets: 0,
-        prizes: [],
-        player: { x: 80, y: 92, dir: "UP" },
-      }),
-    });
-    tap(t, "down");
-    tap(t, "space");
-    const r = recordingSurface();
-    t.draw(r.surface);
-    expect(r.over()).toBe(`${confirmLines.join("")}>NO<YES↑↓WSCHOOSEESPACEENTEROK`);
-    expect(r.over("yellow")).toBe("START A NEW GAME?>NO<");
-    expect(r.keys().map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
-    // Clear of the confirm panel (y 40, 76 tall).
-    expect(Math.min(...r.keys().map((k) => k.y))).toBeGreaterThan(40 + 76);
-  });
-
-  test("the hub pause menu shows the same hints, on two rows inside the screen", () => {
-    const t = new Title({
-      store: memoryStore({
-        v: 3,
-        highScore: 0,
-        tokens: 5,
-        tickets: 0,
-        prizes: [],
-        player: { x: 80, y: 92, dir: "UP" },
-      }),
-    });
-    tap(t, "space");
-    tap(t, "escape");
-    expect(t.phase).toBe("paused");
-    const r = recordingSurface();
-    t.draw(r.surface);
-    const keys = r.keys();
-    expect(keys.map((k) => k.label)).toEqual(["↑", "↓", "W", "S", "E", "SPACE", "ENTER"]);
-    expect([...new Set(keys.map((k) => k.y))]).toHaveLength(2);
-    for (const k of keys) expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
   });
 
   test("with a save that holds a high score, the menu does not show it", () => {

@@ -18,7 +18,7 @@ import {
   type ControlRow,
   type Hint,
 } from "../ui/menu.ts";
-import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
+import { drawPanel, drawTextCentered, keyHeight, textHeight } from "../ui/text.ts";
 import type { Title } from "./title.ts";
 
 /** Size of the title screens: the hub's, so nothing jumps when play starts. */
@@ -42,10 +42,6 @@ export const controls: readonly ControlRow[] = [
   { keys: [["ESC"]], label: "BACK / PAUSE" },
 ];
 
-export const menuHints: readonly Hint[] = [
-  { keys: ["↑", "↓", "W", "S"], label: "CHOOSE" },
-  { keys: ["E", "SPACE", "ENTER"], label: "OK" },
-];
 export const backHints: readonly Hint[] = [{ keys: ["ESC"], label: "BACK" }];
 
 export const confirmLines = ["START A NEW GAME?", "THIS DELETES YOUR", "SAVED GAME."] as const;
@@ -70,18 +66,12 @@ export function draw(screen: Surface, t: Title): void {
       t.hostedGame().draw(screen);
       dimHub(screen);
       drawPausePanel(screen, t.items(), t.cursor, t.tick, centre, 56);
-      drawMenuHints(screen);
       return;
     case "controls":
       t.hostedGame().draw(screen);
       dimHub(screen);
       drawControlsPanel(screen, controls, 4, 40);
   }
-}
-
-/** The menu hints, wrapped to fit the screen. */
-function drawMenuHints(screen: Surface): void {
-  drawHints(screen, menuHints, hintsTop, centre, screenWidth - 8);
 }
 
 /** Blinking prompts show for 40 of every 60 ticks. */
@@ -146,17 +136,30 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
   });
 }
 
-/** The logo, the tagline, the title menu with `cursor` selected. */
+/** Pixels from the logo to the tagline, and from the tagline to the menu. */
+const taglineGap = 8;
+const menuGap = 16;
+/** Pixels from one menu item's top to the next (drawMenuItems). */
+const menuRow = 12;
+
+/**
+ * The logo, the tagline and the title menu with `cursor` selected, as one
+ * block centred on the screen both ways.
+ */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
-  drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), 34, t.tick);
-  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, 58, "blue");
-  drawMenuItems(screen, t.menuItems(), cursor, 88, t.tick, centre);
+  const items = t.menuItems();
+  const menuHeight = (items.length - 1) * menuRow + textHeight;
+  const height = imageLogo.h + taglineGap + textHeight + menuGap + menuHeight;
+  const top = Math.trunc((screenHeight - height) / 2);
+  const tagline = top + imageLogo.h + taglineGap;
+  drawLogo(screen, centre - Math.trunc(imageLogo.w / 2), top, t.tick);
+  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, tagline, "blue");
+  drawMenuItems(screen, items, cursor, tagline + textHeight + menuGap, t.tick, centre);
 }
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawMenuHints(screen);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -166,13 +169,12 @@ function drawConfirm(screen: Surface, t: Title): void {
   const w = 152;
   const h = 76;
   const x = centre - w / 2;
-  const y = 40;
+  const y = (screenHeight - h) / 2;
   drawPanel(screen, x, y, w, h);
   confirmLines.forEach((line, i) => {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
   });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
-  drawMenuHints(screen);
 }
 
 function drawIntro(screen: Surface, t: Title): void {

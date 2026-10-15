@@ -62,36 +62,10 @@ function hintWidth(h: Hint): number {
   return h.keys.reduce((w, k) => w + keyWidth(k) + 1, 0) + 3 + textWidth(h.label);
 }
 
-function hintsWidth(hints: readonly Hint[]): number {
-  return hints.reduce((w, h) => w + hintWidth(h), 0) + hintGap * (hints.length - 1);
-}
-
-/** Pixels between hint rows when they do not fit on one. */
-const hintRowGap = 3;
-
-/**
- * Key hints in a row centred on `centre`, with their key tops at `top`. If
- * the row is wider than `maxWidth`, each hint gets its own row instead, the
- * last at `top` and the others stacked above it.
- */
-export function drawHints(
-  screen: Surface,
-  hints: readonly Hint[],
-  top: number,
-  centre: number,
-  maxWidth = Infinity,
-): void {
-  if (hintsWidth(hints) <= maxWidth) {
-    drawHintRow(screen, hints, top, centre);
-    return;
-  }
-  hints.forEach((h, i) => {
-    drawHintRow(screen, [h], top - (hints.length - 1 - i) * (keyHeight + hintRowGap), centre);
-  });
-}
-
-function drawHintRow(screen: Surface, hints: readonly Hint[], top: number, centre: number): void {
-  let x = centre - Math.trunc(hintsWidth(hints) / 2);
+/** Key hints in a row centred on `centre`, with their key tops at `top`. */
+export function drawHints(screen: Surface, hints: readonly Hint[], top: number, centre: number): void {
+  const width = hints.reduce((w, h) => w + hintWidth(h), 0) + hintGap * (hints.length - 1);
+  let x = centre - Math.trunc(width / 2);
   for (const h of hints) {
     for (const key of h.keys) x += drawKey(screen, key, x, top) + 1;
     x += 3;

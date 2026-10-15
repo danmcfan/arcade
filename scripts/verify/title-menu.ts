@@ -1,8 +1,8 @@
-// The title menu with a save that holds a high score (`bun run verify
-// title-hints`): no high score is drawn, and the menu hints list arrows and
-// WASD for CHOOSE and E / SPACE / ENTER for OK, on two rows at 192 px. Frames
-// of the title menu, the New game check and the hub pause menu, plus a live
-// screenshot and a short video, go to out/verify/title-hints/.
+// The title menu (`bun run verify title-menu`): no high score and no key
+// hints, with the logo, tagline and menu centred on the screen. Frames of the
+// menu without and with a save (Continue), the New game check and the hub
+// pause menu, plus a live screenshot and a short video, go to
+// out/verify/title-menu/.
 
 import { saveKey } from "../../src/title/save.ts";
 import { isTitleSnapshot, verify } from "../harness.ts";
@@ -17,10 +17,14 @@ const save = {
 };
 const storage = { [saveKey]: JSON.stringify(save) };
 
-await verify("title-hints", (v) => {
+await verify("title-menu", (v) => {
   // A desktop viewport: a headless browser that reports no pointer would otherwise get the keyboard notice.
   v.page.run("set", "viewport", "1280", "900");
   v.openHook();
+  v.page.eval(`localStorage.clear(); "ok"`);
+  v.openHook();
+  if (v.snapshot(isTitleSnapshot).canContinue) throw new Error("expected no save");
+  v.frame("0-menu-new");
   v.page.eval(`localStorage.setItem(${JSON.stringify(saveKey)}, ${JSON.stringify(storage[saveKey])}); "ok"`);
   v.openHook();
   let s = v.snapshot(isTitleSnapshot);
