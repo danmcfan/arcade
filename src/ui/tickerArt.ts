@@ -50,8 +50,10 @@ export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   R: ["##.", "#.#", "##.", "#.#", "#.#"],
   S: [".##", "#..", ".#.", "..#", "##."],
   T: ["###", ".#.", ".#.", ".#.", ".#."],
+  U: ["#.#", "#.#", "#.#", "#.#", "###"],
   W: ["#...#", "#...#", "#.#.#", "##.##", "#...#"],
   Y: ["#.#", "#.#", ".#.", ".#.", ".#."],
+  Z: ["###", "..#", ".#.", "#..", "###"],
 };
 
 /** Width of a space between words. */
@@ -65,7 +67,7 @@ export const tickerInks = {
   orange: "o",
   /** Counts. */
   yellow: "y",
-  /** INTERACT TO PLAY. */
+  /** INTERACT TO PLAY, and INTERACT. */
   white: "w",
   /** The cabinets' names, in their lit colours (src/ui/hubArt.ts `cabinetColours`). */
   green: "g",
