@@ -8,7 +8,7 @@ import { createTui } from "./tui.ts";
 // With no number it takes the lowest-numbered open ready-for-agent issue.
 //
 // One container, one branch (agent/<issue>, cut from the branch you have checked out):
-//   implement (Opus) → review (Opus) → fix (Sonnet) → check, refixing up to 3 times → PR body (Sonnet)
+//   implement (Opus) → review and triage (Opus) → fix (Sonnet) → check, refixing up to 3 times → PR body (Sonnet)
 // then this script pushes the branch and opens the PR. It is a draft if the check is still red.
 // The terminal shows a progress view; each agent's full output goes to .sandcastle/logs/<issue>/.
 //

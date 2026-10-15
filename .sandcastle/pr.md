@@ -15,6 +15,7 @@ Final `bun run check`: **{{CHECK}}**.
 3. Use the `/pr` skill to write the body to `out/pipeline/pr-body.md`. Add:
    - `Closes #{{ISSUE_NUMBER}}` near the top.
    - A `## Review` section: each review finding and what happened to it, from `fixes.md`.
+   - A `## Follow-ups` section, if any finding is **won't fix** or was skipped: each one with its reason and the issue it belongs to, if named.
    - If the check failed, a `## Check failing` section saying what is still red.
    - Last line: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
      Reference each picked file as `![what it shows](./out/verify/<name>/<file>)`.
