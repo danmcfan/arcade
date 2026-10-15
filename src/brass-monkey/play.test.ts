@@ -267,12 +267,47 @@ describe("the escape and the next loop", () => {
     expect(run.tuning.gearEvery).toBeLessThan(easy.gearEvery);
     expect(run.tuning.emberEvery).toBeLessThan(easy.emberEvery);
     expect(run.tuning.gearSpeed).toBeGreaterThan(easy.gearSpeed);
-    expect(run.tuning.emberSpeed).toBeGreaterThan(easy.emberSpeed);
+    expect(run.tuning.emberWalkSpeed).toBeGreaterThan(easy.emberWalkSpeed);
+    expect(run.tuning.emberClimbSpeed).toBeGreaterThan(easy.emberClimbSpeed);
   });
 
   test("the bonus never starts below its floor, nor hazards come too often", () => {
     const hard = t.tuningFor(0, 20);
     expect(hard.bonusStart).toBe(t.minBonusStart);
     expect(hard.gearEvery).toBe(t.minSpawnEvery);
+  });
+
+  test("by loop 10 every hazard speed has reached its cap", () => {
+    for (const floor of [0, 1]) {
+      const hard = t.tuningFor(floor, 10);
+      expect(hard.gearSpeed).toBe(t.maxGearSpeed);
+      expect(hard.emberWalkSpeed).toBe(t.maxEmberWalkSpeed);
+      expect(hard.emberClimbSpeed).toBe(t.maxEmberClimbSpeed);
+    }
+  });
+
+  test("an ember is always slower than the monkey, walking and climbing", () => {
+    for (const floor of [0, 1]) {
+      for (let loop = 0; loop <= 30; loop++) {
+        const tuning = t.tuningFor(floor, loop);
+        expect(tuning.emberWalkSpeed).toBeLessThan(t.walkSpeed);
+        expect(tuning.emberClimbSpeed).toBeLessThan(t.climbSpeed);
+      }
+    }
+  });
+
+  test("the first three loops are as fast as they always were", () => {
+    for (const floor of [0, 1]) {
+      for (const loop of [0, 1, 2]) {
+        const tuning = t.tuningFor(floor, loop);
+        const uncapped = t.loopSpeedFactor ** loop;
+        expect(tuning.gearSpeed).toBe(1 * uncapped);
+        expect(tuning.emberWalkSpeed).toBe(0.5 * uncapped);
+        // 0.9 of the monkey's climb is reached at loop 2 (0.72 uncapped).
+        expect(tuning.emberClimbSpeed).toBe(Math.min(t.maxEmberClimbSpeed, 0.5 * uncapped));
+      }
+      expect(t.tuningFor(floor, 1).emberClimbSpeed).toBeLessThan(t.maxEmberClimbSpeed);
+      expect(t.tuningFor(floor, 2).emberClimbSpeed).toBe(t.maxEmberClimbSpeed);
+    }
   });
 });

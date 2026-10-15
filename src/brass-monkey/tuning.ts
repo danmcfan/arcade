@@ -61,8 +61,10 @@ export interface FloorTuning {
   maxEmbers: number;
   /** A gear rolls this many px a tick. */
   gearSpeed: number;
-  /** An ember walks and climbs this many px a tick. */
-  emberSpeed: number;
+  /** An ember walks this many px a tick... */
+  emberWalkSpeed: number;
+  /** ...and climbs this many. */
+  emberClimbSpeed: number;
   /** The bonus when the floor starts. */
   bonusStart: number;
 }
@@ -76,7 +78,8 @@ export const floorTunings: readonly FloorTuning[] = [
     firstEmber: 300,
     maxEmbers: 2,
     gearSpeed: 1,
-    emberSpeed: 0.5,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
     bonusStart: 5000,
   },
   {
@@ -86,7 +89,8 @@ export const floorTunings: readonly FloorTuning[] = [
     firstEmber: 180,
     maxEmbers: 3,
     gearSpeed: 1,
-    emberSpeed: 0.5,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
     bonusStart: 5000,
   },
 ];
@@ -104,19 +108,24 @@ export const loopBonusDrop = 1000;
 /** ...but the bonus never starts below this, and hazards never come more often than every `minSpawnEvery` ticks. */
 export const minBonusStart = 2000;
 export const minSpawnEvery = 60;
+/** Hazards speed up only so far: an ember always walks and climbs slower than the monkey, so it can be outrun. */
+export const maxGearSpeed = 2;
+export const maxEmberWalkSpeed = 0.9 * walkSpeed;
+export const maxEmberClimbSpeed = 0.9 * climbSpeed;
 
 /** `floor`'s tuning on loop `loop` (0 the first time through). */
 export function tuningFor(floor: number, loop: number): FloorTuning {
   const base = floorTunings[floor];
   if (base === undefined) throw new Error(`no tuning for floor ${floor}`);
   const spawn = (n: number): number => Math.max(minSpawnEvery, Math.round(n * loopSpawnFactor ** loop));
-  const speed = (n: number): number => n * loopSpeedFactor ** loop;
+  const speed = (n: number, max: number): number => Math.min(max, n * loopSpeedFactor ** loop);
   return {
     ...base,
     gearEvery: spawn(base.gearEvery),
     emberEvery: spawn(base.emberEvery),
-    gearSpeed: speed(base.gearSpeed),
-    emberSpeed: speed(base.emberSpeed),
+    gearSpeed: speed(base.gearSpeed, maxGearSpeed),
+    emberWalkSpeed: speed(base.emberWalkSpeed, maxEmberWalkSpeed),
+    emberClimbSpeed: speed(base.emberClimbSpeed, maxEmberClimbSpeed),
     bonusStart: Math.max(minBonusStart, base.bonusStart - loopBonusDrop * loop),
   };
 }
