@@ -82,8 +82,10 @@ function buyLantern(v: Verify): void {
   v.step(4, { down: true });
   v.tap("space");
   check(game(v).menu === "prizeCounter", "Space facing the counter opens the prize counter menu", game(v).menu);
-  for (let i = 0; i < 4; i++) v.tap("down");
-  check(game(v).cursor === 4, "four Downs select the lantern", game(v).cursor);
+  v.tap("down");
+  v.tap("right");
+  v.tap("right");
+  check(game(v).cursor === 2, "Down and two Rights select the lantern, top of the right column", game(v).cursor);
   v.frame("2-menu-firefly-prizes");
 
   v.tap("space");
@@ -143,8 +145,8 @@ function buyAndPlay(v: Verify): void {
   v.wait(300);
   v.key("Space"); // open
   v.wait(600);
-  for (let i = 0; i < 4; i++) {
-    v.key("ArrowDown");
+  for (const key of ["ArrowDown", "ArrowRight", "ArrowRight"]) {
+    v.key(key);
     v.wait(300);
   }
   v.wait(500);

@@ -103,7 +103,7 @@ const shelfRowHeight = 24;
 /** The tallest picture a shelf cell holds. */
 const pictureHeight = 12;
 /** A greyed-out (owned) picture's alpha. */
-const ownedAlpha = 0.3;
+const ownedAlpha = 0.45;
 
 /** The info panel's lines for what the cursor is on: a name, a price, what it does. */
 function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; price: string; effect: string } {
@@ -145,7 +145,7 @@ function drawPrizeCounter(
   const offers = w.counter();
   const cols = shelfColumns.length;
   const shelfLeft = x + Math.trunc((width - cols * shelfColumnWidth) / 2);
-  const shelfTop = y + 17;
+  const shelfTop = y + 16;
   shelf.forEach((p, i) => {
     const centre = shelfLeft + (i % cols) * shelfColumnWidth + shelfColumnWidth / 2;
     const top = shelfTop + Math.trunc(i / cols) * shelfRowHeight;
@@ -163,7 +163,7 @@ function drawPrizeCounter(
     screen.fillRect(shelfLeft + 2, plankY, cols * shelfColumnWidth - 4, 1, sweetie.l);
   }
 
-  const rowY = shelfTop + shelfRows * shelfRowHeight + 1;
+  const rowY = shelfTop + shelfRows * shelfRowHeight - 1;
   const token = tokenItems[offers.token];
   const tokenGrey = offers.token === "short";
   const tokenCentre = shelfLeft + shelfColumnWidth;
@@ -171,7 +171,7 @@ function drawPrizeCounter(
   drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
   drawRowItem(screen, closeItem, closeCentre, rowY, cursor === closeCursor, false, tick);
 
-  const infoTop = rowY + 11;
+  const infoTop = rowY + 10;
   const infoHeight = y + height - 3 - infoTop;
   screen.fillRect(x + 4, infoTop, width - 8, 1, sweetie.d);
   const info = counterInfo(counterSlot(cursor), offers.token);
