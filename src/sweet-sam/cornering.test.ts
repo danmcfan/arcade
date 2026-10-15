@@ -59,7 +59,7 @@ describe("what the bear's cornering leaves alone", () => {
     // Corner (6, 1) at (52, 36) is a wall upward; the bear runs on LEFT past it.
     const e = bear(60, 36, "LEFT");
     run(e, "UP", 1);
-    run(e, "", 10);
+    run(e, "", 14);
     expect([e.direction, e.turn]).toEqual(["LEFT", ""]);
   });
 

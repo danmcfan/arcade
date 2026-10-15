@@ -98,6 +98,8 @@ if (import.meta.main) {
           .map((f) => basename(f, ".json"));
   const server = await startServer();
   try {
+    // A desktop viewport: a small headless one shows the "needs a keyboard" notice instead of the scene.
+    page.run("set", "viewport", "1280", "900");
     page.run("open", `${server.url}/?debug`);
     page.run("wait", "--fn", "window.__arcade !== undefined");
     for (const name of names) {

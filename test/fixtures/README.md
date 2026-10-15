@@ -18,7 +18,6 @@ on purpose (ADR 0004; see "Re-recorded from the TypeScript game" below).
 | `traces/<name>.jsonl.gz` | Per-tick state snapshots (§4.3, `src/game/snapshot.ts`) |
 | `frames/<name>/<tick>.png` | Golden frames at logical resolution for each `captureTicks` entry |
 | `rng.json` | mulberry32 reference outputs for seeds 1 and 42 |
-| `sweet-sam.goReference.json` | Trimmed Sweet Sam Go reference used by `src/sweet-sam/sweet-sam.test.ts` (not from `tools/golden/`; see below) |
 
 Total size: about 2.9 MB (traces 1.7 MB, frames 0.98 MB, inputs 96 KB, rng 68 KB).
 
@@ -148,24 +147,6 @@ and drops the software, so that tick's snapshot already has
 `software: null`. In the TS-recorded `sweet-sam-highscore` it shows for as long
 as the payout is open.
 
-## sweet-sam.goReference.json
-
-A trimmed Go reference for Sweet Sam on its own: seed 8, 6,000 ticks, driving the
-Sweet Sam software directly (no hub) with the "greedy" input generator in
-`src/sweet-sam/sweet-sam.test.ts`. It holds the state transitions (`trans`), a few
-complete snapshots (`snaps`) and the end state (`final`). It was captured during T5
-by the Sweet Sam porter's throwaway Go harness, not by `tools/golden/`: a copy of
-the Go Sweet Sam package with `math/rand` swapped for mulberry32 at the same call
-positions, a `Snapshot()` emitting the §4.3 keys, built with
-`CGO_ENABLED=1 GOARCH=amd64`. The full per-tick traces matched the TS port
-bit for bit at the time.
-
-That harness was never committed, so **this file cannot be regenerated**.
-It is kept as a cheap Sweet Sam regression check (`sweet-sam.test.ts` imports
-it; it is test-only and not in the bundle). The full `sweet-sam-*` traces above
-supersede it for regression purposes: if the two ever disagree, the traces
-win.
-
 ## Regenerating
 
 **The Go captures can no longer be regenerated from the current tree.** The
@@ -233,6 +214,7 @@ Re-recorded from TypeScript so far:
 | `arcade-enter-sweet-sam`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-highscore`, `sweet-sam-modes` (traces); `sweet-sam-clear`, `sweet-sam-levels` (inputs, trace and frames) | #155: bees leave the home as in Pac-Man: only the preferred bee in the home counts eaten drops, a global drop counter releases them after a lost life, and a bee leaves after 4 s (3 s from level 5) without an eaten drop. Traces re-recorded with inputs unchanged, except `sweet-sam-clear` and `sweet-sam-levels`, whose runs no longer cleared level 1 (or no longer ate a flower on it). `sweet-sam-levels` was re-recorded with the same bot on seed 15 (seed 4 now eats its first flower on level 3); its capture ticks moved to 900, 2850, 3757, 3872 and 4072. `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear (4010) and 300 ticks of level 2, then random holds to game over (5965); its captures moved to the same moments where they still exist (the smoke pot is now at 697, the first bee eaten at 1103). Both scenarios' frames were re-captured; the other golden frames were not. `sweet-sam.goReference.json` is compared without the bees' `dotMin` |
 | `sweet-sam-levels` (inputs, trace and frames) | #156: Cruise Elroy: red flies faster with 20 and then 10 honey drops left on level 1 and chases the bear during scatter, so the run no longer cleared level 1 (it stalled with 8 drops left). Re-recorded with the same bot on seed 15; level 1 is now cleared at 4174, so the captures after 2850 moved to the same moments (3757, 3872, 4072 became 4189, 4305, 4505) and those frames were re-captured. 900 and 2850 are unchanged. No other trace reaches 20 drops left on level 1 with Elroy on, so none changed |
 | `arcade-enter-sweet-sam`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-clear`, `sweet-sam-modes`, `sweet-sam-levels` (traces only) | #156: the snapshot gained `release.elroySuspended`; traces re-recorded from the same inputs, no other field changed, frames untouched |
+| `arcade-enter-sweet-sam`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-modes` (traces); `sweet-sam-clear`, `sweet-sam-levels` (inputs, trace and frames); `sweet-sam.goReference.json` (deleted) | #157: the bear pre-turns from 4 px before a junction's centre to 3 px after it, as in Pac-Man, so every run that turns plays differently. Traces re-recorded with inputs unchanged, except `sweet-sam-clear` and `sweet-sam-levels`, whose runs no longer cleared level 1. `sweet-sam-levels` was re-recorded with the same bot on seed 15; it now eats its flower on level 2, at the script's last tick, so its captures are 900, the clear (3568, 3684, 3884) and the flower (5749). `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear (3571) and 300 ticks of level 2, then the old script's random holds and 9 idle ticks to game over (5496); its captures moved to the same moments (693, 756, 901, 3586, 3721, 3831, 4473, 5495, 5496). Both scenarios' frames were re-captured; the other golden frames were not. `scripts/capture-frames.ts` now sets a desktop viewport, since a small headless one showed the "needs a keyboard" notice. The trimmed Go reference left Go's path within the bot's first turns, so it was deleted and `sweet-sam.test.ts` keeps only its TypeScript end-state lock |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end
