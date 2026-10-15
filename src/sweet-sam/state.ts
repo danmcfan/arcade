@@ -253,7 +253,7 @@ export class PlayState implements State {
         if (awardIdx >= bonusEatFrameCount) {
           awardIdx = bonusEatFrameCount - 1;
         }
-        s.scoreValue += scaredBeeEatPoints[awardIdx] ?? 0;
+        s.addScore(scaredBeeEatPoints[awardIdx] ?? 0);
         spawnBonusEatIndicator(s, e.x, e.y, awardIdx);
         let nextAward = awardIdx + 1;
         if (nextAward >= bonusEatFrameCount) {
@@ -296,13 +296,13 @@ export class PlayState implements State {
       s.items[idx] = null;
 
       if (item.isPellet()) {
-        s.scoreValue += 10;
+        s.addScore(10);
         // The chomp alternates its two notes, one per honey drop.
         playSound(itemsEaten(s) % 2 === 1 ? sounds.sweetChompHigh : sounds.sweetChompLow);
       }
 
       if (item.isPower()) {
-        s.scoreValue += 50;
+        s.addScore(50);
         playSound(sounds.sweetSmoke);
 
         s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);

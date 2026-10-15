@@ -75,7 +75,7 @@ export function updateFlower(s: SweetSamSoftware): void {
   if (s.flowerTicks > 0) {
     if (collideWithDistance(flowerSpot, s.player, distanceThreshold)) {
       const points = flowerPoints(s.level);
-      s.scoreValue += points;
+      s.addScore(points);
       s.flowerPopup = { points, ticks: flowerPopupTicks };
       s.flowerTicks = 0;
       playSound(sounds.sweetFlower);

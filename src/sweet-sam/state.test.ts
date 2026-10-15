@@ -5,6 +5,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
+import { sweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
@@ -566,5 +567,53 @@ describe("rolling dials", () => {
     step(s, 17);
     snap = s.snapshot();
     expect(snap.dials[4]).toEqual([1, false, 0, 1, 1]);
+  });
+});
+
+describe("the extra life at 10,000 points (#154)", () => {
+  test("a honey drop that takes the score from 9,990 to 10,000 adds one life and its sound", () => {
+    const s = playing();
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    expect([s.scoreValue, s.lives]).toEqual([10_000, 4]);
+    expect(sounds).toContain("play:ticket");
+  });
+
+  test("passing 20,000 adds no second life", () => {
+    const s = playing();
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    s.scoreValue = 19_990;
+    eatUpTo(s, 2);
+    expect([s.scoreValue, s.lives]).toEqual([20_000, 4]);
+  });
+
+  test("a run started with the honey jar still gets the extra life", () => {
+    const s = new SweetSamSoftware(0, sweetSamAdvantages(["honeyJar"]));
+    step(s, 122);
+    expect(s.lives).toBe(4);
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    expect(s.lives).toBe(5);
+  });
+
+  test("a sleepy bee award that crosses 10,000 also grants the life", () => {
+    const s = playing();
+    s.scoreValue = 9_900;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.blueFrames = 300;
+    step(s);
+    expect([s.scoreValue, s.lives]).toEqual([10_100, 4]);
+    expect(sounds).toContain("play:ticket");
+  });
+
+  test("a flower that crosses 10,000 also grants the life", () => {
+    const s = playing();
+    s.scoreValue = 9_950;
+    s.flowerTicks = 100;
+    bearOnFlower(s);
+    step(s);
+    expect([s.scoreValue, s.lives]).toEqual([10_000 + flowerPoints(1) - 50, 4]);
   });
 });
