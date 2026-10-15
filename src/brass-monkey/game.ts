@@ -121,7 +121,8 @@ export class BrassMonkeySoftware implements FixedViewport {
     // Across from the lives.
     const lap = lapLabel(run.loop);
     drawText(screen, lap, left + cabinetPlayfieldWidth - 4 - textWidth(lap), top + 6, "orange");
-    if (run.lapBanner > 0) drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
+    if (run.lapBanner > 0 && run.phase === "play")
+      drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "over") drawTextCentered(screen, "GAME OVER", left + cabinetPlayfieldWidth / 2, top + 20);
   }

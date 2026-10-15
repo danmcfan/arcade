@@ -1,7 +1,6 @@
 // Brass Monkey shows its lap (#175): `bun run verify brass-monkey-loop`.
-// Replays the bot's seed-163 run (scripts/gen-brass-monkey-play.ts), started in the
-// cabinet, which
-// escapes once, through the `?debug` test hook, and writes a frame of the HUD
+// Replays the bot's seed-163 run (scripts/gen-brass-monkey-play.ts), which escapes
+// once, in the cabinet through the `?debug` test hook, and writes a frame of the HUD
 // on the first lap (LOOP 1), the escaped scene (LOOP 2 coming) and the start
 // of the second lap (LOOP 2 in the HUD and over the floor).
 // Files go to out/verify/brass-monkey-loop/.
@@ -54,6 +53,7 @@ await verify("brass-monkey-loop", (v) => {
 
   until("the first floor", (m) => m.phase === "play");
   advance(30);
+  if (bm(v.snapshot(isGameSnapshot))?.loop !== 0) throw new Error("the first lap is not loop 0");
   v.frame("1-hud-loop-1", 2);
   until("the escaped scene", (m) => m.phase === "escape");
   advance(90);
@@ -61,6 +61,7 @@ await verify("brass-monkey-loop", (v) => {
   const m = until("the second lap", (s) => s.phase === "play" && s.loop === 1);
   if (m.floor !== 0) throw new Error(`the second lap opened on floor ${m.floor}`);
   advance(30);
+  if (bm(v.snapshot(isGameSnapshot))?.loop !== 1) throw new Error("the new lap is not loop 1");
   v.frame("3-new-lap-loop-2", 2);
   v.assertNoErrors();
 });
