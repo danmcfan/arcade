@@ -5,15 +5,16 @@
 import { imageArcade, imageLogo } from "../engine/assets.ts";
 import { sub } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { blinkOn } from "../ui/blink.ts";
 import { logoGap, logoLetters, logoShadow, logoWord } from "../ui/glyphs.ts";
 import {
   dim,
   dimColour,
-  drawControls,
-  drawControlsPanel,
   drawHints,
   drawMenuItems,
   drawPausePanel,
+  drawStackedControls,
+  drawStackedControlsPanel,
   moveControl,
   type ControlRow,
   type Hint,
@@ -28,25 +29,25 @@ const background = "#1a1c2c";
 const centre = screenWidth / 2;
 
 export const introLines = [
-  "THIS ARCADE IS FULL OF LITTLE",
-  "GAMES. WALK UP TO A CABINET",
-  "TO SEE ITS NAME, THEN PRESS",
-  "SPACE TO PLAY IT.",
-  "BEAT YOUR HIGH SCORE!",
+  "WALK UP TO A CABINET TO SEE",
+  "ITS NAME, THEN INTERACT TO",
+  "PLAY IT. WIN TICKETS ON THE",
+  "MACHINES AND BUY PRIZES. BEAT",
+  "EVERY MACHINE'S HIGH SCORE",
+  "TO WIN!",
 ] as const;
 
 /** One row of the controls table: the keys, then what they do. */
 export const controls: readonly ControlRow[] = [
   moveControl,
-  { keys: [["SPACE"]], label: "PLAY / ACTION" },
-  { keys: [["ESC"]], label: "BACK / PAUSE" },
+  { keys: [["E"], ["SPACE"], ["ENTER"]], label: "PLAY / ACTION" },
+  { keys: [["Q"], ["ESC"], ["BACKSPACE"]], label: "BACK / PAUSE" },
 ];
 
 export const menuHints: readonly Hint[] = [
   { keys: ["↑", "↓"], label: "CHOOSE" },
   { keys: ["SPACE"], label: "OK" },
 ];
-export const backHints: readonly Hint[] = [{ keys: ["ESC"], label: "BACK" }];
 
 export const confirmLines = ["START A NEW GAME?", "THIS DELETES YOUR", "SAVED GAME."] as const;
 
@@ -74,13 +75,8 @@ export function draw(screen: Surface, t: Title): void {
     case "controls":
       t.hostedGame().draw(screen);
       dimHub(screen);
-      drawControlsPanel(screen, controls, 4, 40);
+      drawStackedControlsPanel(screen, controls, 4, 30);
   }
-}
-
-/** Blinking prompts show for 40 of every 60 ticks. */
-function blinkOn(t: Title): boolean {
-  return t.tick % 60 < 40;
 }
 
 function fillBackground(screen: Surface): void {
@@ -175,11 +171,10 @@ function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
   introLines.forEach((line, i) => {
-    drawTextCentered(screen, line, centre, 26 + i * 10, "white");
+    drawTextCentered(screen, line, centre, 24 + i * 10, "white");
   });
-  drawControls(screen, controls, 12, 104, 86);
-  if (blinkOn(t)) drawTextCentered(screen, "PRESS SPACE TO START", centre, 146, "yellow");
-  drawHints(screen, backHints, hintsTop, centre);
+  drawStackedControls(screen, controls, centre, 86);
+  if (blinkOn(t.tick)) drawTextCentered(screen, "INTERACT TO START", centre, 156, "yellow");
 }
 
 /** The Game's margin around the hub image, which stays transparent. */

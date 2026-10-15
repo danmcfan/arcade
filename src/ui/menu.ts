@@ -109,6 +109,36 @@ export function drawControls(
   });
 }
 
+const stackedRowHeight = 22;
+
+/** Height of a stacked controls table with `rows` rows. */
+export function stackedControlsHeight(rows: number): number {
+  return rows * stackedRowHeight - 2;
+}
+
+/** Width of a row's key caps, groups 4 px apart. */
+function keysWidth(row: ControlRow): number {
+  return (
+    row.keys.reduce((w, group, g) => w + (g > 0 ? 4 : 0) + group.reduce((gw, k) => gw + keyWidth(k) + 1, 0), 0) - 1
+  );
+}
+
+/**
+ * A controls table for rows too wide to sit beside their labels: each label,
+ * centred on `centre`, over its key caps. Its top edge is at `top`.
+ */
+export function drawStackedControls(screen: Surface, rows: readonly ControlRow[], centre: number, top: number): void {
+  rows.forEach((row, r) => {
+    const y = top + r * stackedRowHeight;
+    drawTextCentered(screen, row.label, centre, y, "white");
+    let x = centre - Math.trunc(keysWidth(row) / 2);
+    row.keys.forEach((group, g) => {
+      if (g > 0) x += 4;
+      for (const key of group) x += drawKey(screen, key, x, y + 9) + 1;
+    });
+  });
+}
+
 /** Back out of a panel: Space or Esc. */
 export const panelHints: readonly Hint[] = [{ keys: ["SPACE", "ESC"], label: "BACK" }];
 
@@ -175,5 +205,16 @@ export function drawControlsPanel(screen: Surface, rows: readonly ControlRow[], 
   drawPanel(screen, x, y, w, h);
   drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");
   drawControls(screen, rows, x + 8, x + 100, y + 20);
+  drawHints(screen, panelHints, y + h - keyHeight - 6, centre);
+}
+
+/** The CONTROLS panel around a stacked table (`drawStackedControls`), left edge at `x`, top at `y`. */
+export function drawStackedControlsPanel(screen: Surface, rows: readonly ControlRow[], x: number, y: number): void {
+  const w = controlsPanelWidth;
+  const h = stackedControlsHeight(rows.length) + 46;
+  const centre = x + w / 2;
+  drawPanel(screen, x, y, w, h);
+  drawTextCentered(screen, "CONTROLS", centre, y + 8, "yellow");
+  drawStackedControls(screen, rows, centre, y + 20);
   drawHints(screen, panelHints, y + h - keyHeight - 6, centre);
 }

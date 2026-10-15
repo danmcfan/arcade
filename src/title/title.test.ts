@@ -12,7 +12,7 @@ import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
 import { panelHints } from "../ui/menu.ts";
-import { backHints, confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
+import { confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
 import { Title } from "./title.ts";
 
@@ -879,7 +879,7 @@ function recordingSurface(): {
 
 describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
-    const hints = [...menuHints, ...backHints, ...panelHints];
+    const hints = [...menuHints, ...panelHints];
     const strings = [
       "CONTINUE",
       "NEW GAME",
@@ -893,7 +893,7 @@ describe("drawing", () => {
       ...controls.map((c) => c.label),
       ...hints.flatMap((h) => h.keys.concat(h.label)),
       "GAMES WITHIN A GAME",
-      "PRESS SPACE TO START",
+      "INTERACT TO START",
     ];
     for (const s of strings) {
       expect({ s, ok: canDraw(s) }).toEqual({ s, ok: true });
@@ -1009,11 +1009,40 @@ describe("drawing", () => {
     expect(all).toContain("HOW TO PLAY");
     expect(all).toContain("WALK UP TO A CABINET");
     for (const c of controls) expect(all).toContain(c.label);
-    expect(all).toContain("↑←↓→WASD");
-    expect(r.text("yellow")).toContain("PRESS SPACE TO START");
-    hold(t, {}, 45);
+    expect(all).toContain("BUY PRIZES");
+    expect(all).toContain("EVERY MACHINE");
+    expect(all).toContain("THEN INTERACT TO");
+    expect(all).not.toContain("SPACE TO");
+    expect(r.keys().map((k) => k.label)).toEqual([
+      "↑",
+      "←",
+      "↓",
+      "→",
+      "WASD",
+      "E",
+      "SPACE",
+      "ENTER",
+      "Q",
+      "ESC",
+      "BACKSPACE",
+    ]);
+    expect(r.text("yellow")).toContain("INTERACT TO START");
+    hold(t, {}, 95);
     const off = recordingSurface();
     t.draw(off.surface);
-    expect(off.text("yellow")).not.toContain("PRESS SPACE TO START");
+    expect(off.text("yellow")).not.toContain("INTERACT TO START");
+  });
+
+  test("nothing on the intro runs off the screen or into the prompt", () => {
+    const t = new Title();
+    tap(t, "space");
+    const r = recordingSurface();
+    t.draw(r.surface);
+    for (const k of r.keys()) {
+      expect(k.x).toBeGreaterThanOrEqual(0);
+      expect(k.x + k.w).toBeLessThanOrEqual(screenWidth);
+      expect(k.y + 11).toBeLessThan(154); // above INTERACT TO START
+    }
+    for (const g of r.glyphs) expect(g.x).toBeLessThan(screenWidth);
   });
 });

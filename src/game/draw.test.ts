@@ -334,13 +334,13 @@ describe("hub draw", () => {
     expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
-  test("while the melody plays, the scoreboard shows the cabinet's name and PRESS SPACE TO PLAY", () => {
+  test("while the melody plays, the scoreboard shows the cabinet's name and INTERACT TO PLAY", () => {
     const game = newGame();
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
     const { board, surface } = recordingSurface();
     game.draw(surface);
     expect(board("yellow")).toBe("SWEETSAM");
-    expect(board("white")).toBe("PRESSSPACETOPLAY");
+    expect(board("white")).toBe("INTERACTTOPLAY");
     expect(board("orange")).toBe("");
   });
 
