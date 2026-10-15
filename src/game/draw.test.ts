@@ -299,8 +299,8 @@ describe("hub draw", () => {
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
       ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // The jar left of the picture, the shoes right of it, the picture above the cabinet; + the buffer.
-      ["draw", "prizes", r.honeyJar.x, 0, 8, 8, 79, 49],
-      ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 105, 49],
+      ["draw", "prizes", r.honeyJar.x, 0, 8, 8, 80, 47],
+      ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 104, 47],
       ["draw", "prizes", r.sleepyBees.x, 0, 8, 8, 92, 41],
       ["draw", "player", 0, 24, 16, 24, 88, 96],
     ]);
@@ -340,7 +340,7 @@ describe("hub draw", () => {
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", prizeRects.runningShoes.x, 0, 8, 8, 105, 49],
+      ["draw", "prizes", prizeRects.runningShoes.x, 0, 8, 8, 104, 47],
     ]);
   });
 

@@ -84,7 +84,7 @@ function decoration(id: PrizeId, y = 0): Sprite {
  * Every prize, in the order the prize counter menu lists them, each hung on
  * the wall around its cabinet (`hang`): the 100-ticket prize at 12 o'clock.
  * Brass Monkey's arc runs 9 to 12, Firefly's 3 to 12, and Sweet Sam's
- * rainbow 10 to 2.
+ * rainbow 10:15 to 1:45.
  */
 export const prizes: readonly Prize[] = [
   {
@@ -95,7 +95,7 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("honeyJar"),
     greySprite: decoration("honeyJar", prizeGreyY),
-    ...hang("sweetSam", 10),
+    ...hang("sweetSam", 10.25),
   },
   {
     id: "runningShoes",
@@ -105,7 +105,7 @@ export const prizes: readonly Prize[] = [
     software: "sweetSam",
     sprite: decoration("runningShoes"),
     greySprite: decoration("runningShoes", prizeGreyY),
-    ...hang("sweetSam", 2),
+    ...hang("sweetSam", 1.75),
   },
   {
     id: "sleepyBees",

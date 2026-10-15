@@ -55,7 +55,7 @@ describe("prize catalogue", () => {
     }
   });
 
-  test("each cabinet's prizes hang on a clock face round its top: Brass Monkey 9 to 12, Firefly 3 to 12, Sweet Sam 10 to 2", () => {
+  test("each cabinet's prizes hang on a clock face round its top: Brass Monkey 9 to 12, Firefly 3 to 12, Sweet Sam 10:15 to 1:45", () => {
     const cabinets = newMachines(() => fakeSoftware());
     const placed = (title: ArcadeTitle): { id: string; dx: number; dy: number }[] => {
       const c = defined(cabinets.find((m) => m.title === title)).rect;
@@ -70,8 +70,8 @@ describe("prize catalogue", () => {
       { id: "pocketWatch", dx: -7, dy: -11 }, // 10:30
     ]);
     expect(placed("sweet")).toEqual([
-      { id: "honeyJar", dx: -9, dy: -7 }, // 10
-      { id: "runningShoes", dx: 17, dy: -7 }, // 2
+      { id: "honeyJar", dx: -8, dy: -9 }, // 10:15
+      { id: "runningShoes", dx: 16, dy: -9 }, // 1:45
       { id: "sleepyBees", dx: 4, dy: -15 }, // 12
     ]);
     expect(placed("firefly")).toEqual([
