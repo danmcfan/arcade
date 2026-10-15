@@ -4,9 +4,10 @@
 // out/verify/brass-monkey-art/.
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { repoRoot } from "../../test/parity/fixtures.ts";
 import { PNG } from "pngjs";
-import { brassMonkeyArtFiles, brassMonkeyImagesDir } from "../gen-brass-monkey-art.ts";
+import { brassMonkeyArtFiles } from "../gen-brass-monkey-art.ts";
 import { upscale, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
@@ -19,14 +20,15 @@ function check(ok: boolean, what: string, got?: unknown): void {
 
 function sheets(v: Verify): void {
   console.log("sprite sheets:");
-  for (const { file, render } of brassMonkeyArtFiles) {
+  for (const { file: path, render } of brassMonkeyArtFiles) {
+    const file = basename(path);
     const image = render();
     const png = PNG.sync.write(image);
     // A whole screen, such as the girder floor, needs only 2x to be seen.
     const k = image.width > 128 ? 2 : 8;
     writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, k));
     check(
-      Buffer.compare(readFileSync(join(brassMonkeyImagesDir, file)), png) === 0,
+      Buffer.compare(readFileSync(join(repoRoot, path)), png) === 0,
       `${file} is the committed file (written ${k}x)`,
     );
   }

@@ -10,12 +10,13 @@
 // screen's edge and the payout never paint over the cabinet outline. Files go to out/verify/firefly/.
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { repoRoot } from "../../test/parity/fixtures.ts";
 import { PNG } from "pngjs";
 import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
 import { ticketsFor } from "../../src/arcade/wallet.ts";
-import { fireflyArtFiles, fireflyImagesDir } from "../gen-firefly-art.ts";
+import { fireflyArtFiles } from "../gen-firefly-art.ts";
 import { decodeDataUrl } from "../browser.ts";
 import {
   cabinetInsetLeft,
@@ -193,12 +194,13 @@ function playToPayout(v: Verify): void {
 
 function sheets(v: Verify): void {
   console.log("new sprite sheets:");
-  for (const { file, render } of fireflyArtFiles.filter((f) =>
-    ["owl.png", "owl-hurt.png", "shot.png"].includes(f.file),
+  for (const { file: path, render } of fireflyArtFiles.filter((f) =>
+    ["owl.png", "owl-hurt.png", "shot.png"].includes(basename(f.file)),
   )) {
+    const file = basename(path);
     const png = PNG.sync.write(render());
     writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, 8));
-    check(Buffer.compare(readFileSync(join(fireflyImagesDir, file)), png) === 0, `${file} is the committed file (8x)`);
+    check(Buffer.compare(readFileSync(join(repoRoot, path)), png) === 0, `${file} is the committed file (8x)`);
   }
 }
 

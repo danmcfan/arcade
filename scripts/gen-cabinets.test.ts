@@ -1,17 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { PNG } from "pngjs";
 import { cabinetHeight, cabinetWidth } from "../src/ui/cabinet.ts";
-import {
-  bevelColour,
-  cabinetPath,
-  cabinets,
-  colours,
-  hexAt,
-  outline,
-  renderCabinet,
-  sourceCabinet,
-} from "./gen-cabinets.ts";
+import { bevelColour, cabinets, colours, hexAt, outline, renderCabinet, sourceCabinet } from "./gen-cabinets.ts";
 
 describe("cabinet sources (art/cabinets.json)", () => {
   test("each palette maps every colour of the Sweet Sam cabinet", () => {
@@ -50,13 +39,6 @@ describe("generated cabinet outlines", () => {
           if (got !== want) throw new Error(`${c.name}: (${x}, ${y}) is ${got}, want ${want}`);
         }
       }
-    });
-
-    test(`${c.name}: committed PNG matches (run \`bun run art\` after editing the sources)`, () => {
-      const onDisk = PNG.sync.read(readFileSync(cabinetPath(c)));
-      const fresh = renderCabinet(c);
-      expect([onDisk.width, onDisk.height]).toEqual([fresh.width, fresh.height]);
-      expect(Buffer.compare(onDisk.data, fresh.data)).toBe(0);
     });
   }
 });

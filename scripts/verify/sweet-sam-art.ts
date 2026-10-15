@@ -11,7 +11,7 @@
 // same replay as a video. Files go to out/verify/sweet-sam-art/.
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { PNG } from "pngjs";
 import type { InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
@@ -24,7 +24,7 @@ import {
   cabinetPlayfieldHeight,
   cabinetPlayfieldWidth,
 } from "../../src/ui/cabinet.ts";
-import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
+import { inputPath, loadScript, repoRoot } from "../../test/parity/fixtures.ts";
 import { decodeDataUrl, isRecord } from "../browser.ts";
 import { planCaptures } from "../capture-frames.ts";
 import { isWax, sweetSamArtFiles, sweetSamImagesDir } from "../gen-sweet-sam-art.ts";
@@ -39,7 +39,7 @@ function check(ok: boolean, what: string, got?: unknown): void {
   console.log(`  ok  ${what}`);
 }
 
-const sheet = (file: string): PNG => PNG.sync.read(readFileSync(join(sweetSamImagesDir, file)));
+const sheet = (file: string): PNG => PNG.sync.read(readFileSync(join(repoRoot, sweetSamImagesDir, file)));
 const maze = sheet("maze.png");
 const bear = sheet("bear.png");
 const bees = sheet("bees.png");
@@ -273,12 +273,13 @@ function play(v: Verify): void {
 
 function sheets(v: Verify): void {
   console.log("sprite sheets:");
-  for (const { file, render } of sweetSamArtFiles) {
+  for (const { file: path, render } of sweetSamArtFiles) {
+    const file = basename(path);
     const png = PNG.sync.write(render());
     const scale = file === "maze.png" ? 3 : 8;
     writeFileSync(join(v.dir, `sheet-${file}`), upscale(png, scale));
     check(
-      Buffer.compare(readFileSync(join(sweetSamImagesDir, file)), png) === 0,
+      Buffer.compare(readFileSync(join(repoRoot, path)), png) === 0,
       `${file} is the committed file (written ${scale}x)`,
     );
   }

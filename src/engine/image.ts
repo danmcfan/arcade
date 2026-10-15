@@ -2,8 +2,8 @@
 // pixels are attached later, in the browser only.
 
 /**
- * A loadable image. `width`/`height` are hard-coded in `assets.ts` (checked
- * against the PNG headers by a unit test) so layout and game code can read
+ * A loadable image. `width`/`height` are hard-coded in each image's declaration
+ * (scripts/image-outputs.ts; checked against the PNG headers by a unit test) so layout and game code can read
  * sizes under `bun test`, which has no DOM.
  *
  * `image` is `null` until `loadImages()` decodes it in the browser. It is
@@ -17,6 +17,11 @@ export interface ImageAsset {
   image: CanvasImageSource | null;
   /** Set by `makeSolid`: CSS fill colour of a generated solid image. */
   readonly solid?: string;
+}
+
+/** An image at `url`, `width`×`height`, not yet decoded. */
+export function imageAsset(url: string, width: number, height: number): ImageAsset {
+  return { url, width, height, image: null };
 }
 
 /**
