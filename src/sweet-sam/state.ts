@@ -42,6 +42,7 @@ import {
   distanceThreshold,
   findTarget,
   resetEnemy,
+  restartAfterDeath,
   restartRound,
   startTicks,
   updateBlue,
@@ -383,7 +384,7 @@ export class DeathWaitState implements State {
       this.s.pauseTicks--;
       return stateIDDeathWait;
     }
-    restartRound(this.s, true);
+    restartAfterDeath(this.s);
     return stateIDStart;
   }
 

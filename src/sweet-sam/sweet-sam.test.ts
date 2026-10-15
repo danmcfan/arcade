@@ -116,13 +116,21 @@ function run(seed: number, ticks: number): Tick[] {
 const trace = run(8, 6000);
 
 /** Snapshot keys added after the Go capture (#47: levels, the bonus flower, the death animation). */
-const keysSinceGo = ["level", "levelBannerTicks", "mazeFlash", "flower", "flowerPopup", "deathFrame"] as const;
+const keysSinceGo = [
+  "level",
+  "levelBannerTicks",
+  "mazeFlash",
+  "flower",
+  "flowerPopup",
+  "deathFrame",
+  "release",
+] as const;
 
 /** Go snapshot keys dropped since (#113: the cabinet outline has no joystick). */
 const keysDroppedSinceGo = ["joystick"] as const;
 
 /**
- * Bees without `dotMin`: since #155 only the preferred bee in the home counts eaten drops, where Go
+ * Bees without `dotMin` and `held`: since #155 only the preferred bee in the home counts eaten drops, where Go
  * counted them for every bee. The bees still move as in Go until the first sleepy tick.
  */
 function withoutDotMin(enemies: unknown): unknown {
@@ -131,6 +139,7 @@ function withoutDotMin(enemies: unknown): unknown {
     if (typeof e !== "object" || e === null) return e;
     const rest: Record<string, unknown> = { ...e };
     delete rest["dotMin"];
+    delete rest["held"];
     return rest;
   });
 }
@@ -253,6 +262,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "blue",
         "flashFrames",
         "flash",
+        "held",
         "home",
         "dotMin",
         "reverse",

@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { newEnemies } from "./entity.ts";
 import { levelValues } from "./levels.ts";
-import { afterDeath, dropEaten, newRelease, noDropEaten, type Release } from "./release.ts";
+import { afterDeath, dropEaten, newRelease, noDropEaten, waitingInHome, type Release } from "./release.ts";
 import type { Entity } from "./entity.ts";
 
 const level1 = levelValues(1);
 
 /** Bees still held in the home, by kind. */
 function waiting(bees: readonly Entity[]): (string | null)[] {
-  return bees.filter((e) => e.home && (e.dotMinimum > 0 || e.held)).map((e) => e.kind);
+  return bees.filter((e) => waitingInHome(e)).map((e) => e.kind);
 }
 
 function eat(r: Release, bees: Entity[], n: number): void {
@@ -48,6 +48,18 @@ describe("the global counter after a death", () => {
     eat(r, bees, 1);
     expect(waiting(bees)).toEqual([]);
     expect(r.globalDots).toBeNull();
+  });
+
+  test("the global counter stays on at 32 when orange was already out of the home", () => {
+    const r = newRelease();
+    const bees = afterDeath(r, newEnemies(level1.dotMinimums));
+    const orange = bees.find((e) => e.kind === "orange");
+    if (orange === undefined) throw new Error("no orange");
+    orange.home = false;
+    orange.held = false;
+    orange.dotMinimum = 0;
+    eat(r, bees, 32);
+    expect(r.globalDots).toBe(32);
   });
 
   test("the personal counters survive the death while the global counter runs", () => {

@@ -456,6 +456,26 @@ describe("bonus flower", () => {
     expect(flowerPoints(3)).toBeGreaterThan(flowerPoints(1));
   });
 
+  test("a level cleared after a death resets to personal counters with the new level's limits (#155)", () => {
+    const s = playing();
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    expect(s.release.globalDots).toBe(0);
+    step(s, 130);
+    expect(s.snapshot().state).toBe("PLAY");
+    s.items = s.items.map(() => null);
+    step(s, levelClearTicks + 2);
+    expect(s.level).toBe(2);
+    expect(s.release.globalDots).toBeNull();
+    expect(s.enemies.map((e) => e.held)).toEqual([false, false, false, false]);
+    expect(s.enemies.map((e) => e.dotMinimum)).toEqual([
+      0,
+      levelValues(2).dotMinimums.pink,
+      levelValues(2).dotMinimums.teal,
+      levelValues(2).dotMinimums.orange,
+    ]);
+  });
+
   test("after a lost life the bees wait on the global drop counter, keeping their personal ones (#155)", () => {
     const s = playing();
     eatUpTo(s, 10);

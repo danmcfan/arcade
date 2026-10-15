@@ -24,10 +24,15 @@ export function newRelease(): Release {
 
 const order = ["pink", "teal", "orange"] as const;
 
+/** Whether the bee is still waiting in the home for its release. */
+export function waitingInHome(e: Entity): boolean {
+  return e.home && (e.dotMinimum > 0 || e.held);
+}
+
 /** The first bee, in preferred order, still waiting in the home. */
 function preferred(bees: readonly Entity[]): Entity | undefined {
   for (const kind of order) {
-    const e = bees.find((b) => b.kind === kind && b.home && (b.dotMinimum > 0 || b.held));
+    const e = bees.find((b) => b.kind === kind && waitingInHome(b));
     if (e !== undefined) return e;
   }
   return undefined;
@@ -62,7 +67,8 @@ export function dropEaten(r: Release, bees: readonly Entity[]): void {
     const e = bees.find((b) => b.kind === kind);
     if (e !== undefined && e.home && r.globalDots === globalDotLimits[kind]) free(e);
   }
-  if (r.globalDots >= globalDotLimits.orange) {
+  const orange = bees.find((b) => b.kind === "orange");
+  if (r.globalDots === globalDotLimits.orange && orange?.home === true) {
     r.globalDots = null;
     for (const e of bees) e.held = false;
   }

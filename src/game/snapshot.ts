@@ -174,6 +174,8 @@ export interface SweetSamEnemySnapshot {
   home: boolean;
   /** `Entity.dotMinimum`. */
   dotMin: number;
+  /** `Entity.held`. */
+  held: boolean;
   /** `Entity.reverseDirection`. */
   reverse: boolean;
   /** `Entity.reverseTile` as `[x, y]`. */
@@ -222,6 +224,8 @@ export interface SweetSamSnapshot {
   mode: number;
   /** `SweetSamSoftware.modeTicks`. */
   modeTicks: number;
+  /** `SweetSamSoftware.release`. */
+  release: { globalDots: number | null; idleTicks: number };
   /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
   /** `SweetSamSoftware.startTicks`. */

@@ -273,6 +273,7 @@ describe("updatePosition", () => {
 
   test("waits while dotMinimum > 0", () => {
     const e = bee("teal");
+    e.home = true;
     e.dotMinimum = 3;
     const [x, y] = [e.x, e.y];
     updatePosition(e, corners);
