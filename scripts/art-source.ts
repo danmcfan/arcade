@@ -1,9 +1,11 @@
-// Write rows back into an art source (`bun run studio`'s save): find one
-// export's array literal, or one entry of it, and replace only that span, so
-// every other byte of the file stays as it was.
+// Round-trip an art source through Aseprite (`bun run pixel export` and
+// `import`): draw one export's frames as a PNG strip, read an edited strip back
+// as rows, and write rows into the export's array literal, replacing only that
+// span so every other byte of the file stays as it was.
 
-import type { Rows } from "./pixel-art.ts";
-import { isRows } from "./pixel.ts";
+import type { PNG } from "pngjs";
+import { sweetie } from "../src/ui/sweetie16.ts";
+import { blank, checkRows, paint, toRows, type Rows } from "./pixel-art.ts";
 
 /** Rows, or a list of frames of rows. */
 export type RowsValue = Rows | readonly Rows[];
@@ -23,11 +25,9 @@ export const artSources = [
   "src/sweet-sam/art.ts",
 ];
 
-/** One export the studio can open: its spec, and whether it is frames and glyph rows. */
-export interface StudioItem {
-  spec: string;
-  frames: boolean;
-  glyph: boolean;
+/** True for one image's rows. */
+export function isRows(v: unknown): v is Rows {
+  return Array.isArray(v) && v.length > 0 && v.every((r) => typeof r === "string");
 }
 
 /** True for a list of frames, false for one image. */
@@ -38,6 +38,86 @@ export function isFrames(v: unknown): v is readonly Rows[] {
 /** `v` as rows or frames, or undefined when it is neither. */
 export function asRowsValue(v: unknown): RowsValue | undefined {
   return isRows(v) || isFrames(v) ? v : undefined;
+}
+
+/** `value`'s frames: itself when it is one image. */
+function framesOf(value: RowsValue): readonly Rows[] {
+  return isFrames(value) ? value : [value];
+}
+
+/** Glyph rows draw in `#`; the font is the one source that uses them. They go to Aseprite in white. */
+function paletteFor(value: RowsValue): Record<string, string> {
+  return framesOf(value).some((rows) => rows.some((row) => row.includes("#"))) ? { "#": sweetie.w } : sweetie;
+}
+
+/** One export (or record entry) on a sheet: its name and its rows or frames. */
+export interface SheetEntry {
+  label: string;
+  value: RowsValue;
+}
+
+/** Where each entry sits on a sheet: one row of the sheet each, top to bottom, frames left to right. */
+function layout(entries: readonly SheetEntry[]): {
+  width: number;
+  height: number;
+  rows: { frames: number; w: number; h: number; y: number }[];
+} {
+  let y = 0;
+  const rows = entries.map(({ value }) => {
+    const frames = framesOf(value);
+    const row = { frames: frames.length, w: frames[0]?.[0]?.length ?? 0, h: frames[0]?.length ?? 0, y };
+    y += row.h;
+    return row;
+  });
+  return { width: Math.max(0, ...rows.map((r) => r.w * r.frames)), height: y, rows };
+}
+
+/** The entries as one PNG in Sweetie 16, for Aseprite to open: one row each, its frames left to right. */
+export function toSheet(entries: readonly SheetEntry[]): PNG {
+  const { width, height, rows } = layout(entries);
+  const png = blank(width, height);
+  entries.forEach(({ label, value }, e) => {
+    const { w, h, y } = rows[e] ?? { w: 0, h: 0, y: 0 };
+    framesOf(value).forEach((frame, i) => {
+      checkRows(`${label} frame ${i}`, frame, { w, h }, paletteFor(value));
+      paint(png, frame, paletteFor(value), i * w, y);
+    });
+  });
+  return png;
+}
+
+/**
+ * Each entry's rows read back from `png`, a sheet `toSheet` drew from the same
+ * entries and someone edited: each the same shape and size as before. Throws
+ * on a sheet size that does not match, a colour outside the palette, or a
+ * pixel drawn outside every frame.
+ */
+export function fromSheet(png: PNG, entries: readonly SheetEntry[]): RowsValue[] {
+  const { width, height, rows } = layout(entries);
+  if (png.width !== width || png.height !== height) {
+    throw new Error(
+      `the sheet for ${entries.map((e) => e.label).join(", ")} is ${width}x${height}; the PNG is ${png.width}x${png.height}`,
+    );
+  }
+  for (const { frames, w, h, y } of rows) {
+    for (let Y = y; Y < y + h; Y++) {
+      for (let X = frames * w; X < width; X++) {
+        if (png.data[(Y * width + X) * 4 + 3] !== 0)
+          throw new Error(`pixel (${X}, ${Y}) is outside every frame; leave it blank`);
+      }
+    }
+  }
+  return entries.map(({ label, value }, e) => {
+    const { w, h, y } = rows[e] ?? { w: 0, h: 0, y: 0 };
+    const after = framesOf(value).map((_, i) => {
+      try {
+        return toRows(png, paletteFor(value), i * w, y, w, h);
+      } catch (err: unknown) {
+        throw new Error(`${label} frame ${i}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      }
+    });
+    return isFrames(value) ? after : (after[0] ?? []);
+  });
 }
 
 const printWidth = 120;
@@ -157,23 +237,13 @@ function format(value: RowsValue, indent: number, column: number): string {
 /**
  * `source` with export `name` (its entry `key` when given) replaced by
  * `value`. Throws when the export or entry is missing, or is not written out
- * as rows (a call such as `mirrorX(...)` cannot be saved into).
+ * as rows (a call such as `mirrorX(...)` cannot be written into).
  */
 export function writeRows(source: string, name: string, key: string | undefined, value: RowsValue): string {
   const [start, end] = rowsSpan(source, name, key);
   const lineStart = source.lastIndexOf("\n", start) + 1;
   const indent = /^ */u.exec(source.slice(lineStart))?.[0].length ?? 0;
   return source.slice(0, start) + format(value, indent, start - lineStart) + source.slice(end);
-}
-
-/** Whether `writeRows` can save into export `name` (entry `key`): it is written out as rows. */
-export function isSaveable(source: string, name: string, key: string | undefined): boolean {
-  try {
-    rowsSpan(source, name, key);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** The [start, end) span of export `name`'s (entry `key`'s) rows literal; throws as `writeRows` says. */

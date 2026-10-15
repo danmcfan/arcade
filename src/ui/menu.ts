@@ -114,14 +114,23 @@ export const panelHints: readonly Hint[] = [{ keys: ["SPACE", "ESC"], label: "BA
 
 /** Width of the pause panels (hub and minigame), without a note. */
 export const pausePanelWidth = 120;
-/** Height of the pause panels (hub and minigame). */
-export const pausePanelHeight = 64;
+/** Height of a pause panel (hub and minigame) listing `items` items. */
+export function pausePanelHeight(items: number): number {
+  return 28 + items * 12;
+}
 
 /** A note drawn after a menu item, e.g. NO TICKETS beside QUIT GAME. */
 export interface ItemNote {
   item: number;
   text: string;
   ink: Ink;
+}
+
+/** The note for the first item that has one, drawn orange (QUIT GAME's NO TICKETS). */
+export function pauseNote(items: readonly { note?: string }[]): ItemNote | undefined {
+  const item = items.findIndex((i) => i.note !== undefined);
+  const text = items[item]?.note;
+  return text === undefined ? undefined : { item, text, ink: "orange" };
 }
 
 /**
@@ -139,7 +148,7 @@ export function drawPausePanel(
 ): void {
   const extra = note ? textWidth(note.text) + 12 : 0;
   const w = pausePanelWidth + extra;
-  drawPanel(screen, centre - w / 2, y, w, pausePanelHeight);
+  drawPanel(screen, centre - w / 2, y, w, pausePanelHeight(items.length));
   drawTextCentered(screen, "PAUSED", centre, y + 8, "yellow");
   const listCentre = centre - extra / 2;
   drawMenuItems(screen, items, cursor, y + 22, tick, listCentre);

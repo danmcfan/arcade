@@ -14,7 +14,7 @@ import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
 import { panelHints } from "../ui/menu.ts";
 import { backHints, confirmLines, controls, introLines, menuHints, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
-import { confirmMenu, pauseMenu, Title, titleMenu } from "./title.ts";
+import { Title } from "./title.ts";
 
 const press = (k: keyof Input): Input => ({ ...NO_INPUT, [k]: true });
 
@@ -71,7 +71,6 @@ function atCabinet(): SaveData {
 describe("title menu", () => {
   test("without a save, only New game is listed and selected", () => {
     const t = new Title();
-    expect(titleMenu).toEqual(["CONTINUE", "NEW GAME"]);
     expect(t.snapshot()).toMatchObject({
       phase: "menu",
       items: ["NEW GAME"],
@@ -127,7 +126,7 @@ describe("new game", () => {
     const t = new Title({ store });
     tap(t, "down"); // Continue -> New game
     tap(t, "space");
-    expect(t.snapshot()).toMatchObject({ phase: "confirm", items: [...confirmMenu], cursor: 0 });
+    expect(t.snapshot()).toMatchObject({ phase: "confirm", items: ["NO", "YES"], cursor: 0 });
     tap(t, "space");
     expect(t.snapshot()).toMatchObject({ phase: "menu", cursor: 1 });
     tap(t, "space");
@@ -272,7 +271,7 @@ describe("pause menu", () => {
     hold(t, { left: true }, 10);
     const before = game(t);
     tap(t, "escape");
-    expect(t.snapshot()).toMatchObject({ phase: "paused", items: [...pauseMenu], cursor: 0 });
+    expect(t.snapshot()).toMatchObject({ phase: "paused", items: ["RESUME", "CONTROLS", "QUIT TO MENU"], cursor: 0 });
     hold(t, { left: true }, 10);
     expect(game(t).tick).toBe(before.tick);
     expect(game(t).arcade.player.x).toBe(before.arcade.player.x);
@@ -880,10 +879,14 @@ describe("drawing", () => {
   test("every UI string can be drawn and fits on the screen", () => {
     const hints = [...menuHints, ...backHints, ...panelHints];
     const strings = [
-      ...titleMenu,
-      ...confirmMenu,
+      "CONTINUE",
+      "NEW GAME",
+      "NO",
+      "YES",
       ...confirmLines,
-      ...pauseMenu,
+      "RESUME",
+      "CONTROLS",
+      "QUIT TO MENU",
       ...introLines,
       ...controls.map((c) => c.label),
       ...hints.flatMap((h) => h.keys.concat(h.label)),
