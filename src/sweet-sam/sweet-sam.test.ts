@@ -116,10 +116,33 @@ function run(seed: number, ticks: number): Tick[] {
 const trace = run(8, 6000);
 
 /** Snapshot keys added after the Go capture (#47: levels, the bonus flower, the death animation). */
-const keysSinceGo = ["level", "levelBannerTicks", "mazeFlash", "flower", "flowerPopup", "deathFrame"] as const;
+const keysSinceGo = [
+  "level",
+  "levelBannerTicks",
+  "mazeFlash",
+  "flower",
+  "flowerPopup",
+  "deathFrame",
+  "release",
+] as const;
 
 /** Go snapshot keys dropped since (#113: the cabinet outline has no joystick). */
 const keysDroppedSinceGo = ["joystick"] as const;
+
+/**
+ * Bees without `dotMin` and `held`: since #155 only the preferred bee in the home counts eaten drops, where Go
+ * counted them for every bee. The bees still move as in Go until the first sleepy tick.
+ */
+function withoutDotMin(enemies: unknown): unknown {
+  if (!Array.isArray(enemies)) return enemies;
+  return enemies.map((e: unknown) => {
+    if (typeof e !== "object" || e === null) return e;
+    const rest: Record<string, unknown> = { ...e };
+    delete rest["dotMin"];
+    delete rest["held"];
+    return rest;
+  });
+}
 
 /** A Go reference snapshot without the keys dropped since. */
 function withoutDropped(want: object): Record<string, unknown> {
@@ -128,6 +151,7 @@ function withoutDropped(want: object): Record<string, unknown> {
   if (typeof sw === "object" && sw !== null) {
     const kept: Record<string, unknown> = { ...sw };
     for (const k of keysDroppedSinceGo) delete kept[k];
+    kept["enemies"] = withoutDotMin(kept["enemies"]);
     out["sw"] = kept;
   }
   return out;
@@ -141,6 +165,7 @@ function goView(t: Tick | undefined): unknown {
   if (t === undefined) return undefined;
   const sw: Record<string, unknown> = { ...t.sw };
   for (const k of keysSinceGo) delete sw[k];
+  sw["enemies"] = withoutDotMin(sw["enemies"]);
   const sounds = t.sounds.flatMap((e) => {
     const [action, name] = e.split(":");
     const goName = goSoundNames[name ?? ""];
@@ -186,14 +211,14 @@ describe("Sweet Sam self-check against the Go reference (seed 8, 6000 ticks)", (
 });
 
 describe("Sweet Sam end state of the seed 8 run (TypeScript regression lock)", () => {
-  // The Go end state no longer applies (#152); this pins what the TypeScript run reaches.
+  // The Go end state no longer applies (#152, #155); this pins what the TypeScript run reaches.
   test("rng, score and items hash at tick 6000", () => {
     const last = trace.at(-1);
     expect({
       rng: last?.rng,
       score: last?.sw.score,
       itemsHash: last?.sw.itemsHash,
-    }).toEqual<unknown>({ rng: 2545826085, score: 2110, itemsHash: 3988072839 });
+    }).toEqual<unknown>({ rng: 1338519642, score: 3490, itemsHash: 3752454137 });
   });
 });
 
@@ -237,6 +262,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "blue",
         "flashFrames",
         "flash",
+        "held",
         "home",
         "dotMin",
         "reverse",

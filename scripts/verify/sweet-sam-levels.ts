@@ -112,18 +112,8 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 1049,
-    name: "05-flower-eaten",
-    shows: "the flower eaten: 100 (Pac-Man's cherry points) in the pixel font where it stood",
-    expect: (s, sounds) => {
-      check(s.flowerPopup?.points === flowerPoints(1), "it scores level 1's points", s.flowerPopup);
-      check(s.flower.ticks === 0, "and is gone");
-      check(sounds.includes("play:sweetFlower"), "with its sparkle", sounds);
-    },
-  },
-  {
-    tick: 1189,
-    name: "06-sleepy-bee-eaten",
+    tick: 979,
+    name: "05-sleepy-bee-eaten",
     shows: "a sleepy bee eaten: its points and a burst",
     expect: (s, sounds) => {
       check(s.state === "PAUSE" && s.popups.length > 0, "the bee's points float above it");
@@ -131,7 +121,17 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3247,
+    tick: 2850,
+    name: "06-flower-eaten",
+    shows: "the second flower eaten: 100 (Pac-Man's cherry points) in the pixel font where it stood",
+    expect: (s, sounds) => {
+      check(s.flowerPopup?.points === flowerPoints(1), "it scores level 1's points", s.flowerPopup);
+      check(s.flower.ticks === 0, "and is gone");
+      check(sounds.includes("play:sweetFlower"), "with its sparkle", sounds);
+    },
+  },
+  {
+    tick: 3757,
     name: "07-level-clear-flash",
     shows: "the last honey drop eaten: everything stops, the bees leave and the maze flashes",
     expect: (s, sounds) => {
@@ -141,7 +141,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3362,
+    tick: 3872,
     name: "08-level-2-banner",
     shows: "LEVEL 2 before READY, the maze full again, everyone home",
     expect: (s) => {
@@ -150,7 +150,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3562,
+    tick: 4072,
     name: "09-level-2-faster-bees",
     shows: "level 2 playing: the bees fly faster than on level 1",
     expect: (s) => {
@@ -166,7 +166,7 @@ const levelStops: Stop[] = [
 
 const deathStops: Stop[] = [
   {
-    tick: 2162,
+    tick: 4852,
     name: "10-life-lost-dazed",
     shows: "a bee catches the bear: dazed",
     expect: (s, sounds) => {
@@ -175,7 +175,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 2205,
+    tick: 4895,
     name: "11-life-lost-sinking",
     shows: "the bear sinking",
     expect: (s) => {
@@ -183,7 +183,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 2275,
+    tick: 4965,
     name: "12-life-lost-puddle",
     shows: "a puddle with stars, still inside the 2 s death wait",
     expect: (s) => {
@@ -191,7 +191,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 2282,
+    tick: 4972,
     name: "13-after-death",
     shows: "the round restarts on time: 2 s after the catch",
     expect: (s) => {
@@ -218,9 +218,10 @@ function video(v: Verify): void {
     "level-1-flower-and-clear",
     () => {
       loadFixture(v, levels);
-      replayLive(v, levels, 0, 1200);
-      skipTo(v, levels, 1200, 3112);
-      replayLive(v, levels, 3112, 3662);
+      skipTo(v, levels, 0, 2200);
+      replayLive(v, levels, 2200, 2900);
+      skipTo(v, levels, 2900, 3620);
+      replayLive(v, levels, 3620, 4150);
       v.wait(500);
     },
     { scene: "game" },
@@ -230,8 +231,8 @@ function video(v: Verify): void {
     "life-lost",
     () => {
       loadFixture(v, clear);
-      skipTo(v, clear, 0, 2105);
-      replayLive(v, clear, 2105, 2345);
+      skipTo(v, clear, 0, 4795);
+      replayLive(v, clear, 4795, 5035);
       v.wait(500);
     },
     { scene: "game" },

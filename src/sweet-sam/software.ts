@@ -1,6 +1,7 @@
 // Port of the Go Sweet Sam minigame's software.go (docs/port-notes.md gives its
 // old Go name). Its constants live in ./constants.ts.
 
+import { newRelease, type Release } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -55,6 +56,9 @@ export class SweetSamSoftware implements FixedViewport {
   enemies: Entity[] = [];
   items: (Entity | null)[] = [];
   readonly corners: Entity[] = newCorners();
+
+  /** Which bees may leave the home (release.ts). */
+  release: Release = newRelease();
 
   modeIndex = 0;
   modeCurrent: Mode = modeScatter;
@@ -218,6 +222,7 @@ export class SweetSamSoftware implements FixedViewport {
         flash: e.flash,
         home: e.home,
         dotMin: e.dotMinimum,
+        held: e.held,
         reverse: e.reverseDirection,
         reverseTile: [e.reverseTile.x, e.reverseTile.y],
       })),
@@ -229,6 +234,7 @@ export class SweetSamSoftware implements FixedViewport {
       modeIndex: this.modeIndex,
       mode: this.modeCurrent,
       modeTicks: this.modeTicks,
+      release: { globalDots: this.release.globalDots, idleTicks: this.release.idleTicks },
       pauseTicks: this.pauseTicks,
       startTicks: this.startTicks,
       respawnBlinkRemaining: this.startState.respawnBlinkRemaining,
