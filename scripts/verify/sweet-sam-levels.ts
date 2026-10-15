@@ -11,7 +11,7 @@
 import type { SoundEvent } from "../../src/engine/audio.ts";
 import type { InputScript } from "../../src/game/script.ts";
 import type { GameSnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
-import { flowerPoints } from "../../src/sweet-sam/flower.ts";
+import { flowerPoints, flowerStayMax } from "../../src/sweet-sam/flower.ts";
 import { levelValues } from "../../src/sweet-sam/levels.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { isRecord } from "../browser.ts";
@@ -71,7 +71,7 @@ const levelStops: Stop[] = [
   {
     tick: 1,
     name: "01-level-1-start",
-    shows: "level 1: READY!, L1 at the bottom right, the start jingle",
+    shows: "level 1: READY!, the violet in the level counter at the bottom right, the start jingle",
     expect: (s, sounds) => {
       check(s.level === 1 && s.state === "START" && s.levelBannerTicks === 0, "level 1 starts with READY, no banner");
       check(sounds.includes("play:sweetStart"), "the start jingle plays", sounds);
@@ -108,12 +108,13 @@ const levelStops: Stop[] = [
     shows: "the bonus flower below the bee home",
     expect: (s) => {
       check(s.flower.shown === 1 && s.flower.ticks > 0, "the first flower is out", s.flower);
+      check(s.flower.ticks <= flowerStayMax, "for at most 10 s", s.flower);
     },
   },
   {
     tick: 1049,
     name: "05-flower-eaten",
-    shows: "the flower eaten: 300 in the pixel font where it stood",
+    shows: "the flower eaten: 100 (Pac-Man's cherry points) in the pixel font where it stood",
     expect: (s, sounds) => {
       check(s.flowerPopup?.points === flowerPoints(1), "it scores level 1's points", s.flowerPopup);
       check(s.flower.ticks === 0, "and is gone");
