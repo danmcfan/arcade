@@ -10,6 +10,7 @@ import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
 import type { Software } from "../game/software.ts";
 import { updateScreen } from "./screen.ts";
+import type { Faced } from "./ticker.ts";
 import { blocked, type State } from "./state.ts";
 
 /** What a hub tick asks of the Game: start a cabinet's software, or open the prize counter menu. */
@@ -46,7 +47,7 @@ export function update(s: State, i: Input): HubEvent {
     stopMelody(s);
 
     event = { run: s.wallet.startRun(), start: machine.newSoftware(s.wallet.highScore, s.wallet.prizes) };
-  } else if (i.space && s.counters.some((r) => facing(s.player, r))) {
+  } else if (i.space && facesCounter(s)) {
     event = { openCounter: true };
   }
 
@@ -60,6 +61,17 @@ function stopMelody(s: State): void {
   if (s.imageTitle === null) return;
   attractSounds[s.imageTitle].pause();
   attractSounds[s.imageTitle].rewind();
+}
+
+/** The player faces the prize desk, so the action key opens the prize counter. */
+function facesCounter(s: State): boolean {
+  return s.counters.some((r) => facing(s.player, r));
+}
+
+/** What the LED scoreboard names (src/arcade/ticker.ts): the cabinet whose screen is on, or the prize desk. */
+export function faced(s: State): Faced | null {
+  if (s.melodyPlaying) return s.imageTitle;
+  return facesCounter(s) ? "prizeCounter" : null;
 }
 
 /** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */
