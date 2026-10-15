@@ -67,7 +67,7 @@ export const tickerInks = {
   orange: "o",
   /** Counts. */
   yellow: "y",
-  /** PRESS SPACE TO PLAY, and INTERACT. */
+  /** INTERACT TO PLAY, and INTERACT. */
   white: "w",
   /** The cabinets' names, in their lit colours (src/ui/hubArt.ts `cabinetColours`). */
   green: "g",

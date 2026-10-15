@@ -19,7 +19,7 @@ import { fireflyAdvantages } from "../firefly/advantages.ts";
 import { newFireflySoftware } from "../firefly/game.ts";
 import { sweetSamAdvantages } from "../sweet-sam/advantages.ts";
 import { SweetSamSoftware } from "../sweet-sam/software.ts";
-import { moveControl, type ControlRow } from "../ui/menu.ts";
+import { standardControls, type ControlRow } from "../ui/menu.ts";
 import type { TickerInk } from "../ui/tickerArt.ts";
 import type { ArcadeTitle } from "./snapshot.ts";
 import type { Software, SoftwareName } from "./software.ts";
@@ -51,13 +51,6 @@ export interface Minigame {
   /** A new run; a `FixedViewport` (its cabinet outline, drawn with `buffer` 0). */
   create(start: MinigameStart): Software;
 }
-
-/** For now every minigame has the same three rows. */
-const standardControls: readonly ControlRow[] = [
-  moveControl,
-  { keys: [["SPACE"]], label: "ACTION" },
-  { keys: [["ESC"]], label: "PAUSE" },
-];
 
 /**
  * Cabinets are 40 px apart (Go had them 24 apart, at tiles 6, 9 and 12), so

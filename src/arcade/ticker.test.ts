@@ -70,11 +70,11 @@ describe("LED scoreboard", () => {
     }
   });
 
-  test("facing a cabinet, it shows the cabinet's name in its colour and PRESS SPACE TO PLAY", () => {
+  test("facing a cabinet, it shows the cabinet's name in its colour and INTERACT TO PLAY", () => {
     for (const { title, titleCard: t } of minigames) {
       const v = { tokens: 3, tickets: 1250, faced: title };
       expect(text(v, t.ink)).toBe(t.text.replaceAll(" ", ""));
-      expect(text(v, "white")).toBe("PRESSSPACETOPLAY");
+      expect(text(v, "white")).toBe("INTERACTTOPLAY");
       onBoard(v);
     }
   });

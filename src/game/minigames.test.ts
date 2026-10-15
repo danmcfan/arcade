@@ -25,11 +25,11 @@ describe("minigames", () => {
       expect([m.cabinetStrip.w, m.cabinetStrip.h]).toEqual([cabinetWidth, cabinetHeight]);
     });
 
-    test(`${m.name}: its title card fits the scoreboard beside PRESS SPACE TO PLAY`, () => {
+    test(`${m.name}: its title card fits the scoreboard beside INTERACT TO PLAY`, () => {
       expect(m.titleCard.text.length).toBeGreaterThan(0);
       const letters = tickerLetters({ tokens: 0, tickets: 0, faced: m.title });
       expect(letters.some((l) => l.ink === m.titleCard.ink)).toBe(true);
-      expect(tickerLeft + tickerTextWidth(`${m.titleCard.text}  PRESS SPACE TO PLAY`)).toBeLessThanOrEqual(tickerRight);
+      expect(tickerLeft + tickerTextWidth(`${m.titleCard.text}  INTERACT TO PLAY`)).toBeLessThanOrEqual(tickerRight);
     });
 
     test(`${m.name}: builds its own software, sized to its cabinet, with controls`, () => {

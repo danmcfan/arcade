@@ -1,6 +1,6 @@
 // The hub's LED scoreboard (#72): the token and ticket counts as part of the
 // room, on the board under the ceiling's neon tube. While a cabinet's screen
-// is on, the board shows that cabinet's name and PRESS SPACE TO PLAY instead;
+// is on, the board shows that cabinet's name and INTERACT TO PLAY instead;
 // facing the prize desk, it shows PRIZE COUNTER and INTERACT (#136).
 // The board itself is in the room image; this lays out and draws its lit
 // letters, and lights its marquee's bulbs in a chase (#92)
@@ -46,7 +46,7 @@ export interface TickerView {
 export const tokensLabel = "TOKENS";
 export const ticketsLabel = "TICKETS";
 export const freePlay = "FREE PLAY";
-export const pressSpace = "PRESS SPACE TO PLAY";
+export const playPrompt = "INTERACT TO PLAY";
 export const prizeCounterLabel = "PRIZE COUNTER";
 export const interactPrompt = "INTERACT";
 /** The largest count the board shows; more reads as this. */
@@ -87,7 +87,7 @@ export function tickerLetters(v: TickerView): TickerGlyph[] {
   if (v.faced === "prizeCounter") return named(prizeCounterLabel, "orange", interactPrompt);
   if (v.faced !== null) {
     const t = minigameTitled(v.faced).titleCard;
-    return named(t.text, t.ink, pressSpace);
+    return named(t.text, t.ink, playPrompt);
   }
   const tickets = shown(v.tickets);
   return [

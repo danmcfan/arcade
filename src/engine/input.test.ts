@@ -40,6 +40,10 @@ describe("readInput", () => {
     expect(readInput(new Set(["Backspace"]), new Set())).toEqual(held({ escape: true }));
   });
 
+  test("Q works as Escape", () => {
+    expect(readInput(new Set(["KeyQ"]), new Set())).toEqual(held({ escape: true }));
+  });
+
   test("shiftP needs Shift held and P just pressed this tick", () => {
     expect(readInput(new Set(["ShiftLeft", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);
     expect(readInput(new Set(["ShiftRight", "KeyP"]), new Set(["KeyP"])).shiftP).toBe(true);

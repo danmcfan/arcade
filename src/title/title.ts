@@ -170,7 +170,7 @@ export class Title implements Scene {
         this.stepGame(i, edges.escape);
         break;
       case "controls":
-        if (edges.space || edges.escape) {
+        if (edges.escape) {
           sounds.select.blip();
           this.phase = "paused";
         }
