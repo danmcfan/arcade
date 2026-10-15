@@ -136,5 +136,7 @@ export const dyingTicks = 90;
 export const clearTicks = 120;
 /** Ticks of the escaped scene after the last floor: about 3 s. */
 export const escapeTicks = 180;
+/** Ticks a new lap shows its number over the first floor. */
+export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
 export const throwTicks = 20;
