@@ -131,7 +131,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3585,
+    tick: 3247,
     name: "07-level-clear-flash",
     shows: "the last honey drop eaten: everything stops, the bees leave and the maze flashes",
     expect: (s, sounds) => {
@@ -141,7 +141,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3700,
+    tick: 3362,
     name: "08-level-2-banner",
     shows: "LEVEL 2 before READY, the maze full again, everyone home",
     expect: (s) => {
@@ -150,7 +150,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 3900,
+    tick: 3562,
     name: "09-level-2-faster-bees",
     shows: "level 2 playing: the bees fly faster than on level 1",
     expect: (s) => {
@@ -166,16 +166,16 @@ const levelStops: Stop[] = [
 
 const deathStops: Stop[] = [
   {
-    tick: 7997,
+    tick: 2162,
     name: "10-life-lost-dazed",
-    shows: "a bee catches the bear on level 2: dazed",
+    shows: "a bee catches the bear: dazed",
     expect: (s, sounds) => {
       check(s.state === "DEATHWAIT" && s.deathFrame === 0, "the death animation starts dazed", s.deathFrame);
       check(sounds.includes("play:sweetDeath"), "the lost-life slide plays", sounds);
     },
   },
   {
-    tick: 8040,
+    tick: 2205,
     name: "11-life-lost-sinking",
     shows: "the bear sinking",
     expect: (s) => {
@@ -183,7 +183,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 8110,
+    tick: 2275,
     name: "12-life-lost-puddle",
     shows: "a puddle with stars, still inside the 2 s death wait",
     expect: (s) => {
@@ -191,7 +191,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 8117,
+    tick: 2282,
     name: "13-after-death",
     shows: "the round restarts on time: 2 s after the catch",
     expect: (s) => {
@@ -219,8 +219,8 @@ function video(v: Verify): void {
     () => {
       loadFixture(v, levels);
       replayLive(v, levels, 0, 1200);
-      skipTo(v, levels, 1200, 3450);
-      replayLive(v, levels, 3450, 4000);
+      skipTo(v, levels, 1200, 3112);
+      replayLive(v, levels, 3112, 3662);
       v.wait(500);
     },
     { scene: "game" },
@@ -230,8 +230,8 @@ function video(v: Verify): void {
     "life-lost",
     () => {
       loadFixture(v, clear);
-      skipTo(v, clear, 0, 7940);
-      replayLive(v, clear, 7940, 8180);
+      skipTo(v, clear, 0, 2105);
+      replayLive(v, clear, 2105, 2345);
       v.wait(500);
     },
     { scene: "game" },

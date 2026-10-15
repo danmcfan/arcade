@@ -157,6 +157,33 @@ describe("PLAY modes", () => {
     expect([snap.modeIndex, snap.mode, snap.modeTicks]).toEqual([1, 0, 419]);
     expect(snap.enemies.every((e) => e.reverse)).toBe(true);
   });
+
+  test("the scatter/chase timer holds while any bee is sleepy", () => {
+    const s = playing();
+    const before = s.modeTicks;
+    enemy(s, 3).blueFrames = 60;
+    step(s, 50);
+    expect(enemy(s, 3).blueFrames).toBeGreaterThan(0);
+    expect([s.modeTicks, s.modeIndex]).toEqual([before, 1]);
+
+    // Not vacuous: with no sleepy bee the same 50 ticks run the timer down.
+    const awake = playing();
+    step(awake, 50);
+    expect(awake.modeTicks).toBe(before - 50);
+  });
+
+  test("after sleepy time the timer resumes from where it held and the sequence continues", () => {
+    const s = playing();
+    s.modeTicks = 5;
+    for (const e of s.enemies) e.blueFrames = 20;
+    step(s, 20);
+    expect(s.enemies.every((e) => e.blueFrames === 0)).toBe(true);
+    expect([s.modeTicks, s.modeIndex, s.modeCurrent]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode ?? -1]);
+    step(s, 2);
+    expect(s.modeTicks).toBe(3);
+    step(s, 4);
+    expect([s.modeIndex, s.modeCurrent]).toEqual([2, levelValues(1).modeSequence[1]?.mode ?? -1]);
+  });
 });
 
 describe("velocities", () => {
