@@ -365,6 +365,35 @@ describe("lives", () => {
 });
 
 describe("stages", () => {
+  test("on the last life, a rammed last enemy does not start the next stage: the run ends on stage 1", () => {
+    const { f } = withOnly("wasp", { x: 112, y: playerY });
+    f.lives = 1;
+    f.update(NO_INPUT);
+    run(f, respawnTicks + hitEffectTicks);
+    expect([f.over, f.stage]).toEqual([true, 1]);
+  });
+
+  test("with lives left, a rammed last enemy starts the next stage once the firefly is back", () => {
+    const { f } = withOnly("wasp", { x: 112, y: playerY });
+    f.lives = 2;
+    f.update(NO_INPUT);
+    run(f, respawnTicks - 2);
+    expect([f.respawn, f.stage]).toEqual([1, 1]);
+    f.update(NO_INPUT);
+    expect([f.respawn, f.stage, f.over]).toEqual([0, 2, false]);
+  });
+
+  test("on the last life, shooting the last enemy on the tick the firefly is hit still ends the run on stage 1", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.lives = 1;
+    sparkAt(f, 100, 100);
+    f.shots.push({ x: 112, y: playerY - 3, dx: 0, dy: 0 });
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(0);
+    run(f, respawnTicks + hitEffectTicks);
+    expect([f.over, f.stage]).toEqual([true, 1]);
+  });
+
   test("when the last enemy is dead and its hit effect has played, the next stage starts", () => {
     const { f } = withOnly("moth", { x: 100, y: 100 });
     sparkAt(f, 100, 100);

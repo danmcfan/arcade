@@ -170,7 +170,8 @@ export class FireflySoftware implements FixedViewport {
     this.endHitEffects();
     this.countDownRespawn();
 
-    if (this.enemies.length === 0) this.nextStage();
+    // A cleared field waits for the firefly's burst: with no lives left the run ends on this stage.
+    if (this.enemies.length === 0 && this.respawn === 0 && !this.over) this.nextStage();
   }
 
   /** The formation's x offset this tick. */
