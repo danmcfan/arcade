@@ -4,7 +4,6 @@
 import { imageAsset } from "./image.ts";
 
 import fontUrl from "../assets/images/font.png";
-import logoUrl from "../assets/images/logo.png";
 import titleLogoUrl from "../assets/images/title-logo.png";
 import iconsUrl from "../assets/images/icons.png";
 import tickerUrl from "../assets/images/ticker.png";
@@ -50,7 +49,6 @@ import sweetSamFlowerUrl from "../assets/images/sweet-sam/flower.png";
 
 export const images = {
   font: imageAsset(fontUrl, 128, 224),
-  logo: imageAsset(logoUrl, 100, 17),
   titleLogo: imageAsset(titleLogoUrl, 192, 72),
   icons: imageAsset(iconsUrl, 23, 9),
   ticker: imageAsset(tickerUrl, 111, 25),

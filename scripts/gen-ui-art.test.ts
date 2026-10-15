@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { glyphHeight, glyphs, inks, logoLetters, titleLetters } from "../src/ui/glyphs.ts";
+import { glyphHeight, glyphs, inks, titleLetters } from "../src/ui/glyphs.ts";
 import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
@@ -46,16 +46,6 @@ describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
     for (const [ch, rows] of Object.entries(glyphs))
       checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
-  });
-
-  test("every logo letter is 14x15", () => {
-    for (const [ch, rows] of Object.entries(logoLetters)) {
-      expect({ ch, rows: rows.length, widths: [...new Set(rows.map((r) => r.length))] }).toEqual({
-        ch,
-        rows: 15,
-        widths: [14],
-      });
-    }
   });
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
