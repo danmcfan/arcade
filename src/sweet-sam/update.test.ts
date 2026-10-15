@@ -70,10 +70,10 @@ describe("findTarget", () => {
     expect(findTarget(nth(enemies, 0), enemies, player, modeChase)).toEqual({ x: 14, y: 26 });
   });
 
-  test("chase: pink targets 4 tiles ahead of the player", () => {
+  test("chase: pink targets 4 tiles ahead of the player, and 4 left too when facing up", () => {
     const pink = nth(enemies, 1);
     const cases: [Direction, Tile][] = [
-      ["UP", { x: 14, y: 22 }],
+      ["UP", { x: 10, y: 22 }],
       ["DOWN", { x: 14, y: 30 }],
       ["LEFT", { x: 10, y: 26 }],
       ["RIGHT", { x: 18, y: 26 }],
@@ -85,14 +85,23 @@ describe("findTarget", () => {
     }
   });
 
-  test("chase: teal doubles the vector from red to 2 tiles ahead of the player", () => {
+  test("chase: teal doubles the vector from red to 2 tiles ahead of the player, and 2 left too when facing up", () => {
     const teal = nth(enemies, 2);
     // ahead = (12, 26); red = (14, 14); target = ahead + (ahead - red) = (10, 38)
     expect(findTarget(teal, enemies, player, modeChase)).toEqual({ x: 10, y: 38 });
     const up = newPlayer();
     up.direction = "UP";
-    // ahead = (14, 24); target = (14, 34)
-    expect(findTarget(teal, enemies, up, modeChase)).toEqual({ x: 14, y: 34 });
+    // ahead = (12, 24) (Pac-Man's overflow bug); target = (10, 34)
+    expect(findTarget(teal, enemies, up, modeChase)).toEqual({ x: 10, y: 34 });
+    const cases: [Direction, Tile][] = [
+      ["DOWN", { x: 14, y: 42 }], // ahead = (14, 28)
+      ["RIGHT", { x: 18, y: 38 }], // ahead = (16, 26)
+    ];
+    for (const [d, t] of cases) {
+      const p = newPlayer();
+      p.direction = d;
+      expect(findTarget(teal, enemies, p, modeChase)).toEqual(t);
+    }
   });
 
   test("chase: orange chases from 8+ tiles away, else retreats to its corner", () => {

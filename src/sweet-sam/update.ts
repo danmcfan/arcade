@@ -398,7 +398,9 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
     case "pink":
       switch (player.direction) {
         case "UP":
+          // Pac-Man's overflow bug: facing up also shifts the target left.
           tilePlayer.y -= 4;
+          tilePlayer.x -= 4;
           break;
         case "DOWN":
           tilePlayer.y += 4;
@@ -423,7 +425,9 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
 
       switch (player.direction) {
         case "UP":
+          // Pac-Man's overflow bug: facing up also shifts the pivot left.
           tilePlayer.y -= 2;
+          tilePlayer.x -= 2;
           break;
         case "DOWN":
           tilePlayer.y += 2;
