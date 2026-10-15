@@ -78,14 +78,14 @@ export function readInput(pressed: ReadonlySet<string>, justPressed: ReadonlySet
     down: pressed.has("KeyS") || pressed.has("ArrowDown"),
     left: pressed.has("KeyA") || pressed.has("ArrowLeft"),
     right: pressed.has("KeyD") || pressed.has("ArrowRight"),
-    space: pressed.has("Space"),
-    escape: pressed.has("Escape"),
+    space: pressed.has("Space") || pressed.has("Enter") || pressed.has("NumpadEnter") || pressed.has("KeyE"),
+    escape: pressed.has("Escape") || pressed.has("Backspace") || pressed.has("KeyQ"),
     shiftP: (pressed.has("ShiftLeft") || pressed.has("ShiftRight")) && justPressed.has("KeyP"),
   };
 }
 
 /** Keys a menu reacts to on the tick they go down. */
-export const MENU_KEYS = ["up", "down", "space", "escape"] as const;
+export const MENU_KEYS = ["up", "down", "left", "right", "space", "escape"] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
 /** Which menu keys went down this tick. */
 export type MenuEdges = Record<MenuKey, boolean>;
@@ -105,6 +105,8 @@ export class MenuKeys {
     const edges: MenuEdges = {
       up: pressed("up"),
       down: pressed("down"),
+      left: pressed("left"),
+      right: pressed("right"),
       space: pressed("space"),
       escape: pressed("escape"),
     };

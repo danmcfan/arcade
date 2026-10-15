@@ -17,8 +17,7 @@ import { goRound } from "../engine/gomath.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
-import { flowerX, flowerY } from "./flower.ts";
-import { levelCap } from "./levels.ts";
+import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import { frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
@@ -92,9 +91,9 @@ function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
 export const levelCounterRight = 8 * 26;
 export const levelCounterLength = 7;
 
-/** The bonus flower for `level`: one frame of flower.png per level, the last holding from `levelCap` on. */
+/** The bonus flower for `level`: its kind's frame of flower.png. */
 export function flowerSprite(level: number): Sprite {
-  const x = (Math.min(Math.max(level, 1), levelCap) - 1) * frameSize;
+  const x = flowerKind(level) * frameSize;
   return sub(imageFlower, x, 0, x + frameSize, frameSize);
 }
 

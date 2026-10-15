@@ -5,7 +5,7 @@
 // paint the title's rainbow sweep over them (src/title/draw.ts).
 //
 // The small font copies the 7-px lettering on the hub title cards
-// ("PRESS SPACE TO PLAY"): thin strokes with the corners knocked off. The
+// ("INTERACT TO PLAY"): thin strokes with the corners knocked off. The
 // logo letters are cut from the display font of the Go port's original Brass
 // Monkey title card.
 
@@ -88,6 +88,7 @@ export const inks = {
   blue: "#94b0c2",
   grey: "#566c86",
   dark: "#1a1c2c",
+  red: "#b13e53",
 } as const;
 export type Ink = keyof typeof inks;
 export const inkOrder: readonly Ink[] = Object.keys(inks).filter((k): k is Ink => k in inks);

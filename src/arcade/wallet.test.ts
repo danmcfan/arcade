@@ -1,9 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { prizes, type PrizeId } from "./prizes.ts";
-import { pointsPerTicket, startingTokens, ticketsFor, ticketsPerToken, Wallet, type WalletProgress } from "./wallet.ts";
+import {
+  houseHighScores,
+  noHighScores,
+  pointsPerTicket,
+  startingTokens,
+  ticketsFor,
+  ticketsPerToken,
+  Wallet,
+  type WalletProgress,
+} from "./wallet.ts";
 
 function wallet(p: Partial<WalletProgress> = {}): Wallet {
-  return new Wallet({ highScore: 0, tokens: startingTokens, tickets: 0, prizes: [], ...p });
+  return new Wallet({ highScores: noHighScores, tokens: startingTokens, tickets: 0, prizes: [], ...p });
 }
 
 function counts(w: Wallet): { tokens: number; tickets: number } {
@@ -12,7 +21,12 @@ function counts(w: Wallet): { tokens: number; tickets: number } {
 
 describe("a new Wallet", () => {
   test("holds a New game's 5 tokens, no tickets, no prizes and no high score", () => {
-    expect(new Wallet().toProgress()).toEqual({ highScore: 0, tokens: 5, tickets: 0, prizes: [] });
+    expect(new Wallet().toProgress()).toEqual({
+      highScores: { sweetSam: 0, firefly: 0, brassMonkey: 0 },
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+    });
     expect(startingTokens).toBe(5);
   });
 
@@ -54,26 +68,49 @@ describe("settleRun", () => {
     ] as const) {
       const w = wallet({ tickets: 3 });
       expect(ticketsFor(score)).toBe(tickets);
-      expect(w.settleRun(score, "paid")).toBe(tickets);
+      expect(w.settleRun("sweetSam", score, "paid")).toBe(tickets);
       expect(w.tickets).toBe(3 + tickets);
     }
   });
 
   test("free play and a direct start pay no tickets", () => {
     const w = wallet({ tickets: 3 });
-    expect(w.settleRun(1420, "free")).toBe(0);
-    expect(w.settleRun(1420, "direct")).toBe(0);
+    expect(w.settleRun("sweetSam", 1420, "free")).toBe(0);
+    expect(w.settleRun("sweetSam", 1420, "direct")).toBe(0);
     expect(w.tickets).toBe(3);
   });
 
-  test("every run keeps the best score as the high score", () => {
-    const w = wallet({ highScore: 500 });
-    w.settleRun(300, "paid");
-    expect(w.highScore).toBe(500);
-    w.settleRun(900, "free");
-    expect(w.highScore).toBe(900);
-    w.settleRun(1200, "direct");
-    expect(w.highScore).toBe(1200);
+  test("a run keeps the best score as the player's high score on its own machine only", () => {
+    const w = wallet({ highScores: { sweetSam: 500, firefly: 0, brassMonkey: 40 } });
+    w.settleRun("sweetSam", 300, "paid");
+    expect(w.highScore("sweetSam")).toBe(500);
+    w.settleRun("sweetSam", 900, "free");
+    expect(w.highScore("sweetSam")).toBe(900);
+    w.settleRun("firefly", 1200, "direct");
+    expect(w.toProgress().highScores).toEqual({ sweetSam: 900, firefly: 1200, brassMonkey: 40 });
+  });
+});
+
+describe("the house high score", () => {
+  test("is fixed per machine, the same for every wallet", () => {
+    expect(houseHighScores).toEqual({ sweetSam: 30000, firefly: 40000, brassMonkey: 25000 });
+  });
+
+  test("a machine is beaten only once its player high score is above the house high score", () => {
+    const w = wallet();
+    w.settleRun("brassMonkey", 25000, "paid");
+    expect(w.beaten("brassMonkey")).toBe(false);
+    w.settleRun("brassMonkey", 25001, "paid");
+    expect(w.beaten("brassMonkey")).toBe(true);
+    expect(w.beaten("sweetSam")).toBe(false);
+  });
+
+  test("HI shows the house high score until the machine is beaten, then the player's", () => {
+    const w = wallet();
+    w.settleRun("firefly", 3000, "paid");
+    expect(w.shownHighScore("firefly")).toBe(40000);
+    w.settleRun("firefly", 40200, "paid");
+    expect(w.shownHighScore("firefly")).toBe(40200);
   });
 });
 
@@ -181,15 +218,27 @@ describe("prizes at the counter", () => {
   });
 });
 
+describe("canBuy", () => {
+  test("says whether the counter would sell an item", () => {
+    const w = wallet({ tokens: 1, tickets: 60, prizes: ["honeyJar"] });
+    expect(w.canBuy("token")).toBe(true);
+    expect(w.canBuy("honeyJar")).toBe(false);
+    expect(w.canBuy("glowStick")).toBe(true);
+    expect(wallet({ tokens: 1, tickets: 3 }).canBuy("token")).toBe(false);
+    expect(wallet({ tokens: 0, tickets: 3 }).canBuy("token")).toBe(true);
+    expect(wallet({ tickets: 0 }).canBuy("glowStick")).toBe(false);
+  });
+});
+
 describe("version", () => {
   test("goes up on every change and only then", () => {
     const w = wallet({ tokens: 1, tickets: 30 });
     const steps: [string, () => unknown, boolean][] = [
       ["paid start", () => w.startRun(), true],
       ["free start", () => w.startRun(), false],
-      ["paid settle", () => w.settleRun(0, "paid"), true],
-      ["free settle, no new best", () => w.settleRun(0, "free"), false],
-      ["direct settle, new best", () => w.settleRun(50, "direct"), true],
+      ["paid settle", () => w.settleRun("sweetSam", 0, "paid"), true],
+      ["free settle, no new best", () => w.settleRun("sweetSam", 0, "free"), false],
+      ["direct settle, new best", () => w.settleRun("sweetSam", 50, "direct"), true],
       ["token", () => w.buy("token"), true],
       ["prize", () => w.buy("honeyJar" satisfies PrizeId), true],
       ["owned prize", () => w.buy("honeyJar"), false],

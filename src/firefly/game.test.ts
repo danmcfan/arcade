@@ -4,12 +4,12 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import * as rng from "../engine/rng.ts";
 import { Game } from "../game/game.ts";
-import { ticketsFor } from "../arcade/wallet.ts";
+import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
 import { FireflySoftware, playerY } from "./game.ts";
-import { createFirefly } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
   enemyHp,
@@ -100,7 +100,7 @@ function sparkAt(f: FireflySoftware, x: number, y: number): void {
 
 describe("a new run", () => {
   test("is Firefly on the night sky: stage 1, 3 lives, no score, not over", () => {
-    const f = createFirefly();
+    const f = minigame("firefly").create({ highScore: 0, prizes: [] });
     expect(f.name).toBe("firefly");
     expect(f.background()).toBe(imageFireflyBackground);
     expect(f.gameOver()).toBe(false);
@@ -111,7 +111,7 @@ describe("a new run", () => {
   });
 
   test("is a FixedViewport the size of the cabinet", () => {
-    const f = createFirefly();
+    const f = minigame("firefly").create({ highScore: 0, prizes: [] });
     expect(isFixedViewport(f)).toBe(true);
     if (isFixedViewport(f)) expect(f.fixedViewportSize()).toEqual([240, 304]);
   });
@@ -362,7 +362,7 @@ describe("payout", () => {
   test("a paid run played to game over pays its score in tickets", () => {
     rng.seed(1);
     const game = new Game(null, {
-      restore: { highScore: 0, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      restore: { highScores: noHighScores, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
     });
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.

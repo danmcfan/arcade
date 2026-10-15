@@ -13,10 +13,10 @@
 // switching on and off, and player.png the player's sprite sheet
 // (src/ui/playerArt.ts). Each of `titleCards` is its title card (the source of
 // its cabinet's marquee lettering, scripts/gen-cabinets.ts) with the top line
-// of lettering replaced by `text`. gen-ui-art.test.ts fails when the
-// committed PNGs no longer match the source.
+// of lettering replaced by `text`. gen-art.test.ts fails when the committed
+// PNGs no longer match the source.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
@@ -44,12 +44,21 @@ import { newMachines } from "../src/arcade/machine.ts";
 import { employeeHalf } from "../src/ui/employeeArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
-import { mirroredPrizes, prizeArt, prizeRects, prizeSheetHeight, prizeSheetWidth } from "../src/ui/prizeArt.ts";
+import {
+  greyLetters,
+  mirroredPrizes,
+  prizeArt,
+  prizeGreyY,
+  prizeRects,
+  prizeSheetHeight,
+  prizeSheetWidth,
+} from "../src/ui/prizeArt.ts";
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
-import { blank, mirrorX, outline, paint, plot, toPng } from "./pixel-art.ts";
+import { imageOutput, type ImageOutput } from "./image-outputs.ts";
+import { blank, mirrorX, outline, paint, plot, recolour, toPng } from "./pixel-art.ts";
 
 function own<T extends object>(o: T, key: PropertyKey): key is keyof T {
   return Object.hasOwn(o, key);
@@ -114,7 +123,9 @@ export function renderPrizes(): PNG {
   const png = blank(prizeSheetWidth, prizeSheetHeight);
   for (const [id, rows] of Object.entries(prizeArt)) {
     if (!own(prizeRects, id)) throw new Error(`prize ${id} has no sheet rect`);
-    paint(png, mirroredPrizes.has(id) ? mirrorX(rows) : rows, sweetie, prizeRects[id].x, 0);
+    const placed = mirroredPrizes.has(id) ? mirrorX(rows) : rows;
+    paint(png, placed, sweetie, prizeRects[id].x, 0);
+    paint(png, recolour(placed, greyLetters), sweetie, prizeRects[id].x, prizeGreyY);
   }
   return png;
 }
@@ -166,12 +177,10 @@ export function renderPlayer(): PNG {
 const titleTop = 5;
 const titleClearRows = 21;
 
-export function titleCardPath(file: string): string {
-  return join(repoRoot, "art/title-cards", file);
-}
+const titleCardsDir = "art/title-cards";
 
 export function renderTitleCard(card: (typeof titleCards)[number]): PNG {
-  const png = PNG.sync.read(readFileSync(titleCardPath(card.file)));
+  const png = PNG.sync.read(readFileSync(join(repoRoot, titleCardsDir, card.file)));
   png.data.fill(0, 0, titleClearRows * png.width * 4);
   const rows = titleRows(card.text);
   const left = Math.trunc((png.width - (rows[0]?.length ?? 0)) / 2);
@@ -179,31 +188,18 @@ export function renderTitleCard(card: (typeof titleCards)[number]): PNG {
   return png;
 }
 
-export const fontPath = join(repoRoot, "src/assets/images/font.png");
-export const logoPath = join(repoRoot, "src/assets/images/logo.png");
-export const iconsPath = join(repoRoot, "src/assets/images/icons.png");
-export const tickerPath = join(repoRoot, "src/assets/images/ticker.png");
-export const employeePath = join(repoRoot, "src/assets/images/employee.png");
-export const prizesPath = join(repoRoot, "src/assets/images/prizes.png");
-export const roomPath = join(repoRoot, "src/assets/images/arcade.png");
-export const screensPath = join(repoRoot, "src/assets/images/screens.png");
-export const playerPath = join(repoRoot, "src/assets/images/player.png");
+const imagesDir = "src/assets/images";
 
-if (import.meta.main) {
-  writeFileSync(fontPath, PNG.sync.write(renderFont()));
-  writeFileSync(logoPath, PNG.sync.write(renderLogo()));
-  writeFileSync(iconsPath, PNG.sync.write(renderIcons()));
-  writeFileSync(tickerPath, PNG.sync.write(renderTicker()));
-  writeFileSync(employeePath, PNG.sync.write(renderEmployee()));
-  writeFileSync(prizesPath, PNG.sync.write(renderPrizes()));
-  writeFileSync(roomPath, PNG.sync.write(renderRoom()));
-  writeFileSync(screensPath, PNG.sync.write(renderScreens()));
-  writeFileSync(playerPath, PNG.sync.write(renderPlayer()));
-  for (const card of titleCards) {
-    writeFileSync(titleCardPath(card.file), PNG.sync.write(renderTitleCard(card)));
-    console.log(`wrote ${titleCardPath(card.file)} ("${card.text}")`);
-  }
-  console.log(
-    `wrote ${fontPath} (${fontSheetWidth}x${fontSheetHeight}), ${logoPath} (${logoWidth}x${logoHeight}) ${iconsPath} (${iconSheetWidth}x${iconSheetHeight}), ${tickerPath}, ${employeePath}, ${prizesPath} (${prizeSheetWidth}x${prizeSheetHeight}), ${roomPath}, ${screensPath} and ${playerPath}`,
-  );
-}
+/** Every generated UI image: its file, its size and how to draw it. Title cards are 160×144. */
+export const uiArtFiles: readonly ImageOutput[] = [
+  imageOutput(join(imagesDir, "font.png"), fontSheetWidth, fontSheetHeight, renderFont),
+  imageOutput(join(imagesDir, "logo.png"), logoWidth, logoHeight, renderLogo),
+  imageOutput(join(imagesDir, "icons.png"), iconSheetWidth, iconSheetHeight, renderIcons),
+  imageOutput(join(imagesDir, "ticker.png"), 129, 25, renderTicker),
+  imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
+  imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
+  imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),
+  imageOutput(join(imagesDir, "screens.png"), 392, 108, renderScreens),
+  imageOutput(join(imagesDir, "player.png"), 64, 96, renderPlayer),
+  ...titleCards.map((card) => imageOutput(join(titleCardsDir, card.file), 160, 144, () => renderTitleCard(card))),
+];

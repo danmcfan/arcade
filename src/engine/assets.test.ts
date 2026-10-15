@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { PNG } from "pngjs";
 import { allImages, brassMonkeyImages, fireflyImages, images, loadImages, sounds, sweetSamImages } from "./assets.ts";
@@ -69,42 +69,19 @@ describe("image registry (D12)", () => {
 });
 
 describe("sound registry", () => {
-  test("the hub's sounds, the minigame sounds, the title's and Brass Monkey's: the songs and attract loops loop, effects don't", () => {
-    expect(Object.keys(sounds).toSorted()).toEqual([
-      "attractBrassMonkey",
-      "attractFirefly",
-      "attractSweet",
-      "deny",
-      "hit",
-      "hub",
-      "lifeLost",
-      "monkeyBolt",
-      "monkeyDeath",
-      "monkeyEscape",
-      "monkeyFloor",
-      "monkeyHazard",
-      "monkeyJump",
-      "move",
-      "screenOn",
-      "select",
-      "spark",
-      "stage",
-      "sweetBee",
-      "sweetChompHigh",
-      "sweetChompLow",
-      "sweetClear",
-      "sweetDeath",
-      "sweetFlower",
-      "sweetSmoke",
-      "sweetStart",
-      "ticket",
-      "title",
-    ]);
+  test("every sound is keyed by its own name and its WAV is committed", () => {
+    for (const sound of Object.values(sounds)) {
+      expect(sounds[sound.name]).toBe(sound);
+      expect(existsSync(sound.url)).toBe(true);
+    }
+  });
+
+  test("the songs and attract loops loop, effects don't", () => {
     expect(
       Object.values(sounds)
         .filter((s) => s.loop)
         .map((s) => s.name),
-    ).toEqual(["hub", "attractBrassMonkey", "attractSweet", "attractFirefly", "title"]);
+    ).toEqual(["title", "hub", "attractBrassMonkey", "attractSweet", "attractFirefly"]);
   });
 });
 

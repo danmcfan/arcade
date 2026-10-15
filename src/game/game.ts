@@ -7,44 +7,24 @@
 // tickets buy tokens and prizes.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
-import {
-  imageArcade,
-  attractSounds,
-  soundDeny,
-  soundHit,
-  soundHub,
-  soundLifeLost,
-  soundMove,
-  soundSelect,
-  soundSpark,
-  soundStage,
-  soundTicket,
-  sweetSamSounds,
-} from "../engine/assets.ts";
-import { MenuKeys, type Direction, type Input, type MenuEdges } from "../engine/input.ts";
+import { imageArcade, attractSounds, sounds } from "../engine/assets.ts";
+import { MenuKeys, type Direction, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
-import { prizes } from "../arcade/prizes.ts";
 import { blocked, newState, type State } from "../arcade/state.ts";
-import { Wallet, type RunKind, type WalletProgress } from "../arcade/wallet.ts";
-import { update as updateArcade } from "../arcade/update.ts";
+import { Wallet, type WalletProgress } from "../arcade/wallet.ts";
+import { faced, update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
-import { createSoftware } from "./softwareFactories.ts";
-import {
-  closeItemIndex,
-  firstPrizeIndex,
-  minigamePauseMenu,
-  prizeCounterItems,
-  quitGameIndex,
-  tokenItemIndex,
-} from "./menus.ts";
+import { createSoftware } from "./minigames.ts";
+import { Menu } from "./menu.ts";
+import { moveCounterCursor, prizeCounterItems, tokenCursor } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
-import { Payout } from "./payout.ts";
-import type { GameMenu, GameSnapshot } from "./snapshot.ts";
+import { MinigameRun } from "./minigameRun.ts";
+import type { GameSnapshot } from "./snapshot.ts";
 import { isFixedViewport, type Scene, type Software, type SoftwareName } from "./software.ts";
 
 const buffer = 16;
@@ -56,18 +36,9 @@ export interface Progress extends WalletProgress {
   player: { x: number; y: number; dir: Direction };
 }
 
-/** The minigames' sounds: paused with the minigame pause menu. */
-const minigameSounds: readonly Sound[] = [
-  ...Object.values(sweetSamSounds),
-  soundSpark,
-  soundHit,
-  soundLifeLost,
-  soundStage,
-];
-
 /** Collaborators a test can replace; the real game uses the defaults. */
 export interface GameDeps {
-  /** Builds a machine's software; default: `createSoftware` from ./softwareFactories.ts. */
+  /** Builds a machine's software; default: `createSoftware` from ./minigames.ts. */
   createSoftware?: SoftwareFactory;
   /** Debug panel text; default: `debugPrint` from src/engine/text.ts. */
   debugPrint?: DebugPrinter;
@@ -80,16 +51,23 @@ export class Game implements Scene {
 
   private readonly arcade: State;
 
-  private software: Software | null = null;
-  /** How `software` was started; null in the hub. */
-  private run: RunKind | null = null;
-  /** The menu over the minigame or the hub, if any. */
-  private menu: GameMenu | null = null;
-  /** Selected item of the minigame pause menu or the prize counter menu. */
-  private cursor = 0;
-  private payout: Payout | null = null;
-  /** Minigame sounds that were playing when the pause menu opened; Resume restarts them. */
-  private pausedSounds: Sound[] = [];
+  /** The minigame being played; null in the hub. */
+  private run: MinigameRun | null = null;
+  /** Go `game.New(software)`'s software: it starts, outside the economy, after the first hub tick. */
+  private initialSoftware: Software | null;
+  /** Whether the prize counter menu is open over the hub. */
+  private counterOpen = false;
+  /** The prize counter menu; CLOSE and Esc go back to the hub. */
+  private readonly counterMenu = new Menu(
+    () =>
+      prizeCounterItems(this.arcade.wallet, () => {
+        this.closeCounter();
+      }),
+    () => {
+      this.closeCounter();
+    },
+    moveCounterCursor,
+  );
   /**
    * Menu key presses, and keys held when a menu closes: those are hidden
    * until released, so the Space that chose Resume does not also fire in the
@@ -120,8 +98,9 @@ export class Game implements Scene {
       this.pendingSounds.push(e);
     });
     const sw = initialSoftware === null ? null : factory(initialSoftware, 0, []);
-    this.arcade = newState(sw, factory);
+    this.arcade = newState(factory);
     if (deps.restore) this.restore(deps.restore);
+    this.initialSoftware = sw;
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
   }
 
@@ -149,7 +128,7 @@ export class Game implements Scene {
 
   /** True while the hub is running: not in a minigame, its pause menu, the payout or the prize counter menu. */
   inHub(): boolean {
-    return this.software === null && this.menu === null;
+    return this.run === null && !this.counterOpen;
   }
 
   progress(): Progress {
@@ -160,7 +139,7 @@ export class Game implements Scene {
     };
   }
 
-  /** Goes up whenever tokens, tickets, prizes or the high score change. */
+  /** Goes up whenever tokens, tickets, prizes or a player high score change. */
   walletVersion(): number {
     return this.arcade.wallet.version;
   }
@@ -173,21 +152,21 @@ export class Game implements Scene {
 
   /** Silence the hub song and the faced cabinet while a menu covers the game. */
   pauseAudio(): void {
-    if (this.hubSongOn) soundHub.pause();
+    if (this.hubSongOn) sounds.hub.pause();
     this.attract()?.pause();
   }
 
   /** Undo `pauseAudio`. */
   resumeAudio(): void {
-    if (this.hubSongOn) soundHub.play();
+    if (this.hubSongOn) sounds.hub.play();
     this.attract()?.play();
   }
 
   /** Stop the hub's sounds for good (leaving the game). */
   stopAudio(): void {
     this.hubSongOn = false;
-    soundHub.pause();
-    soundHub.rewind();
+    sounds.hub.pause();
+    sounds.hub.rewind();
     const attract = this.attract();
     attract?.pause();
     attract?.rewind();
@@ -203,11 +182,11 @@ export class Game implements Scene {
 
   /** Play the hub song in the hub (its menus too), pause it in a minigame, and pick up where it left off after. */
   private updateHubSong(): void {
-    const want = this.software === null;
+    const want = this.run === null;
     if (want === this.hubSongOn) return;
     this.hubSongOn = want;
-    if (want) soundHub.play();
-    else soundHub.pause();
+    if (want) sounds.hub.play();
+    else sounds.hub.pause();
   }
 
   /** Go `Game.Update` with the input already read. */
@@ -219,167 +198,56 @@ export class Game implements Scene {
     const { edges } = this.keys.read(raw);
     const input = this.keys.unmasked(raw);
 
-    if (this.software === null) {
-      if (this.menu === "prizeCounter") this.updatePrizeCounter(raw, edges);
-      else this.updateHub(input);
+    if (this.run !== null) {
+      if (this.run.update(raw, input, edges)) this.run = null;
       return;
     }
-    switch (this.menu) {
-      case null:
-        this.updateMinigame(this.software, input, edges);
-        return;
-      case "paused":
-        this.updatePauseMenu(raw, edges);
-        return;
-      case "controls":
-        if (edges.space || edges.escape) {
-          soundSelect.blip();
-          this.menu = "paused";
-        }
-        return;
-      case "payout":
-        if (this.payout === null) throw new Error("game: payout menu without a payout");
-        this.updatePayout(this.payout, raw, edges);
-        break;
-      case "prizeCounter":
-        break; // only opens in the hub
-    }
-  }
-
-  private updateHub(input: Input): void {
-    updateArcade(this.arcade, input);
-
-    if (this.arcade.loadedSoftware !== null) {
-      this.software = this.arcade.loadedSoftware;
-      this.run = this.arcade.loadedRun;
-      this.arcade.loadedSoftware = null;
-    }
-
-    if (this.arcade.counterOpened) {
-      this.arcade.counterOpened = false;
-      soundSelect.blip();
-      this.menu = "prizeCounter";
-      this.cursor = 0;
-    }
-  }
-
-  private updatePrizeCounter(raw: Input, edges: MenuEdges): void {
-    const wallet = this.arcade.wallet;
-    const n = prizeCounterItems(wallet.counter()).length;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta !== 0) {
-      this.cursor = (this.cursor + delta + n) % n;
-      soundMove.blip();
-    }
-    if (edges.space && this.cursor === tokenItemIndex) {
-      (wallet.buy("token") ? soundSelect : soundDeny).blip();
-      return;
-    }
-    if (edges.space && this.cursor >= firstPrizeIndex && this.cursor < closeItemIndex) {
-      const prize = prizes[this.cursor - firstPrizeIndex];
-      if (prize === undefined) throw new Error(`prize counter: no prize at item ${this.cursor}`);
-      (wallet.buy(prize.id) ? soundSelect : soundDeny).blip();
-      return;
-    }
-    if (!edges.space && !edges.escape) return;
-    // CLOSE or Esc: back to the hub.
-    soundSelect.blip();
-    this.menu = null;
-    this.cursor = 0;
-    this.keys.maskHeld(raw);
-  }
-
-  private updateMinigame(software: Software, input: Input, edges: MenuEdges): void {
-    if (edges.escape) {
-      this.openPauseMenu();
+    if (this.counterOpen) {
+      this.counterMenu.step(edges);
       return;
     }
 
-    software.update(input);
-    if (software.gameOver()) {
-      const score = software.score();
-      const run = this.run ?? "direct";
-      // Paid out at once, so a save taken during the count keeps them.
-      const tickets = this.arcade.wallet.settleRun(score, run);
-      if (run === "direct") {
-        this.leaveMinigame();
-        return;
-      }
-      this.payout = new Payout(score, tickets, run === "free");
-      this.menu = "payout";
+    const event = updateArcade(this.arcade, input);
+    if (this.initialSoftware !== null) {
+      this.run = new MinigameRun(this.initialSoftware, "direct", this.arcade.wallet, this.keys);
+      this.initialSoftware = null;
+      return;
     }
+    if (event === null) return;
+    if ("start" in event) {
+      this.run = new MinigameRun(event.start, event.run, this.arcade.wallet, this.keys);
+      return;
+    }
+    sounds.select.blip();
+    this.counterOpen = true;
+    this.counterMenu.open(tokenCursor);
   }
 
-  private openPauseMenu(): void {
-    soundSelect.blip();
-    this.pausedSounds = minigameSounds.filter((s) => s.playing);
-    for (const s of minigameSounds) s.pause();
-    this.menu = "paused";
-    this.cursor = 0;
-  }
-
-  private updatePauseMenu(raw: Input, edges: MenuEdges): void {
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
-    if (delta !== 0) {
-      const n = minigamePauseMenu.length;
-      this.cursor = (this.cursor + delta + n) % n;
-      soundMove.blip();
-    }
-    if (!edges.space && !edges.escape) return;
-    soundSelect.blip();
-    if (edges.escape || this.cursor === 0) {
-      // Resume: the minigame carries on from this tick.
-      this.menu = null;
-      this.cursor = 0;
-      for (const s of this.pausedSounds) s.play();
-      this.pausedSounds = [];
-      this.keys.maskHeld(raw);
-    } else if (this.cursor === quitGameIndex) {
-      // Quit game: the token stays spent, no tickets, no payout.
-      this.pausedSounds = [];
-      this.leaveMinigame();
-      this.keys.maskHeld(raw);
-    } else {
-      this.menu = "controls";
-    }
-  }
-
-  private updatePayout(payout: Payout, raw: Input, edges: MenuEdges): void {
-    if (edges.space) soundSelect.blip();
-    if (payout.step(edges.space)) soundTicket.blip();
-    if (payout.done) {
-      this.leaveMinigame();
-      this.keys.maskHeld(raw);
-    }
-  }
-
-  private leaveMinigame(): void {
-    this.software = null;
-    this.run = null;
-    this.menu = null;
-    this.cursor = 0;
-    this.payout = null;
+  /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
+  private closeCounter(): void {
+    this.counterOpen = false;
+    this.keys.maskHeld();
   }
 
   draw(screen: Surface): void {
-    if (this.software !== null) {
+    if (this.run !== null) {
+      const { software, menu } = this.run;
       let margin = buffer;
-      if (isFixedViewport(this.software)) {
+      if (isFixedViewport(software)) {
         margin = 0;
       }
-      this.software.draw(screen, margin);
-      if (this.menu !== null) {
-        const [w, h] = this.minigameSize(this.software);
+      software.draw(screen, margin);
+      if (menu !== null) {
+        const [w, h] = this.minigameSize(software);
         // Over a cabinet, the menu stays on its screen, clear of the bezel.
-        const playfield = isFixedViewport(this.software)
+        const playfield = isFixedViewport(software)
           ? { x: cabinetInsetLeft, y: cabinetInsetTop, w: cabinetPlayfieldWidth, h: cabinetPlayfieldHeight }
           : { x: buffer, y: buffer, w: w - buffer * 2, h: h - buffer * 2 };
         const overlay = {
-          menu: this.menu,
-          software: this.software.name,
-          cursor: this.cursor,
-          payout: this.payout,
-          wallet: this.arcade.wallet,
+          menu,
+          software: software.name,
+          list: this.run.pauseMenu,
+          payout: this.run.payout,
           tick: this.tick,
           playfield,
         };
@@ -391,18 +259,17 @@ export class Game implements Scene {
     }
 
     // Everything in the hub, its counts and its menu included, is drawn inside the hub image (#72).
-    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode);
+    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode, faced(this.arcade, this.counterOpen));
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
-    if (this.menu === "prizeCounter") {
+    if (this.counterOpen) {
       // The menu fills the room under the scoreboard, so the counts stay readable and change as tokens are bought.
       const below = tickerRect.y + tickerRect.h;
       drawMenuOverlay(screen, {
-        menu: this.menu,
+        menu: "prizeCounter",
         software: null,
-        cursor: this.cursor,
+        list: this.counterMenu,
         payout: null,
-        wallet: this.arcade.wallet,
         tick: this.tick,
         playfield: { x: buffer, y: buffer + below, w: imageArcade.w, h: imageArcade.h - below },
       });
@@ -417,8 +284,8 @@ export class Game implements Scene {
     let baseWidth = imageArcade.w + buffer * 2;
     let baseHeight = imageArcade.h + buffer * 2;
 
-    if (this.software !== null) {
-      [baseWidth, baseHeight] = this.minigameSize(this.software);
+    if (this.run !== null) {
+      [baseWidth, baseHeight] = this.minigameSize(this.run.software);
     }
 
     if (this.debugMode) {
@@ -436,30 +303,39 @@ export class Game implements Scene {
 
   snapshot(): GameSnapshot {
     const p = this.arcade.player;
+    const hubRun = {
+      run: null,
+      menu: this.counterOpen ? "prizeCounter" : null,
+      cursor: this.counterOpen ? this.counterMenu.cursor : 0,
+      payout: null,
+      sw: null,
+    } as const;
+    const { run, menu, cursor, payout, sw } = this.run === null ? hubRun : this.run.snapshot();
     return {
       tick: this.tick,
       rng: rng.state(),
       debug: this.debugMode,
-      software: this.software === null ? null : this.software.name,
+      software: this.run === null ? null : this.run.software.name,
       arcade: {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
+        faced: faced(this.arcade, this.counterOpen),
         title: this.arcade.imageTitle,
         ...this.walletSnapshot(),
       },
-      run: this.run,
-      menu: this.menu,
-      cursor: this.cursor,
-      payout: this.payout === null ? null : this.payout.snapshot(),
-      sw: this.software === null ? null : this.software.snapshot(),
+      run,
+      menu,
+      cursor,
+      payout,
+      sw,
       sounds: [...this.tickSounds],
     };
   }
 
   /** The wallet as the `arcade` snapshot shows it: `prizes` is absent while none is owned (ADR-0004). */
-  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScore" | "tokens" | "tickets" | "prizes"> {
-    const { highScore, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
-    return { highScore, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
+  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScores" | "tokens" | "tickets" | "prizes"> {
+    const { highScores, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
+    return { highScores, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
   }
 
   dispose(): void {

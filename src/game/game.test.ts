@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { sweetSamSounds } from "../engine/assets.ts";
+import { sounds as soundTable } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
@@ -11,6 +11,7 @@ import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snap
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 
 class FakeSoftware implements Software {
   updates: Input[] = [];
@@ -70,8 +71,8 @@ function fakes(): Fakes {
   const factory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]): Software => {
     let sw: FakeSoftware;
     if (name === "sweetSam") {
-      sweetSamSounds.start.rewind();
-      sweetSamSounds.start.play();
+      soundTable.sweetStart.rewind();
+      soundTable.sweetStart.play();
       sw = new FakeFixed(name, highScore, makeSolid(224, 288, "#000"), prizes);
     } else if (name === "firefly") {
       sw = new FakeSoftware(name, highScore, makeSolid(224, 288, "#000"), prizes);
@@ -129,8 +130,9 @@ describe("snapshot", () => {
       arcade: {
         player: { x: 79, y: 92, dir: "LEFT", frame: 0.1 },
         melodyPlaying: false,
+        faced: null,
         title: null,
-        highScore: 0,
+        highScores: noHighScores,
         tokens: 5,
         tickets: 0,
       },
@@ -304,7 +306,7 @@ describe("entering and leaving software", () => {
     if (sw === undefined) throw new Error("sweetSam not built");
     sw.points = 500;
     quitGame(game);
-    expect(snap(game).arcade.highScore).toBe(0);
+    expect(snap(game).arcade.highScores.sweetSam).toBe(0);
   });
 
   test("a direct start (game.New(software)) that ends goes straight back to the hub: no payout", () => {
@@ -317,36 +319,36 @@ describe("entering and leaving software", () => {
     const s = snap(game);
     expect(s.software).toBeNull();
     expect(s.menu).toBeNull();
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
     expect([s.arcade.tokens, s.arcade.tickets]).toEqual([5, 0]);
     expect(first.updates.length).toBe(1);
   });
 
-  test("on gameOver the high score becomes max(high score, score); the next machine gets it", () => {
+  test("on gameOver its machine's player high score becomes max(high score, score); unbeaten, the next run shows the house HI", () => {
     const { game, built } = newGame();
     enterSweetSam(game);
     const first = built[0];
     if (first === undefined) throw new Error("sweetSam not built");
     first.points = 500;
     run(game, 2);
-    expect(snap(game).arcade.highScore).toBe(0); // not over yet
+    expect(snap(game).arcade.highScores.sweetSam).toBe(0); // not over yet
     first.over = true;
     game.step(input());
     let s = snap(game);
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
     expect(first.updates.length).toBe(3); // updated on the game-over tick
     closePayout(game);
 
-    // A lower score does not lower it; the next machine gets the high score.
+    // A lower score does not lower it; 500 does not beat the house, so the next run shows the house high score.
     game.step(input({ space: true, up: true }));
     const second = built[1];
     if (second === undefined) throw new Error("second sweetSam not built");
-    expect(second.highScore).toBe(500);
+    expect(second.highScore).toBe(houseHighScores.sweetSam);
     second.points = 200;
     second.over = true;
     game.step(input());
     s = snap(game);
-    expect(s.arcade.highScore).toBe(500);
+    expect(s.arcade.highScores.sweetSam).toBe(500);
   });
 });
 
@@ -367,11 +369,6 @@ function closePayout(game: Game): void {
   tap(game, "space");
   tap(game, "space");
 }
-/** Lets a bare `{ paused }` stand in for the DOM audio element; Sound only reads `paused` here. */
-function standsInForAudio(x: object): x is HTMLAudioElement {
-  return "paused" in x;
-}
-
 /** Sound events heard while `fn` runs. */
 function heard(game: Game, fn: () => void): string[] {
   const out: string[] = [];
@@ -407,6 +404,7 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:stage",
 ];
 
+// The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.
 describe("minigame pause menu", () => {
   test("Esc opens it over the minigame: no update that tick, the tick still counts, sounds pause", () => {
     const { game, built } = newGame();
@@ -425,92 +423,6 @@ describe("minigame pause menu", () => {
     expect(game.inHub()).toBe(false);
   });
 
-  test("the minigame does not advance while the menu is open, and held Esc does not close it", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    run(game, 3);
-    run(game, 30, { escape: true });
-    run(game, 30, { left: true });
-    expect(snap(game).menu).toBe("paused");
-    expect(built[0]?.updates.length).toBe(3);
-  });
-
-  test("Up and Down move the cursor with the move blip, wrapping", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    expect(
-      heard(game, () => {
-        tap(game, "down");
-      }),
-    ).toEqual(["rewind:move", "play:move"]);
-    expect(snap(game).cursor).toBe(1);
-    tap(game, "down");
-    tap(game, "down");
-    expect(snap(game).cursor).toBe(0);
-    tap(game, "up");
-    expect(snap(game).cursor).toBe(2);
-  });
-
-  test("Space on Resume carries on from the same tick; the held Space is hidden until released", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    run(game, 3);
-    tap(game, "escape");
-    game.step(input({ space: true }));
-    expect(snap(game).menu).toBeNull();
-    expect(built[0]?.updates.length).toBe(3);
-    game.step(input({ space: true, left: true }));
-    expect(built[0]?.updates).toHaveLength(4);
-    expect(built[0]?.updates[3]).toEqual(input({ left: true }));
-    game.step(input());
-    game.step(input({ space: true }));
-    expect(built[0]?.updates[5]).toEqual(input({ space: true }));
-  });
-
-  test("a second Esc resumes too", () => {
-    const { game, built } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    tap(game, "escape");
-    expect(snap(game).menu).toBeNull();
-    game.step(input());
-    expect(built[0]?.updates.length).toBe(2);
-  });
-
-  test("Resume restarts only the minigame sounds that were playing", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    const fakeElement = { paused: false };
-    if (!standsInForAudio(fakeElement)) throw new Error("fake element lacks paused");
-    sweetSamSounds.bee.element = fakeElement;
-    try {
-      tap(game, "escape");
-      expect(
-        heard(game, () => {
-          tap(game, "escape");
-        }),
-      ).toEqual(["rewind:select", "play:select", "play:sweetBee"]);
-    } finally {
-      sweetSamSounds.bee.element = null;
-    }
-  });
-
-  test("Controls shows the controls; Esc or Space backs out to the menu", () => {
-    const { game } = newGame();
-    enterSweetSam(game);
-    tap(game, "escape");
-    tap(game, "down");
-    tap(game, "space");
-    expect(snap(game).menu).toBe("controls");
-    tap(game, "escape");
-    expect([snap(game).menu, snap(game).cursor]).toEqual(["paused", 1]);
-    tap(game, "space");
-    expect(snap(game).menu).toBe("controls");
-    tap(game, "space");
-    expect(snap(game).menu).toBe("paused");
-  });
-
   test("Quit game returns to the hub: the token stays spent, no tickets, no payout", () => {
     const { game, built } = newGame();
     enterSweetSam(game);
@@ -524,7 +436,7 @@ describe("minigame pause menu", () => {
     expect(s.software).toBeNull();
     expect(s.menu).toBeNull();
     expect(s.payout).toBeNull();
-    expect([s.arcade.tokens, s.arcade.tickets, s.arcade.highScore]).toEqual([4, 0, 0]);
+    expect([s.arcade.tokens, s.arcade.tickets, s.arcade.highScores.sweetSam]).toEqual([4, 0, 0]);
     expect(game.inHub()).toBe(true);
     // Still facing the cabinet with Space held: it does not start again until Space is pressed anew.
     run(game, 5, { space: true, up: true });
@@ -538,7 +450,13 @@ describe("minigame pause menu", () => {
 });
 
 function endRun(points: number, tokens = 5): Harness & { sw: FakeSoftware } {
-  const g = newGame(null, { highScore: 0, tokens, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets: 0,
+    prizes: [],
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   enterSweetSam(g.game);
   const sw = defined(g.built[0]);
   sw.points = points;
@@ -554,7 +472,7 @@ describe("payout", () => {
     expect(s.menu).toBe("payout");
     expect(s.software).toBe("sweetSam");
     expect(s.run).toBe("paid");
-    expect(s.arcade.highScore).toBe(1420);
+    expect(s.arcade.highScores.sweetSam).toBe(1420);
     expect(s.arcade.tickets).toBe(14);
     expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 14, freePlay: false, counting: true });
     expect(game.inHub()).toBe(false);
@@ -586,30 +504,17 @@ describe("payout", () => {
     run(game, 3, { space: true, up: true });
     expect(snap(game).software).toBeNull(); // the closing Space does not start the cabinet again
   });
-
-  test("free play shows the score, adds no tickets, and one Space closes it", () => {
-    const { game } = endRun(1420, 0);
-    let s = snap(game);
-    expect(s.run).toBe("free");
-    expect(s.arcade.tokens).toBe(0);
-    expect(s.payout).toEqual({ score: 1420, tickets: 0, total: 0, freePlay: true, counting: false });
-    expect(s.arcade.tickets).toBe(0);
-    tap(game, "space");
-    s = snap(game);
-    expect(s.software).toBeNull();
-    expect(s.arcade.tickets).toBe(0);
-  });
-
-  test("Esc does nothing in the payout", () => {
-    const { game } = endRun(1420);
-    tap(game, "escape");
-    expect(snap(game).menu).toBe("payout");
-  });
 });
 
 /** A hub with these counts; the player walks down to the counter and presses Space. */
 function atCounter(tokens: number, tickets: number): Harness {
-  const g = newGame(null, { highScore: 0, tokens, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } });
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets,
+    prizes: [],
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
@@ -621,13 +526,39 @@ function wallet(game: Game): { tokens: number; tickets: number } {
   return { tokens: a.tokens, tickets: a.tickets };
 }
 
-/** The prize counter menu with the cursor on prize `n` (0 = honey jar). */
-function atPrize(tickets: number, n: number, prizes: PrizeId[] = []): Harness {
-  const g = newGame(null, { highScore: 0, tokens: 5, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+/** Each prize's shelf cell (row * 3 + column): a column per cabinet in hub order, cheapest at the top. */
+const shelfCell: Record<PrizeId, number> = {
+  pocketWatch: 0,
+  sleepyBees: 1,
+  wings: 2,
+  springBoots: 3,
+  runningShoes: 4,
+  glowStick: 5,
+  oilCan: 6,
+  honeyJar: 7,
+  lantern: 8,
+};
+/** The cursor on BUY TOKEN and on CLOSE, the row below the shelf. */
+const tokenCursor = 9;
+const closeCursor = 10;
+
+/** The prize counter with the cursor on prize `id`. */
+function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness {
+  const g = newGame(null, {
+    highScores: noHighScores,
+    tokens: 5,
+    tickets,
+    prizes,
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
-  for (let i = 0; i <= n; i++) tap(g.game, "down");
+  const cell = shelfCell[id];
+  tap(g.game, "up"); // BUY TOKEN up: the bottom of the left column
+  for (let row = 2; row > Math.trunc(cell / 3); row--) tap(g.game, "up");
+  for (let col = 0; col < cell % 3; col++) tap(g.game, "right");
+  expect(snap(g.game).cursor).toBe(cell);
   return g;
 }
 
@@ -640,7 +571,7 @@ describe("prize counter", () => {
     });
     const s = snap(game);
     expect(s.menu).toBe("prizeCounter");
-    expect(s.cursor).toBe(0);
+    expect(s.cursor).toBe(tokenCursor);
     expect(s.software).toBeNull();
     expect(s.run).toBeNull();
     expect(built).toEqual([]);
@@ -675,8 +606,8 @@ describe("prize counter", () => {
 
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
-    tap(game, "up");
-    expect(snap(game).cursor).toBe(10);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(closeCursor);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
     expect(snap(game).cursor).toBe(0);
@@ -685,23 +616,67 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move the cursor round the eleven items (token, nine prizes, CLOSE) with the move blip", () => {
+  test("Up and Down move within a cabinet's column, through the token row, with the move blip", () => {
     const { game } = atCounter(5, 0);
     const sounds = heard(game, () => {
       tap(game, "up");
     });
-    expect(snap(game).cursor).toBe(10);
     expect(sounds).toEqual(["rewind:move", "play:move"]);
+    const seen = [snap(game).cursor];
+    for (let i = 0; i < 3; i++) {
+      tap(game, "up");
+      seen.push(snap(game).cursor);
+    }
+    expect(seen).toEqual([6, 3, 0, tokenCursor]);
     tap(game, "down");
     expect(snap(game).cursor).toBe(0);
-    for (let i = 1; i <= 10; i++) {
+    tap(game, "right");
+    for (const want of [4, 7, tokenCursor]) {
       tap(game, "down");
-      expect(snap(game).cursor).toBe(i);
+      expect(snap(game).cursor).toBe(want);
     }
   });
 
+  test("the right column's foot is CLOSE, and Up from CLOSE climbs it", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "right");
+    tap(game, "up");
+    expect(snap(game).cursor).toBe(8);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(closeCursor);
+  });
+
+  test("Left and Right move between columns round the shelf, and between BUY TOKEN and CLOSE", () => {
+    const { game } = atCounter(5, 0);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "right");
+    expect(snap(game).cursor).toBe(tokenCursor);
+    tap(game, "left");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "left");
+    tap(game, "up"); // pocket watch
+    const seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      tap(game, "right");
+      seen.push(snap(game).cursor);
+    }
+    expect(seen).toEqual([7, 8, 6]);
+    tap(game, "left");
+    expect(snap(game).cursor).toBe(8);
+  });
+
+  test("an owned prize can't be chosen: no sound, nothing taken", () => {
+    const { game } = atPrize(200, "honeyJar", ["honeyJar"]);
+    const sounds = heard(game, () => {
+      tap(game, "space");
+    });
+    expect(sounds).toEqual([]);
+    expect(snap(game).arcade).toMatchObject({ tickets: 200, prizes: ["honeyJar"] });
+  });
+
   test("Space on a prize the player can afford buys it: its price comes off once and it is owned", () => {
-    const { game } = atPrize(60, 0);
+    const { game } = atPrize(60, "honeyJar");
     const sounds = heard(game, () => {
       tap(game, "space");
     });
@@ -712,7 +687,7 @@ describe("prize counter", () => {
   });
 
   test("an unaffordable prize can't be bought: the no sound, nothing taken", () => {
-    const { game } = atPrize(99, 2);
+    const { game } = atPrize(99, "sleepyBees");
     const sounds = heard(game, () => {
       tap(game, "space");
     });
@@ -722,7 +697,7 @@ describe("prize counter", () => {
   });
 
   test("owned prizes go to every minigame the player starts, paid or free play", () => {
-    const { game, built } = atPrize(60, 0);
+    const { game, built } = atPrize(60, "honeyJar");
     tap(game, "space");
     tap(game, "escape");
     run(game, 40, { up: true });
@@ -731,7 +706,7 @@ describe("prize counter", () => {
     expect(defined(built[0]).prizes).toEqual(["honeyJar"]);
 
     const free = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 0,
       tickets: 0,
       prizes: ["sleepyBees"],
@@ -743,13 +718,14 @@ describe("prize counter", () => {
   });
 
   test("a Firefly prize is bought the same way, and goes to the Firefly run", () => {
-    const { game, built } = atPrize(60, 3); // the lantern
+    const { game, built } = atPrize(60, "lantern");
     tap(game, "space");
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "space");
     expect(snap(game).arcade.tickets).toBe(35);
-    tap(game, "down"); // glow stick, 50: too few tickets
+    tap(game, "up"); // glow stick, 50: too few tickets
+    expect(snap(game).cursor).toBe(shelfCell.glowStick);
     tap(game, "space");
     expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
     tap(game, "escape");
@@ -800,17 +776,27 @@ describe("progress", () => {
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 0 });
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScore: 9, tokens: 2, tickets: 31, prizes: [], player: { x: 80, y: 92, dir: "UP" } },
+      restore: {
+        highScores: { ...noHighScores, sweetSam: 9 },
+        tokens: 2,
+        tickets: 31,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "UP" },
+      },
     });
     games.push(restored);
-    expect(snap(restored).arcade).toMatchObject({ highScore: 9, tokens: 2, tickets: 31 });
+    expect(snap(restored).arcade).toMatchObject({
+      highScores: { ...noHighScores, sweetSam: 9 },
+      tokens: 2,
+      tickets: 31,
+    });
   });
 
   test("a save from before the prize desk, standing where the desk now is, starts at the start position", () => {
     // (40, 100) was free floor beside the old counter; the desk now spans the floor there.
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScore: 0, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
+      restore: { highScores: noHighScores, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
     });
     games.push(restored);
     expect(snap(restored).arcade.player).toMatchObject({ x: 80, y: 92 });
@@ -818,7 +804,7 @@ describe("progress", () => {
 
   test("carries owned prizes, and restore brings them back in catalogue order", () => {
     const { game } = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
@@ -841,7 +827,7 @@ describe("progress", () => {
 
   test("a saved position inside the prize counter keeps the start position", () => {
     const { game } = newGame(null, {
-      highScore: 0,
+      highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
@@ -908,7 +894,7 @@ describe("dispose", () => {
   test("stops recording sounds", () => {
     const { game } = newGame();
     game.dispose();
-    sweetSamSounds.start.play();
+    soundTable.sweetStart.play();
     game.step(input());
     expect(snap(game).sounds).toEqual([]);
   });

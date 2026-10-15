@@ -1,20 +1,23 @@
 // Port of internal/arcade/machine.go.
 //
 // Go machines call the minigame constructors directly. Here they go through a
-// `SoftwareFactory` (src/game/registry.ts `createSoftware` in the real game) so
+// `SoftwareFactory` (src/game/minigames.ts `createSoftware` in the real game) so
 // the hub can be tested with fake software. The title image is identified by
 // name (`ArcadeTitle`), which is also what the snapshot reports.
 
 import type { Software, SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
-import { checkCollision, tileSize, type Rect } from "./collision.ts";
+import { minigames } from "../game/minigames.ts";
+import { checkCollision, type Rect } from "./collision.ts";
 import type { PrizeId } from "./prizes.ts";
 import { newScreen, type Screen } from "./screen.ts";
 
-/** Builds a minigame for a run: the hub high score and the prizes the player owns. */
+/** Builds a minigame for a run: the high score its HI shows and the prizes the player owns. */
 export type SoftwareFactory = (name: SoftwareName, highScore: number, prizes: readonly PrizeId[]) => Software;
 
 export interface Machine {
+  /** Its minigame: whose high scores it keeps. */
+  name: SoftwareName;
   rect: Rect;
   /** Go `imageTitle`, by name; the LED scoreboard shows its name (src/arcade/ticker.ts). */
   title: ArcadeTitle;
@@ -24,37 +27,19 @@ export interface Machine {
 }
 
 /**
- * Where each cabinet stands in the hub (its art's top-left is the rect's), by
- * title: 40 px apart (Go had them 24 apart, at tiles 6, 9 and 12), so each
- * cabinet's prizes have wall room around it (#72).
+ * One machine per minigame, left to right as their cabinets stand
+ * (src/game/minigames.ts `hubRect`), the order screens.png's rows follow.
  */
-export const cabinetRects: Readonly<Record<ArcadeTitle, Rect>> = {
-  brassMonkey: { x: tileSize * 4, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
-  sweet: { x: tileSize * 9, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
-  firefly: { x: tileSize * 14, y: tileSize * 5, w: tileSize * 2, h: tileSize * 2 },
-};
-
 export function newMachines(factory: SoftwareFactory): Machine[] {
-  return [
-    {
-      rect: { ...cabinetRects.brassMonkey },
-      title: "brassMonkey",
-      newSoftware: (highScore, prizes) => factory("brassMonkey", highScore, prizes),
+  return minigames
+    .toSorted((a, b) => a.hubRect.x - b.hubRect.x)
+    .map((m) => ({
+      name: m.name,
+      rect: { ...m.hubRect },
+      title: m.title,
+      newSoftware: (highScore, prizes) => factory(m.name, highScore, prizes),
       screen: newScreen(),
-    },
-    {
-      rect: { ...cabinetRects.sweet },
-      title: "sweet",
-      newSoftware: (highScore, prizes) => factory("sweetSam", highScore, prizes),
-      screen: newScreen(),
-    },
-    {
-      rect: { ...cabinetRects.firefly },
-      title: "firefly",
-      newSoftware: (highScore, prizes) => factory("firefly", highScore, prizes),
-      screen: newScreen(),
-    },
-  ];
+    }));
 }
 
 /** Go returns `(machine, bool)`; here the machine or `null`. */

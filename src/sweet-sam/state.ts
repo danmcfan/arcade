@@ -1,7 +1,7 @@
 // Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
 import type { Input } from "../engine/input.ts";
-import { sweetSamSounds } from "../engine/assets.ts";
+import { sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
 import type { SweetSamStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
@@ -145,7 +145,7 @@ export class StartState implements State {
 
     this.s.player.hidden = respawnBlinkHiddenForElapsed(0);
 
-    playSound(sweetSamSounds.start);
+    playSound(sounds.sweetStart);
   }
 
   update(_i: Input): StateID {
@@ -241,7 +241,7 @@ export class PlayState implements State {
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
       if (e.blueFrames > 0) {
-        playSound(sweetSamSounds.bee);
+        playSound(sounds.sweetBee);
 
         s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
         s.particles.spawnBurst(e.x, e.y, particleColorCyan, particleBurstBeeEatenCount);
@@ -261,7 +261,7 @@ export class PlayState implements State {
         return stateIDPause;
       }
 
-      playSound(sweetSamSounds.death);
+      playSound(sounds.sweetDeath);
 
       s.particles.spawnBurst(s.player.x, s.player.y, particleColorRed, particleBurstPlayerEatenCount);
 
@@ -295,12 +295,12 @@ export class PlayState implements State {
       if (item.isPellet()) {
         s.scoreValue += 10;
         // The chomp alternates its two notes, one per honey drop.
-        playSound(itemsEaten(s) % 2 === 1 ? sweetSamSounds.chompHigh : sweetSamSounds.chompLow);
+        playSound(itemsEaten(s) % 2 === 1 ? sounds.sweetChompHigh : sounds.sweetChompLow);
       }
 
       if (item.isPower()) {
         s.scoreValue += 50;
-        playSound(sweetSamSounds.smoke);
+        playSound(sounds.sweetSmoke);
 
         s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
 
@@ -426,7 +426,7 @@ export class LevelClearState implements State {
 
   onEnter(): void {
     this.s.pauseTicks = levelClearTicks;
-    playSound(sweetSamSounds.clear);
+    playSound(sounds.sweetClear);
   }
 
   update(_i: Input): StateID {

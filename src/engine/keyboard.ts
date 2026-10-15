@@ -51,9 +51,9 @@ export class KeyTracker {
   }
 }
 
-const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]);
+const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Backspace"]);
 
-/** Arrows and Space would scroll the page (D3). */
+/** Arrows and Space would scroll the page (D3); Backspace may navigate back. */
 export function shouldPreventDefault(code: string): boolean {
   return SCROLL_KEYS.has(code);
 }

@@ -13,7 +13,7 @@ import {
   sleepyBeesFactor,
   startingLives,
 } from "./advantages.ts";
-import { createSweetSam } from "./index.ts";
+import { minigame } from "../game/minigames.ts";
 import { SweetSamSoftware } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 
@@ -28,8 +28,8 @@ afterEach(() => {
 
 /** Sweet Sam with these prizes, advanced past READY into PLAY. */
 function playing(prizes: readonly PrizeId[]): SweetSamSoftware {
-  const s = createSweetSam(0, prizes);
-  if (!(s instanceof SweetSamSoftware)) throw new Error("createSweetSam did not return a SweetSamSoftware");
+  const s = minigame("sweetSam").create({ highScore: 0, prizes });
+  if (!(s instanceof SweetSamSoftware)) throw new Error("Sweet Sam's create did not return a SweetSamSoftware");
   for (let k = 0; k < 122; k++) s.update(NO_INPUT);
   expect(s.snapshot().state).toBe("PLAY");
   return s;
@@ -84,8 +84,8 @@ describe("Sweet Sam with prizes", () => {
   });
 
   test("honey jar: a run starts with 4 lives", () => {
-    const s = createSweetSam(0, ["honeyJar"]);
-    if (!(s instanceof SweetSamSoftware)) throw new Error("createSweetSam did not return a SweetSamSoftware");
+    const s = minigame("sweetSam").create({ highScore: 0, prizes: ["honeyJar"] });
+    if (!(s instanceof SweetSamSoftware)) throw new Error("Sweet Sam's create did not return a SweetSamSoftware");
     expect(s.snapshot().lives).toBe(4);
   });
 

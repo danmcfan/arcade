@@ -437,7 +437,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
 
 /**
  * Run `body` against a fresh browser session and dev server (or
- * `opts.server`'s, e.g. the art studio), then clean both up. Exits non-zero (and prints the error) if `body` throws.
+ * `opts.server`'s, e.g. a dev server), then clean both up. Exits non-zero (and prints the error) if `body` throws.
  */
 export async function verify(
   name: string,

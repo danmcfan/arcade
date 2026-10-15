@@ -25,8 +25,16 @@ The music that loops, quietly, the whole time the player is in the hub, prize co
 _Avoid_: hub melody, background music
 
 **Minigame**:
-A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`.
+A game played inside a cabinet: Sweet Sam, Firefly or Brass Monkey. In code, a `Software`; each is described once, cabinet and all, by its `Minigame` entry in `minigames` (`src/game/minigames.ts`).
 _Avoid_: level, mode, sub-game
+
+**Channel**:
+Which group a sound belongs to, declared with it in `defineSound`: `minigame` sounds stop when the minigame pause menu opens and resume when it closes; `arcade` sounds (menu blips, the hub song, attract loops) do not.
+_Avoid_: bus, mixer group
+
+**Image output**:
+One PNG an art generator declares with `imageOutput`: its file, its hard-coded size and how to draw it. `bun run art` writes every image output, and the image table from those under `src/assets/images`.
+_Avoid_: art file, sprite file
 
 **Sweet Sam**:
 The Pac-Man-style minigame: a bear in a maze, chased by bees. Code name `sweetSam` (`src/sweet-sam/`).
@@ -107,7 +115,7 @@ _Avoid_: coin, pickup
 ## Economy
 
 **Wallet**:
-What the player has: their tokens, tickets and owned prizes, and the hub high score. It holds every rule that changes them: what a cabinet start costs, what a run pays, and what the prize counter sells. The save and the scoreboard's counts come from it. In code, `Wallet` (`src/arcade/wallet.ts`).
+What the player has: their tokens, tickets and owned prizes, and the player's high score on each machine. It holds every rule that changes them: what a cabinet start costs, what a run pays, and what the prize counter sells. The save and the scoreboard's counts come from it. In code, `Wallet` (`src/arcade/wallet.ts`).
 _Avoid_: purse, bank, inventory, account
 
 **Token**:
@@ -143,11 +151,19 @@ A decoration bought with tickets that shows in the hub and gives the player an a
 _Avoid_: power-up, upgrade, item, reward
 
 **Free play**:
-A play that costs nothing because the player's wallet has no tokens. It pays no tickets, but can still set the high score.
+A play that costs nothing because the player's wallet has no tokens. It pays no tickets, but can still set the player's high score.
 _Avoid_: free credit, bonus play
 
+**House high score**:
+A machine's fixed high score, set by the arcade, that the player must beat.
+_Avoid_: target score, par
+
+**Beaten**:
+A machine is beaten when the player's high score on it is above its house high score. Facing its cabinet, the scoreboard then shows its HI and a gold star, and its HI shows the player's score instead of the house's.
+_Avoid_: cleared, conquered
+
 **Score**:
-Points earned inside one minigame run. The hub keeps the high score.
+Points earned inside one minigame run. The wallet keeps the player's high score for each machine.
 _Avoid_: tickets (they are separate)
 
 ## Menus and progress
@@ -157,7 +173,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the wallet (the hub high score, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
+What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

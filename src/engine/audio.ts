@@ -2,35 +2,8 @@
 // browser half; the recorder half below is the contract porters and parity
 // tests rely on, and it works with no DOM.
 
-export type SoundName =
-  | "hub"
-  | "screenOn"
-  | "attractBrassMonkey"
-  | "attractSweet"
-  | "attractFirefly"
-  | "sweetStart"
-  | "sweetChompHigh"
-  | "sweetChompLow"
-  | "sweetSmoke"
-  | "sweetBee"
-  | "sweetFlower"
-  | "sweetDeath"
-  | "sweetClear"
-  | "spark"
-  | "hit"
-  | "lifeLost"
-  | "stage"
-  | "title"
-  | "move"
-  | "select"
-  | "ticket"
-  | "deny"
-  | "monkeyJump"
-  | "monkeyBolt"
-  | "monkeyHazard"
-  | "monkeyDeath"
-  | "monkeyFloor"
-  | "monkeyEscape";
+import type { SoundName } from "./sounds.generated.ts";
+
 export type SoundAction = "play" | "pause" | "rewind";
 /** Recorded as `"<action>:<name>"`, e.g. `"rewind:spark"`, `"pause:hub"`. */
 export type SoundEvent = `${SoundAction}:${SoundName}`;

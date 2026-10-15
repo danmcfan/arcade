@@ -1,7 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PNG } from "pngjs";
 import {
   bearDeath,
   bearWalk,
@@ -41,7 +38,7 @@ import {
   tunnelRowY,
   type Entity,
 } from "../src/sweet-sam/entity.ts";
-import { levelCap } from "../src/sweet-sam/levels.ts";
+import { flowerKinds } from "../src/sweet-sam/flower.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, flipX } from "./pixel-art.ts";
 import {
@@ -54,7 +51,6 @@ import {
   mazeLetter,
   mazeTileAt,
   sweetSamArtFiles,
-  sweetSamImagesDir,
 } from "./gen-sweet-sam-art.ts";
 
 describe("Sweet Sam art source", () => {
@@ -107,8 +103,8 @@ describe("Sweet Sam art source", () => {
     expect(beeFrames("teal").map((r) => r.length)).toEqual([4, 4, 4, 4, 4, 4]);
   });
 
-  test("one 16×16 bonus flower per level up to levelCap", () => {
-    expect(flowers.length).toBe(levelCap);
+  test("one 16×16 bonus flower per flower kind", () => {
+    expect(flowers.length).toBe(flowerKinds);
     flowers.forEach((f, i) => {
       checkRows(`flower ${i + 1}`, f, { w: 16, h: 16 });
       // Drawn on the frame's bottom row: the flower stands on the corridor's wall, and the counter's on the screen's edge.
@@ -216,19 +212,8 @@ describe("the maze's wax", () => {
   });
 });
 
-describe("committed Sweet Sam PNGs match src/sweet-sam/art.ts (run `bun run art` after editing it)", () => {
-  test("src/assets/images/sweet-sam holds exactly the generated files", () => {
-    expect(readdirSync(sweetSamImagesDir).toSorted()).toEqual(sweetSamArtFiles.map((f) => f.file).toSorted());
-  });
-
+describe("generated Sweet Sam PNGs", () => {
   for (const { file, render } of sweetSamArtFiles) {
-    test(file, () => {
-      const onDisk = PNG.sync.read(readFileSync(join(sweetSamImagesDir, file)));
-      const fresh = render();
-      expect([onDisk.width, onDisk.height]).toEqual([fresh.width, fresh.height]);
-      expect(Buffer.compare(onDisk.data, fresh.data)).toBe(0);
-    });
-
     test(`${file} is only Sweetie 16 colours`, () => {
       const allowed = new Set<string>([...sweetie16, "transparent"]);
       for (const c of colours(render()).keys())
@@ -237,7 +222,7 @@ describe("committed Sweet Sam PNGs match src/sweet-sam/art.ts (run `bun run art`
   }
 
   test("the maze is opaque: no cabinet shows through", () => {
-    const maze = sweetSamArtFiles.find((f) => f.file === "maze.png");
+    const maze = sweetSamArtFiles.find((f) => f.file.endsWith("/maze.png"));
     if (maze === undefined) throw new Error("maze.png is not a generated file");
     expect(colours(maze.render()).has("transparent")).toBe(false);
   });

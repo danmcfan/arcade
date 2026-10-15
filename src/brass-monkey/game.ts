@@ -3,7 +3,6 @@
 // bonus in a 32 px band of wall at the top, then the floor.
 
 import {
-  brassMonkeySounds,
   imageBolt,
   imageCabinetBrassMonkey,
   imageConveyor,
@@ -15,7 +14,9 @@ import {
   imageGnome,
   imageMonkey,
   imageWall,
+  sounds,
 } from "../engine/assets.ts";
+import type { Sound } from "../engine/audio.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
@@ -32,7 +33,7 @@ import {
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawText, drawTextCentered } from "../ui/text.ts";
 import { girderTop, type Floor } from "./floors.ts";
-import { Run, type Hazard, type Monkey } from "./play.ts";
+import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
@@ -45,6 +46,16 @@ const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(
 
 const digits = (n: number, width: number): string => String(Math.trunc(n)).padStart(width, "0");
 
+/** The sound for each of the run's sound cues. */
+const runSounds: Readonly<Record<RunSound, Sound>> = {
+  jump: sounds.monkeyJump,
+  bolt: sounds.monkeyBolt,
+  hazard: sounds.monkeyHazard,
+  death: sounds.monkeyDeath,
+  floor: sounds.monkeyFloor,
+  escape: sounds.monkeyEscape,
+};
+
 export class BrassMonkeySoftware implements FixedViewport {
   readonly name = "brassMonkey" as const;
 
@@ -56,8 +67,8 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.run = new Run({
       advantages,
       onSound: (s): void => {
-        brassMonkeySounds[s].rewind();
-        brassMonkeySounds[s].play();
+        runSounds[s].rewind();
+        runSounds[s].play();
       },
     });
   }

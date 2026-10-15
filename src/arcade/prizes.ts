@@ -8,9 +8,8 @@
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
-import type { ArcadeTitle } from "../game/snapshot.ts";
-import { prizeRects } from "../ui/prizeArt.ts";
-import { cabinetRects } from "./machine.ts";
+import { prizeGreyY, prizeRects } from "../ui/prizeArt.ts";
+import { minigame } from "../game/minigames.ts";
 
 export type PrizeId =
   | "honeyJar"
@@ -47,7 +46,7 @@ type Spot = "left" | "above" | "right";
 type Shape = "arch" | "rainbow";
 
 /** The middle cabinet's prizes make a rainbow, the outer cabinets' arches. */
-const shapes: Readonly<Record<ArcadeTitle, Shape>> = { brassMonkey: "arch", sweet: "rainbow", firefly: "arch" };
+const shapes: Readonly<Record<SoftwareName, Shape>> = { brassMonkey: "arch", sweetSam: "rainbow", firefly: "arch" };
 
 /** Pixels between a side prize's box and its cabinet. */
 const sideGap = 4;
@@ -61,8 +60,8 @@ const rainbowDrop = 2;
  * the cabinet. Each gap between cabinets (24 px) holds the middle cabinet's
  * rainbow side above its neighbour's arch side.
  */
-function hang(cabinet: ArcadeTitle, spot: Spot): { x: number; y: number } {
-  const c = cabinetRects[cabinet];
+function hang(cabinet: SoftwareName, spot: Spot): { x: number; y: number } {
+  const c = minigame(cabinet).hubRect;
   const above = c.y - aboveGap - prizeBox;
   if (spot === "above") return { x: c.x, y: above };
   const x = spot === "left" ? c.x - sideGap - prizeBox : c.x + c.w + sideGap;
@@ -75,18 +74,22 @@ export interface Prize {
   name: string;
   /** Tickets it costs. */
   price: number;
+  /** What it does, as the prize counter's info panel says it. */
+  effect: string;
   /** The minigame it gives an advantage in. */
   software: SoftwareName;
   /** Its decoration in the hub. */
   sprite: Sprite;
+  /** The decoration greyed out, for the prize counter's owned prizes. */
+  greySprite: Sprite;
   /** Top-left of the decoration, in hub-image coordinates. It is not solid. */
   x: number;
   y: number;
 }
 
-function decoration(id: PrizeId): Sprite {
+function decoration(id: PrizeId, y = 0): Sprite {
   const r = prizeRects[id];
-  return sub(imagePrizes, r.x, 0, r.x + r.w, r.h);
+  return sub(imagePrizes, r.x, y, r.x + r.w, y + r.h);
 }
 
 /**
@@ -99,72 +102,90 @@ export const prizes: readonly Prize[] = [
     id: "honeyJar",
     name: "HONEY JAR",
     price: honeyJarPrice,
+    effect: "+1 LIFE IN SWEET SAM",
     software: "sweetSam",
     sprite: decoration("honeyJar"),
-    ...hang("sweet", "left"),
+    greySprite: decoration("honeyJar", prizeGreyY),
+    ...hang("sweetSam", "left"),
   },
   {
     id: "runningShoes",
     name: "RUNNING SHOES",
     price: runningShoesPrice,
+    effect: "SAM RUNS FASTER",
     software: "sweetSam",
     sprite: decoration("runningShoes"),
-    ...hang("sweet", "right"),
+    greySprite: decoration("runningShoes", prizeGreyY),
+    ...hang("sweetSam", "right"),
   },
   {
     id: "sleepyBees",
     name: "SLEEPY BEES",
     price: sleepyBeesPrice,
+    effect: "BEES SLEEP LONGER",
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
-    ...hang("sweet", "above"),
+    greySprite: decoration("sleepyBees", prizeGreyY),
+    ...hang("sweetSam", "above"),
   },
   {
     id: "lantern",
     name: "LANTERN",
     price: lanternPrice,
+    effect: "+1 LIFE IN FIREFLY",
     software: "firefly",
     sprite: decoration("lantern"),
+    greySprite: decoration("lantern", prizeGreyY),
     ...hang("firefly", "right"),
   },
   {
     id: "glowStick",
     name: "GLOW STICK",
     price: glowStickPrice,
+    effect: "3 SPARKS AT ONCE",
     software: "firefly",
     sprite: decoration("glowStick"),
+    greySprite: decoration("glowStick", prizeGreyY),
     ...hang("firefly", "left"),
   },
   {
     id: "wings",
     name: "WINGS",
     price: wingsPrice,
+    effect: "FIREFLY FLIES FASTER",
     software: "firefly",
     sprite: decoration("wings"),
+    greySprite: decoration("wings", prizeGreyY),
     ...hang("firefly", "above"),
   },
   {
     id: "oilCan",
     name: "OIL CAN",
     price: oilCanPrice,
+    effect: "+1 LIFE IN BRASS MONKEY",
     software: "brassMonkey",
     sprite: decoration("oilCan"),
+    greySprite: decoration("oilCan", prizeGreyY),
     ...hang("brassMonkey", "left"),
   },
   {
     id: "springBoots",
     name: "SPRING BOOTS",
     price: springBootsPrice,
+    effect: "JUMP HIGHER",
     software: "brassMonkey",
     sprite: decoration("springBoots"),
+    greySprite: decoration("springBoots", prizeGreyY),
     ...hang("brassMonkey", "above"),
   },
   {
     id: "pocketWatch",
     name: "POCKET WATCH",
     price: pocketWatchPrice,
+    effect: "SLOWER BONUS",
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
+    greySprite: decoration("pocketWatch", prizeGreyY),
     ...hang("brassMonkey", "right"),
   },
 ];

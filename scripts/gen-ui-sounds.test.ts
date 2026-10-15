@@ -2,47 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import {
-  arpeggio,
   attractLoops,
-  bass,
   hubSong,
-  melody,
+  soundDeclarations,
   sweetSamTunes,
+  titleSong,
   tuneSeconds,
   type Note,
 } from "../src/ui/sounds.ts";
-import {
-  attractBrassMonkeyPath,
-  attractFireflyPath,
-  attractSweetPath,
-  brassMonkeySoundFiles,
-  denyPath,
-  hitPath,
-  hubPath,
-  lifeLostPath,
-  movePath,
-  renderAttractBrassMonkey,
-  renderAttractFirefly,
-  renderAttractSweet,
-  renderDeny,
-  renderHit,
-  renderHub,
-  renderLifeLost,
-  renderMove,
-  renderScreenOn,
-  renderSelect,
-  renderSpark,
-  renderStage,
-  renderTicket,
-  renderTitle,
-  screenOnPath,
-  selectPath,
-  sweetSamSoundFiles,
-  sparkPath,
-  stagePath,
-  ticketPath,
-  titlePath,
-} from "./gen-ui-sounds.ts";
+import { checkNames, render, soundTable, tablePath, wavPath } from "./gen-ui-sounds.ts";
 
 const length = (notes: readonly Note[]): number => notes.reduce((t, [, len]) => t + len, 0);
 
@@ -63,32 +31,35 @@ describe("UI sound source", () => {
   });
 
   test("the title music's voices are the same length, so the loop lines up", () => {
-    expect(length(bass)).toBe(length(melody));
-    expect(length(arpeggio)).toBe(length(melody));
+    expect(length(titleSong.bass)).toBe(length(titleSong.melody));
+    expect(length(titleSong.arpeggio)).toBe(length(titleSong.melody));
   });
 });
 
-describe("committed WAVs match src/ui/sounds.ts (run `bun run sounds` after editing it)", () => {
-  for (const [name, path, render] of [
-    ["title.wav", titlePath, renderTitle],
-    ["hub.wav", hubPath, renderHub],
-    ["screen-on.wav", screenOnPath, renderScreenOn],
-    ["attract-brass-monkey.wav", attractBrassMonkeyPath, renderAttractBrassMonkey],
-    ["attract-sweet.wav", attractSweetPath, renderAttractSweet],
-    ["attract-firefly.wav", attractFireflyPath, renderAttractFirefly],
-    ["move.wav", movePath, renderMove],
-    ["select.wav", selectPath, renderSelect],
-    ["ticket.wav", ticketPath, renderTicket],
-    ["deny.wav", denyPath, renderDeny],
-    ...sweetSamSoundFiles.map(([file, renderFile]) => [basename(file), file, renderFile] as const),
-    ["spark.wav", sparkPath, renderSpark],
-    ["hit.wav", hitPath, renderHit],
-    ["life-lost.wav", lifeLostPath, renderLifeLost],
-    ["stage.wav", stagePath, renderStage],
-    ...brassMonkeySoundFiles.map((f) => [basename(f.path), f.path, f.render] as const),
-  ] as const) {
-    test(name, () => {
-      expect(Buffer.compare(readFileSync(path), render())).toBe(0);
-    });
-  }
+describe("sound names", () => {
+  test("each is a camelCase identifier, used once", () => {
+    const sound = soundDeclarations[0];
+    if (sound === undefined) throw new Error("no sounds declared");
+    expect(() => {
+      checkNames(soundDeclarations);
+    }).not.toThrow();
+    expect(() => {
+      checkNames([sound, sound]);
+    }).toThrow(`sound ${sound.name} is declared twice`);
+    expect(() => {
+      checkNames([{ ...sound, name: "life-lost" }]);
+    }).toThrow('sound name "life-lost" is not camelCase');
+  });
+});
+
+describe("committed sounds match src/ui/sounds.ts (run `bun run sounds` after editing it)", () => {
+  const generated: readonly (readonly [name: string, path: string, generate: () => Buffer | Promise<Buffer>])[] = [
+    ...soundDeclarations.map(
+      (sound) => [basename(wavPath(sound)), wavPath(sound), () => render(sound.source)] as const,
+    ),
+    [basename(tablePath), tablePath, async () => Buffer.from(await soundTable())],
+  ];
+  test.each(generated)("%s", async (_name, path, generate) => {
+    expect(Buffer.compare(readFileSync(path), await generate())).toBe(0);
+  });
 });

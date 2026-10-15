@@ -18,6 +18,8 @@ import type { Direction } from "../engine/input.ts";
 import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import type { HighScores } from "../arcade/wallet.ts";
+import type { Faced } from "../arcade/update.ts";
 
 /** Fields every top-level scene snapshot carries. */
 export interface SceneSnapshotBase {
@@ -48,13 +50,15 @@ export interface ArcadeSnapshot {
   player: ArcadePlayerSnapshot;
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
+  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", or null for the counts. */
+  faced: Faced | null;
   /**
    * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
    */
   title: ArcadeTitle | null;
-  /** `State.HighScore`. */
-  highScore: number;
+  /** The player's high score on each machine (Go had one `State.HighScore`). */
+  highScores: HighScores;
   /** Tokens left (no Go original); 0 means the next cabinet start is free play. */
   tokens: number;
   /** Tickets won so far (no Go original). */
@@ -88,7 +92,8 @@ export interface GameSnapshot extends SceneSnapshotBase {
   menu: GameMenu | null;
   /**
    * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
-   * or the prize counter menu (the token, the prizes, CLOSE). Stays 1 (CONTROLS) while
+   * or the prize counter (0-8 the prize shelf row by row, 9 BUY TOKEN, 10
+   * CLOSE; `counterSlot` in ./menus.ts). Stays 1 (CONTROLS) while
    * the controls panel shows; 0 in the hub, the running minigame and the
    * payout.
    */
