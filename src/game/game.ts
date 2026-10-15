@@ -13,13 +13,12 @@ import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
-import { prizes } from "../arcade/prizes.ts";
 import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type WalletProgress } from "../arcade/wallet.ts";
 import { update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
-import { closeItemIndex, firstPrizeIndex, prizeCounterItems, tokenItemIndex } from "./menus.ts";
+import { counterSlot, moveCounterCursor, tokenCursor } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -208,27 +207,22 @@ export class Game implements Scene {
       return;
     }
     sounds.select.blip();
-    this.counterCursor = 0;
+    this.counterCursor = tokenCursor;
   }
 
   private updatePrizeCounter(cursor: number, raw: Input, edges: MenuEdges): void {
     const wallet = this.arcade.wallet;
-    const n = prizeCounterItems(wallet.counter()).length;
-    const delta = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
+    const dx = (edges.right ? 1 : 0) - (edges.left ? 1 : 0);
+    const dy = (edges.down ? 1 : 0) - (edges.up ? 1 : 0);
     let at = cursor;
-    if (delta !== 0) {
-      at = (cursor + delta + n) % n;
+    if (dx !== 0 || dy !== 0) {
+      at = moveCounterCursor(cursor, dx, dy);
       this.counterCursor = at;
       sounds.move.blip();
     }
-    if (edges.space && at === tokenItemIndex) {
-      (wallet.buy("token") ? sounds.select : sounds.deny).blip();
-      return;
-    }
-    if (edges.space && at >= firstPrizeIndex && at < closeItemIndex) {
-      const prize = prizes[at - firstPrizeIndex];
-      if (prize === undefined) throw new Error(`prize counter: no prize at item ${at}`);
-      (wallet.buy(prize.id) ? sounds.select : sounds.deny).blip();
+    const slot = counterSlot(at);
+    if (edges.space && slot !== "close") {
+      (wallet.buy(slot === "token" ? "token" : slot.prize.id) ? sounds.select : sounds.deny).blip();
       return;
     }
     if (!edges.space && !edges.escape) return;

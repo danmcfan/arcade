@@ -68,12 +68,21 @@ describe("direction helpers", () => {
 describe("MenuKeys", () => {
   test("reports menu keys on the tick they go down, not while held", () => {
     const keys = new MenuKeys();
-    expect(keys.read(held({ space: true })).edges).toEqual({ up: false, down: false, space: true, escape: false });
+    expect(keys.read(held({ space: true })).edges).toEqual({
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      space: true,
+      escape: false,
+    });
     expect(keys.read(held({ space: true })).edges.space).toBe(false);
     expect(keys.read(NO_INPUT).edges.space).toBe(false);
     expect(keys.read(held({ escape: true, down: true })).edges).toEqual({
       up: false,
       down: true,
+      left: false,
+      right: false,
       space: false,
       escape: true,
     });

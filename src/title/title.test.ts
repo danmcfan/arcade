@@ -405,7 +405,8 @@ describe("saving when the wallet changes", () => {
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toMatchObject({ tokens: 1, tickets: 25, prizes: [] });
     saves = store.saves;
-    tap(t, "down");
+    tap(t, "down"); // the shelf's top row, the oil can
+    tap(t, "right");
     tap(t, "space"); // the honey jar: 0 tickets left
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toMatchObject({ tokens: 1, tickets: 0, prizes: ["honeyJar"] });
@@ -469,7 +470,8 @@ describe("prize counter inside the title scene", () => {
   test("a prize purchase saves at once as a v3 save, and Continue brings the prize back", () => {
     const store = spyStore();
     const t = atCounter(store, 3, 40);
-    tap(t, "down"); // honey jar
+    tap(t, "down"); // the oil can, top left of the shelf
+    tap(t, "right"); // the honey jar
     const saves = store.saves;
     tap(t, "space");
     expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["honeyJar"] });

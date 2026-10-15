@@ -4,7 +4,8 @@
 // centred on the minigame's playfield; the prize counter menu fills the hub's playfield
 // under the scoreboard, inside the 160x144 frame (#72).
 
-import type { Wallet } from "../arcade/wallet.ts";
+import { prizes } from "../arcade/prizes.ts";
+import { type PrizeOffer, type TokenOffer, type Wallet } from "../arcade/wallet.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawIcon } from "../ui/hud.ts";
 import { iconRects } from "../ui/icons.ts";
@@ -20,15 +21,22 @@ import {
   type Hint,
 } from "../ui/menu.ts";
 import { drawReels } from "../ui/reelText.ts";
-import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth } from "../ui/text.ts";
+import { sweetie } from "../ui/sweetie16.ts";
+import { drawPanel, drawText, drawTextCentered, keyHeight, textHeight, textWidth, type Ink } from "../ui/text.ts";
 import {
-  firstPrizeIndex,
+  closeCursor,
+  closeItem,
+  counterSlot,
   minigamePauseMenu,
-  prizeCounterItems,
   prizeCounterTitle,
   quitGameIndex,
   quitGameNote,
-  tokenItemIndex,
+  shelf,
+  shelfColumns,
+  shelfRows,
+  tokenCursor,
+  tokenItems,
+  type CounterSlot,
 } from "./menus.ts";
 import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
@@ -55,15 +63,6 @@ export const closeHints: readonly Hint[] = [{ keys: ["SPACE"], label: "OK" }];
 
 const payoutWidth = 152;
 const payoutHeight = 74;
-
-export const counterHints: readonly Hint[] = [
-  { keys: ["SPACE"], label: "OK" },
-  { keys: ["ESC"], label: "BACK" },
-];
-/** Items the prize counter shows at once; the list scrolls to keep the cursor in view. */
-export const counterVisibleItems = 7;
-/** Space between item rows. */
-const counterRowHeight = 10;
 
 export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   const { x, y, w, h } = o.playfield;
@@ -97,17 +96,32 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
   }
 }
 
-/** The first item shown when `cursor` is selected in a list of `n`: the cursor kept in the middle where it can be. */
-export function counterWindowStart(cursor: number, n: number): number {
-  const half = Math.trunc(counterVisibleItems / 2);
-  return Math.max(0, Math.min(cursor - half, n - counterVisibleItems));
+/** Each shelf column's width; the shelf is centred in the panel. */
+const shelfColumnWidth = 52;
+/** Each shelf row's height: a picture standing on its plank, its price under it. */
+const shelfRowHeight = 24;
+/** The tallest picture a shelf cell holds. */
+const pictureHeight = 12;
+/** A greyed-out (owned) picture's alpha. */
+const ownedAlpha = 0.3;
+
+/** The info panel's lines for what the cursor is on: a name, a price, what it does. */
+function counterInfo(slot: CounterSlot, token: TokenOffer): { name: string; price: string; effect: string } {
+  if (slot === "close") return { name: closeItem, price: "", effect: "BACK TO THE ARCADE" };
+  if (slot === "token") {
+    return token === "lastChance"
+      ? { name: "LAST CHANCE", price: "ALL", effect: "ALL TICKETS FOR 1 TOKEN" }
+      : { name: "TOKEN", price: tokenItems.token.value, effect: "ONE PLAY ON A CABINET" };
+  }
+  return { name: slot.prize.name, price: `${slot.prize.price}`, effect: slot.prize.effect };
 }
 
 /**
- * The prize counter panel, filling `area` but for a 1-2 px border: the
- * player's tickets, then a scrolling list of the token, the prizes (each
- * greyed out when it can't be bought, owned ones read OWNED) and CLOSE, names
- * on the left and prices on the right, and the key hints.
+ * The prize counter panel, filling `area` but for a 1-2 px border: the title
+ * and the player's tickets, the prize shelf (a column per cabinet, each
+ * picture over its price: red when the player is short, OWNED and the
+ * picture greyed out once bought), BUY TOKEN and CLOSE under it, and an info
+ * panel for what the cursor is on.
  */
 function drawPrizeCounter(
   screen: Surface,
@@ -120,40 +134,86 @@ function drawPrizeCounter(
   const y = area.y + 1;
   const width = area.w - 4;
   const height = area.h - 2;
-  const centre = x + Math.trunc(width / 2);
   drawPanel(screen, x, y, width, height);
-  drawTextCentered(screen, prizeCounterTitle, centre, y + 6, "yellow");
+  drawText(screen, prizeCounterTitle, x + 6, y + 6, "yellow");
   const count = `${w.tickets}`;
   const icon = iconRects.ticket;
-  const left = centre - Math.trunc((icon.w + 3 + textWidth(count)) / 2);
-  drawIcon(screen, "ticket", left, y + 17 - (icon.h - textHeight) / 2);
-  drawText(screen, count, left + icon.w + 3, y + 17, "yellow");
+  const countX = x + width - 6 - textWidth(count);
+  drawIcon(screen, "ticket", countX - 3 - icon.w, y + 6 - (icon.h - textHeight) / 2);
+  drawText(screen, count, countX, y + 6, "yellow");
+
   const offers = w.counter();
-  const greyed = new Set(offers.token === "short" ? [tokenItemIndex] : []);
-  offers.prizes.forEach((o, i) => {
-    if (o !== "buy") greyed.add(firstPrizeIndex + i);
+  const cols = shelfColumns.length;
+  const shelfLeft = x + Math.trunc((width - cols * shelfColumnWidth) / 2);
+  const shelfTop = y + 17;
+  shelf.forEach((p, i) => {
+    const centre = shelfLeft + (i % cols) * shelfColumnWidth + shelfColumnWidth / 2;
+    const top = shelfTop + Math.trunc(i / cols) * shelfRowHeight;
+    const offer = offers.prizes[prizes.indexOf(p)] ?? "buy";
+    const px = centre - Math.trunc(p.sprite.w / 2);
+    const py = top + pictureHeight - p.sprite.h;
+    screen.draw(p.sprite, px, py, offer === "owned" ? { alpha: ownedAlpha } : undefined);
+    const label = offer === "owned" ? "OWNED" : `${p.price}`;
+    drawTextCentered(screen, label, centre, top + pictureHeight + 3, priceInk[offer]);
+    if (i === cursor) drawCellCursor(screen, centre - 18, top - 2, 36, shelfRowHeight - 2, tick);
   });
-  const items = prizeCounterItems(offers);
-  const start = counterWindowStart(cursor, items.length);
-  const top = y + 31;
-  const nameX = x + 14;
-  const valueRight = x + width - 16;
-  items.slice(start, start + counterVisibleItems).forEach((item, row) => {
-    const i = start + row;
-    const rowY = top + row * counterRowHeight;
-    const grey = greyed.has(i);
-    const ink = grey ? "grey" : i === cursor ? "yellow" : "white";
-    drawText(screen, item.label, nameX, rowY, ink);
-    drawText(screen, item.value, valueRight - textWidth(item.value), rowY, grey ? "grey" : "yellow");
-    if (i === cursor) drawText(screen, ">", x + 5 + arrowOffset(tick) - 1, rowY, "yellow");
-  });
-  // More items above or below the window.
-  const arrowX = x + width - 10;
-  if (start > 0) drawText(screen, "↑", arrowX, top, "grey");
-  if (start + counterVisibleItems < items.length) {
-    drawText(screen, "↓", arrowX, top + (counterVisibleItems - 1) * counterRowHeight, "grey");
+  // The planks the pictures stand on.
+  for (let row = 0; row < shelfRows; row++) {
+    const plankY = shelfTop + row * shelfRowHeight + pictureHeight + 1;
+    screen.fillRect(shelfLeft + 2, plankY, cols * shelfColumnWidth - 4, 1, sweetie.l);
   }
-  drawHints(screen, counterHints, y + height - keyHeight - 5, centre);
+
+  const rowY = shelfTop + shelfRows * shelfRowHeight + 1;
+  const token = tokenItems[offers.token];
+  const tokenGrey = offers.token === "short";
+  const tokenCentre = shelfLeft + shelfColumnWidth;
+  const closeCentre = shelfLeft + (cols - 0.5) * shelfColumnWidth;
+  drawRowItem(screen, token.label, tokenCentre, rowY, cursor === tokenCursor, tokenGrey, tick);
+  drawRowItem(screen, closeItem, closeCentre, rowY, cursor === closeCursor, false, tick);
+
+  const infoTop = rowY + 11;
+  const infoHeight = y + height - 3 - infoTop;
+  screen.fillRect(x + 4, infoTop, width - 8, 1, sweetie.d);
+  const info = counterInfo(counterSlot(cursor), offers.token);
+  drawText(screen, info.name, x + 7, infoTop + 3, "white");
+  drawText(screen, info.price, x + width - 7 - textWidth(info.price), infoTop + 3, "white");
+  drawText(screen, info.effect, x + 7, infoTop + infoHeight - textHeight - 1, "white");
+}
+
+/** A shelf price's ink: yellow, red when the player is short, grey once owned. */
+const priceInk: Readonly<Record<PrizeOffer, Ink>> = { buy: "yellow", short: "red", owned: "grey" };
+
+/** The shelf cursor: yellow corner brackets round a cell, pulsing out a pixel with the menu arrows. */
+function drawCellCursor(screen: Surface, x: number, y: number, w: number, h: number, tick: number): void {
+  const o = Math.min(1, arrowOffset(tick));
+  const [l, t, r, b] = [x - o, y - o, x + w - 1 + o, y + h - 1 + o];
+  const ink = sweetie.y;
+  for (const [cx, cy, dx, dy] of [
+    [l, t, 1, 1],
+    [r, t, -1, 1],
+    [l, b, 1, -1],
+    [r, b, -1, -1],
+  ] as const) {
+    screen.fillRect(Math.min(cx, cx + dx * 2), cy, 3, 1, ink);
+    screen.fillRect(cx, Math.min(cy, cy + dy * 2), 1, 3, ink);
+  }
+}
+
+/** BUY TOKEN or CLOSE centred on `centre`: yellow after an arrow when selected, grey when it can't be chosen. */
+function drawRowItem(
+  screen: Surface,
+  label: string,
+  centre: number,
+  y: number,
+  selected: boolean,
+  grey: boolean,
+  tick: number,
+): void {
+  drawTextCentered(screen, label, centre, y, grey ? "grey" : selected ? "yellow" : "white");
+  if (selected) {
+    const left = centre - Math.trunc(textWidth(label) / 2);
+    drawText(screen, ">", left - 8 + arrowOffset(tick) - 1, y, "yellow");
+  }
 }
 
 /** The payout panel, top at `y`: the score spinning down, the tickets spinning up, and a key hint. */

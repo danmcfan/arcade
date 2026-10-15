@@ -5,7 +5,7 @@ import { makeSolid, type Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
-import type { PremulColor, Surface } from "../engine/surface.ts";
+import type { DrawOpts, PremulColor, Surface } from "../engine/surface.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
 import { iconRects, type IconName } from "../ui/icons.ts";
 import { dimColour } from "../ui/menu.ts";
@@ -20,7 +20,7 @@ import {
   tickerRight,
   type TickerInk,
 } from "../ui/tickerArt.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
+import { prizes as catalogue, type PrizeId } from "../arcade/prizes.ts";
 import { Game } from "./game.ts";
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { BrassMonkeySnapshot } from "./snapshot.ts";
@@ -35,6 +35,7 @@ const debugPrint = (_s: Surface, text: string, x: number, y: number): void => {
 
 type Call =
   | ["draw", string, number, number, number, number, number, number]
+  | ["draw", string, number, number, number, number, number, number, number]
   | ["strokeRect", number, number, number, number, PremulColor]
   | ["fillPremul", number, number, number, number, PremulColor];
 
@@ -106,7 +107,7 @@ function recordingSurface(): Recording {
       clips.push([x, y, w, h]);
       draw();
     },
-    draw(s: Sprite, x: number, y: number): void {
+    draw(s: Sprite, x: number, y: number, opts?: DrawOpts): void {
       boxes.push([x, y, s.w, s.h]);
       if (s.asset === images.ticker) {
         const ch = defined(Object.entries(tickerGlyphX).find(([, gx]) => gx === s.sx)?.[0]);
@@ -130,7 +131,8 @@ function recordingSurface(): Recording {
         return;
       }
       const name = Object.entries(images).find(([, a]) => a === s.asset)?.[0] ?? "?";
-      calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y]);
+      if (opts?.alpha === undefined) calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y]);
+      else calls.push(["draw", name, s.sx, s.sy, s.w, s.h, x, y, opts.alpha]);
     },
     fillRect(x: number, y: number, w: number, h: number, css: string): void {
       boxes.push([x, y, w, h]);
@@ -707,6 +709,21 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
   return g;
 }
 
+const prizeIds = catalogue.map((p) => p.id);
+
+/** The prize pictures drawn, in reading order, each with its alpha (1 when drawn plain). */
+function shelfPictures(r: Recording): [PrizeId, number][] {
+  return r.calls
+    .filter((c) => c[0] === "draw" && c[1] === "prizes")
+    .toSorted((a, b) => bottom(a) - bottom(b) || Number(a[6]) - Number(b[6]))
+    .map((c) => [defined(prizeIds.find((id) => prizeRects[id].x === c[2])), typeof c[8] === "number" ? c[8] : 1]);
+}
+
+/** A drawn picture's bottom edge: the shelf stands each row's pictures on one plank. */
+function bottom(c: Call): number {
+  return Number(c[7]) + Number(c[5]);
+}
+
 describe("prize counter menu", () => {
   test("fills the room under the scoreboard: the room dims there, the board stays lit", () => {
     const r = recordingSurface();
@@ -717,30 +734,47 @@ describe("prize counter menu", () => {
     expect(insideFrame(r.boxes)).toEqual([]);
   });
 
-  test("lists the tickets, then the token and the prizes with their prices on the right, seven at a time", () => {
+  test("a shelf of nine prize pictures, a column per cabinet in hub order, each with its price", () => {
     const r = recordingSurface();
     atCounter(2, 120).draw(r.surface);
-    // The title, the ticket count, the selected token and every price shown.
-    expect(r.text("yellow")).toBe("PRIZE COUNTER120>TOKEN525501002550100");
-    expect(r.text("white")).toBe("HONEY JARRUNNING SHOESSLEEPY BEESLANTERNGLOW STICKWINGSSPACEESCOKBACK");
-    // More below.
-    expect(r.text("grey")).toBe("↓");
+    expect(shelfPictures(r)).toEqual([
+      ["oilCan", 1],
+      ["honeyJar", 1],
+      ["lantern", 1],
+      ["springBoots", 1],
+      ["runningShoes", 1],
+      ["glowStick", 1],
+      ["pocketWatch", 1],
+      ["sleepyBees", 1],
+      ["wings", 1],
+    ]);
+    // The title, the ticket count, the prices row by row, then the selected BUY TOKEN and its price.
+    expect(r.text("yellow")).toBe("PRIZE COUNTER120252525505050100100100>BUY TOKEN");
+    expect(r.text("red")).toBe("");
     expect(r.icons.map((i) => i.name)).toEqual(["ticket"]);
   });
 
-  test("scrolling down keeps the cursor in view and shows CLOSE last", () => {
-    const game = atCounter(5, 60);
-    for (let i = 0; i < 10; i++) {
-      game.step(input({ down: true }));
+  test("the info panel describes what the cursor is on, and changes as it moves", () => {
+    const game = atCounter(2, 120);
+    let r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.text("white")).toBe("CLOSETOKEN5ONE PLAY ON A CABINET");
+    for (const key of ["down", "right"] as const) {
+      game.step(input({ [key]: true }));
       game.step(input());
     }
-    expect(game.snapshot().cursor).toBe(10);
-    const r = recordingSurface();
+    r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">CLOSE");
-    // Items 4..10 (LANTERN to CLOSE); at 60 tickets the 100-ticket prizes are greyed out.
-    expect(r.text("white")).toBe("LANTERNGLOW STICKOIL CANSPRING BOOTSSPACEESCOKBACK");
-    expect(r.text("grey")).toBe("↑WINGS100POCKET WATCH100");
+    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
+  });
+
+  test("an owned prize is greyed out and reads OWNED; one the player can't afford keeps its colour, its price red", () => {
+    const r = recordingSurface();
+    atCounter(1, 60, ["honeyJar"]).draw(r.surface);
+    const pictures = shelfPictures(r);
+    expect(pictures.filter(([, alpha]) => alpha < 1).map(([id]) => id)).toEqual(["honeyJar"]);
+    expect(r.text("red")).toBe("100100100");
+    expect(r.text("grey")).toBe("OWNED");
   });
 
   test("a bought token shows on the scoreboard at once", () => {
@@ -755,28 +789,18 @@ describe("prize counter menu", () => {
     const game = atCounter(0, 3);
     const r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">LAST CHANCEALL");
+    expect(r.text("yellow")).toContain(">LAST CHANCE");
   });
 
-  test("with tokens left and too few tickets the token item and every prize are greyed out", () => {
+  test("with tokens left and too few tickets BUY TOKEN is greyed out", () => {
     const r = recordingSurface();
     atCounter(1, 3).draw(r.surface);
-    expect(r.text("grey")).toBe("TOKEN5HONEY JAR25RUNNING SHOES50SLEEPY BEES100LANTERN25GLOW STICK50WINGS100↓");
-    expect(r.text("yellow")).toBe("PRIZE COUNTER3>");
+    expect(r.text("grey")).toBe("BUY TOKEN");
+    expect(r.text("red")).toBe("252525505050100100100");
   });
 
-  test("a prize the player can't afford is greyed out; an owned one reads OWNED, greyed out", () => {
-    const r = recordingSurface();
-    atCounter(1, 60, ["honeyJar"]).draw(r.surface);
-    expect(r.text("grey")).toBe("HONEY JAROWNEDSLEEPY BEES100WINGS100↓");
-    expect(r.text("white")).toContain("RUNNING SHOES");
-  });
-
-  test("the selection arrow and the prices stay inside the panel, clear of its frame", () => {
+  test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {
     const game = atCounter(5, 60);
-    game.step(input({ down: true }));
-    game.step(input());
-    game.step(input({ down: true }));
     const panel = { x: 18, w: 156 };
     for (let t = 0; t < 40; t++) {
       const r = recordingSurface();
@@ -785,7 +809,8 @@ describe("prize counter menu", () => {
         expect(g.x).toBeGreaterThanOrEqual(panel.x + 3);
         expect(g.x + 6).toBeLessThanOrEqual(panel.x + panel.w - 3);
       }
-      game.step(input());
+      expect(insideFrame(r.boxes)).toEqual([]);
+      game.step(input(t % 4 === 0 ? { down: true } : t % 4 === 2 ? { right: true } : {}));
     }
   });
 });

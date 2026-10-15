@@ -1,10 +1,12 @@
 // Labels for the menus the Game draws: the minigame pause menu (each
 // minigame's controls panel is in ./minigames.ts), and the prize counter menu
-// (a token, the prizes, CLOSE) over the hub. (The title scene's menus are in
+// (a shelf of prizes, then BUY TOKEN and CLOSE) over the hub. (The title scene's menus are in
 // src/title/menus.ts; the drawing is in src/ui/menu.ts.)
 
 import { prizes, type Prize } from "../arcade/prizes.ts";
-import { ticketsPerToken, type CounterOffers, type PrizeOffer, type TokenOffer } from "../arcade/wallet.ts";
+import { ticketsPerToken, type TokenOffer } from "../arcade/wallet.ts";
+import { minigames } from "./minigames.ts";
+import type { SoftwareName } from "./software.ts";
 
 export const minigamePauseMenu = ["RESUME", "CONTROLS", "QUIT GAME"] as const;
 /** Index of QUIT GAME in `minigamePauseMenu`. */
@@ -16,38 +18,68 @@ export const quitGameNote = "NO TICKETS";
 
 export const prizeCounterTitle = "PRIZE COUNTER";
 
-/** One prize counter item: its name on the left, its price in tickets (or OWNED, ALL) on the right. */
-export interface CounterItem {
-  label: string;
-  value: string;
-}
-
-/** The token item for each offer; "short" is the normal price, greyed out. */
-export const tokenItems: Readonly<Record<TokenOffer, CounterItem>> = {
-  token: { label: "TOKEN", value: `${ticketsPerToken}` },
+/** The prize counter's token item for each offer, its label and price; "short" is the normal price, greyed out. */
+export const tokenItems: Readonly<Record<TokenOffer, { label: string; value: string }>> = {
+  token: { label: "BUY TOKEN", value: `${ticketsPerToken}` },
   lastChance: { label: "LAST CHANCE", value: "ALL" },
-  short: { label: "TOKEN", value: `${ticketsPerToken}` },
+  short: { label: "BUY TOKEN", value: `${ticketsPerToken}` },
 };
 
-/** A prize's item: its name and price, or OWNED once bought. */
-export function prizeItem(p: Prize, offer: PrizeOffer): CounterItem {
-  return { label: p.name, value: offer === "owned" ? "OWNED" : `${p.price}` };
+export const closeItem = "CLOSE";
+
+/** The cabinets left to right as the hub shows them: the prize shelf's columns. */
+export const shelfColumns: readonly SoftwareName[] = minigames
+  .toSorted((a, b) => a.hubRect.x - b.hubRect.x)
+  .map((m) => m.name);
+/** Prizes per shelf column. */
+export const shelfRows = 3;
+
+/**
+ * The prize shelf, row by row: each column is one cabinet's prizes in
+ * catalogue order (cheapest at the top). Cursor `row * columns + column`
+ * selects a prize; the row below holds BUY TOKEN then CLOSE.
+ */
+export const shelf: readonly Prize[] = Array.from({ length: shelfRows * shelfColumns.length }, (_, i) => {
+  const software = shelfColumns[i % shelfColumns.length];
+  const found = prizes.filter((p) => p.software === software)[Math.trunc(i / shelfColumns.length)];
+  if (found === undefined) throw new Error(`prize shelf: no prize at cell ${i}`);
+  return found;
+});
+/** The cursor on BUY TOKEN, where the prize counter opens. */
+export const tokenCursor = shelf.length;
+/** The cursor on CLOSE. */
+export const closeCursor = shelf.length + 1;
+
+/** What the prize counter cursor is on. */
+export type CounterSlot = { prize: Prize } | "token" | "close";
+
+export function counterSlot(cursor: number): CounterSlot {
+  if (cursor === tokenCursor) return "token";
+  if (cursor === closeCursor) return "close";
+  const prize = shelf[cursor];
+  if (prize === undefined) throw new Error(`prize counter: no item at cursor ${cursor}`);
+  return { prize };
 }
 
-export const closeItem = "CLOSE";
-/** Index of the token item in the prize counter menu. */
-export const tokenItemIndex = 0;
-/** Index of the first prize in the prize counter menu; the rest follow in catalogue order. */
-export const firstPrizeIndex = 1;
-/** Index of CLOSE in the prize counter menu. */
-export const closeItemIndex = firstPrizeIndex + prizes.length;
-
-/** The prize counter menu: the token, each prize (in catalogue order), then CLOSE. */
-export function prizeCounterItems(offers: CounterOffers): readonly CounterItem[] {
-  const prizeItems = prizes.map((p, i) => {
-    const prizeOffer = offers.prizes[i];
-    if (prizeOffer === undefined) throw new Error(`prize counter: no offer for ${p.id}`);
-    return prizeItem(p, prizeOffer);
-  });
-  return [tokenItems[offers.token], ...prizeItems, { label: closeItem, value: "" }];
+/**
+ * Where the prize counter cursor goes from `cursor` (dx, dy: -1, 0 or 1).
+ * Up and Down run round a column and the token row under it (BUY TOKEN under
+ * the left and middle columns, CLOSE under the right); Left and Right run
+ * round a shelf row, or between BUY TOKEN and CLOSE.
+ */
+export function moveCounterCursor(cursor: number, dx: number, dy: number): number {
+  const cols = shelfColumns.length;
+  const onShelf = cursor < shelf.length;
+  if (dx !== 0) {
+    if (!onShelf) return cursor === tokenCursor ? closeCursor : tokenCursor;
+    const row = Math.trunc(cursor / cols);
+    return row * cols + (((cursor % cols) + dx + cols) % cols);
+  }
+  if (dy === 0) return cursor;
+  // Rows 0..shelfRows-1 are the shelf, row shelfRows the token row.
+  const col = onShelf ? cursor % cols : cursor === tokenCursor ? 0 : cols - 1;
+  const row = onShelf ? Math.trunc(cursor / cols) : shelfRows;
+  const next = (row + dy + shelfRows + 1) % (shelfRows + 1);
+  if (next < shelfRows) return next * cols + col;
+  return col === cols - 1 ? closeCursor : tokenCursor;
 }

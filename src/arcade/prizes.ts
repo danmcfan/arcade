@@ -44,6 +44,8 @@ export interface Prize {
   name: string;
   /** Tickets it costs. */
   price: number;
+  /** What it does, as the prize counter's info panel says it. */
+  effect: string;
   /** The minigame it gives an advantage in. */
   software: SoftwareName;
   /** Its decoration in the hub. */
@@ -71,6 +73,7 @@ export const prizes: readonly Prize[] = [
     id: "honeyJar",
     name: "HONEY JAR",
     price: honeyJarPrice,
+    effect: "+1 LIFE IN SWEET SAM",
     software: "sweetSam",
     sprite: decoration("honeyJar"),
     x: sweetCabinet.x - 9,
@@ -80,6 +83,7 @@ export const prizes: readonly Prize[] = [
     id: "runningShoes",
     name: "RUNNING SHOES",
     price: runningShoesPrice,
+    effect: "SAM RUNS FASTER",
     software: "sweetSam",
     sprite: decoration("runningShoes"),
     x: sweetCabinet.x + 17,
@@ -89,6 +93,7 @@ export const prizes: readonly Prize[] = [
     id: "sleepyBees",
     name: "SLEEPY BEES",
     price: sleepyBeesPrice,
+    effect: "BEES SLEEP LONGER",
     software: "sweetSam",
     sprite: decoration("sleepyBees"),
     x: sweetCabinet.x + 2,
@@ -101,6 +106,7 @@ export const prizes: readonly Prize[] = [
     id: "lantern",
     name: "LANTERN",
     price: lanternPrice,
+    effect: "+1 LIFE IN FIREFLY",
     software: "firefly",
     sprite: decoration("lantern"),
     x: fireflyCabinet.x + 17,
@@ -110,6 +116,7 @@ export const prizes: readonly Prize[] = [
     id: "glowStick",
     name: "GLOW STICK",
     price: glowStickPrice,
+    effect: "3 SPARKS AT ONCE",
     software: "firefly",
     sprite: decoration("glowStick"),
     x: fireflyCabinet.x - 4,
@@ -119,6 +126,7 @@ export const prizes: readonly Prize[] = [
     id: "wings",
     name: "WINGS",
     price: wingsPrice,
+    effect: "FIREFLY FLIES FASTER",
     software: "firefly",
     sprite: decoration("wings"),
     x: fireflyCabinet.x + 2,
@@ -128,6 +136,7 @@ export const prizes: readonly Prize[] = [
     id: "oilCan",
     name: "OIL CAN",
     price: oilCanPrice,
+    effect: "+1 LIFE IN BRASS MONKEY",
     software: "brassMonkey",
     sprite: decoration("oilCan"),
     x: brassCabinet.x - 13,
@@ -137,6 +146,7 @@ export const prizes: readonly Prize[] = [
     id: "springBoots",
     name: "SPRING BOOTS",
     price: springBootsPrice,
+    effect: "JUMP HIGHER",
     software: "brassMonkey",
     sprite: decoration("springBoots"),
     x: brassCabinet.x,
@@ -146,6 +156,7 @@ export const prizes: readonly Prize[] = [
     id: "pocketWatch",
     name: "POCKET WATCH",
     price: pocketWatchPrice,
+    effect: "SLOWER BONUS",
     software: "brassMonkey",
     sprite: decoration("pocketWatch"),
     x: brassCabinet.x + 14,

@@ -48,7 +48,7 @@ import sweetSamMazeFlashUrl from "../assets/images/sweet-sam/maze-flash.png";
 import sweetSamFlowerUrl from "../assets/images/sweet-sam/flower.png";
 
 export const images = {
-  font: imageAsset(fontUrl, 128, 192),
+  font: imageAsset(fontUrl, 128, 224),
   logo: imageAsset(logoUrl, 100, 17),
   icons: imageAsset(iconsUrl, 23, 9),
   ticker: imageAsset(tickerUrl, 111, 25),
