@@ -15,7 +15,7 @@ import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
 import { blocked, newState, type State } from "../arcade/state.ts";
 import { Wallet, type WalletProgress } from "../arcade/wallet.ts";
-import { update as updateArcade } from "../arcade/update.ts";
+import { faced, update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
 import { Menu } from "./menu.ts";
@@ -139,7 +139,7 @@ export class Game implements Scene {
     };
   }
 
-  /** Goes up whenever tokens, tickets, prizes or the high score change. */
+  /** Goes up whenever tokens, tickets, prizes or a player high score change. */
   walletVersion(): number {
     return this.arcade.wallet.version;
   }
@@ -259,7 +259,7 @@ export class Game implements Scene {
     }
 
     // Everything in the hub, its counts and its menu included, is drawn inside the hub image (#72).
-    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode);
+    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode, faced(this.arcade, this.counterOpen));
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
     if (this.counterOpen) {
@@ -319,6 +319,7 @@ export class Game implements Scene {
       arcade: {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
+        faced: faced(this.arcade, this.counterOpen),
         title: this.arcade.imageTitle,
         ...this.walletSnapshot(),
       },
@@ -332,9 +333,9 @@ export class Game implements Scene {
   }
 
   /** The wallet as the `arcade` snapshot shows it: `prizes` is absent while none is owned (ADR-0004). */
-  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScore" | "tokens" | "tickets" | "prizes"> {
-    const { highScore, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
-    return { highScore, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
+  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScores" | "tokens" | "tickets" | "prizes"> {
+    const { highScores, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
+    return { highScores, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
   }
 
   dispose(): void {

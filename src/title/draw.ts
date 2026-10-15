@@ -4,19 +4,17 @@
 
 import { imageArcade, imageTitleLogo } from "../engine/assets.ts";
 import type { Surface } from "../engine/surface.ts";
+import { blinkOn } from "../ui/blink.ts";
 import {
   dim,
   dimColour,
-  drawControls,
-  drawControlsPanel,
-  drawHints,
   drawMenuItems,
   drawPausePanel,
-  moveControl,
-  type ControlRow,
-  type Hint,
+  drawStackedControls,
+  drawControlsPanel,
+  standardControls,
 } from "../ui/menu.ts";
-import { drawPanel, drawTextCentered, keyHeight } from "../ui/text.ts";
+import { drawPanel, drawTextCentered } from "../ui/text.ts";
 import { backLights, logoOverlay } from "./logo.ts";
 import type { Title } from "./title.ts";
 
@@ -27,29 +25,13 @@ const background = "#1a1c2c";
 const centre = screenWidth / 2;
 
 export const introLines = [
-  "THIS ARCADE IS FULL OF LITTLE",
-  "GAMES. WALK UP TO A CABINET",
-  "TO SEE ITS NAME, THEN PRESS",
-  "SPACE TO PLAY IT.",
-  "BEAT YOUR HIGH SCORE!",
+  "PLAY GAMES TO WIN TICKETS.",
+  "SPEND TICKETS TO EARN PRIZES.",
+  "USE PRIZES TO BEAT HIGH SCORES.",
+  "BEAT ALL HIGH SCORES TO WIN!",
 ] as const;
 
-/** One row of the controls table: the keys, then what they do. */
-export const controls: readonly ControlRow[] = [
-  moveControl,
-  { keys: [["SPACE"]], label: "PLAY / ACTION" },
-  { keys: [["ESC"]], label: "BACK / PAUSE" },
-];
-
-export const menuHints: readonly Hint[] = [
-  { keys: ["↑", "↓"], label: "CHOOSE" },
-  { keys: ["SPACE"], label: "OK" },
-];
-export const backHints: readonly Hint[] = [{ keys: ["ESC"], label: "BACK" }];
-
 export const confirmLines = ["START A NEW GAME?", "THIS DELETES YOUR", "SAVED GAME."] as const;
-
-const hintsTop = screenHeight - keyHeight - 6;
 
 export function draw(screen: Surface, t: Title): void {
   switch (t.phase) {
@@ -73,13 +55,8 @@ export function draw(screen: Surface, t: Title): void {
     case "controls":
       t.hostedGame().draw(screen);
       dimHub(screen);
-      drawControlsPanel(screen, controls, 4, 40);
+      drawControlsPanel(screen, standardControls, 4, 30);
   }
-}
-
-/** Blinking prompts show for 40 of every 60 ticks. */
-function blinkOn(t: Title): boolean {
-  return t.tick % 60 < 40;
 }
 
 function fillBackground(screen: Surface): void {
@@ -105,7 +82,6 @@ function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
 
 function drawMenu(screen: Surface, t: Title): void {
   drawMenuBody(screen, t, t.cursor);
-  drawHints(screen, menuHints, hintsTop, centre);
 }
 
 /** "Start a new game?" in a panel over the dimmed title menu. */
@@ -121,18 +97,19 @@ function drawConfirm(screen: Surface, t: Title): void {
     drawTextCentered(screen, line, centre, y + 8 + i * 10, i === 0 ? "yellow" : "white");
   });
   drawMenuItems(screen, t.items(), t.cursor, y + 44, t.tick, centre);
-  drawHints(screen, menuHints, hintsTop, centre);
 }
+
+/** Top of the intro's INTERACT TO START prompt. */
+export const introPromptTop = 156;
 
 function drawIntro(screen: Surface, t: Title): void {
   fillBackground(screen);
   drawTextCentered(screen, "HOW TO PLAY", centre, 10, "yellow");
   introLines.forEach((line, i) => {
-    drawTextCentered(screen, line, centre, 26 + i * 10, "white");
+    drawTextCentered(screen, line, centre, 24 + i * 10, "white");
   });
-  drawControls(screen, controls, 12, 104, 86);
-  if (blinkOn(t)) drawTextCentered(screen, "PRESS SPACE TO START", centre, 146, "yellow");
-  drawHints(screen, backHints, hintsTop, centre);
+  drawStackedControls(screen, standardControls, centre, 86);
+  if (blinkOn(t.tick)) drawTextCentered(screen, "INTERACT TO START", centre, introPromptTop, "yellow");
 }
 
 /** The Game's margin around the hub image, which stays transparent. */

@@ -51,7 +51,7 @@ export const images = {
   font: imageAsset(fontUrl, 128, 224),
   titleLogo: imageAsset(titleLogoUrl, 192, 72),
   icons: imageAsset(iconsUrl, 23, 9),
-  ticker: imageAsset(tickerUrl, 111, 25),
+  ticker: imageAsset(tickerUrl, 129, 25),
   employee: imageAsset(employeeUrl, 16, 24),
   prizes: imageAsset(prizesUrl, 91, 24),
   arcade: imageAsset(arcadeUrl, 160, 144),

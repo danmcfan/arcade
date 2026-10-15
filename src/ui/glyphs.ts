@@ -4,7 +4,7 @@
 // (src/ui/text.ts).
 //
 // The small font copies the 7-px lettering on the hub title cards
-// ("PRESS SPACE TO PLAY"): thin strokes with the corners knocked off. The
+// ("INTERACT TO PLAY"): thin strokes with the corners knocked off. The
 // title logo's letters (src/ui/titleArt.ts) were doubled from the display
 // font of the Go port's original Brass Monkey title card.
 

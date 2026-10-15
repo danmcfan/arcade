@@ -71,7 +71,7 @@ function pauseMenu(v: Verify): void {
     "starting Sweet Sam spends exactly 1 token",
     g.arcade,
   );
-  check(stored(v)?.v === 3 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 3)", stored(v));
+  check(stored(v)?.v === 4 && stored(v)?.tokens === 4, "the spent token is saved at once (save v: 4)", stored(v));
   v.step(150, { left: true });
 
   v.tap("escape");
@@ -156,7 +156,7 @@ function payout(v: Verify): void {
   v.step(1, { up: true });
   g = v.snapshot(isGameSnapshot);
   check(g.menu === "payout" && g.software === "sweetSam", "game over opens the payout over the last frame", g.menu);
-  check(g.arcade.highScore === 560, "the high score is updated", g.arcade.highScore);
+  check(g.arcade.highScores.sweetSam === 560, "Sweet Sam's player high score is updated", g.arcade.highScores);
   check(
     g.payout?.score === 560 && g.payout.tickets === 0 && g.payout.total === 5 && g.payout.counting,
     "the payout starts at 560 points and 0 tickets, 5 to pay",
@@ -205,12 +205,14 @@ function upgradeV1(v: Verify): void {
   v.tap("space"); // Continue
   const g = game(v);
   check(
-    g.arcade.highScore === 300 && g.arcade.player.x === 60 && g.arcade.player.dir === "LEFT",
-    "Continue from a v: 1 save keeps its high score and position",
+    Object.values(g.arcade.highScores).every((s) => s === 0) &&
+      g.arcade.player.x === 60 &&
+      g.arcade.player.dir === "LEFT",
+    "Continue from a v: 1 save keeps its position; its one shared high score is dropped (every machine resets to 0)",
     g.arcade,
   );
   check(g.arcade.tokens === 5 && g.arcade.tickets === 0, "and adds 5 tokens and 0 tickets", g.arcade);
-  check(stored(v)?.v === 3, "the save is rewritten as v: 3", stored(v));
+  check(stored(v)?.v === 4, "the save is rewritten as v: 4", stored(v));
 }
 
 function freePlay(v: Verify): void {

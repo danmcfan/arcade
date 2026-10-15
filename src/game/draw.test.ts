@@ -1,3 +1,4 @@
+import { noHighScores } from "../arcade/wallet.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { images } from "../engine/assets.ts";
@@ -221,7 +222,13 @@ const factory = (name: SoftwareName): Software => {
 
 const games: { dispose(): void }[] = [];
 function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []): Game {
-  const restore = { highScore: 0, tokens, tickets: 0, prizes, player: { x: 80, y: 92, dir: "DOWN" as const } };
+  const restore = {
+    highScores: noHighScores,
+    tokens,
+    tickets: 0,
+    prizes,
+    player: { x: 80, y: 92, dir: "DOWN" as const },
+  };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
   games.push(g);
   return g;
@@ -334,13 +341,13 @@ describe("hub draw", () => {
     expect(calls[2]).toEqual(["draw", "player", 32, 48, 16, 24, 63, 96]);
   });
 
-  test("while the melody plays, the scoreboard shows the cabinet's name and PRESS SPACE TO PLAY", () => {
+  test("while the melody plays, the scoreboard shows the cabinet's name and INTERACT TO PLAY", () => {
     const game = newGame();
     for (let t = 0; t < 25; t++) game.step(input({ up: true }));
     const { board, surface } = recordingSurface();
     game.draw(surface);
     expect(board("yellow")).toBe("SWEETSAM");
-    expect(board("white")).toBe("PRESSSPACETOPLAY");
+    expect(board("white")).toBe("INTERACTTOPLAY");
     expect(board("orange")).toBe("");
   });
 
@@ -485,7 +492,7 @@ describe("hub scoreboard", () => {
       const g = new Game(null, {
         createSoftware: factory,
         debugPrint,
-        restore: { highScore: 0, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+        restore: { highScores: noHighScores, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
       });
       games.push(g);
       const r = recordingSurface();
@@ -668,7 +675,7 @@ describe("menus over a minigame", () => {
     let r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("yellow")).toBe("PAYOUT0");
-    expect(r.text("white")).toBe("SCORE1420TICKETSSPACESKIP");
+    expect(r.text("white")).toBe("SCORE1420TICKETS");
 
     // Mid-spin, digits are cut: the old one leaving, the new one arriving.
     for (let t = 0; t < 25; t++) game.step(input());
@@ -680,7 +687,7 @@ describe("menus over a minigame", () => {
     r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("yellow")).toBe("PAYOUT14");
-    expect(r.text("white")).toBe("SCORE0TICKETSSPACEOK");
+    expect(r.text("white")).toBe("SCORE0TICKETS");
   });
 
   test("after free play the payout reads FREE PLAY: 0 TICKETS", () => {
@@ -692,7 +699,7 @@ describe("menus over a minigame", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(r.text("orange")).toBe("FREE PLAY: 0 TICKETS");
-    expect(r.text("white")).toBe("SCORE1420SPACEOK");
+    expect(r.text("white")).toBe("SCORE1420");
   });
 });
 
@@ -700,7 +707,7 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
   const g = new Game(null, {
     createSoftware: factory,
     debugPrint,
-    restore: { highScore: 0, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
+    restore: { highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
   });
   games.push(g);
   for (let t = 0; t < 3; t++) g.step(input({ down: true }));
