@@ -21,6 +21,7 @@ import {
   DeathWaitState,
   FinalDeathWaitState,
   GameOverState,
+  IntermissionState,
   LevelClearState,
   levelClearFlashTicks,
   levelClearTicks,
@@ -31,6 +32,7 @@ import {
   stateIDDeathWait,
   stateIDFinalDeathWait,
   stateIDGameOver,
+  stateIDIntermission,
   stateIDLevelClear,
   stateIDPause,
   stateIDPlay,
@@ -39,6 +41,7 @@ import {
 import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
 import { draw, type DrawCache } from "./draw.ts";
+import { intermissionAfter, type IntermissionScene } from "./intermission.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
 export class SweetSamSoftware implements FixedViewport {
@@ -111,6 +114,7 @@ export class SweetSamSoftware implements FixedViewport {
     this.stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(this));
     this.stateMachine.registerState(stateIDGameOver, new GameOverState());
     this.stateMachine.registerState(stateIDLevelClear, new LevelClearState(this));
+    this.stateMachine.registerState(stateIDIntermission, new IntermissionState(this));
 
     this.lives = advantages.lives;
     this.scoreValue = 0;
@@ -184,6 +188,12 @@ export class SweetSamSoftware implements FixedViewport {
   mazeFlash(): boolean {
     if (this.stateMachine.currentId() !== stateIDLevelClear) return false;
     return Math.trunc((levelClearTicks - this.pauseTicks) / levelClearFlashTicks) % 2 === 1;
+  }
+
+  /** The cutscene playing (after the level before this one), or null outside INTERMISSION. */
+  intermission(): IntermissionScene | null {
+    if (this.stateMachine.currentId() !== stateIDIntermission) return null;
+    return intermissionAfter(this.level - 1);
   }
 
   /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */
