@@ -6,7 +6,7 @@ import { imageDigits } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import { Surface } from "../engine/surface.ts";
-import { digits6, type DigitReels } from "./digitReel.ts";
+import { bootReels, digits6, newDigitReels, syncAndTick, type DigitReels } from "./digitReel.ts";
 
 /** A dial digit's width and height: an 8×8 tile. */
 export const dialDigitSize = 8;
@@ -69,5 +69,29 @@ export class RollingDials {
   private scratch(): Surface {
     this.cell ??= Surface.offscreen(dialDigitSize, dialDigitSize);
     return this.cell;
+  }
+}
+
+/** One number on a HUD: owns its reels, so the value drawn is the value spun to. */
+export class Dial {
+  private readonly reels = newDigitReels();
+  private readonly dials = new RollingDials();
+  private readonly alwaysShown: number;
+  private value: number;
+
+  constructor(initial = 0, alwaysShown = 2) {
+    this.value = initial;
+    this.alwaysShown = alwaysShown;
+    bootReels(this.reels, initial);
+  }
+
+  /** Point the reels at `value` and advance them one tick. */
+  update(value: number): void {
+    this.value = value;
+    syncAndTick(this.reels, digits6(value));
+  }
+
+  draw(screen: Surface, x: number, y: number): void {
+    this.dials.draw(screen, this.value, x, y, this.reels, this.alwaysShown);
   }
 }

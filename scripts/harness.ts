@@ -490,3 +490,35 @@ export async function verify(
     server.stop();
   }
 }
+
+/** One character a tick, its bits the held keys: too many ticks for a JSON array on agent-browser's command line. */
+export function packInputs(inputs: readonly Input[]): string {
+  return inputs
+    .map((i) =>
+      String.fromCodePoint(64 + (+i.up | (+i.down << 1) | (+i.left << 2) | (+i.right << 3) | (+i.space << 4))),
+    )
+    .join("");
+}
+
+/** JS object literal decoding a packed tick's bits (b) into the held keys. */
+const heldKeys = "{ up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 }";
+
+/** In-page JS stepping the page through packed[from, to) at once. */
+export function stepPage(packed: string, from: number, to: number): string {
+  return `{ const p = ${JSON.stringify(packed.slice(from, to))};
+   for (let k = 0; k < p.length; k++) {
+     const b = p.charCodeAt(k) - 64;
+     window.__arcade.step(1, ${heldKeys});
+   } } "ok"`;
+}
+
+/** In-page JS replaying `packed` on a timer, `perFrame` ticks a 16 ms frame; window.__at counts the ticks played. */
+export function replayPage(packed: string, perFrame: number): string {
+  return `window.__inputs = ${JSON.stringify(packed)}; window.__at = 0;
+         window.__timer = setInterval(() => {
+           for (let n = 0; n < ${perFrame} && window.__at < window.__inputs.length; n++) {
+             const b = window.__inputs.charCodeAt(window.__at++) - 64;
+             window.__arcade.step(1, ${heldKeys});
+           }
+         }, 16); "ok"`;
+}

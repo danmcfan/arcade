@@ -14,7 +14,6 @@ import {
   imageGear,
   imageGirderFloor,
   imageGnome,
-  imageHud,
   imageMonkey,
   imageWall,
   sounds,
@@ -35,9 +34,9 @@ import {
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawTextCentered } from "../ui/text.ts";
-import { digits6, newDigitReels, syncAndTick, type DigitReels } from "../ui/digitReel.ts";
-import { hudBandHeight, hudLabels, hudSheetWidth, scoreLabelsX } from "../ui/hudArt.ts";
-import { RollingDials } from "../ui/rollingDials.ts";
+import { scoreLabelsX } from "../ui/hudArt.ts";
+import { hudLabelSprite } from "../ui/hudLabels.ts";
+import { Dial } from "../ui/rollingDials.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
@@ -49,20 +48,6 @@ const hudHeight = 32;
 const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
-
-/** hud.png's band `band`, `w` wide. */
-const hudLabel = (band: number, w: number): Sprite =>
-  sub(imageHud, 0, band * hudBandHeight, w, band * hudBandHeight + 7);
-
-/** Reels booted to show `value` with no spin. */
-function bootedReels(value: number): DigitReels {
-  const reels = newDigitReels();
-  const d = digits6(value);
-  reels.forEach((r, i) => {
-    r.boot(d[i] ?? 0);
-  });
-  return reels;
-}
 
 /** Where the HUD's readouts stand in the band, as Sweet Sam's: labels on row 0, dials on row 1 (8 px rows). */
 const hud = {
@@ -91,16 +76,14 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   readonly run: Run;
   private highScore: number;
-  private readonly scoreDial = newDigitReels();
-  private readonly highScoreDial: DigitReels;
-  private readonly bonusDial: DigitReels;
-  private readonly loopDial = bootedReels(1);
-  /** Draws the dials; never touched by update (D12). */
-  private readonly dials = new RollingDials();
+  private readonly scoreDial = new Dial();
+  private readonly highScoreDial: Dial;
+  private readonly bonusDial: Dial;
+  private readonly loopDial = new Dial(1, 1);
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
-    this.highScoreDial = bootedReels(highScore);
+    this.highScoreDial = new Dial(highScore);
     this.run = new Run({
       advantages,
       onSound: (s): void => {
@@ -108,7 +91,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         runSounds[s].play();
       },
     });
-    this.bonusDial = bootedReels(this.run.bonus);
+    this.bonusDial = new Dial(this.run.bonus);
   }
 
   background(): Sprite {
@@ -118,10 +101,10 @@ export class BrassMonkeySoftware implements FixedViewport {
   update(i: Input): void {
     this.run.update(i);
     this.highScore = Math.max(this.highScore, this.run.score);
-    syncAndTick(this.scoreDial, digits6(this.run.score));
-    syncAndTick(this.highScoreDial, digits6(this.highScore));
-    syncAndTick(this.bonusDial, digits6(this.run.bonus));
-    syncAndTick(this.loopDial, digits6(this.run.loop + 1));
+    this.scoreDial.update(this.run.score);
+    this.highScoreDial.update(this.highScore);
+    this.bonusDial.update(this.run.bonus);
+    this.loopDial.update(this.run.loop + 1);
   }
 
   fixedViewportSize(): [number, number] {
@@ -168,16 +151,16 @@ export class BrassMonkeySoftware implements FixedViewport {
   private drawHud(screen: Surface, left: number, top: number): void {
     for (let x = 0; x < cabinetPlayfieldWidth; x += 32) screen.draw(imageWall, left + x, top);
     const { run } = this;
-    screen.draw(hudLabel(hudLabels.scores, hudSheetWidth), left + scoreLabelsX, top);
-    screen.draw(hudLabel(hudLabels.bonus, 40), left + hud.right, top);
-    this.dials.draw(screen, run.score, left + hud.score, top + hud.dialsTop, this.scoreDial);
-    this.dials.draw(screen, this.highScore, left + hud.highScore, top + hud.dialsTop, this.highScoreDial);
-    this.dials.draw(screen, run.bonus, left + hud.rightDials, top + hud.dialsTop, this.bonusDial);
+    screen.draw(hudLabelSprite("scores"), left + scoreLabelsX, top);
+    screen.draw(hudLabelSprite("bonus"), left + hud.right, top);
+    this.scoreDial.draw(screen, left + hud.score, top + hud.dialsTop);
+    this.highScoreDial.draw(screen, left + hud.highScore, top + hud.dialsTop);
+    this.bonusDial.draw(screen, left + hud.rightDials, top + hud.dialsTop);
     // Spare lives: the one in play is not counted.
     for (let n = 0; n < run.lives - 1; n++)
       screen.draw(frame(imageMonkey, 0, 16, 16), left + 8 * (2 + n * 2), top + hud.livesTop);
-    screen.draw(hudLabel(hudLabels.loop, 32), left + hud.right, top + hud.loopTop);
-    this.dials.draw(screen, run.loop + 1, left + hud.rightDials, top + hud.loopTop, this.loopDial, 1);
+    screen.draw(hudLabelSprite("loop"), left + hud.right, top + hud.loopTop);
+    this.loopDial.draw(screen, left + hud.rightDials, top + hud.loopTop);
   }
 
   gameOver(): boolean {

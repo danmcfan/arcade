@@ -9,18 +9,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { PNG } from "pngjs";
 import type { BrassMonkeySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import { play } from "../gen-brass-monkey-play.ts";
-import { isGameSnapshot, sweetSamIn, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, packInputs, replayPage, stepPage, sweetSamIn, verify, type Verify } from "../harness.ts";
 
 const seed = 163;
 const run = play(seed);
-const held = "{ left: !!(b & 1), right: !!(b & 2), up: !!(b & 4), down: !!(b & 8), space: !!(b & 16) }";
-const packed = run.inputs
-  .map((i) =>
-    String.fromCodePoint(
-      64 + (i.left ? 1 : 0) + (i.right ? 2 : 0) + (i.up ? 4 : 0) + (i.down ? 8 : 0) + (i.space ? 16 : 0),
-    ),
-  )
-  .join("");
+const packed = packInputs(run.inputs);
 
 const bm = (s: GameSnapshot): BrassMonkeySnapshot => {
   if (s.software !== "brassMonkey" || s.sw === null || !("moving" in s.sw)) throw new Error("not in Brass Monkey");
@@ -32,18 +25,11 @@ function check(ok: boolean, what: string, got?: unknown): void {
   if (!ok) throw new Error(what);
 }
 
-const stepPage = (from: number, to: number): string =>
-  `{ const p = ${JSON.stringify(packed.slice(from, to))};
-   for (let k = 0; k < p.length; k++) {
-     const b = p.charCodeAt(k) - 64;
-     window.__arcade.step(1, ${held});
-   } } "ok"`;
-
 function load(v: Verify, software: "sweetSam" | "brassMonkey"): void {
   v.page.eval(`window.__arcade.seed(${seed}); window.__arcade.load("game", { software: "${software}" }); "ok"`);
 }
 
-/** The two frames side by side, 8 px apart. */
+/** The two frames side by side, 16 px apart. */
 function sideBySide(v: Verify, left: string, right: string): void {
   const a = PNG.sync.read(readFileSync(left));
   const b = PNG.sync.read(readFileSync(right));
@@ -73,7 +59,7 @@ await verify("brass-monkey-hud", (v) => {
   console.log("Brass Monkey after points and a lost life:");
   let at = 0;
   for (; at < packed.length; at += 60) {
-    v.page.eval(stepPage(at, at + 60));
+    v.page.eval(stepPage(packed, at, at + 60));
     const m = bm(v.snapshot(isGameSnapshot));
     if (m.lives === 2 && m.phase === "play" && m.score > 0) break;
   }
@@ -88,13 +74,7 @@ await verify("brass-monkey-hud", (v) => {
       v.page.eval(
         `window.__arcade.pause(); window.__arcade.seed(${seed});
          window.__arcade.load("game", { software: "brassMonkey" });
-         window.__inputs = ${JSON.stringify(packed.slice(0, at))}; window.__at = 0;
-         window.__timer = setInterval(() => {
-           for (let n = 0; n < 2 && window.__at < window.__inputs.length; n++) {
-             const b = window.__inputs.charCodeAt(window.__at++) - 64;
-             window.__arcade.step(1, ${held});
-           }
-         }, 16); "ok"`,
+         ${replayPage(packed.slice(0, at), 2)}`,
       );
       v.wait(Math.ceil(at / 2) * 17 + 1000);
     },

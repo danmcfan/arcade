@@ -50,3 +50,6 @@ export const hudSheetRows: readonly string[] = [scoreLabelsArt, bonusLabelArt, l
   rows.map((r) => r.padEnd(hudSheetWidth, ".")).concat(".".repeat(hudSheetWidth)),
 );
 export const hudLabels = { scores: 0, bonus: 1, loop: 2 } as const;
+/** Each label's width in hud.png, and its band's glyph height. */
+export const hudLabelWidths = { scores: hudSheetWidth, bonus: 40, loop: 32 } as const;
+export const hudLabelHeight = 7;
