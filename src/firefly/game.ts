@@ -489,11 +489,9 @@ export class FireflySoftware implements FixedViewport {
 
   /** The beam takes the firefly: a life gone, with no burst; it becomes the Owl's captive. */
   private capture(owl: Enemy): void {
-    this.lives--;
-    this.respawn = respawnTicks;
+    this.loseLife(sounds.capture);
     this.captured = true;
     this.captive = { owl, x: this.player.x, y: this.player.y };
-    play(sounds.capture);
   }
 
   /** The captive rises up the beam to its Owl, then stays above it; it is lost with the Owl. */
@@ -593,10 +591,10 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** The firefly is eaten or shot: one life gone, and the next after a pause. */
-  loseLife(): void {
+  loseLife(sound: typeof sounds.lifeLost = sounds.lifeLost): void {
     this.lives--;
     this.respawn = respawnTicks;
-    play(sounds.lifeLost);
+    play(sound);
   }
 
   private endHitEffects(): void {

@@ -18,6 +18,7 @@ import {
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
+import { sweetie } from "../ui/sweetie16.ts";
 import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
@@ -69,7 +70,7 @@ function drawEnemy(screen: Surface, e: Enemy): void {
 /** The beam's bands, each `beamBand` rows tall, scroll down a row every `beamScrollTicks`. */
 const beamBand = 4;
 const beamScrollTicks = 2;
-const beamColours = ["#73eff7", "#41a6f6"] as const;
+const beamColours = [sweetie.c, sweetie.B] as const;
 /** The beam's width just under the Owl; it widens to `beamWidth` at the firefly's row. */
 const beamTopWidth = 8;
 
@@ -82,8 +83,8 @@ function drawBeam(screen: Surface, e: Enemy): void {
   const scroll = Math.trunc(e.beamTicks / beamScrollTicks);
   for (let y = top; y < bottom; y++) {
     const w = 2 * Math.round((beamTopWidth + ((beamWidth - beamTopWidth) * (y - top)) / (bottom - 1 - top)) / 2);
-    const colour = beamColours[Math.trunc((y - top + beamBand * 2 - (scroll % (beamBand * 2))) / beamBand) % 2];
-    screen.fillRect(ox + Math.round(e.x) - w / 2, oy + y, w, 1, colour ?? beamColours[0]);
+    const stripe = Math.trunc((y - top + beamBand * 2 - (scroll % (beamBand * 2))) / beamBand) % 2;
+    screen.fillRect(ox + Math.round(e.x) - w / 2, oy + y, w, 1, beamColours[stripe === 0 ? 0 : 1]);
   }
 }
 
