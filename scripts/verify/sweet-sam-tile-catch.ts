@@ -6,6 +6,7 @@
 // video of both, to out/verify/sweet-sam-tile-catch/.
 
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
+import { pointToTile, tileEq } from "../../src/sweet-sam/entity.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
 import { isGameSnapshot, sweetSamIn, verify, type Verify } from "../harness.ts";
@@ -28,12 +29,10 @@ function bee(s: SweetSamSnapshot, kind: string): SweetSamEnemySnapshot {
   return e;
 }
 
-const tile = (n: number): number => Math.trunc(n / 8);
-
 /** The bee is in the bear's tile but more than 1 px from it on some axis. */
 function inTileFar(s: SweetSamSnapshot, e: SweetSamEnemySnapshot): boolean {
   const { x, y } = s.player;
-  return tile(e.x) === tile(x) && tile(e.y) === tile(y) && Math.max(Math.abs(e.x - x), Math.abs(e.y - y)) > 1;
+  return tileEq(pointToTile(e.x, e.y), pointToTile(x, y)) && Math.max(Math.abs(e.x - x), Math.abs(e.y - y)) > 1;
 }
 
 const script = loadScript(inputPath("sweet-sam-clear"));
