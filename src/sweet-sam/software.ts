@@ -176,6 +176,11 @@ export class SweetSamSoftware implements FixedViewport {
     return deathFrameAt(deathRoundDelayTicks - this.pauseTicks);
   }
 
+  /** The bees that are not eyes. */
+  awakeBees(): Entity[] {
+    return this.enemies.filter((b) => !b.eyes);
+  }
+
   movingEntities(): Entity[] {
     return [this.player, ...this.enemies];
   }
@@ -215,6 +220,7 @@ export class SweetSamSoftware implements FixedViewport {
         home: e.home,
         dotMin: e.dotMinimum,
         held: e.held,
+        eyes: e.eyes,
         reverse: e.reverseDirection,
         reverseTile: [e.reverseTile.x, e.reverseTile.y],
       })),

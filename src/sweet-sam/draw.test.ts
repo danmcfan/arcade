@@ -30,6 +30,9 @@ class Recorder extends Surface {
   override fillPremul(x: number, y: number, w: number, h: number, c: PremulColor): void {
     this.ops.push(["fillPremul", x, y, w, h, c]);
   }
+  override fillRect(x: number, y: number, w: number, h: number, css: string): void {
+    this.ops.push(["fillRect", x, y, w, h, css]);
+  }
   /** The clip is checked with `screenDraws`; here it only runs the draws. */
   override clipped(_x: number, _y: number, _w: number, _h: number, draw: () => void): void {
     draw();
@@ -124,6 +127,25 @@ describe("SweetSamSoftware.draw", () => {
         .filter((o) => name(o) === "draw:bees.png")[2]
         ?.slice(1, 6),
     ).toEqual(["bees.png", 0, 192 + 32, 16, 16]);
+  });
+
+  test("an eaten bee is drawn as eyes: two white 2×3 eyes, each with a pupil facing its way", () => {
+    const s = new SweetSamSoftware(0);
+    const red = s.enemies[0];
+    if (red === undefined) throw new Error("red bee");
+    red.eyes = true;
+    red.x = 100;
+    red.y = 116;
+    red.direction = "LEFT";
+    const ops = render(s);
+    expect(ops.filter((o) => name(o) === "draw:bees.png")).toHaveLength(3);
+    // Centre (108, 124) on screen: eyes 2 px either side, pupils on their left edge.
+    expect(ops.filter((o) => o[0] === "fillRect")).toEqual([
+      ["fillRect", 104, 122, 2, 3, "#f4f4f4"],
+      ["fillRect", 104, 123, 1, 1, "#3b5dc9"],
+      ["fillRect", 110, 122, 2, 3, "#f4f4f4"],
+      ["fillRect", 110, 123, 1, 1, "#3b5dc9"],
+    ]);
   });
 
   test("shake offsets the playfield, not the cabinet; sleepy/waking rows; popups; particles", () => {

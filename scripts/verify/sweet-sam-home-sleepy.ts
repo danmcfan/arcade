@@ -3,7 +3,7 @@
 // fixture through the `?debug` test hook: the tick before its first honey
 // pot, the pot eaten (every bee sleepy, one still in the home) and the orange
 // bee leaving the home still sleepy. Writes each frame, then a video of the
-// stretch. Files go to out/verify/sweet-sam-home-sleepy/.
+// stretch (ticks re-picked for #201). Files go to out/verify/sweet-sam-home-sleepy/.
 
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { inputPath, loadScript } from "../../test/parity/fixtures.ts";
@@ -32,9 +32,9 @@ await verify("sweet-sam-home-sleepy", (v) => {
   v.openHook("scene=game");
   loadFixture(v, script);
 
-  skipTo(v, script, 0, 771);
+  skipTo(v, script, 0, 619);
   let s = sweetSam(v);
-  console.log(`771: ${bees(s)}`);
+  console.log(`619: ${bees(s)}`);
   check(s.enemies.filter((e) => e.home).length === 1, "one bee still in the home");
   check(
     s.enemies.every((e) => e.blue === 0),
@@ -42,9 +42,9 @@ await verify("sweet-sam-home-sleepy", (v) => {
   );
   v.frame("1-before-honey-pot", 2);
 
-  skipTo(v, script, 771, 772);
+  skipTo(v, script, 619, 620);
   s = sweetSam(v);
-  console.log(`772: ${bees(s)}`);
+  console.log(`620: ${bees(s)}`);
   check(s.enemies.filter((e) => e.home).length === 1, "the bee is still in the home");
   check(
     s.enemies.every((e) => e.blue > 0),
@@ -53,9 +53,9 @@ await verify("sweet-sam-home-sleepy", (v) => {
   );
   v.frame("2-honey-pot-eaten", 2);
 
-  skipTo(v, script, 772, 1051);
+  skipTo(v, script, 620, 930);
   s = sweetSam(v);
-  console.log(`1051: ${bees(s)}`);
+  console.log(`930: ${bees(s)}`);
   const orange = s.enemies.find((e) => e.kind === "orange");
   check(orange !== undefined && !orange.home && orange.blue > 0, "the orange bee leaves the home still sleepy", orange);
   v.frame("3-orange-leaves-sleepy", 2);
@@ -64,8 +64,8 @@ await verify("sweet-sam-home-sleepy", (v) => {
     "home-sleepy",
     () => {
       loadFixture(v, script);
-      skipTo(v, script, 0, 730);
-      replayLive(v, script, 730, 1100);
+      skipTo(v, script, 0, 580);
+      replayLive(v, script, 580, 980);
       v.wait(500);
     },
     { scene: "game" },
