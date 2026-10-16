@@ -129,6 +129,8 @@ export class Entity {
   reverseTile: Tile = { x: 0, y: 0 };
 
   home = false;
+  /** The mode changed while the bee was in the home: it leaves RIGHT, not LEFT. */
+  leaveRight = false;
   dotMinimum = 0;
   /** Held in the home by the global drop counter after a death (release.ts). */
   held = false;
