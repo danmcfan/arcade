@@ -16,9 +16,15 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
-import type { Bonus, Enemy, Shot, Spark, Vec } from "./entity.ts";
+import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
 import {
+  beamDiveChance,
+  beamHeight,
+  beamTicks,
+  beamWidth,
+  captiveOffset,
+  captivePullSpeed,
   diveWeight,
   difficulty,
   type Difficulty,
@@ -53,6 +59,8 @@ import {
 export const playerY = 264;
 const playerHalfWidth = 8;
 const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
+/** Where an Owl hovers to beam, in the bottom third. */
+export const beamY = playerY - beamHeight;
 
 /**
  * The curves each wave flies in on, ending at the enemy's own slot. The top
@@ -137,6 +145,7 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     tStep: 0,
     shotsLeft: 0,
     shotTimer: 0,
+    beamTicks: 0,
     outOfFormation: false,
     escortOf: null,
     escortDx: 0,
@@ -221,6 +230,10 @@ export class FireflySoftware implements FixedViewport {
   shots: Shot[] = [];
   bonuses: Bonus[] = [];
   diveTimer = difficulty(1).diveInterval;
+  /** The firefly in play was taken by a tractor beam: no burst while it respawns. */
+  captured = false;
+  /** The captured firefly, red, held by its Owl until the stage ends or the Owl dies. */
+  captive: Captive | null = null;
   /** Ticks since the run started: drives the formation's sway and breath. */
   ticks = 0;
   /** Swaying while the stage's enemies fly in, breathing once every one has arrived. */
@@ -240,6 +253,7 @@ export class FireflySoftware implements FixedViewport {
     if (this.respawn === 0) this.movePlayer(i);
     this.moveSparks();
     this.moveEnemies();
+    this.moveCaptive();
     this.moveShots();
     this.hitEnemies();
     if (this.respawn === 0) this.hitPlayer();
@@ -311,6 +325,9 @@ export class FireflySoftware implements FixedViewport {
           this.stepPath(e);
           if (e.state === "diving") this.dropShot(e);
           break;
+        case "beaming":
+          this.beam(e);
+          break;
         case "joining": {
           const { x: tx, y: ty } = this.slotPos(e.home);
           const dist = Math.hypot(tx - e.x, ty - e.y);
@@ -368,6 +385,10 @@ export class FireflySoftware implements FixedViewport {
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    if (e.beamTicks > 0) {
+      e.state = "beaming";
+      return;
+    }
     e.state = "joining";
     if (e.y > fieldHeight) {
       // Off the bottom: come back in from above the slot.
@@ -403,16 +424,19 @@ export class FireflySoftware implements FixedViewport {
     const side = e.x < fieldWidth / 2 ? -1 : 1;
     const p0 = { x: e.x, y: e.y };
     const p1 = { x: e.x + side * 40, y: e.y - 30 };
-    // The Owl swoops right at the firefly to eat it, then flies back up; the
-    // others sweep past it and off the bottom.
-    const path: BezierConfig =
-      e.kind === "owl"
-        ? { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }
-        : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
+    // The Owl swoops right at the firefly to eat it, then flies back up, or
+    // stops low over it to beam; the others sweep past it and off the bottom.
+    const beamDive = e.kind === "owl" && this.canBeam() && rng.float() < beamDiveChance;
+    let path: BezierConfig;
+    if (beamDive) path = { p0, p1, p2: { x: aim, y: beamY - 60 }, p3: { x: aim, y: beamY } };
+    else if (e.kind === "owl") path = { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } };
+    else
+      path = { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
     e.state = "diving";
     e.outOfFormation = true;
     followPath(e, path, d.diveSpeed);
-    e.shotsLeft = d.shotsPerDive;
+    e.beamTicks = beamDive ? beamTicks : 0;
+    e.shotsLeft = beamDive ? 0 : d.shotsPerDive;
     e.shotTimer = firstShotDelay;
     e.escortsKilled = 0;
     if (e.kind === "owl") this.takeEscorts(e, d);
@@ -441,6 +465,54 @@ export class FireflySoftware implements FixedViewport {
       w.shotsLeft = d.shotsPerDive;
       w.shotTimer = firstShotDelay;
     });
+  }
+
+  /** One tractor beam at a time, and none while a captive is held. */
+  private canBeam(): boolean {
+    return this.captive === null && this.enemies.every((e) => e.beamTicks === 0);
+  }
+
+  /**
+   * A hovering Owl beams for `beamTicks`, capturing a firefly under it. Once
+   * the beam is off and any captive is pulled up, it flies home.
+   */
+  private beam(e: Enemy): void {
+    if (e.beamTicks === beamTicks) play(sounds.beam);
+    const p = this.player;
+    if (e.beamTicks > 0 && this.respawn === 0 && this.captive === null && Math.abs(p.x - e.x) < beamWidth / 2) {
+      this.capture(e);
+    }
+    if (e.beamTicks > 0) e.beamTicks--;
+    const pulling = this.captive?.owl === e && this.captive.y > e.y - captiveOffset;
+    if (e.beamTicks === 0 && !pulling) e.state = "joining";
+  }
+
+  /** The beam takes the firefly: a life gone, with no burst; it becomes the Owl's captive. */
+  private capture(owl: Enemy): void {
+    this.lives--;
+    this.respawn = respawnTicks;
+    this.captured = true;
+    this.captive = { owl, x: this.player.x, y: this.player.y };
+    play(sounds.capture);
+  }
+
+  /** The captive rises up the beam to its Owl, then stays above it; it is lost with the Owl. */
+  private moveCaptive(): void {
+    const c = this.captive;
+    if (c === null) return;
+    const owl = c.owl;
+    if (owl.hp === 0 || !this.enemies.includes(owl)) {
+      this.captive = null;
+      return;
+    }
+    const ty = owl.y - captiveOffset;
+    if (owl.state === "beaming" && c.y > ty + captivePullSpeed) {
+      c.y -= captivePullSpeed;
+      c.x += Math.sign(owl.x - c.x) * Math.min(captivePullSpeed, Math.abs(owl.x - c.x));
+      return;
+    }
+    c.x = owl.x;
+    c.y = ty;
   }
 
   /** A diving enemy above the firefly drops its shots, aimed down at it. */
@@ -540,6 +612,7 @@ export class FireflySoftware implements FixedViewport {
       return;
     }
     this.player = { ...playerStart };
+    this.captured = false;
     // A fresh firefly starts with no enemy shot already falling on it.
     this.shots = [];
     this.fireDelay = 0;
@@ -555,6 +628,7 @@ export class FireflySoftware implements FixedViewport {
     this.stageTick = 0;
     this.enemies = newStageEnemies();
     this.formationPhase = "sway";
+    this.captive = null;
     this.shots = [];
     this.bonuses = [];
     this.diveTimer = difficulty(this.stage).diveInterval;
@@ -612,6 +686,10 @@ export class FireflySoftware implements FixedViewport {
       diveTimer: this.diveTimer,
       sway: this.sway(),
       formationPhase: this.formationPhase,
+      ...(this.captured ? { captured: true as const } : {}),
+      ...(this.captive === null
+        ? {}
+        : { captive: { row: this.captive.owl.row, col: this.captive.owl.col, x: this.captive.x, y: this.captive.y } }),
     };
   }
 }

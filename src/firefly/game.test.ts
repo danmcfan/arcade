@@ -8,9 +8,11 @@ import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
-import { bonusTicks, FireflySoftware, playerY } from "./game.ts";
+import { beamY, bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
+  beamTicks,
+  beamWidth,
   difficulty,
   entryPairOffset,
   entryWaves,
@@ -337,7 +339,7 @@ describe("Owl escorts", () => {
     g.dive(lead);
     const wings = g.enemies.filter((e) => e.escortOf === lead);
     for (let t = 0; t < 600 && lead.state === "diving"; t++) g.update(NO_INPUT);
-    expect(lead.state).toBe("joining");
+    expect(["joining", "beaming"]).toContain(lead.state);
     g.update(NO_INPUT);
     expect(wings.every((e) => e.escortOf === null && e.state !== "diving")).toBe(true);
   });
@@ -670,5 +672,104 @@ describe("entry waves", () => {
       }
       expect(waits.size).toBe(4);
     }
+  });
+});
+
+/** Puts the Owl hovering at x with its beam on, just switched on. */
+function beamingAt(e: Enemy, x: number): void {
+  e.state = "beaming";
+  e.outOfFormation = true;
+  e.x = x;
+  e.y = beamY;
+  e.path = null;
+  e.beamTicks = beamTicks;
+}
+
+describe("tractor beam", () => {
+  test("an Owl dive is sometimes a beam dive: it stops low over the firefly and beams", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 40 });
+    e.state = "formation";
+    e.home = { x: 100, y: 40 };
+    rng.seed(4);
+    const seen = new Set<string>();
+    for (let t = 0; t < 4000 && !seen.has("beaming"); t++) {
+      f.update(NO_INPUT);
+      seen.add(e.state);
+      if (f.respawn > 0) break;
+    }
+    expect(seen.has("beaming")).toBe(true);
+    expect(e.y).toBe(beamY);
+  });
+
+  test("a beaming Owl over the firefly captures it: a life gone, no burst, the capture sound", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    beamingAt(e, 112 + beamWidth / 2 - 1);
+    const rec = recordSounds();
+    f.update(NO_INPUT);
+    rec.stop();
+    expect(f.captured).toBe(true);
+    expect([f.lives, f.respawn]).toEqual([startLives - 1, respawnTicks - 1]);
+    expect(rec.events).toContain("play:capture");
+    expect(rec.events).not.toContain("play:lifeLost");
+    expect(e.hp).toBe(enemyHp.owl);
+  });
+
+  test("a firefly outside the beam is not captured", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    beamingAt(e, 112 + beamWidth / 2 + 1);
+    run(f, 10);
+    expect([f.captured, f.lives]).toEqual([false, startLives]);
+  });
+
+  test("the beam plays its sound and ends after beamTicks, and the Owl flies home", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    f.player.x = 20;
+    e.home = { x: 100, y: 40 };
+    const rec = recordSounds();
+    beamingAt(e, 180);
+    run(f, beamTicks - 1);
+    expect(e.state).toBe("beaming");
+    f.update(NO_INPUT);
+    rec.stop();
+    expect(rec.events).toContain("play:beam");
+    expect(e.state).toBe("joining");
+  });
+
+  test("the captive is pulled up to its Owl, then follows it in formation and in a dive", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    e.home = { x: 100, y: 40 };
+    beamingAt(e, 112);
+    f.update(NO_INPUT);
+    const captive = f.captive;
+    expect(captive?.y).toBeGreaterThan(beamY);
+    for (let t = 0; t < 400 && e.state !== "formation"; t++) f.update(NO_INPUT);
+    expect(e.state).toBe("formation");
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+    divingAt(e, 60, 150);
+    e.hp = 2;
+    run(f, 5);
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+  });
+
+  test("an Owl holding a captive does not beam again", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    beamingAt(e, 112);
+    f.update(NO_INPUT);
+    run(f, respawnTicks);
+    beamingAt(e, 112);
+    run(f, 5);
+    expect(f.lives).toBe(startLives - 1);
+  });
+
+  test("a capture on the last life ends the run after respawnTicks", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    f.lives = 1;
+    beamingAt(e, 112);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(0);
+    run(f, respawnTicks - 2);
+    expect(f.gameOver()).toBe(false);
+    f.update(NO_INPUT);
+    expect(f.gameOver()).toBe(true);
   });
 });
