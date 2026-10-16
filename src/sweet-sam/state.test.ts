@@ -341,6 +341,31 @@ describe("eating", () => {
     expect(s.scaredEatAwardNext).toBe(3);
   });
 
+  test("a honey pot eaten while bees are sleepy restarts the award at 200", () => {
+    const s = playing();
+    const pink = enemy(s, 1);
+    pink.blueFrames = 10_000; // keeps the ladder alive (blue but home)
+    const eatRed = (): number => {
+      const red = enemy(s, 0);
+      onPlayer(s, red);
+      red.eyes = false;
+      red.blueFrames = 300;
+      const before = s.scoreValue;
+      step(s);
+      const award = s.scoreValue - before;
+      step(s, 61);
+      return award;
+    };
+    const awards = [eatRed(), eatRed()];
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = s.player.y;
+    step(s);
+    awards.push(eatRed());
+    expect(awards).toEqual([200, 400, 200]);
+  });
+
   test("the award resets at the end of a PLAY tick when no bee is scared", () => {
     const s = playing();
     s.scaredEatAwardNext = 2;

@@ -327,6 +327,8 @@ export class PlayState implements State {
       if (item.isPower()) {
         s.addScore(50);
         playSound(sounds.sweetSmoke);
+        // A new honey pot starts the sleepy bee award over at 200.
+        s.scaredEatAwardNext = 0;
 
         s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
 
