@@ -102,10 +102,10 @@ function prizeCounter(v: Verify): void {
   v.step(4, { down: true });
   press(v, "space");
   check(game(v).menu === "prizeCounter", "Space at the desk opens the prize counter");
-  check(game(v).cursor === 9, "the prize counter opens on BUY TOKEN");
-  v.frame("08-counter-token");
+  check(game(v).cursor === 9, "the prize counter opens on CLOSE");
+  v.frame("08-counter-close-selected");
   press(v, "up");
-  press(v, "right");
+  press(v, "left");
   press(v, "space");
   check(game(v).arcade.tickets === 60, "the owned honey jar can't be bought");
   v.frame("09-counter-owned");
@@ -116,7 +116,7 @@ function prizeCounter(v: Verify): void {
   press(v, "right");
   press(v, "down");
   press(v, "down");
-  check(game(v).cursor === 10, "Down from the foot of the right column reaches CLOSE");
+  check(game(v).cursor === 9, "Down from the foot of the right column reaches CLOSE");
   v.frame("11-counter-close");
   press(v, "space");
   check(game(v).menu === null, "CLOSE goes back to the hub");
@@ -139,7 +139,7 @@ function minigamePause(v: Verify): void {
   press(v, "up");
   press(v, "space");
   check(game(v).menu === "controls", "Controls shows the minigame's controls");
-  press(v, "space");
+  press(v, "escape");
   check(game(v).menu === "paused" && game(v).cursor === 1, "back on the pause menu, Controls still selected");
   press(v, "down");
   press(v, "space");
@@ -166,7 +166,7 @@ function video(v: Verify): void {
       v.key("ArrowDown", 300);
       v.key("Space");
       v.wait(600);
-      for (const k of ["ArrowUp", "ArrowRight", "ArrowUp", "Space", "ArrowRight", "ArrowDown", "ArrowDown"]) {
+      for (const k of ["ArrowUp", "ArrowLeft", "ArrowUp", "Space", "ArrowRight", "ArrowDown", "ArrowDown"]) {
         v.key(k);
         v.wait(300);
       }

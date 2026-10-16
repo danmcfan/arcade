@@ -83,9 +83,7 @@ function buyLantern(v: Verify): void {
   v.tap("space");
   check(game(v).menu === "prizeCounter", "Space facing the counter opens the prize counter menu", game(v).menu);
   v.tap("up");
-  v.tap("right");
-  v.tap("right");
-  check(game(v).cursor === 8, "Up and two Rights select the lantern, bottom of the right column", game(v).cursor);
+  check(game(v).cursor === 8, "Up from CLOSE selects the lantern, bottom of the right column", game(v).cursor);
   v.frame("2-menu-firefly-prizes");
 
   v.tap("space");
@@ -139,13 +137,15 @@ function allPrizes(v: Verify): void {
 /** Walk down to the counter, buy the lantern, walk to Firefly and start it. */
 function buyAndPlay(v: Verify): void {
   v.wait(800);
+  v.key("KeyQ"); // dismiss the keyboard notice, if the browser shows it (a key the game ignores)
+  v.wait(400);
   v.key("Space"); // Continue
   v.wait(600);
   v.key("ArrowDown", 200);
   v.wait(300);
   v.key("Space"); // open
   v.wait(600);
-  for (const key of ["ArrowUp", "ArrowRight", "ArrowRight"]) {
+  for (const key of ["ArrowUp"]) {
     v.key(key);
     v.wait(300);
   }
