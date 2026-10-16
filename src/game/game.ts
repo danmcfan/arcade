@@ -22,7 +22,7 @@ import { faced, update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
 import { Menu } from "./menu.ts";
-import { moveCounterCursor, prizeCounterItems, tokenCursor } from "./menus.ts";
+import { closeCursor, moveCounterCursor, prizeCounterItems } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -243,7 +243,7 @@ export class Game implements Scene {
     }
     sounds.select.blip();
     this.counterOpen = true;
-    this.counterMenu.open(tokenCursor);
+    this.counterMenu.open(closeCursor);
   }
 
   /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
@@ -347,6 +347,7 @@ export class Game implements Scene {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
         faced: faced(this.arcade, this.counterOpen),
+        notice: this.arcade.notice?.kind ?? null,
         title: this.arcade.imageTitle,
         ...this.walletSnapshot(),
       },

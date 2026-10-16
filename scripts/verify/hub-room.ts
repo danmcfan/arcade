@@ -49,6 +49,8 @@ function save(tokens: number, tickets: number, prizes: PrizeId[]): string {
 }
 
 function continueWith(v: Verify, tokens: number, tickets: number, prizes: PrizeId[]): void {
+  // A desktop viewport: a headless browser that reports no pointer would otherwise get the keyboard notice.
+  v.page.run("set", "viewport", "1280", "900");
   v.openHook();
   v.page.eval(
     `localStorage.setItem(${JSON.stringify(saveKey)}, ${JSON.stringify(save(tokens, tickets, prizes))}); "ok"`,
@@ -106,8 +108,9 @@ function room(v: Verify): void {
   check(game(v).menu === "prizeCounter", "Space facing the desk opens the prize counter menu", game(v).menu);
   v.frame("2-desk-menu");
   check(marginPixels(v)[0] === 0, "the menu stays inside the frame, under the scoreboard");
+  check(game(v).cursor === 9, "the menu opens on CLOSE", game(v).cursor);
   v.tap("right");
-  check(game(v).cursor === 10, "Right moves from BUY TOKEN to CLOSE", game(v).cursor);
+  check(game(v).cursor === 9, "Right on CLOSE does nothing", game(v).cursor);
   v.frame("3-desk-menu-close");
   v.tap("escape");
   check(game(v).menu === null, "Esc closes it", game(v).menu);
@@ -154,6 +157,8 @@ function video(v: Verify): void {
     "walkaround",
     () => {
       v.wait(800);
+      v.key("KeyQ"); // dismiss the keyboard notice, if the browser shows it (a key the game ignores)
+      v.wait(400);
       v.key("Space"); // Continue
       v.wait(800);
       v.key("ArrowLeft", 700);

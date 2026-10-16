@@ -58,6 +58,9 @@ export const tickerGlyphs: Readonly<Record<string, readonly string[]>> = {
   H: ["#.#", "#.#", "###", "#.#", "#.#"],
   /** The gold star of a beaten machine (#148). */
   "*": ["..#..", "#####", ".###.", ".#.#.", "#...#"],
+  /** For the change machine (#144). */
+  G: [".##", "#..", "#.#", "#.#", ".##"],
+  "=": ["...", "###", "...", "###", "..."],
 };
 
 /** Width of a space between words. */

@@ -1,7 +1,7 @@
 // The prize shelf (#70) in a real browser (`bun run verify prize-shelf`).
 // Continues a save with 60 tickets that owns the honey jar and the oil can,
-// opens the prize counter and checks the 3x3 shelf: the cursor opens on BUY
-// TOKEN, moves up and down a cabinet's column and across the columns, an owned
+// opens the prize counter and checks the 3x3 shelf: the cursor opens on
+// CLOSE, moves up and down a cabinet's column and across the columns, an owned
 // prize can't be chosen (no sound), a 100-ticket prize plays the no sound, and an
 // affordable one is bought. Frames show the shelf at each step; the video walks
 // the same path in real time. Files go to out/verify/prize-shelf/.
@@ -47,11 +47,13 @@ function shelf(v: Verify): void {
   v.tap("space"); // Continue
   v.tap("space"); // facing the desk: open the prize counter
   let g = game(v);
-  check(g.menu === "prizeCounter" && g.cursor === 9, "the prize counter opens with BUY TOKEN selected", g);
-  v.frame("1-shelf-buy-token");
+  check(g.menu === "prizeCounter" && g.cursor === 9, "the prize counter opens with CLOSE selected", g);
+  v.frame("1-shelf-close-selected");
 
   v.tap("up");
-  check(game(v).cursor === 6, "Up from BUY TOKEN: the oil can, bottom of the left column", game(v).cursor);
+  check(game(v).cursor === 8, "Up from CLOSE: the bottom of the right column", game(v).cursor);
+  v.tap("right");
+  check(game(v).cursor === 6, "Right wraps round the row: the oil can, bottom of the left column", game(v).cursor);
   sounds(v);
   v.tap("space");
   check(
@@ -89,7 +91,7 @@ function shelf(v: Verify): void {
 
   v.tap("down");
   v.tap("down");
-  check(game(v).cursor === 10, "Down from the right column's foot reaches CLOSE", game(v).cursor);
+  check(game(v).cursor === 9, "Down from the right column's foot reaches CLOSE", game(v).cursor);
   v.frame("5-shelf-close");
   v.tap("space");
   check(game(v).menu === null, "CLOSE closes the prize counter", game(v).menu);
@@ -106,17 +108,17 @@ function video(v: Verify): void {
       v.wait(600);
       v.key("Space"); // open
       v.wait(900);
-      for (const key of ["ArrowUp", "Space", "ArrowRight", "ArrowUp", "ArrowUp", "Space"]) {
+      for (const key of ["ArrowUp", "ArrowRight", "Space", "ArrowRight", "ArrowUp", "ArrowUp", "Space"]) {
         v.key(key);
         v.wait(600);
       }
-      for (const key of ["ArrowDown", "ArrowRight", "Space", "ArrowLeft", "ArrowUp", "ArrowDown", "ArrowDown"]) {
+      for (const key of ["ArrowDown", "ArrowRight", "Space", "ArrowLeft", "ArrowUp", "ArrowDown"]) {
         v.key(key);
         v.wait(600);
       }
-      v.key("ArrowDown"); // BUY TOKEN
+      v.key("ArrowRight"); // back to the right column
       v.wait(600);
-      v.key("ArrowRight"); // CLOSE
+      v.key("ArrowDown"); // CLOSE
       v.wait(600);
       v.key("Space");
       v.wait(1000);

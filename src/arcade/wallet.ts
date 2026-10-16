@@ -1,7 +1,8 @@
 // The Wallet: the arcade's economy in one place. It owns the player's tokens,
 // tickets, owned prizes and the player's high score on each machine, and every rule that changes
-// them: what a cabinet start costs, what a run pays, what the prize
-// counter sells, and when the player has the arcade win. Nothing else changes those numbers; the snapshot and the
+// them: what a cabinet start costs, what a run pays, what the change machine
+// exchanges, what the prize counter sells, and when the player has the arcade
+// win. Nothing else changes those numbers; the snapshot and the
 // save are projections of `toProgress()`, and `version` tells the title scene
 // when to save.
 
@@ -50,18 +51,18 @@ export function ticketsFor(score: number): number {
 export type RunKind = RunKindSnapshot;
 
 /**
- * The deal the token item offers: a token for `ticketsPerToken` tickets,
- * the last-chance token (all the tickets, even 0, when there are no tokens
- * and too few tickets), or nothing ("short": tokens left but too few tickets).
+ * What a press of the change machine does: a token for `ticketsPerToken`
+ * tickets, the last-chance token (all the tickets, even 0, when there are no
+ * tokens and too few tickets), or nothing ("short": tokens left but too few
+ * tickets).
  */
 export type TokenOffer = "token" | "lastChance" | "short";
 
 /** Whether a prize can be bought: "buy", "owned" (bought already) or "short" (too few tickets). */
 export type PrizeOffer = "buy" | "owned" | "short";
 
-/** What the prize counter offers: the token, and every prize in catalogue order. */
+/** What the prize counter offers: every prize in catalogue order. */
 export interface CounterOffers {
-  token: TokenOffer;
   prizes: PrizeOffer[];
 }
 
@@ -188,36 +189,40 @@ export class Wallet {
 
   /** What the prize counter offers. */
   counter(): CounterOffers {
-    return { token: this.tokenOffer(), prizes: prizes.map((p) => this.prizeOffer(p.id)) };
+    return { prizes: prizes.map((p) => this.prizeOffer(p.id)) };
   }
 
-  /** Whether `buy(item)` would succeed: the prize counter greys out the rest. */
-  canBuy(item: "token" | PrizeId): boolean {
-    return item === "token" ? this.tokenOffer() !== "short" : this.prizeOffer(item) === "buy";
+  /** Whether `buy(id)` would succeed: the prize counter greys out the rest. */
+  canBuy(id: PrizeId): boolean {
+    return this.prizeOffer(id) === "buy";
   }
 
-  /** Buy a token or a prize at the counter; false when it can't be bought. */
-  buy(item: "token" | PrizeId): boolean {
-    if (item === "token") {
-      switch (this.tokenOffer()) {
-        case "token":
-          this._tokens++;
-          this._tickets -= ticketsPerToken;
-          break;
-        case "lastChance":
-          this._tokens = 1;
-          this._tickets = 0;
-          break;
-        case "short":
-          return false;
-      }
-    } else {
-      if (this.prizeOffer(item) !== "buy") return false;
-      this._tickets -= prize(item).price;
-      this._prizes = inCatalogueOrder([...this._prizes, item]);
-    }
+  /** Buy a prize at the counter; false when it can't be bought. */
+  buy(id: PrizeId): boolean {
+    if (this.prizeOffer(id) !== "buy") return false;
+    this._tickets -= prize(id).price;
+    this._prizes = inCatalogueOrder([...this._prizes, id]);
     this._version++;
     return true;
+  }
+
+  /** One press of the change machine: trade tickets for a token if it can, and say which deal it was. */
+  exchange(): TokenOffer {
+    const offer = this.tokenOffer();
+    switch (offer) {
+      case "token":
+        this._tokens++;
+        this._tickets -= ticketsPerToken;
+        break;
+      case "lastChance":
+        this._tokens = 1;
+        this._tickets = 0;
+        break;
+      case "short":
+        return offer;
+    }
+    this._version++;
+    return offer;
   }
 
   toProgress(): WalletProgress {

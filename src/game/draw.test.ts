@@ -854,9 +854,9 @@ describe("prize counter menu", () => {
       ["lantern", false],
     ]);
     // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, in the
-    // scoreboard's small letters, then the selected BUY TOKEN.
+    // scoreboard's small letters, then the selected CLOSE.
     expect(r.cards("yellow")).toBe("100100100505050252525");
-    expect(r.text("yellow")).toBe(">BUY TOKEN");
+    expect(r.text("yellow")).toBe(">CLOSE");
     expect(r.text("red")).toBe("");
     expect(r.icons).toEqual([]);
   });
@@ -865,14 +865,14 @@ describe("prize counter menu", () => {
     const game = atCounter(2, 120);
     let r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("CLOSEBUY TOKEN5ONE PLAY ON A CABINET");
-    for (const key of ["up", "right"] as const) {
+    expect(r.text("white")).toBe("CLOSEBACK TO THE ARCADE");
+    for (const key of ["up", "right", "right"] as const) {
       game.step(input({ [key]: true }));
       game.step(input());
     }
     r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
+    expect(r.text("white")).toBe("CLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
   });
 
   test("an owned prize is greyed out and reads OWNED; on a grey card; one the player can't afford is on a red card, its price white", () => {
@@ -884,26 +884,17 @@ describe("prize counter menu", () => {
     expect(r.cards("pale")).toBe("OWNED");
   });
 
-  test("a bought token shows on the scoreboard at once", () => {
-    const game = atCounter(2, 12);
-    game.step(input({ space: true }));
-    const r = recordingSurface();
-    game.draw(r.surface);
-    expect(r.board("yellow")).toBe("37");
-  });
-
-  test("with 0 tokens and too few tickets the token item is the last-chance token", () => {
-    const game = atCounter(0, 3);
-    const r = recordingSurface();
-    game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">LAST CHANCE");
-  });
-
-  test("with tokens left and too few tickets BUY TOKEN is greyed out", () => {
-    const r = recordingSurface();
-    atCounter(1, 3).draw(r.surface);
-    expect(r.text("grey")).toBe("BUY TOKEN");
-    expect(r.cards("white")).toBe("100100100505050252525");
+  test("there is no token to buy, whatever the tokens and tickets", () => {
+    for (const [tokens, tickets] of [
+      [2, 12],
+      [0, 3],
+      [1, 3],
+    ] as const) {
+      const r = recordingSurface();
+      atCounter(tokens, tickets).draw(r.surface);
+      expect(r.text("grey")).toBe("");
+      expect(r.text("yellow")).toBe(">CLOSE");
+    }
   });
 
   test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {

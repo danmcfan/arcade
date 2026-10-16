@@ -21,7 +21,7 @@ import { saveKey, saveVersion } from "../src/title/save.ts";
 import { noHighScores, Wallet } from "../src/arcade/wallet.ts";
 import { tickerText, tickerTextWidth } from "../src/arcade/ticker.ts";
 import { cardHeight, cardPriceY, cardTop, cardWidth, counterLayout, pictureHeight } from "../src/game/counterLayout.ts";
-import { closeCursor, prizeCounterItems, shelf, tokenCursor } from "../src/game/menus.ts";
+import { closeCursor, prizeCounterItems, shelf } from "../src/game/menus.ts";
 import { cardInks } from "../src/game/overlay.ts";
 import { glyphs, glyphWidth, inks, type Ink } from "../src/ui/glyphs.ts";
 import { arrowOffset } from "../src/ui/menu.ts";
@@ -142,7 +142,7 @@ const ticksPerItem = 30;
  * The prize counter menu over the hub, as the game draws it (src/game/overlay.ts,
  * `counterLayout`), for a player with 75 tickets who owns one 25-ticket prize:
  * cards for sale, too dear and owned. The cursor rests on each card, then
- * BUY TOKEN and CLOSE.
+ * CLOSE.
  */
 function prizeCounterFrames(): PNG[] {
   const owned = shelf.at(-1)?.id;
@@ -185,10 +185,7 @@ function prizeCounterFrames(): PNG[] {
         paint(png, glyph, { "#": sweetie[tickerInks[g.ink]] }, g.x, card.y + cardPriceY);
       }
     });
-    for (const [at, centre] of [
-      [tokenCursor, layout.tokenCentre],
-      [closeCursor, layout.closeCentre],
-    ] as const) {
+    for (const [at, centre] of [[closeCursor, layout.closeCentre]] as const) {
       const item = items[at];
       if (item === undefined) continue;
       const left = Math.round(centre - Math.trunc(textWidth(item.label) / 2));
