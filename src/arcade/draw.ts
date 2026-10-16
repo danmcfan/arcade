@@ -6,6 +6,7 @@
 import { imageArcade, imageScreens } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { drawChangeMachine } from "./changeMachine.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { drawEmployee } from "./employee.ts";
 import { prize } from "./prizes.ts";
@@ -38,6 +39,7 @@ export function draw(
     );
     drawImage(screen, img, m.rect.x - powerCabinetX + buffer, m.rect.y + buffer);
   });
+  drawChangeMachine(screen, buffer);
   // The desk is in the room image; the employee stands in it, out of the player's reach.
   drawEmployee(screen, buffer);
   // Decorations are not solid: the player walks in front of them.
@@ -59,7 +61,13 @@ export function draw(
 
   const machine = s.machines.find((m) => m.title === named);
   const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);
-  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi }, tick, buffer);
+  const notice = s.notice?.kind ?? null;
+  drawTicker(
+    screen,
+    { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi, notice },
+    tick,
+    buffer,
+  );
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);

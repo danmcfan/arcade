@@ -99,6 +99,28 @@ describe("LED scoreboard", () => {
     onBoard(v);
   });
 
+  test("facing the change machine, it shows CHANGE MACHINE and its price", () => {
+    const v = { tokens: 3, tickets: 12, faced: "changeMachine" as const, beatenHi: null };
+    expect(text(v)).toBe("CHANGEMACHINE5TICKETS=1TOKEN");
+    expect(text(v, "white")).toBe("5TICKETS=1TOKEN");
+    onBoard(v);
+  });
+
+  test("after a denied trade, the price blinks", () => {
+    const v = { tokens: 1, tickets: 3, faced: "changeMachine" as const, beatenHi: null, notice: "price" as const };
+    const shown = Array.from({ length: 32 }, (_, tick) => text({ ...v, tick }, "white"));
+    expect(shown).toContain("5TICKETS=1TOKEN");
+    expect(shown).toContain("");
+    expect(text({ ...v, tick: 0 })).toStartWith("CHANGEMACHINE");
+  });
+
+  test("after the last-chance token, it shows LAST CHANCE", () => {
+    const v = { tokens: 1, tickets: 0, faced: "changeMachine" as const, beatenHi: null, notice: "lastChance" as const };
+    expect(text(v)).toBe("CHANGEMACHINELASTCHANCE");
+    expect(text(v, "yellow")).toBe("LASTCHANCE");
+    onBoard(v);
+  });
+
   test("spaces are 2 px and letters 1 px apart", () => {
     expect(tickerTextWidth("A")).toBe(3);
     expect(tickerTextWidth("AA")).toBe(7);
