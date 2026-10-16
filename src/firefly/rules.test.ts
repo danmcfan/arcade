@@ -32,7 +32,7 @@ describe("formation", () => {
     ]);
   });
 
-  test("rows run top to bottom, each centred on the playfield; Owls 28 px apart, the rest 16", () => {
+  test("rows run top to bottom, each centred on the playfield; every row 16 px apart, rows 16 px apart", () => {
     for (let r = 0; r < 5; r++) {
       const row = slots.filter((s) => s.row === r);
       const ys = new Set(row.map((s) => s.y));
@@ -40,11 +40,11 @@ describe("formation", () => {
       const xs = row.map((s) => s.x);
       expect((Math.min(...xs) + Math.max(...xs)) / 2).toBe(112);
       xs.slice(1).forEach((x, i) => {
-        expect(x - (xs[i] ?? 0)).toBe(r === 0 ? 28 : 16);
+        expect(x - (xs[i] ?? 0)).toBe(16);
       });
     }
     const rowY = [0, 1, 2, 3, 4].map((r) => slots.find((s) => s.row === r)?.y ?? 0);
-    expect(rowY.toSorted((a, b) => a - b)).toEqual(rowY);
+    expect(rowY.slice(1).map((y, i) => y - (rowY[i] ?? 0))).toEqual([16, 16, 16, 16]);
   });
 
   test("swaying keeps every slot on the playfield", () => {

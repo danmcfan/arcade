@@ -18,27 +18,29 @@ export interface Slot {
 
 /**
  * The formation's rows from the top: 4 Owls, 2 rows of 8 Wasps, 2 rows of 10
- * Moths, and the px between neighbours (the Owls are twice the size).
+ * Moths.
  */
-const formationRows: readonly { kind: EnemyKind; count: number; spacing: number }[] = [
-  { kind: "owl", count: 4, spacing: 28 },
-  { kind: "wasp", count: 8, spacing: 16 },
-  { kind: "wasp", count: 8, spacing: 16 },
-  { kind: "moth", count: 10, spacing: 16 },
-  { kind: "moth", count: 10, spacing: 16 },
+const formationRows: readonly { kind: EnemyKind; count: number }[] = [
+  { kind: "owl", count: 4 },
+  { kind: "wasp", count: 8 },
+  { kind: "wasp", count: 8 },
+  { kind: "moth", count: 10 },
+  { kind: "moth", count: 10 },
 ];
 const formationTop = 40;
 const rowSpacing = 16;
+/** The px between neighbours in a row. */
+const colSpacing = 16;
 
 /** Every slot, row by row, left to right. */
 export function formation(): Slot[] {
-  return formationRows.flatMap(({ kind, count, spacing }, row) =>
+  return formationRows.flatMap(({ kind, count }, row) =>
     Array.from({ length: count }, (_, col) => ({
       kind,
       row,
       col,
-      x: fieldWidth / 2 + (col - (count - 1) / 2) * spacing,
-      y: formationTop + (row === 0 ? 0 : 4 + row * rowSpacing),
+      x: fieldWidth / 2 + (col - (count - 1) / 2) * colSpacing,
+      y: formationTop + row * rowSpacing,
     })),
   );
 }
@@ -199,7 +201,7 @@ export const captiveOffset = 16;
 /** Spark hits to kill each kind. */
 export const enemyHp: Readonly<Record<EnemyKind, number>> = { moth: 1, wasp: 1, owl: 2 };
 /** Half the hit box of each kind, in px: a spark or the firefly touching it hits. */
-export const enemyHalfSize: Readonly<Record<EnemyKind, number>> = { moth: 6, wasp: 6, owl: 10 };
+export const enemyHalfSize: Readonly<Record<EnemyKind, number>> = { moth: 6, wasp: 6, owl: 6 };
 
 /** Ticks the hit effect plays on a killed enemy (5 frames of 15). */
 export const hitEffectTicks = 75;

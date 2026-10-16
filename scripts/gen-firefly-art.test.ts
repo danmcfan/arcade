@@ -33,10 +33,10 @@ describe("Firefly art source", () => {
     checkRows("spark", sparkArt, { w: 8, h: 8 });
   });
 
-  test("the Moth and Wasp are 16×16 and the Owl is larger, 32×32", () => {
+  test("the Moth, Wasp and Owl are all 16×16", () => {
     checkRows("moth", mothArt, { w: 16, h: 16 });
     checkRows("wasp", waspArt, { w: 16, h: 16 });
-    checkRows("owl", owlArt, { w: 32, h: 32 });
+    checkRows("owl", owlArt, { w: 16, h: 16 });
   });
 
   test("enemies keep inside the circle their frame turns in, so no rotation clips them", () => {
@@ -98,7 +98,7 @@ describe("rotation frames", () => {
   test("in-between angles keep the size and the palette", () => {
     for (const deg of [15, 30, 45, 60, 75]) {
       const turned = rotate(owlArt, deg);
-      expect(size(turned)).toEqual([32, 32]);
+      expect(size(turned)).toEqual([16, 16]);
       for (const ch of new Set(turned.join(""))) expect(owlArt.join("")).toContain(ch);
     }
   });

@@ -35,12 +35,15 @@ import {
 const ox = cabinetInsetLeft;
 const oy = cabinetInsetTop;
 
-/** Each enemy kind's rotation sheet and frame size. */
-const enemySheets: Readonly<Record<EnemyKind, { sheet: Sprite; size: number }>> = {
-  moth: { sheet: imageMoth, size: 16 },
-  wasp: { sheet: imageWasp, size: 16 },
-  owl: { sheet: imageOwl, size: 32 },
+/** Each enemy kind's rotation sheet. */
+const enemySheets: Readonly<Record<EnemyKind, Sprite>> = {
+  moth: imageMoth,
+  wasp: imageWasp,
+  owl: imageOwl,
 };
+
+/** Every enemy frame is 16×16. */
+const enemySize = 16;
 
 /** Frames of the hit effect, each `hitFrameTicks` long. */
 const hitFrameTicks = 15;
@@ -60,11 +63,11 @@ function drawEnemy(screen: Surface, e: Enemy): void {
     drawHit(screen, e.deadFrames, e.x, e.y);
     return;
   }
-  const { sheet, size } = enemySheets[e.kind];
+  const sheet = enemySheets[e.kind];
   const image = e.kind === "owl" && e.hp === 1 ? imageOwlHurt : sheet;
   const [row, col] = frameAngle(angle({ x: e.dx, y: e.dy }));
-  const frame = sub(image, col * size, row * size, (col + 1) * size, (row + 1) * size);
-  screen.draw(frame, ox + e.x - size / 2, oy + e.y - size / 2);
+  const frame = sub(image, col * enemySize, row * enemySize, (col + 1) * enemySize, (row + 1) * enemySize);
+  screen.draw(frame, ox + e.x - enemySize / 2, oy + e.y - enemySize / 2);
 }
 
 /** The beam's bands, each `beamBand` rows tall, scroll down a row every `beamScrollTicks`. */

@@ -162,7 +162,7 @@ describe("firefly draw", () => {
     e.hp = 1;
     const calls = drawCalls(f);
     expect(of(calls, imageOwl)).toEqual([]);
-    expect(of(calls, imageOwlHurt).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 16, 80 + 8 - 16]]);
+    expect(of(calls, imageOwlHurt).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 8, 80 + 8 - 8]]);
   });
 
   test("a killed enemy shows the 5 frames of its hit effect, 15 ticks each", () => {
