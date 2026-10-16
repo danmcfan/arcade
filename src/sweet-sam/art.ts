@@ -17,6 +17,9 @@ import type { SweetieLetter } from "../ui/sweetie16.ts";
 /** Every sprite frame is 16×16, as in the Go game. */
 export const frameSize = 16;
 
+/** bear.png's row of death frames: dazed, sinking, flat, puddle. */
+export const bearDeathRow = 4;
+
 /**
  * The bear walking, one list of frames per facing: standing, one step, the
  * other step. Facing down or up, the other step is the first one mirrored, so

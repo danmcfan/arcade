@@ -20,7 +20,7 @@ import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
-import { frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
+import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
@@ -195,9 +195,6 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
 
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }
-
-/** bear.png's row of death frames: dazed, sinking, flat, puddle. */
-export const bearDeathRow = 4;
 
 function drawPlayer(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   const death = s.deathFrame();

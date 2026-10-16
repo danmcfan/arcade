@@ -18,7 +18,7 @@ import type { InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
-import { beeOrder, frameSize, scoreLabelsArt, scoreLabelsX } from "../../src/sweet-sam/art.ts";
+import { bearDeathRow, beeOrder, frameSize, scoreLabelsArt, scoreLabelsX } from "../../src/sweet-sam/art.ts";
 import {
   cabinetInsetLeft,
   cabinetInsetTop,
@@ -57,9 +57,9 @@ const stops = [
   { tick: 1400, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
   { tick: 1632, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
   { tick: 4818, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
-  { tick: 4842, name: "7-death-sinking", shows: "the caught bear sinking" },
-  { tick: 4866, name: "8-death-flat", shows: "the caught bear squashed flat" },
-  { tick: 4890, name: "9-death-puddle", shows: "the caught bear a puddle under stars" },
+  { tick: 4842, name: "7-death-sinking", deathFrame: 1, shows: "the caught bear sinking" },
+  { tick: 4866, name: "8-death-flat", deathFrame: 2, shows: "the caught bear squashed flat" },
+  { tick: 4890, name: "9-death-puddle", deathFrame: 3, shows: "the caught bear a puddle under stars" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -132,9 +132,6 @@ function placeBee(s: SweetSamSnapshot, e: SweetSamEnemySnapshot): Placed {
     ...at(s, e.x, e.y),
   };
 }
-
-/** bear.png's row of death frames, below the four facings. */
-const bearDeathRow = 4;
 
 function placeBear(s: SweetSamSnapshot): Placed {
   const p = s.player;
@@ -275,8 +272,8 @@ function play(v: Verify): void {
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
     if (stop.tick === 4818)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick > 4818)
-      check(s.deathFrame === stops.indexOf(stop) - 5, "the bear's death frames play in turn", s.deathFrame);
+    if ("deathFrame" in stop)
+      check(s.deathFrame === stop.deathFrame, "the bear's death frames play in turn", s.deathFrame);
     if (stop.tick === 1632)
       check(
         s.enemies.some((e) => e.flash),
