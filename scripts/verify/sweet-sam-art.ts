@@ -53,7 +53,7 @@ const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
   { tick: 772, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
   { tick: 1318, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
-  { tick: 1300, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
+  { tick: 1400, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
   { tick: 1632, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
   { tick: 4818, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
 ] as const;
@@ -262,7 +262,7 @@ function play(v: Verify): void {
       check(s.popups.length === 1 && s.popups[0]?.frameIdx === 0, "a sleepy bee eaten: 200 points float above it");
       check(s.particlesActive > 0, "and a burst of particles", s.particlesActive);
     }
-    if (stop.tick === 1300)
+    if (stop.tick === 1400)
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
     if (stop.tick === 4818)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");

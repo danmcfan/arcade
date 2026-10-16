@@ -195,7 +195,7 @@ const deathStops: Stop[] = [
     name: "13-after-death",
     shows: "the round restarts on time: 2 s after the catch",
     expect: (s) => {
-      check(s.state === "START" && s.deathFrame === null && s.lives === 1, "START on the same tick as before #47");
+      check(s.state === "START" && s.deathFrame === null && s.lives === 2, "START on the same tick as before #47");
     },
   },
 ];
@@ -237,7 +237,7 @@ function video(v: Verify): void {
     },
     { scene: "game" },
   );
-  check(sweetSam(v).lives === 1, "the recording lost a life");
+  check(sweetSam(v).lives === 2, "the recording lost a life");
 }
 
 await verify("sweet-sam-levels", (v) => {
