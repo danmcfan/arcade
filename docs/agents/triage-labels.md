@@ -24,6 +24,6 @@ Every issue also carries exactly one work-type label, so Sandcastle and other to
 | `enhancement` | Adds or changes behaviour: a new feature, rule, art, sound or tool capability                   |
 | `refactor`    | Restructures code with no change in behaviour; Parity fixtures and Golden frames stay unchanged |
 
-When a skill asks for an issue's category (for example `/triage`'s bug / enhancement), choose from these three; a behaviour-preserving restructure is `refactor`, not `enhancement`.
+When a skill asks for an issue's category (for example `/triage`), choose from these three; a behaviour-preserving restructure is `refactor`, not `enhancement`.
 
 Only `bug` changes how the batch runner delivers: it merges green `bug` PRs itself (ADR 0009). `enhancement` and `refactor` PRs wait for the owner.
