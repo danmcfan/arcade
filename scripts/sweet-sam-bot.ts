@@ -67,7 +67,7 @@ function goals(s: SweetSamSoftware): Set<number> {
 }
 
 function dangers(s: SweetSamSoftware): Tile[] {
-  return s.enemies.filter((e) => e.blueFrames === 0 && !e.home).map((e) => pointToTile(e.x, e.y));
+  return s.enemies.filter((e) => e.blueFrames === 0 && !e.home && !e.eyes).map((e) => pointToTile(e.x, e.y));
 }
 
 const manhattan = (a: Tile, b: Tile): number => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
