@@ -390,9 +390,9 @@ const homeY = tileSize * 17.5;
 const doorTile = pointToTile(doorX, doorY);
 
 /** 1 px steps, so the eyes never skip past a junction. */
-const eyesStep = 1;
-/** Steps per tick: the eyes fly at twice the bear's normal speed. */
-export const eyesSteps = 2;
+const eyesPixelsPerStep = 1;
+/** Steps per tick: 2 px per tick. */
+export const eyesStepsPerTick = 2;
 
 /**
  * The eyes' move for one tick: toward the tile above the home door, choosing
@@ -400,11 +400,11 @@ export const eyesSteps = 2;
  * bee revives (Dossier, "Frightened" and "Ghost House").
  */
 export function moveEyes(e: Entity, cs: readonly Entity[]): void {
-  e.velocity = eyesStep;
-  for (let k = 0; k < eyesSteps; k++) {
+  e.velocity = eyesPixelsPerStep;
+  for (let k = 0; k < eyesStepsPerTick; k++) {
     if (e.x === doorX && e.y >= doorY && e.y < homeY) {
       e.direction = "DOWN";
-      e.y += eyesStep;
+      e.y += eyesPixelsPerStep;
       if (e.y >= homeY) {
         resetEnemy(e);
         return;
@@ -412,7 +412,7 @@ export function moveEyes(e: Entity, cs: readonly Entity[]): void {
       continue;
     }
     if (e.y === doorY && Math.abs(e.x - doorX) <= distanceThreshold) {
-      e.x = doorX;
+      e.x += Math.sign(doorX - e.x) * eyesPixelsPerStep;
       continue;
     }
     updateDirection(e, cs, doorTile);

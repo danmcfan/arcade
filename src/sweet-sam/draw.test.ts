@@ -141,10 +141,10 @@ describe("SweetSamSoftware.draw", () => {
     expect(ops.filter((o) => name(o) === "draw:bees.png")).toHaveLength(3);
     // Centre (108, 124) on screen: eyes 2 px either side, pupils on their left edge.
     expect(ops.filter((o) => o[0] === "fillRect")).toEqual([
-      ["fillRect", 104, 122, 2, 3, "#ffffff"],
-      ["fillRect", 104, 123, 1, 1, "#2121de"],
-      ["fillRect", 110, 122, 2, 3, "#ffffff"],
-      ["fillRect", 110, 123, 1, 1, "#2121de"],
+      ["fillRect", 104, 122, 2, 3, "#f4f4f4"],
+      ["fillRect", 104, 123, 1, 1, "#3b5dc9"],
+      ["fillRect", 110, 122, 2, 3, "#f4f4f4"],
+      ["fillRect", 110, 123, 1, 1, "#3b5dc9"],
     ]);
   });
 

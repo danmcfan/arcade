@@ -204,7 +204,7 @@ export class PlayState implements State {
       s.modeCurrent = modeConfig.mode;
       s.modeTicks = modeConfig.ticks;
       s.modeIndex++;
-      for (const e of s.enemies.filter((b) => !b.eyes)) {
+      for (const e of s.awakeBees()) {
         e.reverseDirection = true;
         e.reverseTile = pointToTile(e.x, e.y);
       }
@@ -323,7 +323,7 @@ export class PlayState implements State {
         const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
         // Every bee turns sleepy, home ones too, but not eyes; only maze bees turn around.
-        for (const e of s.enemies.filter((b) => !b.eyes)) {
+        for (const e of s.awakeBees()) {
           if (!e.home) {
             e.reverseDirection = true;
             e.reverseTile = pointToTile(e.x, e.y);
