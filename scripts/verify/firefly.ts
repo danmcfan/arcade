@@ -72,7 +72,7 @@ function outlinePixelsChanged(v: Verify): number {
 function pastEdge(s: FireflySnapshot): boolean {
   return s.enemies.some((e) => {
     if (e.state === "waiting" || e.deadFrames > 0) return false;
-    const half = e.kind === "owl" ? 16 : 8;
+    const half = 8;
     return (
       e.x - half < 0 || e.x + half > cabinetPlayfieldWidth || e.y - half < 0 || e.y + half > cabinetPlayfieldHeight
     );
