@@ -42,6 +42,7 @@ import {
   deathRoundDelayTicks,
   distanceThreshold,
   findTarget,
+  moveEyes,
   restartAfterDeath,
   restartRound,
   startTicks,
@@ -203,7 +204,7 @@ export class PlayState implements State {
       s.modeCurrent = modeConfig.mode;
       s.modeTicks = modeConfig.ticks;
       s.modeIndex++;
-      for (const e of s.enemies) {
+      for (const e of s.enemies.filter((b) => !b.eyes)) {
         e.reverseDirection = true;
         e.reverseTile = pointToTile(e.x, e.y);
       }
@@ -286,7 +287,11 @@ export class PlayState implements State {
 
     for (const e of s.movingEntities()) {
       updateFrame(e);
-      updatePosition(e, s.corners);
+      if (e.eyes) {
+        moveEyes(e, s.corners);
+      } else {
+        updatePosition(e, s.corners);
+      }
     }
 
     // At most one item is eaten per tick.
@@ -317,8 +322,8 @@ export class PlayState implements State {
 
         const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
-        // Every bee turns sleepy, home ones too; only maze bees turn around.
-        for (const e of s.enemies) {
+        // Every bee turns sleepy, home ones too, but not eyes; only maze bees turn around.
+        for (const e of s.enemies.filter((b) => !b.eyes)) {
           if (!e.home) {
             e.reverseDirection = true;
             e.reverseTile = pointToTile(e.x, e.y);

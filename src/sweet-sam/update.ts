@@ -271,9 +271,10 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
   }
 
   // None of these junctions opens downward, so no bee arrives heading up.
-  const choices = noUpTiles.some((t) => tileEq(t, tileCorner))
-    ? validDirections.filter((d) => d !== "UP")
-    : validDirections;
+  const choices =
+    !e.eyes && noUpTiles.some((t) => tileEq(t, tileCorner))
+      ? validDirections.filter((d) => d !== "UP")
+      : validDirections;
 
   // Go stores these in a map, but only membership matters: the tie-break is
   // the fixed priority Up, Left, Down, Right.
@@ -369,6 +370,7 @@ export function resetEnemy(e: Entity): void {
   e.home = true;
   e.dotMinimum = 0;
   e.held = false;
+  e.eyes = false;
 }
 
 /** An eaten bee: its eyes stay where it was eaten, awake, and fly home from there. */
@@ -378,6 +380,44 @@ export function becomeEyes(e: Entity): void {
   e.flashFrames = 0;
   e.flash = false;
   e.reverseDirection = false;
+}
+
+/** Where the eyes enter the home: the spot above its door, where bees leave it. */
+const doorX = tileSize * 14;
+const doorY = tileSize * 14.5;
+/** Where the eyes revive: the middle of the home. */
+const homeY = tileSize * 17.5;
+const doorTile = pointToTile(doorX, doorY);
+
+/** 1 px steps, so the eyes never skip past a junction. */
+const eyesStep = 1;
+/** Steps per tick: the eyes fly at twice the bear's normal speed. */
+export const eyesSteps = 2;
+
+/**
+ * The eyes' move for one tick: toward the tile above the home door, choosing
+ * at each junction like a bee, then down through the door; in the home the
+ * bee revives (Dossier, "Frightened" and "Ghost House").
+ */
+export function moveEyes(e: Entity, cs: readonly Entity[]): void {
+  e.velocity = eyesStep;
+  for (let k = 0; k < eyesSteps; k++) {
+    if (e.x === doorX && e.y >= doorY && e.y < homeY) {
+      e.direction = "DOWN";
+      e.y += eyesStep;
+      if (e.y >= homeY) {
+        resetEnemy(e);
+        return;
+      }
+      continue;
+    }
+    if (e.y === doorY && Math.abs(e.x - doorX) <= distanceThreshold) {
+      e.x = doorX;
+      continue;
+    }
+    updateDirection(e, cs, doorTile);
+    updatePosition(e, cs);
+  }
 }
 
 export function findCorner(e: Entity, cs: readonly Entity[]): Entity | null {

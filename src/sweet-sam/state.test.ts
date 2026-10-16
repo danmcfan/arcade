@@ -758,4 +758,36 @@ describe("an eaten bee becomes eyes (#153)", () => {
     step(s);
     expect([s.snapshot().state, s.lives, s.scoreValue]).toEqual(["PLAY", lives, score]);
   });
+
+  test("from the far corner the eyes reach the home within 240 ticks, then the bee revives and leaves", () => {
+    const s = redEaten();
+    const red = enemy(s, 0);
+    // The bottom-right corner, heading down into it.
+    red.x = 8 * 26 + 4;
+    red.y = 8 * (29 + 3) + 4 - 4;
+    red.direction = "DOWN";
+    step(s, 61);
+    expect(s.snapshot().state).toBe("PLAY");
+    let ticks = 0;
+    while (red.eyes && ticks < 240) {
+      step(s);
+      ticks++;
+    }
+    expect([red.eyes, red.home, red.x, red.y]).toEqual([false, true, 112, 140]);
+    step(s, 60);
+    expect(red.home).toBe(false);
+  });
+
+  test("a second honey pot leaves the eyes awake", () => {
+    const s = redEaten();
+    step(s, 61);
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = s.player.y;
+    step(s);
+    const red = enemy(s, 0);
+    expect([red.eyes, red.blueFrames, red.reverseDirection]).toEqual([true, 0, false]);
+    expect(enemy(s, 1).blueFrames).toBeGreaterThan(0);
+  });
 });
