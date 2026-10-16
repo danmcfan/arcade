@@ -255,3 +255,4 @@ hooks the harness relies on are behavior-neutral: `internal/rng` replaces
 and `assets.Silent` (nil/false in the game), `Game.UpdateWithInput`,
 firefly's `PatternName`, and
 read-only `Snapshot()` methods in `golden.go` files.
+| `sweet-sam-modes` (trace) | #144: the change machine fills the hub's top-right corner and the scoreboard names it while the player faces it, so the run's hub walk reports `arcade.faced` "changeMachine" where it used to report null. Trace re-recorded; inputs unchanged. Golden frame unchanged |

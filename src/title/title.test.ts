@@ -401,13 +401,16 @@ function endedRun(store: SaveStore & { saves: number }, tokens: number, points: 
 describe("saving when the wallet changes", () => {
   test("every purchase saves at once, token or prize; a refused one does not", () => {
     const store = spyStore();
-    const t = atCounter(store, 0, 30);
+    const m = atChangeMachine(store, 0, 30);
     let saves = store.saves;
-    tap(t, "space"); // a token: 25 tickets left
+    tap(m, "space"); // a token: 25 tickets left
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toMatchObject({ tokens: 1, tickets: 25, prizes: [] });
+    m.dispose();
+    const t = atCounter(store, 1, 25);
     saves = store.saves;
-    tap(t, "up"); // the shelf's bottom row, the oil can
+    tap(t, "up"); // CLOSE up: the bottom of the right column
+    tap(t, "right"); // round to the oil can
     tap(t, "right");
     tap(t, "space"); // the honey jar: 0 tickets left
     expect(store.saves).toBe(saves + 1);
@@ -434,6 +437,15 @@ describe("saving when the wallet changes", () => {
   });
 });
 
+/** Continue from a save just under the change machine with these counts, and face it. */
+function atChangeMachine(store: SaveStore, tokens: number, tickets: number): Title {
+  store.save({ v: 4, highScores: noHighScores, tokens, tickets, prizes: [], player: { x: 152, y: 80, dir: "UP" } });
+  const t = new Title({ store });
+  tap(t, "space"); // Continue
+  hold(t, { up: true }, 20);
+  return t;
+}
+
 /** Continue from a save at the start position with these counts, then open the prize counter. */
 function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: SaveData["prizes"] = []): Title {
   store.save({ v: 4, highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
@@ -457,7 +469,7 @@ describe("prize counter inside the title scene", () => {
 
   test("a purchase saves at once, and Continue brings back the new counts", () => {
     const store = spyStore();
-    const t = atCounter(store, 0, 7);
+    const t = atChangeMachine(store, 0, 7);
     tap(t, "space");
     expect(game(t).arcade).toMatchObject({ tokens: 1, tickets: 2 });
     expect(store.load()).toMatchObject({ tokens: 1, tickets: 2 });
@@ -472,7 +484,8 @@ describe("prize counter inside the title scene", () => {
   test("a prize purchase saves at once as a v3 save, and Continue brings the prize back", () => {
     const store = spyStore();
     const t = atCounter(store, 3, 40);
-    tap(t, "up"); // the oil can, bottom left of the shelf
+    tap(t, "up"); // the lantern, bottom right of the shelf
+    tap(t, "right"); // round to the oil can
     tap(t, "right"); // the honey jar
     const saves = store.saves;
     tap(t, "space");
