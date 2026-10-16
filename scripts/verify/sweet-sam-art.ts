@@ -48,14 +48,14 @@ const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
-/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #151 and #153). */
+/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #151, #153 and #201). */
 const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
-  { tick: 772, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
-  { tick: 1318, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
+  { tick: 620, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
+  { tick: 1303, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
   { tick: 1400, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
-  { tick: 1694, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
-  { tick: 3146, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
+  { tick: 2584, name: "5-waking-flash", shows: "sleepy bees flashing awake (after the second honey pot)" },
+  { tick: 3452, name: "6-life-lost", shows: "a life lost on level 2: a red burst, one bear fewer below the maze" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -256,21 +256,21 @@ function play(v: Verify): void {
       );
       check(s.items === 244, "every honey drop and honey pot is out", s.items);
     }
-    if (stop.tick === 772) {
+    if (stop.tick === 620) {
       check(
         s.enemies.some((e) => e.home) && s.enemies.every((e) => e.blue > 0),
         "a honey pot eaten: every bee is sleepy, the ones in the home too",
       );
     }
-    if (stop.tick === 1318) {
+    if (stop.tick === 1303) {
       check(s.popups.length === 1 && s.popups[0]?.frameIdx === 0, "a sleepy bee eaten: 200 points float above it");
       check(s.particlesActive > 0, "and a burst of particles", s.particlesActive);
     }
     if (stop.tick === 1400)
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
-    if (stop.tick === 3146)
+    if (stop.tick === 3452)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick === 1694)
+    if (stop.tick === 2584)
       check(
         s.enemies.some((e) => e.flash),
         "a sleepy bee flashes awake",
@@ -303,11 +303,11 @@ function video(v: Verify): void {
       // The start, READY!, the first honey pot, a sleepy bee eaten, more honey.
       replayLive(v, script, 1, 1400);
       // Sleepy bees flashing awake.
-      skipTo(v, script, 1400, 1580);
-      replayLive(v, script, 1580, 1760);
-      // A life lost.
-      skipTo(v, script, 1760, 3068);
-      replayLive(v, script, 3068, 3228);
+      skipTo(v, script, 1400, 2500);
+      replayLive(v, script, 2500, 2680);
+      // A life lost, on level 2.
+      skipTo(v, script, 2680, 3374);
+      replayLive(v, script, 3374, 3534);
       v.wait(500);
     },
     { scene: "game" },
