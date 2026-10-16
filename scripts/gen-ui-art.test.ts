@@ -5,6 +5,7 @@ import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
+import { bonusLabelArt, hudSheetRows, hudSheetWidth, loopLabelArt } from "../src/ui/hudArt.ts";
 import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
 import {
   cabinetArt,
@@ -49,6 +50,23 @@ describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
     for (const [ch, rows] of Object.entries(glyphs))
       checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
+  });
+
+  test("BONUS and LOOP are white thick letters on 8 px tiles, and hud.png holds them under the score labels", () => {
+    checkRows("BONUS", bonusLabelArt, { w: 40, h: 7 });
+    checkRows("LOOP", loopLabelArt, { w: 32, h: 7 });
+    // L is an upright with a foot, as wide as the labels' E.
+    expect(loopLabelArt.map((r) => r.slice(0, 7))).toEqual([
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "wwwwww.",
+    ]);
+    checkRows("hud", hudSheetRows, { w: hudSheetWidth, h: 24 });
+    expect(hudSheetRows[8]?.startsWith("wwwwww...")).toBe(true);
   });
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {

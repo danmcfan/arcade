@@ -14,6 +14,7 @@ import prizesUrl from "../assets/images/prizes.png";
 import arcadeUrl from "../assets/images/arcade.png";
 import screensUrl from "../assets/images/screens.png";
 import playerUrl from "../assets/images/player.png";
+import hudUrl from "../assets/images/hud.png";
 import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
@@ -61,6 +62,7 @@ export const images = {
   arcade: imageAsset(arcadeUrl, 160, 144),
   screens: imageAsset(screensUrl, 392, 108),
   player: imageAsset(playerUrl, 64, 96),
+  hud: imageAsset(hudUrl, 126, 24),
   cabinet: imageAsset(cabinetUrl, 240, 304),
   cabinetFirefly: imageAsset(cabinetFireflyUrl, 240, 304),
   cabinetBrassMonkey: imageAsset(cabinetBrassMonkeyUrl, 240, 304),

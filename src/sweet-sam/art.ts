@@ -410,22 +410,6 @@ export const mazeBackground: SweetieLetter = "k";
 export const doorBar: SweetieLetter = "w";
 export const doorBarRows: readonly number[] = [5, 6];
 
-/**
- * "1UP" and "HIGH SCORE", baked into the maze's top row as the Go maze had
- * them, in the Go game's thick lettering (imported from its maze image). Its
- * left edge is at x `scoreLabelsX`.
- */
-export const scoreLabelsArt: readonly string[] = [
-  "..ww...ww...ww.wwwwww..........................ww...ww..wwwwww...wwwww.ww...ww..........wwww.....wwww...wwwww..wwwwww...wwwwww",
-  ".www...ww...ww.ww...ww.........................ww...ww....ww....ww.....ww...ww.........ww..ww...ww..ww.ww...ww.ww...ww..ww....",
-  "..ww...ww...ww.ww...ww.........................ww...ww....ww...ww......ww...ww.........ww......ww......ww...ww.ww...ww..ww....",
-  "..ww...ww...ww.ww...ww.........................wwwwwww....ww...ww..www.wwwwwww..........wwwww..ww......ww...ww.ww..www..wwwww.",
-  "..ww...ww...ww.wwwwww..........................ww...ww....ww...ww...ww.ww...ww..............ww.ww......ww...ww.wwwww....ww....",
-  "..ww...ww...ww.ww..............................ww...ww....ww....ww..ww.ww...ww.........ww...ww..ww..ww.ww...ww.ww.www...ww....",
-  "wwwwww..wwwww..ww..............................ww...ww..wwwwww...wwwww.ww...ww..........wwwww....wwww...wwwww..ww..www..wwwwww",
-];
-export const scoreLabelsX = 26;
-
 /** READY!, six 8×8 letters that each ride the wave, imported from the Go game's ready.png. */
 export const readyArt: readonly string[] = [
   ".yyyyyy...yyyyyy...yyy...yyyyy....yy..yy....yyy.",
