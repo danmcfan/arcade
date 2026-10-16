@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { sweetie } from "../ui/sweetie16.ts";
-import { titleBar, titleScreenHeight, titleScreenSpot, titleScreenWidth, titleWord } from "../ui/titleArt.ts";
+import {
+  letterPitch,
+  titleBar,
+  titleLetterFaces,
+  titleScreenHeight,
+  titleScreenSpot,
+  titleScreenWidth,
+  titleWord,
+} from "../ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod, pulsePeriod } from "./logo.ts";
 
 const inLayer = (layer: typeof titleWord, x: number, y: number): string =>
@@ -31,6 +39,21 @@ describe("logoOverlay", () => {
     const overlay = logoOverlay(Math.trunc(sheenPeriod / 5));
     const white = overlay.filter((p) => p.colour === sweetie.w && "yor".includes(inLayer(titleWord, p.x, p.y)));
     expect(white.length).toBeGreaterThan(0);
+  });
+
+  test("one sweep of the sheen crosses every letter of ARCADE", () => {
+    const litColumns = new Set<number>();
+    for (let tick = 0; tick < sheenPeriod; tick++) {
+      for (const p of logoOverlay(tick)) {
+        if (p.colour === sweetie.w && "yor".includes(inLayer(titleWord, p.x, p.y))) litColumns.add(p.x);
+      }
+    }
+    for (let i = 0; i < 6; i++) {
+      // Each letter's face is one `letterPitch` from the last, from the word's left edge.
+      const left = titleWord.x + i * letterPitch;
+      const faceW = titleLetterFaces["A"]?.[0]?.length ?? 0;
+      expect([...litColumns].some((x) => x >= left && x < left + faceW)).toBe(true);
+    }
   });
 
   test("between sweeps no letter face changes", () => {

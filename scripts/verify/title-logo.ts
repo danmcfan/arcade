@@ -8,6 +8,8 @@ import { saveKey } from "../../src/title/save.ts";
 import { isTitleSnapshot, verify } from "../harness.ts";
 
 await verify("title-logo", (v) => {
+  // A desktop viewport: a headless browser that reports no pointer would otherwise get the keyboard notice.
+  v.page.run("set", "viewport", "1280", "900");
   v.openHook();
   v.page.eval("localStorage.clear()");
   v.openHook();
