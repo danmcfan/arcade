@@ -43,6 +43,7 @@ import {
   formation,
   hitEffectTicks,
   morphBonus,
+  morphTrioSize,
   morphChance,
   morphFromStage,
   morphSpacing,
@@ -569,7 +570,8 @@ export class FireflySoftware implements FixedViewport {
   private morph(moth: Enemy, path: Path, d: Difficulty): void {
     const trio = { kills: 0 };
     this.enemies = this.enemies.filter((e) => e !== moth);
-    for (const k of [-1, 0, 1]) {
+    for (let i = 0; i < morphTrioSize; i++) {
+      const k = i - (morphTrioSize - 1) / 2;
       const shift = (p: Vec): Vec => ({ x: p.x + k * morphSpacing, y: p.y });
       const m: Enemy = { ...moth, kind: "morph", hp: enemyHp.morph, x: moth.x + k * morphSpacing, trio };
       this.sendDiving(m, path.map((c) => ({ p0: shift(c.p0), p1: shift(c.p1), p2: shift(c.p2), p3: shift(c.p3) })), d);
@@ -622,7 +624,7 @@ export class FireflySoftware implements FixedViewport {
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
-    if (e.trio !== null && ++e.trio.kills === 3) this.points += morphBonus;
+    if (e.trio !== null && ++e.trio.kills === morphTrioSize) this.points += morphBonus;
   }
 
   /** The enemy bursts and is gone, scoring nothing. */

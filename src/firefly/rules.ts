@@ -192,6 +192,9 @@ export const diveWeight: Readonly<Record<EnemyKind, number>> = { moth: 2, wasp: 
 export const morphFromStage = 4;
 export const morphChance = 4;
 export const morphBonus = 1000;
+
+/** Morphs in one trio. */
+export const morphTrioSize = 3;
 /** The px between the three morphs of a trio. */
 export const morphSpacing = 16;
 
