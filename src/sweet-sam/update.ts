@@ -6,7 +6,6 @@ import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
 import { levelValues, modeScatter, type Mode } from "./levels.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
-import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {
   dirAxis,
   dirOpposite,
@@ -49,8 +48,7 @@ export function update(s: SweetSamSoftware, i: Input): void {
   s.stateMachine.update(i);
   tickBonusEatPopups(s);
   tickFlowerPopup(s);
-  syncAndTickScoreRollingDials(s);
-  syncAndTickHighScoreRollingDials(s);
+  s.dials.tick(s.scoreValue, s.highScore);
 }
 
 export function winner(s: SweetSamSoftware): boolean {
@@ -259,6 +257,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     throw new Error(`no valid directions for enemy at (${e.x}, ${e.y})`);
   }
 
+  // Differs from the arcade: a seeded random exit, not its PRNG (docs/sweet-sam-pacman.md, "Where Sweet Sam stays different").
   if (e.blueFrames > 0) {
     const picked = validDirections[rng.intn(validDirections.length)];
     if (picked === undefined) {
@@ -270,6 +269,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     return;
   }
 
+  // Differs from the arcade: the exit is picked on reaching the junction, not one tile ahead (docs/sweet-sam-pacman.md, "Where Sweet Sam stays different").
   // None of these junctions opens downward, so no bee arrives heading up.
   const choices =
     !e.eyes && noUpTiles.some((t) => tileEq(t, tileCorner))
