@@ -151,6 +151,20 @@ describe("stage start", () => {
   });
 });
 
+describe("jumpTo", () => {
+  test("starts stage n afresh: STAGE n text, a full formation, no shots, that stage's dive timer", () => {
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks + 200, { space: true });
+    f.jumpTo(8);
+    expect(f.stage).toBe(8);
+    expect(f.stageTick).toBe(0);
+    expect(f.shots).toEqual([]);
+    expect(f.enemies.length).toBe(formation().length);
+    expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
+    expect(f.diveTimer).toBe(difficulty(8).diveInterval);
+  });
+});
+
 /** A fresh software with every enemy settled in formation and a dive due next tick. */
 function settled(): FireflySoftware {
   const f = new FireflySoftware();

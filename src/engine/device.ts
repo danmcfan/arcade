@@ -26,6 +26,15 @@ export function looksTouchFirst({ coarseNoHover, width, height }: TouchSignals):
   return Math.min(width, height) < smallViewport;
 }
 
+/**
+ * Whether main.ts shows the "needs a keyboard" notice: on a touch-first
+ * device, unless the page's query has `keyboard` (the verify harness says a
+ * keyboard is there).
+ */
+export function showsKeyboardNotice(signals: TouchSignals, query: URLSearchParams): boolean {
+  return !query.has("keyboard") && looksTouchFirst(signals);
+}
+
 /** The `coarseNoHover` signal from a `matchMedia` (browser only). */
 export function readPointer(matchMedia: (query: string) => { matches: boolean }): boolean | null {
   if (matchMedia("(pointer: coarse) and (hover: none)").matches) return true;

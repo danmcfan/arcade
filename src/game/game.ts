@@ -120,6 +120,13 @@ export class Game implements Scene {
    * save) keeps the start position. The walls frame the hub image, so
    * "inside the image and touching no wall" means "on the floor".
    */
+  jumpTo(stage: number): void {
+    const software = this.run?.software;
+    if (software?.jumpTo === undefined)
+      throw new Error(`Game.jumpTo: ${software?.name ?? "the hub"} has no stages to jump to`);
+    software.jumpTo(stage);
+  }
+
   private restore(p: Progress): void {
     const player = this.arcade.player;
     this.arcade.wallet = new Wallet(p);
