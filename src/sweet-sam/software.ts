@@ -15,7 +15,8 @@ import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
-import { digits6, newDigitReels, type DigitReel, type DigitReels } from "../ui/digitReel.ts";
+import { type DigitReel } from "../ui/digitReel.ts";
+import { ScoreDials } from "../ui/scoreDials.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import {
   DeathWaitState,
@@ -41,7 +42,6 @@ import {
 import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
 import { draw } from "./draw.ts";
-import { RollingDials } from "../ui/rollingDials.ts";
 import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
@@ -83,8 +83,7 @@ export class SweetSamSoftware implements FixedViewport {
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
   readonly advantages: Readonly<SweetSamAdvantages>;
 
-  readonly scoreDial: DigitReels = newDigitReels();
-  readonly highScoreDial: DigitReels = newDigitReels();
+  readonly dials: ScoreDials;
 
   /** Advances every Sweet Sam update; food atlases cycle (tick/holdTicks % frameCount) per pellet row. */
   pelletAnimTick = 0;
@@ -99,9 +98,6 @@ export class SweetSamSoftware implements FixedViewport {
   flowerPopup: FlowerPopup | null = null;
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
-
-  /** Draws the score dials; never touched by update (D12). */
-  readonly dials = new RollingDials();
 
   constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages) {
     this.highScore = highscore;
@@ -121,21 +117,7 @@ export class SweetSamSoftware implements FixedViewport {
     this.scoreValue = 0;
     this.items = newItems();
 
-    const z = digits6(0);
-    this.scoreDial.forEach((r, i) => {
-      r.boot(z[i] ?? 0);
-    });
-    let hc = highscore;
-    if (hc < 0) {
-      hc = 0;
-    }
-    if (hc > 999_999) {
-      hc = 999_999;
-    }
-    const hd = digits6(hc);
-    this.highScoreDial.forEach((r, i) => {
-      r.boot(hd[i] ?? 0);
-    });
+    this.dials = new ScoreDials(highscore);
 
     restartRound(this);
 
@@ -284,7 +266,7 @@ export class SweetSamSoftware implements FixedViewport {
       ],
       particlesActive: this.particles.activeCount(),
       pelletAnimTick: this.pelletAnimTick,
-      dials: [...this.scoreDial.map(dial), ...this.highScoreDial.map(dial)],
+      dials: [...this.dials.score.map(dial), ...this.dials.high.map(dial)],
       level: this.level,
       levelBannerTicks: this.levelBannerTicks,
       mazeFlash: this.mazeFlash(),

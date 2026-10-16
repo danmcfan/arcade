@@ -49,6 +49,8 @@ export const imageHoneyPot: Sprite = whole(sweetSamImages.honeyPot);
 export const imageReady: Sprite = whole(sweetSamImages.ready);
 /** Sweet Sam's score dial digits, 0 to 9, 8×8 each. */
 export const imageDigits: Sprite = whole(sweetSamImages.digits);
+/** "1UP" and "HIGH SCORE" on their own, for cabinets whose background does not bake them in (Sweet Sam's maze does). */
+export const imageScoreLabels: Sprite = whole(sweetSamImages.scoreLabels);
 /** The points for eating a sleepy bee: 200, 400, 800, 1600. */
 export const imagePoints: Sprite = whole(sweetSamImages.points);
 

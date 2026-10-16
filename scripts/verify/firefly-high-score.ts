@@ -1,7 +1,7 @@
 // Firefly shows the hub high score (#165) in a real browser (`bun run verify firefly-high-score`).
 // A New game walks to the Firefly cabinet and starts a paid run; its top row
-// shows the score (top left), the house high score of 40000 centred, and the
-// spare lives (top right). Files go to out/verify/firefly-high-score/.
+// shows the score dial under 1UP and the house high score of 40000 under HIGH
+// SCORE, as in Sweet Sam (#211). Files go to out/verify/firefly-high-score/.
 
 import { houseHighScores } from "../../src/arcade/wallet.ts";
 import { isTitleSnapshot, verify } from "../harness.ts";

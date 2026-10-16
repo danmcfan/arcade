@@ -3,7 +3,7 @@
 // DOM work (offscreen surfaces) happens lazily here (D12).
 
 import { sub, type Sprite } from "../engine/image.ts";
-import type { PremulColor, Surface } from "../engine/surface.ts";
+import { Surface, type PremulColor } from "../engine/surface.ts";
 import {
   imageBear,
   imageCabinet,
@@ -56,8 +56,7 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
     return;
   }
   drawBackground(s, screen, bufX, bufY);
-  drawScore(s, screen, bufX, bufY);
-  drawHighScore(s, screen, bufX, bufY);
+  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
   drawLives(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
@@ -79,8 +78,7 @@ function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bu
   const poses = s.intermissionPoses();
   if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
-  drawScore(s, screen, bufX, bufY);
-  drawHighScore(s, screen, bufX, bufY);
+  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
   drawLevel(s, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
     for (const pose of poses) {
@@ -101,15 +99,6 @@ function drawPose(p: IntermissionPose, screen: Surface, bufX: number, bufY: numb
 
 function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   screen.draw(s.mazeFlash() ? imageSweetSamMazeFlash : imageSweetSamMaze, bufX, bufY);
-}
-
-function drawScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  s.dials.draw(screen, s.scoreValue, 8 + bufX, 8 + bufY, s.scoreDial);
-}
-
-function drawHighScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const highScore = Math.trunc(Math.max(s.scoreValue, s.highScore));
-  s.dials.draw(screen, highScore, 8 * 11 + bufX, 8 + bufY, s.highScoreDial);
 }
 
 function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
