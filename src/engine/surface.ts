@@ -24,6 +24,8 @@ export interface DrawOpts {
   flipX?: boolean;
   /** `ColorScale.ScaleAlpha`, 0..1. */
   alpha?: number;
+  /** Whole-number nearest-neighbour upscale from the top-left corner, after `flipX`. */
+  scale?: number;
 }
 
 /**
@@ -210,6 +212,7 @@ export class Surface {
     ctx.save();
     ctx.globalAlpha = opts?.alpha ?? 1;
     ctx.setTransform(1, 0, 0, 1, snap(x), snap(y));
+    if (opts?.scale !== undefined) ctx.scale(opts.scale, opts.scale);
     if (opts?.flipX === true) {
       // GeoM: Scale(-1, 1) then Translate(w, 0), applied first.
       ctx.translate(w, 0);

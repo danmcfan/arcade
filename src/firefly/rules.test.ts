@@ -43,6 +43,16 @@ describe("formation", () => {
 });
 
 describe("difficulty", () => {
+  test("pins every knob at stages 1, 5, 6, 10 and 15", () => {
+    expect([1, 5, 6, 10, 15].map((s) => difficulty(s))).toEqual([
+      { diveInterval: 150, diversPerDive: 1, shotsPerDive: 1, diveSpeed: 2, shotDrift: 1 },
+      { diveInterval: 50, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2, shotDrift: 1 },
+      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.1, shotDrift: 1.1 },
+      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.5, shotDrift: 1.5 },
+      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.5, shotDrift: 1.5 },
+    ]);
+  });
+
   test("each stage dives more often, sends more divers and drops more shots", () => {
     for (let s = 1; s < 4; s++) {
       const now = difficulty(s);
@@ -60,6 +70,8 @@ describe("difficulty", () => {
       expect(next.diveInterval).toBeLessThanOrEqual(now.diveInterval);
       expect(next.diversPerDive).toBeGreaterThanOrEqual(now.diversPerDive);
       expect(next.shotsPerDive).toBeGreaterThanOrEqual(now.shotsPerDive);
+      expect(next.diveSpeed).toBeGreaterThanOrEqual(now.diveSpeed);
+      expect(next.shotDrift).toBeGreaterThanOrEqual(now.shotDrift);
     }
   });
 });

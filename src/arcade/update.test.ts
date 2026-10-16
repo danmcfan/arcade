@@ -73,7 +73,7 @@ describe("tokens and tickets", () => {
 
   test("with 0 tokens the minigame still starts, as free play", () => {
     const s = newState(fakeFactory);
-    s.wallet = new Wallet({ highScores: noHighScores, tokens: 0, tickets: 0, prizes: [] });
+    s.wallet = new Wallet({ highScores: noHighScores, tokens: 0, tickets: 0, arcadeWon: false, prizes: [] });
     run(s, 31, { up: true });
     const e = update(s, input({ up: true, space: true }));
     expect(startedBy(e)?.name).toBe("sweetSam");
@@ -182,6 +182,7 @@ describe("entering a machine", () => {
       highScores: { ...noHighScores, sweetSam: 777, firefly: 99999 },
       tokens: startingTokens,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
     });
     run(s, 31, { up: true });
@@ -196,7 +197,13 @@ describe("entering a machine", () => {
   test("a beaten cabinet loads its software with the player's high score", () => {
     const s = newState(fakeFactory);
     const best = houseHighScores.sweetSam + 1;
-    s.wallet = new Wallet({ highScores: { ...noHighScores, sweetSam: best }, tokens: 1, tickets: 0, prizes: [] });
+    s.wallet = new Wallet({
+      highScores: { ...noHighScores, sweetSam: best },
+      tokens: 1,
+      tickets: 0,
+      arcadeWon: false,
+      prizes: [],
+    });
     run(s, 31, { up: true });
     const sw = startedBy(update(s, input({ up: true, space: true })));
     expect(sw === null ? undefined : highScores.get(sw)).toBe(best);
