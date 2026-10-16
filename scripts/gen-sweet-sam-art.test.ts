@@ -23,10 +23,9 @@ import {
   pointsFrameSize,
   pointsTop,
   readyArt,
-  scoreLabelsArt,
-  scoreLabelsX,
   walkCycle,
 } from "../src/sweet-sam/art.ts";
+import { scoreLabelsArt, scoreLabelsX } from "../src/ui/hudArt.ts";
 import {
   newCorners,
   newEnemies,

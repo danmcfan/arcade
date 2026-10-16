@@ -54,8 +54,6 @@ import {
   pointsFrameSize,
   pointsTop,
   readyArt,
-  scoreLabelsArt,
-  scoreLabelsX,
   sleepyLook,
   wakingLook,
   walkCycle,
@@ -66,6 +64,7 @@ import {
   waxRim,
   waxRimWidth,
 } from "../src/sweet-sam/art.ts";
+import { scoreLabelsArt, scoreLabelsX } from "../src/ui/hudArt.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";

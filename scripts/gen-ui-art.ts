@@ -1,6 +1,6 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, arcade.png, screens.png, player.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, arcade.png, screens.png, player.png, hud.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. icons.png is the menu icons from
@@ -11,7 +11,7 @@
 // src/ui/prizeArt.ts. arcade.png is the hub room with its cabinets, scoreboard
 // and prize desk (src/ui/hubArt.ts), screens.png the cabinets' screens
 // switching on and off, and player.png the player's sprite sheet
-// (src/ui/playerArt.ts). Each of `titleCards` is its title card (the source of
+// (src/ui/playerArt.ts), hud.png the HUDs' thick labels (src/ui/hudArt.ts). Each of `titleCards` is its title card (the source of
 // its cabinet's marquee lettering, scripts/gen-cabinets.ts) with the top line
 // of lettering replaced by `text`. gen-art.test.ts fails when the committed
 // PNGs no longer match the source.
@@ -45,6 +45,7 @@ import {
   prizeSheetHeight,
   prizeSheetWidth,
 } from "../src/ui/prizeArt.ts";
+import { hudSheetRows, hudSheetWidth } from "../src/ui/hudArt.ts";
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { cardArt, cardRects, cardSheetHeight, cardSheetWidth, panelFrame } from "../src/ui/panelArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -198,5 +199,6 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),
   imageOutput(join(imagesDir, "screens.png"), 392, 108, renderScreens),
   imageOutput(join(imagesDir, "player.png"), 64, 96, renderPlayer),
+  imageOutput(join(imagesDir, "hud.png"), hudSheetWidth, hudSheetRows.length, () => toPng(hudSheetRows)),
   ...titleCards.map((card) => imageOutput(join(titleCardsDir, card.file), 160, 144, () => renderTitleCard(card))),
 ];

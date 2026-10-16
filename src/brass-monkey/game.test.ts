@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import {
   imageCabinetBrassMonkey,
   imageConveyorFloor,
   imageGirderFloor,
   imageFont,
   imageGnome,
+  imageHud,
   imageMonkey,
   imageWall,
 } from "../engine/assets.ts";
@@ -12,7 +13,8 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
-import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
+import { FakeCanvas, canvasElement, stubSurface } from "../engine/fakeCanvas.testutil.ts";
+import { setCanvasFactory } from "../engine/surface.ts";
 import { Game } from "../game/game.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
@@ -39,8 +41,9 @@ interface DrawCall {
   y: number;
 }
 
-function record(g: BrassMonkeySoftware): { calls: DrawCall[]; fills: number } {
+function record(g: BrassMonkeySoftware): { calls: DrawCall[]; fills: number; dials: [number, number][] } {
   const calls: DrawCall[] = [];
+  const dials: [number, number][] = [];
   let fills = 0;
   g.draw(
     stubSurface({
@@ -50,10 +53,13 @@ function record(g: BrassMonkeySoftware): { calls: DrawCall[]; fills: number } {
       fillRect: () => {
         fills++;
       },
+      drawSurface: (_src, x, y) => {
+        dials.push([x, y]);
+      },
     }),
     0,
   );
-  return { calls, fills };
+  return { calls, fills, dials };
 }
 
 /** The words drawn in the font, read back from the glyphs: one per run of glyphs on a line. */
@@ -73,6 +79,14 @@ function words(g: BrassMonkeySoftware): string[] {
   }
   return out;
 }
+
+// The dials draw each digit through a scratch canvas.
+beforeAll(() => {
+  setCanvasFactory((w, h) => canvasElement(new FakeCanvas(w, h)));
+});
+afterAll(() => {
+  setCanvasFactory(null);
+});
 
 const unsubscribe: (() => void)[] = [];
 afterEach(() => {
@@ -181,21 +195,64 @@ describe("draw", () => {
   });
 });
 
-describe("the loop", () => {
-  test("the HUD shows LOOP 1 on a new run and LOOP 2 after one escape", () => {
+/** Where hud.png's band `band` is drawn: [x, y, width]. */
+const label = (g: BrassMonkeySoftware, band: number): number[][] =>
+  record(g)
+    .calls.filter((c) => c.sprite.asset === imageHud.asset && c.sprite.sy === band * 8)
+    .map((c) => [c.x, c.y, c.sprite.w]);
+
+describe("the HUD, in Sweet Sam's style", () => {
+  test("1UP and HIGH SCORE stand where Sweet Sam's maze has them, BONUS at the right", () => {
     const g = quiet();
-    expect(words(g)).toContain("LOOP 1");
-    g.run.loop = 1;
-    expect(words(g)).toContain("LOOP 2");
+    expect(label(g, 0)).toEqual([[8 + 26, 8, 126]]);
+    expect(label(g, 1)).toEqual([[8 + 168, 8, 40]]);
   });
 
-  test("the HUD's LOOP is drawn over the floor, not under it", () => {
-    const { calls } = record(quiet());
-    const floor = calls.findIndex((c) => c.sprite.asset === imageGirderFloor.asset);
-    const loop = calls.findLastIndex((c) => c.sprite.asset === imageFont.asset);
-    expect(loop).toBeGreaterThan(floor);
+  test("score, high score and bonus are dials on Sweet Sam's second row: 00, 00 and 5000", () => {
+    const { dials } = record(quiet());
+    const row = dials.filter(([, y]) => y === 16).map(([x]) => x);
+    expect(row).toEqual([48, 56, 128, 136, 184, 192, 200, 208]);
   });
 
+  test("the high score's dial shows the hub's high score from the start", () => {
+    const { dials } = record(quiet(1234));
+    expect(dials.filter(([x, y]) => y === 16 && x >= 88 && x < 136 + 8).map(([x]) => x)).toEqual([112, 120, 128, 136]);
+  });
+
+  test("the score's dial rolls to the new score", () => {
+    const g = quiet();
+    g.run.score = 100;
+    g.update(NO_INPUT);
+    const { dials } = record(g);
+    expect(dials.filter(([x, y]) => y === 16 && x < 64).map(([x]) => x)).toEqual([40, 48, 56]);
+  });
+
+  test("spare lives are monkey icons in Sweet Sam's spacing, under the score", () => {
+    const g = quiet();
+    const lives = (): number[][] =>
+      record(g)
+        .calls.filter((c) => c.sprite.asset === imageMonkey.asset && c.y === 8 + 16)
+        .map((c) => [c.x, c.sprite.sx]);
+    expect(lives()).toEqual([
+      [24, 0],
+      [40, 0],
+    ]);
+    g.run.lives = 1;
+    expect(lives()).toEqual([]);
+  });
+
+  test("LOOP and its number sit at the right of the band, under the bonus", () => {
+    const g = quiet();
+    expect(label(g, 2)).toEqual([[8 + 168, 8 + 20, 32]]);
+    expect(record(g).dials.filter(([, y]) => y === 28)).toEqual([[208, 28]]);
+  });
+
+  test("the HUD is drawn in the band, not as text", () => {
+    expect(words(quiet())).toEqual([]);
+  });
+});
+
+describe("the loop", () => {
   test("the escaped scene shows the lap coming next", () => {
     const g = quiet();
     g.run.phase = "escape";
@@ -210,13 +267,13 @@ describe("the loop", () => {
     g.run.phaseTicks = 1;
     g.update(NO_INPUT);
     expect(g.run.loop).toBe(1);
-    expect(words(g).filter((w) => w === "LOOP 2")).toHaveLength(2);
+    expect(words(g)).toEqual(["LOOP 2"]);
     for (let n = 0; n < t.lapBannerTicks; n++) g.update(NO_INPUT);
-    expect(words(g).filter((w) => w === "LOOP 2")).toHaveLength(1);
+    expect(words(g)).toEqual([]);
   });
 
   test("the first lap opens without a banner", () => {
-    expect(words(quiet()).filter((w) => w === "LOOP 1")).toHaveLength(1);
+    expect(words(quiet())).toEqual([]);
   });
 });
 

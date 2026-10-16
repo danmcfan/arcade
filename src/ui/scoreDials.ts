@@ -8,7 +8,7 @@ import { Surface } from "../engine/surface.ts";
 import { imageDigits, imageScoreLabels } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
 import { bootReels, digits6, newDigitReels, syncAndTick, type DigitReels } from "./digitReel.ts";
-import { scoreLabelsX } from "../sweet-sam/art.ts";
+import { scoreLabelsX } from "./hudArt.ts";
 
 /** Where the score and high score dials start: tile columns on tile row `scoreDialsRow`. */
 export const scoreDialColumn = 1;

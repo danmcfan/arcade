@@ -14,7 +14,7 @@ import { createScene } from "../../src/game/registry.ts";
 import type { BrassMonkeySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import { boltPoints, hazardPoints } from "../../src/brass-monkey/tuning.ts";
 import { play } from "../gen-brass-monkey-play.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, packInputs, replayPage, stepPage, verify, type Verify } from "../harness.ts";
 
 // play() throws if the bot fails to enter the cabinet from the hub.
 const seed = 163;
@@ -98,21 +98,7 @@ function expected(ticks: readonly number[]): Map<number, GameSnapshot> {
   return out;
 }
 
-/** One character a tick, its bits the held keys: too many ticks for a JSON array on agent-browser's command line. */
-const packed = inputs
-  .map((i) => String.fromCodePoint(64 + (+i.up | (+i.down << 1) | (+i.left << 2) | (+i.right << 3) | (+i.space << 4))))
-  .join("");
-
-/** JS object literal decoding a packed tick's bits (b) into the held keys. */
-const held = "{ up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 }";
-
-/** Step the page through inputs[from, to) (packed: a JSON script of them is too long for the command line). */
-const stepPage = (from: number, to: number): string =>
-  `{ const p = ${JSON.stringify(packed.slice(from, to))};
-   for (let k = 0; k < p.length; k++) {
-     const b = p.charCodeAt(k) - 64;
-     window.__arcade.step(1, ${held});
-   } } "ok"`;
+const packed = packInputs(inputs);
 
 function walkthrough(v: Verify): void {
   const shots = moments();
@@ -121,7 +107,7 @@ function walkthrough(v: Verify): void {
   v.page.eval(`window.__arcade.seed(${seed}); window.__arcade.load("game"); "ok"`);
   let at = 0;
   for (const [name, tick] of shots) {
-    v.page.eval(stepPage(at, tick));
+    v.page.eval(stepPage(packed, at, tick));
     at = tick;
     const got = v.snapshot(isGameSnapshot);
     const exp = want.get(tick);
@@ -155,13 +141,7 @@ function video(v: Verify): void {
     () => {
       v.page.eval(
         `window.__arcade.pause(); window.__arcade.seed(${seed}); window.__arcade.load("game");
-         window.__inputs = ${JSON.stringify(packed)}; window.__at = 0;
-         window.__timer = setInterval(() => {
-           for (let n = 0; n < 3 && window.__at < window.__inputs.length; n++) {
-             const b = window.__inputs.charCodeAt(window.__at++) - 64;
-             window.__arcade.step(1, ${held});
-           }
-         }, 16); "ok"`,
+         ${replayPage(packed, 3)}`,
       );
       v.wait(Math.ceil(inputs.length / 3) * 17 + 1500);
     },
