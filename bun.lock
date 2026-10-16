@@ -14,6 +14,7 @@
         "pixelmatch": "7.2.0",
         "pngjs": "7.0.0",
         "prettier": "3.9.10",
+        "sandworm": "github:danmcfan/sandworm#v0.1.0",
         "typescript": "7.0.2",
       },
     },
@@ -248,6 +249,8 @@
     "prettier": ["prettier@3.9.10", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA=="],
 
     "resolve-pkg-maps": ["resolve-pkg-maps@1.0.0", "", {}, "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw=="],
+
+    "sandworm": ["sandworm@github:danmcfan/sandworm#55d3dd7", { "peerDependencies": { "@ai-hero/sandcastle": "0.12.0" } }, "danmcfan-sandworm-55d3dd7", "sha512-PAWmgc8htFuIrCP0+JiJN301hWlx9EiVIe00sgqbtXCaLVewgjMG2dfsCwziiQ/86AOvcanpQbgHoOK6Y/zZ9w=="],
 
     "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 
