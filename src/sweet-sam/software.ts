@@ -41,7 +41,7 @@ import {
 import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
 import { draw, type DrawCache } from "./draw.ts";
-import { intermissionAfter, type IntermissionScene } from "./intermission.ts";
+import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
 export class SweetSamSoftware implements FixedViewport {
@@ -194,6 +194,12 @@ export class SweetSamSoftware implements FixedViewport {
   intermission(): IntermissionScene | null {
     if (this.stateMachine.currentId() !== stateIDIntermission) return null;
     return intermissionAfter(this.level - 1);
+  }
+
+  /** The cutscene's actors at this tick, or null outside INTERMISSION. */
+  intermissionPoses(): IntermissionPose[] | null {
+    const scene = this.intermission();
+    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.pauseTicks);
   }
 
   /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */

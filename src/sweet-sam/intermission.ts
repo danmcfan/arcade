@@ -58,6 +58,10 @@ function walk(from: number, to: number, fromX: number, toX: number): Intermissio
   return { from, to, fromX, toX, facing: toX < fromX ? "LEFT" : "RIGHT" };
 }
 
+function stand(from: number, to: number, x: number, facing: Direction): IntermissionMove {
+  return { from, to, fromX: x, toX: x, facing };
+}
+
 function actor(
   sprite: IntermissionSprite,
   moves: IntermissionMove[],
@@ -85,7 +89,7 @@ const actII: IntermissionScene = {
   ticks: 300,
   actors: [
     actor("bear", [walk(0, crossTicks, offRight, offLeft)]),
-    actor("redBee", [walk(0, 90, offRight + 32, 128), { from: 90, to: 300, fromX: 128, toX: 128, facing: "LEFT" }]),
+    actor("redBee", [walk(0, 90, offRight + 32, 128), stand(90, 300, 128, "LEFT")]),
   ],
 };
 

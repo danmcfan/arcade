@@ -161,12 +161,21 @@ export function beeSheet(kind: SweetSamEnemyKind): Sprite {
   return sub(imageBees, 0, y, imageBees.w, y + h);
 }
 
+/** Bear rows in bear.png, by facing. */
+export const bearRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 2, RIGHT: 3 };
+
+/** Bee rows in each bee's sheet, by facing. */
+export const beeRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 1, RIGHT: 0 };
+
+/** Rows a frightened bee's frames sit below its normal ones. */
+export const frightenedRowOffset = 2;
+
 export function newPlayer(): Entity {
   const e = new Entity();
   e.sprite = imageBear;
   e.frameIncrement = 0.1;
   e.frameTotal = 4;
-  e.frameDirection = { DOWN: 0, UP: 1, LEFT: 2, RIGHT: 3 };
+  e.frameDirection = bearRows;
   e.x = 112;
   e.y = 212;
   e.width = 16;
@@ -210,7 +219,7 @@ function newEnemy(
   e.color = kindColors[kind];
   e.frameIncrement = 0.1;
   e.frameTotal = 4;
-  e.frameDirection = { DOWN: 0, UP: 1, LEFT: 1, RIGHT: 0 };
+  e.frameDirection = beeRows;
   e.x = tileSize * tx;
   e.y = tileSize * ty;
   e.width = 16;

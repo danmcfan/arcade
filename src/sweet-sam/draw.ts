@@ -19,11 +19,14 @@ import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
-import { intermissionPoses, intermissionY, type IntermissionPose } from "./intermission.ts";
+import { intermissionY, type IntermissionPose } from "./intermission.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import { frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
 import {
+  beeRows,
+  bearRows,
   beeSheet,
+  frightenedRowOffset,
   pelletAnimFrameCount,
   pelletAnimHoldTicks,
   pointToTile,
@@ -31,7 +34,6 @@ import {
   type Entity,
   type Tile,
 } from "./entity.ts";
-import type { Direction } from "../engine/input.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -81,26 +83,22 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
 
 /** A cutscene (#160): its actors over a black screen, under the score and lives. */
 function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const scene = s.intermission();
-  if (scene === null) return;
+  const poses = s.intermissionPoses();
+  if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
   drawScore(s, screen, bufX, bufY);
   drawHighScore(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
-    for (const pose of intermissionPoses(scene, scene.ticks - s.pauseTicks)) {
+    for (const pose of poses) {
       drawPose(pose, screen, bufX, bufY);
     }
   });
 }
 
-/** Bear rows in bear.png and bee rows in each bee's sheet, by facing (entity.ts). */
-const bearRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 2, RIGHT: 3 };
-const beeRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 1, RIGHT: 0 };
-
 function drawPose(p: IntermissionPose, screen: Surface, bufX: number, bufY: number): void {
   const sheet = p.sprite === "bear" ? imageBear : beeSheet("red");
-  const row = p.sprite === "bear" ? bearRows[p.facing] : beeRows[p.facing] + (p.frightened ? 2 : 0);
+  const row = p.sprite === "bear" ? bearRows[p.facing] : beeRows[p.facing] + (p.frightened ? frightenedRowOffset : 0);
   const sx = sheet.sx + frameSize * p.frame;
   const sy = sheet.sy + frameSize * row;
   const frame = sub(sheet, sx, sy, sx + frameSize, sy + frameSize);
@@ -414,9 +412,9 @@ function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): voi
   let row = e.direction === "" ? 0 : (e.frameDirection?.[e.direction] ?? 0);
 
   if (e.blueFrames > 0) {
-    row += 2;
+    row += frightenedRowOffset;
     if (e.flash) {
-      row += 2;
+      row += frightenedRowOffset;
     }
   }
 
