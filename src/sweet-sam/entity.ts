@@ -342,7 +342,8 @@ export const cornerRowOffset = 3;
 /**
  * The junctions where a bee in scatter or chase may not choose UP (Pac-Man
  * Dossier, "Areas To Exploit"): the two T-junctions above the home and the two
- * on the bear's start row. Tiles as pointToTile gives them.
+ * on the bear's start row. Tiles as pointToTile gives them. Sweet Sam has no
+ * Ghost Bug: see "Where Sweet Sam stays different" in docs/sweet-sam-pacman.md.
  */
 export const noUpTiles: readonly Tile[] = [
   { x: 12, y: 14 },
