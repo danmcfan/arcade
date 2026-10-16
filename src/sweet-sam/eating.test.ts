@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
-import { NO_INPUT, type Direction, type Input } from "../engine/input.ts";
+import { NO_INPUT, type Input } from "../engine/input.ts";
 import { SweetSamSoftware } from "./software.ts";
 
 // Corner (6, 5) allows all four directions; its centre, and its honey drop, are at (52, 68).
@@ -11,7 +11,7 @@ beforeEach(() => {
   rng.seed(1);
 });
 
-const held = (dir: Direction | ""): Input => ({ ...NO_INPUT, up: dir === "UP" });
+const up: Input = { ...NO_INPUT, up: true };
 
 /** A game in PLAY with the bear heading LEFT at (x, crossY) and the bees held at home. */
 function playingAt(x: number): SweetSamSoftware {
@@ -40,7 +40,7 @@ function cornerUp(s: SweetSamSoftware, idx: number): number {
   for (let k = 0; k < 12; k++) {
     const before = s.scoreValue;
     const present = s.items[idx] !== null;
-    s.update(held("UP"));
+    s.update(up);
     if (present && s.items[idx] === null) scored = s.scoreValue - before;
   }
   expect(s.player.direction).toBe("UP");
