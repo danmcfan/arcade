@@ -181,6 +181,8 @@ export interface SweetSamEnemySnapshot {
   dotMin: number;
   /** `Entity.held`. */
   held: boolean;
+  /** `Entity.eyes`. */
+  eyes: boolean;
   /** `Entity.reverseDirection`. */
   reverse: boolean;
   /** `Entity.reverseTile` as `[x, y]`. */

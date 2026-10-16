@@ -282,7 +282,7 @@ describe("eating", () => {
     expect(snap.popups).toEqual([{ x: s.player.x, y: s.player.y, frameIdx: 0, ticks: 44 }]);
     expect(snap.shake).toEqual([0, 0, 9, 8]);
     expect(snap.particlesActive).toBe(25);
-    expect([red.x, red.y, red.home, red.blueFrames]).toEqual([112, 140, true, 0]);
+    expect([red.eyes, red.blueFrames]).toEqual([true, 0]);
   });
 
   test("award ladder 200 → 400 → 800 → 1600 → 1600 while some bee stays scared", () => {
@@ -293,6 +293,7 @@ describe("eating", () => {
     for (let k = 0; k < 5; k++) {
       const red = enemy(s, 0);
       onPlayer(s, red);
+      red.eyes = false; // revived: the same bee is eaten again
       red.blueFrames = 300;
       const before = s.scoreValue;
       step(s);
@@ -772,5 +773,70 @@ describe("Cruise Elroy (#156)", () => {
     enemy(s, 0).home = true;
     step(s);
     expect(enemy(s, 0).velocity).toBe(levelValues(1).beeVelocity);
+  });
+});
+
+/** A game whose red bee the bear has just eaten. */
+function redEaten(): SweetSamSoftware {
+  const s = playing();
+  const red = enemy(s, 0);
+  onPlayer(s, red);
+  red.blueFrames = 300;
+  step(s);
+  expect(s.snapshot().state).toBe("PAUSE");
+  return s;
+}
+
+describe("an eaten bee becomes eyes (#153)", () => {
+  test("the tick after, the bee is eyes where it was eaten", () => {
+    const s = redEaten();
+    const red = enemy(s, 0);
+    expect([red.x, red.y, red.home]).toEqual([s.player.x, s.player.y, false]);
+    expect(s.snapshot().enemies[0]?.eyes).toBe(true);
+    expect(red.blueFrames).toBe(0);
+  });
+
+  test("touching the eyes neither kills the bear nor scores", () => {
+    const s = redEaten();
+    step(s, 61);
+    expect(s.snapshot().state).toBe("PLAY");
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.eyes = true;
+    const [lives, score] = [s.lives, s.scoreValue];
+    step(s);
+    expect([s.snapshot().state, s.lives, s.scoreValue]).toEqual(["PLAY", lives, score]);
+  });
+
+  test("from the far corner the eyes reach the home within 240 ticks, then the bee revives and leaves", () => {
+    const s = redEaten();
+    const red = enemy(s, 0);
+    // The bottom-right corner, heading down into it.
+    red.x = 8 * 26 + 4;
+    red.y = 8 * (29 + 3) + 4 - 4;
+    red.direction = "DOWN";
+    step(s, 61);
+    expect(s.snapshot().state).toBe("PLAY");
+    let ticks = 0;
+    while (red.eyes && ticks < 240) {
+      step(s);
+      ticks++;
+    }
+    expect([red.eyes, red.home, red.x, red.y]).toEqual([false, true, 112, 140]);
+    step(s, 60);
+    expect(red.home).toBe(false);
+  });
+
+  test("a second honey pot leaves the eyes awake", () => {
+    const s = redEaten();
+    step(s, 61);
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = s.player.y;
+    step(s);
+    const red = enemy(s, 0);
+    expect([red.eyes, red.blueFrames, red.reverseDirection]).toEqual([true, 0, false]);
+    expect(enemy(s, 1).blueFrames).toBeGreaterThan(0);
   });
 });

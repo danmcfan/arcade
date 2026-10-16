@@ -28,6 +28,7 @@ import {
   isSleepy,
   newItems,
   pointToTile,
+  tileEq,
   tunnelLeftX,
   tunnelRightX,
   tunnelRowY,
@@ -37,11 +38,11 @@ import {
 } from "./entity.ts";
 import {
   applyInput,
+  becomeEyes,
   collideWithDistance,
   deathRoundDelayTicks,
-  distanceThreshold,
   findTarget,
-  resetEnemy,
+  moveEyes,
   restartAfterDeath,
   restartRound,
   startTicks,
@@ -205,7 +206,7 @@ export class PlayState implements State {
       s.modeCurrent = modeConfig.mode;
       s.modeTicks = modeConfig.ticks;
       s.modeIndex++;
-      for (const e of s.enemies) {
+      for (const e of s.awakeBees()) {
         e.reverseDirection = true;
         e.reverseTile = pointToTile(e.x, e.y);
       }
@@ -238,6 +239,10 @@ export class PlayState implements State {
 
     for (const e of s.enemies) {
       updateBlue(e);
+      // Eyes steer themselves home (update.ts `moveEyes`) and cannot hurt or be eaten.
+      if (e.eyes) {
+        continue;
+      }
 
       const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
       updateDirection(e, s.corners, target);
@@ -265,7 +270,7 @@ export class PlayState implements State {
           nextAward = bonusEatFrameCount - 1;
         }
         s.scaredEatAwardNext = nextAward;
-        resetEnemy(e);
+        becomeEyes(e);
         return stateIDPause;
       }
 
@@ -284,7 +289,11 @@ export class PlayState implements State {
 
     for (const e of s.movingEntities()) {
       updateFrame(e);
-      updatePosition(e, s.corners);
+      if (e.eyes) {
+        moveEyes(e, s.corners);
+      } else {
+        updatePosition(e, s.corners);
+      }
     }
 
     // At most one item is eaten per tick.
@@ -295,7 +304,8 @@ export class PlayState implements State {
         continue;
       }
 
-      if (!collideWithDistance(item, s.player, distanceThreshold)) {
+      // Pac-Man eats a dot on entering its tile, so a cornering bear still clears the junction's.
+      if (!tileEq(pointToTile(item.x, item.y), pointToTile(s.player.x, s.player.y))) {
         continue;
       }
 
@@ -315,8 +325,8 @@ export class PlayState implements State {
 
         const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
-        // Every bee turns sleepy, home ones too; only maze bees turn around.
-        for (const e of s.enemies) {
+        // Every bee turns sleepy, home ones too, but not eyes; only maze bees turn around.
+        for (const e of s.awakeBees()) {
           if (!e.home) {
             e.reverseDirection = true;
             e.reverseTile = pointToTile(e.x, e.y);
