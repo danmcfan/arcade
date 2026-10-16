@@ -1,5 +1,5 @@
-// The change machine (#144): a machine against the hub's back wall, near the
-// prize desk, that exchanges tickets for tokens, one token each time the
+// The change machine (#144): a machine in the middle of the hub's right side
+// wall, facing left into the room, that exchanges tickets for tokens, one token each time the
 // player faces it and presses the action key. It has no menu; the scoreboard
 // says what it does (src/arcade/ticker.ts) and the Wallet owns the deal
 // (`exchange`). Its position and its look live here only: for now a
@@ -12,14 +12,14 @@ import { sweetie } from "../ui/sweetie16.ts";
 import type { Rect } from "./collision.ts";
 import type { State } from "./state.ts";
 
-/** The machine in the hub image: solid, and faced from below to use it. */
-export const changeMachineRect: Readonly<Rect> = { x: 144, y: 40, w: 16, h: 16 };
+/** The machine in the hub image: solid, and faced from the left to use it. */
+export const changeMachineRect: Readonly<Rect> = { x: 144, y: 88, w: 16, h: 16 };
 
-/** Draw the placeholder: a block with a darker coin slot, the hub image at (`buffer`, `buffer`). */
+/** Draw the placeholder: a block with a darker coin slot on its left face, the hub image at (`buffer`, `buffer`). */
 export function drawChangeMachine(screen: Surface, buffer: number): void {
   const { x, y, w, h } = changeMachineRect;
   screen.fillRect(x + buffer, y + buffer, w, h, sweetie.t);
-  screen.fillRect(x + buffer + w / 2 - 1, y + buffer + 4, 2, 4, sweetie.k);
+  screen.fillRect(x + buffer + 2, y + buffer + h / 2 - 2, 2, 4, sweetie.k);
 }
 
 /** Ticks the scoreboard flashes the price or LAST CHANCE after a press of the change machine. */

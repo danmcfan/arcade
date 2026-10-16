@@ -829,12 +829,12 @@ function atChangeMachine(tokens: number, tickets: number): Game {
     arcadeWon: false,
     prizes: [],
     player: {
-      x: changeMachineRect.x + changeMachineRect.w / 2,
-      y: changeMachineRect.y + changeMachineRect.h + 20,
-      dir: "UP",
+      x: changeMachineRect.x - 20,
+      y: changeMachineRect.y, // high enough to clear the prize desk's corner
+      dir: "RIGHT",
     },
   });
-  run(game, 20, { up: true });
+  run(game, 20, { right: true });
   game.step(input());
   expect(snap(game).arcade.faced).toBe("changeMachine");
   return game;
@@ -866,7 +866,7 @@ describe("change machine", () => {
     const game = atChangeMachine(0, 3);
     tap(game, "space");
     expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
-    run(game, 40, { left: true });
+    run(game, 24, { left: true });
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
     expect(snap(game)).toMatchObject({ software: "firefly", run: "paid", arcade: { tokens: 0, tickets: 0 } });

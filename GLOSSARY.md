@@ -147,7 +147,7 @@ The token the change machine sells for all the player's tickets, even 0, when th
 _Avoid_: free token, pity token, bailout
 
 **Change machine**:
-A machine in the hub, near the prize desk, that exchanges tickets for tokens: one token each time the player uses it. It has no menu.
+A machine in the middle of the hub's right wall, facing into the room, that exchanges tickets for tokens: one token each time the player uses it. It has no menu.
 _Avoid_: token machine, ticket exchange
 
 **Prize**:

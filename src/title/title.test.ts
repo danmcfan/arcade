@@ -506,11 +506,11 @@ function atChangeMachine(store: SaveStore, tokens: number, tickets: number): Tit
     tickets,
     prizes: [],
     arcadeWon: false,
-    player: { x: 152, y: 80, dir: "UP" },
+    player: { x: 124, y: 88, dir: "RIGHT" },
   });
   const t = new Title({ store });
   tap(t, "space"); // Continue
-  hold(t, { up: true }, 20);
+  hold(t, { right: true }, 20);
   return t;
 }
 
