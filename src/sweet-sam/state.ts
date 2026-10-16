@@ -39,7 +39,6 @@ import {
 import {
   applyInput,
   becomeEyes,
-  collideWithDistance,
   deathRoundDelayTicks,
   findTarget,
   moveEyes,
@@ -253,7 +252,9 @@ export class PlayState implements State {
       const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
       updateDirection(e, s.corners, target);
 
-      if (!collideWithDistance(e, s.player, 1.0)) {
+      // A bee catches the bear in the same tile, so the two can swap tiles and pass through
+      // (Dossier, "Just Passing Through").
+      if (!tileEq(pointToTile(e.x, e.y), pointToTile(s.player.x, s.player.y))) {
         continue;
       }
 
