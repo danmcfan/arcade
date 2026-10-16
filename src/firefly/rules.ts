@@ -64,7 +64,7 @@ export const entryGroupSize = 8;
 export const entrySpacing = 6;
 export const entryGroupGap = 70;
 
-/** Speeds, in px per tick. Enemy speed is the same on every stage. */
+/** Speeds, in px per tick. Divers speed up on later stages (`Difficulty.diveSpeed`). */
 export const playerSpeed = 2;
 export const sparkSpeed = 6;
 export const enemySpeed = 2;
@@ -101,6 +101,10 @@ export interface Difficulty {
   diversPerDive: number;
   /** Shots each diving enemy drops. */
   shotsPerDive: number;
+  /** Speed of a diving enemy, in px per tick. Entering and joining the formation stay at `enemySpeed`. */
+  diveSpeed: number;
+  /** The most a shot drifts sideways per tick, aiming at the firefly. */
+  shotDrift: number;
 }
 
 const firstDiveInterval = 150;
@@ -110,14 +114,26 @@ const firstDiversPerDive = 1;
 const maxDiversPerDive = 4;
 const firstShotsPerDive = 1;
 const maxShotsPerDive = 4;
+/** Dive speed and shot drift grow by these fractions each stage after `lastFlatStage`, up to `lastHarderStage`. */
+const lastFlatStage = 5;
+const lastHarderStage = 10;
+const diveSpeedGrowth = 0.05;
+const shotDriftGrowth = 0.1;
 
-/** Stage `stage` (1 is the first): each one dives more often, with more divers and more shots, up to a cap. */
+/**
+ * Stage `stage` (1 is the first): each one dives more often, with more divers
+ * and more shots, up to a cap. From stage 6 to 10 divers also fly faster and
+ * shots aim harder; from stage 10 on every stage is the same.
+ */
 export function difficulty(stage: number): Difficulty {
   const n = stage - 1;
+  const late = Math.max(0, Math.min(lastHarderStage, stage) - lastFlatStage);
   return {
     diveInterval: Math.max(minDiveInterval, firstDiveInterval - n * diveIntervalStep),
     diversPerDive: Math.min(maxDiversPerDive, firstDiversPerDive + n),
     shotsPerDive: Math.min(maxShotsPerDive, firstShotsPerDive + n),
+    diveSpeed: enemySpeed * (1 + diveSpeedGrowth * late),
+    shotDrift: shotMaxDrift * (1 + shotDriftGrowth * late),
   };
 }
 
