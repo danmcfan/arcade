@@ -69,6 +69,8 @@ export class SweetSamSoftware implements FixedViewport {
   modeTicks = 0;
 
   pauseTicks = 0;
+  /** Ticks the bear stands still after eating: 1 for a honey drop, 3 for a pot (Dossier, "Speed"). */
+  eatPauseTicks = 0;
 
   startTicks = 0;
 
