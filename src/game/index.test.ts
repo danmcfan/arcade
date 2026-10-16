@@ -68,6 +68,8 @@ for (const [name, size] of real) {
         "pause:spark",
         "pause:hit",
         "pause:lifeLost",
+        "pause:beam",
+        "pause:capture",
         "pause:stage",
       ]);
       expect(scene.layout()).toEqual(size);

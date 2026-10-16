@@ -58,6 +58,8 @@ export const imagePoints: Sprite = whole(sweetSamImages.points);
 // of 90°, clockwise from facing up.
 /** The player in Firefly. */
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
+/** A firefly captured by an Owl's tractor beam: the firefly in reds. */
+export const imageCaptive: Sprite = whole(fireflyImages.captive);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
 export const imageWasp: Sprite = whole(fireflyImages.wasp);

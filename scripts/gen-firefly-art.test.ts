@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   backgroundHeight,
   backgroundWidth,
+  captiveColours,
   fireflyArt,
   grassTile,
   hitQuarters,
@@ -57,6 +58,7 @@ describe("Firefly art source", () => {
 
   test("the enemy shot is 4×8 and the hurt Owl only swaps letters of the Owl's own", () => {
     checkRows("shot", shotArt, { w: 4, h: 8 });
+    for (const from of Object.keys(captiveColours)) expect(fireflyArt.join("")).toContain(from);
     for (const from of Object.keys(owlHurtColours)) expect(owlArt.join("")).toContain(from);
   });
 

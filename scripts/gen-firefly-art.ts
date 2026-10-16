@@ -2,7 +2,8 @@
 //
 //   bun run art      # also writes src/assets/images/firefly/*.png
 //
-// firefly.png, spark.png and shot.png are their rows as drawn. moth.png,
+// firefly.png, captive.png (the firefly in reds), spark.png and shot.png are
+// their rows as drawn. moth.png,
 // wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
 // sheets: the up-facing source turned clockwise in 15° steps, one frame per heading (`rotationRows` × `rotationColumns`). Quarter
 // turns are exact; the other angles use RotSprite (scale the source up 8×
@@ -16,6 +17,7 @@ import { PNG } from "pngjs";
 import {
   backgroundHeight,
   backgroundWidth,
+  captiveColours,
   fireflyArt,
   grassTile,
   hitQuarters,
@@ -179,6 +181,7 @@ export const fireflyImagesDir = "src/assets/images/firefly";
 /** Every generated Firefly image: its file, its size and how to draw it. */
 export const fireflyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(fireflyImagesDir, "firefly.png"), 16, 16, () => toPng(fireflyArt)),
+  imageOutput(join(fireflyImagesDir, "captive.png"), 16, 16, () => toPng(recolour(fireflyArt, captiveColours))),
   imageOutput(join(fireflyImagesDir, "spark.png"), 8, 8, () => toPng(sparkArt)),
   imageOutput(join(fireflyImagesDir, "moth.png"), 96, 64, () => rotationSheet(mothArt)),
   imageOutput(join(fireflyImagesDir, "wasp.png"), 96, 64, () => rotationSheet(waspArt)),

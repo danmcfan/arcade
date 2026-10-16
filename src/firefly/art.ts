@@ -38,6 +38,14 @@ export const fireflyArt: readonly string[] = [
 ];
 
 /**
+ * A captured firefly: the firefly's rows turned red, so the player sees it is
+ * held by the Owl above it. `bun run art` recolours `fireflyArt`: the grey
+ * wings and antennae red, the white glow and yellow light orange, the lime tail
+ * red and the body purple.
+ */
+export const captiveColours: Readonly<Record<string, SweetieLetter>> = { l: "r", w: "o", m: "p", g: "r", y: "o" };
+
+/**
  * The spark: a drop of light the firefly shoots upwards. 8×8, drawn with its
  * top-left at the spark's position (4 left of the firefly's centre).
  */

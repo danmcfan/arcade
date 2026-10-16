@@ -16,12 +16,19 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
-import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
-import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
+import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
+import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
+  beamDiveChance,
+  beamHeight,
+  beamTicks,
+  beamWidth,
+  captiveOffset,
+  captivePullSpeed,
   diveWeight,
   difficulty,
   type Difficulty,
+  type EnemyKind,
   enemyHalfSize,
   enemyHp,
   enemySpeed,
@@ -43,13 +50,18 @@ import {
   sparkCooldown,
   sparkSpeed,
   stageIntroTicks,
+  formationPos,
   swayOffset,
+  type FormationPhase,
+  type FormationState,
 } from "./rules.ts";
 
 /** The firefly's row and where it starts, centred. */
 export const playerY = 264;
 const playerHalfWidth = 8;
 const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
+/** Where an Owl hovers to beam, in the bottom third. */
+export const beamY = playerY - beamHeight;
 
 /**
  * The curves each wave flies in on, ending at the enemy's own slot. The top
@@ -83,26 +95,63 @@ const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p)
 
 /** Where a dive aims: the firefly's x, give or take this much. */
 const diveAimSpread = 24;
-/** A diving Moth or Wasp leaves the screen this far below the bottom, then comes back in from above. */
+/** A diving Moth leaves the screen this far below the bottom, then comes back in from above. */
 const offscreenMargin = 24;
 
-/** Rough length of a curve, from 16 straight pieces. */
-function curveLength(c: BezierConfig): number {
-  const f = newBezierPatternFunc(c);
-  let len = 0;
-  let prev = f(0);
-  for (let i = 1; i <= 16; i++) {
-    const p = f(i / 16);
-    len += Math.hypot(p.x - prev.x, p.y - prev.y);
-    prev = p;
+/** An Owl's escorts: Wasps from slots this close under it (in x), flying this far either side of it. */
+const maxEscorts = 2;
+const escortReach = 16;
+const escortOffset = 16;
+
+/** Ticks the escort-kill bonus shows where the Owl was shot. */
+export const bonusTicks = 60;
+
+const pathFuncs = new WeakMap<Path, PatternFunc>();
+
+/** The path's curve func, built once per path. */
+function pathFunc(path: Path): PatternFunc {
+  let f = pathFuncs.get(path);
+  if (f === undefined) {
+    f = newPathPatternFunc(path);
+    pathFuncs.set(path, f);
   }
-  return len;
+  return f;
 }
 
-function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
+function followPath(e: Enemy, path: Path, speed = enemySpeed): void {
   e.path = path;
   e.t = 0;
-  e.tStep = speed / Math.max(1, curveLength(path));
+  e.tStep = speed / Math.max(1, pathLength(path));
+}
+
+/** Height of the loop a diving Moth flies over its slot before it sweeps down. */
+const mothLoopHeight = 32;
+
+/**
+ * Each kind's dive from `p0`, heading out to `side` through `p1` at the
+ * firefly's x `aim`. The Owl swoops right at the firefly to eat it, then
+ * flies back up. A Moth loops over its slot, then sweeps past the firefly and
+ * off the bottom. A Wasp swoops down past the firefly and curves back up to
+ * where it started, never leaving the field.
+ */
+function divePath(kind: EnemyKind, p0: Vec, p1: Vec, aim: number, side: number): Path {
+  if (kind === "owl") return [{ p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }];
+  if (kind === "moth") {
+    // Two half circles, out to `side` and up, then back down to the slot.
+    const r = mothLoopHeight / 2;
+    const top = { x: p0.x, y: p0.y - 2 * r };
+    const k = (4 / 3) * r;
+    return [
+      { p0, p1: { x: p0.x + side * k, y: p0.y }, p2: { x: p0.x + side * k, y: top.y }, p3: top },
+      { p0: top, p1: { x: p0.x - side * k, y: top.y }, p2: { x: p0.x - side * k, y: p0.y }, p3: p0 },
+      { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } },
+    ];
+  }
+  const low = { x: aim, y: playerY - 24 };
+  return [
+    { p0, p1, p2: { x: aim + side * 40, y: low.y }, p3: low },
+    { p0: low, p1: { x: aim - side * 40, y: low.y }, p2: { x: p0.x - side * 40, y: p0.y + 40 }, p3: p0 },
+  ];
 }
 
 /** One enemy waiting to fly in along `curve`, which ends at its slot. */
@@ -126,9 +175,13 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     tStep: 0,
     shotsLeft: 0,
     shotTimer: 0,
+    beamTicks: 0,
     outOfFormation: false,
+    escortOf: null,
+    escortDx: 0,
+    escortsKilled: 0,
   };
-  followPath(e, { ...curve, p3: home });
+  followPath(e, [{ ...curve, p3: home }]);
   return e;
 }
 
@@ -156,6 +209,17 @@ export function newStageEnemies(): Enemy[] {
       // In formation order, row by row, as the rest of the game keeps them.
       .toSorted((a, b) => order(a) - order(b))
   );
+}
+
+/** Faces the sprite along its last move, or down in the formation. */
+function face(e: Enemy, px: number, py: number): void {
+  if (e.state === "formation") {
+    e.dx = 0;
+    e.dy = 1;
+  } else if (e.x !== px || e.y !== py) {
+    e.dx = e.x - px;
+    e.dy = e.y - py;
+  }
 }
 
 function play(s: Sound): void {
@@ -194,9 +258,18 @@ export class FireflySoftware implements FixedViewport {
   sparks: Spark[] = [];
   enemies: Enemy[] = newStageEnemies();
   shots: Shot[] = [];
+  bonuses: Bonus[] = [];
   diveTimer = difficulty(1).diveInterval;
-  /** Ticks since the run started: drives the formation's sway. */
+  /** The firefly in play was taken by a tractor beam: no burst while it respawns. */
+  captured = false;
+  /** The captured firefly, red, held by its Owl until the stage ends or the Owl dies. */
+  captive: Captive | null = null;
+  /** Ticks since the run started: drives the formation's sway and breath. */
   ticks = 0;
+  /** Swaying while the stage's enemies fly in, breathing once every one has arrived. */
+  formationPhase: FormationPhase = "sway";
+  /** `ticks` when the formation began to breathe. */
+  breatheFrom = 0;
   /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
   readonly dials: ScoreDials;
 
@@ -210,10 +283,12 @@ export class FireflySoftware implements FixedViewport {
     if (this.respawn === 0) this.movePlayer(i);
     this.moveSparks();
     this.moveEnemies();
+    this.moveCaptive();
     this.moveShots();
     this.hitEnemies();
     if (this.respawn === 0) this.hitPlayer();
     this.endHitEffects();
+    this.countDownBonuses();
     this.countDownRespawn();
 
     // With no lives left the run ends on this stage, even if the field is clear.
@@ -222,9 +297,29 @@ export class FireflySoftware implements FixedViewport {
     this.dials.tick(this.score(), this.highScore);
   }
 
-  /** The formation's x offset this tick. */
+  /** The formation's x offset this tick: 0 once it breathes. */
   sway(): number {
-    return swayOffset(this.ticks);
+    return formationPos({ x: 0, y: 0 }, this.formation()).x;
+  }
+
+  /** Where the slot `home` is in the formation this tick. */
+  private slotPos(home: { x: number; y: number }): { x: number; y: number } {
+    return formationPos(home, this.formation());
+  }
+
+  private formation(): FormationState {
+    return { phase: this.formationPhase, ticks: this.ticks, breatheFrom: this.breatheFrom };
+  }
+
+  /**
+   * Starts the breathing once every enemy is in its slot, on a tick the sway
+   * is centred so the formation does not jump.
+   */
+  private startBreathing(): void {
+    if (this.formationPhase !== "sway" || swayOffset(this.ticks) !== 0) return;
+    if (!this.enemies.every((e) => e.state === "formation" || e.deadFrames > 0)) return;
+    this.formationPhase = "breathe";
+    this.breatheFrom = this.ticks;
   }
 
   private movePlayer(i: Input): void {
@@ -247,9 +342,8 @@ export class FireflySoftware implements FixedViewport {
 
   private moveEnemies(): void {
     const d = difficulty(this.stage);
-    const sway = this.sway();
     for (const e of this.enemies) {
-      if (e.deadFrames > 0) continue;
+      if (e.deadFrames > 0 || e.escortOf !== null) continue;
       const px = e.x;
       const py = e.y;
       switch (e.state) {
@@ -258,12 +352,14 @@ export class FireflySoftware implements FixedViewport {
           break;
         case "entering":
         case "diving":
-          this.stepPath(e, sway);
+          this.stepPath(e);
           if (e.state === "diving") this.dropShot(e);
           break;
+        case "beaming":
+          this.beam(e);
+          break;
         case "joining": {
-          const tx = e.home.x + sway;
-          const ty = e.home.y;
+          const { x: tx, y: ty } = this.slotPos(e.home);
           const dist = Math.hypot(tx - e.x, ty - e.y);
           if (dist <= enemySpeed) {
             e.x = tx;
@@ -276,22 +372,33 @@ export class FireflySoftware implements FixedViewport {
           }
           break;
         }
-        case "formation":
-          e.x = e.home.x + sway;
-          e.y = e.home.y;
+        case "formation": {
+          const p = this.slotPos(e.home);
+          e.x = p.x;
+          e.y = p.y;
           break;
+        }
       }
-      if (e.state === "formation") {
-        e.dx = 0;
-        e.dy = 1;
-      } else if (e.x !== px || e.y !== py) {
-        e.dx = e.x - px;
-        e.dy = e.y - py;
+      face(e, px, py);
+    }
+    // Escorts move after their Owl, to fly beside it.
+    for (const e of this.enemies) {
+      const owl = e.escortOf;
+      if (e.deadFrames > 0 || owl === null) continue;
+      if (owl.state !== "diving") {
+        this.release(e);
+        continue;
       }
+      const px = e.x;
+      const py = e.y;
+      e.x = owl.x + e.escortDx;
+      e.y = owl.y;
+      face(e, px, py);
+      this.dropShot(e);
     }
 
-    const allIn = this.enemies.every((e) => e.state !== "waiting" && e.state !== "entering");
-    if (!allIn || this.respawn > 0) return;
+    this.startBreathing();
+    if (this.formationPhase !== "breathe" || this.respawn > 0) return;
     if (this.diveTimer > 0) this.diveTimer--;
     if (this.diveTimer > 0) return;
     this.diveTimer = d.diveInterval;
@@ -299,21 +406,32 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** One step along the enemy's curve; at its end it heads for its slot. */
-  private stepPath(e: Enemy, sway: number): void {
+  private stepPath(e: Enemy): void {
     const path = e.path;
     if (path === null) throw new Error(`${e.state} enemy without a path`);
     e.t += e.tStep;
-    const p = e.t >= 1 ? path.p3 : newBezierPatternFunc(path)(e.t);
+    const p = e.t >= 1 ? (path.at(-1)?.p3 ?? e) : pathFunc(path)(e.t);
     e.x = p.x;
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    if (e.beamTicks > 0) {
+      e.state = "beaming";
+      return;
+    }
     e.state = "joining";
     if (e.y > fieldHeight) {
       // Off the bottom: come back in from above the slot.
-      e.x = e.home.x + sway;
+      e.x = this.slotPos(e.home).x;
       e.y = -offscreenMargin;
     }
+  }
+
+  /** An escort whose Owl is no longer diving flies back to its slot. */
+  private release(e: Enemy): void {
+    e.escortOf = null;
+    e.escortDx = 0;
+    if (e.state === "diving") e.state = "joining";
   }
 
   /** Picks an enemy in formation, Wasps most often, and sends it at the firefly. */
@@ -324,7 +442,11 @@ export class FireflySoftware implements FixedViewport {
     let pick = rng.intn(total);
     const e = candidates.find((c) => (pick -= diveWeight[c.kind]) < 0);
     if (e === undefined) return;
+    this.dive(e, d);
+  }
 
+  /** Sends `e` at the firefly; an Owl takes up to 2 Wasps from the slots under it as escorts. */
+  dive(e: Enemy, d: Difficulty = difficulty(this.stage)): void {
     const aim = Math.max(
       16,
       Math.min(fieldWidth - 16, this.player.x + rng.intn(2 * diveAimSpread + 1) - diveAimSpread),
@@ -332,17 +454,91 @@ export class FireflySoftware implements FixedViewport {
     const side = e.x < fieldWidth / 2 ? -1 : 1;
     const p0 = { x: e.x, y: e.y };
     const p1 = { x: e.x + side * 40, y: e.y - 30 };
-    // The Owl swoops right at the firefly to eat it, then flies back up; the
-    // others sweep past it and off the bottom.
-    const path: BezierConfig =
-      e.kind === "owl"
-        ? { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }
-        : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
+    // The Owl sometimes stops low over the firefly to beam; otherwise each
+    // kind flies its own dive shape.
+    const beamDive = e.kind === "owl" && this.canBeam() && rng.float() < beamDiveChance;
+    const path: Path = beamDive
+      ? [{ p0, p1, p2: { x: aim, y: beamY - 60 }, p3: { x: aim, y: beamY } }]
+      : divePath(e.kind, p0, p1, aim, side);
     e.state = "diving";
     e.outOfFormation = true;
     followPath(e, path, d.diveSpeed);
-    e.shotsLeft = d.shotsPerDive;
+    e.beamTicks = beamDive ? beamTicks : 0;
+    e.shotsLeft = beamDive ? 0 : d.shotsPerDive;
     e.shotTimer = firstShotDelay;
+    e.escortsKilled = 0;
+    if (e.kind === "owl") this.takeEscorts(e, d);
+  }
+
+  /** The (up to 2) Wasps nearest under the Owl, upper row first, fly either side of it. */
+  private takeEscorts(owl: Enemy, d: Difficulty): void {
+    const escorts = this.enemies
+      .filter(
+        (w) =>
+          w.kind === "wasp" &&
+          w.state === "formation" &&
+          w.deadFrames === 0 &&
+          Math.abs(w.home.x - owl.home.x) <= escortReach,
+      )
+      .toSorted((a, b) => a.row - b.row || Math.abs(a.home.x - owl.home.x) - Math.abs(b.home.x - owl.home.x))
+      .slice(0, maxEscorts)
+      .toSorted((a, b) => a.home.x - b.home.x);
+    escorts.forEach((w, i) => {
+      const left = escorts.length === maxEscorts ? i === 0 : w.home.x < owl.home.x;
+      w.state = "diving";
+      w.outOfFormation = true;
+      w.path = null;
+      w.escortOf = owl;
+      w.escortDx = left ? -escortOffset : escortOffset;
+      w.shotsLeft = d.shotsPerDive;
+      w.shotTimer = firstShotDelay;
+    });
+  }
+
+  /** One tractor beam at a time, and none while a captive is held. */
+  private canBeam(): boolean {
+    return this.captive === null && this.enemies.every((e) => e.beamTicks === 0);
+  }
+
+  /**
+   * A hovering Owl beams for `beamTicks`, capturing a firefly under it. Once
+   * the beam is off and any captive is pulled up, it flies home.
+   */
+  private beam(e: Enemy): void {
+    if (e.beamTicks === beamTicks) play(sounds.beam);
+    const p = this.player;
+    if (e.beamTicks > 0 && this.respawn === 0 && this.captive === null && Math.abs(p.x - e.x) < beamWidth / 2) {
+      this.capture(e);
+    }
+    if (e.beamTicks > 0) e.beamTicks--;
+    const pulling = this.captive?.owl === e && this.captive.y > e.y - captiveOffset;
+    if (e.beamTicks === 0 && !pulling) e.state = "joining";
+  }
+
+  /** The beam takes the firefly: a life gone, with no burst; it becomes the Owl's captive. */
+  private capture(owl: Enemy): void {
+    this.loseLife(sounds.capture);
+    this.captured = true;
+    this.captive = { owl, x: this.player.x, y: this.player.y };
+  }
+
+  /** The captive rises up the beam to its Owl, then stays above it; it is lost with the Owl. */
+  private moveCaptive(): void {
+    const c = this.captive;
+    if (c === null) return;
+    const owl = c.owl;
+    if (owl.hp === 0 || !this.enemies.includes(owl)) {
+      this.captive = null;
+      return;
+    }
+    const ty = owl.y - captiveOffset;
+    if (owl.state === "beaming" && c.y > ty + captivePullSpeed) {
+      c.y -= captivePullSpeed;
+      c.x += Math.sign(owl.x - c.x) * Math.min(captivePullSpeed, Math.abs(owl.x - c.x));
+      return;
+    }
+    c.x = owl.x;
+    c.y = ty;
   }
 
   /** A diving enemy above the firefly drops its shots, aimed down at it. */
@@ -385,14 +581,24 @@ export class FireflySoftware implements FixedViewport {
 
   /** A shot kills the enemy and scores it. */
   private shootDown(e: Enemy): void {
+    if (e.escortOf !== null) e.escortOf.escortsKilled++;
     this.destroy(e);
-    this.points += points(e.kind, e.outOfFormation);
+    const p = points(e.kind, e.outOfFormation, e.escortsKilled);
+    this.points += p;
+    if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
   }
 
   /** The enemy bursts and is gone, scoring nothing. */
   private destroy(e: Enemy): void {
     e.hp = 0;
     e.deadFrames = hitEffectTicks;
+    for (const w of this.enemies) if (w.escortOf === e) this.release(w);
+    if (e.escortOf !== null) e.escortOf = null;
+  }
+
+  private countDownBonuses(): void {
+    for (const b of this.bonuses) b.ticks--;
+    this.bonuses = this.bonuses.filter((b) => b.ticks > 0);
   }
 
   private hitPlayer(): void {
@@ -413,10 +619,10 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** The firefly is eaten or shot: one life gone, and the next after a pause. */
-  loseLife(): void {
+  loseLife(sound: typeof sounds.lifeLost = sounds.lifeLost): void {
     this.lives--;
     this.respawn = respawnTicks;
-    play(sounds.lifeLost);
+    play(sound);
   }
 
   private endHitEffects(): void {
@@ -432,6 +638,7 @@ export class FireflySoftware implements FixedViewport {
       return;
     }
     this.player = { ...playerStart };
+    this.captured = false;
     // A fresh firefly starts with no enemy shot already falling on it.
     this.shots = [];
     this.fireDelay = 0;
@@ -446,7 +653,10 @@ export class FireflySoftware implements FixedViewport {
     this.stage++;
     this.stageTick = 0;
     this.enemies = newStageEnemies();
+    this.formationPhase = "sway";
+    this.captive = null;
     this.shots = [];
+    this.bonuses = [];
     this.diveTimer = difficulty(this.stage).diveInterval;
   }
 
@@ -494,10 +704,18 @@ export class FireflySoftware implements FixedViewport {
         hp: e.hp,
         deadFrames: e.deadFrames,
         outOfFormation: e.outOfFormation,
+        escorting: e.escortOf !== null,
+        escortsKilled: e.escortsKilled,
       })),
       shots: this.shots.map((s) => ({ x: s.x, y: s.y, dx: s.dx, dy: s.dy })),
+      bonuses: this.bonuses.map((b) => ({ ...b })),
       diveTimer: this.diveTimer,
       sway: this.sway(),
+      formationPhase: this.formationPhase,
+      ...(this.captured ? { captured: true as const } : {}),
+      ...(this.captive === null
+        ? {}
+        : { captive: { row: this.captive.owl.row, col: this.captive.owl.col, x: this.captive.x, y: this.captive.y } }),
     };
   }
 }

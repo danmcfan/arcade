@@ -2,7 +2,7 @@
 // frame for a heading. game.ts moves them; draw.ts draws them.
 
 import type { FireflyEnemyState } from "../game/snapshot.ts";
-import type { BezierConfig } from "./pattern.ts";
+import type { Path } from "./pattern.ts";
 import type { EnemyKind } from "./rules.ts";
 
 export interface Vec {
@@ -26,19 +26,42 @@ export interface Enemy {
   /** Ticks left before it flies in (while `waiting`). */
   wait: number;
   /** The curve it follows while entering or diving, how far along (0..1) and the step per tick. */
-  path: BezierConfig | null;
+  path: Path | null;
   t: number;
   tStep: number;
   /** Shots still to drop on this dive, and ticks to the next. */
   shotsLeft: number;
   shotTimer: number;
+  /** Ticks left of its tractor beam (while `beaming`). */
+  beamTicks: number;
   /** It left the formation to dive and is not back yet: a kill scores the diving points. */
   outOfFormation: boolean;
+  /** The diving Owl this Wasp escorts, flying `escortDx` px beside it; null when on its own. */
+  escortOf: Enemy | null;
+  escortDx: number;
+  /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
+  escortsKilled: number;
+}
+
+/** A captured firefly, red, above the Owl that took it; `y` climbs while the beam pulls it up. */
+export interface Captive {
+  owl: Enemy;
+  x: number;
+  y: number;
 }
 
 export interface Spark {
   x: number;
   y: number;
+}
+
+/** The points of an escort-kill bonus, shown where the Owl was shot. */
+export interface Bonus {
+  points: number;
+  x: number;
+  y: number;
+  /** Ticks left on the screen. */
+  ticks: number;
 }
 
 export interface Shot {

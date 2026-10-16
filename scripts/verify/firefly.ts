@@ -14,7 +14,6 @@ import { basename, join } from "node:path";
 import { repoRoot } from "../../test/parity/fixtures.ts";
 import { PNG } from "pngjs";
 import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
-import type { Input } from "../../src/engine/input.ts";
 import { ticketsFor } from "../../src/arcade/wallet.ts";
 import { fireflyArtFiles } from "../gen-firefly-art.ts";
 import { decodeDataUrl } from "../browser.ts";
@@ -24,7 +23,7 @@ import {
   cabinetPlayfieldHeight,
   cabinetPlayfieldWidth,
 } from "../../src/ui/cabinet.ts";
-import { evalJson, isStringArray, isTitleSnapshot, upscale, verify, type Verify } from "../harness.ts";
+import { botInput, evalJson, isStringArray, isTitleSnapshot, upscale, verify, type Verify } from "../harness.ts";
 
 let checks = 0;
 
@@ -82,20 +81,6 @@ function pastEdge(s: FireflySnapshot): boolean {
       e.y + enemyHalfSpan > cabinetPlayfieldHeight
     );
   });
-}
-
-/** The bot: Space held, dodging shots and divers close above, else steering under the nearest enemy. */
-function botInput(s: FireflySnapshot): Partial<Input> {
-  const px = s.player.x;
-  const threat = [
-    ...s.shots.filter((x) => x.y > s.player.y - 60),
-    ...s.enemies.filter((e) => e.state === "diving" && e.deadFrames === 0 && e.y > s.player.y - 70),
-  ].find((x) => Math.abs(x.x - px) < 14);
-  if (threat !== undefined) return threat.x > px ? { space: true, left: true } : { space: true, right: true };
-  const targets = s.enemies.filter((e) => e.deadFrames === 0 && e.state !== "waiting" && e.y < 230);
-  const target = targets.toSorted((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px))[0];
-  if (target === undefined || Math.abs(target.x - px) <= 2) return { space: true };
-  return target.x > px ? { space: true, right: true } : { space: true, left: true };
 }
 
 function playToPayout(v: Verify): void {
