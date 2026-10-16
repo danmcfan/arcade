@@ -1,6 +1,8 @@
 // Brass Monkey's Software (#39): the run in play.ts, played inside its
-// cabinet and drawn to fill the cabinet's screen: the score, high score and
-// bonus in a 32 px band of wall at the top, then the floor.
+// cabinet and drawn to fill the cabinet's screen: the HUD in a 32 px band of
+// wall at the top, then the floor. The HUD is Sweet Sam's (#212): its labels,
+// its rolling dials on its rows, and spare lives in its spacing, under the
+// scores, since Sweet Sam's place for them is where the monkey walks.
 
 import {
   imageBolt,
@@ -12,6 +14,7 @@ import {
   imageGear,
   imageGirderFloor,
   imageGnome,
+  imageHud,
   imageMonkey,
   imageWall,
   sounds,
@@ -31,7 +34,10 @@ import {
   drawOnScreen,
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
+import { drawTextCentered } from "../ui/text.ts";
+import { digits6, newDigitReels, syncAndTick, type DigitReels } from "../ui/digitReel.ts";
+import { hudBandHeight, hudLabels, hudSheetWidth, scoreLabelsX } from "../ui/hudArt.ts";
+import { RollingDials } from "../ui/rollingDials.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
@@ -44,7 +50,31 @@ const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
-const digits = (n: number, width: number): string => String(Math.trunc(n)).padStart(width, "0");
+/** hud.png's band `band`, `w` wide. */
+const hudLabel = (band: number, w: number): Sprite =>
+  sub(imageHud, 0, band * hudBandHeight, w, band * hudBandHeight + 7);
+
+/** Reels booted to show `value` with no spin. */
+function bootedReels(value: number): DigitReels {
+  const reels = newDigitReels();
+  const d = digits6(value);
+  reels.forEach((r, i) => {
+    r.boot(d[i] ?? 0);
+  });
+  return reels;
+}
+
+/** Where the HUD's readouts stand in the band, as Sweet Sam's: labels on row 0, dials on row 1 (8 px rows). */
+const hud = {
+  score: 8,
+  highScore: 8 * 11,
+  /** BONUS and LOOP, at the right; their dials' six-reel fields start a tile left of them. */
+  right: 8 * 21,
+  rightDials: 8 * 20,
+  dialsTop: 8,
+  livesTop: 16,
+  loopTop: 20,
+} as const;
 
 /** The sound for each of the run's sound cues. */
 const runSounds: Readonly<Record<RunSound, Sound>> = {
@@ -61,9 +91,16 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   readonly run: Run;
   private highScore: number;
+  private readonly scoreDial = newDigitReels();
+  private readonly highScoreDial: DigitReels;
+  private readonly bonusDial: DigitReels;
+  private readonly loopDial = bootedReels(1);
+  /** Draws the dials; never touched by update (D12). */
+  private readonly dials = new RollingDials();
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
+    this.highScoreDial = bootedReels(highScore);
     this.run = new Run({
       advantages,
       onSound: (s): void => {
@@ -71,6 +108,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         runSounds[s].play();
       },
     });
+    this.bonusDial = bootedReels(this.run.bonus);
   }
 
   background(): Sprite {
@@ -80,6 +118,10 @@ export class BrassMonkeySoftware implements FixedViewport {
   update(i: Input): void {
     this.run.update(i);
     this.highScore = Math.max(this.highScore, this.run.score);
+    syncAndTick(this.scoreDial, digits6(this.run.score));
+    syncAndTick(this.highScoreDial, digits6(this.highScore));
+    syncAndTick(this.bonusDial, digits6(this.run.bonus));
+    syncAndTick(this.loopDial, digits6(this.run.loop + 1));
   }
 
   fixedViewportSize(): [number, number] {
@@ -117,10 +159,6 @@ export class BrassMonkeySoftware implements FixedViewport {
     for (const h of run.hazards) drawHazard(screen, h, left, top, run.ticks);
     // The monkey blinks while it loses a life.
     if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
-    for (let n = 0; n < run.lives; n++) screen.draw(frame(imageMonkey, 0, 16, 16), left + 4 + n * 14, top + 2);
-    // Across from the lives.
-    const lap = lapLabel(run.loop);
-    drawText(screen, lap, left + cabinetPlayfieldWidth - 4 - textWidth(lap), top + 6, "orange");
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -129,13 +167,17 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   private drawHud(screen: Surface, left: number, top: number): void {
     for (let x = 0; x < cabinetPlayfieldWidth; x += 32) screen.draw(imageWall, left + x, top);
-    const w = cabinetPlayfieldWidth;
-    drawText(screen, "SCORE", left + 6, top + 6, "orange");
-    drawText(screen, digits(this.run.score, 6), left + 6, top + 17);
-    drawTextCentered(screen, "HIGH SCORE", left + w / 2, top + 6, "orange");
-    drawTextCentered(screen, digits(this.highScore, 6), left + w / 2, top + 17);
-    drawText(screen, "BONUS", left + w - 38, top + 6, "orange");
-    drawText(screen, digits(this.run.bonus, 4), left + w - 38, top + 17, "yellow");
+    const { run } = this;
+    screen.draw(hudLabel(hudLabels.scores, hudSheetWidth), left + scoreLabelsX, top);
+    screen.draw(hudLabel(hudLabels.bonus, 40), left + hud.right, top);
+    this.dials.draw(screen, run.score, left + hud.score, top + hud.dialsTop, this.scoreDial);
+    this.dials.draw(screen, this.highScore, left + hud.highScore, top + hud.dialsTop, this.highScoreDial);
+    this.dials.draw(screen, run.bonus, left + hud.rightDials, top + hud.dialsTop, this.bonusDial);
+    // Spare lives: the one in play is not counted.
+    for (let n = 0; n < run.lives - 1; n++)
+      screen.draw(frame(imageMonkey, 0, 16, 16), left + 8 * (2 + n * 2), top + hud.livesTop);
+    screen.draw(hudLabel(hudLabels.loop, 32), left + hud.right, top + hud.loopTop);
+    this.dials.draw(screen, run.loop + 1, left + hud.rightDials, top + hud.loopTop, this.loopDial, 1);
   }
 
   gameOver(): boolean {
