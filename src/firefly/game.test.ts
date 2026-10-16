@@ -12,6 +12,7 @@ import { FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
+  entryWaves,
   enemyHp,
   formation,
   hitEffectTicks,
@@ -496,5 +497,32 @@ describe("payout", () => {
     expect(s.payout?.score).toBe(score);
     expect(s.payout?.total).toBe(ticketsFor(score));
     expect(s.arcade.tickets).toBe(ticketsFor(score));
+  });
+});
+
+describe("entry waves", () => {
+  const enemies = new FireflySoftware().enemies;
+  const at = (row: number, col: number): Enemy | undefined => enemies.find((e) => e.row === row && e.col === col);
+
+  test("every Owl waits longer than the whole of wave 1", () => {
+    const wave1 = entryWaves[0]?.pairs.flat() ?? [];
+    const wave1Waits = enemies.filter((e) => wave1.some((s) => s.row === e.row && s.col === e.col)).map((e) => e.wait);
+    expect(wave1Waits.length).toBe(8);
+    for (const owl of enemies.filter((e) => e.kind === "owl"))
+      expect(owl.wait).toBeGreaterThan(Math.max(...wave1Waits));
+  });
+
+  test("each wave flies in as pairs: equal waits, two different paths", () => {
+    for (const w of entryWaves) {
+      const waits = new Set<number>();
+      for (const [a, b] of w.pairs) {
+        const ea = at(a.row, a.col);
+        const eb = at(b.row, b.col);
+        expect(ea?.wait).toBe(eb?.wait ?? -1);
+        expect(ea?.path?.p0).not.toEqual(eb?.path?.p0);
+        waits.add(ea?.wait ?? -1);
+      }
+      expect(waits.size).toBe(4);
+    }
   });
 });

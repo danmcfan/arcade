@@ -26,8 +26,10 @@ import {
   enemyHp,
   enemySpeed,
   entryGroupGap,
-  entryGroupSize,
+  entryPairOffset,
   entrySpacing,
+  entryWaves,
+  type EntryCurve,
   fieldHeight,
   fieldWidth,
   firstShotDelay,
@@ -49,16 +51,32 @@ const playerHalfWidth = 8;
 const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
 
 /**
- * The curves enemies fly in on, by group: from the top swinging right, from
- * the top swinging left, then low from the left and from the right. Each ends
- * at the enemy's own slot.
+ * The curves each wave flies in on, ending at the enemy's own slot. The top
+ * ones swoop down and loop round; the lower ones come in low from a side and
+ * climb. `beside` is the way the second of a pair sits off the first.
  */
-const entryCurves: readonly Omit<BezierConfig, "p3">[] = [
-  { p0: { x: 96, y: -16 }, p1: { x: 96, y: 170 }, p2: { x: 210, y: 210 } },
-  { p0: { x: 128, y: -16 }, p1: { x: 128, y: 170 }, p2: { x: 14, y: 210 } },
-  { p0: { x: -16, y: 230 }, p1: { x: 170, y: 250 }, p2: { x: 170, y: 90 } },
-  { p0: { x: 240, y: 230 }, p1: { x: 54, y: 250 }, p2: { x: 54, y: 90 } },
-];
+const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">; beside: Vec }>> = {
+  topCentre: {
+    curve: { p0: { x: 96, y: -16 }, p1: { x: 96, y: 170 }, p2: { x: 210, y: 210 } },
+    beside: { x: 0, y: 0 },
+  },
+  lowerLeft: {
+    curve: { p0: { x: -16, y: 230 }, p1: { x: 170, y: 250 }, p2: { x: 170, y: 90 } },
+    beside: { x: 0, y: 1 },
+  },
+  lowerRight: {
+    curve: { p0: { x: 240, y: 230 }, p1: { x: 54, y: 250 }, p2: { x: 54, y: 90 } },
+    beside: { x: 0, y: 1 },
+  },
+  topRight: {
+    curve: { p0: { x: 176, y: -16 }, p1: { x: 176, y: 160 }, p2: { x: 24, y: 200 } },
+    beside: { x: 1, y: 0 },
+  },
+  topLeft: { curve: { p0: { x: 48, y: -16 }, p1: { x: 48, y: 160 }, p2: { x: 200, y: 200 } }, beside: { x: -1, y: 0 } },
+};
+
+const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
+const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
 
 /** Where a dive aims: the firefly's x, give or take this much. */
 const diveAimSpread = 24;
@@ -84,36 +102,49 @@ function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
   e.tStep = speed / Math.max(1, curveLength(path));
 }
 
-/** A fresh stage: every slot filled, waiting to fly in group by group. */
+/** A fresh stage: every slot filled, waiting to fly in wave by wave, two by two (`entryWaves`). */
 export function newStageEnemies(): Enemy[] {
-  return formation().map((slot, i) => {
-    const group = Math.trunc(i / entryGroupSize);
-    const curve = entryCurves[group % entryCurves.length] ?? entryCurves[0];
-    if (curve === undefined) throw new Error("no entry curves");
-    const home = { x: slot.x, y: slot.y };
-    const e: Enemy = {
-      kind: slot.kind,
-      row: slot.row,
-      col: slot.col,
-      home,
-      state: "waiting",
-      x: curve.p0.x,
-      y: curve.p0.y,
-      dx: 0,
-      dy: 1,
-      hp: enemyHp[slot.kind],
-      deadFrames: 0,
-      wait: stageIntroTicks + group * entryGroupGap + (i % entryGroupSize) * entrySpacing,
-      path: null,
-      t: 0,
-      tStep: 0,
-      shotsLeft: 0,
-      shotTimer: 0,
-      outOfFormation: false,
-    };
-    followPath(e, { ...curve, p3: home });
-    return e;
-  });
+  const slots = formation();
+  const order = (e: Enemy): number => slots.findIndex((s) => s.row === e.row && s.col === e.col);
+  return (
+    entryWaves
+      .flatMap((wave, w) =>
+        wave.pairs.flatMap((refs, p) =>
+          refs.map((ref, side) => {
+            const slot = slots.find((s) => s.row === ref.row && s.col === ref.col);
+            if (slot === undefined) throw new Error(`no slot at row ${ref.row} col ${ref.col}`);
+            const { curve: c, beside } = entryCurves[wave.curve];
+            const move = side === 0 ? (v: Vec): Vec => v : wave.split ? mirror : (v: Vec): Vec => shift(v, beside);
+            const curve = { p0: move(c.p0), p1: move(c.p1), p2: move(c.p2) };
+            const home = { x: slot.x, y: slot.y };
+            const e: Enemy = {
+              kind: slot.kind,
+              row: slot.row,
+              col: slot.col,
+              home,
+              state: "waiting",
+              x: curve.p0.x,
+              y: curve.p0.y,
+              dx: 0,
+              dy: 1,
+              hp: enemyHp[slot.kind],
+              deadFrames: 0,
+              wait: stageIntroTicks + w * entryGroupGap + p * entrySpacing,
+              path: null,
+              t: 0,
+              tStep: 0,
+              shotsLeft: 0,
+              shotTimer: 0,
+              outOfFormation: false,
+            };
+            followPath(e, { ...curve, p3: home });
+            return e;
+          }),
+        ),
+      )
+      // In formation order, row by row, as the rest of the game keeps them.
+      .toSorted((a, b) => order(a) - order(b))
+  );
 }
 
 function play(s: Sound): void {
