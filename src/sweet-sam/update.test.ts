@@ -442,15 +442,13 @@ describe("the home (#226)", () => {
     expect(Math.max(...ys)).toBeGreaterThan(y);
   });
 
-  test("a bee freed mid-bob centres back on the home row before sliding to the door", () => {
+  test("a bee freed mid-bob centres on the home row while it slides to the door", () => {
     const e = nth(newEnemies(), 2);
     for (let t = 0; t < 3; t++) updatePosition(e, corners);
     expect(e.y).not.toBe(140);
+    const slide = Math.abs(e.x - 112) / 0.5;
     e.dotMinimum = 0;
-    for (let t = 0; t < 20 && e.y !== 140; t++) {
-      updatePosition(e, corners);
-      expect(e.x).toBe(96);
-    }
-    expect(e.y).toBe(140);
+    for (let t = 0; t < slide; t++) updatePosition(e, corners);
+    expect([e.x, e.y]).toEqual([112, 140]);
   });
 });

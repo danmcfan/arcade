@@ -17,18 +17,12 @@ import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { SweetSamSoftware } from "../../src/sweet-sam/software.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, sweetSamIn, verify } from "../harness.ts";
 import { compress } from "../sweet-sam-bot.ts";
 
 function check(ok: boolean, what: string, got?: unknown): void {
   if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
   console.log(`  ok  ${what}`);
-}
-
-function sweetSam(v: Verify): SweetSamSnapshot {
-  const g = v.snapshot(isGameSnapshot);
-  if (g.software !== "sweetSam" || g.sw === null || !("modeTicks" in g.sw)) throw new Error("not in Sweet Sam");
-  return g.sw;
 }
 
 function bee(s: SweetSamSnapshot, kind: string): SweetSamSnapshot["enemies"][number] {
@@ -88,15 +82,15 @@ await verify("sweet-sam-home-exit", (v) => {
 
   // Teal bobs while it waits.
   let at = 0;
-  const bob = 140;
-  skipTo(v, script, at, bob);
-  at = bob;
+  const watchTick = 140;
+  skipTo(v, script, at, watchTick);
+  at = watchTick;
   const xs = new Set<number>();
   const ys = new Set<number>();
   for (let k = 0; k < 20; k++) {
     skipTo(v, script, at, at + 1);
     at++;
-    const t = bee(sweetSam(v), "teal");
+    const t = bee(sweetSamIn(v.snapshot(isGameSnapshot)), "teal");
     check(t.home && t.dotMin > 0, `tick ${at}: teal waits in the home`);
     xs.add(t.x);
     ys.add(t.y);
@@ -106,9 +100,15 @@ await verify("sweet-sam-home-exit", (v) => {
 
   for (const [n, kind] of kinds.entries()) {
     const { tick, changed } = exitOf(kind);
+    skipTo(v, script, at, tick - 1);
+    at = tick - 1;
+    check(
+      bee(sweetSamIn(v.snapshot(isGameSnapshot)), kind).leaveRight === changed,
+      `${kind} is set to leave ${changed ? "RIGHT" : "LEFT"} before it goes`,
+    );
     skipTo(v, script, at, tick);
     at = tick;
-    const e = bee(sweetSam(v), kind);
+    const e = bee(sweetSamIn(v.snapshot(isGameSnapshot)), kind);
     const want = changed ? "RIGHT" : "LEFT";
     check(
       !e.home && e.dir === want,
@@ -118,7 +118,7 @@ await verify("sweet-sam-home-exit", (v) => {
     v.frame(`${n + 2}-${kind}-leaves-${want.toLowerCase()}`, 2);
     skipTo(v, script, at, at + 6);
     at += 6;
-    const after = bee(sweetSam(v), kind);
+    const after = bee(sweetSamIn(v.snapshot(isGameSnapshot)), kind);
     check(!after.reverse && after.dir === want, `and is still heading ${want} 6 ticks later`, after);
   }
   check(

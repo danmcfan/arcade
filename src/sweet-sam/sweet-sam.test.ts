@@ -116,7 +116,7 @@ describe("Sweet Sam end state of the seed 8 run (TypeScript regression lock)", (
       rng: last?.rng,
       score: last?.sw.score,
       itemsHash: last?.sw.itemsHash,
-    }).toEqual<unknown>({ rng: 3057355661, score: 1520, itemsHash: 1532209722 });
+    }).toEqual<unknown>({ rng: 4121627110, score: 1500, itemsHash: 3294328596 });
   });
 });
 
@@ -180,6 +180,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "home",
         "dotMin",
         "reverse",
+        "leaveRight",
         "reverseTile",
       ].toSorted(),
     );

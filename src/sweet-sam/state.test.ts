@@ -179,6 +179,20 @@ describe("PLAY modes", () => {
     expect([teal.home, teal.reverseDirection, teal.leaveRight]).toEqual([true, false, true]);
     for (let t = 0; t < 200 && pink.home; t++) step(s);
     expect([pink.home, pink.direction, pink.leaveRight, pink.reverseDirection]).toEqual([false, "RIGHT", false, false]);
+    step(s, 6);
+    expect([pink.direction, pink.reverseDirection]).toEqual(["RIGHT", false]);
+  });
+
+  test("bees leave the home on the same ticks as before the bob (#226)", () => {
+    rng.seed(1);
+    const s = new SweetSamSoftware(0);
+    const out: Record<string, number> = {};
+    for (let t = 1; t < 3000 && Object.keys(out).length < 3; t++) {
+      step(s, 1, { ...NO_INPUT, down: true });
+      for (const e of s.enemies)
+        if (e.kind !== null && e.kind !== "red" && !e.home && !(e.kind in out)) out[e.kind] = t;
+    }
+    expect(out).toEqual({ pink: 170, teal: 494, orange: 734 });
   });
 
   test("the scatter/chase timer holds while any bee is sleepy", () => {

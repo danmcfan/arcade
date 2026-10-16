@@ -180,17 +180,15 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   }
 
   if (e.home) {
-    if (e.y !== homeY && e.x !== doorX) {
-      e.y += Math.sign(homeY - e.y) * velocityEnemyTunnel;
-      return;
-    }
+    // Re-centre on the home row during the slide to the door, so a bee freed mid-bob leaves on the same tick.
+    if (e.x !== doorX && e.y !== homeY) e.y += Math.sign(homeY - e.y) * velocityEnemyTunnel;
 
-    if (e.x < tileSize * 14) {
+    if (e.x < doorX) {
       e.x += velocityEnemyTunnel;
       return;
     }
 
-    if (e.x > tileSize * 14) {
+    if (e.x > doorX) {
       e.x -= velocityEnemyTunnel;
       return;
     }
@@ -244,7 +242,7 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
 }
 
 /** How far a waiting bee bobs above and below the home row. */
-const bobPixels = 4;
+export const bobPixels = 4;
 
 /** A waiting bee bobs up and down in place until it is released (Dossier, "Home Sweet Home"). */
 function bob(e: Entity): void {
@@ -407,7 +405,7 @@ export function becomeEyes(e: Entity): void {
 const doorX = tileSize * 14;
 const doorY = tileSize * 14.5;
 /** Where the eyes revive: the middle of the home. */
-const homeY = tileSize * 17.5;
+export const homeY = tileSize * 17.5;
 const doorTile = pointToTile(doorX, doorY);
 
 /** 1 px steps, so the eyes never skip past a junction. */

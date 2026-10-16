@@ -5,7 +5,7 @@
 // 1. The idle timer: the bear holds Down from the start, eats the drops on
 //    its way into the bottom-left corner and stops there. 4 s after its last
 //    drop teal leaves the home, and 4 s later orange.
-// 2. The global counter: the bot (seed 11) loses a life; pink, teal and orange
+// 2. The global counter: the bot (seed 12) loses a life; pink, teal and orange
 //    wait in the home until 7, 17 and 32 drops are eaten after the death.
 //
 // Writes a frame at each stop and a video of each run to
@@ -18,6 +18,7 @@ import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { levelValues } from "../../src/sweet-sam/levels.ts";
 import { globalDotLimits } from "../../src/sweet-sam/release.ts";
+import { bobPixels, homeY } from "../../src/sweet-sam/update.ts";
 import { SweetSamSoftware } from "../../src/sweet-sam/software.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
@@ -37,8 +38,8 @@ function sweetSam(v: Verify): SweetSamSnapshot {
 /** Where each bee waits in the home: it bobs there, so only its x is kept. */
 const spots = new Map<string, number>();
 
-/** The lowest y a bee bobs up to in the home (update.ts `bob`). */
-const bobTop = 136;
+/** The highest y a bee bobs up to in the home. */
+const bobTop = homeY - bobPixels;
 
 /** Whether the bee of `kind` is still at its spot in the home: same x, within its bob. */
 function waiting(s: SweetSamSnapshot, kind: string): boolean {
@@ -88,7 +89,7 @@ let ticks = 1;
 const dropsAt: number[] = [];
 let lives = -1;
 let dropsBefore = 0;
-const run = play(11, 1, (s) => {
+const run = play(12, 1, (s) => {
   ticks++;
   if (lives < 0) lives = s.lives;
   if (deathPlay === 0 && s.lives < lives && s.stateMachine.currentId() === "PLAY") {
@@ -98,7 +99,7 @@ const run = play(11, 1, (s) => {
   if (deathPlay > 0 && eaten(s) - dropsBefore > dropsAt.length) dropsAt.push(ticks);
   return dropsAt.length >= 40;
 });
-const globalScript = script("sweet-sam-bee-release-global", 11, run.inputs);
+const globalScript = script("sweet-sam-bee-release-global", 12, run.inputs);
 
 await verify("sweet-sam-bee-release", (v) => {
   v.openHook("scene=game");

@@ -194,6 +194,8 @@ export interface SweetSamEnemySnapshot {
   eyes: boolean;
   /** `Entity.reverseDirection`. */
   reverse: boolean;
+  /** `Entity.leaveRight`: the bee leaves the home RIGHT, not LEFT. */
+  leaveRight: boolean;
   /** `Entity.reverseTile` as `[x, y]`. */
   reverseTile: [number, number];
 }
