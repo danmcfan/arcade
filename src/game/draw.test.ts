@@ -238,6 +238,7 @@ function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeI
     tokens,
     tickets: 0,
     prizes,
+    arcadeWon: false,
     player: { x: 80, y: 92, dir: "DOWN" as const },
   };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
@@ -503,7 +504,14 @@ describe("hub scoreboard", () => {
       const g = new Game(null, {
         createSoftware: factory,
         debugPrint,
-        restore: { highScores: noHighScores, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+        restore: {
+          highScores: noHighScores,
+          tokens: 0,
+          tickets,
+          arcadeWon: false,
+          prizes: [],
+          player: { x: 80, y: 92, dir: "DOWN" },
+        },
       });
       games.push(g);
       const r = recordingSurface();
@@ -718,7 +726,14 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
   const g = new Game(null, {
     createSoftware: factory,
     debugPrint,
-    restore: { highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
+    restore: {
+      highScores: noHighScores,
+      tokens,
+      tickets,
+      prizes,
+      arcadeWon: false,
+      player: { x: 80, y: 92, dir: "DOWN" },
+    },
   });
   games.push(g);
   for (let t = 0; t < 3; t++) g.step(input({ down: true }));

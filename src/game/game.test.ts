@@ -454,6 +454,7 @@ function endRun(points: number, tokens = 5): Harness & { sw: FakeSoftware } {
     highScores: noHighScores,
     tokens,
     tickets: 0,
+    arcadeWon: false,
     prizes: [],
     player: { x: 80, y: 92, dir: "DOWN" },
   });
@@ -512,6 +513,7 @@ function atCounter(tokens: number, tickets: number): Harness {
     highScores: noHighScores,
     tokens,
     tickets,
+    arcadeWon: false,
     prizes: [],
     player: { x: 80, y: 92, dir: "DOWN" },
   });
@@ -549,6 +551,7 @@ function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness 
     tokens: 5,
     tickets,
     prizes,
+    arcadeWon: false,
     player: { x: 80, y: 92, dir: "DOWN" },
   });
   run(g.game, 3, { down: true });
@@ -709,6 +712,7 @@ describe("prize counter", () => {
       highScores: noHighScores,
       tokens: 0,
       tickets: 0,
+      arcadeWon: false,
       prizes: ["sleepyBees"],
       player: { x: 80, y: 92, dir: "UP" },
     });
@@ -780,6 +784,7 @@ describe("progress", () => {
         highScores: { ...noHighScores, sweetSam: 9 },
         tokens: 2,
         tickets: 31,
+        arcadeWon: false,
         prizes: [],
         player: { x: 80, y: 92, dir: "UP" },
       },
@@ -796,7 +801,14 @@ describe("progress", () => {
     // (40, 100) was free floor beside the old counter; the desk now spans the floor there.
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScores: noHighScores, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
+      restore: {
+        highScores: noHighScores,
+        tokens: 2,
+        tickets: 0,
+        arcadeWon: false,
+        prizes: [],
+        player: { x: 40, y: 100, dir: "LEFT" },
+      },
     });
     games.push(restored);
     expect(snap(restored).arcade.player).toMatchObject({ x: 80, y: 92 });
@@ -807,6 +819,7 @@ describe("progress", () => {
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
       player: { x: 80, y: 92, dir: "UP" },
     });
@@ -830,6 +843,7 @@ describe("progress", () => {
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
       player: { x: 80, y: 100, dir: "LEFT" },
     });

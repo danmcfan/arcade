@@ -12,7 +12,14 @@ import {
 } from "./wallet.ts";
 
 function wallet(p: Partial<WalletProgress> = {}): Wallet {
-  return new Wallet({ highScores: noHighScores, tokens: startingTokens, tickets: 0, prizes: [], ...p });
+  return new Wallet({
+    highScores: noHighScores,
+    tokens: startingTokens,
+    tickets: 0,
+    prizes: [],
+    arcadeWon: false,
+    ...p,
+  });
 }
 
 function counts(w: Wallet): { tokens: number; tickets: number } {
@@ -26,6 +33,7 @@ describe("a new Wallet", () => {
       tokens: 5,
       tickets: 0,
       prizes: [],
+      arcadeWon: false,
     });
     expect(startingTokens).toBe(5);
   });
@@ -257,5 +265,42 @@ describe("version", () => {
     w.buy("token");
     expect(w.prizes).toHaveLength(0);
     expect(w.version).not.toBe(before);
+  });
+});
+
+describe("the arcade win", () => {
+  const allBeaten = { sweetSam: 30_001, firefly: 40_001, brassMonkey: 25_001 };
+
+  test("a New game has not had it", () => {
+    expect(new Wallet().arcadeWon).toBe(false);
+    expect(new Wallet().toProgress().arcadeWon).toBe(false);
+  });
+
+  test("beating the last house high score wins the arcade once", () => {
+    const w = wallet({ highScores: { ...allBeaten, brassMonkey: 0 } });
+    w.settleRun("brassMonkey", 20_000, "paid");
+    expect(w.winArcade()).toBe(false);
+    w.settleRun("brassMonkey", 26_000, "paid");
+    const before = w.version;
+    expect(w.winArcade()).toBe(true);
+    expect(w.arcadeWon).toBe(true);
+    expect(w.version).toBeGreaterThan(before);
+    w.settleRun("sweetSam", 50_000, "paid");
+    expect(w.winArcade()).toBe(false);
+    expect(w.arcadeWon).toBe(true);
+  });
+
+  test("is not won while any machine is unbeaten", () => {
+    const w = wallet({ highScores: { ...allBeaten, firefly: houseHighScores.firefly } });
+    expect(w.winArcade()).toBe(false);
+    expect(w.arcadeWon).toBe(false);
+  });
+
+  test("is kept in the progress and restored from it", () => {
+    const w = wallet({ highScores: allBeaten });
+    w.winArcade();
+    const restored = new Wallet(w.toProgress());
+    expect(restored.arcadeWon).toBe(true);
+    expect(restored.winArcade()).toBe(false);
   });
 });
