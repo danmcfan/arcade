@@ -2,11 +2,11 @@
 // via `createScene` (src/game/registry.ts), run the fixed-step loop (D2), and
 // install `window.__arcade` when `?debug` is present (D7). On a touch-first
 // device it first shows the "needs a keyboard" notice; any key press
-// dismisses it, and that press is hidden from the title scene.
+// dismisses it, and that press is hidden from the title scene. `?keyboard` skips it.
 
 import { allImages, allSounds, loadImages } from "./engine/assets.ts";
 import { installAudioUnlock, loadSounds } from "./engine/audio.ts";
-import { looksTouchFirst, readPointer } from "./engine/device.ts";
+import { readPointer, showsKeyboardNotice } from "./engine/device.ts";
 import { readInput } from "./engine/input.ts";
 import { KeyTracker, installKeyboard } from "./engine/keyboard.ts";
 import { startLoop } from "./engine/loop.ts";
@@ -39,11 +39,14 @@ async function main(): Promise<void> {
 
   // The keyboard notice: shown until a key goes down. The scene below is
   // built but neither stepped nor drawn while it is up.
-  let notice: "up" | "dismissed" | null = looksTouchFirst({
-    coarseNoHover: readPointer((q) => window.matchMedia(q)),
-    width: window.innerWidth,
-    height: window.innerHeight,
-  })
+  let notice: "up" | "dismissed" | null = showsKeyboardNotice(
+    {
+      coarseNoHover: readPointer((q) => window.matchMedia(q)),
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+    params,
+  )
     ? "up"
     : null;
   if (notice)

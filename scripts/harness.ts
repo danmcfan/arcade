@@ -18,6 +18,9 @@
 //   `record()` records the final URL directly and seeds storage through the
 //   test hook (`load()` rebuilds the scene, which re-reads the save).
 // - Audio only starts after a real user gesture; Shift does not count.
+// - A headless browser can look touch-first and show the "needs a keyboard"
+//   notice instead of the game. `open()` and `record()` add `?keyboard`, which
+//   skips it; after `phone()` they leave it off, so a phone sees the notice.
 
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -103,12 +106,14 @@ export interface Verify {
   /** The server's root URL, e.g. http://localhost:4123. */
   url: string;
   page: Browser;
-  /** Open the game (query like "?scene=game") and wait for the canvas. */
+  /** Open the game (query like "?scene=game", plus `keyboard` unless emulating a phone) and wait for the canvas. */
   open(query?: string): void;
   /** Open with `?debug`, wait for the test hook and pause the loop, so only `step()` moves the game. */
   openHook(query?: string): void;
   /** Hook only: run `ticks` fixed ticks with these keys held. */
   step(ticks: number, input?: Partial<Input>): void;
+  /** Hook only: jump the running minigame to stage (or level) `stage`. */
+  jump(stage: number): void;
   /** Hook only: hold a key for one tick, then release for one tick. */
   tap(key: keyof Input): void;
   /** Hook only: the current scene snapshot, checked with `is` (e.g. `isTitleSnapshot`). */
@@ -124,7 +129,7 @@ export interface Verify {
    */
   phone(device?: string): Promise<void>;
   /**
-   * Hook only: dismiss the "needs a keyboard" notice a headless browser can show. Only a running
+   * Hook only: dismiss the "needs a keyboard" notice (shown only after `phone()`). Only a running
    * loop clears it, so this runs the loop around a key press, then pauses it again.
    */
   dismissNotice(): void;
@@ -161,6 +166,18 @@ export function upscale(png: Buffer, scale: number): Buffer {
     }
   }
   return PNG.sync.write(dst);
+}
+
+/** `query` with `keyboard` added, so the page skips the "needs a keyboard" notice. */
+export function withKeyboard(query: string): string {
+  const q = query.replace(/^\?/u, "");
+  return `?${q === "" ? "keyboard" : `${q}&keyboard`}`;
+}
+
+/** A verify step: log `what`, or throw with what the page had instead. */
+export function check(ok: boolean, what: string, got?: unknown): void {
+  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
+  console.log(`  ok  ${what}`);
 }
 
 function keyInit(code: string): string {
@@ -327,12 +344,15 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     page.run("wait", "--fn", "document.getElementById('screen')?.width > 0");
   };
   const cleanups: (() => void)[] = [];
+  /** Set by `phone()`: the page keeps its "needs a keyboard" notice. */
+  let isPhone = false;
 
   /** Start recording `<name>.webm` on a fresh load of `scene` with the test hook. */
   const startRecording = (n: string, scene?: SceneName, path = ""): string => {
     const webm = file(n, "webm");
     rmSync(webm, { force: true });
-    page.run("record", "start", webm, `${url}/${path}${scene ? `?debug&scene=${scene}` : "?debug"}`);
+    const query = scene ? `?debug&scene=${scene}` : "?debug";
+    page.run("record", "start", webm, `${url}/${path}${isPhone ? query : withKeyboard(query)}`);
     waitCanvas();
     page.run("wait", "--fn", "window.__arcade !== undefined");
     return webm;
@@ -372,7 +392,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     url,
     page,
     open(query = "") {
-      page.run("open", `${url}/${query}`);
+      page.run("open", `${url}/${isPhone ? query : withKeyboard(query)}`);
       waitCanvas();
     },
     openHook(query = "") {
@@ -383,6 +403,9 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     },
     step(ticks, input = {}) {
       page.eval(`window.__arcade.step(${ticks}, ${JSON.stringify(input)})`);
+    },
+    jump(stage) {
+      page.eval(`window.__arcade.jump(${stage}); "ok"`);
     },
     tap(key) {
       v.step(1, { [key]: true });
@@ -409,6 +432,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
       page.eval("window.__arcade.pause()");
     },
     async phone(device = "iPhone 15") {
+      isPhone = true;
       page.run("set", "device", device);
       cleanups.push(await emulateTouch(page));
     },
@@ -436,6 +460,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
       return finishRecording(n, webm, play);
     },
     async recordPhone(n, play, opts = {}) {
+      isPhone = true; // record without `?keyboard`, so the phone shows the notice
       const webm = startRecording(n, opts.scene, opts.path);
       if (opts.storage) seedStorage(opts.storage);
       // The recording's fresh context drops the emulation, and the page reads
@@ -463,6 +488,29 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     },
   };
   return Object.assign(v, { cleanups });
+}
+
+/** Hook only: the arcade Game the title is hosting; throws before one starts. */
+export function gameIn(v: Verify): GameSnapshot {
+  const g = v.snapshot(isTitleSnapshot).game;
+  if (g === null) throw new Error("no game running");
+  return g;
+}
+
+/**
+ * Hook only: a fresh save, `seed`, then New game, through the intro, up to
+ * the Firefly cabinet and Space: a paid Firefly run on its first tick.
+ */
+export function startFirefly(v: Verify, seed: number): void {
+  v.openHook();
+  v.page.eval("localStorage.clear()");
+  v.openHook();
+  v.page.eval(`window.__arcade.seed(${seed}); "ok"`);
+  v.tap("space"); // New game -> intro
+  v.tap("space"); // intro -> hub
+  v.step(31, { up: true });
+  v.step(40, { right: true });
+  v.step(1, { up: true, space: true });
 }
 
 /**

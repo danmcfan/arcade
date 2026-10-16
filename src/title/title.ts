@@ -201,6 +201,10 @@ export class Title implements Scene {
     if (phase === "confirm") this.confirmMenu.open();
   }
 
+  jumpTo(stage: number): void {
+    this.hostedGame().jumpTo(stage);
+  }
+
   private startGame(restore?: Progress): void {
     this.game = this.createGame(restore);
     this.phase = "playing";

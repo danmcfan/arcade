@@ -17,13 +17,8 @@ import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { SweetSamSoftware } from "../../src/sweet-sam/software.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, sweetSamIn, verify } from "../harness.ts";
+import { check, isGameSnapshot, sweetSamIn, verify } from "../harness.ts";
 import { compress } from "../sweet-sam-bot.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
 
 function bee(s: SweetSamSnapshot, kind: string): SweetSamSnapshot["enemies"][number] {
   const e = s.enemies.find((b) => b.kind === kind);

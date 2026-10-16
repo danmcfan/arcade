@@ -36,6 +36,10 @@ class FakeSoftware implements Software {
   update(i: Input): void {
     this.updates.push(i);
   }
+  readonly jumps: number[] = [];
+  jumpTo(stage: number): void {
+    this.jumps.push(stage);
+  }
   draw(screen: Surface, buffer: number): void {
     this.draws.push([screen, buffer]);
   }
@@ -117,6 +121,22 @@ function enterBrassMonkey(game: Game): void {
   run(game, 40, { left: true });
   game.step(input({ up: true, space: true }));
 }
+
+describe("jumpTo", () => {
+  test("jumps the running minigame to a stage", () => {
+    const { game, built } = newGame();
+    enterSweetSam(game);
+    game.jumpTo(5);
+    expect(built[0]?.jumps).toEqual([5]);
+  });
+
+  test("throws in the hub, with no minigame to jump", () => {
+    const { game } = newGame();
+    expect(() => {
+      game.jumpTo(2);
+    }).toThrow();
+  });
+});
 
 describe("snapshot", () => {
   test("hub snapshot has exactly the §4.3 game keys", () => {

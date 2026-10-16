@@ -21,13 +21,8 @@ import { globalDotLimits } from "../../src/sweet-sam/release.ts";
 import { bobPixels, homeY } from "../../src/sweet-sam/update.ts";
 import { SweetSamSoftware } from "../../src/sweet-sam/software.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { check, isGameSnapshot, verify, type Verify } from "../harness.ts";
 import { compress, play } from "../sweet-sam-bot.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
 
 function sweetSam(v: Verify): SweetSamSnapshot {
   const g = v.snapshot(isGameSnapshot);

@@ -9,12 +9,7 @@
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
 import { PNG } from "pngjs";
 import { decodeDataUrl } from "../browser.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
+import { check, isGameSnapshot, verify, type Verify } from "../harness.ts";
 
 /** The screen's top-left corner in the frame, and the HUD's tile rows and dial columns (src/ui/scoreDials.ts). */
 const screenX = 8;

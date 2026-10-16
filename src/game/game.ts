@@ -115,6 +115,14 @@ export class Game implements Scene {
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
   }
 
+  /** Jump the running minigame to `stage` (test hook); throws when it has no stages. */
+  jumpTo(stage: number): void {
+    const software = this.run?.software;
+    if (software?.jumpTo === undefined)
+      throw new Error(`Game.jumpTo: ${software?.name ?? "the hub"} has no stages to jump to`);
+    software.jumpTo(stage);
+  }
+
   /**
    * A position in or beyond a wall or the prize counter (a stale or edited
    * save) keeps the start position. The walls frame the hub image, so

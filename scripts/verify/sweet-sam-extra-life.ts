@@ -9,13 +9,8 @@ import type { InputScript } from "../../src/game/script.ts";
 import type { SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import { extraLifeScore } from "../../src/sweet-sam/constants.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { check, isGameSnapshot, verify, type Verify } from "../harness.ts";
 import { compress, play } from "../sweet-sam-bot.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
 
 function sweetSam(v: Verify): SweetSamSnapshot {
   const g = v.snapshot(isGameSnapshot);

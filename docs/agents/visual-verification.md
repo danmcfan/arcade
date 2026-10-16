@@ -52,6 +52,8 @@ await verify("pause-menu", (v) => {
 | The page as a player sees it        | `open()`, `key()`, `wait()`, `screenshot()`; `hold(code, play)` keeps one key down (Space while steering)    |
 | Motion, animation, a flow           | `record(name, play, { scene, storage })` writes `.mp4` (for the PR) and `.webm`                              |
 | A phone or tablet (touch, no hover) | `await phone()` before `open()`; `await recordPhone(name, play, opts)` for its video                         |
+| A minigame on a later stage         | `jump(stage)` after the run starts (Firefly); `startFirefly(v, seed)` starts one                             |
+| A pass/fail line, the hosted Game   | `check(ok, what, got)`, `gameIn(v)` from the harness: don't copy them into the script                        |
 | Anything else                       | `v.page.run(...)` / `v.page.eval(js)` (raw agent-browser)                                                    |
 
 Keep the check in the repo and in the PR, so the next change to that screen can rerun it.
@@ -77,6 +79,7 @@ Keep the check in the repo and in the PR, so the next change to that screen can 
 - **Any navigation during a recording freezes the video on one frame**, and that includes `open()` and reloads. `record()` opens the final URL itself and seeds `storage` through the test hook. Inside `play`, drive the page with `key()` and `wait()` only.
 - **Audio starts only after a user gesture, and Shift is not one.** Press a real key such as Space before you check that music is playing. Sound is checked through `__arcade.sounds()` or the audio element state; nobody listens to it, so mention in the PR what a person should listen for.
 - **zsh does not word-split a command held in a variable** (`B="agent-browser --session x"; $B open` fails). In ad-hoc shell work, use a function: `ab() { agent-browser --session x "$@"; }`.
+- **A headless browser can look touch-first** and show the "needs a keyboard" notice instead of the game. `open()` and `record()` add `?keyboard`, which skips it; after `phone()` (and in `recordPhone()`) they leave it off, so a phone still sees the notice.
 - **Browser zoom emulation** at fractional device-pixel ratios can lose a device pixel at the edges. That is an emulation artifact, not a game bug (`docs/port-notes.md`, T12).
 
 ## Parity frames

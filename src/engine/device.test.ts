@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { looksTouchFirst, readPointer } from "./device.ts";
+import { looksTouchFirst, readPointer, showsKeyboardNotice } from "./device.ts";
 
 describe("looksTouchFirst", () => {
   test("a coarse pointer with no hover is touch-first, at any size", () => {
@@ -39,5 +39,18 @@ describe("readPointer", () => {
 
   test("neither reported is null", () => {
     expect(readPointer(media([]))).toBe(null);
+  });
+});
+
+describe("showsKeyboardNotice", () => {
+  const phone = { coarseNoHover: true, width: 390, height: 844 };
+  test("a touch-first device shows the notice", () => {
+    expect(showsKeyboardNotice(phone, new URLSearchParams(""))).toBe(true);
+  });
+  test("?keyboard says a keyboard is there, so the notice never shows", () => {
+    expect(showsKeyboardNotice(phone, new URLSearchParams("debug&keyboard"))).toBe(false);
+  });
+  test("a desktop shows no notice", () => {
+    expect(showsKeyboardNotice({ ...phone, coarseNoHover: false }, new URLSearchParams(""))).toBe(false);
   });
 });
