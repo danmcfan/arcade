@@ -454,7 +454,14 @@ describe("payout", () => {
   test("a paid run played to game over pays its score in tickets", () => {
     rng.seed(1);
     const game = new Game(null, {
-      restore: { highScores: noHighScores, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      restore: {
+        highScores: noHighScores,
+        tokens: 1,
+        tickets: 0,
+        arcadeWon: false,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "DOWN" },
+      },
     });
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.

@@ -150,6 +150,7 @@ function prizeCounterFrames(): PNG[] {
     highScores: noHighScores,
     tokens: 3,
     tickets: 75,
+    arcadeWon: false,
     prizes: owned === undefined ? [] : [owned],
   });
   const items = prizeCounterItems(wallet, () => {

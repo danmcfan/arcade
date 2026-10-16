@@ -1,11 +1,12 @@
 // Port of internal/arcade/draw.go, plus the cabinet screens switching on, the
-// prize desk's employee, the decorations of the prizes the player owns and
-// the LED scoreboard. Everything is drawn inside the hub image (the 160x144
+// prize desk's employee, the decorations of the prizes the player owns, the
+// arcade win's cake, trophy and confetti, and the LED scoreboard. Everything is drawn inside the hub image (the 160x144
 // Game Boy frame, #72); Go's title card is now the scoreboard's text.
 
 import { imageArcade, imageScreens } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
+import { drawCake, drawConfetti, drawTrophy } from "./arcadeWin.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { drawEmployee } from "./employee.ts";
 import { prize } from "./prizes.ts";
@@ -15,6 +16,14 @@ import { powerCabinetX, powerFrameHeight, powerFrameWidth } from "../ui/hubArt.t
 import type { State } from "./state.ts";
 import type { Faced } from "./update.ts";
 
+/** The arcade win as the hub shows it, beyond the cake and trophy the wallet implies. */
+export interface ArcadeWinView {
+  /** The scoreboard's banner is up. */
+  banner: boolean;
+  /** Ticks since the arcade win in this sitting, for the confetti; null when there is none to show. */
+  confettiAge: number | null;
+}
+
 /** Draw the hub; the scoreboard names `named` (see `faced`), or shows the counts when null. */
 export function draw(
   screen: Surface,
@@ -23,6 +32,7 @@ export function draw(
   buffer: number,
   debugMode: boolean,
   named: Faced | null,
+  win: ArcadeWinView,
 ): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.
@@ -45,6 +55,11 @@ export function draw(
     const p = prize(id);
     drawImage(screen, p.sprite, p.x + buffer, p.y + buffer);
   }
+  // The arcade win's cake and trophy stand on the desk for good.
+  if (s.wallet.arcadeWon) {
+    drawCake(screen, buffer);
+    drawTrophy(screen, buffer);
+  }
 
   const player = s.player;
   const row = player.frameDirection[player.direction];
@@ -59,7 +74,13 @@ export function draw(
 
   const machine = s.machines.find((m) => m.title === named);
   const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);
-  drawTicker(screen, { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi }, tick, buffer);
+  drawTicker(
+    screen,
+    { tokens: s.wallet.tokens, tickets: s.wallet.tickets, faced: named, beatenHi, arcadeWinBanner: win.banner },
+    tick,
+    buffer,
+  );
+  if (win.confettiAge !== null) drawConfetti(screen, win.confettiAge, buffer);
 
   if (debugMode) {
     drawDebugOverlay(screen, s, buffer);

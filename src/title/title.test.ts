@@ -6,7 +6,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { Surface } from "../engine/surface.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { Game } from "../game/game.ts";
-import { noHighScores } from "../arcade/wallet.ts";
+import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
@@ -62,10 +62,11 @@ function atCabinet(): SaveData {
   g.dispose();
   expect(s.arcade.title).toBe("sweet");
   return {
-    v: 4,
+    v: 5,
     highScores: noHighScores,
     tokens: 5,
     tickets: 0,
+    arcadeWon: false,
     prizes: [],
     player: { x: s.arcade.player.x, y: s.arcade.player.y, dir: "UP" },
   };
@@ -118,10 +119,11 @@ describe("new game", () => {
 
   test("with a save, New game asks first; No (the default) and Esc keep the save", () => {
     const save: SaveData = {
-      v: 4,
+      v: 5,
       highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
       player: { x: 50, y: 90, dir: "LEFT" },
     };
@@ -141,10 +143,11 @@ describe("new game", () => {
 
   test("Yes, then Space on the intro, starts a fresh hub and replaces the old save", () => {
     const store = spyStore({
-      v: 4,
+      v: 5,
       highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
       player: { x: 50, y: 90, dir: "LEFT" },
     });
@@ -160,21 +163,23 @@ describe("new game", () => {
     expect(game(t).arcade).toEqual(fresh.arcade);
     expect(game(t).software).toBeNull();
     expect(store.load()).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
+      arcadeWon: false,
       player: { x: 80, y: 92, dir: "DOWN" },
     });
   });
 
   test("New game removes every prize", () => {
     const store = memoryStore({
-      v: 4,
+      v: 5,
       highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 0,
       tickets: 88,
+      arcadeWon: false,
       prizes: ["honeyJar", "runningShoes", "sleepyBees", "lantern", "glowStick", "wings"],
       player: { x: 50, y: 90, dir: "LEFT" },
     });
@@ -190,10 +195,11 @@ describe("new game", () => {
 
   test("New game resets tokens and tickets", () => {
     const store = memoryStore({
-      v: 4,
+      v: 5,
       highScores: { ...noHighScores, sweetSam: 900 },
       tokens: 0,
       tickets: 88,
+      arcadeWon: false,
       prizes: [],
       player: { x: 50, y: 90, dir: "LEFT" },
     });
@@ -212,10 +218,11 @@ describe("continue", () => {
   test("restores the player's position, facing and the high score", () => {
     const t = new Title({
       store: memoryStore({
-        v: 4,
+        v: 5,
         highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 5,
         tickets: 0,
+        arcadeWon: false,
         prizes: [],
         player: { x: 50, y: 90, dir: "LEFT" },
       }),
@@ -246,10 +253,11 @@ describe("continue", () => {
     ] as const) {
       const t = new Title({
         store: memoryStore({
-          v: 4,
+          v: 5,
           highScores: noHighScores,
           tokens: 5,
           tickets: 0,
+          arcadeWon: false,
           prizes: [],
           player: { x, y, dir: "UP" },
         }),
@@ -318,10 +326,11 @@ describe("pause menu", () => {
   test("restores tokens and tickets", () => {
     const t = new Title({
       store: memoryStore({
-        v: 4,
+        v: 5,
         highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 2,
         tickets: 37,
+        arcadeWon: false,
         prizes: [],
         player: { x: 50, y: 90, dir: "LEFT" },
       }),
@@ -400,6 +409,55 @@ function endedRun(store: SaveStore & { saves: number }, tokens: number, points: 
   return t;
 }
 
+describe("the arcade win inside the title scene", () => {
+  /** Firefly and Brass Monkey beaten: a Sweet Sam run over 30000 is the arcade win. */
+  const twoBeaten = { sweetSam: 0, firefly: houseHighScores.firefly + 1, brassMonkey: houseHighScores.brassMonkey + 1 };
+
+  function wonArcade(store: SaveStore & { saves: number }): Title {
+    store.save({ ...atCabinet(), highScores: twoBeaten });
+    const t = new Title({
+      store,
+      createGame: (restore): Game =>
+        new Game(null, {
+          createSoftware: (): Software => endingSoftware(houseHighScores.sweetSam + 100),
+          ...(restore ? { restore } : {}),
+        }),
+    });
+    tap(t, "space"); // Continue
+    hold(t, { up: true, space: true }, 2);
+    t.step(NO_INPUT); // the run ends: the payout opens over it
+    tap(t, "space"); // skip the count
+    tap(t, "space"); // close the payout
+    return t;
+  }
+
+  test("is saved the moment it happens, and Continue restores it without the banner", () => {
+    const store = spyStore();
+    const t = wonArcade(store);
+    expect(game(t).arcade.arcadeWin).toBe("banner");
+    expect(store.load()?.arcadeWon).toBe(true);
+    t.dispose();
+    const again = new Title({ store });
+    tap(again, "space"); // Continue
+    expect(game(again).arcade.arcadeWin).toBe("won");
+    again.dispose();
+  });
+
+  test("New game clears it", () => {
+    const store = spyStore();
+    wonArcade(store).dispose();
+    const t = new Title({ store });
+    tap(t, "down"); // Continue -> New game
+    tap(t, "space");
+    tap(t, "down"); // No -> Yes
+    tap(t, "space");
+    tap(t, "space"); // intro
+    expect(game(t).arcade.arcadeWin).toBeUndefined();
+    expect(store.load()?.arcadeWon).toBe(false);
+    t.dispose();
+  });
+});
+
 describe("saving when the wallet changes", () => {
   test("every purchase saves at once, token or prize; a refused one does not", () => {
     const store = spyStore();
@@ -438,7 +496,15 @@ describe("saving when the wallet changes", () => {
 
 /** Continue from a save at the start position with these counts, then open the prize counter. */
 function atCounter(store: SaveStore, tokens: number, tickets: number, prizes: SaveData["prizes"] = []): Title {
-  store.save({ v: 4, highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } });
+  store.save({
+    v: 5,
+    highScores: noHighScores,
+    tokens,
+    tickets,
+    prizes,
+    arcadeWon: false,
+    player: { x: 80, y: 92, dir: "DOWN" },
+  });
   const t = new Title({ store });
   tap(t, "space"); // Continue
   hold(t, { down: true }, 3);
@@ -481,11 +547,12 @@ describe("prize counter inside the title scene", () => {
     expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["honeyJar"] });
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 3,
       tickets: 15,
       prizes: ["honeyJar"],
+      arcadeWon: false,
       player: { x: 80, y: 95, dir: "DOWN" },
     });
     t.dispose();
@@ -496,7 +563,7 @@ describe("prize counter inside the title scene", () => {
     again.dispose();
   });
 
-  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v4", () => {
+  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v5", () => {
     const store = memoryStore();
     const raw = { v: 2, highScore: 40, tokens: 2, tickets: 30, player: { x: 80, y: 92, dir: "DOWN" } };
     const parsed = parseSave(raw);
@@ -508,11 +575,12 @@ describe("prize counter inside the title scene", () => {
     expect(game(t).arcade.prizes).toBeUndefined();
     t.persist();
     expect(store.load()).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 2,
       tickets: 30,
       prizes: [],
+      arcadeWon: false,
       player: { x: 80, y: 92, dir: "DOWN" },
     });
     t.dispose();
@@ -542,10 +610,11 @@ describe("sounds", () => {
   test("the title music starts on the first tick and plays through the New game check and intro", () => {
     const t = new Title({
       store: memoryStore({
-        v: 4,
+        v: 5,
         highScores: noHighScores,
         tokens: 5,
         tickets: 0,
+        arcadeWon: false,
         prizes: [],
         player: { x: 80, y: 92, dir: "UP" },
       }),
@@ -605,10 +674,11 @@ describe("sounds", () => {
   test("moving the cursor blips; a choice or Back chirps; nothing else does", () => {
     const t = new Title({
       store: memoryStore({
-        v: 4,
+        v: 5,
         highScores: noHighScores,
         tokens: 5,
         tickets: 0,
+        arcadeWon: false,
         prizes: [],
         player: { x: 80, y: 92, dir: "UP" },
       }),
@@ -675,16 +745,18 @@ describe("sounds", () => {
 
 describe("parseSave", () => {
   const ok: SaveData = {
-    v: 4,
+    v: 5,
     highScores: { sweetSam: 3, firefly: 0, brassMonkey: 7 },
     tokens: 4,
     tickets: 12,
     prizes: ["honeyJar", "sleepyBees"],
+    arcadeWon: false,
     player: { x: 1, y: 2, dir: "UP" },
   };
 
-  test("accepts a v4 save with its player high scores and owned prizes", () => {
+  test("accepts a v5 save with its player high scores, owned prizes and arcade win", () => {
     expect(parseSave(ok)).toEqual(ok);
+    expect(parseSave({ ...ok, arcadeWon: true })).toEqual({ ...ok, arcadeWon: true });
     const empty: SaveData = { ...ok, tokens: 0, tickets: 0, prizes: [] };
     expect(parseSave({ ...ok, tokens: 0, tickets: 0, prizes: [] })).toEqual(empty);
   });
@@ -718,11 +790,12 @@ describe("parseSave", () => {
   test("upgrades a v2 save: same counts and position, no prizes and no player high scores", () => {
     const v2 = { v: 2, highScore: 3, tokens: 4, tickets: 12, player: { x: 1, y: 2, dir: "UP" } };
     expect(parseSave(v2)).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 4,
       tickets: 12,
       prizes: [],
+      arcadeWon: false,
       player: { x: 1, y: 2, dir: "UP" },
     });
     // A v2 save never had prizes: anything under that key is ignored.
@@ -735,11 +808,12 @@ describe("parseSave", () => {
     const raw =
       '{"v":3,"highScore":2470,"tokens":2,"tickets":9,"prizes":["honeyJar","runningShoes","sleepyBees"],"player":{"x":70,"y":53,"dir":"UP"}}';
     expect(parseSave(JSON.parse(raw))).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 2,
       tickets: 9,
       prizes: ["honeyJar", "runningShoes", "sleepyBees"],
+      arcadeWon: false,
       player: { x: 70, y: 53, dir: "UP" },
     });
   });
@@ -747,14 +821,23 @@ describe("parseSave", () => {
   test("upgrades a v1 save: same position, no player high scores, plus 5 tokens, 0 tickets and no prizes", () => {
     const v1 = { v: 1, highScore: 3, player: { x: 1, y: 2, dir: "UP" } };
     expect(parseSave(v1)).toEqual({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
       prizes: [],
+      arcadeWon: false,
       player: { x: 1, y: 2, dir: "UP" },
     });
     expect(parseSave({ ...v1, player: null })).toBeNull();
+  });
+
+  test("upgrades a v4 save: everything kept, and it has not had the arcade win", () => {
+    const allBeaten = { sweetSam: 30_001, firefly: 40_001, brassMonkey: 25_001 };
+    const { arcadeWon: _, ...v4 } = { ...ok, v: 4, highScores: allBeaten };
+    expect(parseSave(v4)).toEqual({ ...ok, highScores: allBeaten, arcadeWon: false });
+    // A v4 save never had the arcade win: anything under that key is ignored.
+    expect(parseSave({ ...v4, arcadeWon: true })?.arcadeWon).toBe(false);
   });
 
   test("an old save's one shared high score is dropped: no machine can claim it", () => {
@@ -768,8 +851,10 @@ describe("parseSave", () => {
       1,
       "x",
       {},
-      { ...ok, v: 5 },
+      { ...ok, v: 6 },
       { ...ok, v: 0 },
+      { ...ok, arcadeWon: undefined },
+      { ...ok, arcadeWon: "yes" },
       { ...ok, prizes: undefined },
       { ...ok, prizes: "honeyJar" },
       { ...ok, prizes: ["goldenTrophy"] },
@@ -893,10 +978,11 @@ function recordingSurface(): {
 const withSave = (): Title =>
   new Title({
     store: memoryStore({
-      v: 4,
+      v: 5,
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
       player: { x: 80, y: 92, dir: "UP" },
     }),
@@ -1008,10 +1094,11 @@ describe("drawing", () => {
   test("with a save that holds a high score, the menu does not show it", () => {
     const t = new Title({
       store: memoryStore({
-        v: 4,
+        v: 5,
         highScores: { ...noHighScores, sweetSam: 120 },
         tokens: 5,
         tickets: 0,
+        arcadeWon: false,
         prizes: [],
         player: { x: 80, y: 92, dir: "UP" },
       }),
