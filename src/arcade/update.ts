@@ -6,7 +6,7 @@
 
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { attractSounds, sounds } from "../engine/assets.ts";
-import { pressChangeMachine, tickNotice } from "./changeMachine.ts";
+import { changeMachineRect, pressChangeMachine, tickNotice } from "./changeMachine.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
@@ -54,11 +54,11 @@ export function update(s: State, i: Input): HubEvent {
     };
   } else if (i.space && facesCounter(s)) {
     event = { openCounter: true };
-  } else if (i.space && !s.actionHeld && facing(s.player, s.changeMachine)) {
+  } else if (i.space && !s.actionHeld && facing(s.player, changeMachineRect)) {
     pressChangeMachine(s);
   }
   s.actionHeld = i.space;
-  tickNotice(s, facing(s.player, s.changeMachine));
+  tickNotice(s, facing(s.player, changeMachineRect));
 
   for (const m of s.machines) updateScreen(m.screen, s.melodyPlaying && s.imageTitle === m.title);
   return event;
@@ -85,7 +85,7 @@ export function faced(s: State, menuOpen: boolean): Faced | null {
   if (menuOpen) return null;
   if (s.melodyPlaying) return s.imageTitle;
   if (facesCounter(s)) return "prizeCounter";
-  return facing(s.player, s.changeMachine) ? "changeMachine" : null;
+  return facing(s.player, changeMachineRect) ? "changeMachine" : null;
 }
 
 /** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */

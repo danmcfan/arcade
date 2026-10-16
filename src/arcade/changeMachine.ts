@@ -22,6 +22,9 @@ export function drawChangeMachine(screen: Surface, buffer: number): void {
   screen.fillRect(x + buffer + 2, y + buffer + h / 2 - 2, 2, 4, sweetie.k);
 }
 
+/** What a press that did not hand over a token flashes on the scoreboard. */
+export type NoticeKind = "price" | "lastChance";
+
 /** Ticks the scoreboard flashes the price or LAST CHANCE after a press of the change machine. */
 export const noticeTicks = 120;
 
