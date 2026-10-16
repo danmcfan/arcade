@@ -176,6 +176,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "flashFrames",
         "flash",
         "held",
+        "eyes",
         "home",
         "dotMin",
         "reverse",

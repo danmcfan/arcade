@@ -232,6 +232,7 @@ export class SweetSamSoftware implements FixedViewport {
         home: e.home,
         dotMin: e.dotMinimum,
         held: e.held,
+        eyes: e.eyes,
         reverse: e.reverseDirection,
         reverseTile: [e.reverseTile.x, e.reverseTile.y],
       })),

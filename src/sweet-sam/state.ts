@@ -37,11 +37,11 @@ import {
 } from "./entity.ts";
 import {
   applyInput,
+  becomeEyes,
   collideWithDistance,
   deathRoundDelayTicks,
   distanceThreshold,
   findTarget,
-  resetEnemy,
   restartAfterDeath,
   restartRound,
   startTicks,
@@ -236,6 +236,10 @@ export class PlayState implements State {
 
     for (const e of s.enemies) {
       updateBlue(e);
+      // Eyes steer themselves home (update.ts `moveEyes`) and cannot hurt or be eaten.
+      if (e.eyes) {
+        continue;
+      }
 
       const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
       updateDirection(e, s.corners, target);
@@ -263,7 +267,7 @@ export class PlayState implements State {
           nextAward = bonusEatFrameCount - 1;
         }
         s.scaredEatAwardNext = nextAward;
-        resetEnemy(e);
+        becomeEyes(e);
         return stateIDPause;
       }
 

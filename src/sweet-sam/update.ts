@@ -371,6 +371,15 @@ export function resetEnemy(e: Entity): void {
   e.held = false;
 }
 
+/** An eaten bee: its eyes stay where it was eaten, awake, and fly home from there. */
+export function becomeEyes(e: Entity): void {
+  e.eyes = true;
+  e.blueFrames = 0;
+  e.flashFrames = 0;
+  e.flash = false;
+  e.reverseDirection = false;
+}
+
 export function findCorner(e: Entity, cs: readonly Entity[]): Entity | null {
   for (const c of cs) {
     if (collideWithDistance(c, e, distanceThreshold)) {
