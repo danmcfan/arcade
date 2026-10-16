@@ -513,6 +513,11 @@ const fireflyEffects = {
     ],
     eighth: 0.09,
   },
+  /** A stage badge is added: a short high tick. */
+  badgeTick: {
+    notes: [[96, 1]],
+    eighth: 0.025,
+  },
 } as const satisfies Record<string, Effect>;
 for (const [name, effect] of Object.entries(fireflyEffects)) defineSound(name, { effect }, { channel: "minigame" });
 

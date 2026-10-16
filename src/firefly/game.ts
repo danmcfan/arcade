@@ -58,6 +58,7 @@ import {
   sparkSpeed,
   stageIntroTicks,
   formationPos,
+  badgesShown,
   swayOffset,
   type FormationPhase,
   type FormationState,
@@ -287,6 +288,7 @@ export class FireflySoftware implements FixedViewport {
 
     if (this.stageTick === 0) play(sounds.stage);
     this.stageTick++;
+    if (badgesShown(this.stage, this.stageTick) > badgesShown(this.stage, this.stageTick - 1)) play(sounds.badgeTick);
     this.ticks++;
 
     if (this.respawn === 0) this.movePlayer(i);

@@ -28,6 +28,7 @@ import beamUrl from "../assets/sounds/beam.wav";
 import captureUrl from "../assets/sounds/capture.wav";
 import rescueUrl from "../assets/sounds/rescue.wav";
 import stageUrl from "../assets/sounds/stage.wav";
+import badgeTickUrl from "../assets/sounds/badge-tick.wav";
 import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
 import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
 import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
@@ -61,6 +62,7 @@ export type SoundName =
   | "capture"
   | "rescue"
   | "stage"
+  | "badgeTick"
   | "monkeyJump"
   | "monkeyBolt"
   | "monkeyHazard"
@@ -98,6 +100,7 @@ export function soundTable<S>(
     capture: make("capture", captureUrl, false, 1),
     rescue: make("rescue", rescueUrl, false, 1),
     stage: make("stage", stageUrl, false, 1),
+    badgeTick: make("badgeTick", badgeTickUrl, false, 1),
     monkeyJump: make("monkeyJump", monkeyJumpUrl, false, 1),
     monkeyBolt: make("monkeyBolt", monkeyBoltUrl, false, 1),
     monkeyHazard: make("monkeyHazard", monkeyHazardUrl, false, 1),
@@ -125,6 +128,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "capture",
     "rescue",
     "stage",
+    "badgeTick",
   ],
   arcade: [
     "title",
