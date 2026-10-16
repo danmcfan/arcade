@@ -347,6 +347,8 @@ export interface FireflySnapshot {
   diveTimer: number;
   /** The formation's x offset this tick: 0 once it breathes. */
   sway: number;
+  /** Whether the formation is swaying while it fills, or breathing once full. */
+  formationPhase: "sway" | "breathe";
 }
 
 // ---------------------------------------------------------------------------

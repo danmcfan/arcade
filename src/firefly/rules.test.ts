@@ -59,7 +59,11 @@ describe("formationPos", () => {
 
   test("while the formation fills, every slot sways by the same x offset", () => {
     for (const t of [0, 10, 40, 100]) {
-      for (const s of slots) expect(formationPos(s, t, "sway")).toEqual({ x: s.x + swayOffset(t), y: s.y });
+      for (const s of slots)
+        expect(formationPos(s, { phase: "sway", ticks: t, breatheFrom: 0 })).toEqual({
+          x: s.x + swayOffset(t),
+          y: s.y,
+        });
     }
   });
 
@@ -74,23 +78,28 @@ describe("formationPos", () => {
     const owls = slots.filter((s) => s.row === 0);
     const [left, right] = [owls[0], owls.at(-1)];
     if (left === undefined || right === undefined) throw new Error("no owls");
-    const width = (t: number): number => formationPos(right, t, "breathe").x - formationPos(left, t, "breathe").x;
+    const width = (t: number): number =>
+      formationPos(right, { phase: "breathe", ticks: t, breatheFrom: 0 }).x -
+      formationPos(left, { phase: "breathe", ticks: t, breatheFrom: 0 }).x;
     expect(width(peak)).toBeGreaterThan(width(0));
     const centre = { kind: "moth" as const, row: 3, col: 0, x: 112, y: slots[30]?.y ?? 0 };
-    for (let t = 0; t < breathePeriod; t++) expect(formationPos(centre, t, "breathe").x).toBe(112);
+    for (let t = 0; t < breathePeriod; t++)
+      expect(formationPos(centre, { phase: "breathe", ticks: t, breatheFrom: 0 }).x).toBe(112);
   });
 
   test("breathing moves the rows apart at the peak", () => {
     const top = slots[0];
     const bottom = slots.at(-1);
     if (top === undefined || bottom === undefined) throw new Error("no slots");
-    const height = (t: number): number => formationPos(bottom, t, "breathe").y - formationPos(top, t, "breathe").y;
+    const height = (t: number): number =>
+      formationPos(bottom, { phase: "breathe", ticks: t, breatheFrom: 0 }).y -
+      formationPos(top, { phase: "breathe", ticks: t, breatheFrom: 0 }).y;
     expect(height(peak)).toBeGreaterThan(height(0));
   });
 
   test("breathing keeps every slot on the playfield", () => {
     for (const s of slots) {
-      const p = formationPos(s, peak, "breathe");
+      const p = formationPos(s, { phase: "breathe", ticks: peak, breatheFrom: 0 });
       expect(p.x - 8).toBeGreaterThanOrEqual(0);
       expect(p.x + 8).toBeLessThanOrEqual(224);
     }

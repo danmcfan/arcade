@@ -18,7 +18,9 @@ function firefly(v: Verify): FireflySnapshot {
 }
 
 const meanX = (s: FireflySnapshot): number => s.enemies.reduce((t, e) => t + e.x, 0) / s.enemies.length;
-const edgeX = (s: FireflySnapshot): number => s.enemies.find((e) => e.row === 4 && e.col === 0)?.x ?? NaN;
+const edgeMoth = (s: FireflySnapshot): FireflySnapshot["enemies"][number] | undefined =>
+  s.enemies.find((e) => e.row === 4 && e.col === 0);
+const edgeX = (s: FireflySnapshot): number => edgeMoth(s)?.x ?? NaN;
 const allIn = (s: FireflySnapshot): boolean => s.enemies.every((e) => e.state === "formation");
 
 await verify("firefly-breathing", (v) => {
@@ -32,8 +34,8 @@ await verify("firefly-breathing", (v) => {
   }
   check(allIn(s), "every enemy reaches the formation");
   check(sways.size > 2, "the formation sways while it fills", [...sways]);
-  // Wait for the breath to start: the sway reads 0 from then on.
-  for (let t = 0; t < breathePeriod && s.sway !== 0; t++) {
+  // Wait for the breath to start.
+  for (let t = 0; t < breathePeriod && s.formationPhase !== "breathe"; t++) {
     v.step(1);
     s = firefly(v);
   }
@@ -42,17 +44,20 @@ await verify("firefly-breathing", (v) => {
   const edges: number[] = [];
   const means = new Set<number>();
   let widest = 0;
+  let ticksMeasured = 0;
   for (let t = 0; t < breathePeriod; t++) {
     v.step(1);
     s = firefly(v);
-    if (!allIn(s)) break;
+    if (edgeMoth(s)?.state !== "formation") break;
+    ticksMeasured++;
     edges.push(edgeX(s));
     means.add(meanX(s));
     if (t === breathePeriod / 2) v.frame("2-formation-at-widest", 3);
     widest = Math.max(widest, edge0 - edgeX(s));
   }
   console.log(`edge moth x from ${edge0}: ${edges.join(",")}`);
-  check(s.sway === 0, "the formation stops swaying once it is full", s.sway);
+  check(ticksMeasured === breathePeriod, "the edge Moth stays in formation for a full breath", ticksMeasured);
+  check(s.formationPhase === "breathe" && s.sway === 0, "the formation stops swaying once it is full", s.sway);
   check(widest >= 8, "the edge Moth moves out at least 8 px at the widest breath", widest);
   check(edges.at(-1) !== undefined && Math.abs((edges.at(-1) ?? 0) - edge0) <= 1, "and back in", edges.at(-1));
   check(means.size === 1 && means.has(mean0), "the formation's mean x stays put", [mean0, ...means]);

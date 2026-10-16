@@ -46,6 +46,7 @@ import {
   formationPos,
   swayOffset,
   type FormationPhase,
+  type FormationState,
 } from "./rules.ts";
 
 /** The firefly's row and where it starts, centred. */
@@ -230,14 +231,16 @@ export class FireflySoftware implements FixedViewport {
 
   /** The formation's x offset this tick: 0 once it breathes. */
   sway(): number {
-    return this.formationPhase === "sway" ? swayOffset(this.ticks) : 0;
+    return formationPos({ x: 0, y: 0 }, this.formation()).x;
   }
 
   /** Where the slot `home` is in the formation this tick. */
   private slotPos(home: { x: number; y: number }): { x: number; y: number } {
-    return this.formationPhase === "sway"
-      ? formationPos(home, this.ticks, "sway")
-      : formationPos(home, this.ticks - this.breatheFrom, "breathe");
+    return formationPos(home, this.formation());
+  }
+
+  private formation(): FormationState {
+    return { phase: this.formationPhase, ticks: this.ticks, breatheFrom: this.breatheFrom };
   }
 
   /**
@@ -315,8 +318,7 @@ export class FireflySoftware implements FixedViewport {
     }
 
     this.startBreathing();
-    const allIn = this.enemies.every((e) => e.state !== "waiting" && e.state !== "entering");
-    if (!allIn || this.respawn > 0) return;
+    if (this.formationPhase !== "breathe" || this.respawn > 0) return;
     if (this.diveTimer > 0) this.diveTimer--;
     if (this.diveTimer > 0) return;
     this.diveTimer = d.diveInterval;
@@ -524,6 +526,7 @@ export class FireflySoftware implements FixedViewport {
       shots: this.shots.map((s) => ({ x: s.x, y: s.y, dx: s.dx, dy: s.dy })),
       diveTimer: this.diveTimer,
       sway: this.sway(),
+      formationPhase: this.formationPhase,
     };
   }
 }

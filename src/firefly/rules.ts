@@ -72,17 +72,20 @@ export function breathe(tick: number): number {
  */
 export type FormationPhase = "sway" | "breathe";
 
+/** The formation's clock: its phase, the stage tick, and the tick breathing began. */
+export interface FormationState {
+  phase: FormationPhase;
+  ticks: number;
+  breatheFrom: number;
+}
+
 /**
- * Where `slot` is at `tick` of `phase`, in whole pixels: shifted by the sway,
- * or scaled out from the centre by the breath.
+ * Where `slot` is in the formation `state`, in whole pixels: shifted by the
+ * sway, or scaled out from the centre by the breath.
  */
-export function formationPos(
-  slot: { x: number; y: number },
-  tick: number,
-  phase: FormationPhase,
-): { x: number; y: number } {
-  if (phase === "sway") return { x: slot.x + swayOffset(tick), y: slot.y };
-  const scale = breathe(tick);
+export function formationPos(slot: { x: number; y: number }, state: FormationState): { x: number; y: number } {
+  if (state.phase === "sway") return { x: slot.x + swayOffset(state.ticks), y: slot.y };
+  const scale = breathe(state.ticks - state.breatheFrom);
   // Round away from the centre either side, so mirrored slots stay mirrored.
   const out = (d: number): number => Math.sign(d) * Math.round(Math.abs(d) * scale);
   return { x: breatheCentre.x + out(slot.x - breatheCentre.x), y: breatheCentre.y + out(slot.y - breatheCentre.y) };

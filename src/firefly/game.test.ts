@@ -196,6 +196,7 @@ function settled(): FireflySoftware {
     e.state = "formation";
     e.path = null;
   }
+  f.formationPhase = "breathe";
   f.diveTimer = 1;
   return f;
 }

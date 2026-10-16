@@ -258,4 +258,5 @@ and `assets.Silent` (nil/false in the game), `Game.UpdateWithInput`,
 firefly's `PatternName`, and
 read-only `Snapshot()` methods in `golden.go` files.
 | `sweet-sam-modes` (trace) | #144: the change machine fills the hub's top-right corner and the scoreboard names it while the player faces it, so the run's hub walk reports `arcade.faced` "changeMachine" where it used to report null. Trace re-recorded; inputs unchanged. Golden frame unchanged |
-| `firefly-stages` (trace) | #233: once every enemy is in formation it stops swaying and breathes (expands and contracts about the centre column and top row). Inputs unchanged; trace re-recorded from tick 612 on |
+| `firefly-stages` (trace) | #233: once every enemy is in formation it stops swaying and breathes (expands and contracts about the centre column and top row). Inputs unchanged; trace re-recorded from tick 612 on; dives now wait for the breathing, and the snapshot reports `formationPhase` |
+| `arcade-enter-firefly` (trace) | #233: the Firefly snapshot reports `formationPhase`. Inputs unchanged; trace re-recorded |
