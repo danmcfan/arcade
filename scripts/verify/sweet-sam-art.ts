@@ -48,14 +48,14 @@ const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
-/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #151). */
+/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #151 and #153). */
 const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
   { tick: 772, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
   { tick: 1318, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
   { tick: 1400, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
-  { tick: 1632, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
-  { tick: 4818, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
+  { tick: 1694, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
+  { tick: 3146, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -202,9 +202,13 @@ function checkStop(v: Verify, name: string, shows: string): SweetSamSnapshot {
   const s = sweetSam(v);
   const frame = canvas(v);
   console.log(`${name} (tick ${v.snapshot(isGameSnapshot).tick}): ${shows}`);
-  const placed = s.enemies.map((e) => ({ e: { x: e.x, y: e.y }, p: placeBee(s, e) }));
-  if (!s.player.hidden) placed.unshift({ e: s.player, p: placeBear(s) });
+  const placed = s.enemies.map((e) => ({ e: { x: e.x, y: e.y, eyes: e.eyes }, p: placeBee(s, e) }));
+  if (!s.player.hidden) placed.unshift({ e: { ...s.player, eyes: false }, p: placeBear(s) });
   placed.forEach(({ e, p }, i) => {
+    if (e.eyes) {
+      console.log(`  --  the ${p.what} is eyes, a placeholder drawing until #196: not compared`);
+      return;
+    }
     if (nearBurst(s, e.x, e.y)) {
       console.log(`  --  the ${p.what} is under a particle burst: not compared`);
       return;
@@ -264,9 +268,9 @@ function play(v: Verify): void {
     }
     if (stop.tick === 1400)
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
-    if (stop.tick === 4818)
+    if (stop.tick === 3146)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick === 1632)
+    if (stop.tick === 1694)
       check(
         s.enemies.some((e) => e.flash),
         "a sleepy bee flashes awake",
@@ -302,8 +306,8 @@ function video(v: Verify): void {
       skipTo(v, script, 1400, 1580);
       replayLive(v, script, 1580, 1760);
       // A life lost.
-      skipTo(v, script, 1760, 4740);
-      replayLive(v, script, 4740, 4900);
+      skipTo(v, script, 1760, 3068);
+      replayLive(v, script, 3068, 3228);
       v.wait(500);
     },
     { scene: "game" },

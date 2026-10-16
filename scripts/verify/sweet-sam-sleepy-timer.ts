@@ -1,7 +1,7 @@
 // Sleepy bees pause the scatter/chase timer (#152) in a real browser
 // (`bun run verify sweet-sam-sleepy-timer`). Replays the sweet-sam-levels
 // fixture through the `?debug` test hook: the bear eats a honey pot at tick
-// 696 in chase, and `modeTicks` holds at its value for the whole sleepy time,
+// 772 in chase, and `modeTicks` holds at its value for the whole sleepy time,
 // then counts down again in the same mode. Writes a frame at each stop and a
 // video of the sleepy stretch to out/verify/sweet-sam-sleepy-timer/.
 
@@ -30,30 +30,30 @@ await verify("sweet-sam-sleepy-timer", (v) => {
   v.dismissNotice();
   loadFixture(v, levels);
 
-  skipTo(v, levels, 0, 695);
+  skipTo(v, levels, 0, 771);
   const before = sweetSam(v);
-  check(!sleepy(before), "tick 695: no bee is sleepy yet", before.enemies);
+  check(!sleepy(before), "tick 771: no bee is sleepy yet", before.enemies);
   v.frame("1-before-honey-pot", 2);
 
-  skipTo(v, levels, 695, 700);
+  skipTo(v, levels, 771, 776);
   const start = sweetSam(v);
-  check(sleepy(start), "tick 700: the honey pot made the bees sleepy");
+  check(sleepy(start), "tick 776: the honey pot made the bees sleepy");
   const held = start.modeTicks;
   v.frame("2-sleepy", 2);
 
-  skipTo(v, levels, 700, 1857);
+  skipTo(v, levels, 776, 1810);
   const end = sweetSam(v);
-  check(sleepy(end), "tick 1857: still sleepy");
+  check(sleepy(end), "tick 1810: still sleepy");
   check(
     end.modeTicks === held && end.modeIndex === start.modeIndex,
-    `modeTicks held at ${held} through 1157 sleepy ticks`,
+    `modeTicks held at ${held} through 1034 sleepy ticks`,
     [end.modeIndex, end.modeTicks],
   );
   v.frame("3-sleepy-ending", 2);
 
-  skipTo(v, levels, 1857, 1900);
+  skipTo(v, levels, 1810, 1860);
   const after = sweetSam(v);
-  check(!sleepy(after), "tick 1900: sleepy time is over");
+  check(!sleepy(after), "tick 1860: sleepy time is over");
   check(
     after.modeIndex === start.modeIndex && after.mode === start.mode && after.modeTicks < held,
     `the timer counts down again in the same mode (${held} → ${after.modeTicks})`,
@@ -66,8 +66,8 @@ await verify("sweet-sam-sleepy-timer", (v) => {
     () => {
       v.dismissNotice();
       loadFixture(v, levels);
-      skipTo(v, levels, 0, 640);
-      replayLive(v, levels, 640, 1920);
+      skipTo(v, levels, 0, 720);
+      replayLive(v, levels, 720, 1880);
       v.wait(500);
     },
     { scene: "game" },
