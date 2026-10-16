@@ -50,8 +50,18 @@ export interface Hazard {
   ladder: Ladder | null;
   /** Up (-1) or down (1), while climbing. */
   climbDir: -1 | 1;
-  /** The monkey's jump this hazard was last jumped in. */
-  jumpedIn: number;
+  /** The monkey's jump this hazard can score in: one that took off from its girder; 0 once scored. */
+  scorableIn: number;
+}
+
+/** Whether an end of ladder `l` touches girder `g`. */
+function ladderMeetsGirder(l: Ladder, g: Girder): boolean {
+  const x = ladderMiddle(l);
+  return (
+    x >= g.x0 &&
+    x < g.x1 &&
+    (Math.abs(girderTop(g, x) - ladderHead(l)) <= 2 || Math.abs(girderTop(g, x) - ladderFoot(l)) <= 2)
+  );
 }
 
 /** The girder whose top is within `tol` of y at x, the nearest if more than one. */
@@ -264,6 +274,7 @@ export class Run {
           m.airTop = m.y;
           m.jumps++;
           m.moving = false;
+          this.markJumpable(groundUnder(floor, m.x, m.y, 2));
           this.onSound("jump");
         } else if (up !== undefined || down !== undefined) {
           const l = up ?? down;
@@ -328,6 +339,20 @@ export class Run {
     }
   }
 
+  /** The hazards on girder `g`, or on a ladder it meets, can score in the jump just started. */
+  private markJumpable(g: Girder | undefined): void {
+    if (g === undefined) return;
+    const floor = this.currentFloor();
+    for (const h of this.hazards) {
+      const l = h.ladder;
+      const on =
+        h.footing === "climb" && l !== null
+          ? ladderMeetsGirder(l, g)
+          : h.footing === "ground" && groundUnder(floor, h.x, h.y, 2) === g;
+      if (on) h.scorableIn = this.monkey.jumps;
+    }
+  }
+
   /** The monkey stands on the girder under it, or starts to fall. */
   private settle(): void {
     const m = this.monkey;
@@ -357,7 +382,7 @@ export class Run {
       footing: "ground",
       ladder: null,
       climbDir: 1,
-      jumpedIn: 0,
+      scorableIn: 0,
     });
     if (--this.gearTimer <= 0) {
       this.hazards.push(at("gear"));
@@ -481,8 +506,14 @@ export class Run {
         return;
       }
       const below = h.y - m.y;
-      if (m.footing === "air" && h.jumpedIn !== m.jumps && dx < t.jumpOverX && below > 0 && below <= t.jumpOverHeight) {
-        h.jumpedIn = m.jumps;
+      if (
+        m.footing === "air" &&
+        h.scorableIn === m.jumps &&
+        dx < t.jumpOverX &&
+        below > 0 &&
+        below <= t.jumpOverHeight
+      ) {
+        h.scorableIn = 0;
         this.score += t.hazardPoints;
         this.onSound("hazard");
       }
