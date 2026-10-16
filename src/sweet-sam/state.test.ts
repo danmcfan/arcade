@@ -354,6 +354,51 @@ describe("eating", () => {
 });
 
 describe("collisions and death", () => {
+  test("a bee anywhere in the bear's tile catches it", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x + 3; // tile 14 spans x 112..119; the bear is at 112
+    step(s);
+    expect([s.snapshot().state, s.lives]).toEqual(["DEATHWAIT", 2]);
+  });
+
+  test("a sleepy bee anywhere in the bear's tile is eaten", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x + 7;
+    red.blueFrames = 50;
+    step(s);
+    expect([s.snapshot().state, red.eyes, s.lives]).toEqual(["PAUSE", true, 3]);
+  });
+
+  test("a bee in the neighbouring tile does not catch the bear, however close", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x - 1; // tile 13, 1 px from the bear in tile 14
+    red.direction = "LEFT";
+    s.player.direction = "RIGHT";
+    step(s);
+    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+  });
+
+  test("bear and bee swapping tiles in one tick pass through each other", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x - 0.5; // a bee moves under 1 px a tick
+    red.direction = "RIGHT";
+    step(s, 1, { ...NO_INPUT, left: true });
+    expect([Math.trunc(s.player.x / 8), Math.trunc(red.x / 8)]).toEqual([13, 14]);
+    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+  });
+
   test("a collision returns immediately: later bees skip updateBlue, nothing moves or is eaten", () => {
     const s = playing();
     const red = enemy(s, 0);
