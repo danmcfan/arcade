@@ -572,9 +572,9 @@ export class FireflySoftware implements FixedViewport {
     this.enemies = this.enemies.filter((e) => e !== moth);
     for (let i = 0; i < morphTrioSize; i++) {
       const k = i - (morphTrioSize - 1) / 2;
-      const shift = (p: Vec): Vec => ({ x: p.x + k * morphSpacing, y: p.y });
+      const beside = (p: Vec): Vec => ({ x: p.x + k * morphSpacing, y: p.y });
       const m: Enemy = { ...moth, kind: "morph", hp: enemyHp.morph, x: moth.x + k * morphSpacing, trio };
-      this.sendDiving(m, path.map((c) => ({ p0: shift(c.p0), p1: shift(c.p1), p2: shift(c.p2), p3: shift(c.p3) })), d);
+      this.sendDiving(m, path.map((c) => ({ p0: beside(c.p0), p1: beside(c.p1), p2: beside(c.p2), p3: beside(c.p3) })), d);
       this.enemies.push(m);
     }
   }
