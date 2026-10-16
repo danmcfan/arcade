@@ -15,11 +15,16 @@ import type { Tui } from "./tui.ts";
 // Running the same issue again skips the steps an earlier run finished (kept in
 // .sandcastle/logs/<issue>/state.json) and starts the stopped step over on the same branch.
 // `fresh` forgets those and starts from implement; the branch keeps its commits.
+//
+// Running it again once the PR is open starts a feedback round if the owner (the `gh` user) has
+// commented on the PR since the last round: their comments go to out/pipeline/feedback.md and
+// implement (address.md) → review → fix → check → PR body run again, then publish pushes and
+// rewrites the PR's title and body. With no new comments the run does nothing.
 const MAX_FIX_ROUNDS = 3;
 const OPUS = claudeCode("claude-opus-5-5", { effort: "low" });
 const SONNET = claudeCode("claude-sonnet-5-5", { effort: "low" });
 
-export const STEPS = ["setup", "implement", "review", "fix", "check", "pr", "publish"] as const;
+export const STEPS = ["feedback", "setup", "implement", "review", "fix", "check", "pr", "publish"] as const;
 
 /** The parts of the progress view the pipeline drives. */
 export type Reporter = Omit<Tui, "close">;
@@ -30,6 +35,10 @@ export interface Progress {
   url?: string;
   // publish found no commits and commented on the issue instead of opening a PR
   commented?: boolean;
+  /** Feedback rounds run so far. */
+  rounds?: number;
+  /** When the newest owner comment a feedback round took in was made, as ISO 8601. */
+  feedbackSeen?: string;
 }
 
 export interface IssueRun {
@@ -66,6 +75,29 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
   const enter = (name: string): void => {
     run.onStep?.(name);
   };
+
+  // A published PR with new owner comments starts a feedback round: every step after setup runs again.
+  enter("feedback");
+  const feedback = await newFeedback(progress, signal);
+  if (feedback === null)
+    tui.skip("feedback", progress.url === undefined ? "no PR yet" : "no open PR, or a round to carry on");
+  else if (feedback.comments === "") {
+    tui.done("feedback", "no new comments; nothing to do");
+    return progress;
+  } else {
+    const rounds = (progress.rounds ?? 0) + 1;
+    progress = { done: [], url: progress.url, rounds, feedbackSeen: feedback.seen };
+    // The last round's review and fixes would read as this round's.
+    for (const file of ["review.md", "fixes.md", "check.log"]) rmSync(`${savedOut}/pipeline/${file}`, { force: true });
+    await Bun.write(`${savedOut}/pipeline/feedback.md`, feedback.comments);
+    await Bun.write(`${logs}/feedback-${rounds}.md`, feedback.comments);
+    // The local branch may lag the pushed one (the owner can push to the PR too).
+    await $`git fetch -q origin ${branch}`.quiet();
+    const behind = await $`git merge-base --is-ancestor ${branch} origin/${branch}`.nothrow().quiet();
+    if (behind.exitCode === 0) await $`git branch -f ${branch} origin/${branch}`.quiet();
+    tui.done("feedback", `round ${rounds}: ${feedback.count} comment(s)`);
+  }
+  const answering = progress.rounds !== undefined && existsSync(`${savedOut}/pipeline/feedback.md`);
 
   enter("setup");
   tui.start("setup", "container and bun install");
@@ -115,7 +147,8 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
   };
 
   await phase("implement", "Opus", async () => {
-    await step("implement", "implement", OPUS, "implement.md");
+    if (answering) await step("implement", `address-${progress.rounds}`, OPUS, "address.md");
+    else await step("implement", "implement", OPUS, "implement.md");
   });
   await phase("review", "Opus", async () => {
     await step("review", "review", OPUS, "review.md");
@@ -175,6 +208,12 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
       // A run stopped after gh pr create but before recording it has already opened the PR.
       const existing = (await $`gh pr view ${branch} --json url --jq .url`.nothrow().quiet().text()).trim();
       const draft = green ? [] : ["--draft"];
+      if (existing !== "" && answering) {
+        await $`gh pr edit ${existing} --title ${pr.title} --body-file ${pipeline}/pr-body.md ${attachments}`
+          .cwd(sandbox.worktreePath)
+          .quiet();
+        if (green) await $`gh pr ready ${existing}`.nothrow().quiet();
+      }
       const url =
         existing ||
         (
@@ -188,6 +227,67 @@ export async function runIssue(run: IssueRun): Promise<Progress> {
     }
   }
   return progress;
+}
+
+interface Feedback {
+  /** The comments as Markdown, or "" when there are none. */
+  comments: string;
+  count: number;
+  seen: string | undefined;
+}
+
+// The owner's comments on the run's open PR made after `progress.feedbackSeen`, or null when
+// there is no open PR to take feedback from.
+async function newFeedback(progress: Progress, signal: AbortSignal): Promise<Feedback | null> {
+  const { url } = progress;
+  if (url === undefined || progress.commented === true || !progress.done.includes("publish")) return null;
+  const state = (await untilAborted($`gh pr view ${url} --json state --jq .state`.quiet().text(), signal)).trim();
+  if (state !== "OPEN") return null;
+  const owner = (await $`gh api user --jq .login`.quiet().text()).trim();
+  const number = url.split("/").at(-1) ?? "";
+  // Conversation comments, review summaries and inline review comments, each as {at, body, where}.
+  const mine = `select(.user.login == "${owner}" and (.body // "") != "")`;
+  const found: Comment[] = [
+    ...(await query(`issues/${number}/comments`, `.[] | ${mine} | {at: .created_at, body, where: "comment"}`)),
+    ...(await query(`pulls/${number}/reviews`, `.[] | ${mine} | {at: .submitted_at, body, where: "review"}`)),
+    ...(await query(
+      `pulls/${number}/comments`,
+      `.[] | ${mine} | {at: .created_at, body, where: "\\(.path):\\(.line // .original_line)", hunk: .diff_hunk}`,
+    )),
+  ].filter((value): value is Comment => isComment(value));
+  // Each list comes oldest first; ISO 8601 times compare as strings.
+  const fresh = found.filter(({ at }) => progress.feedbackSeen === undefined || at > progress.feedbackSeen);
+  const comments = fresh
+    .map(({ at, body, where, hunk }) =>
+      [`## ${where} (${at})`, hunk === undefined ? "" : `\n\`\`\`diff\n${hunk}\n\`\`\`\n`, body].join("\n"),
+    )
+    .join("\n\n");
+  const seen = fresh.reduce<string | undefined>(
+    (latest, { at }) => (latest === undefined || at > latest ? at : latest),
+    progress.feedbackSeen,
+  );
+  return { comments, count: fresh.length, seen };
+}
+
+// One JSON value per line from a paginated GitHub API read; gh fills {owner}/{repo} from the checkout.
+async function query(path: string, jq: string): Promise<unknown[]> {
+  const text = await $`gh api --paginate repos/{owner}/{repo}/${path} --jq ${jq}`.quiet().text();
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .map((line): unknown => JSON.parse(line));
+}
+
+interface Comment {
+  at: string;
+  body: string;
+  where: string;
+  hunk?: string;
+}
+
+function isComment(value: unknown): value is Comment {
+  if (typeof value !== "object" || value === null) return false;
+  return "at" in value && typeof value.at === "string" && "body" in value && typeof value.body === "string";
 }
 
 // Rejects as soon as `signal` aborts, for work that takes no AbortSignal of its own.

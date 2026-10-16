@@ -8,7 +8,7 @@ Commits under review:
 
 # Task
 
-1. Use the `/code-review` skill with fixed point `main`. The spec is issue #{{ISSUE_NUMBER}}: read it with `gh issue view {{ISSUE_NUMBER}} --comments`. Do not ask the user anything; nobody is there to answer.
+1. Use the `/code-review` skill with fixed point `main`. The spec is issue #{{ISSUE_NUMBER}}: read it with `gh issue view {{ISSUE_NUMBER}} --comments`. Do not ask the user anything; nobody is there to answer. If `out/pipeline/feedback.md` exists, the PR is already open and this round answers the owner's comments in it: they are part of the spec too, and any comment the branch does not yet answer is a **must fix** Spec finding.
 2. On the Standards axis, also use the `/codebase-design` skill's vocabulary: flag shallow modules, leaky seams and interfaces that could be deeper.
 3. Decide what happens to each finding. A cheaper agent applies the fixes and follows your verdicts, so commit to one per finding; do not hedge with "judgement call":
    - **must fix**: a bug, a spec gap, or a finding that undercuts what the issue is for.
