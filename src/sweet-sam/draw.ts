@@ -19,10 +19,22 @@ import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
+import { intermissionY, type IntermissionPose } from "./intermission.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
+import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
+import {
+  beeRows,
+  bearRows,
+  beeSheet,
+  frightenedRowOffset,
+  pelletAnimFrameCount,
+  pelletAnimHoldTicks,
+  pointToTile,
+  tileSize,
+  type Entity,
+  type Tile,
+} from "./entity.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
-import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -47,6 +59,10 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
   const [ox, oy] = s.camera.cameraOffset();
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;
+  if (s.intermission() !== null) {
+    drawIntermission(s, screen, bufX, bufY);
+    return;
+  }
   drawBackground(s, screen, bufX, bufY);
   drawScore(s, screen, bufX, bufY);
   drawHighScore(s, screen, bufX, bufY);
@@ -64,6 +80,31 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
   drawFlowerPopup(s, screen, bufX, bufY);
   s.particles.draw(screen, bufX, bufY);
   drawMode(s, screen, bufX, bufY, debug);
+}
+
+/** A cutscene (#160): its actors over a black screen, under the score and lives. */
+function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+  const poses = s.intermissionPoses();
+  if (poses === null) return;
+  screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
+  drawScore(s, screen, bufX, bufY);
+  drawHighScore(s, screen, bufX, bufY);
+  drawLevel(s, screen, bufX, bufY);
+  screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
+    for (const pose of poses) {
+      drawPose(pose, screen, bufX, bufY);
+    }
+  });
+}
+
+function drawPose(p: IntermissionPose, screen: Surface, bufX: number, bufY: number): void {
+  const sheet = p.sprite === "bear" ? imageBear : beeSheet("red");
+  const row = p.sprite === "bear" ? bearRows[p.facing] : beeRows[p.facing] + (p.frightened ? frightenedRowOffset : 0);
+  const sx = sheet.sx + frameSize * p.frame;
+  const sy = sheet.sy + frameSize * row;
+  const frame = sub(sheet, sx, sy, sx + frameSize, sy + frameSize);
+  const half = (frameSize * p.scale) / 2;
+  screen.draw(frame, p.x - half + bufX, intermissionY - half + bufY, { scale: p.scale });
 }
 
 function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
@@ -391,9 +432,9 @@ function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): voi
   let row = e.direction === "" ? 0 : (e.frameDirection?.[e.direction] ?? 0);
 
   if (e.blueFrames > 0) {
-    row += 2;
+    row += frightenedRowOffset;
     if (e.flash) {
-      row += 2;
+      row += frightenedRowOffset;
     }
   }
 

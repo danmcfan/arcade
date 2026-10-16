@@ -20,6 +20,7 @@ import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
 import {
   diveWeight,
   difficulty,
+  type Difficulty,
   enemyHalfSize,
   enemyHp,
   enemySpeed,
@@ -33,7 +34,6 @@ import {
   hitEffectTicks,
   points,
   respawnTicks,
-  shotMaxDrift,
   shotSpacing,
   shotSpeed,
   sparkCooldown,
@@ -77,10 +77,10 @@ function curveLength(c: BezierConfig): number {
   return len;
 }
 
-function followPath(e: Enemy, path: BezierConfig): void {
+function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
   e.path = path;
   e.t = 0;
-  e.tStep = enemySpeed / Math.max(1, curveLength(path));
+  e.tStep = speed / Math.max(1, curveLength(path));
 }
 
 /** A fresh stage: every slot filled, waiting to fly in group by group. */
@@ -247,7 +247,7 @@ export class FireflySoftware implements FixedViewport {
     if (this.diveTimer > 0) this.diveTimer--;
     if (this.diveTimer > 0) return;
     this.diveTimer = d.diveInterval;
-    for (let n = 0; n < d.diversPerDive; n++) this.startDive(d.shotsPerDive);
+    for (let n = 0; n < d.diversPerDive; n++) this.startDive(d);
   }
 
   /** One step along the enemy's curve; at its end it heads for its slot. */
@@ -269,7 +269,7 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** Picks an enemy in formation, Wasps most often, and sends it at the firefly. */
-  private startDive(shots: number): void {
+  private startDive(d: Difficulty): void {
     const candidates = this.enemies.filter((e) => e.state === "formation" && e.deadFrames === 0);
     const total = candidates.reduce((t, e) => t + diveWeight[e.kind], 0);
     if (total === 0) return;
@@ -292,8 +292,8 @@ export class FireflySoftware implements FixedViewport {
         : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
     e.state = "diving";
     e.outOfFormation = true;
-    followPath(e, path);
-    e.shotsLeft = shots;
+    followPath(e, path, d.diveSpeed);
+    e.shotsLeft = d.shotsPerDive;
     e.shotTimer = firstShotDelay;
   }
 
@@ -303,7 +303,8 @@ export class FireflySoftware implements FixedViewport {
     if (e.shotTimer > 0) e.shotTimer--;
     if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
-    const drift = Math.max(-shotMaxDrift, Math.min(shotMaxDrift, (this.player.x - e.x) / ticksToPlayer));
+    const maxDrift = difficulty(this.stage).shotDrift;
+    const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
     this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
