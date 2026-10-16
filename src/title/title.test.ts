@@ -11,7 +11,9 @@ import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
 import { bandRows, cell, charset, glyphHeight, inkOrder, sheetColumns, type Ink } from "../ui/glyphs.ts";
-import { canDraw, keyHeight, textWidth } from "../ui/text.ts";
+import { canDraw, keyHeight, textHeight, textWidth } from "../ui/text.ts";
+import { siteAddress } from "../ui/notice.ts";
+import { panelCorner } from "../ui/panelArt.ts";
 import { standardControls } from "../ui/menu.ts";
 import { confirmLines, introLines, introPromptTop, screenHeight, screenWidth } from "./draw.ts";
 import { memoryStore, parseSave, type SaveData, type SaveStore } from "./save.ts";
@@ -931,7 +933,8 @@ describe("drawing", () => {
     const r = recordingSurface();
     t.draw(r.surface);
     // title-logo.png once; its animation is painted over it (src/title/logo.test.ts).
-    expect(r.sprites.map(([name]) => name)).toEqual(["titleLogo"]);
+    expect(r.sprites[0]?.[0]).toBe("titleLogo");
+    expect(new Set(r.sprites.slice(1).map(([name]) => name))).toEqual(new Set(["panel"]));
     expect(r.text("blue")).toBe("GAMES WITHIN A GAME");
     expect(r.text("yellow")).toBe(">NEW GAME<");
     expect(r.text("white")).not.toContain("CONTINUE");
@@ -961,15 +964,33 @@ describe("drawing", () => {
     expect(p.keys()).toEqual([]);
   });
 
-  test("the logo, tagline and menu sit centred on the screen, with or without Continue", () => {
+  test("the logo hangs a margin below the top and the site address a margin above the bottom", () => {
     for (const t of [new Title(), withSave()]) {
       const r = recordingSurface();
       t.draw(r.surface);
-      const top = Math.min(...r.sprites.map(([, , y]) => y));
-      const bottom = Math.max(...r.glyphs.map((g) => g.y)) + 7;
-      // The logo bobs a pixel either way, so allow 2 px of slack.
-      expect(Math.abs(top - (screenHeight - bottom))).toBeLessThanOrEqual(2);
+      const logo = r.sprites.find(([name]) => name === "titleLogo");
+      expect(logo?.[2]).toBe(8);
+      expect(r.text("grey")).toBe(siteAddress);
+      const footer = r.glyphs.filter((g) => g.ink === "grey");
+      expect(Math.max(...footer.map((g) => g.y)) + textHeight).toBe(screenHeight - 8);
     }
+  });
+
+  test("the menu sits in a panel that stays put with or without Continue, its items centred in it", () => {
+    const layouts = [new Title(), withSave()].map((t) => {
+      const r = recordingSurface();
+      t.draw(r.surface);
+      const panel = r.sprites.filter(([name]) => name === "panel");
+      const top = Math.min(...panel.map(([, , y]) => y));
+      const bottom = Math.max(...panel.map(([, , y]) => y)) + panelCorner;
+      const items = r.glyphs.filter((g) => g.ink === "white" || g.ink === "yellow");
+      const first = Math.min(...items.map((g) => g.y));
+      const last = Math.max(...items.map((g) => g.y)) + textHeight;
+      return { panel: panel.map(([, x, y]) => `${x},${y}`).join(" "), above: first - top, below: bottom - last };
+    });
+    expect(layouts[0]?.panel).not.toBe("");
+    expect(layouts[1]?.panel).toBe(layouts[0]?.panel);
+    for (const l of layouts) expect(Math.abs(l.above - l.below)).toBeLessThanOrEqual(1);
   });
 
   test("with a save that holds a high score, the menu does not show it", () => {

@@ -5,6 +5,7 @@
 import { imageArcade, imageTitleLogo } from "../engine/assets.ts";
 import type { Surface } from "../engine/surface.ts";
 import { blinkOn } from "../ui/blink.ts";
+import { siteAddress } from "../ui/notice.ts";
 import {
   dim,
   dimColour,
@@ -70,26 +71,34 @@ function drawLogo(screen: Surface, left: number, top: number, tick: number): voi
   for (const p of logoOverlay(tick)) screen.fillRect(left + p.x, top + p.y, 1, 1, p.colour);
 }
 
-/** Pixels from the logo to the tagline, and from the tagline to the menu. */
-const taglineGap = 8;
-const menuGap = 16;
+/** Pixels between the screen's edge and the logo above, the site address below. */
+const margin = 8;
+/** Top of the tagline, under the logo. */
+const taglineTop = margin + imageTitleLogo.h + 6;
+/** The site address along the bottom margin. */
+const footerTop = screenHeight - margin - textHeight;
+/** The panel the menu sits in: sized for the longest menu, centred between the tagline and the site address. */
+const menuPanelW = 112;
+const menuPanelH = 44;
+const menuPanelTop = Math.trunc((taglineTop + textHeight + footerTop - menuPanelH) / 2);
 /** Pixels from one menu item's top to the next (drawMenuItems). */
 const menuRow = 12;
 
 /**
- * The logo, the tagline and the title menu with `cursor` selected, as one
- * block centred on the screen both ways.
+ * The logo at the top margin, the tagline under it, the title menu with
+ * `cursor` selected centred in its panel, and the site address on the
+ * bottom margin. Everything has a fixed place, so Continue appearing moves
+ * nothing but the items in the panel.
  */
 function drawMenuBody(screen: Surface, t: Title, cursor: number): void {
   fillBackground(screen);
   const items = t.menuItems();
+  drawLogo(screen, centre - Math.trunc(imageTitleLogo.w / 2), margin, t.tick);
+  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, taglineTop, "blue");
+  drawPanel(screen, centre - menuPanelW / 2, menuPanelTop, menuPanelW, menuPanelH);
   const menuHeight = (items.length - 1) * menuRow + textHeight;
-  const height = imageTitleLogo.h + taglineGap + textHeight + menuGap + menuHeight;
-  const top = Math.trunc((screenHeight - height) / 2);
-  const tagline = top + imageTitleLogo.h + taglineGap;
-  drawLogo(screen, centre - Math.trunc(imageTitleLogo.w / 2), top, t.tick);
-  drawTextCentered(screen, "GAMES WITHIN A GAME", centre, tagline, "blue");
-  drawMenuItems(screen, items, cursor, tagline + textHeight + menuGap, t.tick, centre);
+  drawMenuItems(screen, items, cursor, menuPanelTop + Math.trunc((menuPanelH - menuHeight) / 2), t.tick, centre);
+  drawTextCentered(screen, siteAddress, centre, footerTop, "grey");
 }
 
 function drawMenu(screen: Surface, t: Title): void {
