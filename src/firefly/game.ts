@@ -43,7 +43,9 @@ import {
   sparkCooldown,
   sparkSpeed,
   stageIntroTicks,
+  formationPos,
   swayOffset,
+  type FormationPhase,
 } from "./rules.ts";
 
 /** The firefly's row and where it starts, centred. */
@@ -195,8 +197,12 @@ export class FireflySoftware implements FixedViewport {
   enemies: Enemy[] = newStageEnemies();
   shots: Shot[] = [];
   diveTimer = difficulty(1).diveInterval;
-  /** Ticks since the run started: drives the formation's sway. */
+  /** Ticks since the run started: drives the formation's sway and breath. */
   ticks = 0;
+  /** Swaying while the stage's enemies fly in, breathing once every one has arrived. */
+  formationPhase: FormationPhase = "sway";
+  /** `ticks` when the formation began to breathe. */
+  breatheFrom = 0;
   /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
   readonly dials: ScoreDials;
 
@@ -222,9 +228,27 @@ export class FireflySoftware implements FixedViewport {
     this.dials.tick(this.score(), this.highScore);
   }
 
-  /** The formation's x offset this tick. */
+  /** The formation's x offset this tick: 0 once it breathes. */
   sway(): number {
-    return swayOffset(this.ticks);
+    return this.formationPhase === "sway" ? swayOffset(this.ticks) : 0;
+  }
+
+  /** Where the slot `home` is in the formation this tick. */
+  private slotPos(home: { x: number; y: number }): { x: number; y: number } {
+    return this.formationPhase === "sway"
+      ? formationPos(home, this.ticks, "sway")
+      : formationPos(home, this.ticks - this.breatheFrom, "breathe");
+  }
+
+  /**
+   * Starts the breathing once every enemy is in its slot, on a tick the sway
+   * is centred so the formation does not jump.
+   */
+  private startBreathing(): void {
+    if (this.formationPhase !== "sway" || swayOffset(this.ticks) !== 0) return;
+    if (!this.enemies.every((e) => e.state === "formation" || e.deadFrames > 0)) return;
+    this.formationPhase = "breathe";
+    this.breatheFrom = this.ticks;
   }
 
   private movePlayer(i: Input): void {
@@ -247,7 +271,6 @@ export class FireflySoftware implements FixedViewport {
 
   private moveEnemies(): void {
     const d = difficulty(this.stage);
-    const sway = this.sway();
     for (const e of this.enemies) {
       if (e.deadFrames > 0) continue;
       const px = e.x;
@@ -258,12 +281,11 @@ export class FireflySoftware implements FixedViewport {
           break;
         case "entering":
         case "diving":
-          this.stepPath(e, sway);
+          this.stepPath(e);
           if (e.state === "diving") this.dropShot(e);
           break;
         case "joining": {
-          const tx = e.home.x + sway;
-          const ty = e.home.y;
+          const { x: tx, y: ty } = this.slotPos(e.home);
           const dist = Math.hypot(tx - e.x, ty - e.y);
           if (dist <= enemySpeed) {
             e.x = tx;
@@ -276,10 +298,12 @@ export class FireflySoftware implements FixedViewport {
           }
           break;
         }
-        case "formation":
-          e.x = e.home.x + sway;
-          e.y = e.home.y;
+        case "formation": {
+          const p = this.slotPos(e.home);
+          e.x = p.x;
+          e.y = p.y;
           break;
+        }
       }
       if (e.state === "formation") {
         e.dx = 0;
@@ -290,6 +314,7 @@ export class FireflySoftware implements FixedViewport {
       }
     }
 
+    this.startBreathing();
     const allIn = this.enemies.every((e) => e.state !== "waiting" && e.state !== "entering");
     if (!allIn || this.respawn > 0) return;
     if (this.diveTimer > 0) this.diveTimer--;
@@ -299,7 +324,7 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** One step along the enemy's curve; at its end it heads for its slot. */
-  private stepPath(e: Enemy, sway: number): void {
+  private stepPath(e: Enemy): void {
     const path = e.path;
     if (path === null) throw new Error(`${e.state} enemy without a path`);
     e.t += e.tStep;
@@ -311,7 +336,7 @@ export class FireflySoftware implements FixedViewport {
     e.state = "joining";
     if (e.y > fieldHeight) {
       // Off the bottom: come back in from above the slot.
-      e.x = e.home.x + sway;
+      e.x = this.slotPos(e.home).x;
       e.y = -offscreenMargin;
     }
   }
@@ -446,6 +471,7 @@ export class FireflySoftware implements FixedViewport {
     this.stage++;
     this.stageTick = 0;
     this.enemies = newStageEnemies();
+    this.formationPhase = "sway";
     this.shots = [];
     this.diveTimer = difficulty(this.stage).diveInterval;
   }

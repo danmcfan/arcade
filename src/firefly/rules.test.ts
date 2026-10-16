@@ -1,5 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { difficulty, entryWaves, formation, points, swayOffset, swayAmplitude, type EnemyKind } from "./rules.ts";
+import {
+  breathe,
+  breathePeriod,
+  difficulty,
+  entryWaves,
+  formation,
+  formationPos,
+  points,
+  swayOffset,
+  swayAmplitude,
+  type EnemyKind,
+} from "./rules.ts";
 
 describe("formation", () => {
   const slots = formation();
@@ -39,6 +50,50 @@ describe("formation", () => {
     const offsets = Array.from({ length: 400 }, (_, t) => swayOffset(t));
     expect(Math.max(...offsets)).toBe(swayAmplitude);
     expect(Math.min(...offsets)).toBe(-swayAmplitude);
+  });
+});
+
+describe("formationPos", () => {
+  const slots = formation();
+  const peak = breathePeriod / 2;
+
+  test("while the formation fills, every slot sways by the same x offset", () => {
+    for (const t of [0, 10, 40, 100]) {
+      for (const s of slots) expect(formationPos(s, t, "sway")).toEqual({ x: s.x + swayOffset(t), y: s.y });
+    }
+  });
+
+  test("breathing starts and ends each pulse at the slots themselves, widest halfway", () => {
+    expect(breathe(0)).toBe(1);
+    expect(breathe(breathePeriod)).toBe(1);
+    expect(breathe(peak)).toBeGreaterThan(1);
+    for (let t = 0; t < breathePeriod; t++) expect(breathe(t)).toBeLessThanOrEqual(breathe(peak));
+  });
+
+  test("breathing keeps the centre column fixed and moves outer columns apart at the peak", () => {
+    const owls = slots.filter((s) => s.row === 0);
+    const [left, right] = [owls[0], owls.at(-1)];
+    if (left === undefined || right === undefined) throw new Error("no owls");
+    const width = (t: number): number => formationPos(right, t, "breathe").x - formationPos(left, t, "breathe").x;
+    expect(width(peak)).toBeGreaterThan(width(0));
+    const centre = { kind: "moth" as const, row: 3, col: 0, x: 112, y: slots[30]?.y ?? 0 };
+    for (let t = 0; t < breathePeriod; t++) expect(formationPos(centre, t, "breathe").x).toBe(112);
+  });
+
+  test("breathing moves the rows apart at the peak", () => {
+    const top = slots[0];
+    const bottom = slots.at(-1);
+    if (top === undefined || bottom === undefined) throw new Error("no slots");
+    const height = (t: number): number => formationPos(bottom, t, "breathe").y - formationPos(top, t, "breathe").y;
+    expect(height(peak)).toBeGreaterThan(height(0));
+  });
+
+  test("breathing keeps every slot on the playfield", () => {
+    for (const s of slots) {
+      const p = formationPos(s, peak, "breathe");
+      expect(p.x - 8).toBeGreaterThanOrEqual(0);
+      expect(p.x + 8).toBeLessThanOrEqual(224);
+    }
   });
 });
 

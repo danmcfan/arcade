@@ -25,6 +25,7 @@ import {
   stageIntroTicks,
   startLives,
   swayOffset,
+  breathePeriod,
   type EnemyKind,
 } from "./rules.ts";
 
@@ -151,6 +152,25 @@ describe("stage start", () => {
     expect(t).toBeLessThan(2000);
     const sway = swayOffset(f.ticks);
     expect(f.enemies.map((e) => [e.kind, e.x - sway, e.y])).toEqual(formation().map((s) => [s.kind, s.x, s.y]));
+  });
+});
+
+describe("breathing", () => {
+  test("once every enemy is in formation, the edges move in and out about a fixed centre", () => {
+    rng.seed(1);
+    const f = new FireflySoftware();
+    let t = 0;
+    while (f.formationPhase !== "breathe" && t++ < 2000) f.update(NO_INPUT);
+    expect(t).toBeLessThan(2000);
+    expect(f.enemies.every((e) => e.state === "formation")).toBe(true);
+    const edge = f.enemies.find((e) => e.row === 4 && e.col === 0);
+    if (edge === undefined) throw new Error("no edge moth");
+    const meanX = (): number => f.enemies.reduce((sum, e) => sum + e.x, 0) / f.enemies.length;
+    const [x0, mean0] = [edge.x, meanX()];
+    run(f, breathePeriod / 2);
+    expect(f.enemies.every((e) => e.state === "formation")).toBe(true);
+    expect(edge.x).toBeLessThan(x0);
+    expect(meanX()).toBe(mean0);
   });
 });
 

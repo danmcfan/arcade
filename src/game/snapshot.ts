@@ -345,7 +345,7 @@ export interface FireflySnapshot {
   shots: FireflyShotSnapshot[];
   /** Ticks until the next dive may start. */
   diveTimer: number;
-  /** The formation's x offset this tick. */
+  /** The formation's x offset this tick: 0 once it breathes. */
   sway: number;
 }
 

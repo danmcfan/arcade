@@ -54,6 +54,40 @@ export function swayOffset(tick: number): number {
   return Math.round(tri * swayAmplitude);
 }
 
+/** Ticks of one breath, and how much wider the formation is at its fullest (1/8 more). */
+export const breathePeriod = 128;
+const breatheGrowth = 1 / 8;
+/** The point the formation breathes out from: the playfield's centre column, the top row. */
+const breatheCentre = { x: fieldWidth / 2, y: formationTop };
+
+/** The formation's scale `tick` ticks into breathing: 1 at the start of each breath, widest halfway. */
+export function breathe(tick: number): number {
+  const phase = (tick % breathePeriod) / breathePeriod;
+  return 1 + breatheGrowth * (phase < 0.5 ? phase * 2 : 2 - phase * 2);
+}
+
+/**
+ * What the formation is doing: swaying side to side while enemies fly in,
+ * then breathing (expanding and contracting) once every one has arrived.
+ */
+export type FormationPhase = "sway" | "breathe";
+
+/**
+ * Where `slot` is at `tick` of `phase`, in whole pixels: shifted by the sway,
+ * or scaled out from the centre by the breath.
+ */
+export function formationPos(
+  slot: { x: number; y: number },
+  tick: number,
+  phase: FormationPhase,
+): { x: number; y: number } {
+  if (phase === "sway") return { x: slot.x + swayOffset(tick), y: slot.y };
+  const scale = breathe(tick);
+  // Round away from the centre either side, so mirrored slots stay mirrored.
+  const out = (d: number): number => Math.sign(d) * Math.round(Math.abs(d) * scale);
+  return { x: breatheCentre.x + out(slot.x - breatheCentre.x), y: breatheCentre.y + out(slot.y - breatheCentre.y) };
+}
+
 /** Lives at the start of a run. No extra lives come from score. */
 export const startLives = 3;
 
