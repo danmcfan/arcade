@@ -123,6 +123,14 @@ export class Game implements Scene {
     software.jumpTo(stage);
   }
 
+  /** Set the running minigame's score to `score` (test hook); throws when it has none to set. */
+  scoreTo(score: number): void {
+    const software = this.run?.software;
+    if (software?.scoreTo === undefined)
+      throw new Error(`Game.scoreTo: ${software?.name ?? "the hub"} has no score to set`);
+    software.scoreTo(score);
+  }
+
   /**
    * A position in or beyond a wall or the prize counter (a stale or edited
    * save) keeps the start position. The walls frame the hub image, so

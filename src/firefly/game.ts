@@ -657,6 +657,10 @@ export class FireflySoftware implements FixedViewport {
     this.fireDelay = 0;
   }
 
+  scoreTo(score: number): void {
+    this.points = score;
+  }
+
   jumpTo(stage: number): void {
     this.stage = stage - 1;
     this.nextStage();

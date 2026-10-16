@@ -443,6 +443,14 @@ function killAt(f: FireflySoftware, score: number): { gained: number; sounds: So
 }
 
 describe("extra lives", () => {
+  test("scoreTo sets the score, and the next tick pays any extra life it reaches", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.scoreTo(20_000);
+    expect([f.score(), f.lives]).toEqual([20_000, startLives]);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 1);
+  });
+
   const moth = points("moth", false);
 
   test("crossing 20,000, 70,000 and 140,000 each adds one life with the extra-life jingle", () => {

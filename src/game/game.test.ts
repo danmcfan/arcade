@@ -40,6 +40,10 @@ class FakeSoftware implements Software {
   jumpTo(stage: number): void {
     this.jumps.push(stage);
   }
+  readonly scores: number[] = [];
+  scoreTo(score: number): void {
+    this.scores.push(score);
+  }
   draw(screen: Surface, buffer: number): void {
     this.draws.push([screen, buffer]);
   }
@@ -134,6 +138,22 @@ describe("jumpTo", () => {
     const { game } = newGame();
     expect(() => {
       game.jumpTo(2);
+    }).toThrow();
+  });
+});
+
+describe("scoreTo", () => {
+  test("sets the running minigame's score", () => {
+    const { game, built } = newGame();
+    enterSweetSam(game);
+    game.scoreTo(19_990);
+    expect(built[0]?.scores).toEqual([19_990]);
+  });
+
+  test("throws in the hub, with no minigame to score", () => {
+    const { game } = newGame();
+    expect(() => {
+      game.scoreTo(100);
     }).toThrow();
   });
 });

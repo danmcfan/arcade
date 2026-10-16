@@ -120,6 +120,8 @@ export interface Verify {
   step(ticks: number, input?: Partial<Input>): void;
   /** Hook only: jump the running minigame to stage (or level) `stage`. */
   jump(stage: number): void;
+  /** Hook only: set the running minigame's score to `score`. */
+  scoreTo(score: number): void;
   /** Hook only: hold a key for one tick, then release for one tick. */
   tap(key: keyof Input): void;
   /** Hook only: the current scene snapshot, checked with `is` (e.g. `isTitleSnapshot`). */
@@ -412,6 +414,9 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     },
     jump(stage) {
       page.eval(`window.__arcade.jump(${stage}); "ok"`);
+    },
+    scoreTo(score) {
+      page.eval(`window.__arcade.scoreTo(${score}); "ok"`);
     },
     tap(key) {
       v.step(1, { [key]: true });
