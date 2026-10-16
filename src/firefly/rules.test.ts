@@ -1,9 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  beamDiveChance,
+  beamHeight,
+  beamTicks,
+  beamWidth,
   breathe,
   breathePeriod,
   difficulty,
   entryWaves,
+  fieldHeight,
   formation,
   formationPos,
   points,
@@ -194,5 +199,12 @@ describe("points for a diving Owl", () => {
   test("escorts shot earlier count for nothing in formation or for other kinds", () => {
     expect(points("owl", false, 2)).toBe(points("owl", false));
     expect(points("wasp", true, 2)).toBe(points("wasp", true));
+  });
+});
+
+describe("tractor beam", () => {
+  test("an Owl beams from the bottom third, a beam 24 px wide, for 3 seconds, on half its dives", () => {
+    expect(fieldHeight - (264 - beamHeight)).toBeLessThanOrEqual(fieldHeight / 3);
+    expect([beamHeight, beamWidth, beamTicks, beamDiveChance]).toEqual([72, 24, 180, 0.5]);
   });
 });

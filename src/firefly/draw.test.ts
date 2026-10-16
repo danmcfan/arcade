@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
+  imageCaptive,
   imageCabinetFirefly,
   imageFirefly,
   imageFireflyBackground,
@@ -19,8 +20,9 @@ import { FakeCanvas, canvasElement, stubSurface } from "../engine/fakeCanvas.tes
 import { setCanvasFactory } from "../engine/surface.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
-import { FireflySoftware, newFireflySoftware, playerY } from "./game.ts";
-import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
+import { captiveColours } from "./art.ts";
+import { FireflySoftware, beamY, newFireflySoftware, playerY } from "./game.ts";
+import { beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 // The score dials draw each digit through an offscreen cell, so give it a canvas.
 beforeAll(() => {
@@ -210,5 +212,45 @@ describe("firefly draw", () => {
     f.update(NO_INPUT);
     expect(f.over).toBe(false);
     expect(of(drawCalls(f), imageFirefly)).toContainEqual({ sprite: imageFirefly, x: f.player.x, y: playerY });
+  });
+});
+
+describe("firefly tractor beam", () => {
+  test("a captured firefly does not burst; its captive is drawn red above the Owl", () => {
+    const { f, e } = onlyEnemy("owl", 100, 60);
+    f.respawn = respawnTicks;
+    f.captured = true;
+    f.captive = { owl: e, x: 100, y: 44 };
+    const calls = drawCalls(f);
+    expect(of(calls, imageHit)).toEqual([]);
+    expect(of(calls, imageCaptive).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 8, 44 + 8 - 8]]);
+    // Only the spare lives are left.
+    expect(of(calls, imageFirefly).length).toBe(2);
+  });
+
+  test("the captive sprite is the firefly in reds: its greys, white, lime and yellow turn red, orange or purple", () => {
+    expect(Object.keys(captiveColours).toSorted()).toEqual(["g", "l", "m", "w", "y"]);
+    for (const to of Object.values(captiveColours)) expect(["r", "o", "p"]).toContain(to);
+  });
+
+  test("a beaming Owl shines its beam down to the firefly's row, beamWidth wide", () => {
+    const { f, e } = onlyEnemy("owl", 100, beamY);
+    e.state = "beaming";
+    e.beamTicks = 100;
+    const rects: number[][] = [];
+    f.draw(stubSurface({ draw: () => {}, fillRect: (x, y, w, h) => void rects.push([x, y, w, h]) }), 0);
+    expect(rects.length).toBeGreaterThan(0);
+    expect(Math.min(...rects.map(([x]) => x ?? 0))).toBe(8 + 100 - beamWidth / 2);
+    expect(Math.max(...rects.map(([x, , w]) => (x ?? 0) + (w ?? 0)))).toBe(8 + 100 + beamWidth / 2);
+    expect(Math.max(...rects.map(([, y, , h]) => (y ?? 0) + (h ?? 0)))).toBe(8 + playerY + 8);
+  });
+
+  test("no beam once it is off", () => {
+    const { f, e } = onlyEnemy("owl", 100, beamY);
+    e.state = "beaming";
+    e.beamTicks = 0;
+    const rects: number[][] = [];
+    f.draw(stubSurface({ draw: () => {}, fillRect: (x, y, w, h) => void rects.push([x, y, w, h]) }), 0);
+    expect(rects).toEqual([]);
   });
 });

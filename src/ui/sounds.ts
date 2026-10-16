@@ -459,6 +459,32 @@ const fireflyEffects = {
     ],
     eighth: 0.06,
   },
+  /** The Owl's tractor beam: a wobbling hum up and down. */
+  beam: {
+    notes: [
+      [60, 1],
+      [67, 1],
+      [72, 1],
+      [67, 1],
+      [60, 1],
+      [67, 1],
+      [72, 1],
+      [67, 1],
+    ],
+    eighth: 0.08,
+  },
+  /** The beam takes the firefly: a slide up into the Owl. */
+  capture: {
+    notes: [
+      [60, 2],
+      [64, 2],
+      [67, 2],
+      [72, 2],
+      [76, 2],
+      [79, 4],
+    ],
+    eighth: 0.06,
+  },
   /** STAGE n: a little fanfare. */
   stage: {
     notes: [
