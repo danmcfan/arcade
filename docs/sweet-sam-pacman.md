@@ -4,6 +4,12 @@ Sweet Sam plays as close to the arcade Pac-Man as it can. For any gameplay quest
 
 Diverge only when the owner decides to, and record the divergence and its reason in the code comment beside the rule.
 
+## Writing and building Sweet Sam issues
+
+- **Quote, don't paraphrase.** An issue for a gameplay rule quotes the Dossier passage word for word and copies the exact table rows it relies on, with the section or table name.
+- **Cover every case.** Where a rule varies by level or by direction, the acceptance tests cover each direction (up, down, left, right) and levels 1, 2–4, 5–20 and 21+.
+- **Re-read before testing.** The implement agent re-reads the cited Dossier section before writing tests, and builds to the source, not to the issue's summary of it.
+
 ## Terms
 
 | Pac-Man   | Sweet Sam      |

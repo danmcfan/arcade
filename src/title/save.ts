@@ -19,7 +19,10 @@ export interface SaveData extends Progress {
   v: 5;
 }
 
-/** The current format version. */
+/**
+ * The current format version. Bumping it needs a fixture of the previous
+ * version's save in test/fixtures/saves/ (save.test.ts).
+ */
 export const saveVersion = 5;
 
 /** What a `v: 1` save gets on upgrade: a New game's tokens and tickets. */
