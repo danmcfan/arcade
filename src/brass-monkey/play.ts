@@ -74,13 +74,13 @@ function groundUnder(floor: Floor, x: number, y: number, tol: number): Girder | 
  * crosses: its feet end on or below the top at x1, having been above the top
  * at x0 or at x1, so a slope's 1 px step can't slip between two ticks.
  */
-function landing(floor: Floor, x0: number, x1: number, y0: number, y1: number): Girder | undefined {
+function landing(floor: Floor, x0: number, y0: number, x1: number, y1: number): Girder | undefined {
   let best: Girder | undefined;
   for (const g of floor.girders) {
     if (x1 < g.x0 || x1 >= g.x1) continue;
     const top = girderTop(g, x1);
-    const above = Math.max(top, x0 >= g.x0 && x0 < g.x1 ? girderTop(g, x0) : top);
-    if (above > y0 && top <= y1 && (best === undefined || top < girderTop(best, x1))) best = g;
+    const lowerTop = Math.max(top, x0 >= g.x0 && x0 < g.x1 ? girderTop(g, x0) : top);
+    if (lowerTop > y0 && top <= y1 && (best === undefined || top < girderTop(best, x1))) best = g;
   }
   return best;
 }
@@ -297,7 +297,7 @@ export class Run {
         const y0 = m.y;
         m.y += m.vy;
         m.airTop = Math.min(m.airTop, m.y);
-        const g = m.vy > 0 ? landing(floor, x0, m.x, y0, m.y) : undefined;
+        const g = m.vy > 0 ? landing(floor, x0, y0, m.x, m.y) : undefined;
         if (g !== undefined) {
           m.y = girderTop(g, m.x);
           m.footing = "ground";
@@ -417,7 +417,7 @@ export class Run {
     h.vy = Math.min(h.vy + t.gravity, t.maxFallSpeed);
     const y0 = h.y;
     h.y += h.vy;
-    const g = landing(floor, h.x, h.x, y0, h.y);
+    const g = landing(floor, h.x, y0, h.x, h.y);
     if (g === undefined) return;
     h.y = girderTop(g, h.x);
     h.footing = "ground";

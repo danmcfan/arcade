@@ -336,13 +336,25 @@ describe("landing on a slope", () => {
             step(run, 1, { ...dir, space: true });
             until(run, () => run.monkey.footing !== "air", {}, 200);
             const at = `floor ${f} girder ${g.x0}-${g.x1} x ${x} ${Object.keys(dir)[0]}`;
-            // A jump carried past the girder's end is a real fall, not this bug.
+            // A jump carried past the girder's end is a real fall, not this bug (and may kill).
             if (run.monkey.x < g.x0 || run.monkey.x >= g.x1) continue;
-            expect([at, run.monkey.y, run.lives]).toEqual([at, girderTop(g, run.monkey.x), 3]);
+            expect([at, run.monkey.y, run.lives, run.phase]).toEqual([at, girderTop(g, run.monkey.x), 3, "play"]);
           }
         }
       }
     });
+  });
+
+  test("a fall longer than maxFall onto a girder still kills", () => {
+    const { run } = quiet();
+    const girder = floors[0]?.girders.find((g) => g.y === 142);
+    if (girder === undefined) throw new Error("no girder at y 142");
+    run.monkey.x = 94;
+    run.monkey.y = girderTop(girder, 94) - t.maxFall - 10;
+    run.monkey.airTop = run.monkey.y;
+    run.monkey.footing = "air";
+    until(run, () => run.monkey.footing !== "air" || run.phase !== "play", {}, 200);
+    expect(run.phase).toBe("dying");
   });
 
   test("walking off a girder's end still falls to the girder below", () => {
