@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { sweetie } from "../ui/sweetie16.ts";
-import { titleBar, titleScreenHeight, titleScreenSpot, titleScreenWidth, titleWord } from "../ui/titleArt.ts";
+import {
+  letterPitch,
+  titleBar,
+  titleLetterFaces,
+  titleScreenHeight,
+  titleScreenSpot,
+  titleScreenWidth,
+  titleWord,
+} from "../ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod, pulsePeriod } from "./logo.ts";
 
 const inLayer = (layer: typeof titleWord, x: number, y: number): string =>
@@ -41,9 +49,10 @@ describe("logoOverlay", () => {
       }
     }
     for (let i = 0; i < 6; i++) {
-      // Each letter's face is 28 columns wide, one every 31 columns from the word's left edge.
-      const left = titleWord.x + i * 31;
-      expect([...litColumns].some((x) => x >= left && x < left + 28)).toBe(true);
+      // Each letter's face is one `letterPitch` from the last, from the word's left edge.
+      const left = titleWord.x + i * letterPitch;
+      const faceW = titleLetterFaces["A"]?.[0]?.length ?? 0;
+      expect([...litColumns].some((x) => x >= left && x < left + faceW)).toBe(true);
     }
   });
 

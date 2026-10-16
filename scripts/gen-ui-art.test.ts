@@ -36,6 +36,7 @@ import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
 import {
   titleBar,
+  letterSide,
   titleCabinet,
   titleLogoHeight,
   titleLogoWidth,
@@ -130,8 +131,8 @@ describe("UI art source", () => {
     expect(spans).toHaveLength(6);
     const gaps = spans.slice(1).map(([l], i) => l - (spans[i]?.[1] ?? 0) - 1);
     // Each face casts a 3-pixel side (two purple, one dark) to its right: a gap that wide shows it all.
-    expect(gaps).toEqual(gaps.map(() => 3));
-    const margin = { left: spans[0]?.[0] ?? 0, right: titleLogoWidth - 1 - ((spans[5]?.[1] ?? 0) + 3) };
+    expect(gaps).toEqual(gaps.map(() => letterSide));
+    const margin = { left: spans[0]?.[0] ?? 0, right: titleLogoWidth - 1 - ((spans[5]?.[1] ?? 0) + letterSide) };
     expect(Math.abs(margin.left - margin.right)).toBeLessThanOrEqual(1);
   });
 

@@ -986,11 +986,23 @@ describe("drawing", () => {
       const items = r.glyphs.filter((g) => g.ink === "white" || g.ink === "yellow");
       const first = Math.min(...items.map((g) => g.y));
       const last = Math.max(...items.map((g) => g.y)) + textHeight;
-      return { panel: panel.map(([, x, y]) => `${x},${y}`).join(" "), above: first - top, below: bottom - last };
+      const left = Math.min(...panel.map(([, x]) => x));
+      const right = Math.max(...panel.map(([, x]) => x)) + panelCorner;
+      // Every item glyph, "CONTINUE" with its arrows included, lies inside the panel.
+      const inside = items.every((g) => g.x >= left && g.x < right && g.y >= top && g.y + textHeight <= bottom);
+      return {
+        panel: panel.map(([, x, y]) => `${x},${y}`).join(" "),
+        above: first - top,
+        below: bottom - last,
+        inside,
+      };
     });
     expect(layouts[0]?.panel).not.toBe("");
     expect(layouts[1]?.panel).toBe(layouts[0]?.panel);
-    for (const l of layouts) expect(Math.abs(l.above - l.below)).toBeLessThanOrEqual(1);
+    for (const l of layouts) {
+      expect(l.inside).toBe(true);
+      expect(Math.abs(l.above - l.below)).toBeLessThanOrEqual(1);
+    }
   });
 
   test("with a save that holds a high score, the menu does not show it", () => {
