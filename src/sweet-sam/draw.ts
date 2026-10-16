@@ -20,6 +20,7 @@ import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { digits6, type DigitReels } from "../ui/digitReel.ts";
+import { sweetie } from "../ui/sweetie16.ts";
 import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
@@ -251,7 +252,29 @@ function drawEnemies(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: n
     return;
   }
   for (const enemy of s.enemies) {
-    drawEntity(enemy, screen, bufX, bufY);
+    if (enemy.eyes) {
+      drawEyes(enemy, screen, bufX, bufY);
+    } else {
+      drawEntity(enemy, screen, bufX, bufY);
+    }
+  }
+}
+
+const eyeWhite = sweetie.w;
+const eyePupil = sweetie.b;
+
+/**
+ * An eaten bee's eyes: two white 2×3 eyes, each with a 1 px pupil toward its
+ * direction of travel. A placeholder until the eye sprites (#196).
+ */
+function drawEyes(e: Entity, screen: Surface, bufX: number, bufY: number): void {
+  const cx = e.x + bufX;
+  const cy = e.y + bufY;
+  const px = e.direction === "RIGHT" ? 1 : 0;
+  const py = e.direction === "UP" ? 0 : e.direction === "DOWN" ? 2 : 1;
+  for (const ex of [cx - 4, cx + 2]) {
+    screen.fillRect(ex, cy - 2, 2, 3, eyeWhite);
+    screen.fillRect(ex + px, cy - 2 + py, 1, 1, eyePupil);
   }
 }
 
