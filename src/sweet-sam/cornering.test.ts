@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { opposite, type Direction } from "../engine/input.ts";
 import { newCorners, newEnemies, newPlayer, type Entity } from "./entity.ts";
-import { steer, updateDirection, updatePosition } from "./update.ts";
+import { corneringWindow, dirSteps, steer, updateDirection, updatePosition } from "./update.ts";
 
 const corners = newCorners();
 
@@ -29,7 +29,7 @@ function run(e: Entity, held: Direction | "", ticks: number): void {
 
 /** Whether a turn pressed `ahead` px before the junction's centre (negative: after it) is taken at once. */
 function takes(dir: Direction, turn: Direction, ahead: number): boolean {
-  const [dx, dy] = dir === "RIGHT" ? [1, 0] : dir === "LEFT" ? [-1, 0] : dir === "DOWN" ? [0, 1] : [0, -1];
+  const [dx, dy] = dirSteps[dir];
   const e = bear(crossX - dx * ahead, crossY - dy * ahead, dir);
   steer(e, corners, turn);
   return e.direction === turn;
@@ -104,7 +104,7 @@ describe("what the bear's cornering leaves alone", () => {
       for (const from of c.directions) {
         for (const to of c.directions) {
           const direction = opposite(from);
-          const before = direction === "RIGHT" || direction === "DOWN" ? 3 : 4;
+          const [before] = corneringWindow(direction);
           for (let px = 1; px <= before; px++) {
             const e = newPlayer();
             e.velocity = 1;

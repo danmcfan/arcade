@@ -69,7 +69,7 @@ export function applyInput(s: SweetSamSoftware, i: Input): void {
  * moving left or up, and 3 px before to 4 px after moving right or down,
  * because the tile's centre point sits off-centre (Dossier, "Cornering").
  */
-function corneringWindow(d: Direction | ""): [before: number, after: number] {
+export function corneringWindow(d: Direction | ""): [before: number, after: number] {
   return d === "RIGHT" || d === "DOWN" ? [3, 4] : [4, 3];
 }
 
@@ -130,7 +130,7 @@ function cornerWindow(e: Entity, cs: readonly Entity[]): Entity | null {
   return null;
 }
 
-const dirSteps: Record<Direction | "", [number, number]> = {
+export const dirSteps: Record<Direction | "", [number, number]> = {
   UP: [0, -1],
   DOWN: [0, 1],
   LEFT: [-1, 0],
