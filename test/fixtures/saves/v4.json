@@ -1,0 +1,18 @@
+{
+  "v": 4,
+  "highScores": {
+    "sweetSam": 1000,
+    "firefly": 2000,
+    "brassMonkey": 3000
+  },
+  "tokens": 7,
+  "tickets": 42,
+  "prizes": [
+    "lantern"
+  ],
+  "player": {
+    "x": 120,
+    "y": 96,
+    "dir": "LEFT"
+  }
+}
