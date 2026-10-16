@@ -25,7 +25,7 @@ import {
 import { drawReels } from "../ui/reelText.ts";
 import { drawPanel, drawText, drawTextCentered, textHeight, textWidth } from "../ui/text.ts";
 import type { Menu, MenuItem } from "./menu.ts";
-import { closeCursor, shelf, tokenCursor } from "./menus.ts";
+import { closeCursor, shelf } from "./menus.ts";
 import { minigame } from "./minigames.ts";
 import type { Payout } from "./payout.ts";
 import type { GameMenu } from "./snapshot.ts";
@@ -92,7 +92,7 @@ export function drawMenuOverlay(screen: Surface, o: MenuOverlay): void {
  * The prize counter panel, filling `area` but for a 1-2 px border: the prize
  * shelf (a card per prize, a column per cabinet; a card is red when the
  * player is short, grey and reading OWNED once bought, and ringed when
- * selected), BUY TOKEN and CLOSE under it, and an info panel for what the
+ * selected), CLOSE under it, and an info panel for what the
  * cursor is on. The tickets show on the scoreboard, so the panel doesn't
  * repeat them. Where each goes is `counterLayout`; the frames are
  * src/ui/panelArt.ts.
@@ -127,9 +127,7 @@ function drawPrizeCounter(
     drawTickerTextCentered(screen, it.value ?? "", cardInks[offer], centre, card.y + cardPriceY);
   });
 
-  const token = item(tokenCursor);
-  drawRowItem(screen, token.label, layout.tokenCentre, layout.rowY, cursor === tokenCursor, !token.enabled, tick);
-  drawRowItem(screen, item(closeCursor).label, layout.closeCentre, layout.rowY, cursor === closeCursor, false, tick);
+  drawRowItem(screen, item(closeCursor).label, layout.closeCentre, layout.rowY, cursor === closeCursor, tick);
 
   const info = item(cursor);
   const price = info.value ?? "";
@@ -156,17 +154,9 @@ function cardOffer(i: MenuItem): CardOffer {
 /** A card's price ink, by offer. */
 export const cardInks: Readonly<Record<CardOffer, TickerInk>> = { buy: "yellow", short: "white", owned: "pale" };
 
-/** BUY TOKEN or CLOSE centred on `centre`: yellow after an arrow when selected, grey when it can't be chosen. */
-function drawRowItem(
-  screen: Surface,
-  label: string,
-  centre: number,
-  y: number,
-  selected: boolean,
-  grey: boolean,
-  tick: number,
-): void {
-  drawTextCentered(screen, label, centre, y, grey ? "grey" : selected ? "yellow" : "white");
+/** CLOSE centred on `centre`: yellow after an arrow when selected. */
+function drawRowItem(screen: Surface, label: string, centre: number, y: number, selected: boolean, tick: number): void {
+  drawTextCentered(screen, label, centre, y, selected ? "yellow" : "white");
   if (selected) {
     const left = centre - Math.trunc(textWidth(label) / 2);
     drawText(screen, ">", left - 8 + arrowOffset(tick) - 1, y, "yellow");

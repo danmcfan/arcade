@@ -50,7 +50,7 @@ export interface ArcadeSnapshot {
   player: ArcadePlayerSnapshot;
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
-  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", or null for the counts. */
+  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", "changeMachine", or null for the counts. */
   faced: Faced | null;
   /**
    * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
@@ -92,8 +92,8 @@ export interface GameSnapshot extends SceneSnapshotBase {
   menu: GameMenu | null;
   /**
    * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
-   * or the prize counter (0-8 the prize shelf row by row, 9 BUY TOKEN, 10
-   * CLOSE; `counterSlot` in ./menus.ts). Stays 1 (CONTROLS) while
+   * or the prize counter (0-8 the prize shelf row by row, 9 CLOSE;
+   * `closeCursor` in ./menus.ts). Stays 1 (CONTROLS) while
    * the controls panel shows; 0 in the hub, the running minigame and the
    * payout.
    */

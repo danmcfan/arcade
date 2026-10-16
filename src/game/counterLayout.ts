@@ -1,5 +1,5 @@
 // Where everything in the prize counter menu goes, from the area it fills: the
-// panel, a card per shelf cell, the BUY TOKEN row and the info panel. The game
+// panel, a card per shelf cell, the CLOSE row and the info panel. The game
 // draws from it (src/game/overlay.ts), and so does the pixel preview's prize
 // counter scene (scripts/pixel-scenes.ts).
 
@@ -22,9 +22,8 @@ export interface CounterLayout {
   panel: { x: number; y: number; w: number; h: number };
   /** Each shelf cell's card's top left, in shelf order. */
   cards: { x: number; y: number }[];
-  /** The BUY TOKEN and CLOSE row: its top, and each label's centre. */
+  /** The CLOSE row: its top, and CLOSE's centre. */
   rowY: number;
-  tokenCentre: number;
   closeCentre: number;
   /** The info panel's first line: its top, and its left and right text edges. */
   infoTop: number;
@@ -34,7 +33,7 @@ export interface CounterLayout {
 
 /**
  * The menu filling `area` but for a 1-2 px border. Five rows (three of cards,
- * BUY TOKEN, the info panel) sit inside the panel's 3 px frame, with six even gaps.
+ * CLOSE, the info panel) sit inside the panel's 3 px frame, with six even gaps.
  */
 export function counterLayout(area: { x: number; y: number; w: number; h: number }): CounterLayout {
   const x = area.x + 2;
@@ -57,7 +56,6 @@ export function counterLayout(area: { x: number; y: number; w: number; h: number
     panel: { x, y, w: width, h: height },
     cards,
     rowY,
-    tokenCentre: left + cardWidth + colGap / 2,
     closeCentre: left + (cols - 1) * (cardWidth + colGap) + cardWidth / 2,
     infoTop: rowY + textHeight + gap,
     infoLeft: x + 7,

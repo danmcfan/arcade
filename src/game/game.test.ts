@@ -538,9 +538,8 @@ const shelfCell: Record<PrizeId, number> = {
   honeyJar: 7,
   lantern: 8,
 };
-/** The cursor on BUY TOKEN and on CLOSE, the row below the shelf. */
-const tokenCursor = 9;
-const closeCursor = 10;
+/** The cursor on CLOSE, the row below the shelf. */
+const closeCursor = 9;
 
 /** The prize counter with the cursor on prize `id`. */
 function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness {
@@ -555,7 +554,8 @@ function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness 
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
   const cell = shelfCell[id];
-  tap(g.game, "up"); // BUY TOKEN up: the bottom of the left column
+  tap(g.game, "up"); // CLOSE up: the bottom of the right column
+  tap(g.game, "right"); // round to the bottom of the left column
   for (let row = 2; row > Math.trunc(cell / 3); row--) tap(g.game, "up");
   for (let col = 0; col < cell % 3; col++) tap(g.game, "right");
   expect(snap(g.game).cursor).toBe(cell);
@@ -571,7 +571,7 @@ describe("prize counter", () => {
     });
     const s = snap(game);
     expect(s.menu).toBe("prizeCounter");
-    expect(s.cursor).toBe(tokenCursor);
+    expect(s.cursor).toBe(closeCursor);
     expect(s.software).toBeNull();
     expect(s.run).toBeNull();
     expect(built).toEqual([]);
@@ -606,7 +606,6 @@ describe("prize counter", () => {
 
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
-    tap(game, "right");
     expect(snap(game).cursor).toBe(closeCursor);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
@@ -616,22 +615,24 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move within a cabinet's column, through the token row, with the move blip", () => {
+  test("Up and Down move within a cabinet's column, through CLOSE, with the move blip", () => {
     const { game } = atCounter(5, 0);
+    tap(game, "up");
+    tap(game, "right"); // the oil can, bottom of the left column
     const sounds = heard(game, () => {
       tap(game, "up");
     });
     expect(sounds).toEqual(["rewind:move", "play:move"]);
     const seen = [snap(game).cursor];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       tap(game, "up");
       seen.push(snap(game).cursor);
     }
-    expect(seen).toEqual([6, 3, 0, tokenCursor]);
+    expect(seen).toEqual([3, 0, closeCursor]);
     tap(game, "down");
-    expect(snap(game).cursor).toBe(0);
+    expect(snap(game).cursor).toBe(2);
     tap(game, "right");
-    for (const want of [4, 7, tokenCursor]) {
+    for (const want of [3, 6, closeCursor]) {
       tap(game, "down");
       expect(snap(game).cursor).toBe(want);
     }
@@ -646,16 +647,14 @@ describe("prize counter", () => {
     expect(snap(game).cursor).toBe(closeCursor);
   });
 
-  test("Left and Right move between columns round the shelf, and between BUY TOKEN and CLOSE", () => {
+  test("Left and Right move between columns round the shelf, and stay on CLOSE", () => {
     const { game } = atCounter(5, 0);
     tap(game, "right");
     expect(snap(game).cursor).toBe(closeCursor);
-    tap(game, "right");
-    expect(snap(game).cursor).toBe(tokenCursor);
     tap(game, "left");
     expect(snap(game).cursor).toBe(closeCursor);
-    tap(game, "left");
-    tap(game, "up"); // pocket watch
+    tap(game, "up"); // lantern
+    tap(game, "right"); // oil can
     const seen: number[] = [];
     for (let i = 0; i < 3; i++) {
       tap(game, "right");
@@ -736,36 +735,61 @@ describe("prize counter", () => {
     expect(defined(built[0]).prizes).toEqual(["lantern"]);
   });
 
-  test("with 5 or more tickets, Space buys a token for 5 and the counts update at once", () => {
-    const { game } = atCounter(2, 12);
+  test("the menu offers no token: the shelf then CLOSE", () => {
+    const { game } = atCounter(0, 3);
+    tap(game, "up");
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(2);
+  });
+});
+
+/** A hub with `tokens` and `tickets`, the player facing the change machine. */
+function atChangeMachine(tokens: number, tickets: number): Game {
+  const { game } = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets,
+    prizes: [],
+    player: { x: 152, y: 80, dir: "UP" },
+  });
+  run(game, 20, { up: true });
+  game.step(input());
+  expect(snap(game).arcade.faced).toBe("changeMachine");
+  return game;
+}
+
+describe("change machine", () => {
+  test("each press trades 5 tickets for a token, and the counts update at once", () => {
+    const game = atChangeMachine(2, 12);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(wallet(game)).toEqual({ tokens: 3, tickets: 7 });
     expect(sounds).toEqual(["rewind:select", "play:select"]);
-    expect(snap(game).menu).toBe("prizeCounter");
+    expect(snap(game).menu).toBeNull();
     tap(game, "space");
-    expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 2 });
   });
 
-  test("with tokens left and too few tickets, Space gives the no sound and buys nothing", () => {
-    const { game } = atCounter(4, 2);
+  test("with tokens left and too few tickets, a press gives the no sound and trades nothing", () => {
+    const game = atChangeMachine(4, 2);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
     expect(sounds).toEqual(["rewind:deny", "play:deny"]);
-    expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("a bought token pays for the next cabinet start", () => {
-    const { game } = atCounter(0, 5);
+  test("the last-chance token pays for the next cabinet start", () => {
+    const game = atChangeMachine(0, 3);
     tap(game, "space");
-    tap(game, "escape");
+    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
+    run(game, 40, { left: true });
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
-    expect(snap(game)).toMatchObject({ software: "sweetSam", run: "paid", arcade: { tokens: 0, tickets: 0 } });
+    expect(snap(game)).toMatchObject({ software: "firefly", run: "paid", arcade: { tokens: 0, tickets: 0 } });
   });
 });
 
