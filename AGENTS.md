@@ -24,7 +24,7 @@ Verify any change a player can see or hear with a verify check (`bun run verify 
 
 ## Pixel art
 
-Any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any PR: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
+On a `ready-for-human` issue, any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any PR; on a `ready-for-agent` issue, make the artistic calls yourself and name them in the PR: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
 
 ## Quality gate
 
