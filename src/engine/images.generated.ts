@@ -45,6 +45,7 @@ import sweetSamHoneyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
 import sweetSamHoneyPotUrl from "../assets/images/sweet-sam/honey-pot.png";
 import sweetSamReadyUrl from "../assets/images/sweet-sam/ready.png";
 import sweetSamDigitsUrl from "../assets/images/sweet-sam/digits.png";
+import sweetSamScoreLabelsUrl from "../assets/images/sweet-sam/score-labels.png";
 import sweetSamPointsUrl from "../assets/images/sweet-sam/points.png";
 import sweetSamMazeFlashUrl from "../assets/images/sweet-sam/maze-flash.png";
 import sweetSamFlowerUrl from "../assets/images/sweet-sam/flower.png";
@@ -101,6 +102,7 @@ export const sweetSamImages = {
   honeyPot: imageAsset(sweetSamHoneyPotUrl, 32, 12),
   ready: imageAsset(sweetSamReadyUrl, 48, 8),
   digits: imageAsset(sweetSamDigitsUrl, 80, 8),
+  scoreLabels: imageAsset(sweetSamScoreLabelsUrl, 126, 7),
   points: imageAsset(sweetSamPointsUrl, 64, 16),
   mazeFlash: imageAsset(sweetSamMazeFlashUrl, 224, 288),
   flower: imageAsset(sweetSamFlowerUrl, 128, 16),
