@@ -1,6 +1,6 @@
 // The change machine (#144) in a real browser (`bun run verify change-machine`).
 // Part 1 drives the `?debug` test hook from the title scene: Continue a save
-// with 2 tokens and 12 tickets just under the machine, check that it is solid
+// with 2 tokens and 12 tickets just left of the machine, check that it is solid
 // and that the board reads CHANGE MACHINE and its price while the player
 // faces it, trade twice (the scoreboard and the save update at once), then
 // find the third press denied with the "no" sound and the price blinking.
@@ -45,19 +45,19 @@ function stored(v: Verify): Stored {
   return evalJson(v.page, `localStorage.getItem(${JSON.stringify(saveKey)}) ?? "null"`, isStored);
 }
 
-/** A save a few steps under the change machine (x 144-160, y 40-56), facing up. */
+/** A save a few steps left of the change machine (x 144-160, y 88-104, mid right wall), facing right. */
 function save(tokens: number, tickets: number): string {
-  return JSON.stringify({ v: 2, highScore: 0, tokens, tickets, player: { x: 152, y: 80, dir: "UP" } });
+  return JSON.stringify({ v: 2, highScore: 0, tokens, tickets, player: { x: 124, y: 88, dir: "RIGHT" } });
 }
 
-/** Open the title scene with this save, Continue, and walk up to the machine. */
+/** Open the title scene with this save, Continue, and walk right to the machine. */
 function continueWith(v: Verify, tokens: number, tickets: number): void {
   v.openHook();
   v.page.eval(`localStorage.setItem(${JSON.stringify(saveKey)}, ${JSON.stringify(save(tokens, tickets))}); "ok"`);
   v.openHook();
   v.key("ShiftLeft"); // dismisses the keyboard notice if this browser looks touch-first; nothing on the title
   v.tap("space"); // Continue
-  v.step(30, { up: true });
+  v.step(30, { right: true });
   v.step(2);
 }
 
@@ -69,7 +69,7 @@ function trades(v: Verify): void {
   console.log("trades and a denied trade (2 tokens, 12 tickets):");
   continueWith(v, 2, 12);
   const p = game(v).arcade.player;
-  check(p.x === 152 && p.y === 68, "walking up stops under the change machine: it is solid", p);
+  check(p.x === 136 && p.y === 88, "walking right stops left of the change machine: it is solid", p);
   check(game(v).arcade.faced === "changeMachine", "facing it, the board names the change machine", game(v).arcade);
 
   sounds(v);
@@ -92,7 +92,7 @@ function trades(v: Verify): void {
   check(game(v).arcade.notice === "price", "the price blinks on the board", game(v).arcade);
   v.step(8);
 
-  v.step(10, { down: true });
+  v.step(10, { left: true });
   check(game(v).arcade.faced === null, "walking away, the board shows the counts again", game(v).arcade);
 }
 
@@ -139,7 +139,7 @@ function stills(v: Verify, name: string, tokens: number, tickets: number): void 
   v.key("ShiftLeft"); // the keyboard notice, if any
   v.key("Space"); // Continue
   v.wait(500);
-  v.key("ArrowUp", 400);
+  v.key("ArrowRight", 400);
   v.wait(300);
   v.screenshot(`${name}-1-facing`);
   v.key("Space");
@@ -150,20 +150,20 @@ function stills(v: Verify, name: string, tokens: number, tickets: number): void 
   v.screenshot(`${name}-3-pressed-again`);
 }
 
-/** Continue, walk up to the machine, and press it three times. */
+/** Continue, walk right to the machine, and press it three times. */
 function pressOnVideo(v: Verify): void {
   v.wait(800);
   v.key("ShiftLeft"); // the keyboard notice, if any
   v.wait(400);
   v.key("Space"); // Continue
   v.wait(600);
-  v.key("ArrowUp", 400); // face the machine: CHANGE MACHINE, 5 TICKETS = 1 TOKEN
+  v.key("ArrowRight", 400); // face the machine: CHANGE MACHINE, 5 TICKETS = 1 TOKEN
   v.wait(1200);
   for (let i = 0; i < 3; i++) {
     v.key("Space"); // a trade, LAST CHANCE, or denied with the price blinking
     v.wait(1500);
   }
-  v.key("ArrowDown", 300); // away: the counts
+  v.key("ArrowLeft", 300); // away: the counts
   v.wait(1000);
 }
 

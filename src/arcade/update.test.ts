@@ -4,7 +4,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
 import { changeMachineRect } from "./changeMachine.ts";
-import { newWalls } from "./collision.ts";
+import { tileSize } from "./collision.ts";
 import { counterRects, deskRect } from "./desk.ts";
 import { formatFloat0, newState, type State } from "./state.ts";
 import { faced, update, type HubEvent } from "./update.ts";
@@ -411,10 +411,9 @@ describe("the change machine", () => {
   });
 
   test("stands in the middle of the right side wall", () => {
-    const [top, , right, floor] = newWalls();
-    expect(changeMachineRect.x + changeMachineRect.w).toBe(right.x);
-    const mid = (top.y + top.h + floor.y) / 2;
-    expect(changeMachineRect.y + changeMachineRect.h / 2).toBe(mid);
+    // The room's floor runs from the back wall (6 tiles) to the bottom wall (18 tiles), up to the right wall (20 tiles).
+    expect(changeMachineRect.x + changeMachineRect.w).toBe(tileSize * 20);
+    expect(changeMachineRect.y + changeMachineRect.h / 2).toBe((tileSize * (6 + 18)) / 2);
   });
 
   test("is used from the left: facing it from below does nothing", () => {
