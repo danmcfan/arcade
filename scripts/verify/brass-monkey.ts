@@ -103,12 +103,15 @@ const packed = inputs
   .map((i) => String.fromCodePoint(64 + (+i.up | (+i.down << 1) | (+i.left << 2) | (+i.right << 3) | (+i.space << 4))))
   .join("");
 
+/** JS object literal decoding a packed tick's bits (b) into the held keys. */
+const held = "{ up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 }";
+
 /** Step the page through inputs[from, to) (packed: a JSON script of them is too long for the command line). */
 const stepPage = (from: number, to: number): string =>
   `{ const p = ${JSON.stringify(packed.slice(from, to))};
    for (let k = 0; k < p.length; k++) {
      const b = p.charCodeAt(k) - 64;
-     window.__arcade.step(1, { up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 });
+     window.__arcade.step(1, ${held});
    } } "ok"`;
 
 function walkthrough(v: Verify): void {
@@ -156,7 +159,7 @@ function video(v: Verify): void {
          window.__timer = setInterval(() => {
            for (let n = 0; n < 3 && window.__at < window.__inputs.length; n++) {
              const b = window.__inputs.charCodeAt(window.__at++) - 64;
-             window.__arcade.step(1, { up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 });
+             window.__arcade.step(1, ${held});
            }
          }, 16); "ok"`,
       );

@@ -79,12 +79,12 @@ export interface Played {
   jumped: boolean;
 }
 
-function snapshotOf(scene: ReturnType<typeof createScene>): BrassMonkeySnapshot | null {
+type Scene = ReturnType<typeof createScene>;
+
+function snapshotOf(scene: Scene): BrassMonkeySnapshot | null {
   const s = scene.snapshot();
   return "arcade" in s ? sw(s) : null;
 }
-
-type Scene = ReturnType<typeof createScene>;
 
 /**
  * From the hub's spawn: walk up to the cabinets' wall, then left along it
