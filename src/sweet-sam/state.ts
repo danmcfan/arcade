@@ -294,7 +294,11 @@ export class PlayState implements State {
       return stateIDDeathWait;
     }
 
+    // The bear stands still while it swallows; the bees keep moving.
+    const bearPaused = s.eatPauseTicks > 0;
+    if (bearPaused) s.eatPauseTicks--;
     for (const e of s.movingEntities()) {
+      if (bearPaused && e === s.player) continue;
       updateFrame(e);
       if (e.eyes) {
         moveEyes(e, s.corners);
@@ -320,12 +324,14 @@ export class PlayState implements State {
 
       if (item.isPellet()) {
         s.addScore(10);
+        s.eatPauseTicks = 1;
         // The chomp alternates its two notes, one per honey drop.
         playSound(itemsEaten(s) % 2 === 1 ? sounds.sweetChompHigh : sounds.sweetChompLow);
       }
 
       if (item.isPower()) {
         s.addScore(50);
+        s.eatPauseTicks = 3;
         playSound(sounds.sweetSmoke);
         // A new honey pot starts the sleepy bee award over at 200.
         s.scaredEatAwardNext = 0;

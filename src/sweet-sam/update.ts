@@ -365,6 +365,7 @@ export function restartAfterDeath(s: SweetSamSoftware): void {
 
 function resetRound(s: SweetSamSoftware): void {
   s.player = newPlayer();
+  s.eatPauseTicks = 0;
   s.modeIndex = 0;
   s.modeTicks = 0;
 

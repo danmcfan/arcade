@@ -71,6 +71,7 @@ function bearOnFlower(s: SweetSamSoftware): void {
   s.player.x = flowerX + s.player.velocity;
   s.player.y = flowerY;
   s.player.direction = "LEFT";
+  s.eatPauseTicks = 0;
 }
 
 /** A game on level 1 whose last honey drop the bear has just eaten. */
@@ -192,7 +193,7 @@ describe("PLAY modes", () => {
       for (const e of s.enemies)
         if (e.kind !== null && e.kind !== "red" && !e.home && !(e.kind in out)) out[e.kind] = t;
     }
-    expect(out).toEqual({ pink: 170, teal: 494, orange: 734 });
+    expect(out).toEqual({ pink: 170, teal: 500, orange: 740 });
   });
 
   test("the scatter/chase timer holds while any bee is sleepy", () => {

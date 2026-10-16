@@ -246,6 +246,8 @@ export interface SweetSamSnapshot {
   release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
   /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
+  /** `SweetSamSoftware.eatPauseTicks`. */
+  eatPauseTicks: number;
   /** `SweetSamSoftware.startTicks`. */
   startTicks: number;
   /** `StartState.respawnBlinkRemaining` (the registered START state's field, whatever the current state). */
