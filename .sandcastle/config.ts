@@ -5,6 +5,7 @@ import { defineConfig } from "sandworm";
 // sync.md does, for the parity fixtures.
 export default defineConfig({
   repo: "arcade",
+  base: "origin/main",
   prompts: {
     verify:
       "For any change the player can see or hear, write and run a verify check (`docs/agents/visual-verification.md`). Commit the check; leave its output in `out/verify/`.",
