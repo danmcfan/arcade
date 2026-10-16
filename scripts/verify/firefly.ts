@@ -68,13 +68,18 @@ function outlinePixelsChanged(v: Verify): number {
   return changed;
 }
 
+/** Half the 16 px enemy sprite. */
+const enemyHalfSpan = 8;
+
 /** An enemy in play with part of its sprite past the screen's edge. */
 function pastEdge(s: FireflySnapshot): boolean {
   return s.enemies.some((e) => {
     if (e.state === "waiting" || e.deadFrames > 0) return false;
-    const half = e.kind === "owl" ? 16 : 8;
     return (
-      e.x - half < 0 || e.x + half > cabinetPlayfieldWidth || e.y - half < 0 || e.y + half > cabinetPlayfieldHeight
+      e.x - enemyHalfSpan < 0 ||
+      e.x + enemyHalfSpan > cabinetPlayfieldWidth ||
+      e.y - enemyHalfSpan < 0 ||
+      e.y + enemyHalfSpan > cabinetPlayfieldHeight
     );
   });
 }
