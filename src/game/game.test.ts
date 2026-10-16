@@ -11,6 +11,7 @@ import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snap
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import { changeMachineRect } from "../arcade/changeMachine.ts";
 import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 
 class FakeSoftware implements Software {
@@ -131,6 +132,7 @@ describe("snapshot", () => {
         player: { x: 79, y: 92, dir: "LEFT", frame: 0.1 },
         melodyPlaying: false,
         faced: null,
+        notice: null,
         title: null,
         highScores: noHighScores,
         tokens: 5,
@@ -752,7 +754,11 @@ function atChangeMachine(tokens: number, tickets: number): Game {
     tokens,
     tickets,
     prizes: [],
-    player: { x: 152, y: 80, dir: "UP" },
+    player: {
+      x: changeMachineRect.x + changeMachineRect.w / 2,
+      y: changeMachineRect.y + changeMachineRect.h + 20,
+      dir: "UP",
+    },
   });
   run(game, 20, { up: true });
   game.step(input());

@@ -320,6 +320,7 @@ export class Game implements Scene {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
         faced: faced(this.arcade, this.counterOpen),
+        notice: this.arcade.notice?.kind ?? null,
         title: this.arcade.imageTitle,
         ...this.walletSnapshot(),
       },

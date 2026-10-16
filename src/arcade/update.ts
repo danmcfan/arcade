@@ -6,6 +6,7 @@
 
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { attractSounds, sounds } from "../engine/assets.ts";
+import { pressChangeMachine, tickNotice } from "./changeMachine.ts";
 import { checkCollision, type Rect } from "./collision.ts";
 import type { Entity } from "./entity.ts";
 import { findMachine } from "./machine.ts";
@@ -54,10 +55,10 @@ export function update(s: State, i: Input): HubEvent {
   } else if (i.space && facesCounter(s)) {
     event = { openCounter: true };
   } else if (i.space && !s.actionHeld && facing(s.player, s.changeMachine)) {
-    useChangeMachine(s);
+    pressChangeMachine(s);
   }
   s.actionHeld = i.space;
-  updateNotice(s);
+  tickNotice(s, facing(s.player, s.changeMachine));
 
   for (const m of s.machines) updateScreen(m.screen, s.melodyPlaying && s.imageTitle === m.title);
   return event;
@@ -74,24 +75,6 @@ function stopMelody(s: State): void {
 /** The player faces the prize desk, so the action key opens the prize counter. */
 function facesCounter(s: State): boolean {
   return s.counters.some((r) => facing(s.player, r));
-}
-
-/** Ticks the scoreboard flashes the price or LAST CHANCE after a press of the change machine. */
-export const noticeTicks = 120;
-
-/** One press of the change machine: a token for tickets with a blip, or the deny sound and the price blinking. */
-function useChangeMachine(s: State): void {
-  const offer = s.wallet.exchange();
-  if (offer === "short") sounds.deny.blip();
-  else sounds.select.blip();
-  s.notice = offer === "token" ? null : { kind: offer === "short" ? "price" : "lastChance", ticks: noticeTicks };
-}
-
-/** Count the notice down; it ends early once the player stops facing the machine. */
-function updateNotice(s: State): void {
-  if (s.notice === null) return;
-  s.notice.ticks--;
-  if (s.notice.ticks <= 0 || !facing(s.player, s.changeMachine)) s.notice = null;
 }
 
 /** What the player faces that the action key works: a cabinet, by title, the prize desk or the change machine. */

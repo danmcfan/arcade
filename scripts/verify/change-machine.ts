@@ -89,6 +89,7 @@ function trades(v: Verify): void {
   v.tap("space");
   check(wallet(v) === '{"tokens":4,"tickets":2}', "with 2 tickets and tokens left, a press trades nothing", wallet(v));
   check(sounds(v).includes("play:deny"), "and plays the no sound");
+  check(game(v).arcade.notice === "price", "the price blinks on the board", game(v).arcade);
   v.step(8);
 
   v.step(10, { down: true });
@@ -104,6 +105,7 @@ function lastChance(v: Verify): void {
     "the last-chance token takes all 3 tickets: 1 token, 0 tickets",
     wallet(v),
   );
+  check(game(v).arcade.notice === "lastChance", "the board reads LAST CHANCE", game(v).arcade);
   sounds(v);
   v.tap("space");
   check(wallet(v) === '{"tokens":1,"tickets":0}', "with a token and 0 tickets the next press is denied", wallet(v));

@@ -52,6 +52,8 @@ export interface ArcadeSnapshot {
   melodyPlaying: boolean;
   /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", "changeMachine", or null for the counts. */
   faced: Faced | null;
+  /** `State.notice`'s kind: what the scoreboard flashes after a press of the change machine, or null. */
+  notice: "price" | "lastChance" | null;
   /**
    * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
