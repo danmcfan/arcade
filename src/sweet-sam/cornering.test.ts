@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { opposite, type Direction } from "../engine/input.ts";
 import { newCorners, newEnemies, newPlayer, type Entity } from "./entity.ts";
-import { steer, updateDirection, updatePosition } from "./update.ts";
+import { corneringWindow, dirSteps, steer, updateDirection, updatePosition } from "./update.ts";
 
 const corners = newCorners();
 
@@ -27,6 +27,14 @@ function run(e: Entity, held: Direction | "", ticks: number): void {
   }
 }
 
+/** Whether a turn pressed `ahead` px before the junction's centre (negative: after it) is taken at once. */
+function takes(dir: Direction, turn: Direction, ahead: number): boolean {
+  const [dx, dy] = dirSteps[dir];
+  const e = bear(crossX - dx * ahead, crossY - dy * ahead, dir);
+  steer(e, corners, turn);
+  return e.direction === turn;
+}
+
 describe("the bear corners like Pac-Man", () => {
   test.each([1, 2, 3, 4])("UP pressed %p px before the junction turns the bear onto the new corridor", (px) => {
     const e = bear(crossX + px, crossY, "LEFT");
@@ -35,6 +43,28 @@ describe("the bear corners like Pac-Man", () => {
     run(e, "", 10);
     expect(e.x).toBe(crossX);
     expect(e.y).toBeLessThan(crossY);
+  });
+});
+
+describe("the cornering window depends on the bear's direction", () => {
+  test.each<[Direction, Direction]>([
+    ["RIGHT", "UP"],
+    ["DOWN", "LEFT"],
+  ])("moving %p, the window is 3 px before and 4 px after", (dir, turn) => {
+    expect(takes(dir, turn, 4)).toBe(false);
+    expect(takes(dir, turn, 3)).toBe(true);
+    expect(takes(dir, turn, -4)).toBe(true);
+    expect(takes(dir, turn, -5)).toBe(false);
+  });
+
+  test.each<[Direction, Direction]>([
+    ["LEFT", "UP"],
+    ["UP", "LEFT"],
+  ])("moving %p, the window is 4 px before and 3 px after", (dir, turn) => {
+    expect(takes(dir, turn, 5)).toBe(false);
+    expect(takes(dir, turn, 4)).toBe(true);
+    expect(takes(dir, turn, -3)).toBe(true);
+    expect(takes(dir, turn, -4)).toBe(false);
   });
 });
 
@@ -73,10 +103,12 @@ describe("what the bear's cornering leaves alone", () => {
     for (const c of corners) {
       for (const from of c.directions) {
         for (const to of c.directions) {
-          for (let px = 1; px <= 4; px++) {
+          const direction = opposite(from);
+          const [before] = corneringWindow(direction);
+          for (let px = 1; px <= before; px++) {
             const e = newPlayer();
             e.velocity = 1;
-            e.direction = from === "UP" ? "DOWN" : from === "DOWN" ? "UP" : from === "LEFT" ? "RIGHT" : "LEFT";
+            e.direction = direction;
             // Approach the corner `px` before its centre, coming in from `from`.
             e.x = c.x + (from === "LEFT" ? -px : from === "RIGHT" ? px : 0);
             e.y = c.y + (from === "UP" ? -px : from === "DOWN" ? px : 0);

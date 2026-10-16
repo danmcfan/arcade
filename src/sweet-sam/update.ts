@@ -64,9 +64,14 @@ export function applyInput(s: SweetSamSoftware, i: Input): void {
   steer(s.player, s.corners, direction(i));
 }
 
-/** Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it (Dossier, "Cornering"). */
-export const corneringBefore = 4;
-export const corneringAfter = 3;
+/**
+ * Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it
+ * moving left or up, and 3 px before to 4 px after moving right or down,
+ * because the tile's centre point sits off-centre (Dossier, "Cornering").
+ */
+export function corneringWindow(d: Direction | ""): [before: number, after: number] {
+  return d === "RIGHT" || d === "DOWN" ? [3, 4] : [4, 3];
+}
 
 /**
  * The bear's input for one tick. A reversal applies at once; a perpendicular
@@ -114,17 +119,18 @@ export function steer(e: Entity, cs: readonly Entity[], held: Direction | ""): v
 /** The junction on the bear's line whose cornering window it is in, if any. */
 function cornerWindow(e: Entity, cs: readonly Entity[]): Entity | null {
   const [dx, dy] = dirSteps[e.direction];
+  const [before, after] = corneringWindow(e.direction);
   for (const c of cs) {
     const ahead = (c.x - e.x) * dx + (c.y - e.y) * dy;
     const across = (c.x - e.x) * dy + (c.y - e.y) * dx;
-    if (Math.abs(across) <= distanceThreshold && ahead <= corneringBefore && ahead >= -corneringAfter) {
+    if (Math.abs(across) <= distanceThreshold && ahead <= before && ahead >= -after) {
       return c;
     }
   }
   return null;
 }
 
-const dirSteps: Record<Direction | "", [number, number]> = {
+export const dirSteps: Record<Direction | "", [number, number]> = {
   UP: [0, -1],
   DOWN: [0, 1],
   LEFT: [-1, 0],
