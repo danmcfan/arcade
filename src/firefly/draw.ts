@@ -28,7 +28,7 @@ const oy = cabinetInsetTop;
 const enemySheets: Readonly<Record<EnemyKind, { sheet: Sprite; size: number }>> = {
   moth: { sheet: imageMoth, size: 16 },
   wasp: { sheet: imageWasp, size: 16 },
-  owl: { sheet: imageOwl, size: 32 },
+  owl: { sheet: imageOwl, size: 16 },
 };
 
 /** Frames of the hit effect, each `hitFrameTicks` long. */
