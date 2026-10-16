@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
   imageCabinetFirefly,
   imageFirefly,
@@ -8,18 +8,27 @@ import {
   imageMoth,
   imageOwl,
   imageOwlHurt,
+  imageScoreLabels,
   imageShot,
   imageSpark,
 } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { defined } from "../engine/defined.testutil.ts";
-import { stubSurface } from "../engine/fakeCanvas.testutil.ts";
+import { FakeCanvas, canvasElement, stubSurface } from "../engine/fakeCanvas.testutil.ts";
+import { setCanvasFactory } from "../engine/surface.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
-import { drawTextCentered } from "../ui/text.ts";
 import { FireflySoftware, newFireflySoftware, playerY } from "./game.ts";
 import { hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
+
+// The score dials draw each digit through an offscreen cell, so give it a canvas.
+beforeAll(() => {
+  setCanvasFactory((w, h) => canvasElement(new FakeCanvas(w, h)));
+});
+afterAll(() => {
+  setCanvasFactory(null);
+});
 
 interface DrawCall {
   sprite: Sprite;
@@ -39,22 +48,15 @@ function drawCalls(f: FireflySoftware): DrawCall[] {
   return calls;
 }
 
+/** Where each score or high score dial cell lands on the screen, in draw order. */
+function dialCells(f: FireflySoftware): number[][] {
+  const cells: number[][] = [];
+  f.draw(stubSurface({ draw: () => {}, drawSurface: (_src, x, y) => void cells.push([x, y]) }), 0);
+  return cells;
+}
+
 const rect = (s: Sprite): number[] => [s.sx, s.sy, s.w, s.h];
 const of = (calls: DrawCall[], asset: Sprite): DrawCall[] => calls.filter((c) => c.sprite.asset === asset.asset);
-
-/** The font calls `drawTextCentered` makes for `text` centred along the top row. */
-function topRowCentered(text: string): DrawCall[] {
-  const calls: DrawCall[] = [];
-  drawTextCentered(stubSurface({ draw: (sprite, x, y) => void calls.push({ sprite, x, y }) }), text, 8 + 112, 8 + 4);
-  return calls;
-}
-
-/** Whether every call in `want` is among `calls`. */
-function includesAll(calls: DrawCall[], want: DrawCall[]): boolean {
-  return want.every((w) =>
-    calls.some((c) => c.x === w.x && c.y === w.y && rect(c.sprite).join() === rect(w.sprite).join()),
-  );
-}
 
 /** A software past its intro whose only enemy is `kind`, at (x, y). */
 function onlyEnemy(kind: Enemy["kind"], x: number, y: number): { f: FireflySoftware; e: Enemy } {
@@ -92,33 +94,46 @@ describe("firefly draw", () => {
     expect(of(calls, imageMoth)).toEqual([]);
   });
 
-  test("the score, spare lives and STAGE n are drawn while the stage opens", () => {
+  test("the HUD sits where Sweet Sam's does: 1UP / HIGH SCORE labels, score dials, spare lives along the bottom", () => {
     const f = new FireflySoftware();
     const calls = drawCalls(f);
-    expect(of(calls, imageFont).length).toBeGreaterThan(6); // "0" and "STAGE 1"
-    // 2 spare fireflies along the top right, plus the one in play.
+    // The labels' left edge at x 26 of the screen's top row.
+    expect(of(calls, imageScoreLabels).map((c) => [c.x, c.y])).toEqual([[8 + 26, 8]]);
+    // A zero score and high score show their last two digits, on tile row 1 from tile columns 1 and 11.
+    expect(dialCells(f)).toEqual([
+      [8 + 8 * 5, 8 + 8],
+      [8 + 8 * 6, 8 + 8],
+      [8 + 8 * 15, 8 + 8],
+      [8 + 8 * 16, 8 + 8],
+    ]);
+    // 2 spare fireflies at Sweet Sam's spare-lives spots, plus the one in play.
     expect(of(calls, imageFirefly).map((c) => [c.x, c.y])).toEqual([
       [112 + 8 - 8, 264 + 8 - 8],
-      [8 + 224 - 18, 10],
-      [8 + 224 - 36, 10],
+      [8 + 16, 8 + 8 * 34 + 1],
+      [8 + 32, 8 + 8 * 34 + 1],
     ]);
-    f.stageTick = stageIntroTicks + 1;
-    expect(of(drawCalls(f), imageFont).length).toBe(2); // the score "0" and the high score "0"
   });
 
-  test("the high score the software was made with shows centred along the top row", () => {
-    const f = newFireflySoftware(12340);
+  test("STAGE n is drawn in the pixel font only while the stage opens", () => {
+    const f = new FireflySoftware();
+    expect(of(drawCalls(f), imageFont).length).toBe("STAGE 1".length);
     f.stageTick = stageIntroTicks + 1;
-    expect(includesAll(of(drawCalls(f), imageFont), topRowCentered("12340"))).toBe(true);
+    expect(of(drawCalls(f), imageFont)).toEqual([]);
   });
 
-  test("once the score passes the high score, the high score shown follows it", () => {
+  test("the high score the software was made with shows on the high score dials", () => {
     const f = newFireflySoftware(12340);
+    // 1, 2, 3, 4, 0 in tile columns 12 to 16, after the score's 0 0.
+    expect(dialCells(f).slice(2)).toEqual([12, 13, 14, 15, 16].map((col) => [8 + 8 * col, 8 + 8]));
+  });
+
+  test("once the score passes the high score, the high score dials roll to follow it", () => {
+    const f = newFireflySoftware(5);
     f.stageTick = stageIntroTicks + 1;
     f.points = 12500;
-    const font = of(drawCalls(f), imageFont);
-    expect(includesAll(font, topRowCentered("12500"))).toBe(true);
-    expect(includesAll(font, topRowCentered("12340"))).toBe(false);
+    for (let i = 0; i < 60; i++) f.update(NO_INPUT);
+    expect(f.scoreDial.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
+    expect(f.highScoreDial.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
   });
 
   test("an enemy in formation faces down: row 2 of its sheet, centred on it", () => {

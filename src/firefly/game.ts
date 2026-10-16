@@ -14,6 +14,8 @@ import type { FixedViewport } from "../game/software.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
+import { bootReels, digits6, newDigitReels, syncAndTick, type DigitReels } from "../ui/digitReel.ts";
+import type { ScoreDialsCache } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
@@ -137,6 +139,7 @@ export class FireflySoftware implements FixedViewport {
     this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
+    bootReels(this.highScoreDial, highScore);
   }
 
   stage = 1;
@@ -153,6 +156,11 @@ export class FireflySoftware implements FixedViewport {
   diveTimer = difficulty(1).diveInterval;
   /** Ticks since the run started: drives the formation's sway. */
   ticks = 0;
+  /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
+  readonly scoreDial: DigitReels = newDigitReels();
+  readonly highScoreDial: DigitReels = newDigitReels();
+  /** Lazily created draw resources; never touched by update. */
+  readonly drawCache: ScoreDialsCache = { digitDialScratch: null };
 
   update(i: Input): void {
     if (this.over) return;
@@ -172,6 +180,9 @@ export class FireflySoftware implements FixedViewport {
 
     // With no lives left the run ends on this stage, even if the field is clear.
     if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
+
+    syncAndTick(this.scoreDial, digits6(this.score()));
+    syncAndTick(this.highScoreDial, digits6(Math.max(this.score(), this.highScore)));
   }
 
   /** The formation's x offset this tick. */
