@@ -3,10 +3,11 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import type { Software, SoftwareName } from "../game/software.ts";
+import { changeMachineRect } from "./changeMachine.ts";
 import { counterRects, deskRect } from "./desk.ts";
 import { formatFloat0, newState, type State } from "./state.ts";
 import { faced, update, type HubEvent } from "./update.ts";
-import { houseHighScores, noHighScores, startingTokens, Wallet } from "./wallet.ts";
+import { houseHighScores, noHighScores, startingTokens, ticketsPerToken, Wallet } from "./wallet.ts";
 
 /** The high score each fake was constructed with. */
 const highScores = new WeakMap<Software, number>();
@@ -126,7 +127,7 @@ describe("walking", () => {
     run(s, 100, { down: true });
     expect(s.player.y).toBe(132);
     run(s, 100, { up: true });
-    expect(s.player.y).toBe(60);
+    expect(s.player.y).toBe(68); // under the change machine, in the right corner
   });
 });
 
@@ -285,7 +286,7 @@ describe("prize desk", () => {
     run(s, 200, { up: true });
     expect({ x: s.player.x, y: s.player.y }).toEqual({ x: 8, y: 60 });
     run(s, 200, { right: true });
-    expect(s.player.x).toBe(152);
+    expect(s.player.x).toBe(136); // the change machine fills the right corner
   });
 
   test("Space facing it from above opens it, anywhere along it, and starts no minigame", () => {
@@ -380,5 +381,80 @@ describe("formatFloat0 (Go %.0f)", () => {
       [-3.5, "-4"],
     ];
     expect(cases.map(([v]) => formatFloat0(v))).toEqual(cases.map(([, s]) => s));
+  });
+});
+
+/** A hub whose wallet holds `tokens` and `tickets`, the player under the change machine, facing it. */
+function atChangeMachine(tokens: number, tickets: number): State {
+  const s = newState(fakeFactory);
+  s.wallet = new Wallet({ highScores: noHighScores, tokens, tickets, prizes: [] });
+  s.player.x = changeMachineRect.x + changeMachineRect.w / 2;
+  s.player.y = changeMachineRect.y + changeMachineRect.h + 20;
+  run(s, 30, { up: true });
+  run(s, 1);
+  sounds = [];
+  return s;
+}
+
+describe("the change machine", () => {
+  test("is solid: the player stops under it", () => {
+    const s = atChangeMachine(0, 0);
+    expect(s.player.y - s.player.height / 2).toBe(changeMachineRect.y + changeMachineRect.h);
+  });
+
+  test("facing it, the scoreboard names it", () => {
+    expect(faced(atChangeMachine(1, 0), false)).toBe("changeMachine");
+  });
+
+  test("each press of the action key trades ticketsPerToken tickets for 1 token", () => {
+    const s = atChangeMachine(2, 12);
+    expect(update(s, input({ space: true }))).toBeNull();
+    expect({ tokens: s.wallet.tokens, tickets: s.wallet.tickets }).toEqual({
+      tokens: 3,
+      tickets: 12 - ticketsPerToken,
+    });
+    expect(sounds).toEqual(["rewind:select", "play:select"]);
+    run(s, 10, { space: true }); // held: still one press
+    expect(s.wallet.tokens).toBe(3);
+    run(s, 1);
+    update(s, input({ space: true }));
+    expect({ tokens: s.wallet.tokens, tickets: s.wallet.tickets }).toEqual({ tokens: 4, tickets: 2 });
+    expect(s.notice).toBeNull();
+  });
+
+  test("with tokens left and too few tickets it plays the deny sound, makes no trade and blinks the price", () => {
+    const s = atChangeMachine(1, ticketsPerToken - 1);
+    update(s, input({ space: true }));
+    expect({ tokens: s.wallet.tokens, tickets: s.wallet.tickets }).toEqual({ tokens: 1, tickets: ticketsPerToken - 1 });
+    expect(sounds).toEqual(["rewind:deny", "play:deny"]);
+    expect(s.notice?.kind).toBe("price");
+  });
+
+  test("with 0 tokens and too few tickets it trades all the tickets, even 0, for 1 token: LAST CHANCE", () => {
+    for (const tickets of [0, ticketsPerToken - 1]) {
+      const s = atChangeMachine(0, tickets);
+      update(s, input({ space: true }));
+      expect({ tokens: s.wallet.tokens, tickets: s.wallet.tickets }).toEqual({ tokens: 1, tickets: 0 });
+      expect(s.notice?.kind).toBe("lastChance");
+    }
+  });
+
+  test("the board's notice ends after a while, or on walking away", () => {
+    const s = atChangeMachine(0, 0);
+    update(s, input({ space: true }));
+    run(s, 200);
+    expect(s.notice).toBeNull();
+    update(s, input({ space: true }));
+    run(s, 1);
+    expect(s.notice?.kind).toBe("price");
+    run(s, 5, { down: true });
+    expect(s.notice).toBeNull();
+  });
+
+  test("away from it the action key trades nothing", () => {
+    const s = newState(fakeFactory);
+    s.wallet = new Wallet({ highScores: noHighScores, tokens: 1, tickets: 20, prizes: [] });
+    update(s, input({ space: true }));
+    expect(s.wallet.tickets).toBe(20);
   });
 });

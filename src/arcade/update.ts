@@ -1,6 +1,7 @@
 // Port of internal/arcade/update.go, plus the token a cabinet start costs, the
 // prize counter (solid, opened with Space while facing it), and the cabinet
-// screens switching on while the player faces them. Go's hub melody is now
+// screens switching on while the player faces them, and the change machine
+// (solid, Space while facing it trades tickets for a token). Go's hub melody is now
 // the faced cabinet's own attract loop.
 
 import { direction, type Direction, type Input } from "../engine/input.ts";
@@ -52,7 +53,11 @@ export function update(s: State, i: Input): HubEvent {
     };
   } else if (i.space && facesCounter(s)) {
     event = { openCounter: true };
+  } else if (i.space && !s.actionHeld && facing(s.player, s.changeMachine)) {
+    useChangeMachine(s);
   }
+  s.actionHeld = i.space;
+  updateNotice(s);
 
   for (const m of s.machines) updateScreen(m.screen, s.melodyPlaying && s.imageTitle === m.title);
   return event;
@@ -71,14 +76,33 @@ function facesCounter(s: State): boolean {
   return s.counters.some((r) => facing(s.player, r));
 }
 
-/** What the player faces that the action key works: a cabinet, by title, or the prize desk. */
-export type Faced = ArcadeTitle | "prizeCounter";
+/** Ticks the scoreboard flashes the price or LAST CHANCE after a press of the change machine. */
+export const noticeTicks = 120;
 
-/** What the LED scoreboard names (src/arcade/ticker.ts): the cabinet whose screen is on, or the prize desk; nothing while the prize counter menu is open. */
+/** One press of the change machine: a token for tickets with a blip, or the deny sound and the price blinking. */
+function useChangeMachine(s: State): void {
+  const offer = s.wallet.exchange();
+  if (offer === "short") sounds.deny.blip();
+  else sounds.select.blip();
+  s.notice = offer === "token" ? null : { kind: offer === "short" ? "price" : "lastChance", ticks: noticeTicks };
+}
+
+/** Count the notice down; it ends early once the player stops facing the machine. */
+function updateNotice(s: State): void {
+  if (s.notice === null) return;
+  s.notice.ticks--;
+  if (s.notice.ticks <= 0 || !facing(s.player, s.changeMachine)) s.notice = null;
+}
+
+/** What the player faces that the action key works: a cabinet, by title, the prize desk or the change machine. */
+export type Faced = ArcadeTitle | "prizeCounter" | "changeMachine";
+
+/** What the LED scoreboard names (src/arcade/ticker.ts): the cabinet whose screen is on, the prize desk or the change machine; nothing while the prize counter menu is open. */
 export function faced(s: State, menuOpen: boolean): Faced | null {
   if (menuOpen) return null;
   if (s.melodyPlaying) return s.imageTitle;
-  return facesCounter(s) ? "prizeCounter" : null;
+  if (facesCounter(s)) return "prizeCounter";
+  return facing(s.player, s.changeMachine) ? "changeMachine" : null;
 }
 
 /** The player touches `r` on the side they face: their rect, 1 px further on, overlaps it. */
