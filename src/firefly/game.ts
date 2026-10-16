@@ -17,7 +17,7 @@ import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
-import { newPathPatternFunc, pathLength, type BezierConfig, type Path } from "./pattern.ts";
+import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
   diveWeight,
   difficulty,
@@ -89,6 +89,18 @@ const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p)
 const diveAimSpread = 24;
 /** A diving Moth leaves the screen this far below the bottom, then comes back in from above. */
 const offscreenMargin = 24;
+
+const pathFuncs = new WeakMap<Path, PatternFunc>();
+
+/** The path's curve func, built once per path. */
+function pathFunc(path: Path): PatternFunc {
+  let f = pathFuncs.get(path);
+  if (f === undefined) {
+    f = newPathPatternFunc(path);
+    pathFuncs.set(path, f);
+  }
+  return f;
+}
 
 function followPath(e: Enemy, path: Path, speed = enemySpeed): void {
   e.path = path;
@@ -348,7 +360,7 @@ export class FireflySoftware implements FixedViewport {
     const path = e.path;
     if (path === null) throw new Error(`${e.state} enemy without a path`);
     e.t += e.tStep;
-    const p = e.t >= 1 ? (path.at(-1)?.p3 ?? e) : newPathPatternFunc(path)(e.t);
+    const p = e.t >= 1 ? (path.at(-1)?.p3 ?? e) : pathFunc(path)(e.t);
     e.x = p.x;
     e.y = p.y;
     if (e.t < 1) return;

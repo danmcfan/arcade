@@ -65,19 +65,16 @@ export function newPathPatternFunc(path: Path): PatternFunc {
     }
   }
   if (path.length === 1) return newBezierPatternFunc(first);
-  const lengths = path.map((c) => curveLength(c));
-  const total = lengths.reduce((a, b) => a + b, 0);
-  const curves = path.map((c) => newBezierPatternFunc(c));
+  const parts = path.map((c) => ({ f: newBezierPatternFunc(c), len: curveLength(c) }));
+  const total = parts.reduce((a, b) => a + b.len, 0);
   const end = path.at(-1)?.p3 ?? first.p0;
   return (t: number): Vec => {
     if (t >= 1) return end;
     let left = t * total;
-    for (let i = 0; i < curves.length - 1; i++) {
-      const len = lengths[i] ?? 0;
-      if (left <= len) return curves[i]?.(len === 0 ? 1 : left / len) ?? first.p0;
+    for (const { f, len } of parts) {
+      if (left <= len) return f(len === 0 ? 1 : left / len);
       left -= len;
     }
-    const len = lengths.at(-1) ?? 0;
-    return curves.at(-1)?.(len === 0 ? 1 : Math.min(1, left / len)) ?? first.p0;
+    return end;
   };
 }

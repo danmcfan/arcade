@@ -6,26 +6,16 @@
 // field. Frames of a Moth mid-loop and a Wasp on its way back, and a
 // recording of a run played with the keyboard, go to out/verify/firefly-dives/.
 
-import type { FireflySnapshot } from "../../src/game/snapshot.ts";
-import type { Input } from "../../src/engine/input.ts";
 import { fieldHeight } from "../../src/firefly/rules.ts";
-import { check, gameIn as game, isTitleSnapshot, startFirefly, verify, type Verify } from "../harness.ts";
-
-function firefly(v: Verify): FireflySnapshot | null {
-  const g = game(v);
-  return g.software === "firefly" && g.sw !== null && "stageTick" in g.sw ? g.sw : null;
-}
-
-/** Fire, and step away from a shot or diver coming down close by. */
-function botInput(s: FireflySnapshot): Partial<Input> {
-  const px = s.player.x;
-  const threat = [
-    ...s.shots.filter((x) => x.y > s.player.y - 60),
-    ...s.enemies.filter((e) => e.state === "diving" && e.deadFrames === 0 && e.y > s.player.y - 70),
-  ].find((x) => Math.abs(x.x - px) < 14);
-  if (threat === undefined) return {};
-  return threat.x > px ? { left: true } : { right: true };
-}
+import {
+  botInput,
+  check,
+  fireflyIn as firefly,
+  gameIn as game,
+  startFirefly,
+  verify,
+  walkToFirefly,
+} from "../harness.ts";
 
 interface Dive {
   kind: string;
@@ -118,22 +108,26 @@ await verify("firefly-dives", (v) => {
   v.record(
     "dives",
     () => {
-      for (let n = 0; n < 30 && v.snapshot(isTitleSnapshot).game === null; n++) {
-        v.key("Space");
-        v.wait(400);
-      }
-      const hubX = (): number => game(v).arcade.player.x;
-      for (let n = 0; n < 40 && hubX() < 118; n++) v.key("ArrowRight", 60);
-      for (let n = 0; n < 40 && game(v).software === null; n++) {
-        v.key("ArrowUp", 80);
-        v.key("Space");
-      }
+      walkToFirefly(v);
       check(firefly(v) !== null, "the recording plays Firefly", game(v).software);
-      v.wait(9000);
-      v.key("ArrowLeft", 600);
-      v.wait(5000);
-      v.key("ArrowRight", 1000);
-      v.wait(6000);
+      // Play on, Space held, until a Moth and a Wasp have each been seen
+      // diving and then finished, capped so a quiet run still ends.
+      const diving = new Set<string>();
+      const seen = new Set<string>();
+      v.hold("Space", () => {
+        for (let n = 0; n < 300 && seen.size < 2; n++) {
+          v.wait(100);
+          const now = firefly(v);
+          if (now === null || now.over) break;
+          for (const e of now.enemies) {
+            if (e.kind !== "moth" && e.kind !== "wasp") continue;
+            const key = `${e.kind}${e.row},${e.col}`;
+            if (e.state === "diving" && e.deadFrames === 0) diving.add(key);
+            else if (diving.delete(key) && e.deadFrames === 0) seen.add(e.kind);
+          }
+        }
+      });
+      check(seen.has("moth") && seen.has("wasp"), "the recording shows a Moth and a Wasp finish a dive", [...seen]);
     },
     {},
   );
