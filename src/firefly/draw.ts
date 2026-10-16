@@ -1,6 +1,6 @@
 // Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
 // effects), enemy shots, sparks, the firefly (or its death effect), the
-// score HUD shared with Sweet Sam (src/ui/scoreDials.ts) and spare lives, and "STAGE n" while a stage opens.
+// score HUD shared with Sweet Sam (src/ui/scoreDials.ts) and spare lives, escort-kill bonuses, and "STAGE n" while a stage opens.
 
 import {
   imageCabinetFirefly,
@@ -19,7 +19,7 @@ import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
 import { drawTextCentered } from "../ui/text.ts";
-import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
+import { angle, frameAngle, type Bonus, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
 
 const ox = cabinetInsetLeft;
@@ -73,6 +73,7 @@ export interface FireflyView {
   sparks: readonly Spark[];
   enemies: readonly Enemy[];
   shots: readonly Shot[];
+  bonuses: readonly Bonus[];
   highScore: number;
   dials: ScoreDials;
   score(): number;
@@ -91,6 +92,8 @@ function drawField(screen: Surface, f: FireflyView): void {
   for (const e of f.enemies) drawEnemy(screen, e);
   for (const s of f.shots) screen.draw(imageShot, ox + s.x - 2, oy + s.y - 4);
   for (const s of f.sparks) screen.draw(imageSpark, ox + s.x - 4, oy + s.y - 4);
+  // Galaga's escort-kill bonus: the points, where the Owl was shot.
+  for (const b of f.bonuses) drawTextCentered(screen, `${b.points}`, ox + b.x, oy + b.y - 4, "blue");
 
   if (f.respawn > 0) {
     // The firefly bursts like a hit enemy, over the first part of the pause.

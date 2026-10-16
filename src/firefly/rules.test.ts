@@ -185,3 +185,14 @@ describe("entryWaves", () => {
     expect(entryWaves.map((w) => w.curve)).toEqual(["topCentre", "lowerLeft", "lowerRight", "topRight", "topLeft"]);
   });
 });
+
+describe("points for a diving Owl", () => {
+  test("400 alone, 800 after 1 escort is shot, 1600 after both (Galaga's escort-kill bonus)", () => {
+    expect([0, 1, 2].map((n) => points("owl", true, n))).toEqual([400, 800, 1600]);
+  });
+
+  test("escorts shot earlier count for nothing in formation or for other kinds", () => {
+    expect(points("owl", false, 2)).toBe(points("owl", false));
+    expect(points("wasp", true, 2)).toBe(points("wasp", true));
+  });
+});

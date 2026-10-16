@@ -8,7 +8,7 @@ import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
-import { FireflySoftware, playerY } from "./game.ts";
+import { bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
@@ -250,7 +250,8 @@ describe("dives", () => {
       const f = settled();
       f.stage = stage;
       f.update(NO_INPUT);
-      expect(f.enemies.filter((e) => e.state === "diving").length).toBe(difficulty(stage).diversPerDive);
+      const divers = f.enemies.filter((e) => e.state === "diving" && e.escortOf === null);
+      expect(divers.length).toBe(difficulty(stage).diversPerDive);
       expect(f.diveTimer).toBe(difficulty(stage).diveInterval);
     }
   });
@@ -273,6 +274,125 @@ describe("dives", () => {
       f.update(NO_INPUT);
       expect(f.shots.map((s) => s.dx)).toEqual([difficulty(stage).shotDrift]);
     }
+  });
+});
+
+/** The Owl in column `col` of a settled formation. */
+function owlAt(f: FireflySoftware, col: number): Enemy {
+  const owl = f.enemies.find((e) => e.kind === "owl" && e.col === col);
+  if (owl === undefined) throw new Error(`no owl in column ${col}`);
+  return owl;
+}
+
+/** `settled()`, a tick on: everyone stands in their slot, and no dive is due. */
+function inFormation(): FireflySoftware {
+  rng.seed(1);
+  const f = settled();
+  f.diveTimer = 1_000_000;
+  f.update(NO_INPUT);
+  return f;
+}
+
+describe("Owl escorts", () => {
+  test("a diving Owl takes the 2 Wasps from the slots under it, flying either side of it", () => {
+    const f = inFormation();
+    const owl = owlAt(f, 1);
+    f.dive(owl);
+    const escorts = f.enemies.filter((e) => e.state === "diving" && e !== owl);
+    expect(escorts.length).toBe(2);
+    expect(escorts.every((e) => e.kind === "wasp" && e.escortOf === owl && e.outOfFormation)).toBe(true);
+    expect(escorts.every((e) => Math.abs(e.home.x - owl.home.x) <= 16)).toBe(true);
+    for (let t = 0; t < 60; t++) {
+      f.update(NO_INPUT);
+      for (const e of escorts) {
+        expect(e.state).toBe("diving");
+        expect(Math.abs(e.x - owl.x)).toBeLessThanOrEqual(16);
+        expect(e.y).toBe(owl.y);
+      }
+    }
+    expect(escorts.map((e) => Math.sign(e.x - owl.x)).toSorted((a, b) => a - b)).toEqual([-1, 1]);
+  });
+
+  test("with no Wasps under it, an Owl dives alone", () => {
+    const f = inFormation();
+    const owl = owlAt(f, 1);
+    f.enemies = f.enemies.filter((e) => e.kind !== "wasp" || Math.abs(e.home.x - owl.home.x) > 16);
+    f.dive(owl);
+    expect(f.enemies.filter((e) => e.state === "diving")).toEqual([owl]);
+  });
+
+  test("escorts go their own way once the Owl's swoop ends or it is shot", () => {
+    const f = inFormation();
+    const owl = owlAt(f, 2);
+    f.dive(owl);
+    const escorts = f.enemies.filter((e) => e.escortOf === owl);
+    owl.hp = 1;
+    sparkAt(f, owl.x, owl.y);
+    f.update(NO_INPUT);
+    expect(owl.deadFrames).toBeGreaterThan(0);
+    expect(escorts.every((e) => e.escortOf === null && e.state === "joining")).toBe(true);
+
+    const g = inFormation();
+    const lead = owlAt(g, 1);
+    g.dive(lead);
+    const wings = g.enemies.filter((e) => e.escortOf === lead);
+    for (let t = 0; t < 600 && lead.state === "diving"; t++) g.update(NO_INPUT);
+    expect(lead.state).toBe("joining");
+    g.update(NO_INPUT);
+    expect(wings.every((e) => e.escortOf === null && e.state !== "diving")).toBe(true);
+  });
+});
+
+/** A settled field with one Owl diving at (100, 100) and its 2 escorts beside it, frozen there. */
+function escortedOwl(): { f: FireflySoftware; owl: Enemy; escorts: Enemy[] } {
+  const f = inFormation();
+  const owl = owlAt(f, 1);
+  f.dive(owl);
+  divingAt(owl, 100, 100);
+  const escorts = f.enemies.filter((e) => e.escortOf === owl);
+  f.update(NO_INPUT);
+  f.sparks = [];
+  return { f, owl, escorts };
+}
+
+describe("escort-kill bonus", () => {
+  test("shooting both escorts and then the Owl scores 160 + 160 + 1600, with the bonus shown", () => {
+    const { f, owl, escorts } = escortedOwl();
+    for (const e of escorts) {
+      sparkAt(f, e.x, e.y);
+      f.update(NO_INPUT);
+    }
+    expect(f.score()).toBe(2 * points("wasp", true));
+    sparkAt(f, owl.x, owl.y);
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(2 * points("wasp", true) + 1600);
+    expect(f.bonuses.map((b) => [b.points, b.x, b.y])).toEqual([[1600, owl.x, owl.y]]);
+  });
+
+  test("shooting the Owl first scores 400, then its escorts 160 each", () => {
+    const { f, owl, escorts } = escortedOwl();
+    sparkAt(f, owl.x, owl.y);
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(400);
+    expect(f.bonuses).toEqual([]);
+    for (const e of escorts) {
+      sparkAt(f, e.x, e.y);
+      f.update(NO_INPUT);
+    }
+    expect(f.score()).toBe(400 + 160 + 160);
+  });
+
+  test("the bonus number shows for a while, then goes", () => {
+    const { f, owl, escorts } = escortedOwl();
+    const [escort] = escorts;
+    if (escort === undefined) throw new Error("no escort");
+    sparkAt(f, escort.x, escort.y);
+    f.update(NO_INPUT);
+    sparkAt(f, owl.x, owl.y);
+    f.update(NO_INPUT);
+    expect(f.bonuses.map((b) => b.points)).toEqual([800]);
+    run(f, bonusTicks);
+    expect(f.bonuses).toEqual([]);
   });
 });
 

@@ -121,6 +121,17 @@ describe("firefly draw", () => {
     expect(of(drawCalls(f), imageFont)).toEqual([]);
   });
 
+  test("an escort-kill bonus shows its points in the pixel font, centred where the Owl was shot", () => {
+    const f = new FireflySoftware();
+    f.stageTick = stageIntroTicks + 1;
+    f.bonuses = [{ points: 1600, x: 100, y: 120, ticks: 10 }];
+    const glyphs = of(drawCalls(f), imageFont);
+    expect(glyphs.length).toBe(4);
+    expect(glyphs.map((g) => g.y)).toEqual([8 + 116, 8 + 116, 8 + 116, 8 + 116]);
+    expect(defined(glyphs[1]).x).toBeLessThan(8 + 100);
+    expect(defined(glyphs[3]).x).toBeGreaterThan(8 + 100);
+  });
+
   test("the high score the software was made with shows on the high score dials", () => {
     const f = newFireflySoftware(12340);
     // 1, 2, 3, 4, 0 in tile columns 12 to 16, after the score's 0 0.

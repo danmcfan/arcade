@@ -34,11 +34,25 @@ export interface Enemy {
   shotTimer: number;
   /** It left the formation to dive and is not back yet: a kill scores the diving points. */
   outOfFormation: boolean;
+  /** The diving Owl this Wasp escorts, flying `escortDx` px beside it; null when on its own. */
+  escortOf: Enemy | null;
+  escortDx: number;
+  /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
+  escortsKilled: number;
 }
 
 export interface Spark {
   x: number;
   y: number;
+}
+
+/** The points of an escort-kill bonus, shown where the Owl was shot. */
+export interface Bonus {
+  points: number;
+  x: number;
+  y: number;
+  /** Ticks left on the screen. */
+  ticks: number;
 }
 
 export interface Shot {

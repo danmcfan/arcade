@@ -245,7 +245,11 @@ const killPoints: Readonly<Record<EnemyKind, { formation: number; diving: number
   owl: { formation: 150, diving: 400 },
 };
 
-export function points(kind: EnemyKind, diving: boolean): number {
+/** A diving Owl shot after `escortsKilled` of its escorts: 400, 800 or 1600 (Galaga's escort-kill bonus). */
+const owlEscortPoints: readonly number[] = [400, 800, 1600];
+
+export function points(kind: EnemyKind, diving: boolean, escortsKilled = 0): number {
   const p = killPoints[kind];
+  if (kind === "owl" && diving) return owlEscortPoints[escortsKilled] ?? p.diving;
   return diving ? p.diving : p.formation;
 }
