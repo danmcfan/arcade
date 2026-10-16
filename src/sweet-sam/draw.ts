@@ -3,11 +3,10 @@
 // DOM work (offscreen surfaces) happens lazily here (D12).
 
 import { sub, type Sprite } from "../engine/image.ts";
-import { Surface, type PremulColor } from "../engine/surface.ts";
+import type { PremulColor, Surface } from "../engine/surface.ts";
 import {
   imageBear,
   imageCabinet,
-  imageDigits,
   imageFlower,
   imageReady,
   imageSweetSamMaze,
@@ -19,19 +18,12 @@ import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
-import { digits6, type DigitReels } from "../ui/digitReel.ts";
 import { frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
 const debug = false;
-
-/** Lazily created draw resources. */
-export interface DrawCache {
-  /** Reused cell for clipped score/high-score draws (Go `digitDialScratch`). */
-  digitDialScratch: Surface | null;
-}
 
 /** Go `Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
 export function draw(s: SweetSamSoftware, screen: Surface): void {
@@ -70,12 +62,12 @@ function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY
 }
 
 function drawScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  drawRollingInteger(s, screen, bufX, bufY, s.scoreValue, 1, 1, s.scoreDial);
+  s.dials.draw(screen, s.scoreValue, 8 + bufX, 8 + bufY, s.scoreDial);
 }
 
 function drawHighScore(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   const highScore = Math.trunc(Math.max(s.scoreValue, s.highScore));
-  drawRollingInteger(s, screen, bufX, bufY, highScore, 11, 1, s.highScoreDial);
+  s.dials.draw(screen, highScore, 8 * 11 + bufX, 8 + bufY, s.highScoreDial);
 }
 
 function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
@@ -278,88 +270,6 @@ function drawMode(s: SweetSamSoftware, _screen: Surface, _bufX: number, _bufY: n
       break;
   }
   return `[${s.modeIndex}] ${mode}: ${s.modeTicks}`;
-}
-
-function digitGlyphSize(): [number, number] {
-  const dw = Math.trunc(imageDigits.w / 10);
-  const dh = imageDigits.h;
-  return [dw, dh];
-}
-
-function digitFrame(digit: number): Sprite {
-  let d = digit % 10;
-  if (d < 0) {
-    d += 10;
-  }
-  const [dw, dh] = digitGlyphSize();
-  return sub(imageDigits, d * dw, 0, (d + 1) * dw, dh);
-}
-
-function digitDialCell(s: SweetSamSoftware, dw: number, dh: number): Surface {
-  const cached = s.drawCache.digitDialScratch;
-  if (cached !== null && cached.width === dw && cached.height === dh) {
-    return cached;
-  }
-  const cell = Surface.offscreen(dw, dh);
-  s.drawCache.digitDialScratch = cell;
-  return cell;
-}
-
-/**
- * Renders each decimal column into a dw×dh scratch (hard clip), then
- * composites that cell onto the HUD. The last 2 digits always draw.
- */
-function drawRollingInteger(
-  s: SweetSamSoftware,
-  screen: Surface,
-  bufX: number,
-  bufY: number,
-  value: number,
-  tx: number,
-  ty: number,
-  reels: DigitReels,
-): void {
-  const digs = digits6(value);
-  const [dw, dhInt] = digitGlyphSize();
-  const dh = dhInt;
-  const cell = digitDialCell(s, dw, dhInt);
-
-  let leadingZero = true;
-  for (let i = 0; i < 6; i++) {
-    const digit = digs[i] ?? 0;
-    const r = reels[i];
-    if (r === undefined) {
-      continue;
-    }
-    if (i >= 6 - 2) {
-      leadingZero = false;
-    }
-
-    if (digit === 0 && leadingZero && !r.active) {
-      continue;
-    }
-
-    if (digit !== 0) {
-      leadingZero = false;
-    }
-
-    const px = 8 * (tx + i) + bufX;
-    const py = 8 * ty + bufY;
-
-    cell.clear();
-
-    if (r.active) {
-      const p = r.scroll01();
-      const offOld = -p * dh;
-      const offNew = (1 - p) * dh;
-      cell.draw(digitFrame(r.from), 0, offOld);
-      cell.draw(digitFrame(r.to), 0, offNew);
-    } else {
-      cell.draw(digitFrame(r.settledDigit), 0, 0);
-    }
-
-    screen.drawSurface(cell, goRound(px), goRound(py));
-  }
 }
 
 function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): void {

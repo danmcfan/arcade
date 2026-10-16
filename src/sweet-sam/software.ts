@@ -38,7 +38,8 @@ import {
 } from "./state.ts";
 import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
-import { draw, type DrawCache } from "./draw.ts";
+import { draw } from "./draw.ts";
+import { RollingDials } from "../ui/rollingDials.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
 export class SweetSamSoftware implements FixedViewport {
@@ -96,8 +97,8 @@ export class SweetSamSoftware implements FixedViewport {
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
 
-  /** Lazily created draw resources (Go `digitDialScratch`); never touched by update (D12). */
-  drawCache: DrawCache = { digitDialScratch: null };
+  /** Draws the score dials; never touched by update (D12). */
+  readonly dials = new RollingDials();
 
   constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages) {
     this.highScore = highscore;

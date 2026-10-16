@@ -17,7 +17,8 @@ import type { InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
-import { beeOrder, frameSize, scoreLabelsArt, scoreLabelsX } from "../../src/sweet-sam/art.ts";
+import { beeOrder, frameSize } from "../../src/sweet-sam/art.ts";
+import { scoreLabelsArt, scoreLabelsX } from "../../src/ui/hudArt.ts";
 import {
   cabinetInsetLeft,
   cabinetInsetTop,
