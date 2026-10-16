@@ -32,13 +32,36 @@ export interface Enemy {
   /** Shots still to drop on this dive, and ticks to the next. */
   shotsLeft: number;
   shotTimer: number;
+  /** Ticks left of its tractor beam (while `beaming`). */
+  beamTicks: number;
   /** It left the formation to dive and is not back yet: a kill scores the diving points. */
   outOfFormation: boolean;
+  /** The diving Owl this Wasp escorts, flying `escortDx` px beside it; null when on its own. */
+  escortOf: Enemy | null;
+  escortDx: number;
+  /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
+  escortsKilled: number;
+}
+
+/** A captured firefly, red, above the Owl that took it; `y` climbs while the beam pulls it up. */
+export interface Captive {
+  owl: Enemy;
+  x: number;
+  y: number;
 }
 
 export interface Spark {
   x: number;
   y: number;
+}
+
+/** The points of an escort-kill bonus, shown where the Owl was shot. */
+export interface Bonus {
+  points: number;
+  x: number;
+  y: number;
+  /** Ticks left on the screen. */
+  ticks: number;
 }
 
 export interface Shot {

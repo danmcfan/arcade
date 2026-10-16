@@ -181,6 +181,21 @@ export const shotSpacing = 14;
 /** How likely each kind is to be picked for a dive, relative to the others. Wasps dive most. */
 export const diveWeight: Readonly<Record<EnemyKind, number>> = { moth: 2, wasp: 5, owl: 2 };
 
+/**
+ * The Owl's tractor beam (Galaga's Boss): a beam dive stops `beamHeight` px above
+ * the firefly's row, in the bottom third, and beams for `beamTicks`. A firefly
+ * whose centre is within `beamWidth` / 2 of the Owl's x is captured.
+ */
+export const beamHeight = 72;
+export const beamWidth = 24;
+export const beamTicks = 180;
+/** The chance an Owl's dive is a beam dive, while no captive is held and no beam is on. */
+export const beamDiveChance = 0.5;
+/** Px per tick the beam pulls a captured firefly up to its Owl. */
+export const captivePullSpeed = 1;
+/** A captive sits this far above its Owl's centre. */
+export const captiveOffset = 16;
+
 /** Spark hits to kill each kind. */
 export const enemyHp: Readonly<Record<EnemyKind, number>> = { moth: 1, wasp: 1, owl: 2 };
 /** Half the hit box of each kind, in px: a spark or the firefly touching it hits. */
@@ -245,7 +260,11 @@ const killPoints: Readonly<Record<EnemyKind, { formation: number; diving: number
   owl: { formation: 150, diving: 400 },
 };
 
-export function points(kind: EnemyKind, diving: boolean): number {
+/** A diving Owl shot after `escortsKilled` of its escorts: 400, 800 or 1600 (Galaga's escort-kill bonus). */
+const owlEscortPoints: readonly number[] = [400, 800, 1600];
+
+export function points(kind: EnemyKind, diving: boolean, escortsKilled = 0): number {
   const p = killPoints[kind];
+  if (kind === "owl" && diving) return owlEscortPoints[escortsKilled] ?? p.diving;
   return diving ? p.diving : p.formation;
 }

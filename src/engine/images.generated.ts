@@ -19,6 +19,7 @@ import cabinetUrl from "../assets/images/cabinet.png";
 import cabinetFireflyUrl from "../assets/images/cabinet-firefly.png";
 import cabinetBrassMonkeyUrl from "../assets/images/cabinet-brass-monkey.png";
 import fireflyFireflyUrl from "../assets/images/firefly/firefly.png";
+import fireflyCaptiveUrl from "../assets/images/firefly/captive.png";
 import fireflySparkUrl from "../assets/images/firefly/spark.png";
 import fireflyMothUrl from "../assets/images/firefly/moth.png";
 import fireflyWaspUrl from "../assets/images/firefly/wasp.png";
@@ -71,6 +72,7 @@ export const images = {
 
 export const fireflyImages = {
   firefly: imageAsset(fireflyFireflyUrl, 16, 16),
+  captive: imageAsset(fireflyCaptiveUrl, 16, 16),
   spark: imageAsset(fireflySparkUrl, 8, 8),
   moth: imageAsset(fireflyMothUrl, 96, 64),
   wasp: imageAsset(fireflyWaspUrl, 96, 64),

@@ -291,9 +291,10 @@ export type FireflyEnemyKind = "moth" | "wasp" | "owl";
 
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,
- * flying straight to its slot, in the formation, or diving at the firefly.
+ * flying straight to its slot, in the formation, diving at the firefly, or
+ * (an Owl) hovering low with its tractor beam on.
  */
-export type FireflyEnemyState = "waiting" | "entering" | "joining" | "formation" | "diving";
+export type FireflyEnemyState = "waiting" | "entering" | "joining" | "formation" | "diving" | "beaming";
 
 export interface FireflyEnemySnapshot {
   kind: FireflyEnemyKind;
@@ -312,6 +313,10 @@ export interface FireflyEnemySnapshot {
   deadFrames: number;
   /** It dove and is not back in the formation yet: a kill scores the diving points. */
   outOfFormation: boolean;
+  /** A Wasp flying beside a diving Owl as its escort. */
+  escorting: boolean;
+  /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
+  escortsKilled: number;
 }
 
 export interface FireflyShotSnapshot {
@@ -343,12 +348,18 @@ export interface FireflySnapshot {
   enemies: FireflyEnemySnapshot[];
   /** Enemy shots in flight: centre and velocity. */
   shots: FireflyShotSnapshot[];
+  /** Escort-kill bonuses showing: the points, where the Owl was shot, and ticks left. */
+  bonuses: { points: number; x: number; y: number; ticks: number }[];
   /** Ticks until the next dive may start. */
   diveTimer: number;
   /** The formation's x offset this tick: 0 once it breathes. */
   sway: number;
   /** Whether the formation is swaying while it fills, or breathing once full. */
   formationPhase: "sway" | "breathe";
+  /** The firefly lost to the tractor beam is being pulled up (only while respawning); absent otherwise. */
+  captured?: true;
+  /** The captured firefly above its Owl (the Owl's row and column); absent while there is none. */
+  captive?: { row: number; col: number; x: number; y: number };
 }
 
 // ---------------------------------------------------------------------------

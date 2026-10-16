@@ -1,9 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  beamDiveChance,
+  beamHeight,
+  beamTicks,
+  beamWidth,
   breathe,
   breathePeriod,
   difficulty,
   entryWaves,
+  fieldHeight,
   formation,
   formationPos,
   points,
@@ -183,5 +188,23 @@ describe("entryWaves", () => {
       { moth: 8, wasp: 0, owl: 0 },
     ]);
     expect(entryWaves.map((w) => w.curve)).toEqual(["topCentre", "lowerLeft", "lowerRight", "topRight", "topLeft"]);
+  });
+});
+
+describe("points for a diving Owl", () => {
+  test("400 alone, 800 after 1 escort is shot, 1600 after both (Galaga's escort-kill bonus)", () => {
+    expect([0, 1, 2].map((n) => points("owl", true, n))).toEqual([400, 800, 1600]);
+  });
+
+  test("escorts shot earlier count for nothing in formation or for other kinds", () => {
+    expect(points("owl", false, 2)).toBe(points("owl", false));
+    expect(points("wasp", true, 2)).toBe(points("wasp", true));
+  });
+});
+
+describe("tractor beam", () => {
+  test("an Owl beams from the bottom third, a beam 24 px wide, for 3 seconds, on half its dives", () => {
+    expect(fieldHeight - (264 - beamHeight)).toBeLessThanOrEqual(fieldHeight / 3);
+    expect([beamHeight, beamWidth, beamTicks, beamDiveChance]).toEqual([72, 24, 180, 0.5]);
   });
 });
