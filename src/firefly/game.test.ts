@@ -7,7 +7,7 @@ import { Game } from "../game/game.ts";
 import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { angle, frameAngle, radToDeg, type Enemy } from "./entity.ts";
+import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
 import { FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
@@ -16,6 +16,7 @@ import {
   entryWaves,
   fieldWidth,
   enemyHp,
+  fieldHeight,
   formation,
   hitEffectTicks,
   maxSparks,
@@ -34,7 +35,7 @@ function divingAt(e: Enemy, x: number, y: number): void {
   const p = { x, y };
   e.state = "diving";
   e.outOfFormation = true;
-  e.path = { p0: p, p1: p, p2: p, p3: p };
+  e.path = [{ p0: p, p1: p, p2: p, p3: p }];
   e.tStep = 0.001;
   e.hp = 1;
 }
@@ -339,7 +340,7 @@ describe("hits", () => {
     const b = withOnly("moth", { x: 100, y: 100 });
     b.e.state = "diving";
     b.e.outOfFormation = true;
-    b.e.path = { p0: { x: 100, y: 100 }, p1: { x: 100, y: 100 }, p2: { x: 100, y: 100 }, p3: { x: 100, y: 100 } };
+    b.e.path = [{ p0: { x: 100, y: 100 }, p1: { x: 100, y: 100 }, p2: { x: 100, y: 100 }, p3: { x: 100, y: 100 } }];
     b.e.tStep = 0.001;
     sparkAt(b.f, 100, 100);
     b.f.update(NO_INPUT);
@@ -542,13 +543,53 @@ describe("entry waves", () => {
         const ea = at(a.row, a.col);
         const eb = at(b.row, b.col);
         expect(ea?.wait).toBe(eb?.wait ?? -1);
-        const pa = ea?.path?.p0 ?? { x: 0, y: 0 };
-        const pb = eb?.path?.p0 ?? { x: 0, y: 0 };
+        const pa = ea?.path?.[0]?.p0 ?? { x: 0, y: 0 };
+        const pb = eb?.path?.[0]?.p0 ?? { x: 0, y: 0 };
         if (w.split) expect(pb.x).toBe(fieldWidth - pa.x);
         else expect(Math.hypot(pb.x - pa.x, pb.y - pa.y)).toBeCloseTo(entryPairOffset);
         waits.add(ea?.wait ?? -1);
       }
       expect(waits.size).toBe(4);
     }
+  });
+});
+
+/** A settled software whose only enemy is one `kind`, about to dive; returns its path, tick by tick, until it is back in formation. */
+function diveTrack(kind: EnemyKind): { start: Vec; home: Vec; track: Vec[]; back: boolean } {
+  rng.seed(5);
+  const f = settled();
+  const e = f.enemies.find((c) => c.kind === kind);
+  if (e === undefined) throw new Error(`no ${kind}`);
+  f.enemies = [e];
+  f.player.x = 40;
+  f.update(NO_INPUT);
+  if (e.state !== "diving") throw new Error(`the ${kind} did not dive`);
+  f.diveTimer = 1_000_000;
+  const start = { x: e.x, y: e.y };
+  const state = (): string => e.state;
+  const track: Vec[] = [];
+  for (let t = 0; t < 1000 && state() !== "formation"; t++) {
+    f.update(NO_INPUT);
+    if (state() === "diving") track.push({ x: e.x, y: e.y });
+  }
+  return { start, home: e.home, track, back: state() === "formation" };
+}
+
+describe("dive shapes", () => {
+  test("a Moth loops above its slot first, then sweeps off the bottom", () => {
+    const { start, track, back } = diveTrack("moth");
+    const lowest = track.reduce((i, p, n) => (p.y > (track[i]?.y ?? 0) ? n : i), 0);
+    expect(track.slice(0, lowest).some((p) => p.y < start.y - 16)).toBe(true);
+    expect(track.at(-1)?.y).toBeGreaterThan(fieldHeight);
+    expect(back).toBe(true);
+  });
+
+  test("a Wasp swoops down and curves back up to its slot without leaving the field", () => {
+    const { start, track, back } = diveTrack("wasp");
+    expect(Math.max(...track.map((p) => p.y))).toBeGreaterThan(playerY - 60);
+    expect(track.every((p) => p.y <= fieldHeight)).toBe(true);
+    const last = track.at(-1);
+    expect(Math.hypot((last?.x ?? 0) - start.x, (last?.y ?? 0) - start.y)).toBeLessThan(4);
+    expect(back).toBe(true);
   });
 });

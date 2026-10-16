@@ -2,7 +2,7 @@
 // frame for a heading. game.ts moves them; draw.ts draws them.
 
 import type { FireflyEnemyState } from "../game/snapshot.ts";
-import type { BezierConfig } from "./pattern.ts";
+import type { Path } from "./pattern.ts";
 import type { EnemyKind } from "./rules.ts";
 
 export interface Vec {
@@ -26,7 +26,7 @@ export interface Enemy {
   /** Ticks left before it flies in (while `waiting`). */
   wait: number;
   /** The curve it follows while entering or diving, how far along (0..1) and the step per tick. */
-  path: BezierConfig | null;
+  path: Path | null;
   t: number;
   tStep: number;
   /** Shots still to drop on this dive, and ticks to the next. */

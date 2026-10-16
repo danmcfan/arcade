@@ -17,11 +17,12 @@ import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
-import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
+import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
   diveWeight,
   difficulty,
   type Difficulty,
+  type EnemyKind,
   enemyHalfSize,
   enemyHp,
   enemySpeed,
@@ -86,26 +87,55 @@ const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p)
 
 /** Where a dive aims: the firefly's x, give or take this much. */
 const diveAimSpread = 24;
-/** A diving Moth or Wasp leaves the screen this far below the bottom, then comes back in from above. */
+/** A diving Moth leaves the screen this far below the bottom, then comes back in from above. */
 const offscreenMargin = 24;
 
-/** Rough length of a curve, from 16 straight pieces. */
-function curveLength(c: BezierConfig): number {
-  const f = newBezierPatternFunc(c);
-  let len = 0;
-  let prev = f(0);
-  for (let i = 1; i <= 16; i++) {
-    const p = f(i / 16);
-    len += Math.hypot(p.x - prev.x, p.y - prev.y);
-    prev = p;
+const pathFuncs = new WeakMap<Path, PatternFunc>();
+
+/** The path's curve func, built once per path. */
+function pathFunc(path: Path): PatternFunc {
+  let f = pathFuncs.get(path);
+  if (f === undefined) {
+    f = newPathPatternFunc(path);
+    pathFuncs.set(path, f);
   }
-  return len;
+  return f;
 }
 
-function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
+function followPath(e: Enemy, path: Path, speed = enemySpeed): void {
   e.path = path;
   e.t = 0;
-  e.tStep = speed / Math.max(1, curveLength(path));
+  e.tStep = speed / Math.max(1, pathLength(path));
+}
+
+/** Height of the loop a diving Moth flies over its slot before it sweeps down. */
+const mothLoopHeight = 32;
+
+/**
+ * Each kind's dive from `p0`, heading out to `side` through `p1` at the
+ * firefly's x `aim`. The Owl swoops right at the firefly to eat it, then
+ * flies back up. A Moth loops over its slot, then sweeps past the firefly and
+ * off the bottom. A Wasp swoops down past the firefly and curves back up to
+ * where it started, never leaving the field.
+ */
+function divePath(kind: EnemyKind, p0: Vec, p1: Vec, aim: number, side: number): Path {
+  if (kind === "owl") return [{ p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }];
+  if (kind === "moth") {
+    // Two half circles, out to `side` and up, then back down to the slot.
+    const r = mothLoopHeight / 2;
+    const top = { x: p0.x, y: p0.y - 2 * r };
+    const k = (4 / 3) * r;
+    return [
+      { p0, p1: { x: p0.x + side * k, y: p0.y }, p2: { x: p0.x + side * k, y: top.y }, p3: top },
+      { p0: top, p1: { x: p0.x - side * k, y: top.y }, p2: { x: p0.x - side * k, y: p0.y }, p3: p0 },
+      { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } },
+    ];
+  }
+  const low = { x: aim, y: playerY - 24 };
+  return [
+    { p0, p1, p2: { x: aim + side * 40, y: low.y }, p3: low },
+    { p0: low, p1: { x: aim - side * 40, y: low.y }, p2: { x: p0.x - side * 40, y: p0.y + 40 }, p3: p0 },
+  ];
 }
 
 /** One enemy waiting to fly in along `curve`, which ends at its slot. */
@@ -131,7 +161,7 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     shotTimer: 0,
     outOfFormation: false,
   };
-  followPath(e, { ...curve, p3: home });
+  followPath(e, [{ ...curve, p3: home }]);
   return e;
 }
 
@@ -330,7 +360,7 @@ export class FireflySoftware implements FixedViewport {
     const path = e.path;
     if (path === null) throw new Error(`${e.state} enemy without a path`);
     e.t += e.tStep;
-    const p = e.t >= 1 ? path.p3 : newBezierPatternFunc(path)(e.t);
+    const p = e.t >= 1 ? (path.at(-1)?.p3 ?? e) : pathFunc(path)(e.t);
     e.x = p.x;
     e.y = p.y;
     if (e.t < 1) return;
@@ -359,12 +389,7 @@ export class FireflySoftware implements FixedViewport {
     const side = e.x < fieldWidth / 2 ? -1 : 1;
     const p0 = { x: e.x, y: e.y };
     const p1 = { x: e.x + side * 40, y: e.y - 30 };
-    // The Owl swoops right at the firefly to eat it, then flies back up; the
-    // others sweep past it and off the bottom.
-    const path: BezierConfig =
-      e.kind === "owl"
-        ? { p0, p1, p2: { x: aim, y: playerY - 100 }, p3: { x: aim, y: playerY } }
-        : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
+    const path = divePath(e.kind, p0, p1, aim, side);
     e.state = "diving";
     e.outOfFormation = true;
     followPath(e, path, d.diveSpeed);

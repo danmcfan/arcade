@@ -25,7 +25,13 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import type { GameSnapshot, SceneSnapshot, SweetSamSnapshot, TitleSnapshot } from "../src/game/snapshot.ts";
+import type {
+  FireflySnapshot,
+  GameSnapshot,
+  SceneSnapshot,
+  SweetSamSnapshot,
+  TitleSnapshot,
+} from "../src/game/snapshot.ts";
 import type { SceneName } from "../src/game/software.ts";
 import type { Input } from "../src/engine/input.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
@@ -495,6 +501,40 @@ export function gameIn(v: Verify): GameSnapshot {
   const g = v.snapshot(isTitleSnapshot).game;
   if (g === null) throw new Error("no game running");
   return g;
+}
+
+/** The bot: Space held, dodging shots and divers close above, else steering under the nearest enemy. */
+export function botInput(s: FireflySnapshot): Partial<Input> {
+  const px = s.player.x;
+  const threat = [
+    ...s.shots.filter((x) => x.y > s.player.y - 60),
+    ...s.enemies.filter((e) => e.state === "diving" && e.deadFrames === 0 && e.y > s.player.y - 70),
+  ].find((x) => Math.abs(x.x - px) < 14);
+  if (threat !== undefined) return threat.x > px ? { space: true, left: true } : { space: true, right: true };
+  const targets = s.enemies.filter((e) => e.deadFrames === 0 && e.state !== "waiting" && e.y < 230);
+  const target = targets.toSorted((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px))[0];
+  if (target === undefined || Math.abs(target.x - px) <= 2) return { space: true };
+  return target.x > px ? { space: true, right: true } : { space: true, left: true };
+}
+
+/** Hook only: the Firefly snapshot while Firefly is running, else null. */
+export function fireflyIn(v: Verify): FireflySnapshot | null {
+  const g = gameIn(v);
+  return g.software === "firefly" && g.sw !== null && "stageTick" in g.sw ? g.sw : null;
+}
+
+/** Hook only, while recording: Space through the title, then keyboard up to the Firefly cabinet and start it. */
+export function walkToFirefly(v: Verify): void {
+  for (let n = 0; n < 30 && v.snapshot(isTitleSnapshot).game === null; n++) {
+    v.key("Space");
+    v.wait(400);
+  }
+  const hubX = (): number => gameIn(v).arcade.player.x;
+  for (let n = 0; n < 40 && hubX() < 118; n++) v.key("ArrowRight", 60);
+  for (let n = 0; n < 40 && gameIn(v).software === null; n++) {
+    v.key("ArrowUp", 80);
+    v.key("Space");
+  }
 }
 
 /**
