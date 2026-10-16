@@ -54,8 +54,8 @@ export function tileEq(a: Tile, b: Tile): boolean {
 
 export const targetTopLeft: Readonly<Tile> = { x: 2, y: 0 };
 export const targetTopRight: Readonly<Tile> = { x: tileWidth - 3, y: 0 };
-export const targetBottomLeft: Readonly<Tile> = { x: 0, y: tileHeight - 2 };
-export const targetBottomRight: Readonly<Tile> = { x: tileWidth - 1, y: tileHeight - 2 };
+export const targetBottomLeft: Readonly<Tile> = { x: 0, y: tileHeight - 1 };
+export const targetBottomRight: Readonly<Tile> = { x: tileWidth - 1, y: tileHeight - 1 };
 
 // Premultiplied Go color.RGBA values; debug drawing only. Identity is `kind`.
 export const colorRed: PremulColor = { r: 255, g: 0, b: 0, a: 128 };
@@ -201,10 +201,10 @@ export const goDotMinimums: Readonly<DotMinimums> = { pink: 0, teal: 30, orange:
 
 export function newEnemies(dots: Readonly<DotMinimums> = goDotMinimums): Entity[] {
   return [
-    newEnemy(14, 14.5, "RIGHT", targetTopLeft, "red", false, 0),
-    newEnemy(14, 17.5, "LEFT", targetTopRight, "pink", true, dots.pink),
-    newEnemy(12, 17.5, "RIGHT", targetBottomLeft, "teal", true, dots.teal),
-    newEnemy(16, 17.5, "LEFT", targetBottomRight, "orange", true, dots.orange),
+    newEnemy(14, 14.5, "RIGHT", targetTopRight, "red", false, 0),
+    newEnemy(14, 17.5, "LEFT", targetTopLeft, "pink", true, dots.pink),
+    newEnemy(12, 17.5, "RIGHT", targetBottomRight, "teal", true, dots.teal),
+    newEnemy(16, 17.5, "LEFT", targetBottomLeft, "orange", true, dots.orange),
   ];
 }
 

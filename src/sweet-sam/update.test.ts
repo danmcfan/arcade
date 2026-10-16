@@ -57,12 +57,12 @@ describe("findTarget", () => {
   player.direction = "LEFT";
   const enemies = newEnemies(); // red at tile (14, 14)
 
-  test("scatter: every bee heads for its own corner target", () => {
+  test("scatter: red top right, pink top left, teal bottom right, orange bottom left (#225)", () => {
     expect(enemies.map((e) => findTarget(e, enemies, player, modeScatter))).toEqual([
-      { x: 2, y: 0 },
       { x: 25, y: 0 },
-      { x: 0, y: 34 },
-      { x: 27, y: 34 },
+      { x: 2, y: 0 },
+      { x: 27, y: 35 },
+      { x: 0, y: 35 },
     ]);
   });
 
@@ -108,22 +108,22 @@ describe("findTarget", () => {
     const orange = at(bee("orange"), 14, 15); // tile (14, 18): 8 tiles from the player
     expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 14, y: 26 });
     at(orange, 14, 17); // tile (14, 20): 6 tiles away
-    expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 27, y: 34 });
+    expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 0, y: 35 });
   });
 
   test("scatter returns a copy of the bee's target", () => {
     const red = nth(enemies, 0);
     const t = findTarget(red, enemies, player, modeScatter);
     t.x = 99;
-    expect(red.target).toEqual({ x: 2, y: 0 });
+    expect(red.target).toEqual({ x: 25, y: 0 });
   });
 
   test("scatter in Cruise Elroy: red targets the player's tile, the others still their corners", () => {
     expect(enemies.map((e) => findTarget(e, enemies, player, modeScatter, true))).toEqual([
       { x: 14, y: 26 },
-      { x: 25, y: 0 },
-      { x: 0, y: 34 },
-      { x: 27, y: 34 },
+      { x: 2, y: 0 },
+      { x: 27, y: 35 },
+      { x: 0, y: 35 },
     ]);
   });
 });
