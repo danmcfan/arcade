@@ -332,9 +332,9 @@ describe("updatePosition", () => {
     const e = bee("teal");
     e.home = true;
     e.dotMinimum = 3;
-    const [x, y] = [e.x, e.y];
+    const x = e.x;
     updatePosition(e, corners);
-    expect([e.x, e.y]).toEqual([x, y]);
+    expect([e.x, e.home]).toEqual([x, true]);
   });
 
   test("home bees centre on x=112 then rise to y=116 at 0.5px, then leave home", () => {
@@ -400,5 +400,57 @@ describe("resetEnemy", () => {
       0,
     ]);
     expect([e.reverseDirection, e.velocity, e.frame]).toEqual([true, 0.625, 2.5]);
+  });
+});
+
+/** Ticks `e` until it leaves the home; its first tick out is the last one. */
+function leave(e: Entity): void {
+  e.velocity = 1;
+  for (let t = 0; e.home && t < 500; t++) updatePosition(e, corners);
+}
+
+describe("the home (#226)", () => {
+  test.each(["pink", "teal", "orange"] as const)("%s leaves the home moving LEFT", (kind) => {
+    const e = nth(
+      newEnemies().filter((b) => b.kind === kind),
+      0,
+    );
+    e.dotMinimum = 0;
+    const x = 112;
+    leave(e);
+    expect([e.direction, e.x]).toEqual(["LEFT", x - 1]);
+  });
+
+  test("a bee told of a mode change in the home leaves moving RIGHT, once", () => {
+    const e = nth(newEnemies(), 1);
+    e.dotMinimum = 0;
+    e.leaveRight = true;
+    leave(e);
+    expect([e.direction, e.x, e.leaveRight]).toEqual(["RIGHT", 113, false]);
+  });
+
+  test("a waiting bee bobs up and down in place", () => {
+    const e = nth(newEnemies(), 2);
+    const [x, y] = [e.x, e.y];
+    const ys = new Set<number>();
+    for (let t = 0; t < 40; t++) {
+      updatePosition(e, corners);
+      ys.add(e.y);
+      expect(e.x).toBe(x);
+    }
+    expect(Math.min(...ys)).toBeLessThan(y);
+    expect(Math.max(...ys)).toBeGreaterThan(y);
+  });
+
+  test("a bee freed mid-bob centres back on the home row before sliding to the door", () => {
+    const e = nth(newEnemies(), 2);
+    for (let t = 0; t < 3; t++) updatePosition(e, corners);
+    expect(e.y).not.toBe(140);
+    e.dotMinimum = 0;
+    for (let t = 0; t < 20 && e.y !== 140; t++) {
+      updatePosition(e, corners);
+      expect(e.x).toBe(96);
+    }
+    expect(e.y).toBe(140);
   });
 });

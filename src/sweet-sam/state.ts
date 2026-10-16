@@ -205,10 +205,16 @@ export class PlayState implements State {
       }
       s.modeCurrent = modeConfig.mode;
       s.modeTicks = modeConfig.ticks;
+      const change = s.modeIndex > 0;
       s.modeIndex++;
+      // A home bee does not reverse; after a real change it leaves RIGHT (Dossier, "Home Sweet Home").
       for (const e of s.awakeBees()) {
-        e.reverseDirection = true;
-        e.reverseTile = pointToTile(e.x, e.y);
+        if (e.home) {
+          e.leaveRight ||= change;
+        } else {
+          e.reverseDirection = true;
+          e.reverseTile = pointToTile(e.x, e.y);
+        }
       }
     }
 
