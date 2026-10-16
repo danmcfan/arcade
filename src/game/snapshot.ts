@@ -312,6 +312,10 @@ export interface FireflyEnemySnapshot {
   deadFrames: number;
   /** It dove and is not back in the formation yet: a kill scores the diving points. */
   outOfFormation: boolean;
+  /** A Wasp flying beside a diving Owl as its escort. */
+  escorting: boolean;
+  /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
+  escortsKilled: number;
 }
 
 export interface FireflyShotSnapshot {
@@ -343,6 +347,8 @@ export interface FireflySnapshot {
   enemies: FireflyEnemySnapshot[];
   /** Enemy shots in flight: centre and velocity. */
   shots: FireflyShotSnapshot[];
+  /** Escort-kill bonuses showing: the points, where the Owl was shot, and ticks left. */
+  bonuses: { points: number; x: number; y: number; ticks: number }[];
   /** Ticks until the next dive may start. */
   diveTimer: number;
   /** The formation's x offset this tick: 0 once it breathes. */

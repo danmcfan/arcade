@@ -6,6 +6,7 @@
 // run goes to out/verify/firefly-escort/.
 
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
+import { fieldWidth } from "../../src/firefly/rules.ts";
 import type { Input } from "../../src/engine/input.ts";
 import { check, gameIn as game, startFirefly, type Verify, verify } from "../harness.ts";
 
@@ -21,13 +22,13 @@ const alive = (e: SnapEnemy): boolean => e.deadFrames === 0 && e.state !== "wait
 /** A diving Owl and the Wasps flying level with it, 16 px either side. */
 function escorted(s: FireflySnapshot): { owl: SnapEnemy; escorts: SnapEnemy[] } | null {
   for (const owl of s.enemies.filter((e) => alive(e) && e.kind === "owl" && e.state === "diving")) {
-    const escorts = s.enemies.filter(
-      (e) => alive(e) && e.kind === "wasp" && e.state === "diving" && e.y === owl.y && Math.abs(e.x - owl.x) === 16,
-    );
+    const escorts = s.enemies.filter((e) => alive(e) && e.escorting && e.y === owl.y && Math.abs(e.x - owl.x) === 16);
     if (escorts.length > 0) return { owl, escorts };
   }
   return null;
 }
+
+const fieldMid = fieldWidth / 2;
 
 /** Steer under `x` and fire. */
 function toward(px: number, x: number): Partial<Input> {
@@ -45,7 +46,6 @@ function botInput(s: FireflySnapshot): Partial<Input> {
   if (owl !== undefined) return toward(px, owl.x);
   return { ...toward(px, fieldMid), space: false };
 }
-const fieldMid = 112;
 
 function findBonus(v: Verify): { escortShot: boolean; bonus: number } {
   let escortShot = false;
@@ -71,6 +71,10 @@ function findBonus(v: Verify): { escortShot: boolean; bonus: number } {
       const gain = next.score - s.score;
       if (owlShot !== undefined && next.lives === s.lives && (gain === 800 || gain === 1600)) {
         console.log(`seed ${seed}, tick ${t}: a diving Owl shot after its escorts scores ${gain}`);
+        check(
+          next.bonuses.some((b) => b.points === gain),
+          "the bonus shows where the Owl was shot",
+        );
         v.frame("2-bonus", 3);
         v.step(20);
         v.frame("3-bonus-later", 3);
