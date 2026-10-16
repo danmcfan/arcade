@@ -426,6 +426,50 @@ describe("sparks", () => {
   });
 });
 
+/** Kills a lone moth in formation with the score at `score` beforehand; returns lives gained and sounds. */
+function killAt(f: FireflySoftware, score: number): { gained: number; sounds: SoundEvent[] } {
+  const e = f.enemies[0];
+  if (e === undefined) throw new Error("no enemy");
+  e.hp = 1;
+  e.deadFrames = 0;
+  e.outOfFormation = false;
+  sparkAt(f, e.x, e.y);
+  f.points = score;
+  const before = f.lives;
+  const rec = recordSounds();
+  f.update(NO_INPUT);
+  rec.stop();
+  return { gained: f.lives - before, sounds: rec.events };
+}
+
+describe("extra lives", () => {
+  const moth = points("moth", false);
+
+  test("crossing 20,000, 70,000 and 140,000 each adds one life with the extra-life jingle", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    for (const t of [20_000, 70_000, 140_000]) {
+      const below = killAt(f, t - moth - 10);
+      expect(below.gained).toBe(0);
+      expect(below.sounds).not.toContain("play:ticket");
+      const across = killAt(f, t - 10);
+      expect(across.gained).toBe(1);
+      expect(across.sounds).toContain("play:ticket");
+      expect(killAt(f, t + 10).gained).toBe(0);
+    }
+  });
+
+  test("one large score jump crosses each threshold only once", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    expect(killAt(f, 19_990).gained).toBe(1);
+    f.points = 75_000;
+    f.update(NO_INPUT);
+    const lives = f.lives;
+    expect(lives).toBe(startLives + 2);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(lives);
+  });
+});
+
 describe("hits", () => {
   for (const kind of ["moth", "wasp"] as const) {
     test(`one spark kills a ${kind}`, () => {

@@ -8,9 +8,11 @@ import {
   breathePeriod,
   difficulty,
   entryWaves,
+  extraLifeThresholds,
   fieldHeight,
   formation,
   formationPos,
+  nextExtraLife,
   points,
   swayOffset,
   swayAmplitude,
@@ -206,5 +208,14 @@ describe("tractor beam", () => {
   test("an Owl beams from the bottom third, a beam 24 px wide, for 3 seconds, on half its dives", () => {
     expect(fieldHeight - (264 - beamHeight)).toBeLessThanOrEqual(fieldHeight / 3);
     expect([beamHeight, beamWidth, beamTicks, beamDiveChance]).toEqual([72, 24, 180, 0.5]);
+  });
+});
+
+describe("nextExtraLife", () => {
+  test("Galaga's default: 20,000 and 70,000, then every 70,000", () => {
+    expect(extraLifeThresholds).toEqual({ first: 20_000, second: 70_000, every: 70_000 });
+    expect([0, 19_990, 20_000, 69_999, 70_000, 139_999, 140_000, 210_000].map((s) => nextExtraLife(s))).toEqual([
+      20_000, 20_000, 70_000, 70_000, 140_000, 140_000, 210_000, 280_000,
+    ]);
   });
 });

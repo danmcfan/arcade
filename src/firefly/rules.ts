@@ -93,8 +93,19 @@ export function formationPos(slot: { x: number; y: number }, state: FormationSta
   return { x: breatheCentre.x + out(slot.x - breatheCentre.x), y: breatheCentre.y + out(slot.y - breatheCentre.y) };
 }
 
-/** Lives at the start of a run. No extra lives come from score. */
+/** Lives at the start of a run. */
 export const startLives = 3;
+
+/** Galaga's default bonus fighters: a life at `first` and `second` points, then every `every` after (#230). */
+export const extraLifeThresholds = { first: 20_000, second: 70_000, every: 70_000 } as const;
+
+/** The score of the next extra life after `score`: 20,000, 70,000, 140,000, 210,000 and so on. */
+export function nextExtraLife(score: number): number {
+  const { first, second, every } = extraLifeThresholds;
+  if (score < first) return first;
+  if (score < second) return second;
+  return second + (Math.floor((score - second) / every) + 1) * every;
+}
 
 /** Ticks the "STAGE n" text shows before the enemies fly in. */
 export const stageIntroTicks = 120;
