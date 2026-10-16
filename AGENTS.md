@@ -8,7 +8,7 @@ Issues and specs live in GitHub Issues for danmcfan/arcade, managed with the `gh
 
 ### Triage labels
 
-Uses the default label names: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+Uses the default label names: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. Every issue also carries exactly one work type: bug, enhancement or refactor. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
