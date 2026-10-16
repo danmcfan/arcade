@@ -108,7 +108,12 @@ function buyAll(v: Verify): void {
   v.tap("space");
   check(game(v).menu === "prizeCounter", "Space facing the desk opens the prize counter menu", game(v).menu);
   v.tap("up");
-  check(game(v).cursor === 6, "Up from BUY TOKEN selects the oil can, bottom of the left column", game(v).cursor);
+  v.tap("right");
+  check(
+    game(v).cursor === 6,
+    "Up from CLOSE then Right (wrapping the row) selects the oil can, bottom of the left column",
+    game(v).cursor,
+  );
   v.frame("2-menu-oil-can");
   v.tap("space");
   v.tap("up");
@@ -158,13 +163,17 @@ function noPrizes(v: Verify): void {
 /** Walk down to the counter, buy the oil can, walk over and start Brass Monkey. */
 function buyAndPlay(v: Verify): void {
   v.wait(800);
+  v.key("KeyQ"); // dismiss the keyboard notice, if the browser shows it (a key the game ignores)
+  v.wait(400);
   v.key("Space"); // Continue
   v.wait(600);
   v.key("ArrowDown", 200); // into the counter
   v.wait(300);
   v.key("Space"); // open
   v.wait(600);
-  v.key("ArrowUp"); // to the oil can
+  v.key("ArrowUp"); // to the bottom of the right column
+  v.wait(500);
+  v.key("ArrowRight"); // wrap round to the oil can
   v.wait(500);
   v.key("Space"); // buy
   v.wait(1200);

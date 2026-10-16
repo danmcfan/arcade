@@ -54,8 +54,8 @@ export function tileEq(a: Tile, b: Tile): boolean {
 
 export const targetTopLeft: Readonly<Tile> = { x: 2, y: 0 };
 export const targetTopRight: Readonly<Tile> = { x: tileWidth - 3, y: 0 };
-export const targetBottomLeft: Readonly<Tile> = { x: 0, y: tileHeight - 2 };
-export const targetBottomRight: Readonly<Tile> = { x: tileWidth - 1, y: tileHeight - 2 };
+export const targetBottomLeft: Readonly<Tile> = { x: 0, y: tileHeight - 1 };
+export const targetBottomRight: Readonly<Tile> = { x: tileWidth - 1, y: tileHeight - 1 };
 
 // Premultiplied Go color.RGBA values; debug drawing only. Identity is `kind`.
 export const colorRed: PremulColor = { r: 255, g: 0, b: 0, a: 128 };
@@ -129,6 +129,8 @@ export class Entity {
   reverseTile: Tile = { x: 0, y: 0 };
 
   home = false;
+  /** The mode changed while the bee was in the home: it leaves RIGHT, not LEFT. */
+  leaveRight = false;
   dotMinimum = 0;
   /** Held in the home by the global drop counter after a death (release.ts). */
   held = false;
@@ -163,12 +165,21 @@ export function beeSheet(kind: SweetSamEnemyKind): Sprite {
   return sub(imageBees, 0, y, imageBees.w, y + h);
 }
 
+/** Bear rows in bear.png, by facing. */
+export const bearRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 2, RIGHT: 3 };
+
+/** Bee rows in each bee's sheet, by facing. */
+export const beeRows: Readonly<Record<Direction, number>> = { DOWN: 0, UP: 1, LEFT: 1, RIGHT: 0 };
+
+/** Rows a frightened bee's frames sit below its normal ones. */
+export const frightenedRowOffset = 2;
+
 export function newPlayer(): Entity {
   const e = new Entity();
   e.sprite = imageBear;
   e.frameIncrement = 0.1;
   e.frameTotal = 4;
-  e.frameDirection = { DOWN: 0, UP: 1, LEFT: 2, RIGHT: 3 };
+  e.frameDirection = bearRows;
   e.x = 112;
   e.y = 212;
   e.width = 16;
@@ -190,10 +201,10 @@ export const goDotMinimums: Readonly<DotMinimums> = { pink: 0, teal: 30, orange:
 
 export function newEnemies(dots: Readonly<DotMinimums> = goDotMinimums): Entity[] {
   return [
-    newEnemy(14, 14.5, "RIGHT", targetTopLeft, "red", false, 0),
-    newEnemy(14, 17.5, "LEFT", targetTopRight, "pink", true, dots.pink),
-    newEnemy(12, 17.5, "RIGHT", targetBottomLeft, "teal", true, dots.teal),
-    newEnemy(16, 17.5, "LEFT", targetBottomRight, "orange", true, dots.orange),
+    newEnemy(14, 14.5, "RIGHT", targetTopRight, "red", false, 0),
+    newEnemy(14, 17.5, "LEFT", targetTopLeft, "pink", true, dots.pink),
+    newEnemy(12, 17.5, "RIGHT", targetBottomRight, "teal", true, dots.teal),
+    newEnemy(16, 17.5, "LEFT", targetBottomLeft, "orange", true, dots.orange),
   ];
 }
 
@@ -212,7 +223,7 @@ function newEnemy(
   e.color = kindColors[kind];
   e.frameIncrement = 0.1;
   e.frameTotal = 4;
-  e.frameDirection = { DOWN: 0, UP: 1, LEFT: 1, RIGHT: 0 };
+  e.frameDirection = beeRows;
   e.x = tileSize * tx;
   e.y = tileSize * ty;
   e.width = 16;
@@ -333,7 +344,8 @@ export const cornerRowOffset = 3;
 /**
  * The junctions where a bee in scatter or chase may not choose UP (Pac-Man
  * Dossier, "Areas To Exploit"): the two T-junctions above the home and the two
- * on the bear's start row. Tiles as pointToTile gives them.
+ * on the bear's start row. Tiles as pointToTile gives them. Sweet Sam has no
+ * Ghost Bug: see "Where Sweet Sam stays different" in docs/sweet-sam-pacman.md.
  */
 export const noUpTiles: readonly Tile[] = [
   { x: 12, y: 14 },

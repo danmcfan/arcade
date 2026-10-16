@@ -24,6 +24,10 @@ class FakeScene implements Scene {
   step(i: Input): void {
     this.inputs.push(i);
   }
+  readonly jumps: number[] = [];
+  jumpTo(stage: number): void {
+    this.jumps.push(stage);
+  }
   draw(): void {}
   layout(): [number, number] {
     return [192, 176];
@@ -169,5 +173,12 @@ describe("window.__arcade (§3.5)", () => {
     hook.pause();
     hook.resume();
     expect(log).toEqual(["pause", "resume"]);
+  });
+
+  test("jump(n) jumps the scene's minigame to stage n, then draws once", () => {
+    const { hook, current, log } = setup();
+    hook.jump(8);
+    expect(current().jumps).toEqual([8]);
+    expect(log).toEqual(["draw"]);
   });
 });

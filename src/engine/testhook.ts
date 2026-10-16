@@ -27,6 +27,8 @@ export interface ArcadeTestHook {
    * Does not reseed or reload: call `seed()` and `load()` first.
    */
   runScript(script: InputScript): void;
+  /** Jump the running minigame to stage (or level) `stage`, then one draw; throws if the scene has none. */
+  jump(stage: number): void;
   /** `rng.seed(n)`. */
   seed(n: number): void;
   /** Replace the current scene with a fresh instance from src/game/registry.ts. */
@@ -82,6 +84,12 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
     },
     runScript(script) {
       for (const i of expandSteps(script.steps)) runtime.step(i);
+      host.draw();
+    },
+    jump(stage) {
+      const scene = runtime.scene;
+      if (scene.jumpTo === undefined) throw new Error(`jump: the ${scene.name} scene has no minigame to jump`);
+      scene.jumpTo(stage);
       host.draw();
     },
     seed: (n) => {

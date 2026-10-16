@@ -5,6 +5,7 @@ import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
 import { tickerGlyphHeight, tickerGlyphs, tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { icons } from "../src/ui/icons.ts";
+import { bonusLabelArt, hudSheetRows, hudSheetWidth, loopLabelArt } from "../src/ui/hudArt.ts";
 import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
 import {
   cabinetArt,
@@ -36,6 +37,7 @@ import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
 import {
   titleBar,
+  letterSide,
   titleCabinet,
   titleLogoHeight,
   titleLogoWidth,
@@ -49,6 +51,23 @@ describe("UI art source", () => {
   test("every glyph is 7 rows of one width, made of # and .", () => {
     for (const [ch, rows] of Object.entries(glyphs))
       checkRows(`glyph "${ch}"`, rows, { h: glyphHeight }, { "#": inks.white });
+  });
+
+  test("BONUS and LOOP are white thick letters on 8 px tiles, and hud.png holds them under the score labels", () => {
+    checkRows("BONUS", bonusLabelArt, { w: 40, h: 7 });
+    checkRows("LOOP", loopLabelArt, { w: 32, h: 7 });
+    // L is an upright with a foot, as wide as the labels' E.
+    expect(loopLabelArt.map((r) => r.slice(0, 7))).toEqual([
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "ww.....",
+      "wwwwww.",
+    ]);
+    checkRows("hud", hudSheetRows, { w: hudSheetWidth, h: 24 });
+    expect(hudSheetRows[8]?.startsWith("wwwwww...")).toBe(true);
   });
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {
@@ -125,6 +144,16 @@ describe("UI art source", () => {
     });
   });
 
+  test("ARCADE's letters are evenly spaced, each block side showing, and the word is centred in the logo", () => {
+    const spans = faceSpans(titleWord.rows).map(([l, r]) => [titleWord.x + l, titleWord.x + r] as const);
+    expect(spans).toHaveLength(6);
+    const gaps = spans.slice(1).map(([l], i) => l - (spans[i]?.[1] ?? 0) - 1);
+    // Each face casts a 3-pixel side (two purple, one dark) to its right: a gap that wide shows it all.
+    expect(gaps).toEqual(gaps.map(() => letterSide));
+    const margin = { left: spans[0]?.[0] ?? 0, right: titleLogoWidth - 1 - ((spans[5]?.[1] ?? 0) + letterSide) };
+    expect(Math.abs(margin.left - margin.right)).toBeLessThanOrEqual(1);
+  });
+
   test("every title letter is 11x15 (the space only sets a width)", () => {
     for (const [ch, rows] of Object.entries(titleLetters)) {
       if (ch === " ") continue;
@@ -136,3 +165,17 @@ describe("UI art source", () => {
     }
   });
 });
+
+/** Each letter face's [left, right] columns in `rows`: runs of columns holding face colours (y, o, r), left to right. */
+function faceSpans(rows: readonly string[]): [number, number][] {
+  const width = rows[0]?.length ?? 0;
+  const face = (x: number): boolean => rows.some((row) => "yor".includes(row[x] ?? "."));
+  const spans: [number, number][] = [];
+  for (let x = 0; x < width; x++) {
+    if (!face(x)) continue;
+    const last = spans.at(-1);
+    if (last !== undefined && last[1] === x - 1) last[1] = x;
+    else spans.push([x, x]);
+  }
+  return spans;
+}

@@ -4,13 +4,16 @@
 // menu (Resume / Controls / Quit game), and a minigame that ends shows the
 // payout, which turns its score into tickets, before the hub comes back.
 // Space at the prize desk opens the prize counter menu over the hub, where
-// tickets buy tokens and prizes.
+// tickets buy tokens and prizes. The payout that leaves every machine beaten
+// is the arcade win: confetti, and a scoreboard banner the hub waits on until
+// the action key.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import { imageArcade, attractSounds, sounds } from "../engine/assets.ts";
 import { MenuKeys, type Direction, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import type { Surface } from "../engine/surface.ts";
+import { confettiTicks } from "../arcade/arcadeWin.ts";
 import { draw as drawArcade } from "../arcade/draw.ts";
 import type { SoftwareFactory } from "../arcade/machine.ts";
 import { blocked, newState, type State } from "../arcade/state.ts";
@@ -19,7 +22,7 @@ import { faced, update as updateArcade } from "../arcade/update.ts";
 import { newDebugPanel, type DebugPrinter, type Panel } from "./debugPanel.ts";
 import { createSoftware } from "./minigames.ts";
 import { Menu } from "./menu.ts";
-import { moveCounterCursor, prizeCounterItems, tokenCursor } from "./menus.ts";
+import { closeCursor, moveCounterCursor, prizeCounterItems } from "./menus.ts";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { tickerRect } from "../ui/tickerArt.ts";
 import { drawMenuOverlay } from "./overlay.ts";
@@ -31,7 +34,7 @@ const buffer = 16;
 
 const initialDebugMode = false;
 
-/** What "Continue" brings back: the hub high score, tokens, tickets and prizes, and where the player stood. */
+/** What "Continue" brings back: the wallet (high scores, tokens, tickets, prizes, the arcade win) and where the player stood. */
 export interface Progress extends WalletProgress {
   player: { x: number; y: number; dir: Direction };
 }
@@ -75,6 +78,14 @@ export class Game implements Scene {
    */
   private readonly keys = new MenuKeys();
 
+  /**
+   * The tick of the arcade win in this sitting, for the confetti; null when
+   * it has not happened since the Game began (a Continue shows no confetti).
+   */
+  private winTick: number | null = null;
+  /** The scoreboard's arcade win banner is up: the hub waits for the action key. */
+  private banner = false;
+
   private debugMode = initialDebugMode;
   private readonly debugPanel: Panel;
 
@@ -102,6 +113,14 @@ export class Game implements Scene {
     if (deps.restore) this.restore(deps.restore);
     this.initialSoftware = sw;
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
+  }
+
+  /** Jump the running minigame to `stage` (test hook); throws when it has no stages. */
+  jumpTo(stage: number): void {
+    const software = this.run?.software;
+    if (software?.jumpTo === undefined)
+      throw new Error(`Game.jumpTo: ${software?.name ?? "the hub"} has no stages to jump to`);
+    software.jumpTo(stage);
   }
 
   /**
@@ -199,7 +218,19 @@ export class Game implements Scene {
     const input = this.keys.unmasked(raw);
 
     if (this.run !== null) {
-      if (this.run.update(raw, input, edges)) this.run = null;
+      const paidOut = this.run.payout !== null;
+      if (!this.run.update(raw, input, edges)) return;
+      this.run = null;
+      if (paidOut && this.arcade.wallet.winArcade()) {
+        this.winTick = this.tick;
+        this.banner = true;
+      }
+      return;
+    }
+    if (this.banner) {
+      if (!edges.space) return;
+      this.banner = false;
+      this.keys.maskHeld(raw);
       return;
     }
     if (this.counterOpen) {
@@ -220,7 +251,7 @@ export class Game implements Scene {
     }
     sounds.select.blip();
     this.counterOpen = true;
-    this.counterMenu.open(tokenCursor);
+    this.counterMenu.open(closeCursor);
   }
 
   /** CLOSE or Esc: back to the hub, with the keys that closed it hidden until released. */
@@ -259,7 +290,11 @@ export class Game implements Scene {
     }
 
     // Everything in the hub, its counts and its menu included, is drawn inside the hub image (#72).
-    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode, faced(this.arcade, this.counterOpen));
+    const confettiAge = this.winTick === null ? null : this.tick - this.winTick;
+    drawArcade(screen, this.arcade, this.tick, buffer, this.debugMode, faced(this.arcade, this.counterOpen), {
+      banner: this.banner,
+      confettiAge: confettiAge !== null && confettiAge < confettiTicks ? confettiAge : null,
+    });
     const hubWidth = imageArcade.w + buffer * 2;
     const hubHeight = imageArcade.h + buffer * 2;
     if (this.counterOpen) {
@@ -320,6 +355,7 @@ export class Game implements Scene {
         player: { x: p.x, y: p.y, dir: p.direction, frame: p.frame },
         melodyPlaying: this.arcade.melodyPlaying,
         faced: faced(this.arcade, this.counterOpen),
+        notice: this.arcade.notice?.kind ?? null,
         title: this.arcade.imageTitle,
         ...this.walletSnapshot(),
       },
@@ -333,9 +369,15 @@ export class Game implements Scene {
   }
 
   /** The wallet as the `arcade` snapshot shows it: `prizes` is absent while none is owned (ADR-0004). */
-  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScores" | "tokens" | "tickets" | "prizes"> {
-    const { highScores, tokens, tickets, prizes: owned } = this.arcade.wallet.toProgress();
-    return { highScores, tokens, tickets, ...(owned.length > 0 ? { prizes: owned } : {}) };
+  private walletSnapshot(): Pick<GameSnapshot["arcade"], "highScores" | "tokens" | "tickets" | "prizes" | "arcadeWin"> {
+    const { highScores, tokens, tickets, prizes: owned, arcadeWon } = this.arcade.wallet.toProgress();
+    return {
+      highScores,
+      tokens,
+      tickets,
+      ...(owned.length > 0 ? { prizes: owned } : {}),
+      ...(arcadeWon ? { arcadeWin: this.banner ? "banner" : "won" } : {}),
+    };
   }
 
   dispose(): void {

@@ -18,6 +18,7 @@ import type { Direction } from "../engine/input.ts";
 import type { SoundEvent } from "../engine/audio.ts";
 import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import type { NoticeKind } from "../arcade/changeMachine.ts";
 import type { HighScores } from "../arcade/wallet.ts";
 import type { Faced } from "../arcade/update.ts";
 
@@ -50,8 +51,10 @@ export interface ArcadeSnapshot {
   player: ArcadePlayerSnapshot;
   /** `State.melodyPlaying`. */
   melodyPlaying: boolean;
-  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", or null for the counts. */
+  /** What the scoreboard names (`faced`): a cabinet title, "prizeCounter", "changeMachine", or null for the counts. */
   faced: Faced | null;
+  /** `State.notice`'s kind: what the scoreboard flashes after a press of the change machine, or null. */
+  notice: NoticeKind | null;
   /**
    * `State.imageTitle`: the Brass Monkey title (`imageTitleBrassMonkey` here) → "brassMonkey",
    * `ImageTitleSweet` → "sweet", `ImageTitleFirefly` → "firefly", nil → null.
@@ -69,6 +72,12 @@ export interface ArcadeSnapshot {
    * existed (which own none) still match key for key.
    */
   prizes?: PrizeId[];
+  /**
+   * The arcade win (#143): "banner" from the run that won it until the action
+   * key closes the scoreboard's banner, then "won". Absent until the player
+   * has had it, so older traces still match key for key.
+   */
+  arcadeWin?: "banner" | "won";
 }
 
 /** How the running minigame was started (`RunKind` in src/arcade/wallet.ts). */
@@ -92,8 +101,8 @@ export interface GameSnapshot extends SceneSnapshotBase {
   menu: GameMenu | null;
   /**
    * Selected item of the minigame pause menu (RESUME, CONTROLS, QUIT GAME)
-   * or the prize counter (0-8 the prize shelf row by row, 9 BUY TOKEN, 10
-   * CLOSE; `counterSlot` in ./menus.ts). Stays 1 (CONTROLS) while
+   * or the prize counter (0-8 the prize shelf row by row, 9 CLOSE;
+   * `closeCursor` in ./menus.ts). Stays 1 (CONTROLS) while
    * the controls panel shows; 0 in the hub, the running minigame and the
    * payout.
    */
@@ -131,7 +140,8 @@ export interface PayoutSnapshot {
 // sweetSam (the Go port's Sweet Sam package)
 
 /** Go `StateID` values. */
-export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR";
+export type SweetSamStateId =
+  "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR" | "INTERMISSION";
 
 /** Enemy identity; Go compares `e.color` against `colorRed`, `colorPink`, `colorTeal`, `colorOrange`. */
 export type SweetSamEnemyKind = "red" | "pink" | "teal" | "orange";
@@ -184,6 +194,8 @@ export interface SweetSamEnemySnapshot {
   eyes: boolean;
   /** `Entity.reverseDirection`. */
   reverse: boolean;
+  /** `Entity.leaveRight`: the bee leaves the home RIGHT, not LEFT. */
+  leaveRight: boolean;
   /** `Entity.reverseTile` as `[x, y]`. */
   reverseTile: [number, number];
 }
@@ -234,6 +246,8 @@ export interface SweetSamSnapshot {
   release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
   /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
+  /** `SweetSamSoftware.eatPauseTicks`. */
+  eatPauseTicks: number;
   /** `SweetSamSoftware.startTicks`. */
   startTicks: number;
   /** `StartState.respawnBlinkRemaining` (the registered START state's field, whatever the current state). */

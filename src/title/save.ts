@@ -1,6 +1,6 @@
-// The save behind "Continue": the player's high score on each machine, tokens, tickets and owned
-// prizes, and where the player stood. Minigame progress is not saved. The title scene talks to a `SaveStore`
-// so it stays DOM-free (D12); main.ts passes `localStorageStore()`, tests
+// The save behind "Continue": the player's high score on each machine, tokens, tickets, owned
+// prizes, whether the player has had the arcade win, and where the player stood. Minigame
+// progress is not saved. The title scene talks to a `SaveStore` so it stays DOM-free (D12); main.ts passes `localStorageStore()`, tests
 // pass `memoryStore()`.
 
 import type { Direction } from "../engine/input.ts";
@@ -13,13 +13,17 @@ export interface SaveData extends Progress {
    * Format version. Older saves are upgraded on load: `v: 1` (no tokens,
    * tickets or prizes), `v: 2` (no prizes) and `v: 3`. Before `v: 4` every
    * machine shared one `highScore`; no one machine can claim it, so it is
-   * dropped and each machine starts at 0. Any other `v` is ignored.
+   * dropped and each machine starts at 0. Before `v: 5` no save had the
+   * arcade win. Any other `v` is ignored.
    */
-  v: 4;
+  v: 5;
 }
 
-/** The current format version. */
-export const saveVersion = 4;
+/**
+ * The current format version. Bumping it needs a fixture of the previous
+ * version's save in test/fixtures/saves/ (save.test.ts).
+ */
+export const saveVersion = 5;
 
 /** What a `v: 1` save gets on upgrade: a New game's tokens and tickets. */
 const v1Upgrade = { tokens: startingTokens, tickets: 0 };
@@ -64,8 +68,8 @@ export function parseSave(raw: unknown): SaveData | null {
   if (!isRecord(raw)) return null;
   const o = raw;
   const v = o["v"];
-  if (v !== 1 && v !== 2 && v !== 3 && v !== 4) return null;
-  const scores = v === 4 ? highScores(o["highScores"]) : noHighScores;
+  if (v !== 1 && v !== 2 && v !== 3 && v !== 4 && v !== 5) return null;
+  const scores = v >= 4 ? highScores(o["highScores"]) : noHighScores;
   if (scores === null) return null;
   const p = o["player"];
   if (!isRecord(p)) return null;
@@ -77,9 +81,12 @@ export function parseSave(raw: unknown): SaveData | null {
   // v1 and v2 saves own no prizes.
   const prizes = v >= 3 ? o["prizes"] : [];
   if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
-  const wallet = new Wallet({ highScores: scores, tokens, tickets, prizes });
+  // Saves before v5 have not had the arcade win.
+  const arcadeWon = v === 5 ? o["arcadeWon"] : false;
+  if (typeof arcadeWon !== "boolean") return null;
+  const wallet = new Wallet({ highScores: scores, tokens, tickets, prizes, arcadeWon });
   return {
-    v: 4,
+    v: 5,
     ...wallet.toProgress(),
     player: { x: p["x"], y: p["y"], dir },
   };

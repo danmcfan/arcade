@@ -71,6 +71,7 @@ function bearOnFlower(s: SweetSamSoftware): void {
   s.player.x = flowerX + s.player.velocity;
   s.player.y = flowerY;
   s.player.direction = "LEFT";
+  s.eatPauseTicks = 0;
 }
 
 /** A game on level 1 whose last honey drop the bear has just eaten. */
@@ -152,12 +153,47 @@ describe("START", () => {
 });
 
 describe("PLAY modes", () => {
-  test("the first PLAY tick starts scatter (420 ticks) and flags every bee to reverse", () => {
+  test("the first PLAY tick starts scatter (420 ticks) and flags every maze bee to reverse", () => {
     const s = new SweetSamSoftware(0);
     step(s, 122);
     const snap = s.snapshot();
     expect([snap.modeIndex, snap.mode, snap.modeTicks]).toEqual([1, 0, 419]);
-    expect(snap.enemies.every((e) => e.reverse)).toBe(true);
+    expect(snap.enemies.map((e) => e.reverse)).toEqual([true, false, false, false]);
+  });
+
+  test("the first scatter flags only the red bee; home bees still leave LEFT (#226)", () => {
+    const s = playing();
+    expect(s.enemies.map((e) => [e.reverseDirection, e.leaveRight])).toEqual([
+      [true, false],
+      [false, false],
+      [false, false],
+      [false, false],
+    ]);
+  });
+
+  test("a mode change sends home bees out RIGHT instead of reversing them (#226)", () => {
+    const s = playing();
+    s.modeTicks = 0;
+    step(s);
+    const [red, pink, teal] = [enemy(s, 0), enemy(s, 1), enemy(s, 2)];
+    expect([red.reverseDirection, red.leaveRight]).toEqual([true, false]);
+    expect([teal.home, teal.reverseDirection, teal.leaveRight]).toEqual([true, false, true]);
+    for (let t = 0; t < 200 && pink.home; t++) step(s);
+    expect([pink.home, pink.direction, pink.leaveRight, pink.reverseDirection]).toEqual([false, "RIGHT", false, false]);
+    step(s, 6);
+    expect([pink.direction, pink.reverseDirection]).toEqual(["RIGHT", false]);
+  });
+
+  test("bees leave the home on the same ticks as before the bob (#226)", () => {
+    rng.seed(1);
+    const s = new SweetSamSoftware(0);
+    const out: Record<string, number> = {};
+    for (let t = 1; t < 3000 && Object.keys(out).length < 3; t++) {
+      step(s, 1, { ...NO_INPUT, down: true });
+      for (const e of s.enemies)
+        if (e.kind !== null && e.kind !== "red" && !e.home && !(e.kind in out)) out[e.kind] = t;
+    }
+    expect(out).toEqual({ pink: 170, teal: 500, orange: 740 });
   });
 
   test("the scatter/chase timer holds while any bee is sleepy", () => {
@@ -306,6 +342,31 @@ describe("eating", () => {
     expect(s.scaredEatAwardNext).toBe(3);
   });
 
+  test("a honey pot eaten while bees are sleepy restarts the award at 200", () => {
+    const s = playing();
+    const pink = enemy(s, 1);
+    pink.blueFrames = 10_000; // keeps the ladder alive (blue but home)
+    const eatRed = (): number => {
+      const red = enemy(s, 0);
+      onPlayer(s, red);
+      red.eyes = false;
+      red.blueFrames = 300;
+      const before = s.scoreValue;
+      step(s);
+      const award = s.scoreValue - before;
+      step(s, 61);
+      return award;
+    };
+    const awards = [eatRed(), eatRed()];
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = s.player.y;
+    step(s);
+    awards.push(eatRed());
+    expect(awards).toEqual([200, 400, 200]);
+  });
+
   test("the award resets at the end of a PLAY tick when no bee is scared", () => {
     const s = playing();
     s.scaredEatAwardNext = 2;
@@ -319,6 +380,51 @@ describe("eating", () => {
 });
 
 describe("collisions and death", () => {
+  test("a bee anywhere in the bear's tile catches it", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x + 3; // tile 14 spans x 112..119; the bear is at 112
+    step(s);
+    expect([s.snapshot().state, s.lives]).toEqual(["DEATHWAIT", 2]);
+  });
+
+  test("a sleepy bee anywhere in the bear's tile is eaten", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x + 7;
+    red.blueFrames = 50;
+    step(s);
+    expect([s.snapshot().state, red.eyes, s.lives]).toEqual(["PAUSE", true, 3]);
+  });
+
+  test("a bee in the neighbouring tile does not catch the bear, however close", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x - 1; // tile 13, 1 px from the bear in tile 14
+    red.direction = "LEFT";
+    s.player.direction = "RIGHT";
+    step(s);
+    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+  });
+
+  test("bear and bee swapping tiles in one tick pass through each other", () => {
+    const s = playing();
+    s.player.x = 112;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.x = s.player.x - 0.5; // a bee moves under 1 px a tick
+    red.direction = "RIGHT";
+    step(s, 1, { ...NO_INPUT, left: true });
+    expect([Math.trunc(s.player.x / 8), Math.trunc(red.x / 8)]).toEqual([13, 14]);
+    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+  });
+
   test("a collision returns immediately: later bees skip updateBlue, nothing moves or is eaten", () => {
     const s = playing();
     const red = enemy(s, 0);
@@ -576,7 +682,56 @@ describe("clearing a level", () => {
     step(s, levelClearTicks + 1 + levelBannerTicks + 121);
     s.items = s.items.map(() => null);
     step(s, 2 + levelClearTicks);
-    expect([s.snapshot().state, s.snapshot().level]).toEqual(["START", 3]);
+    expect([s.snapshot().state, s.snapshot().level]).toEqual(["INTERMISSION", 3]);
+  });
+});
+
+/** A game on `level` whose last honey drop the bear has just eaten. */
+function clearedLevel(level: number): SweetSamSoftware {
+  const s = cleared();
+  s.level = level;
+  return s;
+}
+
+/** The states a cleared level passes through on its way to the next START. */
+function statesAfterClear(s: SweetSamSoftware, i: Input = NO_INPUT): string[] {
+  const seen: string[] = [];
+  for (let t = 0; t < 5000 && s.snapshot().state !== "START"; t++) {
+    step(s, 1, i);
+    const state = s.snapshot().state;
+    if (seen.at(-1) !== state) seen.push(state);
+  }
+  return seen;
+}
+
+describe("intermissions (#160)", () => {
+  test.each([2, 5, 9])("clearing level %i plays an intermission before the next level", (level) => {
+    const s = clearedLevel(level);
+    expect(statesAfterClear(s)).toEqual(["LEVELCLEAR", "INTERMISSION", "START"]);
+    expect(s.level).toBe(level + 1);
+  });
+
+  test.each([1, 3, 4, 6, 7, 8, 10, 13])("clearing level %i goes straight to the next level", (level) => {
+    expect(statesAfterClear(clearedLevel(level))).toEqual(["LEVELCLEAR", "START"]);
+  });
+
+  test("the action key skips the scene straight to the next level's START", () => {
+    const s = clearedLevel(2);
+    step(s, levelClearTicks + 1);
+    expect(s.snapshot().state).toBe("INTERMISSION");
+    step(s, 30);
+    step(s, 1, { ...NO_INPUT, space: true });
+    const snap = s.snapshot();
+    expect([snap.state, snap.level, snap.items, snap.levelBannerTicks]).toEqual(["START", 3, 244, levelBannerTicks]);
+  });
+
+  test("the scene plays the intermission music", () => {
+    const s = clearedLevel(5);
+    step(s, levelClearTicks);
+    sounds = [];
+    step(s);
+    expect(s.snapshot().state).toBe("INTERMISSION");
+    expect(sounds).toEqual(["rewind:sweetStart", "play:sweetStart"]);
   });
 });
 

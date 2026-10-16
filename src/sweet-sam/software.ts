@@ -15,12 +15,14 @@ import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
-import { digits6, newDigitReels, type DigitReel, type DigitReels } from "../ui/digitReel.ts";
+import { type DigitReel } from "../ui/digitReel.ts";
+import { ScoreDials } from "../ui/scoreDials.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import {
   DeathWaitState,
   FinalDeathWaitState,
   GameOverState,
+  IntermissionState,
   LevelClearState,
   levelClearFlashTicks,
   levelClearTicks,
@@ -31,6 +33,7 @@ import {
   stateIDDeathWait,
   stateIDFinalDeathWait,
   stateIDGameOver,
+  stateIDIntermission,
   stateIDLevelClear,
   stateIDPause,
   stateIDPlay,
@@ -38,7 +41,8 @@ import {
 } from "./state.ts";
 import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
-import { draw, type DrawCache } from "./draw.ts";
+import { draw } from "./draw.ts";
+import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
 export class SweetSamSoftware implements FixedViewport {
@@ -65,6 +69,8 @@ export class SweetSamSoftware implements FixedViewport {
   modeTicks = 0;
 
   pauseTicks = 0;
+  /** Ticks the bear stands still after eating: 1 for a honey drop, 3 for a pot (Dossier, "Speed"). */
+  eatPauseTicks = 0;
 
   startTicks = 0;
 
@@ -79,8 +85,7 @@ export class SweetSamSoftware implements FixedViewport {
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
   readonly advantages: Readonly<SweetSamAdvantages>;
 
-  readonly scoreDial: DigitReels = newDigitReels();
-  readonly highScoreDial: DigitReels = newDigitReels();
+  readonly dials: ScoreDials;
 
   /** Advances every Sweet Sam update; food atlases cycle (tick/holdTicks % frameCount) per pellet row. */
   pelletAnimTick = 0;
@@ -96,9 +101,6 @@ export class SweetSamSoftware implements FixedViewport {
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
 
-  /** Lazily created draw resources (Go `digitDialScratch`); never touched by update (D12). */
-  drawCache: DrawCache = { digitDialScratch: null };
-
   constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages) {
     this.highScore = highscore;
     this.advantages = advantages;
@@ -111,26 +113,13 @@ export class SweetSamSoftware implements FixedViewport {
     this.stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(this));
     this.stateMachine.registerState(stateIDGameOver, new GameOverState());
     this.stateMachine.registerState(stateIDLevelClear, new LevelClearState(this));
+    this.stateMachine.registerState(stateIDIntermission, new IntermissionState(this));
 
     this.lives = advantages.lives;
     this.scoreValue = 0;
     this.items = newItems();
 
-    const z = digits6(0);
-    this.scoreDial.forEach((r, i) => {
-      r.boot(z[i] ?? 0);
-    });
-    let hc = highscore;
-    if (hc < 0) {
-      hc = 0;
-    }
-    if (hc > 999_999) {
-      hc = 999_999;
-    }
-    const hd = digits6(hc);
-    this.highScoreDial.forEach((r, i) => {
-      r.boot(hd[i] ?? 0);
-    });
+    this.dials = new ScoreDials(highscore);
 
     restartRound(this);
 
@@ -186,6 +175,18 @@ export class SweetSamSoftware implements FixedViewport {
     return Math.trunc((levelClearTicks - this.pauseTicks) / levelClearFlashTicks) % 2 === 1;
   }
 
+  /** The cutscene playing (after the level before this one), or null outside INTERMISSION. */
+  intermission(): IntermissionScene | null {
+    if (this.stateMachine.currentId() !== stateIDIntermission) return null;
+    return intermissionAfter(this.level - 1);
+  }
+
+  /** The cutscene's actors at this tick, or null outside INTERMISSION. */
+  intermissionPoses(): IntermissionPose[] | null {
+    const scene = this.intermission();
+    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.pauseTicks);
+  }
+
   /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */
   deathFrame(): number | null {
     const id = this.stateMachine.currentId();
@@ -239,6 +240,7 @@ export class SweetSamSoftware implements FixedViewport {
         held: e.held,
         eyes: e.eyes,
         reverse: e.reverseDirection,
+        leaveRight: e.leaveRight,
         reverseTile: [e.reverseTile.x, e.reverseTile.y],
       })),
       items: present.length,
@@ -255,6 +257,7 @@ export class SweetSamSoftware implements FixedViewport {
         elroySuspended: this.release.elroySuspended,
       },
       pauseTicks: this.pauseTicks,
+      eatPauseTicks: this.eatPauseTicks,
       startTicks: this.startTicks,
       respawnBlinkRemaining: this.startState.respawnBlinkRemaining,
       scaredEatAwardNext: this.scaredEatAwardNext,
@@ -267,7 +270,7 @@ export class SweetSamSoftware implements FixedViewport {
       ],
       particlesActive: this.particles.activeCount(),
       pelletAnimTick: this.pelletAnimTick,
-      dials: [...this.scoreDial.map(dial), ...this.highScoreDial.map(dial)],
+      dials: [...this.dials.score.map(dial), ...this.dials.high.map(dial)],
       level: this.level,
       levelBannerTicks: this.levelBannerTicks,
       mazeFlash: this.mazeFlash(),

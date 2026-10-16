@@ -1,6 +1,6 @@
 // Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
 // effects), enemy shots, sparks, the firefly (or its death effect), the
-// score, high score and spare lives, and "STAGE n" while a stage opens.
+// score HUD shared with Sweet Sam (src/ui/scoreDials.ts) and spare lives, and "STAGE n" while a stage opens.
 
 import {
   imageCabinetFirefly,
@@ -17,7 +17,8 @@ import {
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
-import { drawText, drawTextCentered } from "../ui/text.ts";
+import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
+import { drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
 
@@ -59,9 +60,9 @@ function drawEnemy(screen: Surface, e: Enemy): void {
   screen.draw(frame, ox + e.x - enemySize / 2, oy + e.y - enemySize / 2);
 }
 
-/** Spare lives: fireflies along the top right, clear of the firefly in play. */
+/** Spare lives: fireflies along the bottom left, where Sweet Sam shows its spare bears, under the firefly in play. */
 function drawLives(screen: Surface, spare: number): void {
-  for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + fieldWidth - 18 * (i + 1), oy + 2);
+  for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + 8 * (2 + i * 2), oy + 8 * 34 + 1);
 }
 
 /** What drawing needs of the game (`FireflySoftware`). */
@@ -76,6 +77,7 @@ export interface FireflyView {
   enemies: readonly Enemy[];
   shots: readonly Shot[];
   highScore: number;
+  dials: ScoreDials;
   score(): number;
 }
 
@@ -101,9 +103,9 @@ function drawField(screen: Surface, f: FireflyView): void {
     screen.draw(imageFirefly, ox + f.player.x - 8, oy + f.player.y - 8);
   }
 
-  drawText(screen, `${f.score()}`, ox + 4, oy + 4);
-  // The high score follows the score once the score passes it, as in Sweet Sam.
-  drawTextCentered(screen, `${Math.max(f.score(), f.highScore)}`, ox + fieldWidth / 2, oy + 4);
+  // Sweet Sam's HUD: the high score follows the score once the score passes it.
+  drawScoreLabels(screen, ox, oy);
+  f.dials.draw(screen, ox, oy, f.score(), f.highScore);
   drawLives(screen, Math.max(0, f.lives - 1));
 
   if (f.stageTick <= stageIntroTicks) {

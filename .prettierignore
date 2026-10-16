@@ -6,3 +6,4 @@ bun.lock
 .claude/
 test/fixtures/
 .sandcastle/logs
+.sandcastle/worktrees

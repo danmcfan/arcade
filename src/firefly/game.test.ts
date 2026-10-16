@@ -12,6 +12,9 @@ import { FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
+  entryPairOffset,
+  entryWaves,
+  fieldWidth,
   enemyHp,
   formation,
   hitEffectTicks,
@@ -151,6 +154,20 @@ describe("stage start", () => {
   });
 });
 
+describe("jumpTo", () => {
+  test("starts stage n afresh: STAGE n text, a full formation, no shots, that stage's dive timer", () => {
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks + 200, { space: true });
+    f.jumpTo(8);
+    expect(f.stage).toBe(8);
+    expect(f.stageTick).toBe(0);
+    expect(f.shots).toEqual([]);
+    expect(f.enemies.length).toBe(formation().length);
+    expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
+    expect(f.diveTimer).toBe(difficulty(8).diveInterval);
+  });
+});
+
 /** A fresh software with every enemy settled in formation and a dive due next tick. */
 function settled(): FireflySoftware {
   const f = new FireflySoftware();
@@ -161,6 +178,17 @@ function settled(): FireflySoftware {
   }
   f.diveTimer = 1;
   return f;
+}
+
+/** The curve step of the first diver on `stage`, from the same seed and formation. */
+function diveStep(stage: number): number {
+  rng.seed(9);
+  const f = settled();
+  f.stage = stage;
+  f.update(NO_INPUT);
+  const diver = f.enemies.find((e) => e.state === "diving");
+  if (diver === undefined) throw new Error("no dive started");
+  return diver.tStep;
 }
 
 describe("dives", () => {
@@ -203,6 +231,26 @@ describe("dives", () => {
       f.update(NO_INPUT);
       expect(f.enemies.filter((e) => e.state === "diving").length).toBe(difficulty(stage).diversPerDive);
       expect(f.diveTimer).toBe(difficulty(stage).diveInterval);
+    }
+  });
+
+  test("on later stages a diver flies its dive faster", () => {
+    expect(diveStep(10) / diveStep(5)).toBeCloseTo(difficulty(10).diveSpeed / difficulty(5).diveSpeed);
+  });
+
+  test("on later stages a shot drifts further sideways at the firefly", () => {
+    for (const stage of [5, 10]) {
+      const f = settled();
+      f.stage = stage;
+      f.diveTimer = 1_000_000;
+      const e = f.enemies[0];
+      if (e === undefined) throw new Error("no enemy");
+      divingAt(e, 20, 20);
+      e.shotsLeft = 1;
+      e.shotTimer = 1;
+      f.player.x = 200;
+      f.update(NO_INPUT);
+      expect(f.shots.map((s) => s.dx)).toEqual([difficulty(stage).shotDrift]);
     }
   });
 });
@@ -423,7 +471,14 @@ describe("payout", () => {
   test("a paid run played to game over pays its score in tickets", () => {
     rng.seed(1);
     const game = new Game(null, {
-      restore: { highScores: noHighScores, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      restore: {
+        highScores: noHighScores,
+        tokens: 1,
+        tickets: 0,
+        arcadeWon: false,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "DOWN" },
+      },
     });
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.
@@ -444,5 +499,35 @@ describe("payout", () => {
     expect(s.payout?.score).toBe(score);
     expect(s.payout?.total).toBe(ticketsFor(score));
     expect(s.arcade.tickets).toBe(ticketsFor(score));
+  });
+});
+
+describe("entry waves", () => {
+  const enemies = new FireflySoftware().enemies;
+  const at = (row: number, col: number): Enemy | undefined => enemies.find((e) => e.row === row && e.col === col);
+
+  test("every Owl waits longer than the whole of wave 1", () => {
+    const wave1 = entryWaves[0]?.pairs.flat() ?? [];
+    const wave1Waits = enemies.filter((e) => wave1.some((s) => s.row === e.row && s.col === e.col)).map((e) => e.wait);
+    expect(wave1Waits.length).toBe(8);
+    for (const owl of enemies.filter((e) => e.kind === "owl"))
+      expect(owl.wait).toBeGreaterThan(Math.max(...wave1Waits));
+  });
+
+  test("each wave flies in as pairs: equal waits, two different paths", () => {
+    for (const w of entryWaves) {
+      const waits = new Set<number>();
+      for (const [a, b] of w.pairs) {
+        const ea = at(a.row, a.col);
+        const eb = at(b.row, b.col);
+        expect(ea?.wait).toBe(eb?.wait ?? -1);
+        const pa = ea?.path?.p0 ?? { x: 0, y: 0 };
+        const pb = eb?.path?.p0 ?? { x: 0, y: 0 };
+        if (w.split) expect(pb.x).toBe(fieldWidth - pa.x);
+        else expect(Math.hypot(pb.x - pa.x, pb.y - pa.y)).toBeCloseTo(entryPairOffset);
+        waits.add(ea?.wait ?? -1);
+      }
+      expect(waits.size).toBe(4);
+    }
   });
 });

@@ -131,7 +131,7 @@ The menu shown when a minigame ends, which turns the score into tickets.
 _Avoid_: reward screen, cutscene
 
 **Prize counter**:
-The place in the hub where the player spends tickets on tokens and prizes: the prize desk across the bottom of the room, with its employee, and the menu it opens. What it offers, and at what price, comes from the wallet.
+The place in the hub where the player spends tickets on prizes: the prize desk across the bottom of the room, with its employee, and the menu it opens. What it offers, and at what price, comes from the wallet.
 _Avoid_: shop, store, token exchange, redemption
 
 **Employee**:
@@ -143,8 +143,12 @@ The LED board on the hub's wall that shows the player's tokens and tickets, and 
 _Avoid_: HUD, status bar
 
 **Last-chance token**:
-The token the prize counter sells for all the player's tickets, even 0, when they have no tokens and too few tickets to buy one. It is a wallet rule.
+The token the change machine sells for all the player's tickets, even 0, when they have no tokens and too few tickets to buy one. It is a wallet rule.
 _Avoid_: free token, pity token, bailout
+
+**Change machine**:
+A machine in the middle of the hub's right wall, facing into the room, that exchanges tickets for tokens: one token each time the player uses it. It has no menu.
+_Avoid_: token machine, ticket exchange
 
 **Prize**:
 A decoration bought with tickets that shows in the hub and gives the player an ability or advantage in one minigame.
@@ -162,6 +166,10 @@ _Avoid_: target score, par
 A machine is beaten when the player's high score on it is above its house high score. Facing its cabinet, the scoreboard then shows its HI and a gold star, and its HI shows the player's score instead of the house's.
 _Avoid_: cleared, conquered
 
+**Arcade win**:
+The moment the player has beaten every machine's house high score. It happens once per save, and leaves the cake and the trophy in the hub.
+_Avoid_: victory, game complete, ending
+
 **Score**:
 Points earned inside one minigame run. The wallet keeps the player's high score for each machine.
 _Avoid_: tickets (they are separate)
@@ -173,7 +181,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
+What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, the prizes they own, and whether the player has had the arcade win) and where the player stood. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:

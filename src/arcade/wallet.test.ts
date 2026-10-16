@@ -12,7 +12,14 @@ import {
 } from "./wallet.ts";
 
 function wallet(p: Partial<WalletProgress> = {}): Wallet {
-  return new Wallet({ highScores: noHighScores, tokens: startingTokens, tickets: 0, prizes: [], ...p });
+  return new Wallet({
+    highScores: noHighScores,
+    tokens: startingTokens,
+    tickets: 0,
+    prizes: [],
+    arcadeWon: false,
+    ...p,
+  });
 }
 
 function counts(w: Wallet): { tokens: number; tickets: number } {
@@ -26,6 +33,7 @@ describe("a new Wallet", () => {
       tokens: 5,
       tickets: 0,
       prizes: [],
+      arcadeWon: false,
     });
     expect(startingTokens).toBe(5);
   });
@@ -114,7 +122,7 @@ describe("the house high score", () => {
   });
 });
 
-describe("the token at the counter", () => {
+describe("exchange: the change machine", () => {
   test("costs 5 tickets", () => {
     expect(ticketsPerToken).toBe(5);
   });
@@ -139,8 +147,7 @@ describe("the token at the counter", () => {
       ],
     ] as const) {
       const w = wallet(before);
-      expect(w.counter().token).toBe("token");
-      expect(w.buy("token")).toBe(true);
+      expect(w.exchange()).toBe("token");
       expect(counts(w)).toEqual(after);
     }
   });
@@ -148,8 +155,7 @@ describe("the token at the counter", () => {
   test("with 0 tokens and 0 to 4 tickets the last-chance token takes all the tickets", () => {
     for (let tickets = 0; tickets < ticketsPerToken; tickets++) {
       const w = wallet({ tokens: 0, tickets });
-      expect(w.counter().token).toBe("lastChance");
-      expect(w.buy("token")).toBe(true);
+      expect(w.exchange()).toBe("lastChance");
       expect(counts(w)).toEqual({ tokens: 1, tickets: 0 });
     }
   });
@@ -158,8 +164,7 @@ describe("the token at the counter", () => {
     for (const tokens of [1, 4]) {
       for (let tickets = 0; tickets < ticketsPerToken; tickets++) {
         const w = wallet({ tokens, tickets });
-        expect(w.counter().token).toBe("short");
-        expect(w.buy("token")).toBe(false);
+        expect(w.exchange()).toBe("short");
         expect(counts(w)).toEqual({ tokens, tickets });
       }
     }
@@ -221,11 +226,8 @@ describe("prizes at the counter", () => {
 describe("canBuy", () => {
   test("says whether the counter would sell an item", () => {
     const w = wallet({ tokens: 1, tickets: 60, prizes: ["honeyJar"] });
-    expect(w.canBuy("token")).toBe(true);
     expect(w.canBuy("honeyJar")).toBe(false);
     expect(w.canBuy("glowStick")).toBe(true);
-    expect(wallet({ tokens: 1, tickets: 3 }).canBuy("token")).toBe(false);
-    expect(wallet({ tokens: 0, tickets: 3 }).canBuy("token")).toBe(true);
     expect(wallet({ tickets: 0 }).canBuy("glowStick")).toBe(false);
   });
 });
@@ -239,10 +241,10 @@ describe("version", () => {
       ["paid settle", () => w.settleRun("sweetSam", 0, "paid"), true],
       ["free settle, no new best", () => w.settleRun("sweetSam", 0, "free"), false],
       ["direct settle, new best", () => w.settleRun("sweetSam", 50, "direct"), true],
-      ["token", () => w.buy("token"), true],
+      ["token", () => w.exchange(), true],
       ["prize", () => w.buy("honeyJar" satisfies PrizeId), true],
       ["owned prize", () => w.buy("honeyJar"), false],
-      ["short token", () => w.buy("token"), false],
+      ["short token", () => w.exchange(), false],
     ];
     for (const [name, act, changes] of steps) {
       const before = w.version;
@@ -254,8 +256,45 @@ describe("version", () => {
   test("a purchase that keeps the prize count the same still changes it", () => {
     const w = wallet({ tokens: 2, tickets: 10 });
     const before = w.version;
-    w.buy("token");
+    w.exchange();
     expect(w.prizes).toHaveLength(0);
     expect(w.version).not.toBe(before);
+  });
+});
+
+describe("the arcade win", () => {
+  const allBeaten = { sweetSam: 30_001, firefly: 40_001, brassMonkey: 25_001 };
+
+  test("a New game has not had it", () => {
+    expect(new Wallet().arcadeWon).toBe(false);
+    expect(new Wallet().toProgress().arcadeWon).toBe(false);
+  });
+
+  test("beating the last house high score wins the arcade once", () => {
+    const w = wallet({ highScores: { ...allBeaten, brassMonkey: 0 } });
+    w.settleRun("brassMonkey", 20_000, "paid");
+    expect(w.winArcade()).toBe(false);
+    w.settleRun("brassMonkey", 26_000, "paid");
+    const before = w.version;
+    expect(w.winArcade()).toBe(true);
+    expect(w.arcadeWon).toBe(true);
+    expect(w.version).toBeGreaterThan(before);
+    w.settleRun("sweetSam", 50_000, "paid");
+    expect(w.winArcade()).toBe(false);
+    expect(w.arcadeWon).toBe(true);
+  });
+
+  test("is not won while any machine is unbeaten", () => {
+    const w = wallet({ highScores: { ...allBeaten, firefly: houseHighScores.firefly } });
+    expect(w.winArcade()).toBe(false);
+    expect(w.arcadeWon).toBe(false);
+  });
+
+  test("is kept in the progress and restored from it", () => {
+    const w = wallet({ highScores: allBeaten });
+    w.winArcade();
+    const restored = new Wallet(w.toProgress());
+    expect(restored.arcadeWon).toBe(true);
+    expect(restored.winArcade()).toBe(false);
   });
 });

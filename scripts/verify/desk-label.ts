@@ -7,12 +7,7 @@
 // out/verify/desk-label/.
 
 import { saveKey } from "../../src/title/save.ts";
-import { isTitleSnapshot, verify, type Verify } from "../harness.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
+import { check, isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 function menu(v: Verify): string | null {
   const g = v.snapshot(isTitleSnapshot).game;

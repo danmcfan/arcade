@@ -6,7 +6,6 @@ import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
 import { levelValues, modeScatter, type Mode } from "./levels.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
-import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {
   dirAxis,
   dirOpposite,
@@ -49,8 +48,7 @@ export function update(s: SweetSamSoftware, i: Input): void {
   s.stateMachine.update(i);
   tickBonusEatPopups(s);
   tickFlowerPopup(s);
-  syncAndTickScoreRollingDials(s);
-  syncAndTickHighScoreRollingDials(s);
+  s.dials.tick(s.scoreValue, s.highScore);
 }
 
 export function winner(s: SweetSamSoftware): boolean {
@@ -66,9 +64,14 @@ export function applyInput(s: SweetSamSoftware, i: Input): void {
   steer(s.player, s.corners, direction(i));
 }
 
-/** Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it (Dossier, "Cornering"). */
-export const corneringBefore = 4;
-export const corneringAfter = 3;
+/**
+ * Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it
+ * moving left or up, and 3 px before to 4 px after moving right or down,
+ * because the tile's centre point sits off-centre (Dossier, "Cornering").
+ */
+export function corneringWindow(d: Direction | ""): [before: number, after: number] {
+  return d === "RIGHT" || d === "DOWN" ? [3, 4] : [4, 3];
+}
 
 /**
  * The bear's input for one tick. A reversal applies at once; a perpendicular
@@ -116,17 +119,18 @@ export function steer(e: Entity, cs: readonly Entity[], held: Direction | ""): v
 /** The junction on the bear's line whose cornering window it is in, if any. */
 function cornerWindow(e: Entity, cs: readonly Entity[]): Entity | null {
   const [dx, dy] = dirSteps[e.direction];
+  const [before, after] = corneringWindow(e.direction);
   for (const c of cs) {
     const ahead = (c.x - e.x) * dx + (c.y - e.y) * dy;
     const across = (c.x - e.x) * dy + (c.y - e.y) * dx;
-    if (Math.abs(across) <= distanceThreshold && ahead <= corneringBefore && ahead >= -corneringAfter) {
+    if (Math.abs(across) <= distanceThreshold && ahead <= before && ahead >= -after) {
       return c;
     }
   }
   return null;
 }
 
-const dirSteps: Record<Direction | "", [number, number]> = {
+export const dirSteps: Record<Direction | "", [number, number]> = {
   UP: [0, -1],
   DOWN: [0, 1],
   LEFT: [-1, 0],
@@ -177,16 +181,20 @@ export function updateBlue(e: Entity): void {
 
 export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   if (waitingInHome(e)) {
+    bob(e);
     return;
   }
 
   if (e.home) {
-    if (e.x < tileSize * 14) {
+    // Re-centre on the home row during the slide to the door, so a bee freed mid-bob leaves on the same tick.
+    if (e.x !== doorX && e.y !== homeY) e.y += Math.sign(homeY - e.y) * velocityEnemyTunnel;
+
+    if (e.x < doorX) {
       e.x += velocityEnemyTunnel;
       return;
     }
 
-    if (e.x > tileSize * 14) {
+    if (e.x > doorX) {
       e.x -= velocityEnemyTunnel;
       return;
     }
@@ -197,6 +205,9 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
     }
 
     e.home = false;
+    // Dossier, "Home Sweet Home": out LEFT, or RIGHT after a mode change in the home.
+    e.direction = e.leaveRight ? "RIGHT" : "LEFT";
+    e.leaveRight = false;
   }
 
   let validDirections: readonly (Direction | "")[] = [e.direction];
@@ -236,6 +247,17 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   }
 }
 
+/** How far a waiting bee bobs above and below the home row. */
+export const bobPixels = 4;
+
+/** A waiting bee bobs up and down in place until it is released (Dossier, "Home Sweet Home"). */
+function bob(e: Entity): void {
+  if (e.direction !== "UP" && e.direction !== "DOWN") e.direction = "UP";
+  if (e.direction === "UP" && e.y <= homeY - bobPixels) e.direction = "DOWN";
+  if (e.direction === "DOWN" && e.y >= homeY + bobPixels) e.direction = "UP";
+  e.y += e.direction === "UP" ? -velocityEnemyTunnel : velocityEnemyTunnel;
+}
+
 export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile): void {
   const tileCurrent = pointToTile(e.x, e.y);
   // Go compares tile structs by value (update.go:176).
@@ -259,6 +281,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     throw new Error(`no valid directions for enemy at (${e.x}, ${e.y})`);
   }
 
+  // Differs from the arcade: a seeded random exit, not its PRNG (docs/sweet-sam-pacman.md, "Where Sweet Sam stays different").
   if (e.blueFrames > 0) {
     const picked = validDirections[rng.intn(validDirections.length)];
     if (picked === undefined) {
@@ -270,6 +293,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     return;
   }
 
+  // Differs from the arcade: the exit is picked on reaching the junction, not one tile ahead (docs/sweet-sam-pacman.md, "Where Sweet Sam stays different").
   // None of these junctions opens downward, so no bee arrives heading up.
   const choices =
     !e.eyes && noUpTiles.some((t) => tileEq(t, tileCorner))
@@ -347,6 +371,7 @@ export function restartAfterDeath(s: SweetSamSoftware): void {
 
 function resetRound(s: SweetSamSoftware): void {
   s.player = newPlayer();
+  s.eatPauseTicks = 0;
   s.modeIndex = 0;
   s.modeTicks = 0;
 
@@ -368,6 +393,7 @@ export function resetEnemy(e: Entity): void {
   e.flashFrames = 0;
   e.flash = false;
   e.home = true;
+  e.leaveRight = false;
   e.dotMinimum = 0;
   e.held = false;
   e.eyes = false;
@@ -386,7 +412,7 @@ export function becomeEyes(e: Entity): void {
 const doorX = tileSize * 14;
 const doorY = tileSize * 14.5;
 /** Where the eyes revive: the middle of the home. */
-const homeY = tileSize * 17.5;
+export const homeY = tileSize * 17.5;
 const doorTile = pointToTile(doorX, doorY);
 
 /** 1 px steps, so the eyes never skip past a junction. */

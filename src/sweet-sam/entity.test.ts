@@ -64,10 +64,10 @@ describe("constructors", () => {
   test("enemies: red outside the house, pink/teal/orange home with dot minimums", () => {
     const es = newEnemies();
     expect(es.map((e) => [e.kind, e.x, e.y, e.direction, e.home, e.dotMinimum, e.target.x, e.target.y])).toEqual([
-      ["red", 112, 116, "RIGHT", false, 0, 2, 0],
-      ["pink", 112, 140, "LEFT", true, 0, 25, 0],
-      ["teal", 96, 140, "RIGHT", true, 30, 0, 34],
-      ["orange", 128, 140, "LEFT", true, 60, 27, 34],
+      ["red", 112, 116, "RIGHT", false, 0, 25, 0],
+      ["pink", 112, 140, "LEFT", true, 0, 2, 0],
+      ["teal", 96, 140, "RIGHT", true, 30, 27, 35],
+      ["orange", 128, 140, "LEFT", true, 60, 0, 35],
     ]);
     for (const e of es) {
       expect(e.velocity).toBe(0.75);

@@ -8,7 +8,7 @@ Issues and specs live in GitHub Issues for danmcfan/arcade, managed with the `gh
 
 ### Triage labels
 
-Uses the default label names: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+Uses the default label names: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix, plus needs-owner for open owner questions. Every issue also carries exactly one work type: bug, enhancement or refactor. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
@@ -24,7 +24,7 @@ Verify any change a player can see or hear with a verify check (`bun run verify 
 
 ## Pixel art
 
-Any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any PR: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
+On a `ready-for-human` issue, any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any PR; on a `ready-for-agent` issue, make the artistic calls yourself and name them in the PR: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
 
 ## Quality gate
 

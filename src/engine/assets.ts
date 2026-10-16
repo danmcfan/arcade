@@ -24,6 +24,8 @@ export const imageCabinetFirefly: Sprite = whole(images.cabinetFirefly);
 export const imageCabinetBrassMonkey: Sprite = whole(images.cabinetBrassMonkey);
 
 export const imageFont: Sprite = whole(images.font);
+/** The HUDs' thick labels: 1UP and HIGH SCORE, BONUS, LOOP (src/ui/hudArt.ts). */
+export const imageHud: Sprite = whole(images.hud);
 export const imageTitleLogo: Sprite = whole(images.titleLogo);
 /** The LED scoreboard's lit letters (src/ui/tickerArt.ts). */
 export const imageTicker: Sprite = whole(images.ticker);
@@ -47,6 +49,8 @@ export const imageHoneyPot: Sprite = whole(sweetSamImages.honeyPot);
 export const imageReady: Sprite = whole(sweetSamImages.ready);
 /** Sweet Sam's score dial digits, 0 to 9, 8×8 each. */
 export const imageDigits: Sprite = whole(sweetSamImages.digits);
+/** "1UP" and "HIGH SCORE" on their own, for cabinets whose background does not bake them in (Sweet Sam's maze does). */
+export const imageScoreLabels: Sprite = whole(sweetSamImages.scoreLabels);
 /** The points for eating a sleepy bee: 200, 400, 800, 1600. */
 export const imagePoints: Sprite = whole(sweetSamImages.points);
 

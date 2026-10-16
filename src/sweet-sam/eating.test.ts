@@ -73,3 +73,70 @@ describe("the bear eats the item on a junction it corners round", () => {
     expect(s.enemies.every((e) => e.blueFrames > 0)).toBe(true);
   });
 });
+
+/** The bear heading LEFT one step short of the drop at (crossX - 8, crossY), a bee free in the maze. */
+function beforeDrop(): { s: SweetSamSoftware; idx: number } {
+  const s = playingAt(crossX - 8 + 1);
+  const idx = s.items.findIndex((it) => it !== null && it.x === crossX - 8 && it.y === crossY);
+  if (idx < 0) throw new Error("no drop left of the junction");
+  return { s, idx };
+}
+
+function freeBee(s: SweetSamSoftware): { x: number; y: number } {
+  const bee = s.enemies[0];
+  if (!bee) throw new Error("no bee");
+  bee.home = false;
+  return bee;
+}
+
+/** Where the bear is after 30 ticks heading LEFT from the junction, and how many drops it ate. */
+function run(cleared: boolean): { x: number; eaten: number } {
+  const s = playingAt(crossX - 1);
+  if (cleared) s.items = s.items.map((it) => (it !== null && it.y === crossY && it.x <= crossX ? null : it));
+  const left = (): number => s.items.filter((it) => it !== null).length;
+  const before = left();
+  for (let k = 0; k < 30; k++) s.update(NO_INPUT);
+  return { x: s.player.x, eaten: before - left() };
+}
+
+describe("the bear pauses after it eats (Dossier, Speed)", () => {
+  test("a honey drop holds the bear for one tick while the bees move", () => {
+    const { s, idx } = beforeDrop();
+    const bee = freeBee(s);
+    let x = s.player.x;
+    s.update(NO_INPUT);
+    expect(s.items[idx]).toBeNull();
+    expect(s.player.x).toBe(x - 1);
+    x = s.player.x;
+    const beeAt = { x: bee.x, y: bee.y };
+    s.update(NO_INPUT);
+    expect(s.player.x).toBe(x);
+    expect({ x: bee.x, y: bee.y }).not.toEqual(beeAt);
+    s.update(NO_INPUT);
+    expect(s.player.x).toBe(x - 1);
+  });
+
+  test("a honey pot holds the bear for three ticks", () => {
+    const { s, idx } = beforeDrop();
+    const pot = s.items[idx];
+    if (!pot) throw new Error("no pot");
+    pot.powerPellet = true;
+    s.update(NO_INPUT);
+    expect(s.items[idx]).toBeNull();
+    const x = s.player.x;
+    for (let k = 0; k < 3; k++) {
+      s.update(NO_INPUT);
+      expect(s.player.x).toBe(x);
+    }
+    s.update(NO_INPUT);
+    expect(s.player.x).toBeLessThan(x);
+  });
+
+  test("over a run of N drops the bear covers N fewer steps than over the same run already eaten", () => {
+    const full = run(false);
+    const empty = run(true);
+    expect(full.eaten).toBeGreaterThan(1);
+    expect(empty.eaten).toBe(0);
+    expect(full.x - empty.x).toBe(full.eaten);
+  });
+});

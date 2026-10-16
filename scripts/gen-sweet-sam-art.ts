@@ -11,7 +11,8 @@
 // `beeOrder`: flying right, flying left, then sleepy and waking, each right
 // then left. honey-drop.png and honey-pot.png are 4 bobbing frames of 8×12.
 // ready.png is READY!, six 8×8 letters. digits.png is the score dials' 0 to
-// 9, 8×8 each. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
+// 9, 8×8 each, and score-labels.png the maze's "1UP" and "HIGH SCORE" alone, for
+// Firefly's HUD. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // maze-flash.png is the maze with its wax in the level-clear flash colours,
 // and flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68).
 // gen-art.test.ts fails when the committed PNGs drift.
@@ -53,8 +54,6 @@ import {
   pointsFrameSize,
   pointsTop,
   readyArt,
-  scoreLabelsArt,
-  scoreLabelsX,
   sleepyLook,
   wakingLook,
   walkCycle,
@@ -65,6 +64,7 @@ import {
   waxRim,
   waxRimWidth,
 } from "../src/sweet-sam/art.ts";
+import { scoreLabelsArt, scoreLabelsX } from "../src/ui/hudArt.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
@@ -286,6 +286,7 @@ export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "honey-pot.png"), 32, 12, renderHoneyPot),
   imageOutput(join(sweetSamImagesDir, "ready.png"), 48, 8, () => image(readyArt)),
   imageOutput(join(sweetSamImagesDir, "digits.png"), 80, 8, () => image(dialDigitsArt)),
+  imageOutput(join(sweetSamImagesDir, "score-labels.png"), 126, 7, () => image(scoreLabelsArt)),
   imageOutput(join(sweetSamImagesDir, "points.png"), 64, 16, renderPoints),
   imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
   imageOutput(join(sweetSamImagesDir, "flower.png"), 16 * flowers.length, 16, () => sheet([flowers])),

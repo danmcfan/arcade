@@ -20,6 +20,8 @@ export interface Software {
   score(): number;
   /** §4.3; the matching type in snapshot.ts (`SweetSamSnapshot`, …). */
   snapshot(): SoftwareSnapshot;
+  /** Optional, test hook only: start stage (or level) `stage` afresh, for verify checks. */
+  jumpTo?(stage: number): void;
 }
 
 /**
@@ -57,4 +59,6 @@ export interface Scene {
   dispose?(): void;
   /** Optional, browser only: write the save now (main.ts calls it when the page is hidden). */
   persist?(): void;
+  /** Optional, test hook only: jump the running minigame to stage (or level) `stage`. */
+  jumpTo?(stage: number): void;
 }

@@ -14,18 +14,22 @@ import type { FixedViewport } from "../game/software.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
+import { ScoreDials } from "../ui/scoreDials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newBezierPatternFunc, type BezierConfig } from "./pattern.ts";
 import {
   diveWeight,
   difficulty,
+  type Difficulty,
   enemyHalfSize,
   enemyHp,
   enemySpeed,
-  entryGroupGap,
-  entryGroupSize,
+  entryWaveGap,
+  entryPairOffset,
   entrySpacing,
+  entryWaves,
+  type EntryCurve,
   fieldHeight,
   fieldWidth,
   firstShotDelay,
@@ -33,8 +37,8 @@ import {
   hitEffectTicks,
   points,
   respawnTicks,
-  shotMaxDrift,
   shotSpacing,
+  type Slot,
   shotSpeed,
   sparkCooldown,
   sparkSpeed,
@@ -48,16 +52,34 @@ const playerHalfWidth = 8;
 const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
 
 /**
- * The curves enemies fly in on, by group: from the top swinging right, from
- * the top swinging left, then low from the left and from the right. Each ends
- * at the enemy's own slot.
+ * The curves each wave flies in on, ending at the enemy's own slot. The top
+ * ones swoop down and loop round; the lower ones come in low from a side and
+ * climb. `beside` is the way the second of a pair sits off the first.
  */
-const entryCurves: readonly Omit<BezierConfig, "p3">[] = [
-  { p0: { x: 96, y: -16 }, p1: { x: 96, y: 170 }, p2: { x: 210, y: 210 } },
-  { p0: { x: 128, y: -16 }, p1: { x: 128, y: 170 }, p2: { x: 14, y: 210 } },
-  { p0: { x: -16, y: 230 }, p1: { x: 170, y: 250 }, p2: { x: 170, y: 90 } },
-  { p0: { x: 240, y: 230 }, p1: { x: 54, y: 250 }, p2: { x: 54, y: 90 } },
-];
+const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">; beside: Vec }>> = {
+  topCentre: {
+    curve: { p0: { x: 96, y: -16 }, p1: { x: 96, y: 170 }, p2: { x: 210, y: 210 } },
+    beside: { x: 0, y: 0 },
+  },
+  lowerLeft: {
+    curve: { p0: { x: -16, y: 230 }, p1: { x: 170, y: 250 }, p2: { x: 170, y: 90 } },
+    beside: { x: 0, y: 1 },
+  },
+  lowerRight: {
+    curve: { p0: { x: 240, y: 230 }, p1: { x: 54, y: 250 }, p2: { x: 54, y: 90 } },
+    beside: { x: 0, y: 1 },
+  },
+  topRight: {
+    curve: { p0: { x: 176, y: -16 }, p1: { x: 176, y: 160 }, p2: { x: 24, y: 200 } },
+    beside: { x: 1, y: 0 },
+  },
+  topLeft: { curve: { p0: { x: 48, y: -16 }, p1: { x: 48, y: 160 }, p2: { x: 200, y: 200 } }, beside: { x: -1, y: 0 } },
+};
+
+const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
+const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
+/** Where the second of a pair flies: mirrored on a split wave, else `beside` the first. */
+const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p) : shift(p, beside));
 
 /** Where a dive aims: the firefly's x, give or take this much. */
 const diveAimSpread = 24;
@@ -77,42 +99,63 @@ function curveLength(c: BezierConfig): number {
   return len;
 }
 
-function followPath(e: Enemy, path: BezierConfig): void {
+function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
   e.path = path;
   e.t = 0;
-  e.tStep = enemySpeed / Math.max(1, curveLength(path));
+  e.tStep = speed / Math.max(1, curveLength(path));
 }
 
-/** A fresh stage: every slot filled, waiting to fly in group by group. */
+/** One enemy waiting to fly in along `curve`, which ends at its slot. */
+function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): Enemy {
+  const home = { x: slot.x, y: slot.y };
+  const e: Enemy = {
+    kind: slot.kind,
+    row: slot.row,
+    col: slot.col,
+    home,
+    state: "waiting",
+    x: curve.p0.x,
+    y: curve.p0.y,
+    dx: 0,
+    dy: 1,
+    hp: enemyHp[slot.kind],
+    deadFrames: 0,
+    wait,
+    path: null,
+    t: 0,
+    tStep: 0,
+    shotsLeft: 0,
+    shotTimer: 0,
+    outOfFormation: false,
+  };
+  followPath(e, { ...curve, p3: home });
+  return e;
+}
+
+/** A fresh stage: every slot filled, waiting to fly in wave by wave, two by two (`entryWaves`). */
 export function newStageEnemies(): Enemy[] {
-  return formation().map((slot, i) => {
-    const group = Math.trunc(i / entryGroupSize);
-    const curve = entryCurves[group % entryCurves.length] ?? entryCurves[0];
-    if (curve === undefined) throw new Error("no entry curves");
-    const home = { x: slot.x, y: slot.y };
-    const e: Enemy = {
-      kind: slot.kind,
-      row: slot.row,
-      col: slot.col,
-      home,
-      state: "waiting",
-      x: curve.p0.x,
-      y: curve.p0.y,
-      dx: 0,
-      dy: 1,
-      hp: enemyHp[slot.kind],
-      deadFrames: 0,
-      wait: stageIntroTicks + group * entryGroupGap + (i % entryGroupSize) * entrySpacing,
-      path: null,
-      t: 0,
-      tStep: 0,
-      shotsLeft: 0,
-      shotTimer: 0,
-      outOfFormation: false,
-    };
-    followPath(e, { ...curve, p3: home });
-    return e;
-  });
+  const slots = formation();
+  const slotAt = (ref: { row: number; col: number }): Slot => {
+    const slot = slots.find((s) => s.row === ref.row && s.col === ref.col);
+    if (slot === undefined) throw new Error(`no slot at row ${ref.row} col ${ref.col}`);
+    return slot;
+  };
+  const order = (e: Enemy): number => slots.findIndex((s) => s.row === e.row && s.col === e.col);
+  return (
+    entryWaves
+      .flatMap((wave, w) =>
+        wave.pairs.flatMap((refs, p) =>
+          refs.map((ref, side) => {
+            const { curve: c, beside } = entryCurves[wave.curve];
+            const move = (v: Vec): Vec => (side === 1 ? partner(wave.split, v, beside) : v);
+            const curve = { p0: move(c.p0), p1: move(c.p1), p2: move(c.p2) };
+            return waveEnemy(slotAt(ref), curve, stageIntroTicks + w * entryWaveGap + p * entrySpacing);
+          }),
+        ),
+      )
+      // In formation order, row by row, as the rest of the game keeps them.
+      .toSorted((a, b) => order(a) - order(b))
+  );
 }
 
 function play(s: Sound): void {
@@ -137,6 +180,7 @@ export class FireflySoftware implements FixedViewport {
     this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
+    this.dials = new ScoreDials(highScore);
   }
 
   stage = 1;
@@ -153,6 +197,8 @@ export class FireflySoftware implements FixedViewport {
   diveTimer = difficulty(1).diveInterval;
   /** Ticks since the run started: drives the formation's sway. */
   ticks = 0;
+  /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
+  readonly dials: ScoreDials;
 
   update(i: Input): void {
     if (this.over) return;
@@ -172,6 +218,8 @@ export class FireflySoftware implements FixedViewport {
 
     // With no lives left the run ends on this stage, even if the field is clear.
     if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
+
+    this.dials.tick(this.score(), this.highScore);
   }
 
   /** The formation's x offset this tick. */
@@ -247,7 +295,7 @@ export class FireflySoftware implements FixedViewport {
     if (this.diveTimer > 0) this.diveTimer--;
     if (this.diveTimer > 0) return;
     this.diveTimer = d.diveInterval;
-    for (let n = 0; n < d.diversPerDive; n++) this.startDive(d.shotsPerDive);
+    for (let n = 0; n < d.diversPerDive; n++) this.startDive(d);
   }
 
   /** One step along the enemy's curve; at its end it heads for its slot. */
@@ -269,7 +317,7 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** Picks an enemy in formation, Wasps most often, and sends it at the firefly. */
-  private startDive(shots: number): void {
+  private startDive(d: Difficulty): void {
     const candidates = this.enemies.filter((e) => e.state === "formation" && e.deadFrames === 0);
     const total = candidates.reduce((t, e) => t + diveWeight[e.kind], 0);
     if (total === 0) return;
@@ -292,8 +340,8 @@ export class FireflySoftware implements FixedViewport {
         : { p0, p1, p2: { x: aim, y: playerY - 60 }, p3: { x: aim - side * 60, y: fieldHeight + offscreenMargin } };
     e.state = "diving";
     e.outOfFormation = true;
-    followPath(e, path);
-    e.shotsLeft = shots;
+    followPath(e, path, d.diveSpeed);
+    e.shotsLeft = d.shotsPerDive;
     e.shotTimer = firstShotDelay;
   }
 
@@ -303,7 +351,8 @@ export class FireflySoftware implements FixedViewport {
     if (e.shotTimer > 0) e.shotTimer--;
     if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
-    const drift = Math.max(-shotMaxDrift, Math.min(shotMaxDrift, (this.player.x - e.x) / ticksToPlayer));
+    const maxDrift = difficulty(this.stage).shotDrift;
+    const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
     this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
@@ -386,6 +435,11 @@ export class FireflySoftware implements FixedViewport {
     // A fresh firefly starts with no enemy shot already falling on it.
     this.shots = [];
     this.fireDelay = 0;
+  }
+
+  jumpTo(stage: number): void {
+    this.stage = stage - 1;
+    this.nextStage();
   }
 
   private nextStage(): void {

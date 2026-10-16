@@ -57,12 +57,12 @@ describe("findTarget", () => {
   player.direction = "LEFT";
   const enemies = newEnemies(); // red at tile (14, 14)
 
-  test("scatter: every bee heads for its own corner target", () => {
+  test("scatter: red top right, pink top left, teal bottom right, orange bottom left (#225)", () => {
     expect(enemies.map((e) => findTarget(e, enemies, player, modeScatter))).toEqual([
-      { x: 2, y: 0 },
       { x: 25, y: 0 },
-      { x: 0, y: 34 },
-      { x: 27, y: 34 },
+      { x: 2, y: 0 },
+      { x: 27, y: 35 },
+      { x: 0, y: 35 },
     ]);
   });
 
@@ -108,22 +108,22 @@ describe("findTarget", () => {
     const orange = at(bee("orange"), 14, 15); // tile (14, 18): 8 tiles from the player
     expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 14, y: 26 });
     at(orange, 14, 17); // tile (14, 20): 6 tiles away
-    expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 27, y: 34 });
+    expect(findTarget(orange, enemies, player, modeChase)).toEqual({ x: 0, y: 35 });
   });
 
   test("scatter returns a copy of the bee's target", () => {
     const red = nth(enemies, 0);
     const t = findTarget(red, enemies, player, modeScatter);
     t.x = 99;
-    expect(red.target).toEqual({ x: 2, y: 0 });
+    expect(red.target).toEqual({ x: 25, y: 0 });
   });
 
   test("scatter in Cruise Elroy: red targets the player's tile, the others still their corners", () => {
     expect(enemies.map((e) => findTarget(e, enemies, player, modeScatter, true))).toEqual([
       { x: 14, y: 26 },
-      { x: 25, y: 0 },
-      { x: 0, y: 34 },
-      { x: 27, y: 34 },
+      { x: 2, y: 0 },
+      { x: 27, y: 35 },
+      { x: 0, y: 35 },
     ]);
   });
 });
@@ -332,9 +332,9 @@ describe("updatePosition", () => {
     const e = bee("teal");
     e.home = true;
     e.dotMinimum = 3;
-    const [x, y] = [e.x, e.y];
+    const x = e.x;
     updatePosition(e, corners);
-    expect([e.x, e.y]).toEqual([x, y]);
+    expect([e.x, e.home]).toEqual([x, true]);
   });
 
   test("home bees centre on x=112 then rise to y=116 at 0.5px, then leave home", () => {
@@ -400,5 +400,55 @@ describe("resetEnemy", () => {
       0,
     ]);
     expect([e.reverseDirection, e.velocity, e.frame]).toEqual([true, 0.625, 2.5]);
+  });
+});
+
+/** Ticks `e` until it leaves the home; its first tick out is the last one. */
+function leave(e: Entity): void {
+  e.velocity = 1;
+  for (let t = 0; e.home && t < 500; t++) updatePosition(e, corners);
+}
+
+describe("the home (#226)", () => {
+  test.each(["pink", "teal", "orange"] as const)("%s leaves the home moving LEFT", (kind) => {
+    const e = nth(
+      newEnemies().filter((b) => b.kind === kind),
+      0,
+    );
+    e.dotMinimum = 0;
+    const x = 112;
+    leave(e);
+    expect([e.direction, e.x]).toEqual(["LEFT", x - 1]);
+  });
+
+  test("a bee told of a mode change in the home leaves moving RIGHT, once", () => {
+    const e = nth(newEnemies(), 1);
+    e.dotMinimum = 0;
+    e.leaveRight = true;
+    leave(e);
+    expect([e.direction, e.x, e.leaveRight]).toEqual(["RIGHT", 113, false]);
+  });
+
+  test("a waiting bee bobs up and down in place", () => {
+    const e = nth(newEnemies(), 2);
+    const [x, y] = [e.x, e.y];
+    const ys = new Set<number>();
+    for (let t = 0; t < 40; t++) {
+      updatePosition(e, corners);
+      ys.add(e.y);
+      expect(e.x).toBe(x);
+    }
+    expect(Math.min(...ys)).toBeLessThan(y);
+    expect(Math.max(...ys)).toBeGreaterThan(y);
+  });
+
+  test("a bee freed mid-bob centres on the home row while it slides to the door", () => {
+    const e = nth(newEnemies(), 2);
+    for (let t = 0; t < 3; t++) updatePosition(e, corners);
+    expect(e.y).not.toBe(140);
+    const slide = Math.abs(e.x - 112) / 0.5;
+    e.dotMinimum = 0;
+    for (let t = 0; t < slide; t++) updatePosition(e, corners);
+    expect([e.x, e.y]).toEqual([112, 140]);
   });
 });

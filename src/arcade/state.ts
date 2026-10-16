@@ -1,9 +1,10 @@
 // Port of internal/arcade/state.go.
 
 import type { ArcadeTitle } from "../game/snapshot.ts";
-import { checkCollisions, newWalls, type Rect } from "./collision.ts";
+import { checkCollision, checkCollisions, newWalls, type Rect } from "./collision.ts";
 import { newPlayer, type Entity } from "./entity.ts";
 import { newMachines, type Machine, type SoftwareFactory } from "./machine.ts";
+import { changeMachineRect, type NoticeKind } from "./changeMachine.ts";
 import { counterRects } from "./desk.ts";
 import { Wallet } from "./wallet.ts";
 
@@ -13,6 +14,11 @@ export class State {
   machines: Machine[];
   /** The prize desk's rects: solid, and faced with Space to open the prize counter menu. */
   counters: Rect[];
+  /** The change machine: solid, and faced with Space to trade tickets for a token. */
+  /** Whether the action key was down last tick: the change machine trades once per press. */
+  actionHeld = false;
+  /** What the scoreboard flashes after a press of the change machine, for `ticks` more ticks; null when nothing. */
+  notice: { kind: NoticeKind; ticks: number } | null = null;
 
   melodyPlaying = false;
   /** Go `imageTitle` (nil → null), by name; the scoreboard shows it while the melody plays. */
@@ -32,9 +38,9 @@ export class State {
   }
 }
 
-/** Whether a player rect at `r` would be inside a wall or the prize desk. */
+/** Whether a player rect at `r` would be inside a wall, the prize desk or the change machine. */
 export function blocked(s: State, r: Rect): boolean {
-  return checkCollisions(r, s.walls) || checkCollisions(r, s.counters);
+  return checkCollisions(r, s.walls) || checkCollisions(r, s.counters) || checkCollision(r, changeMachineRect);
 }
 
 /** Go `arcade.NewState`; `factory` builds a machine's software. The Game starts any initial software itself. */

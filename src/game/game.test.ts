@@ -11,6 +11,7 @@ import type { GameSnapshot, BrassMonkeySnapshot, SoftwareSnapshot } from "./snap
 import { fakeBrassMonkeySnapshot } from "./snapshot.testutil.ts";
 import type { FixedViewport, Software, SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
+import { changeMachineRect } from "../arcade/changeMachine.ts";
 import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 
 class FakeSoftware implements Software {
@@ -34,6 +35,10 @@ class FakeSoftware implements Software {
   }
   update(i: Input): void {
     this.updates.push(i);
+  }
+  readonly jumps: number[] = [];
+  jumpTo(stage: number): void {
+    this.jumps.push(stage);
   }
   draw(screen: Surface, buffer: number): void {
     this.draws.push([screen, buffer]);
@@ -117,6 +122,22 @@ function enterBrassMonkey(game: Game): void {
   game.step(input({ up: true, space: true }));
 }
 
+describe("jumpTo", () => {
+  test("jumps the running minigame to a stage", () => {
+    const { game, built } = newGame();
+    enterSweetSam(game);
+    game.jumpTo(5);
+    expect(built[0]?.jumps).toEqual([5]);
+  });
+
+  test("throws in the hub, with no minigame to jump", () => {
+    const { game } = newGame();
+    expect(() => {
+      game.jumpTo(2);
+    }).toThrow();
+  });
+});
+
 describe("snapshot", () => {
   test("hub snapshot has exactly the §4.3 game keys", () => {
     rng.seed(42);
@@ -131,6 +152,7 @@ describe("snapshot", () => {
         player: { x: 79, y: 92, dir: "LEFT", frame: 0.1 },
         melodyPlaying: false,
         faced: null,
+        notice: null,
         title: null,
         highScores: noHighScores,
         tokens: 5,
@@ -449,11 +471,17 @@ describe("minigame pause menu", () => {
   });
 });
 
-function endRun(points: number, tokens = 5): Harness & { sw: FakeSoftware } {
+function endRun(
+  points: number,
+  tokens = 5,
+  highScores = noHighScores,
+  arcadeWon = false,
+): Harness & { sw: FakeSoftware } {
   const g = newGame(null, {
-    highScores: noHighScores,
+    highScores,
     tokens,
     tickets: 0,
+    arcadeWon,
     prizes: [],
     player: { x: 80, y: 92, dir: "DOWN" },
   });
@@ -512,6 +540,7 @@ function atCounter(tokens: number, tickets: number): Harness {
     highScores: noHighScores,
     tokens,
     tickets,
+    arcadeWon: false,
     prizes: [],
     player: { x: 80, y: 92, dir: "DOWN" },
   });
@@ -538,9 +567,8 @@ const shelfCell: Record<PrizeId, number> = {
   honeyJar: 7,
   lantern: 8,
 };
-/** The cursor on BUY TOKEN and on CLOSE, the row below the shelf. */
-const tokenCursor = 9;
-const closeCursor = 10;
+/** The cursor on CLOSE, the row below the shelf. */
+const closeCursor = 9;
 
 /** The prize counter with the cursor on prize `id`. */
 function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness {
@@ -549,18 +577,84 @@ function atPrize(tickets: number, id: PrizeId, prizes: PrizeId[] = []): Harness 
     tokens: 5,
     tickets,
     prizes,
+    arcadeWon: false,
     player: { x: 80, y: 92, dir: "DOWN" },
   });
   run(g.game, 3, { down: true });
   g.game.step(input({ down: true, space: true }));
   g.game.step(input());
   const cell = shelfCell[id];
-  tap(g.game, "up"); // BUY TOKEN up: the bottom of the left column
+  tap(g.game, "up"); // CLOSE up: the bottom of the right column
+  tap(g.game, "right"); // round to the bottom of the left column
   for (let row = 2; row > Math.trunc(cell / 3); row--) tap(g.game, "up");
   for (let col = 0; col < cell % 3; col++) tap(g.game, "right");
   expect(snap(g.game).cursor).toBe(cell);
   return g;
 }
+
+describe("the arcade win", () => {
+  /** Firefly and Brass Monkey beaten; Sweet Sam is the last house high score to beat. */
+  const twoBeaten = { sweetSam: 0, firefly: houseHighScores.firefly + 1, brassMonkey: houseHighScores.brassMonkey + 1 };
+  const beatSweetSam = houseHighScores.sweetSam + 100;
+
+  test("beating the last house high score wins the arcade once the payout closes", () => {
+    const { game } = endRun(beatSweetSam, 5, twoBeaten);
+    expect(snap(game).arcade.arcadeWin).toBeUndefined(); // not during the payout
+    closePayout(game);
+    const s = snap(game);
+    expect(s.software).toBeNull();
+    expect(s.arcade.arcadeWin).toBe("banner");
+    expect(game.progress().arcadeWon).toBe(true);
+  });
+
+  test("a run that leaves a machine unbeaten does not", () => {
+    const { game } = endRun(houseHighScores.sweetSam, 5, twoBeaten);
+    closePayout(game);
+    expect(snap(game).arcade.arcadeWin).toBeUndefined();
+    expect(game.progress().arcadeWon).toBe(false);
+  });
+
+  test("the banner holds, and the player stays put, until the action key", () => {
+    const { game } = endRun(beatSweetSam, 5, twoBeaten);
+    closePayout(game);
+    const at = snap(game).arcade.player;
+    run(game, 600, { left: true });
+    let s = snap(game);
+    expect(s.arcade.arcadeWin).toBe("banner");
+    expect(s.arcade.player).toMatchObject({ x: at.x, y: at.y });
+    game.step(input({ space: true }));
+    expect(snap(game).arcade.arcadeWin).toBe("won");
+    run(game, 5, { space: true, left: true });
+    s = snap(game);
+    expect(s.arcade.player.x).toBeLessThan(at.x);
+    expect(s.menu).toBeNull(); // the Space that closed the banner opened nothing
+  });
+
+  test("beating a house high score again does nothing more", () => {
+    const allBeaten = { ...twoBeaten, sweetSam: beatSweetSam };
+    const { game } = endRun(beatSweetSam + 5000, 5, allBeaten, true);
+    closePayout(game);
+    expect(snap(game).arcade.arcadeWin).toBe("won");
+  });
+
+  test("Continue restores it, with no banner", () => {
+    const g = newGame(null, {
+      highScores: { ...twoBeaten, sweetSam: beatSweetSam },
+      tokens: 5,
+      tickets: 0,
+      prizes: [],
+      arcadeWon: true,
+      player: { x: 80, y: 92, dir: "DOWN" },
+    });
+    expect(snap(g.game).arcade.arcadeWin).toBe("won");
+    run(g.game, 3, { left: true });
+    expect(snap(g.game).arcade.player.x).toBe(77);
+  });
+
+  test("a New game has not had it", () => {
+    expect(snap(newGame().game).arcade.arcadeWin).toBeUndefined();
+  });
+});
 
 describe("prize counter", () => {
   test("Space facing the counter opens its menu over the hub", () => {
@@ -571,7 +665,7 @@ describe("prize counter", () => {
     });
     const s = snap(game);
     expect(s.menu).toBe("prizeCounter");
-    expect(s.cursor).toBe(tokenCursor);
+    expect(s.cursor).toBe(closeCursor);
     expect(s.software).toBeNull();
     expect(s.run).toBeNull();
     expect(built).toEqual([]);
@@ -606,7 +700,6 @@ describe("prize counter", () => {
 
   test("CLOSE closes it, and the Space that chose it does not open it again", () => {
     const { game } = atCounter(5, 0);
-    tap(game, "right");
     expect(snap(game).cursor).toBe(closeCursor);
     run(game, 5, { space: true });
     expect(snap(game).menu).toBeNull();
@@ -616,22 +709,24 @@ describe("prize counter", () => {
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("Up and Down move within a cabinet's column, through the token row, with the move blip", () => {
+  test("Up and Down move within a cabinet's column, through CLOSE, with the move blip", () => {
     const { game } = atCounter(5, 0);
+    tap(game, "up");
+    tap(game, "right"); // the oil can, bottom of the left column
     const sounds = heard(game, () => {
       tap(game, "up");
     });
     expect(sounds).toEqual(["rewind:move", "play:move"]);
     const seen = [snap(game).cursor];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       tap(game, "up");
       seen.push(snap(game).cursor);
     }
-    expect(seen).toEqual([6, 3, 0, tokenCursor]);
+    expect(seen).toEqual([3, 0, closeCursor]);
     tap(game, "down");
-    expect(snap(game).cursor).toBe(0);
+    expect(snap(game).cursor).toBe(2);
     tap(game, "right");
-    for (const want of [4, 7, tokenCursor]) {
+    for (const want of [3, 6, closeCursor]) {
       tap(game, "down");
       expect(snap(game).cursor).toBe(want);
     }
@@ -646,16 +741,14 @@ describe("prize counter", () => {
     expect(snap(game).cursor).toBe(closeCursor);
   });
 
-  test("Left and Right move between columns round the shelf, and between BUY TOKEN and CLOSE", () => {
+  test("Left and Right move between columns round the shelf, and stay on CLOSE", () => {
     const { game } = atCounter(5, 0);
     tap(game, "right");
     expect(snap(game).cursor).toBe(closeCursor);
-    tap(game, "right");
-    expect(snap(game).cursor).toBe(tokenCursor);
     tap(game, "left");
     expect(snap(game).cursor).toBe(closeCursor);
-    tap(game, "left");
-    tap(game, "up"); // pocket watch
+    tap(game, "up"); // lantern
+    tap(game, "right"); // oil can
     const seen: number[] = [];
     for (let i = 0; i < 3; i++) {
       tap(game, "right");
@@ -709,6 +802,7 @@ describe("prize counter", () => {
       highScores: noHighScores,
       tokens: 0,
       tickets: 0,
+      arcadeWon: false,
       prizes: ["sleepyBees"],
       player: { x: 80, y: 92, dir: "UP" },
     });
@@ -736,36 +830,66 @@ describe("prize counter", () => {
     expect(defined(built[0]).prizes).toEqual(["lantern"]);
   });
 
-  test("with 5 or more tickets, Space buys a token for 5 and the counts update at once", () => {
-    const { game } = atCounter(2, 12);
+  test("the menu offers no token: the shelf then CLOSE", () => {
+    const { game } = atCounter(0, 3);
+    tap(game, "up");
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(closeCursor);
+    tap(game, "down");
+    expect(snap(game).cursor).toBe(2);
+  });
+});
+
+/** A hub with `tokens` and `tickets`, the player facing the change machine. */
+function atChangeMachine(tokens: number, tickets: number): Game {
+  const { game } = newGame(null, {
+    highScores: noHighScores,
+    tokens,
+    tickets,
+    arcadeWon: false,
+    prizes: [],
+    player: {
+      x: changeMachineRect.x - 20,
+      y: changeMachineRect.y, // high enough to clear the prize desk's corner
+      dir: "RIGHT",
+    },
+  });
+  run(game, 20, { right: true });
+  game.step(input());
+  expect(snap(game).arcade.faced).toBe("changeMachine");
+  return game;
+}
+
+describe("change machine", () => {
+  test("each press trades 5 tickets for a token, and the counts update at once", () => {
+    const game = atChangeMachine(2, 12);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(wallet(game)).toEqual({ tokens: 3, tickets: 7 });
     expect(sounds).toEqual(["rewind:select", "play:select"]);
-    expect(snap(game).menu).toBe("prizeCounter");
+    expect(snap(game).menu).toBeNull();
     tap(game, "space");
-    expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
     expect(game.progress()).toMatchObject({ tokens: 4, tickets: 2 });
   });
 
-  test("with tokens left and too few tickets, Space gives the no sound and buys nothing", () => {
-    const { game } = atCounter(4, 2);
+  test("with tokens left and too few tickets, a press gives the no sound and trades nothing", () => {
+    const game = atChangeMachine(4, 2);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(wallet(game)).toEqual({ tokens: 4, tickets: 2 });
     expect(sounds).toEqual(["rewind:deny", "play:deny"]);
-    expect(snap(game).menu).toBe("prizeCounter");
   });
 
-  test("a bought token pays for the next cabinet start", () => {
-    const { game } = atCounter(0, 5);
+  test("the last-chance token pays for the next cabinet start", () => {
+    const game = atChangeMachine(0, 3);
     tap(game, "space");
-    tap(game, "escape");
+    expect(wallet(game)).toEqual({ tokens: 1, tickets: 0 });
+    run(game, 24, { left: true });
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
-    expect(snap(game)).toMatchObject({ software: "sweetSam", run: "paid", arcade: { tokens: 0, tickets: 0 } });
+    expect(snap(game)).toMatchObject({ software: "firefly", run: "paid", arcade: { tokens: 0, tickets: 0 } });
   });
 });
 
@@ -780,6 +904,7 @@ describe("progress", () => {
         highScores: { ...noHighScores, sweetSam: 9 },
         tokens: 2,
         tickets: 31,
+        arcadeWon: false,
         prizes: [],
         player: { x: 80, y: 92, dir: "UP" },
       },
@@ -796,7 +921,14 @@ describe("progress", () => {
     // (40, 100) was free floor beside the old counter; the desk now spans the floor there.
     const restored = new Game(null, {
       createSoftware: fakes().factory,
-      restore: { highScores: noHighScores, tokens: 2, tickets: 0, prizes: [], player: { x: 40, y: 100, dir: "LEFT" } },
+      restore: {
+        highScores: noHighScores,
+        tokens: 2,
+        tickets: 0,
+        arcadeWon: false,
+        prizes: [],
+        player: { x: 40, y: 100, dir: "LEFT" },
+      },
     });
     games.push(restored);
     expect(snap(restored).arcade.player).toMatchObject({ x: 80, y: 92 });
@@ -807,6 +939,7 @@ describe("progress", () => {
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
       player: { x: 80, y: 92, dir: "UP" },
     });
@@ -830,6 +963,7 @@ describe("progress", () => {
       highScores: noHighScores,
       tokens: 5,
       tickets: 0,
+      arcadeWon: false,
       prizes: [],
       player: { x: 80, y: 100, dir: "LEFT" },
     });

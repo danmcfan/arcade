@@ -1,4 +1,5 @@
-import { noHighScores } from "../arcade/wallet.ts";
+import { cakeRect, confettiTicks, trophyRect } from "../arcade/arcadeWin.ts";
+import { houseHighScores, noHighScores, type HighScores } from "../arcade/wallet.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { images } from "../engine/assets.ts";
@@ -232,12 +233,19 @@ const factory = (name: SoftwareName): Software => {
 };
 
 const games: { dispose(): void }[] = [];
-function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []): Game {
+function newGame(
+  initial: SoftwareName | null = null,
+  tokens = 5,
+  prizes: PrizeId[] = [],
+  highScores: HighScores = noHighScores,
+  arcadeWon = false,
+): Game {
   const restore = {
-    highScores: noHighScores,
+    highScores,
     tokens,
     tickets: 0,
     prizes,
+    arcadeWon,
     player: { x: 80, y: 92, dir: "DOWN" as const },
   };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
@@ -503,7 +511,14 @@ describe("hub scoreboard", () => {
       const g = new Game(null, {
         createSoftware: factory,
         debugPrint,
-        restore: { highScores: noHighScores, tokens: 0, tickets, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+        restore: {
+          highScores: noHighScores,
+          tokens: 0,
+          tickets,
+          arcadeWon: false,
+          prizes: [],
+          player: { x: 80, y: 92, dir: "DOWN" },
+        },
       });
       games.push(g);
       const r = recordingSurface();
@@ -543,6 +558,71 @@ describe("hub scoreboard", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(r.dimmed()).toBeNull();
+  });
+});
+
+/** How many fills the hub draw makes inside `r` (in hub-image coordinates). */
+function filledWithin(
+  rec: ReturnType<typeof recordingSurface>,
+  r: { x: number; y: number; w: number; h: number },
+): number {
+  return rec.boxes.filter(
+    ([x, y, w, h]) => x >= r.x + 16 && y >= r.y + 16 && x + w <= r.x + r.w + 16 && y + h <= r.y + r.h + 16,
+  ).length;
+}
+
+describe("the arcade win", () => {
+  const twoBeaten = { sweetSam: 0, firefly: houseHighScores.firefly + 1, brassMonkey: houseHighScores.brassMonkey + 1 };
+
+  /** A game that has just won the arcade: a Sweet Sam run over its house high score, its payout closed. */
+  function justWon(): Game {
+    const game = newGame(null, 5, [], twoBeaten);
+    for (let t = 0; t < 31; t++) game.step(input({ up: true }));
+    game.step(input({ up: true, space: true }));
+    const sw = defined(built[0]);
+    sw.points = houseHighScores.sweetSam + 100;
+    sw.over = true;
+    for (const keys of [{}, { space: true }, {}, { space: true }, {}]) game.step(input(keys));
+    return game;
+  }
+
+  test("without it, no cake, trophy, banner or confetti", () => {
+    const r = recordingSurface();
+    newGame(null, 5, [], twoBeaten).draw(r.surface);
+    expect(filledWithin(r, cakeRect)).toBe(0);
+    expect(filledWithin(r, trophyRect)).toBe(0);
+    expect(r.board()).not.toContain("ARCADE");
+  });
+
+  test("the moment it happens: the banner on the scoreboard, confetti, and the cake and trophy on the desk", () => {
+    const game = justWon();
+    const r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.board()).toBe("*YOUBEATTHEARCADE*");
+    expect(filledWithin(r, cakeRect)).toBeGreaterThan(0);
+    expect(filledWithin(r, trophyRect)).toBeGreaterThan(0);
+    const confettiDots = (rec: ReturnType<typeof recordingSurface>): number =>
+      [sweetie.r, sweetie.g, sweetie.c].reduce((n, css) => n + rec.dots(css).length, 0);
+    for (let t = 0; t < 120; t++) game.step(input());
+    const mid = recordingSurface();
+    game.draw(mid.surface);
+    expect(confettiDots(mid)).toBeGreaterThan(5);
+    // The action key closes the banner; the confetti finishes its fall and is gone.
+    game.step(input({ space: true }));
+    for (let t = 0; t < confettiTicks; t++) game.step(input());
+    const after = recordingSurface();
+    game.draw(after.surface);
+    expect(after.board()).not.toContain("ARCADE");
+    expect(confettiDots(after)).toBe(0);
+    expect(filledWithin(after, cakeRect)).toBeGreaterThan(0);
+  });
+
+  test("Continue shows the cake and trophy, with no banner or confetti", () => {
+    const r = recordingSurface();
+    newGame(null, 5, [], { ...twoBeaten, sweetSam: houseHighScores.sweetSam + 1 }, true).draw(r.surface);
+    expect(filledWithin(r, cakeRect)).toBeGreaterThan(0);
+    expect(filledWithin(r, trophyRect)).toBeGreaterThan(0);
+    expect(r.board("orange")).toBe("TOKENSTICKETS");
   });
 });
 
@@ -718,7 +798,14 @@ function atCounter(tokens: number, tickets: number, prizes: PrizeId[] = []): Gam
   const g = new Game(null, {
     createSoftware: factory,
     debugPrint,
-    restore: { highScores: noHighScores, tokens, tickets, prizes, player: { x: 80, y: 92, dir: "DOWN" } },
+    restore: {
+      highScores: noHighScores,
+      tokens,
+      tickets,
+      prizes,
+      arcadeWon: false,
+      player: { x: 80, y: 92, dir: "DOWN" },
+    },
   });
   games.push(g);
   for (let t = 0; t < 3; t++) g.step(input({ down: true }));
@@ -767,9 +854,9 @@ describe("prize counter menu", () => {
       ["lantern", false],
     ]);
     // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, in the
-    // scoreboard's small letters, then the selected BUY TOKEN.
+    // scoreboard's small letters, then the selected CLOSE.
     expect(r.cards("yellow")).toBe("100100100505050252525");
-    expect(r.text("yellow")).toBe(">BUY TOKEN");
+    expect(r.text("yellow")).toBe(">CLOSE");
     expect(r.text("red")).toBe("");
     expect(r.icons).toEqual([]);
   });
@@ -778,14 +865,14 @@ describe("prize counter menu", () => {
     const game = atCounter(2, 120);
     let r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("CLOSEBUY TOKEN5ONE PLAY ON A CABINET");
-    for (const key of ["up", "right"] as const) {
+    expect(r.text("white")).toBe("CLOSEBACK TO THE ARCADE");
+    for (const key of ["up", "right", "right"] as const) {
       game.step(input({ [key]: true }));
       game.step(input());
     }
     r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("BUY TOKENCLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
+    expect(r.text("white")).toBe("CLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
   });
 
   test("an owned prize is greyed out and reads OWNED; on a grey card; one the player can't afford is on a red card, its price white", () => {
@@ -797,26 +884,17 @@ describe("prize counter menu", () => {
     expect(r.cards("pale")).toBe("OWNED");
   });
 
-  test("a bought token shows on the scoreboard at once", () => {
-    const game = atCounter(2, 12);
-    game.step(input({ space: true }));
-    const r = recordingSurface();
-    game.draw(r.surface);
-    expect(r.board("yellow")).toBe("37");
-  });
-
-  test("with 0 tokens and too few tickets the token item is the last-chance token", () => {
-    const game = atCounter(0, 3);
-    const r = recordingSurface();
-    game.draw(r.surface);
-    expect(r.text("yellow")).toContain(">LAST CHANCE");
-  });
-
-  test("with tokens left and too few tickets BUY TOKEN is greyed out", () => {
-    const r = recordingSurface();
-    atCounter(1, 3).draw(r.surface);
-    expect(r.text("grey")).toBe("BUY TOKEN");
-    expect(r.cards("white")).toBe("100100100505050252525");
+  test("there is no token to buy, whatever the tokens and tickets", () => {
+    for (const [tokens, tickets] of [
+      [2, 12],
+      [0, 3],
+      [1, 3],
+    ] as const) {
+      const r = recordingSurface();
+      atCounter(tokens, tickets).draw(r.surface);
+      expect(r.text("grey")).toBe("");
+      expect(r.text("yellow")).toBe(">CLOSE");
+    }
   });
 
   test("the text and the cursor stay inside the panel, clear of its frame, wherever the cursor is", () => {
