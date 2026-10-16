@@ -36,7 +36,12 @@ await verify("firefly-extra-life", (v) => {
   startFirefly(v, 1);
   v.step(stageIntroTicks + 400);
 
-  for (const [i, threshold] of [20_000, 70_000].entries()) {
+  for (const [i, [threshold, next]] of [
+    [20_000, 70_000],
+    [70_000, 140_000],
+  ].entries()) {
+    if (threshold === undefined || next === undefined) throw new Error("no threshold");
+    check(firefly(v).nextLife === threshold, `next life at ${threshold}`, firefly(v).nextLife);
     v.scoreTo(threshold - 10);
     v.step(1);
     const before = firefly(v);
@@ -45,7 +50,8 @@ await verify("firefly-extra-life", (v) => {
     const heard = fireUntil(v, threshold);
     const at = firefly(v);
     check(at.lives === before.lives + 1, `crossing ${threshold}: lives ${before.lives} → ${at.lives}`, at.lives);
-    check(heard.includes("play:ticket"), "the extra-life jingle plays", heard);
+    check(heard.includes("play:extraLife"), "the extra-life jingle plays", heard);
+    check(at.nextLife === next, `next life moves to ${next}`, at.nextLife);
     v.step(30);
     check(firefly(v).lives === at.lives, "30 ticks on, no second life", firefly(v).lives);
     v.frame(`${2 * i + 2}-after-${threshold}`, 3);

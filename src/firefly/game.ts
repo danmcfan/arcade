@@ -597,7 +597,7 @@ export class FireflySoftware implements FixedViewport {
     while (this.points >= this.nextLife) {
       this.lives++;
       this.nextLife = nextExtraLife(this.nextLife);
-      play(sounds.ticket);
+      play(sounds.extraLife);
     }
   }
 
@@ -703,6 +703,7 @@ export class FireflySoftware implements FixedViewport {
       stage: this.stage,
       stageTick: this.stageTick,
       lives: this.lives,
+      nextLife: this.nextLife,
       score: this.points,
       over: this.over,
       player: { x: this.player.x, y: this.player.y },

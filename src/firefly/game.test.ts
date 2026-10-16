@@ -458,23 +458,25 @@ describe("extra lives", () => {
     for (const t of [20_000, 70_000, 140_000]) {
       const below = killAt(f, t - moth - 10);
       expect(below.gained).toBe(0);
-      expect(below.sounds).not.toContain("play:ticket");
+      expect(below.sounds).not.toContain("play:extraLife");
       const across = killAt(f, t - 10);
       expect(across.gained).toBe(1);
-      expect(across.sounds).toContain("play:ticket");
+      expect(across.sounds).toContain("play:extraLife");
       expect(killAt(f, t + 10).gained).toBe(0);
     }
   });
 
-  test("one large score jump crosses each threshold only once", () => {
+  test("one jump across two thresholds pays two lives, once", () => {
     const { f } = withOnly("moth", { x: 100, y: 100 });
-    expect(killAt(f, 19_990).gained).toBe(1);
+    f.points = 19_990;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives);
     f.points = 75_000;
     f.update(NO_INPUT);
-    const lives = f.lives;
-    expect(lives).toBe(startLives + 2);
+    expect(f.lives).toBe(startLives + 2);
+    expect(f.snapshot().nextLife).toBe(140_000);
     f.update(NO_INPUT);
-    expect(f.lives).toBe(lives);
+    expect(f.lives).toBe(startLives + 2);
   });
 });
 
