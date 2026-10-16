@@ -16,6 +16,13 @@ describe("save version guard", () => {
   test(`a v${previous} save loads as the current version`, () => {
     const raw: unknown = JSON.parse(readFileSync(fixture, "utf8"));
     expect(raw).toMatchObject({ v: previous });
-    expect(parseSave(raw)?.v).toBe(saveVersion);
+    expect(parseSave(raw)).toMatchObject({
+      v: saveVersion,
+      highScores: { sweetSam: 1000, firefly: 2000, brassMonkey: 3000 },
+      tokens: 7,
+      tickets: 42,
+      prizes: ["lantern"],
+      player: { x: 120, y: 96, dir: "LEFT" },
+    });
   });
 });
