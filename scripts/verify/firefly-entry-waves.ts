@@ -8,7 +8,7 @@
 // the whole entry go to out/verify/firefly-entry-waves/.
 
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
-import { entryGroupGap, stageIntroTicks } from "../../src/firefly/rules.ts";
+import { entryWaveGap, fieldWidth, stageIntroTicks } from "../../src/firefly/rules.ts";
 import { check, gameIn as game, isTitleSnapshot, startFirefly, verify, type Verify } from "../harness.ts";
 
 function firefly(v: Verify): FireflySnapshot {
@@ -37,13 +37,17 @@ await verify("firefly-entry-waves", (v) => {
   check(
     wave1
       .filter((e) => e.kind === "wasp")
-      .every((w) => wave1.some((m) => m.kind === "moth" && (m.x - 112) * (w.x - 112) < 0 && Math.abs(m.y - w.y) < 12)),
+      .every((w) =>
+        wave1.some(
+          (m) => m.kind === "moth" && (m.x - fieldWidth / 2) * (w.x - fieldWidth / 2) < 0 && Math.abs(m.y - w.y) < 12,
+        ),
+      ),
     "wave 1 flies in pairs, a Wasp and a Moth either side of the centre",
   );
   v.frame("1-wave-1", 3);
 
   // Wave 2 just setting off, then halfway in.
-  v.step(entryGroupGap - 30);
+  v.step(entryWaveGap - 30);
   s = firefly(v);
   const owls = entering(s).filter((e) => e.kind === "owl");
   console.log(`owls: ${owls.map((e) => `${Math.round(e.x)},${Math.round(e.y)}`).join(" ")}`);
@@ -65,6 +69,7 @@ await verify("firefly-entry-waves", (v) => {
         v.key("ArrowUp", 80);
         v.key("Space");
       }
+      check(game(v).software === "firefly", "recording reached Firefly");
       v.wait(12_000);
     },
     {},

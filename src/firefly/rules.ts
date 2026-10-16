@@ -119,9 +119,9 @@ export const entryWaves: readonly EntryWave[] = [
   },
 ];
 
-/** Pairs of a wave set off `entrySpacing` ticks apart, waves `entryGroupGap` ticks apart. */
+/** Pairs of a wave set off `entrySpacing` ticks apart, waves `entryWaveGap` ticks apart. */
 export const entrySpacing = 12;
-export const entryGroupGap = 70;
+export const entryWaveGap = 70;
 /** How far the second of a pair flies beside the first, in px. */
 export const entryPairOffset = 16;
 

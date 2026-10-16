@@ -12,7 +12,9 @@ import { FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import {
   difficulty,
+  entryPairOffset,
   entryWaves,
+  fieldWidth,
   enemyHp,
   formation,
   hitEffectTicks,
@@ -519,7 +521,10 @@ describe("entry waves", () => {
         const ea = at(a.row, a.col);
         const eb = at(b.row, b.col);
         expect(ea?.wait).toBe(eb?.wait ?? -1);
-        expect(ea?.path?.p0).not.toEqual(eb?.path?.p0);
+        const pa = ea?.path?.p0 ?? { x: 0, y: 0 };
+        const pb = eb?.path?.p0 ?? { x: 0, y: 0 };
+        if (w.split) expect(pb.x).toBe(fieldWidth - pa.x);
+        else expect(Math.hypot(pb.x - pa.x, pb.y - pa.y)).toBeCloseTo(entryPairOffset);
         waits.add(ea?.wait ?? -1);
       }
       expect(waits.size).toBe(4);

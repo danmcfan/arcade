@@ -25,7 +25,7 @@ import {
   enemyHalfSize,
   enemyHp,
   enemySpeed,
-  entryGroupGap,
+  entryWaveGap,
   entryPairOffset,
   entrySpacing,
   entryWaves,
@@ -38,6 +38,7 @@ import {
   points,
   respawnTicks,
   shotSpacing,
+  type Slot,
   shotSpeed,
   sparkCooldown,
   sparkSpeed,
@@ -77,6 +78,8 @@ const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">
 
 const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
 const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
+/** Where the second of a pair flies: mirrored on a split wave, else `beside` the first. */
+const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p) : shift(p, beside));
 
 /** Where a dive aims: the firefly's x, give or take this much. */
 const diveAimSpread = 24;
@@ -102,43 +105,51 @@ function followPath(e: Enemy, path: BezierConfig, speed = enemySpeed): void {
   e.tStep = speed / Math.max(1, curveLength(path));
 }
 
+/** One enemy waiting to fly in along `curve`, which ends at its slot. */
+function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): Enemy {
+  const home = { x: slot.x, y: slot.y };
+  const e: Enemy = {
+    kind: slot.kind,
+    row: slot.row,
+    col: slot.col,
+    home,
+    state: "waiting",
+    x: curve.p0.x,
+    y: curve.p0.y,
+    dx: 0,
+    dy: 1,
+    hp: enemyHp[slot.kind],
+    deadFrames: 0,
+    wait,
+    path: null,
+    t: 0,
+    tStep: 0,
+    shotsLeft: 0,
+    shotTimer: 0,
+    outOfFormation: false,
+  };
+  followPath(e, { ...curve, p3: home });
+  return e;
+}
+
 /** A fresh stage: every slot filled, waiting to fly in wave by wave, two by two (`entryWaves`). */
 export function newStageEnemies(): Enemy[] {
   const slots = formation();
+  const slotAt = (ref: { row: number; col: number }): Slot => {
+    const slot = slots.find((s) => s.row === ref.row && s.col === ref.col);
+    if (slot === undefined) throw new Error(`no slot at row ${ref.row} col ${ref.col}`);
+    return slot;
+  };
   const order = (e: Enemy): number => slots.findIndex((s) => s.row === e.row && s.col === e.col);
   return (
     entryWaves
       .flatMap((wave, w) =>
         wave.pairs.flatMap((refs, p) =>
           refs.map((ref, side) => {
-            const slot = slots.find((s) => s.row === ref.row && s.col === ref.col);
-            if (slot === undefined) throw new Error(`no slot at row ${ref.row} col ${ref.col}`);
             const { curve: c, beside } = entryCurves[wave.curve];
-            const move = side === 0 ? (v: Vec): Vec => v : wave.split ? mirror : (v: Vec): Vec => shift(v, beside);
+            const move = (v: Vec): Vec => (side === 1 ? partner(wave.split, v, beside) : v);
             const curve = { p0: move(c.p0), p1: move(c.p1), p2: move(c.p2) };
-            const home = { x: slot.x, y: slot.y };
-            const e: Enemy = {
-              kind: slot.kind,
-              row: slot.row,
-              col: slot.col,
-              home,
-              state: "waiting",
-              x: curve.p0.x,
-              y: curve.p0.y,
-              dx: 0,
-              dy: 1,
-              hp: enemyHp[slot.kind],
-              deadFrames: 0,
-              wait: stageIntroTicks + w * entryGroupGap + p * entrySpacing,
-              path: null,
-              t: 0,
-              tStep: 0,
-              shotsLeft: 0,
-              shotTimer: 0,
-              outOfFormation: false,
-            };
-            followPath(e, { ...curve, p3: home });
-            return e;
+            return waveEnemy(slotAt(ref), curve, stageIntroTicks + w * entryWaveGap + p * entrySpacing);
           }),
         ),
       )
