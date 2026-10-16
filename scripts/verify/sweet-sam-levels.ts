@@ -131,7 +131,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4677,
+    tick: 3844,
     name: "07-level-clear-flash",
     shows: "the last honey drop eaten: everything stops, the bees leave and the maze flashes",
     expect: (s, sounds) => {
@@ -141,7 +141,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4793,
+    tick: 3960,
     name: "08-level-2-banner",
     shows: "LEVEL 2 before READY, the maze full again, everyone home",
     expect: (s) => {
@@ -150,7 +150,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4993,
+    tick: 4160,
     name: "09-level-2-faster-bees",
     shows: "level 2 playing: the bees fly faster than on level 1",
     expect: (s) => {
@@ -166,7 +166,7 @@ const levelStops: Stop[] = [
 
 const deathStops: Stop[] = [
   {
-    tick: 4817,
+    tick: 3145,
     name: "10-life-lost-dazed",
     shows: "a bee catches the bear: dazed",
     expect: (s, sounds) => {
@@ -175,7 +175,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4860,
+    tick: 3188,
     name: "11-life-lost-sinking",
     shows: "the bear sinking",
     expect: (s) => {
@@ -183,7 +183,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4930,
+    tick: 3258,
     name: "12-life-lost-puddle",
     shows: "a puddle with stars, still inside the 2 s death wait",
     expect: (s) => {
@@ -191,7 +191,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4938,
+    tick: 3266,
     name: "13-after-death",
     shows: "the round restarts on time: 2 s after the catch",
     expect: (s) => {
@@ -220,8 +220,8 @@ function video(v: Verify): void {
       loadFixture(v, levels);
       skipTo(v, levels, 0, 1150);
       replayLive(v, levels, 1150, 1400);
-      skipTo(v, levels, 1400, 4550);
-      replayLive(v, levels, 4550, 5080);
+      skipTo(v, levels, 1400, 3717);
+      replayLive(v, levels, 3717, 4247);
       v.wait(500);
     },
     { scene: "game" },
@@ -231,8 +231,8 @@ function video(v: Verify): void {
     "life-lost",
     () => {
       loadFixture(v, clear);
-      skipTo(v, clear, 0, 4760);
-      replayLive(v, clear, 4760, 5000);
+      skipTo(v, clear, 0, 3088);
+      replayLive(v, clear, 3088, 3328);
       v.wait(500);
     },
     { scene: "game" },
