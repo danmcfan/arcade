@@ -131,7 +131,8 @@ export interface PayoutSnapshot {
 // sweetSam (the Go port's Sweet Sam package)
 
 /** Go `StateID` values. */
-export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR";
+export type SweetSamStateId =
+  "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR" | "INTERMISSION";
 
 /** Enemy identity; Go compares `e.color` against `colorRed`, `colorPink`, `colorTeal`, `colorOrange`. */
 export type SweetSamEnemyKind = "red" | "pink" | "teal" | "orange";
