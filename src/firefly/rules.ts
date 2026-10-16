@@ -59,10 +59,71 @@ export const startLives = 3;
 
 /** Ticks the "STAGE n" text shows before the enemies fly in. */
 export const stageIntroTicks = 120;
-/** Enemies fly in in groups of this many, `entrySpacing` ticks apart, groups `entryGroupGap` ticks apart. */
-export const entryGroupSize = 8;
-export const entrySpacing = 6;
-export const entryGroupGap = 70;
+/** Where a wave flies in from (game.ts holds the curves). */
+export type EntryCurve = "topCentre" | "lowerLeft" | "lowerRight" | "topRight" | "topLeft";
+
+/** A formation place by row and column. */
+export interface SlotRef {
+  row: number;
+  col: number;
+}
+
+/**
+ * One entry wave: the curve it flies in on and its 4 pairs of slots, in the
+ * order they set off. The two of a pair fly side by side: the first on the
+ * curve, the second `entryPairOffset` px beside it, or mirrored when the wave
+ * is `split` (wave 1 comes in as two mirrored streams).
+ */
+export interface EntryWave {
+  curve: EntryCurve;
+  split: boolean;
+  pairs: readonly (readonly [SlotRef, SlotRef])[];
+}
+
+const pair = (a: [number, number], b: [number, number]): readonly [SlotRef, SlotRef] => [
+  { row: a[0], col: a[1] },
+  { row: b[0], col: b[1] },
+];
+
+/**
+ * Galaga's 5 waves of 8 (Bees are Moths, Butterflies Wasps, Boss Galaga Owls):
+ * 4 Wasps and 4 Moths from the top centre, split; 4 Owls and 4 Wasps from the
+ * lower left; 8 Wasps from the lower right; 8 Moths from the top right; 8
+ * Moths from the top left.
+ */
+export const entryWaves: readonly EntryWave[] = [
+  {
+    curve: "topCentre",
+    split: true,
+    pairs: [pair([1, 3], [3, 4]), pair([1, 4], [3, 5]), pair([2, 3], [4, 4]), pair([2, 4], [4, 5])],
+  },
+  {
+    curve: "lowerLeft",
+    split: false,
+    pairs: [pair([0, 0], [1, 0]), pair([0, 1], [1, 1]), pair([0, 2], [1, 6]), pair([0, 3], [1, 7])],
+  },
+  {
+    curve: "lowerRight",
+    split: false,
+    pairs: [pair([1, 2], [1, 5]), pair([2, 0], [2, 1]), pair([2, 2], [2, 5]), pair([2, 6], [2, 7])],
+  },
+  {
+    curve: "topRight",
+    split: false,
+    pairs: [pair([3, 6], [3, 7]), pair([3, 8], [3, 9]), pair([4, 6], [4, 7]), pair([4, 8], [4, 9])],
+  },
+  {
+    curve: "topLeft",
+    split: false,
+    pairs: [pair([3, 0], [3, 1]), pair([3, 2], [3, 3]), pair([4, 0], [4, 1]), pair([4, 2], [4, 3])],
+  },
+];
+
+/** Pairs of a wave set off `entrySpacing` ticks apart, waves `entryWaveGap` ticks apart. */
+export const entrySpacing = 12;
+export const entryWaveGap = 70;
+/** How far the second of a pair flies beside the first, in px. */
+export const entryPairOffset = 16;
 
 /** Speeds, in px per tick. Divers speed up on later stages (`Difficulty.diveSpeed`). */
 export const playerSpeed = 2;

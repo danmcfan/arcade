@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { difficulty, formation, points, swayOffset, swayAmplitude, type EnemyKind } from "./rules.ts";
+import { difficulty, entryWaves, formation, points, swayOffset, swayAmplitude, type EnemyKind } from "./rules.ts";
 
 describe("formation", () => {
   const slots = formation();
@@ -84,5 +84,40 @@ describe("points", () => {
     expect(points("owl", false)).toBeGreaterThan(points("wasp", false));
     expect(points("wasp", false)).toBeGreaterThan(points("moth", false));
     expect(points("owl", true)).toBeGreaterThan(points("wasp", true));
+  });
+});
+
+describe("entryWaves", () => {
+  const slots = formation();
+  const kindAt = (row: number, col: number): EnemyKind | undefined =>
+    slots.find((s) => s.row === row && s.col === col)?.kind;
+
+  test("5 waves of 8 fill every slot exactly once", () => {
+    expect(entryWaves.length).toBe(5);
+    const seen = entryWaves.flatMap((w) => {
+      expect(w.pairs.length).toBe(4);
+      return w.pairs.flat().map((s) => `${s.row},${s.col}`);
+    });
+    expect(seen.length).toBe(40);
+    expect(new Set(seen)).toEqual(new Set(slots.map((s) => `${s.row},${s.col}`)));
+  });
+
+  test("Galaga's mix: 4 Moths and 4 Wasps, 4 Owls and 4 Wasps, 8 Wasps, 8 Moths, 8 Moths", () => {
+    const mix = entryWaves.map((w) => {
+      const kinds = w.pairs.flat().map((s) => kindAt(s.row, s.col));
+      return {
+        moth: kinds.filter((k) => k === "moth").length,
+        wasp: kinds.filter((k) => k === "wasp").length,
+        owl: kinds.filter((k) => k === "owl").length,
+      };
+    });
+    expect(mix).toEqual([
+      { moth: 4, wasp: 4, owl: 0 },
+      { moth: 0, wasp: 4, owl: 4 },
+      { moth: 0, wasp: 8, owl: 0 },
+      { moth: 8, wasp: 0, owl: 0 },
+      { moth: 8, wasp: 0, owl: 0 },
+    ]);
+    expect(entryWaves.map((w) => w.curve)).toEqual(["topCentre", "lowerLeft", "lowerRight", "topRight", "topLeft"]);
   });
 });
