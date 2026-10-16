@@ -39,7 +39,7 @@ import {
 } from "../src/sweet-sam/entity.ts";
 import { flowerKinds } from "../src/sweet-sam/flower.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, flipX } from "./pixel-art.ts";
+import { checkRows, colours, flipX, type Rows } from "./pixel-art.ts";
 import {
   bearFrames,
   dazedBear,
@@ -51,6 +51,19 @@ import {
   mazeTileAt,
   sweetSamArtFiles,
 } from "./gen-sweet-sam-art.ts";
+
+/** The black pixels of `rows` next to a blank pixel or the frame's edge, as "x,y". */
+function blackOnEdge(rows: Rows): string[] {
+  const blank = (x: number, y: number): boolean => (rows[y]?.[x] ?? ".") === ".";
+  const out: string[] = [];
+  rows.forEach((row, y) => {
+    Array.from(row).forEach((px, x) => {
+      if (px === "k" && (blank(x - 1, y) || blank(x + 1, y) || blank(x, y - 1) || blank(x, y + 1)))
+        out.push(`${x},${y}`);
+    });
+  });
+  return out;
+}
 
 describe("Sweet Sam art source", () => {
   test("every bear and bee frame is 16×16, in Sweetie 16 letters and .", () => {
@@ -65,6 +78,18 @@ describe("Sweet Sam art source", () => {
       checkRows(`bee ${i}`, f, { w: 16, h: 16 });
     });
     checkRows("dazed face", dazedFace, { w: 12, h: 2 });
+  });
+
+  test("no sprite drawn on the black maze has black on its outer edge: it would vanish into the background", () => {
+    const sprites: [string, Rows][] = [
+      ...bearFrames().flatMap((row, r) => row.map((f, c): [string, Rows] => [`bear ${r},${c}`, f])),
+      ...beeOrder.flatMap((kind) =>
+        beeFrames(kind).flatMap((row, r) => row.map((f, c): [string, Rows] => [`${kind} bee ${r},${c}`, f])),
+      ),
+      ...flowers.map((f, i): [string, Rows] => [`flower ${i + 1}`, f]),
+      ["honey pot", honeyPotArt],
+    ];
+    for (const [name, rows] of sprites) expect({ name, edge: blackOnEdge(rows) }).toEqual({ name, edge: [] });
   });
 
   test("the bear sheet keeps the Go layout, 4 facings of 4 walk frames, and adds 4 death frames below", () => {

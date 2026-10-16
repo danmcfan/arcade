@@ -3,7 +3,8 @@
 // fixture (seed 11, a bot clearing the maze) through the `?debug` test hook
 // and stops where the art matters: the start (the bear, the four bees, honey
 // drops, honey pots, READY!), a honey pot eaten, a sleepy bee eaten with its
-// points, sleepy bees, the waking flash and a lost life. At each stop it
+// points, sleepy bees, the waking flash, a lost life and the bear's death
+// frames. At each stop it
 // checks the bear and every bee on the canvas against the generated sheets,
 // in the frame the game picks for them, that the wax shows wherever no
 // sprite is, and that "1UP" and "HIGH SCORE" show as maze.png has them. Part 2 writes every generated sheet scaled up, the bear's death
@@ -17,7 +18,7 @@ import type { InputStep } from "../../src/game/script.ts";
 import type { SweetSamEnemySnapshot, SweetSamSnapshot } from "../../src/game/snapshot.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { snap } from "../../src/engine/surface.ts";
-import { beeOrder, frameSize } from "../../src/sweet-sam/art.ts";
+import { bearDeathRow, beeOrder, frameSize } from "../../src/sweet-sam/art.ts";
 import { scoreLabelsArt, scoreLabelsX } from "../../src/ui/hudArt.ts";
 import {
   cabinetInsetLeft,
@@ -57,6 +58,9 @@ const stops = [
   { tick: 1400, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
   { tick: 2584, name: "5-waking-flash", shows: "sleepy bees flashing awake (after the second honey pot)" },
   { tick: 3452, name: "6-life-lost", shows: "a life lost on level 2: a red burst, one bear fewer below the maze" },
+  { tick: 3476, name: "7-death-sinking", deathFrame: 1, shows: "the caught bear sinking" },
+  { tick: 3500, name: "8-death-flat", deathFrame: 2, shows: "the caught bear squashed flat" },
+  { tick: 3524, name: "9-death-puddle", deathFrame: 3, shows: "the caught bear a puddle under stars" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -132,11 +136,12 @@ function placeBee(s: SweetSamSnapshot, e: SweetSamEnemySnapshot): Placed {
 
 function placeBear(s: SweetSamSnapshot): Placed {
   const p = s.player;
+  const death = s.deathFrame;
   return {
-    what: "bear",
+    what: death === null ? "bear" : `bear (death frame ${death})`,
     src: bear,
-    sx: frameSize * Math.trunc(p.frame),
-    sy: frameSize * bearRows[p.dir],
+    sx: frameSize * (death ?? Math.trunc(p.frame)),
+    sy: frameSize * (death === null ? bearRows[p.dir] : bearDeathRow),
     ...at(s, p.x, p.y),
   };
 }
@@ -204,7 +209,8 @@ function checkStop(v: Verify, name: string, shows: string): SweetSamSnapshot {
   const frame = canvas(v);
   console.log(`${name} (tick ${v.snapshot(isGameSnapshot).tick}): ${shows}`);
   const placed = s.enemies.map((e) => ({ e: { x: e.x, y: e.y, eyes: e.eyes }, p: placeBee(s, e) }));
-  if (!s.player.hidden) placed.unshift({ e: { ...s.player, eyes: false }, p: placeBear(s) });
+  // A caught bear is hidden, its death frames drawn in its place.
+  if (!s.player.hidden || s.deathFrame !== null) placed.unshift({ e: { ...s.player, eyes: false }, p: placeBear(s) });
   placed.forEach(({ e, p }, i) => {
     if (e.eyes) {
       console.log(`  --  the ${p.what} is eyes, a placeholder drawing until #196: not compared`);
@@ -271,6 +277,8 @@ function play(v: Verify): void {
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
     if (stop.tick === 3452)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
+    if ("deathFrame" in stop)
+      check(s.deathFrame === stop.deathFrame, "the bear's death frames play in turn", s.deathFrame);
     if (stop.tick === 2584)
       check(
         s.enemies.some((e) => e.flash),
