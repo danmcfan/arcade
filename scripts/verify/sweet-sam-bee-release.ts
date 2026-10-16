@@ -34,17 +34,16 @@ function sweetSam(v: Verify): SweetSamSnapshot {
   return g.sw;
 }
 
-/** Where each bee waits in the home: a held bee does not move. */
-const spots = new Map<string, string>();
+/** Where each bee waits in the home: it bobs there, so only its x is kept. */
+const spots = new Map<string, number>();
 
-function spot(s: SweetSamSnapshot, kind: string): string {
-  const e = s.enemies.find((b) => b.kind === kind);
-  return e === undefined ? "" : `${e.x},${e.y},${e.home}`;
-}
+/** The lowest y a bee bobs up to in the home (update.ts `bob`). */
+const bobTop = 136;
 
-/** Whether the bee of `kind` is still at its spot in the home. */
+/** Whether the bee of `kind` is still at its spot in the home: same x, within its bob. */
 function waiting(s: SweetSamSnapshot, kind: string): boolean {
-  return spots.get(kind) === spot(s, kind);
+  const e = s.enemies.find((b) => b.kind === kind);
+  return e !== undefined && e.home && e.x === spots.get(kind) && e.y >= bobTop;
 }
 
 const eaten = (s: SweetSamSoftware): number => s.items.filter((i) => i === null).length;
@@ -126,7 +125,7 @@ await verify("sweet-sam-bee-release", (v) => {
   loadFixture(v, globalScript);
   skipTo(v, globalScript, 0, deathPlay);
   const start = sweetSam(v);
-  for (const kind of ["pink", "teal", "orange"]) spots.set(kind, spot(start, kind));
+  for (const e of start.enemies) spots.set(e.kind, e.x);
   check(
     start.enemies.slice(1).every((e) => e.home),
     "after the lost life pink, teal and orange wait in the home",
