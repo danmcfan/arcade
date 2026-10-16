@@ -11,6 +11,8 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
+When two issues need the same new shared code, the shared module gets its own issue and both issues are blocked on it, so neither builds its own copy.
+
 An issue that asks for art follows "The bar" in `docs/agents/pixel-art.md`: it names the existing art to import and keep, and asks for options when the look is open.
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.

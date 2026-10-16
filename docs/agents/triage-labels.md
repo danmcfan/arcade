@@ -12,6 +12,12 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
+## Needs owner
+
+`needs-owner` marks an issue with an open question only the owner can answer: design, art or placement. Apply it alongside the triage label whenever the issue leaves such a decision open, and remove it once the owner answers in the issue. An agent never builds past it; it asks on the issue and stops.
+
+Apply it to every art request (creating, redrawing or specifying art) that does not yet record the owner's prototype-or-tweak choice (`docs/agents/pixel-art.md`).
+
 Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## Work type
