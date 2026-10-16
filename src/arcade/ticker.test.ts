@@ -142,4 +142,17 @@ describe("marquee bulbs", () => {
     // Over one cycle every bulb is dark once.
     for (const b of tickerBulbs) expect([0, 8, 16].filter((t) => !litOn(t).includes(key(b)))).toHaveLength(1);
   });
+
+  test("the arcade win banner, centred between gold stars, covers whatever else it would show", () => {
+    for (const faced of [null, "sweet", "prizeCounter"] as const) {
+      const v = { tokens: 3, tickets: 1250, faced, beatenHi: null, arcadeWinBanner: true };
+      expect(text(v)).toBe("*YOUBEATTHEARCADE*");
+      expect(text(v, "yellow")).toBe("**");
+      onBoard(v);
+      const xs = tickerLetters(v).map((g) => g.x);
+      const left = Math.min(...xs) - tickerFace.x;
+      const right = tickerFace.x + tickerFace.w - (Math.max(...xs) + 5);
+      expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
+    }
+  });
 });

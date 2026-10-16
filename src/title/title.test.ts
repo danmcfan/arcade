@@ -6,7 +6,7 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { Surface } from "../engine/surface.ts";
 import { fakeSoftware } from "../game/fakeSoftware.testutil.ts";
 import { Game } from "../game/game.ts";
-import { noHighScores } from "../arcade/wallet.ts";
+import { houseHighScores, noHighScores } from "../arcade/wallet.ts";
 import { createScene } from "../game/registry.ts";
 import type { GameSnapshot } from "../game/snapshot.ts";
 import type { Software } from "../game/software.ts";
@@ -406,6 +406,55 @@ function endedRun(store: SaveStore & { saves: number }, tokens: number, points: 
   expect(t.hostedGame().inHub()).toBe(false);
   return t;
 }
+
+describe("the arcade win inside the title scene", () => {
+  /** Firefly and Brass Monkey beaten: a Sweet Sam run over 30000 is the arcade win. */
+  const twoBeaten = { sweetSam: 0, firefly: houseHighScores.firefly + 1, brassMonkey: houseHighScores.brassMonkey + 1 };
+
+  function wonArcade(store: SaveStore & { saves: number }): Title {
+    store.save({ ...atCabinet(), highScores: twoBeaten });
+    const t = new Title({
+      store,
+      createGame: (restore): Game =>
+        new Game(null, {
+          createSoftware: (): Software => endingSoftware(houseHighScores.sweetSam + 100),
+          ...(restore ? { restore } : {}),
+        }),
+    });
+    tap(t, "space"); // Continue
+    hold(t, { up: true, space: true }, 2);
+    t.step(NO_INPUT); // the run ends: the payout opens over it
+    tap(t, "space"); // skip the count
+    tap(t, "space"); // close the payout
+    return t;
+  }
+
+  test("is saved the moment it happens, and Continue restores it without the banner", () => {
+    const store = spyStore();
+    const t = wonArcade(store);
+    expect(game(t).arcade.arcadeWin).toBe("banner");
+    expect(store.load()?.arcadeWon).toBe(true);
+    t.dispose();
+    const again = new Title({ store });
+    tap(again, "space"); // Continue
+    expect(game(again).arcade.arcadeWin).toBe("won");
+    again.dispose();
+  });
+
+  test("New game clears it", () => {
+    const store = spyStore();
+    wonArcade(store).dispose();
+    const t = new Title({ store });
+    tap(t, "down"); // Continue -> New game
+    tap(t, "space");
+    tap(t, "down"); // No -> Yes
+    tap(t, "space");
+    tap(t, "space"); // intro
+    expect(game(t).arcade.arcadeWin).toBeUndefined();
+    expect(store.load()?.arcadeWon).toBe(false);
+    t.dispose();
+  });
+});
 
 describe("saving when the wallet changes", () => {
   test("every purchase saves at once, token or prize; a refused one does not", () => {

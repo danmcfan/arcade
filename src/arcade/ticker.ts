@@ -2,7 +2,8 @@
 // room, on the board under the ceiling's neon tube. While a cabinet's screen
 // is on, the board shows that cabinet's name and INTERACT TO PLAY instead,
 // or, once the cabinet is beaten, its HI and a gold star at the top right;
-// facing the prize desk, it shows PRIZE COUNTER and INTERACT (#136).
+// facing the prize desk, it shows PRIZE COUNTER and INTERACT (#136). Right
+// after the arcade win, a banner covers it all until the action key (#143).
 // The board itself is in the room image; this lays out and draws its lit
 // letters, and lights its marquee's bulbs in a chase (#92)
 // (src/ui/tickerArt.ts).
@@ -16,6 +17,7 @@ import { sweetie } from "../ui/sweetie16.ts";
 import {
   bulbLit,
   tickerBulbs,
+  tickerFace,
   tickerGap,
   tickerGlyphHeight,
   tickerGlyphs,
@@ -44,6 +46,8 @@ export interface TickerView {
   faced: Faced | null;
   /** The faced cabinet's HI once it is beaten; null while it is not. */
   beatenHi: number | null;
+  /** The arcade win banner is up: it covers everything else until the action key. */
+  arcadeWinBanner?: boolean;
 }
 
 export const tokensLabel = "TOKENS";
@@ -54,6 +58,7 @@ export const prizeCounterLabel = "PRIZE COUNTER";
 export const interactPrompt = "INTERACT";
 export const star = "*";
 export const hiLabel = "HI";
+export const arcadeWinLabel = "YOU BEAT THE ARCADE";
 /** The largest count the board shows; more reads as this. */
 export const maxShown = 999_999;
 
@@ -89,6 +94,7 @@ const shown = (n: number): string => String(Math.min(maxShown, Math.max(0, Math.
 
 /** Every lit letter on the board for `v`. */
 export function tickerLetters(v: TickerView): TickerGlyph[] {
+  if (v.arcadeWinBanner === true) return arcadeWinBanner();
   if (v.faced === "prizeCounter") return named(prizeCounterLabel, "orange", interactPrompt);
   if (v.faced !== null) {
     const t = minigameTitled(v.faced).titleCard;
@@ -109,6 +115,18 @@ export function tickerLetters(v: TickerView): TickerGlyph[] {
     ...(v.tokens > 0 ? tickerText(shown(v.tokens), "yellow", tokensX) : tickerText(freePlay, "orange", tokensX)),
     ...tickerText(ticketsLabel, "orange", ticketsX),
     ...tickerText(tickets, "yellow", tickerRight - tickerTextWidth(tickets)),
+  ];
+}
+
+/** YOU BEAT THE ARCADE between two gold stars, centred on the board. */
+function arcadeWinBanner(): TickerGlyph[] {
+  const text = `${star} ${arcadeWinLabel} ${star}`;
+  const x = tickerFace.x + Math.trunc((tickerFace.w - tickerTextWidth(text)) / 2);
+  const labelX = x + tickerTextWidth(`${star} `) + tickerGap;
+  return [
+    ...tickerText(star, "yellow", x),
+    ...tickerText(arcadeWinLabel, "white", labelX),
+    ...tickerText(star, "yellow", x + tickerTextWidth(text) - tickerTextWidth(star)),
   ];
 }
 

@@ -1,4 +1,5 @@
-import { noHighScores } from "../arcade/wallet.ts";
+import { cakeRect, confettiTicks, trophyRect } from "../arcade/arcadeWin.ts";
+import { houseHighScores, noHighScores, type HighScores } from "../arcade/wallet.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
 import { images } from "../engine/assets.ts";
@@ -232,13 +233,19 @@ const factory = (name: SoftwareName): Software => {
 };
 
 const games: { dispose(): void }[] = [];
-function newGame(initial: SoftwareName | null = null, tokens = 5, prizes: PrizeId[] = []): Game {
+function newGame(
+  initial: SoftwareName | null = null,
+  tokens = 5,
+  prizes: PrizeId[] = [],
+  highScores: HighScores = noHighScores,
+  arcadeWon = false,
+): Game {
   const restore = {
-    highScores: noHighScores,
+    highScores,
     tokens,
     tickets: 0,
     prizes,
-    arcadeWon: false,
+    arcadeWon,
     player: { x: 80, y: 92, dir: "DOWN" as const },
   };
   const g = new Game(initial, { createSoftware: factory, debugPrint, restore });
@@ -551,6 +558,71 @@ describe("hub scoreboard", () => {
     const r = recordingSurface();
     game.draw(r.surface);
     expect(r.dimmed()).toBeNull();
+  });
+});
+
+/** How many fills the hub draw makes inside `r` (in hub-image coordinates). */
+function filledWithin(
+  rec: ReturnType<typeof recordingSurface>,
+  r: { x: number; y: number; w: number; h: number },
+): number {
+  return rec.boxes.filter(
+    ([x, y, w, h]) => x >= r.x + 16 && y >= r.y + 16 && x + w <= r.x + r.w + 16 && y + h <= r.y + r.h + 16,
+  ).length;
+}
+
+describe("the arcade win", () => {
+  const twoBeaten = { sweetSam: 0, firefly: houseHighScores.firefly + 1, brassMonkey: houseHighScores.brassMonkey + 1 };
+
+  /** A game that has just won the arcade: a Sweet Sam run over its house high score, its payout closed. */
+  function justWon(): Game {
+    const game = newGame(null, 5, [], twoBeaten);
+    for (let t = 0; t < 31; t++) game.step(input({ up: true }));
+    game.step(input({ up: true, space: true }));
+    const sw = defined(built[0]);
+    sw.points = houseHighScores.sweetSam + 100;
+    sw.over = true;
+    for (const keys of [{}, { space: true }, {}, { space: true }, {}]) game.step(input(keys));
+    return game;
+  }
+
+  test("without it, no cake, trophy, banner or confetti", () => {
+    const r = recordingSurface();
+    newGame(null, 5, [], twoBeaten).draw(r.surface);
+    expect(filledWithin(r, cakeRect)).toBe(0);
+    expect(filledWithin(r, trophyRect)).toBe(0);
+    expect(r.board()).not.toContain("ARCADE");
+  });
+
+  test("the moment it happens: the banner on the scoreboard, confetti, and the cake and trophy on the desk", () => {
+    const game = justWon();
+    const r = recordingSurface();
+    game.draw(r.surface);
+    expect(r.board()).toBe("*YOUBEATTHEARCADE*");
+    expect(filledWithin(r, cakeRect)).toBeGreaterThan(0);
+    expect(filledWithin(r, trophyRect)).toBeGreaterThan(0);
+    const confettiDots = (rec: ReturnType<typeof recordingSurface>): number =>
+      [sweetie.r, sweetie.g, sweetie.c].reduce((n, css) => n + rec.dots(css).length, 0);
+    for (let t = 0; t < 120; t++) game.step(input());
+    const mid = recordingSurface();
+    game.draw(mid.surface);
+    expect(confettiDots(mid)).toBeGreaterThan(5);
+    // The action key closes the banner; the confetti finishes its fall and is gone.
+    game.step(input({ space: true }));
+    for (let t = 0; t < confettiTicks; t++) game.step(input());
+    const after = recordingSurface();
+    game.draw(after.surface);
+    expect(after.board()).not.toContain("ARCADE");
+    expect(confettiDots(after)).toBe(0);
+    expect(filledWithin(after, cakeRect)).toBeGreaterThan(0);
+  });
+
+  test("Continue shows the cake and trophy, with no banner or confetti", () => {
+    const r = recordingSurface();
+    newGame(null, 5, [], { ...twoBeaten, sweetSam: houseHighScores.sweetSam + 1 }, true).draw(r.surface);
+    expect(filledWithin(r, cakeRect)).toBeGreaterThan(0);
+    expect(filledWithin(r, trophyRect)).toBeGreaterThan(0);
+    expect(r.board("orange")).toBe("TOKENSTICKETS");
   });
 });
 

@@ -1,7 +1,7 @@
 // The Wallet: the arcade's economy in one place. It owns the player's tokens,
 // tickets, owned prizes and the player's high score on each machine, and every rule that changes
-// them: what a cabinet start costs, what a run pays, and what the prize
-// counter sells. Nothing else changes those numbers; the snapshot and the
+// them: what a cabinet start costs, what a run pays, what the prize
+// counter sells, and when the player has the arcade win. Nothing else changes those numbers; the snapshot and the
 // save are projections of `toProgress()`, and `version` tells the title scene
 // when to save.
 
