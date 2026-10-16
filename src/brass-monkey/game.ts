@@ -31,7 +31,7 @@ import {
   drawOnScreen,
 } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawText, drawTextCentered } from "../ui/text.ts";
+import { drawText, drawTextCentered, textWidth } from "../ui/text.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
@@ -101,6 +101,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     const run = this.run;
     if (run.phase === "escape") {
       drawEscape(screen, left, top, escapeTicks - run.phaseTicks);
+      drawTextCentered(screen, lapLabel(run.loop + 1), left + cabinetPlayfieldWidth / 2, top + 84, "dark");
       return;
     }
     const floor = run.currentFloor();
@@ -117,6 +118,11 @@ export class BrassMonkeySoftware implements FixedViewport {
     // The monkey blinks while it loses a life.
     if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
     for (let n = 0; n < run.lives; n++) screen.draw(frame(imageMonkey, 0, 16, 16), left + 4 + n * 14, top + 2);
+    // Across from the lives.
+    const lap = lapLabel(run.loop);
+    drawText(screen, lap, left + cabinetPlayfieldWidth - 4 - textWidth(lap), top + 6, "orange");
+    if (run.lapBanner > 0 && run.phase === "play")
+      drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "over") drawTextCentered(screen, "GAME OVER", left + cabinetPlayfieldWidth / 2, top + 20);
   }
@@ -165,6 +171,11 @@ export class BrassMonkeySoftware implements FixedViewport {
       emberTimer: run.emberTimer,
     };
   }
+}
+
+/** The lap as the player counts it, from 1: `run.loop` counts escapes. */
+function lapLabel(loop: number): string {
+  return `LOOP ${loop + 1}`;
 }
 
 export function newBrassMonkeySoftware(

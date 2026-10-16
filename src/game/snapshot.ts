@@ -149,6 +149,10 @@ export interface SweetSamPlayerSnapshot {
   hidden: boolean;
   /** `Entity.Velocity`. */
   velocity: number;
+  /** The tapped turn waiting for a junction's cornering window ("" when none). */
+  turn: Direction | "";
+  /** Whether the bear is cornering round a junction. */
+  cornering: boolean;
 }
 
 export interface SweetSamEnemySnapshot {
@@ -174,6 +178,8 @@ export interface SweetSamEnemySnapshot {
   home: boolean;
   /** `Entity.dotMinimum`. */
   dotMin: number;
+  /** `Entity.held`. */
+  held: boolean;
   /** `Entity.reverseDirection`. */
   reverse: boolean;
   /** `Entity.reverseTile` as `[x, y]`. */
@@ -222,6 +228,8 @@ export interface SweetSamSnapshot {
   mode: number;
   /** `SweetSamSoftware.modeTicks`. */
   modeTicks: number;
+  /** `SweetSamSoftware.release`. */
+  release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
   /** `SweetSamSoftware.pauseTicks`. */
   pauseTicks: number;
   /** `SweetSamSoftware.startTicks`. */

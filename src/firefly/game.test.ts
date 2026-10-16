@@ -25,6 +25,16 @@ import {
   type EnemyKind,
 } from "./rules.ts";
 
+/** Puts an Owl on a degenerate dive path that stays at (x, y), with one hit point. */
+function divingAt(e: Enemy, x: number, y: number): void {
+  const p = { x, y };
+  e.state = "diving";
+  e.outOfFormation = true;
+  e.path = { p0: p, p1: p, p2: p, p3: p };
+  e.tStep = 0.001;
+  e.hp = 1;
+}
+
 describe("angle", () => {
   const tests = [
     { direction: { x: 0, y: 0 }, angle: 0 },
@@ -315,6 +325,29 @@ describe("lives", () => {
     expect(e.hp).toBe(0);
   });
 
+  test("a formation Moth ramming the firefly dies but scores nothing", () => {
+    const { f, e } = withOnly("moth", { x: 112, y: playerY });
+    f.update(NO_INPUT);
+    expect([f.score(), f.lives]).toEqual([0, startLives - 1]);
+    expect(e.deadFrames).toBeGreaterThan(0);
+  });
+
+  test("a diving Owl ramming the firefly leaves the score unchanged", () => {
+    const { f, e } = withOnly("owl", { x: 112, y: playerY });
+    divingAt(e, 112, playerY);
+    f.points = 1234;
+    f.update(NO_INPUT);
+    expect([f.score(), f.lives, e.hp]).toEqual([1234, startLives - 1, 0]);
+  });
+
+  test("shooting a diving Owl still scores 400", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 100 });
+    divingAt(e, 100, 100);
+    sparkAt(f, 100, 100);
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(400);
+  });
+
   test("the third lost life ends the run once the firefly's burst has played", () => {
     const { f } = withOnly("moth", { x: 30, y: 40 });
     f.points = 1234;
@@ -332,6 +365,34 @@ describe("lives", () => {
 });
 
 describe("stages", () => {
+  test("on the last life, a rammed last enemy does not start the next stage: the run ends on stage 1", () => {
+    const { f } = withOnly("wasp", { x: 112, y: playerY });
+    f.lives = 1;
+    f.update(NO_INPUT);
+    run(f, respawnTicks + hitEffectTicks);
+    expect([f.over, f.stage]).toEqual([true, 1]);
+  });
+
+  test("with lives left, a rammed last enemy still starts the next stage", () => {
+    const { f } = withOnly("wasp", { x: 112, y: playerY });
+    f.lives = 2;
+    f.update(NO_INPUT);
+    run(f, respawnTicks);
+    expect([f.respawn, f.lives, f.stage, f.over]).toEqual([0, 1, 2, false]);
+  });
+
+  test("on the last life, shooting the last enemy on the tick the firefly is hit still ends the run on stage 1", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.lives = 1;
+    sparkAt(f, 100, 100);
+    f.shots.push({ x: 112, y: playerY - 3, dx: 0, dy: 0 });
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(0);
+    expect(f.enemies.every((e) => e.deadFrames > 0)).toBe(true);
+    run(f, respawnTicks + hitEffectTicks);
+    expect([f.over, f.stage]).toEqual([true, 1]);
+  });
+
   test("when the last enemy is dead and its hit effect has played, the next stage starts", () => {
     const { f } = withOnly("moth", { x: 100, y: 100 });
     sparkAt(f, 100, 100);

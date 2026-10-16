@@ -18,7 +18,6 @@ on purpose (ADR 0004; see "Re-recorded from the TypeScript game" below).
 | `traces/<name>.jsonl.gz` | Per-tick state snapshots (§4.3, `src/game/snapshot.ts`) |
 | `frames/<name>/<tick>.png` | Golden frames at logical resolution for each `captureTicks` entry |
 | `rng.json` | mulberry32 reference outputs for seeds 1 and 42 |
-| `sweet-sam.goReference.json` | Trimmed Sweet Sam Go reference used by `src/sweet-sam/sweet-sam.test.ts` (not from `tools/golden/`; see below) |
 
 Total size: about 2.9 MB (traces 1.7 MB, frames 0.98 MB, inputs 96 KB, rng 68 KB).
 
@@ -90,8 +89,8 @@ What the capture ticks show:
 |---|---|
 | `arcade-walk` | 1 hub start (token and ticket counts on top, the prize counter on the bottom wall) · 41 Sweet Sam cabinet title · 70 Brass Monkey title · 389 firefly title · 420 debug panel + overlay · 440 debug + Sweet Sam title · 462 hub after debug off |
 | `arcade-enter-*` | entry tick (software just loaded, before its first update) · last tick inside · Esc tick (minigame pause menu opens) · QUIT GAME selected (NO TICKETS) · hub after Quit game (1 token spent) |
-| `sweet-sam-clear` | 1 tick 1 (READY) · 61 READY wave mid-animation · 383 camera shake (power pellet) · 387 bee-eaten popup + particles · 444 power mode · 601 mid-play · 6705 level-clear flash · 6840 LEVEL 2 · 6950 READY on level 2 · 8040 the bear's death animation · 9179 last FINALDEATHWAIT tick · 9180 hub after game over |
-| `sweet-sam-levels` | 900 the bonus flower · 1049 the flower eaten (100) · 3585 level-clear flash · 3700 LEVEL 2 · 3900 level 2 playing |
+| `sweet-sam-clear` | `game.New(sweetSam)` | 11 | 6765 | look-ahead bot eats everything: level 1 cleared at 3590 (re-recorded for #155, #157 and #158), bee chains 200→400→800; then random holds through level 2, standing still once they run out, to game over (6765) |
+| `sweet-sam-levels` | 900 the bonus flower · 2850 the second flower eaten (100) · 4189 level-clear flash · 4305 LEVEL 2 · 4505 level 2 playing |
 | `sweet-sam-modes` | 3358 flashing bees (unshaken) |
 | `sweet-sam-fuzz-*` | 1 |
 | `sweet-sam-highscore` | 2871 game over: the payout opens · 2900 mid-count (1 ticket) · 2943 hub after the payout (5 tickets) · 2994 re-entered Sweet Sam (high score dials) · 3124 later in that game · 3125 minigame pause menu · 3158 hub after Quit game |
@@ -125,14 +124,14 @@ reproduce every entry exactly.
 | `arcade-enter-sweet-sam` | hub | 1 | 418 | same for Sweet Sam |
 | `arcade-enter-firefly` | hub | 1 | 442 | same for firefly |
 | `sweet-sam-fuzz-1..4` | `game.New(sweetSam)` | 1..4 | 3616–3650 | random held directions, 10–60 tick holds; after game over the rest drives the hub |
-| `sweet-sam-clear` | `game.New(sweetSam)` | 11 | 9714 | look-ahead bot eats everything: level 1 cleared at 6690, bee chains 200→400→800→1600; then random holds through level 2 to game over (9180) |
-| `sweet-sam-levels` | `game.New(sweetSam)` | 4 | 4171 | recorded from TypeScript by `scripts/sweet-sam-bot.ts script sweet-sam-levels 4` (#47): two bonus flowers (the first eaten), level 1 cleared at 3570, LEVEL 2 and its first 300 PLAY ticks |
+| `sweet-sam-clear` | `game.New(sweetSam)` | 11 | 5995 | look-ahead bot eats everything: level 1 cleared at 4010 (#155: bees leave the home as in Pac-Man), bee chains 200→400→800; then random holds through level 2 to game over (5965) |
+| `sweet-sam-levels` | `game.New(sweetSam)` | 27 | 4983 | recorded from TypeScript by `scripts/sweet-sam-bot.ts script sweet-sam-levels 27` (#47, re-recorded for #152, #155, #156, #157 and #158): a bonus flower eaten (1277), level 1 cleared at 4382, LEVEL 2 and its first 300 PLAY ticks |
 | `sweet-sam-modes` | `game.New(sweetSam)` | 5 | 6903 | survival bot that never eats the last items, so one round lasts until `modeIndex` 8 (every `modeSequence` entry through index 7) |
 | `sweet-sam-highscore` | hub | 21 | 3178 | enter Sweet Sam from the hub, play to game over, hub `highScore` updated, payout (560 points: 5 tickets; Space skips, Space closes), re-enter Sweet Sam (its high score dials boot from it), Esc and Quit game |
 | `firefly-stages` | `game.New(firefly)` | 10 | 1261 | recorded from the TypeScript game (#34): a bot's inputs (Space held, steering under the nearest enemy) through stage 1's start, the entry, kills (an Owl hurt, then killed), dives with shots, a lost life, and stage 2's start |
 | `brass-monkey-play` | `game.New(brassMonkey)` | 163 | 9136 | recorded from TypeScript (#39); inputs written by `scripts/gen-brass-monkey-play.ts`'s bot: climbs, jumps (hazards jumped), bolts, both floors finished, 2 lives lost, the escape, then standing still to game over and back in the hub |
 
-46,471 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
+45,346 ticks in total. The Sweet Sam bot only picked inputs; the scripts replay
 without it.
 
 ### Coverage
@@ -147,28 +146,6 @@ state never appears: the tick it is entered, `Game.Update` sees `GameOver()`
 and drops the software, so that tick's snapshot already has
 `software: null`. In the TS-recorded `sweet-sam-highscore` it shows for as long
 as the payout is open.
-
-## sweet-sam.goReference.json
-
-A trimmed Go reference for Sweet Sam on its own: seed 8, 6,000 ticks, driving the
-Sweet Sam software directly (no hub) with the "greedy" input generator in
-`src/sweet-sam/sweet-sam.test.ts`. It holds the state transitions (`trans`), a few
-complete snapshots (`snaps`) and the end state (`final`). It was captured during T5
-by the Sweet Sam porter's throwaway Go harness, not by `tools/golden/`: a copy of
-the Go Sweet Sam package with `math/rand` swapped for mulberry32 at the same call
-positions, a `Snapshot()` emitting the §4.3 keys, built with
-`CGO_ENABLED=1 GOARCH=amd64`. The full per-tick traces matched the TS port
-bit for bit at the time.
-
-That harness was never committed, so the Go capture cannot be regenerated.
-#151 re-recorded it from the TypeScript game (same seed, generator and
-ticks): a honey pot makes the bees in the home sleepy too, so the run
-plays differently from the first honey pot on. The `snaps` keys are now the
-first death (610), the first bee-eaten pause (1688) and game over (3386).
-It is kept as a cheap Sweet Sam regression check (`sweet-sam.test.ts` imports
-it; it is test-only and not in the bundle). The full `sweet-sam-*` traces above
-supersede it for regression purposes: if the two ever disagree, the traces
-win.
 
 ## Regenerating
 
@@ -232,11 +209,19 @@ Re-recorded from TypeScript so far:
 | `arcade-walk`, `sweet-sam-fuzz-1`..`3`, `sweet-sam-clear` (traces); `arcade-walk` (every frame), `arcade-enter-*` (the hub frame after Quit game: 408, 408, 368), `sweet-sam-clear` (9180), `sweet-sam-highscore` (2943, 3158) | #88: the prize desk is redrawn as a U after the Celadon Dept Store 4F counter, its top edge at y 107 instead of 106, so walking down stops the player at y 95 instead of 94. Traces re-recorded; inputs unchanged. The hub frames were re-captured: they differ in the desk and employee (x 48..143, y 119..159), and also pick up the scoreboard lettering from the #72/#75 review fixes, which landed after those frames were recorded (44 pixels round x 112..142, y 24..30) |
 | every scenario but the frame-only ones | #148: the hub snapshot's one `highScore` became `highScores`, a player high score per machine, and a run from a cabinet boots with that machine's house high score (Sweet Sam 30000, Firefly 40000, Brass Monkey 25000) until it is beaten, so `arcade-enter-sweet-sam`, `arcade-enter-brass-monkey` and `sweet-sam-highscore` show that HI in their minigame. Traces re-recorded; inputs unchanged. Golden frames not re-captured |
 | every scenario but `arcade-walk` (traces); every minigame frame (51) | #113: minigames play inside a 240×304 cabinet outline (the screen plus 8 px of the cabinet art), not the 336×428 cabinet, and the joystick is gone. Inputs unchanged. Traces re-recorded: each is the old one with `sw.joystick` dropped and nothing else changed. Every frame that shows a minigame was re-recorded at 240×304; hub frames were not touched |
-| `sweet-sam-fuzz-2`..`4`, `sweet-sam-modes`, `sweet-sam-clear`, `sweet-sam-levels` | #151: a honey pot makes every bee sleepy, the ones still in the home too (Pac-Man), so each run plays differently from its first honey pot on. `sweet-sam-fuzz-2`..`4` and `sweet-sam-modes` keep their inputs; traces re-recorded and the changed frames re-captured. `sweet-sam-clear` and `sweet-sam-levels` no longer cleared level 1 (the bear died), so their inputs were re-planned from the first tick their old run would have lost a life (920 and 1060): the old key presses up to there, then a search that clears level 1, then the old key presses after the old clear. Their captures moved to the same moments (clear: the flash 6831, LEVEL 2 6966, READY 7076, the death animation 8188, the last tick 10316 and the hub 10317; levels: the flash 5067, LEVEL 2 5182, level 2 playing 5382). Traces and frames re-recorded |
+| `arcade-walk`, `sweet-sam-fuzz-1`, `sweet-sam-fuzz-3` (traces) | #93: the hub's walls are the frame's edges (the carpet runs out to them since #72) and the prize desk is solid over its whole U, so the player walks down either side of it to the bottom edge. The walks that hit the old side and bottom walls now go further. Traces re-recorded; inputs and frames unchanged |
+| `sweet-sam-fuzz-2`..`4`, `sweet-sam-modes` (traces); `sweet-sam-clear`, `sweet-sam-levels` (inputs and trace) | #152: while any bee is sleepy the scatter/chase timer (`modeTicks`) holds, as in Pac-Man, so every run that eats a honey pot plays differently from then on. Traces re-recorded with inputs unchanged, except `sweet-sam-clear` and `sweet-sam-levels`: their runs no longer cleared level 1, so their inputs were re-recorded with the same bot and seed, and its capture ticks after 1049 moved to the same moments (3585, 3700, 3900 became 3247, 3362, 3562). With the old inputs `sweet-sam-clear` lost its last life on level 1 at 2954, so its inputs were re-recorded too: the same bot and seed through the level 1 clear (4162) and 300 ticks of level 2, then random holds to game over (8103); its capture ticks from 6705 on moved to 4177, 4312, 4422, 5800, 8102 and 8103, and those frames were re-captured. The other golden frames were not re-captured. `sweet-sam.goReference.json` cannot be regenerated, so `sweet-sam.test.ts` compares it only up to the first sleepy tick |
+| `arcade-enter-sweet-sam`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-highscore`, `sweet-sam-modes` (traces); `sweet-sam-clear`, `sweet-sam-levels` (inputs, trace and frames) | #155: bees leave the home as in Pac-Man: only the preferred bee in the home counts eaten drops, a global drop counter releases them after a lost life, and a bee leaves after 4 s (3 s from level 5) without an eaten drop. Traces re-recorded with inputs unchanged, except `sweet-sam-clear` and `sweet-sam-levels`, whose runs no longer cleared level 1 (or no longer ate a flower on it). `sweet-sam-levels` was re-recorded with the same bot on seed 15 (seed 4 now eats its first flower on level 3); its capture ticks moved to 900, 2850, 3757, 3872 and 4072. `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear (4010) and 300 ticks of level 2, then random holds to game over (5965); its captures moved to the same moments where they still exist (the smoke pot is now at 697, the first bee eaten at 1103). Both scenarios' frames were re-captured; the other golden frames were not. `sweet-sam.goReference.json` is compared without the bees' `dotMin` |
+| `sweet-sam-levels` (inputs, trace and frames) | #156: Cruise Elroy: red flies faster with 20 and then 10 honey drops left on level 1 and chases the bear during scatter, so the run no longer cleared level 1 (it stalled with 8 drops left). Re-recorded with the same bot on seed 15; level 1 is now cleared at 4174, so the captures after 2850 moved to the same moments (3757, 3872, 4072 became 4189, 4305, 4505) and those frames were re-captured. 900 and 2850 are unchanged. No other trace reaches 20 drops left on level 1 with Elroy on, so none changed |
+| `arcade-enter-sweet-sam`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-clear`, `sweet-sam-modes`, `sweet-sam-levels` (traces only) | #156: the snapshot gained `release.elroySuspended`; traces re-recorded from the same inputs, no other field changed, frames untouched |
+| `arcade-enter-sweet-sam`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-modes` (traces); `sweet-sam-clear`, `sweet-sam-levels` (inputs, trace and frames); `sweet-sam.goReference.json` (deleted) | #157: the bear pre-turns from 4 px before a junction's centre to 3 px after it, as in Pac-Man, so every run that turns plays differently. Traces re-recorded with inputs unchanged, except `sweet-sam-clear` and `sweet-sam-levels`, whose runs no longer cleared level 1. `sweet-sam-levels` was re-recorded with the same bot on seed 15; it now eats its flower on level 2, at the script's last tick, so its captures are 900, the clear (3568, 3684, 3884) and the flower (5749). `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear (3571) and 300 ticks of level 2, then the old script's random holds and 9 idle ticks to game over (5496); its captures moved to the same moments (693, 756, 901, 3586, 3721, 3831, 4473, 5495, 5496). Both scenarios' frames were re-captured; the other golden frames were not. `scripts/capture-frames.ts` now sets a desktop viewport, since a small headless one showed the "needs a keyboard" notice. The trimmed Go reference left Go's path within the bot's first turns, so it was deleted and `sweet-sam.test.ts` keeps only its TypeScript end-state lock |
 
 A minigame started straight from `game.New(software)` (every scenario with
 `software`) costs no token and has no payout, so those scenarios still end
 straight back in the hub.
+| `arcade-enter-sweet-sam`, `sweet-sam-highscore`, `sweet-sam-fuzz-1`..`4`, `sweet-sam-modes` (traces and frames); `sweet-sam-clear`, `sweet-sam-levels` (inputs, traces and frames) | #158: bees in scatter or chase may not choose UP at the four no-up junctions (tiles (12, 11), (15, 11), (12, 23), (15, 23)), as in Pac-Man, so the bees fly differently from the first junction on. Traces re-recorded with inputs unchanged, and the frames whose bees moved re-captured, except `sweet-sam-clear` and `sweet-sam-levels`, whose runs no longer cleared level 1. `sweet-sam-levels` was re-recorded with the same bot: seed 15 now takes 14,954 ticks to reach level 2 and eat a flower, so it moved to seed 27 (4983 ticks); its captures are 900 (the flower out), 1277 (the flower eaten) and the clear (4397, 4513, 4713). `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear and 300 PLAY ticks of level 2, then the old script's random holds and, once they ran out, no input until game over (6765); its captures moved to the same moments (773, 815, 1337, 3605, 3740, 3850, 4851, 6764, 6765). The highscore run reaches game over sooner but plays the same payout, re-entry and Quit game |
+| `sweet-sam-clear`, `sweet-sam-fuzz-3`, `sweet-sam-highscore`, `sweet-sam-levels` (traces); `sweet-sam-highscore` (frames 2871, 2900, 2943, 2994, 3124, 3125) | #159: with the bear facing up, the pink bee's target and the teal bee's pivot also shift left (4 and 2 tiles), as Pac-Man's overflow bug does, so those bees fly differently once they chase an upward-facing bear. Traces re-recorded with inputs unchanged; `sweet-sam-clear` and `sweet-sam-levels` still clear level 1 at the same ticks and their frames are unchanged. The highscore run reaches game over later but plays the same payout, re-entry and Quit game, so its frames after game over were re-captured |
+| `sweet-sam-fuzz-2`..`4` (traces and frames); `sweet-sam-clear`, `sweet-sam-levels` (inputs, traces and frames) | #151: a honey pot makes every bee sleepy, the ones still in the home too, as in Pac-Man, so each run plays differently from its first honey pot on. `sweet-sam-fuzz-2`..`4` keep their inputs; traces re-recorded and their frames re-captured. `sweet-sam-clear` and `sweet-sam-levels` no longer cleared level 1. `sweet-sam-levels` was re-recorded with the same bot: seed 27 no longer reaches level 2, so it moved to seed 4 (5263 ticks); its captures are 900 (the flower out), 1277 (the flower eaten) and the clear (4677, 4793, 4993). `sweet-sam-clear` was re-recorded with the same bot and seed through the level 1 clear and 300 PLAY ticks of level 2, then the old script's random holds and no input until game over (6771); its captures moved to the same moments (773, 815, 1318, 3611, 3746, 3856, 4857, 6770, 6771). The other Sweet Sam traces and frames are unchanged |
 
 ### The original Go capture
 

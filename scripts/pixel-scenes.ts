@@ -9,10 +9,11 @@
 import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
 import { employeeSpot } from "../src/arcade/desk.ts";
+import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { blank, paint, plot, toPng } from "./pixel-art.ts";
+import { blank, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -29,7 +30,6 @@ import { nineSlice } from "../src/ui/nineSlice.ts";
 import { cardArt, cardCorner, panelCorner, panelFrame } from "../src/ui/panelArt.ts";
 import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
-import { mirrorX, recolour, type Rows } from "./pixel-art.ts";
 import { titleBar, titleCabinet, titleWord } from "../src/ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod } from "../src/title/logo.ts";
 
@@ -66,7 +66,7 @@ const hubLoop = { off: 40, on: 80, after: 40 } as const;
  * switches on and off on the game's own timing (src/arcade/screen.ts), drawn
  * from screens.png's frames (`powerSheetRows`).
  */
-function hubFrames(): PNG[] {
+function hubFrames(decorate: (room: PNG) => void = () => {}): PNG[] {
   const cabinets = hubCabinets();
   const room = hubRoomRows();
   const sheet = powerSheetRows(cabinets);
@@ -86,9 +86,18 @@ function hubFrames(): PNG[] {
         .map((r) => r.slice(column * powerFrameWidth, (column + 1) * powerFrameWidth));
       paint(png, cell, sweetie, cabinet.rect.x - powerCabinetX, cabinet.rect.y);
     }
+    decorate(png);
     frames.push(withPlayer(png, tick));
   }
   return frames;
+}
+
+/** Every prize's decoration on the wall where it hangs, as if the player owned them all. */
+function paintPrizes(room: PNG): void {
+  for (const p of prizes) {
+    const rows = prizeArt[p.id];
+    paint(room, mirroredPrizes.has(p.id) ? mirrorX(rows) : rows, sweetie, p.x, p.y);
+  }
 }
 
 /** Sweet Sam's level counter on the black maze: every bonus flower in level order, one frame, 8 px apart. */
@@ -224,7 +233,7 @@ export const scenes: readonly Scene[] = [
       "src/ui/employeeArt.ts",
       "src/ui/playerArt.ts",
     ],
-    render: hubFrames,
+    render: () => hubFrames(),
     // Continue (Space) stands the player above the prize desk, facing it, with
     // enough tickets that Space again opens the prize counter with every prize in reach.
     play: {
@@ -261,6 +270,7 @@ export const scenes: readonly Scene[] = [
       },
     },
   },
+  { name: "hub with every prize", sources: ["src/ui/prizeArt.ts"], render: () => hubFrames(paintPrizes) },
   { name: "title", sources: ["src/ui/titleArt.ts"], render: titleTop },
   { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
 ];

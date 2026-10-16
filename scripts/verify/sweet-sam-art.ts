@@ -3,7 +3,7 @@
 // fixture (seed 11, a bot clearing the maze) through the `?debug` test hook
 // and stops where the art matters: the start (the bear, the four bees, honey
 // drops, honey pots, READY!), a honey pot eaten, a sleepy bee eaten with its
-// points, sleepy bees, a lost life and the waking flash. At each stop it
+// points, sleepy bees, the waking flash and a lost life. At each stop it
 // checks the bear and every bee on the canvas against the generated sheets,
 // in the frame the game picks for them, that the wax shows wherever no
 // sprite is, and that "1UP" and "HIGH SCORE" show as maze.png has them. Part 2 writes every generated sheet scaled up, the bear's death
@@ -25,10 +25,10 @@ import {
   cabinetPlayfieldWidth,
 } from "../../src/ui/cabinet.ts";
 import { inputPath, loadScript, repoRoot } from "../../test/parity/fixtures.ts";
-import { decodeDataUrl } from "../browser.ts";
+import { decodeDataUrl, isRecord } from "../browser.ts";
 import { planCaptures } from "../capture-frames.ts";
 import { isWax, sweetSamArtFiles, sweetSamImagesDir } from "../gen-sweet-sam-art.ts";
-import { isGameSnapshot, sweetSamIn, upscale, verify, type Verify } from "../harness.ts";
+import { isGameSnapshot, upscale, verify, type Verify } from "../harness.ts";
 import { loadFixture, replayLive, runSteps, skipTo } from "../fixture-replay.ts";
 
 let checks = 0;
@@ -48,14 +48,14 @@ const beeSheetHeight = bees.height / beeOrder.length;
 
 const script = loadScript(inputPath("sweet-sam-clear"));
 
-/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace; 8152 is on level 2 since #151). */
+/** Where the replay stops, in order, and what each stop shows (ticks from the fixture's trace, re-picked for #151). */
 const stops = [
   { tick: 1, name: "1-start", shows: "the bear, four different bees, honey drops, honey pots and READY!" },
-  { tick: 382, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
-  { tick: 387, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
+  { tick: 772, name: "2-honey-pot-eaten", shows: "a honey pot eaten: every bee falls asleep, home ones too" },
+  { tick: 1318, name: "3-sleepy-bee-eaten", shows: "a sleepy bee eaten: its points and a cyan burst" },
   { tick: 1300, name: "4-sleepy-bees", shows: "sleepy bees, eyes shut" },
-  { tick: 2500, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
-  { tick: 8152, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
+  { tick: 1632, name: "5-waking-flash", shows: "sleepy bees flashing awake" },
+  { tick: 4818, name: "6-life-lost", shows: "a life lost: a red burst, one bear fewer below the maze" },
 ] as const;
 
 /** The canvas at logical resolution, decoded. */
@@ -63,8 +63,14 @@ function canvas(v: Verify): PNG {
   return PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
 }
 
+function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
+  return isRecord(x) && Array.isArray(x["enemies"]) && isRecord(x["player"]) && typeof x["lives"] === "number";
+}
+
 function sweetSam(v: Verify): SweetSamSnapshot {
-  return sweetSamIn(v.snapshot(isGameSnapshot));
+  const g = v.snapshot(isGameSnapshot);
+  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
+  return g.sw;
 }
 
 const px = (png: PNG, x: number, y: number): number => png.data.readUInt32BE((y * png.width + x) * 4);
@@ -231,6 +237,7 @@ function plan(): { tick: number; steps: InputStep[] }[] {
 
 function play(v: Verify): void {
   v.openHook("scene=game");
+  v.dismissNotice();
   loadFixture(v, script);
   const steps = plan();
   stops.forEach((stop, i) => {
@@ -245,21 +252,21 @@ function play(v: Verify): void {
       );
       check(s.items === 244, "every honey drop and honey pot is out", s.items);
     }
-    if (stop.tick === 382) {
+    if (stop.tick === 772) {
       check(
         s.enemies.some((e) => e.home) && s.enemies.every((e) => e.blue > 0),
         "a honey pot eaten: every bee is sleepy, the ones in the home too",
       );
     }
-    if (stop.tick === 387) {
+    if (stop.tick === 1318) {
       check(s.popups.length === 1 && s.popups[0]?.frameIdx === 0, "a sleepy bee eaten: 200 points float above it");
       check(s.particlesActive > 0, "and a burst of particles", s.particlesActive);
     }
     if (stop.tick === 1300)
       check(s.enemies.filter((e) => e.blue > 0 && !e.flash).length >= 3, "at least three bees asleep");
-    if (stop.tick === 8152)
+    if (stop.tick === 4818)
       check(s.state === "DEATHWAIT" && s.lives === 2 && s.particlesActive > 0, "a bee caught the bear: a life lost");
-    if (stop.tick === 2500)
+    if (stop.tick === 1632)
       check(
         s.enemies.some((e) => e.flash),
         "a sleepy bee flashes awake",
@@ -290,13 +297,13 @@ function video(v: Verify): void {
       runSteps(v, script, plan()[0]?.steps ?? []);
       v.wait(600);
       // The start, READY!, the first honey pot, a sleepy bee eaten, more honey.
-      replayLive(v, script, 1, 1300);
+      replayLive(v, script, 1, 1400);
       // Sleepy bees flashing awake.
-      skipTo(v, script, 1300, 2420);
-      replayLive(v, script, 2420, 2600);
+      skipTo(v, script, 1400, 1580);
+      replayLive(v, script, 1580, 1760);
       // A life lost.
-      skipTo(v, script, 2600, 8070);
-      replayLive(v, script, 8070, 8230);
+      skipTo(v, script, 1760, 4740);
+      replayLive(v, script, 4740, 4900);
       v.wait(500);
     },
     { scene: "game" },

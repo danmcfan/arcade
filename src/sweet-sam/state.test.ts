@@ -3,8 +3,10 @@ import * as rng from "../engine/rng.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
+import { dropEaten } from "./release.ts";
 import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
+import { sweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
@@ -156,6 +158,33 @@ describe("PLAY modes", () => {
     const snap = s.snapshot();
     expect([snap.modeIndex, snap.mode, snap.modeTicks]).toEqual([1, 0, 419]);
     expect(snap.enemies.every((e) => e.reverse)).toBe(true);
+  });
+
+  test("the scatter/chase timer holds while any bee is sleepy", () => {
+    const s = playing();
+    const before = s.modeTicks;
+    enemy(s, 3).blueFrames = 60;
+    step(s, 50);
+    expect(enemy(s, 3).blueFrames).toBeGreaterThan(0);
+    expect([s.modeTicks, s.modeIndex]).toEqual([before, 1]);
+
+    // Not vacuous: with no sleepy bee the same 50 ticks run the timer down.
+    const awake = playing();
+    step(awake, 50);
+    expect(awake.modeTicks).toBe(before - 50);
+  });
+
+  test("after sleepy time the timer resumes from where it held and the sequence continues", () => {
+    const s = playing();
+    s.modeTicks = 5;
+    for (const e of s.enemies) e.blueFrames = 20;
+    step(s, 20);
+    expect(s.enemies.every((e) => e.blueFrames === 0)).toBe(true);
+    expect([s.modeTicks, s.modeIndex, s.modeCurrent]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode ?? -1]);
+    step(s, 2);
+    expect(s.modeTicks).toBe(3);
+    step(s, 4);
+    expect([s.modeIndex, s.modeCurrent]).toEqual([2, levelValues(1).modeSequence[1]?.mode ?? -1]);
   });
 });
 
@@ -447,6 +476,40 @@ describe("bonus flower", () => {
     expect(flowerPoints(3)).toBeGreaterThan(flowerPoints(1));
   });
 
+  test("a level cleared after a death resets to personal counters with the new level's limits (#155)", () => {
+    const s = playing();
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    expect(s.release.globalDots).toBe(0);
+    step(s, 130);
+    expect(s.snapshot().state).toBe("PLAY");
+    s.items = s.items.map(() => null);
+    step(s, levelClearTicks + 2);
+    expect(s.level).toBe(2);
+    expect(s.release.globalDots).toBeNull();
+    expect(s.enemies.map((e) => e.held)).toEqual([false, false, false, false]);
+    expect(s.enemies.map((e) => e.dotMinimum)).toEqual([
+      0,
+      levelValues(2).dotMinimums.pink,
+      levelValues(2).dotMinimums.teal,
+      levelValues(2).dotMinimums.orange,
+    ]);
+  });
+
+  test("after a lost life the bees wait on the global drop counter, keeping their personal ones (#155)", () => {
+    const s = playing();
+    eatUpTo(s, 10);
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    expect(s.release.globalDots).toBe(0);
+    expect(s.enemies.map((e) => [e.kind, e.held, e.dotMinimum])).toEqual([
+      ["red", false, 0],
+      ["pink", true, 0],
+      ["teal", true, 29],
+      ["orange", true, 60],
+    ]);
+  });
+
   test("a lost life takes the flower away", () => {
     const s = playing();
     eatUpTo(s, flowerDrops[0]);
@@ -494,7 +557,7 @@ describe("clearing a level", () => {
     step(s, levelBannerTicks);
     snap = s.snapshot();
     expect([snap.state, snap.levelBannerTicks, snap.startTicks]).toEqual(["START", 0, 120]);
-    step(s, 121);
+    step(s, 122);
     expect(s.snapshot().state).toBe("PLAY");
   });
 
@@ -558,5 +621,107 @@ describe("rolling dials", () => {
     step(s, 17);
     snap = s.snapshot();
     expect(snap.dials[4]).toEqual([1, false, 0, 1, 1]);
+  });
+});
+
+describe("the extra life at 10,000 points (#154)", () => {
+  test("a honey drop that takes the score from 9,990 to 10,000 adds one life and its sound", () => {
+    const s = playing();
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    expect([s.scoreValue, s.lives]).toEqual([10_000, 4]);
+    expect(sounds).toContain("play:ticket");
+  });
+
+  test("passing 20,000 adds no second life", () => {
+    const s = playing();
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    s.scoreValue = 19_990;
+    eatUpTo(s, 2);
+    expect([s.scoreValue, s.lives]).toEqual([20_000, 4]);
+  });
+
+  test("a run started with the honey jar still gets the extra life", () => {
+    const s = new SweetSamSoftware(0, sweetSamAdvantages(["honeyJar"]));
+    step(s, 122);
+    expect(s.lives).toBe(4);
+    s.scoreValue = 9_990;
+    eatUpTo(s, 1);
+    expect(s.lives).toBe(5);
+  });
+
+  test("a sleepy bee award that crosses 10,000 also grants the life", () => {
+    const s = playing();
+    s.scoreValue = 9_900;
+    const red = enemy(s, 0);
+    onPlayer(s, red);
+    red.blueFrames = 300;
+    step(s);
+    expect([s.scoreValue, s.lives]).toEqual([10_100, 4]);
+    expect(sounds).toContain("play:ticket");
+  });
+
+  test("a flower that crosses 10,000 also grants the life", () => {
+    const s = playing();
+    s.scoreValue = 9_950;
+    s.flowerTicks = 100;
+    bearOnFlower(s);
+    step(s);
+    expect([s.scoreValue, s.lives]).toEqual([10_000 + flowerPoints(1) - 50, 4]);
+  });
+});
+
+/** Leaves `left` honey drops in the maze, none of them near the bear. */
+function dropsLeft(s: SweetSamSoftware, left: number): void {
+  let kept = 0;
+  s.items = s.items.map((it) => (it !== null && Math.abs(it.y - s.player.y) > 16 && kept++ < left ? it : null));
+  expect(s.items.filter((it) => it !== null).length).toBe(left);
+}
+
+describe("Cruise Elroy (#156)", () => {
+  test("on level 1 red speeds up at 20 drops left, then again at 10; the others don't", () => {
+    const s = playing();
+    dropsLeft(s, 21);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.9375, 0.9375]);
+    dropsLeft(s, 20);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.96875, 0.9375]);
+    dropsLeft(s, 10);
+    step(s);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
+  });
+
+  test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    enemy(s, 0).blueFrames = 300;
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(0.625);
+  });
+
+  test("after a lost life Elroy stays off until orange has left the home", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    onPlayer(s, enemy(s, 0));
+    step(s, 1 + deathRoundDelayTicks + 1);
+    step(s, 122);
+    expect(s.snapshot().state).toBe("PLAY");
+    const orange = enemy(s, 3);
+    expect(orange.home).toBe(true);
+    expect(enemy(s, 0).velocity).toBe(0.9375);
+    s.release.globalDots = 31;
+    dropEaten(s.release, s.enemies);
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(1);
+  });
+
+  test("a red bee in the home or flying home ignores Elroy's speed", () => {
+    const s = playing();
+    dropsLeft(s, 10);
+    enemy(s, 0).home = true;
+    step(s);
+    expect(enemy(s, 0).velocity).toBe(levelValues(1).beeVelocity);
   });
 });

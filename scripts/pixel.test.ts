@@ -130,8 +130,16 @@ describe("previewOptions", () => {
     expect(options[1]?.frames).toHaveLength(6);
   });
 
+  test("draws prize decorations on the hub wall, where each one hangs", async () => {
+    const [plain, inked] = await previewOptions({
+      "src/ui/prizeArt.ts:prizeArt.honeyJar": { Blank: ["."], Inked: ["k"] },
+    });
+    expect(plain?.screens[0]).toBeDefined();
+    expect(inked?.screens[0]).not.toEqual(plain?.screens[0]);
+  });
+
   test("names the scenes file when no scene shows the art", async () => {
-    const e = await rejection(previewOptions({ "src/ui/prizeArt.ts:prizeArt": { A: ["k"] } }));
+    const e = await rejection(previewOptions({ "src/ui/icons.ts:icons": { A: ["k"] } }));
     expect(e.message).toContain("scripts/pixel-scenes.ts");
   });
 });

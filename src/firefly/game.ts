@@ -130,7 +130,11 @@ export class FireflySoftware implements FixedViewport {
   /** What the player's prizes change in this run (./advantages.ts). */
   readonly advantages: Readonly<FireflyAdvantages>;
 
-  constructor(advantages: Readonly<FireflyAdvantages> = noAdvantages) {
+  /** The hub high score this run is chasing; HI shows it until the score passes it. */
+  readonly highScore: number;
+
+  constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
+    this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
   }
@@ -166,7 +170,8 @@ export class FireflySoftware implements FixedViewport {
     this.endHitEffects();
     this.countDownRespawn();
 
-    if (this.enemies.length === 0) this.nextStage();
+    // With no lives left the run ends on this stage, even if the field is clear.
+    if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
   }
 
   /** The formation's x offset this tick. */
@@ -323,16 +328,22 @@ export class FireflySoftware implements FixedViewport {
       );
       if (e === undefined) return true;
       e.hp--;
-      if (e.hp === 0) this.kill(e);
+      if (e.hp === 0) this.shootDown(e);
       play(sounds.hit);
       return false;
     });
   }
 
-  private kill(e: Enemy): void {
+  /** A shot kills the enemy and scores it. */
+  private shootDown(e: Enemy): void {
+    this.destroy(e);
+    this.points += points(e.kind, e.outOfFormation);
+  }
+
+  /** The enemy bursts and is gone, scoring nothing. */
+  private destroy(e: Enemy): void {
     e.hp = 0;
     e.deadFrames = hitEffectTicks;
-    this.points += points(e.kind, e.outOfFormation);
   }
 
   private hitPlayer(): void {
@@ -346,7 +357,8 @@ export class FireflySoftware implements FixedViewport {
     );
     const shot = this.shots.find((s) => Math.abs(s.x - p.x) < 5 && Math.abs(s.y - p.y) < 7);
     if (body === undefined && shot === undefined) return;
-    if (body !== undefined) this.kill(body);
+    // A rammed enemy dies with the firefly but scores nothing.
+    if (body !== undefined) this.destroy(body);
     if (shot !== undefined) this.shots = this.shots.filter((s) => s !== shot);
     this.loseLife();
   }
@@ -436,7 +448,10 @@ export class FireflySoftware implements FixedViewport {
   }
 }
 
-/** A new run, with the advantages of the player's prizes (none by default). */
-export function newFireflySoftware(advantages: Readonly<FireflyAdvantages> = noAdvantages): FireflySoftware {
-  return new FireflySoftware(advantages);
+/** A new run chasing `highScore`, with the advantages of the player's prizes (none by default). */
+export function newFireflySoftware(
+  highScore = 0,
+  advantages: Readonly<FireflyAdvantages> = noAdvantages,
+): FireflySoftware {
+  return new FireflySoftware(highScore, advantages);
 }

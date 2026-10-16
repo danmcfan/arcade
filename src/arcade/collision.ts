@@ -11,12 +11,18 @@ export interface Rect {
   h: number;
 }
 
+/**
+ * The hub's walls: the back wall, down to where the player's head can
+ * overlap it, then the frame's left, right and bottom edges, a tile thick
+ * just outside it. The carpet runs out to the frame (#72), so all of it is
+ * walkable.
+ */
 export function newWalls(): Rect[] {
   return [
     { x: 0, y: 0, w: tileSize * 20, h: tileSize * 6 },
-    { x: 0, y: tileSize * 6, w: tileSize * 3, h: tileSize * 9 },
-    { x: tileSize * 17, y: tileSize * 6, w: tileSize * 3, h: tileSize * 9 },
-    { x: 0, y: tileSize * 15, w: tileSize * 20, h: tileSize * 3 },
+    { x: -tileSize, y: 0, w: tileSize, h: tileSize * 18 },
+    { x: tileSize * 20, y: 0, w: tileSize, h: tileSize * 18 },
+    { x: 0, y: tileSize * 18, w: tileSize * 20, h: tileSize },
   ];
 }
 

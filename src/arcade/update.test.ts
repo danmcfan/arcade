@@ -119,12 +119,12 @@ describe("walking", () => {
   test("walls stop the player but the walk animation keeps running", () => {
     const s = newState(fakeFactory);
     run(s, 100, { left: true });
-    expect(s.player.x).toBe(32);
+    expect(s.player.x).toBe(8);
     expect(s.player.frame).not.toBe(0);
-    run(s, 100, { right: true });
-    expect(s.player.x).toBe(128);
-    run(s, 100, { down: true }); // x 128: the prize desk spans the floor, so it stops the player too
-    expect(s.player.y).toBe(95);
+    run(s, 200, { right: true });
+    expect(s.player.x).toBe(152);
+    run(s, 100, { down: true });
+    expect(s.player.y).toBe(132);
     run(s, 100, { up: true });
     expect(s.player.y).toBe(60);
   });
@@ -252,8 +252,8 @@ describe("prize desk", () => {
     expect(s.player.y).toBe(95);
   });
 
-  test("spans the floor: down stops at it from the left wall to the right wall", () => {
-    for (const x of [32, 48, 107, 128]) {
+  test("down stops at it anywhere along it", () => {
+    for (const x of [29, 48, 107, 131]) {
       const at = newState(fakeFactory);
       at.player.x = x;
       run(at, 100, { down: true });
@@ -261,8 +261,31 @@ describe("prize desk", () => {
     }
   });
 
-  test("is one rect from its top to the bottom wall, as wide as the desk: no way into the U", () => {
-    expect(counterRects).toEqual([{ x: deskRect.x, y: deskTop, w: deskRect.w, h: 120 - deskTop }]);
+  test("is one rect over the whole desk: no way into the U", () => {
+    expect(counterRects).toEqual([deskRect]);
+  });
+
+  test("can be walked around: down either side to the bottom edge, then into its arms", () => {
+    for (const [x, toward, stopX] of [
+      [16, "right", 28],
+      [144, "left", 132],
+    ] as const) {
+      const s = newState(fakeFactory);
+      s.player.x = x;
+      run(s, 100, { down: true });
+      expect(s.player.y).toBe(132);
+      run(s, 100, { [toward]: true });
+      expect({ x, stop: s.player.x }).toEqual({ x, stop: stopX });
+    }
+  });
+
+  test("the room's corners are reachable", () => {
+    const s = newState(fakeFactory);
+    run(s, 200, { left: true });
+    run(s, 200, { up: true });
+    expect({ x: s.player.x, y: s.player.y }).toEqual({ x: 8, y: 60 });
+    run(s, 200, { right: true });
+    expect(s.player.x).toBe(152);
   });
 
   test("Space facing it from above opens it, anywhere along it, and starts no minigame", () => {

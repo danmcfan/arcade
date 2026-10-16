@@ -10,99 +10,28 @@ import { sweetie } from "./sweetie16.ts";
 import { stripRects } from "./strip.ts";
 
 export const prizeArt = {
-  /** A jar of honey with a red lid: stands on the floor left of the Sweet Sam cabinet. */
-  honeyJar: [
-    ".kkkkkk.",
-    "krrrrrrk",
-    "kkkkkkkk",
-    "kywyyyok",
-    "kwyyyyok",
-    "kyyyyyok",
-    "kyyyyyok",
-    "kyyyyook",
-    ".kkkkkk.",
-  ],
-  /** A red running shoe with a white sole: stands on the floor right of the Sweet Sam cabinet. */
-  runningShoes: [".kkkk....", "krwrrk...", "krwrrkkk.", "krrrrrrrk", "kwwwwwwwk", ".kkkkkkk."],
-  /** A framed picture of a bee asleep under a "z": hangs on the wall above the Sweet Sam cabinet. */
-  sleepyBees: [
-    "kkkkkkkkkkkk",
-    "kooooooooook",
-    "konnnnnnwwok",
-    "konnnnnnnwok",
-    "konnllnnwwok",
-    "konnllnnnnok",
-    "konykykknnok",
-    "kokykykkknok",
-    "konnnnnnnnok",
-    "kooooooooook",
-    "kkkkkkkkkkkk",
-  ],
-  /** A brass storm lantern on a wall bracket, its flame lit: hangs on the wall right of the Firefly cabinet. */
-  lantern: [
-    "kk......",
-    "kmmmk...",
-    "kk..k...",
-    "...kk...",
-    "..k..k..",
-    ".kkkkkk.",
-    "kmyyyymk",
-    "kygwwgyk",
-    "kygwwgyk",
-    "kmyyyymk",
-    ".kkkkkk.",
-  ],
-  /** A cyan glow stick on a hook: hangs on the wall left of the Firefly cabinet. */
-  glowStick: [".k.", "k.k", ".k.", "kck", "kwk", "kck", "kck", "kck", "kck", ".k."],
+  /** A jar of honey with a red lid: hangs at 10:15 round the Sweet Sam cabinet. */
+  honeyJar: [".kkkkkk.", "krrwrrrk", "kkkkkkkk", ".kwyyok.", ".kywwok.", ".kyyyok.", ".kyyook.", "..kkkk.."],
+  /** A red running shoe with a white sole: hangs at 1:45 round the Sweet Sam cabinet. */
+  runningShoes: ["........", "kkk.....", "krrk....", "krwkk...", "krrrwkk.", "krwwrrrk", "kwwwwwwk", ".kkkkkk."],
+  /** A framed picture of a bee asleep under a "z": hangs at 12 above the Sweet Sam cabinet. */
+  sleepyBees: ["kkkkkkkk", "kooooook", "konnnwok", "konwnnok", "koykykok", "koGGGGok", "kooooook", "kkkkkkkk"],
+  /** A brass storm lantern, its flame lit: hangs at 3 round the Firefly cabinet. */
+  lantern: ["..kkkk..", ".k....k.", ".kkkkkk.", "kmyooymk", "kmowwomk", "kmyooymk", ".kkkkkk.", "..kkkk.."],
+  /** A cyan glow stick on a hook: hangs at 1:30 round the Firefly cabinet. */
+  glowStick: ["...kk...", "..k..k..", "..kkkk..", "..kcwk..", "..kcwk..", "..kcBk..", "..kBBk..", "..kkkk.."],
   /**
-   * A pair of firefly wings mounted bare: hangs on the wall above the Firefly
+   * A pair of firefly wings mounted bare: hangs at 12 above the Firefly
    * cabinet. The left half; the generator mirrors it into the right
    * (`mirroredPrizes`).
    */
-  wings: [".kk...", "kcBk..", "kccBk.", ".kccBk", "..kcck", "...kky", "....ky", ".....k"],
-  /** A squat brass oil can with a red label, on a wall shelf left of the Brass Monkey cabinet. */
-  oilCan: [
-    ".....k......",
-    "....kok.....",
-    "...kkkkk..k.",
-    "..kyyyyokkk.",
-    ".kywyyyyok..",
-    ".kyrrrryok..",
-    ".kyyyyyyok..",
-    ".kkkkkkkkk..",
-    "kkkkkkkkkkkk",
-    "kooooooooook",
-    ".k........k.",
-  ],
-  /** A red boot with a white sole on a brass spring, hung from a peg on the wall above the Brass Monkey cabinet. */
-  springBoots: [
-    ".m........",
-    ".k........",
-    "kkkk......",
-    "krrk......",
-    "krrk......",
-    "krrrkkkk..",
-    "krrrrrrrk.",
-    "kwwwwwwwk.",
-    "kkkkkkkkk.",
-    "..kyyk....",
-    ".kyyk.....",
-    "..kkkk....",
-  ],
-  /** A brass gear-edged pocket watch, hung from a peg on the wall above and right of the Brass Monkey cabinet. */
-  pocketWatch: [
-    "....m....",
-    "....k....",
-    ".k.kkk.k.",
-    "kokooooko",
-    ".koyyyok.",
-    "koywkwyok",
-    "koywkwyok",
-    "koywkkyok",
-    ".koyyyok.",
-    "kokooooko",
-    ".k.kkk.k.",
-  ],
+  wings: ["kk..", "kcwk", "kcBk", ".kkk", "kcBy", "kBky", ".kkg", "...k"],
+  /** A squat brass oil can with a red label: hangs at 9 round the Brass Monkey cabinet. */
+  oilCan: ["......k.", ".....km.", "..k.km..", ".kkkkk..", "kywyyok.", "kyrrrok.", "kyrwrok.", ".kkkkk.."],
+  /** A red boot with a white sole on a brass spring: hangs at 12 above the Brass Monkey cabinet. */
+  springBoots: ["kkkk....", "krwk....", "krrkkk..", "krrrrrk.", "kwwwwwk.", "..kyyk..", "..kook..", "..kyyk.."],
+  /** A brass pocket watch: hangs at 10:30 round the Brass Monkey cabinet. */
+  pocketWatch: ["...kk...", "..kkkk..", ".kywwok.", "kywkwwok", "kywkkwok", "kywwwwok", ".kooook.", "..kkkk.."],
 } as const satisfies Record<PrizeId, readonly string[]>;
 
 /** Decorations drawn as their left half: the sheet holds them mirrored, twice as wide. */

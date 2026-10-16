@@ -1,5 +1,6 @@
 // Port of the Go Sweet Sam minigame's update.go (docs/port-notes.md gives its old Go name).
 
+import { afterDeath, newRelease, waitingInHome } from "./release.ts";
 import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
@@ -13,6 +14,7 @@ import {
   Entity,
   newEnemies,
   newPlayer,
+  noUpTiles,
   pointToTile,
   tileEq,
   tileSize,
@@ -61,37 +63,90 @@ export function winner(s: SweetSamSoftware): boolean {
 }
 
 export function applyInput(s: SweetSamSoftware, i: Input): void {
-  const newDirection = direction(i);
-  const corner = findCorner(s.player, s.corners);
+  steer(s.player, s.corners, direction(i));
+}
+
+/** Pac-Man pre-turns from 4 px before a junction's centre to 3 px after it (Dossier, "Cornering"). */
+export const corneringBefore = 4;
+export const corneringAfter = 3;
+
+/**
+ * The bear's input for one tick. A reversal applies at once; a perpendicular
+ * turn waits, even after the key is released, until the bear is inside a
+ * junction's cornering window, and is forgotten when it leaves that window.
+ */
+export function steer(e: Entity, cs: readonly Entity[], held: Direction | ""): void {
+  if (held !== "") {
+    e.turn = held;
+  }
+  const want = e.turn;
+  if (want === "" || want === e.direction) {
+    e.turn = "";
+    return;
+  }
+
+  if (e.direction === "" || dirAxis(e.direction) === dirAxis(want)) {
+    const corner = findCorner(e, cs);
+    if (corner === null || corner.directions.includes(want)) {
+      e.direction = want;
+    }
+    e.turn = "";
+    return;
+  }
+
+  const corner = cornerWindow(e, cs);
   if (corner === null) {
-    let validDirections: Direction[] = [];
-    switch (dirAxis(s.player.direction)) {
-      case "VERTICAL":
-        validDirections = ["UP", "DOWN"];
-        break;
-      case "HORIZONTAL":
-        validDirections = ["LEFT", "RIGHT"];
-        break;
+    if (e.inWindow) {
+      e.turn = "";
     }
-
-    if (newDirection === "" || !validDirections.includes(newDirection)) {
-      return;
-    }
-
-    s.player.direction = newDirection;
+    e.inWindow = false;
+    return;
+  }
+  e.inWindow = true;
+  if (!corner.directions.includes(want)) {
     return;
   }
 
-  if (newDirection === "" || !corner.directions.includes(newDirection)) {
+  e.direction = want;
+  e.turn = "";
+  e.inWindow = false;
+  e.cornering = corner;
+}
+
+/** The junction on the bear's line whose cornering window it is in, if any. */
+function cornerWindow(e: Entity, cs: readonly Entity[]): Entity | null {
+  const [dx, dy] = dirSteps[e.direction];
+  for (const c of cs) {
+    const ahead = (c.x - e.x) * dx + (c.y - e.y) * dy;
+    const across = (c.x - e.x) * dy + (c.y - e.y) * dx;
+    if (Math.abs(across) <= distanceThreshold && ahead <= corneringBefore && ahead >= -corneringAfter) {
+      return c;
+    }
+  }
+  return null;
+}
+
+const dirSteps: Record<Direction | "", [number, number]> = {
+  UP: [0, -1],
+  DOWN: [0, 1],
+  LEFT: [-1, 0],
+  RIGHT: [1, 0],
+  "": [0, 0],
+};
+
+/** Moves `e` toward the centre line of the junction it is cornering round. */
+function closeCorner(e: Entity): void {
+  const c = e.cornering;
+  if (c === null) {
     return;
   }
-
-  if (dirAxis(s.player.direction) !== dirAxis(newDirection)) {
-    s.player.x = corner.x;
-    s.player.y = corner.y;
+  if (dirAxis(e.direction) === "VERTICAL") {
+    e.x += Math.max(-e.velocity, Math.min(e.velocity, c.x - e.x));
+    if (e.x === c.x) e.cornering = null;
+  } else {
+    e.y += Math.max(-e.velocity, Math.min(e.velocity, c.y - e.y));
+    if (e.y === c.y) e.cornering = null;
   }
-
-  s.player.direction = newDirection;
 }
 
 export function updateFrame(e: Entity): void {
@@ -121,7 +176,7 @@ export function updateBlue(e: Entity): void {
 }
 
 export function updatePosition(e: Entity, cs: readonly Entity[]): void {
-  if (e.dotMinimum > 0) {
+  if (waitingInHome(e)) {
     return;
   }
 
@@ -150,6 +205,8 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
   if (corner !== null) {
     validDirections = corner.directions;
   }
+
+  closeCorner(e);
 
   if (validDirections.includes(e.direction)) {
     switch (e.direction) {
@@ -213,12 +270,17 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
     return;
   }
 
+  // None of these junctions opens downward, so no bee arrives heading up.
+  const choices = noUpTiles.some((t) => tileEq(t, tileCorner))
+    ? validDirections.filter((d) => d !== "UP")
+    : validDirections;
+
   // Go stores these in a map, but only membership matters: the tie-break is
   // the fixed priority Up, Left, Down, Right.
   const distances = new Map<Direction, number>();
 
   let minDistance = Number.MAX_VALUE;
-  for (const dir of validDirections) {
+  for (const dir of choices) {
     const tileNext = { ...tileCorner };
     switch (dir) {
       case "UP":
@@ -264,13 +326,26 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
 }
 
 /**
- * Go `restartRound`. Leaves camera, particles, items and
- * `modeCurrent` alone (D11).
+ * Go `restartRound` for a new level: the bees start on the level's personal
+ * counters. Leaves camera, particles, items and `modeCurrent` alone (D11).
  */
 export function restartRound(s: SweetSamSoftware): void {
-  s.player = newPlayer();
+  s.release = newRelease();
   s.enemies = newEnemies(levelValues(s.level).dotMinimums);
+  resetRound(s);
+}
 
+/**
+ * Go `restartRound` after a lost life: the bees keep their personal counters
+ * and wait on the global one (release.ts).
+ */
+export function restartAfterDeath(s: SweetSamSoftware): void {
+  s.enemies = afterDeath(s.release, s.enemies);
+  resetRound(s);
+}
+
+function resetRound(s: SweetSamSoftware): void {
+  s.player = newPlayer();
   s.modeIndex = 0;
   s.modeTicks = 0;
 
@@ -293,6 +368,7 @@ export function resetEnemy(e: Entity): void {
   e.flash = false;
   e.home = true;
   e.dotMinimum = 0;
+  e.held = false;
 }
 
 export function findCorner(e: Entity, cs: readonly Entity[]): Entity | null {
@@ -308,8 +384,26 @@ export function collideWithDistance(a: Entity, b: Entity, dist: number): boolean
   return Math.abs(a.x - b.x) <= dist && Math.abs(a.y - b.y) <= dist;
 }
 
-export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity, mode: Mode): Tile {
-  if (mode === modeScatter) {
+/** `n` tiles ahead of `tile` along `dir`; facing up also shifts left, as Pac-Man's overflow bug does. */
+export function tilesAhead(tile: Tile, dir: Direction | "", n: number): Tile {
+  switch (dir) {
+    case "UP":
+      return { x: tile.x - n, y: tile.y - n };
+    case "DOWN":
+      return { x: tile.x, y: tile.y + n };
+    case "LEFT":
+      return { x: tile.x - n, y: tile.y };
+    case "RIGHT":
+      return { x: tile.x + n, y: tile.y };
+    case "":
+      break;
+  }
+  return { ...tile };
+}
+
+/** In Cruise Elroy (`elroy`), red chases the player during scatter too. */
+export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity, mode: Mode, elroy = false): Tile {
+  if (mode === modeScatter && !(elroy && e.kind === "red")) {
     return { ...e.target };
   }
 
@@ -319,23 +413,7 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
     case "red":
       return tilePlayer;
     case "pink":
-      switch (player.direction) {
-        case "UP":
-          tilePlayer.y -= 4;
-          break;
-        case "DOWN":
-          tilePlayer.y += 4;
-          break;
-        case "LEFT":
-          tilePlayer.x -= 4;
-          break;
-        case "RIGHT":
-          tilePlayer.x += 4;
-          break;
-        case "":
-          break;
-      }
-      return tilePlayer;
+      return tilesAhead(tilePlayer, player.direction, 4);
     case "teal": {
       const enemyRed = getEnemy(enemies, "red");
       if (enemyRed === null) {
@@ -344,30 +422,9 @@ export function findTarget(e: Entity, enemies: readonly Entity[], player: Entity
       }
       const tileRed = pointToTile(enemyRed.x, enemyRed.y);
 
-      switch (player.direction) {
-        case "UP":
-          tilePlayer.y -= 2;
-          break;
-        case "DOWN":
-          tilePlayer.y += 2;
-          break;
-        case "LEFT":
-          tilePlayer.x -= 2;
-          break;
-        case "RIGHT":
-          tilePlayer.x += 2;
-          break;
-        case "":
-          break;
-      }
+      const pivot = tilesAhead(tilePlayer, player.direction, 2);
 
-      const dx = tilePlayer.x - tileRed.x;
-      const dy = tilePlayer.y - tileRed.y;
-
-      tilePlayer.x += dx;
-      tilePlayer.y += dy;
-
-      return tilePlayer;
+      return { x: pivot.x * 2 - tileRed.x, y: pivot.y * 2 - tileRed.y };
     }
     case "orange": {
       const d = distance(pointToTile(e.x, e.y), tilePlayer);

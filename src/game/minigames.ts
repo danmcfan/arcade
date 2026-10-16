@@ -78,8 +78,7 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(14),
     cabinetStrip: imageCabinetFirefly,
     controls: standardControls,
-    // Firefly takes no high score, as in Go.
-    create: ({ prizes }) => newFireflySoftware(fireflyAdvantages(prizes)),
+    create: ({ highScore, prizes }) => newFireflySoftware(highScore, fireflyAdvantages(prizes)),
   },
   brassMonkey: {
     name: "brassMonkey",

@@ -57,7 +57,7 @@ export const images = {
   panel: imageAsset(panelUrl, 16, 16),
   cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
-  prizes: imageAsset(prizesUrl, 91, 24),
+  prizes: imageAsset(prizesUrl, 80, 16),
   arcade: imageAsset(arcadeUrl, 160, 144),
   screens: imageAsset(screensUrl, 392, 108),
   player: imageAsset(playerUrl, 64, 96),

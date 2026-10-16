@@ -1,0 +1,99 @@
+// When the bees leave the home (#155), as in Pac-Man (Dossier, "Home Sweet
+// Home"): the preferred bee in the home (pink, then teal, then orange) counts
+// eaten drops against its personal limit; after a lost life a global drop
+// counter releases them instead; and a bee leaves anyway when the bear goes
+// too long without eating.
+
+import { newEnemies, type Entity } from "./entity.ts";
+import type { ElroyStep, LevelValues } from "./levels.ts";
+
+/** Global drop counts at which pink, teal and orange leave after a death. */
+export const globalDotLimits = { pink: 7, teal: 17, orange: 32 } as const;
+
+export interface Release {
+  /** Drops eaten since the last death, or null while personal counters are in use. */
+  globalDots: number | null;
+  /** Ticks since the last drop was eaten. */
+  idleTicks: number;
+  /** Cruise Elroy is off after a death until orange leaves the home. */
+  elroySuspended: boolean;
+}
+
+/** Personal counters, as at the start of a level. */
+export function newRelease(): Release {
+  return { globalDots: null, idleTicks: 0, elroySuspended: false };
+}
+
+const order = ["pink", "teal", "orange"] as const;
+
+/** Whether the bee is still waiting in the home for its release. */
+export function waitingInHome(e: Entity): boolean {
+  return e.home && (e.dotMinimum > 0 || e.held);
+}
+
+/** The first bee, in preferred order, still waiting in the home. */
+function preferred(bees: readonly Entity[]): Entity | undefined {
+  for (const kind of order) {
+    const e = bees.find((b) => b.kind === kind && waitingInHome(b));
+    if (e !== undefined) return e;
+  }
+  return undefined;
+}
+
+function free(r: Release, e: Entity): void {
+  if (e.kind === "orange") r.elroySuspended = false;
+  e.dotMinimum = 0;
+  e.held = false;
+}
+
+/** Rebuilds the bees after a lost life: they keep their personal counters but wait on the global one. */
+export function afterDeath(r: Release, old: readonly Entity[]): Entity[] {
+  const bees = newEnemies();
+  for (const e of bees) {
+    e.dotMinimum = old.find((o) => o.kind === e.kind)?.dotMinimum ?? 0;
+    e.held = e.home;
+  }
+  r.globalDots = 0;
+  r.idleTicks = 0;
+  r.elroySuspended = true;
+  return bees;
+}
+
+export function dropEaten(r: Release, bees: readonly Entity[]): void {
+  r.idleTicks = 0;
+  if (r.globalDots === null) {
+    const e = preferred(bees);
+    if (e !== undefined && e.dotMinimum > 0) e.dotMinimum--;
+    return;
+  }
+  r.globalDots++;
+  for (const kind of order) {
+    const e = bees.find((b) => b.kind === kind);
+    if (e !== undefined && e.home && r.globalDots === globalDotLimits[kind]) free(r, e);
+  }
+  const orange = bees.find((b) => b.kind === "orange");
+  if (r.globalDots === globalDotLimits.orange && orange?.home === true) {
+    r.globalDots = null;
+    for (const e of bees) e.held = false;
+  }
+}
+
+export function noDropEaten(r: Release, bees: readonly Entity[], values: Readonly<LevelValues>): void {
+  r.idleTicks++;
+  if (r.idleTicks < values.idleReleaseTicks) return;
+  r.idleTicks = 0;
+  const e = preferred(bees);
+  if (e !== undefined) free(r, e);
+}
+
+/**
+ * Red's Cruise Elroy step with `dropsLeft` honey drops in the maze, or null
+ * (Dossier, "Cruise Elroy"). After a death it stays off until orange is out.
+ */
+export function elroyStep(r: Release, values: Readonly<LevelValues>, dropsLeft: number): ElroyStep | null {
+  if (r.elroySuspended) return null;
+  const [first, second] = values.elroy;
+  if (dropsLeft <= second.dropsLeft) return second;
+  if (dropsLeft <= first.dropsLeft) return first;
+  return null;
+}

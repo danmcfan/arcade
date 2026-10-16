@@ -123,6 +123,11 @@ export interface Verify {
    * and `(hover: none)` match. Needs a page open; `open()` reloads keep it.
    */
   phone(device?: string): Promise<void>;
+  /**
+   * Hook only: dismiss the "needs a keyboard" notice a headless browser can show. Only a running
+   * loop clears it, so this runs the loop around a key press, then pauses it again.
+   */
+  dismissNotice(): void;
   /** Let the page run in real time. */
   wait(ms: number): void;
   /** Browser screenshot (the page as a person sees it, scaled) to <dir>/<name>.png. */
@@ -396,6 +401,12 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
       } finally {
         page.eval(`window.dispatchEvent(new KeyboardEvent("keyup", ${keyInit(code)})); "ok"`);
       }
+    },
+    dismissNotice() {
+      page.eval("window.__arcade.resume()");
+      this.key("KeyZ");
+      this.wait(100);
+      page.eval("window.__arcade.pause()");
     },
     async phone(device = "iPhone 15") {
       page.run("set", "device", device);

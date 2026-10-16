@@ -4,3 +4,5 @@
 
 export const framesPerSecond = 60;
 export const blueFramesDuration = framesPerSecond * 10;
+/** The score that earns the run's one extra life (Pac-Man's 10,000). */
+export const extraLifeScore = 10_000;

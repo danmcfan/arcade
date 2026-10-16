@@ -113,6 +113,8 @@ export class Run {
   floor: number;
   /** How many times the monkey has escaped: each loop is harder. */
   loop: number;
+  /** Ticks left showing the new lap's number over its first floor. */
+  lapBanner = 0;
   lives: number;
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
   readonly advantages: Readonly<BrassMonkeyAdvantages>;
@@ -182,6 +184,7 @@ export class Run {
     this.ticks++;
     const jumpPressed = i.space && !this.prevSpace;
     this.prevSpace = i.space;
+    if (this.lapBanner > 0) this.lapBanner--;
     switch (this.phase) {
       case "play":
         this.play(i, jumpPressed);
@@ -207,6 +210,7 @@ export class Run {
         this.loop++;
         this.floor = 0;
         this.startFloor();
+        this.lapBanner = t.lapBannerTicks;
         break;
       case "over":
         break;
@@ -422,10 +426,9 @@ export class Run {
    */
   private moveEmber(h: Hazard): void {
     const floor = this.currentFloor();
-    const speed = this.tuning.emberSpeed;
     if (h.footing === "climb" && h.ladder !== null) {
       const l = h.ladder;
-      h.y += h.climbDir * speed;
+      h.y += h.climbDir * this.tuning.emberClimbSpeed;
       if (h.climbDir < 0 ? h.y <= ladderHead(l) : h.y >= ladderFoot(l)) {
         h.y = h.climbDir < 0 ? ladderHead(l) : ladderFoot(l);
         h.footing = "ground";
@@ -436,7 +439,7 @@ export class Run {
     }
     const belt = groundUnder(floor, h.x, h.y, 2)?.belt ?? 0;
     const x0 = h.x;
-    const x = x0 + h.dir * speed + belt * t.beltSpeed;
+    const x = x0 + h.dir * this.tuning.emberWalkSpeed + belt * t.beltSpeed;
     const g = groundUnder(floor, x, h.y, 2);
     if (g === undefined || x < 6 || x > floor.width - 6) {
       h.dir = h.dir < 0 ? 1 : -1;

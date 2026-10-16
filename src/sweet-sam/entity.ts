@@ -43,6 +43,11 @@ export interface Tile {
 }
 
 /** Go compares `tile` structs by value; never use `===` on tiles. */
+/** A sleepy bee (blue after a honey pot): it can be eaten and holds the scatter/chase timer. */
+export function isSleepy(e: { blueFrames: number }): boolean {
+  return e.blueFrames > 0;
+}
+
 export function tileEq(a: Tile, b: Tile): boolean {
   return a.x === b.x && a.y === b.y;
 }
@@ -113,11 +118,20 @@ export class Entity {
   directions: Direction[] = [];
   velocity = 0;
 
+  /** The bear's turn waiting for a junction's cornering window (update.ts `steer`). */
+  turn: Direction | "" = "";
+  /** Whether the bear was inside a cornering window last tick. */
+  inWindow = false;
+  /** The junction the bear is cornering round: it closes the gap to its centre line. */
+  cornering: Entity | null = null;
+
   reverseDirection = false;
   reverseTile: Tile = { x: 0, y: 0 };
 
   home = false;
   dotMinimum = 0;
+  /** Held in the home by the global drop counter after a death (release.ts). */
+  held = false;
 
   blueFrames = 0;
   flashFrames = 0;
@@ -310,6 +324,21 @@ function newPower(tx: number, ty: number): Entity {
   e.powerPellet = true;
   return e;
 }
+
+/** Rows pointToTile sits below the corner-grid row. */
+export const cornerRowOffset = 3;
+
+/**
+ * The junctions where a bee in scatter or chase may not choose UP (Pac-Man
+ * Dossier, "Areas To Exploit"): the two T-junctions above the home and the two
+ * on the bear's start row. Tiles as pointToTile gives them.
+ */
+export const noUpTiles: readonly Tile[] = [
+  { x: 12, y: 14 },
+  { x: 15, y: 14 },
+  { x: 12, y: 26 },
+  { x: 15, y: 26 },
+];
 
 export function newCorners(): Entity[] {
   return [

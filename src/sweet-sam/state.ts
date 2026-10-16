@@ -1,5 +1,6 @@
 // Port of the Go Sweet Sam minigame's state.go (docs/port-notes.md gives its old Go name).
 
+import { dropEaten, elroyStep, noDropEaten } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import { sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
@@ -24,6 +25,7 @@ import {
   spawnBonusEatIndicator,
 } from "./bonusEat.ts";
 import {
+  isSleepy,
   newItems,
   pointToTile,
   tunnelLeftX,
@@ -40,6 +42,7 @@ import {
   distanceThreshold,
   findTarget,
   resetEnemy,
+  restartAfterDeath,
   restartRound,
   startTicks,
   updateBlue,
@@ -188,7 +191,9 @@ export class PlayState implements State {
 
   update(i: Input): StateID {
     const s = this.s;
-    if (s.modeTicks === 0) {
+    // Sleepy time pauses the scatter/chase timer (Pac-Man Dossier).
+    const sleepy = s.enemies.some(isSleepy);
+    if (!sleepy && s.modeTicks === 0) {
       const modes = s.values().modeSequence;
       const modeConfig = modes[s.modeIndex];
       if (modeConfig === undefined) {
@@ -204,7 +209,7 @@ export class PlayState implements State {
       }
     }
 
-    if (s.modeTicks > 0) {
+    if (!sleepy && s.modeTicks > 0) {
       s.modeTicks--;
     }
 
@@ -214,9 +219,10 @@ export class PlayState implements State {
 
     s.player.velocity = s.advantages.playerVelocity;
     const { beeVelocity } = s.values();
+    const elroy = elroyStep(s.release, s.values(), s.items.filter((it) => it !== null).length);
     for (const e of s.enemies) {
-      e.velocity = beeVelocity;
-      if (e.blueFrames > 0) {
+      e.velocity = e.kind === "red" && !e.home && elroy !== null ? elroy.velocity : beeVelocity;
+      if (isSleepy(e)) {
         s.player.velocity = velocityPlayerPower;
         e.velocity = velocityEnemyPower;
       }
@@ -231,7 +237,7 @@ export class PlayState implements State {
     for (const e of s.enemies) {
       updateBlue(e);
 
-      const target = findTarget(e, s.enemies, s.player, s.modeCurrent);
+      const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
       updateDirection(e, s.corners, target);
 
       if (!collideWithDistance(e, s.player, 1.0)) {
@@ -240,7 +246,7 @@ export class PlayState implements State {
 
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
-      if (e.blueFrames > 0) {
+      if (isSleepy(e)) {
         playSound(sounds.sweetBee);
 
         s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
@@ -250,7 +256,7 @@ export class PlayState implements State {
         if (awardIdx >= bonusEatFrameCount) {
           awardIdx = bonusEatFrameCount - 1;
         }
-        s.scoreValue += scaredBeeEatPoints[awardIdx] ?? 0;
+        s.addScore(scaredBeeEatPoints[awardIdx] ?? 0);
         spawnBonusEatIndicator(s, e.x, e.y, awardIdx);
         let nextAward = awardIdx + 1;
         if (nextAward >= bonusEatFrameCount) {
@@ -280,6 +286,7 @@ export class PlayState implements State {
     }
 
     // At most one item is eaten per tick.
+    let ate = false;
     for (let idx = 0; idx < s.items.length; idx++) {
       const item = s.items[idx];
       if (item === null || item === undefined) {
@@ -293,13 +300,13 @@ export class PlayState implements State {
       s.items[idx] = null;
 
       if (item.isPellet()) {
-        s.scoreValue += 10;
+        s.addScore(10);
         // The chomp alternates its two notes, one per honey drop.
         playSound(itemsEaten(s) % 2 === 1 ? sounds.sweetChompHigh : sounds.sweetChompLow);
       }
 
       if (item.isPower()) {
-        s.scoreValue += 50;
+        s.addScore(50);
         playSound(sounds.sweetSmoke);
 
         s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
@@ -319,13 +326,12 @@ export class PlayState implements State {
         }
       }
 
-      for (const e of s.enemies) {
-        if (e.dotMinimum > 0) {
-          e.dotMinimum--;
-        }
-      }
-
+      dropEaten(s.release, s.enemies);
+      ate = true;
       break;
+    }
+    if (!ate) {
+      noDropEaten(s.release, s.enemies, s.values());
     }
 
     updateFlower(s);
@@ -378,7 +384,7 @@ export class DeathWaitState implements State {
       this.s.pauseTicks--;
       return stateIDDeathWait;
     }
-    restartRound(this.s);
+    restartAfterDeath(this.s);
     return stateIDStart;
   }
 
