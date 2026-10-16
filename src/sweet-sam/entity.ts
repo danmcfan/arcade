@@ -132,6 +132,8 @@ export class Entity {
   dotMinimum = 0;
   /** Held in the home by the global drop counter after a death (release.ts). */
   held = false;
+  /** Eaten: only the eyes are left, flying back to the home (#153). */
+  eyes = false;
 
   blueFrames = 0;
   flashFrames = 0;

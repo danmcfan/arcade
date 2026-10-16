@@ -2,9 +2,10 @@
 // Replays parity fixtures through the `?debug` test hook and stops where #47
 // shows: sweet-sam-levels (the start of level 1, honey drops and a smoke pot
 // eaten, the bonus flower and its points, a sleepy bee eaten, the level-clear
-// flash, LEVEL 2 and its faster bees), sweet-sam-clear (a lost life with the
+// flash, LEVEL 2 and its faster bees), sweet-sam-clear (a lost life on level 2 with the
 // death animation) and sweet-sam-highscore (game over opening the payout).
 // At each stop it checks the snapshot and the sounds, and writes the frame.
+// Ticks re-picked for #201.
 // Then it records the level-1 flower and clear, and the death, as videos.
 // Files go to out/verify/sweet-sam-levels/.
 
@@ -91,7 +92,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 772,
+    tick: 620,
     name: "03-smoke-pot",
     shows: "a smoke pot eaten: every bee falls asleep, home ones too, with a puff",
     expect: (s, sounds) => {
@@ -112,7 +113,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 1177,
+    tick: 1084,
     name: "05-sleepy-bee-eaten",
     shows: "a sleepy bee eaten: its points and a burst",
     expect: (s, sounds) => {
@@ -121,7 +122,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 1277,
+    tick: 1191,
     name: "06-flower-eaten",
     shows: "the first flower eaten: 100 (Pac-Man's cherry points) in the pixel font where it stood",
     expect: (s, sounds) => {
@@ -131,7 +132,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4677,
+    tick: 2588,
     name: "07-level-clear-flash",
     shows: "the last honey drop eaten: everything stops, the bees leave and the maze flashes",
     expect: (s, sounds) => {
@@ -141,7 +142,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4793,
+    tick: 2704,
     name: "08-level-2-banner",
     shows: "LEVEL 2 before READY, the maze full again, everyone home",
     expect: (s) => {
@@ -150,7 +151,7 @@ const levelStops: Stop[] = [
     },
   },
   {
-    tick: 4993,
+    tick: 2904,
     name: "09-level-2-faster-bees",
     shows: "level 2 playing: the bees fly faster than on level 1",
     expect: (s) => {
@@ -166,7 +167,7 @@ const levelStops: Stop[] = [
 
 const deathStops: Stop[] = [
   {
-    tick: 4817,
+    tick: 3451,
     name: "10-life-lost-dazed",
     shows: "a bee catches the bear: dazed",
     expect: (s, sounds) => {
@@ -175,7 +176,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4860,
+    tick: 3480,
     name: "11-life-lost-sinking",
     shows: "the bear sinking",
     expect: (s) => {
@@ -183,7 +184,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4930,
+    tick: 3530,
     name: "12-life-lost-puddle",
     shows: "a puddle with stars, still inside the 2 s death wait",
     expect: (s) => {
@@ -191,7 +192,7 @@ const deathStops: Stop[] = [
     },
   },
   {
-    tick: 4938,
+    tick: 3572,
     name: "13-after-death",
     shows: "the round restarts on time: 2 s after the catch",
     expect: (s) => {
@@ -218,10 +219,10 @@ function video(v: Verify): void {
     "level-1-flower-and-clear",
     () => {
       loadFixture(v, levels);
-      skipTo(v, levels, 0, 1150);
-      replayLive(v, levels, 1150, 1400);
-      skipTo(v, levels, 1400, 4550);
-      replayLive(v, levels, 4550, 5080);
+      skipTo(v, levels, 0, 1060);
+      replayLive(v, levels, 1060, 1310);
+      skipTo(v, levels, 1310, 2446);
+      replayLive(v, levels, 2446, 2976);
       v.wait(500);
     },
     { scene: "game" },
@@ -231,8 +232,8 @@ function video(v: Verify): void {
     "life-lost",
     () => {
       loadFixture(v, clear);
-      skipTo(v, clear, 0, 4760);
-      replayLive(v, clear, 4760, 5000);
+      skipTo(v, clear, 0, 3394);
+      replayLive(v, clear, 3394, 3634);
       v.wait(500);
     },
     { scene: "game" },
