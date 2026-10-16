@@ -52,6 +52,8 @@ export interface Hazard {
   climbDir: -1 | 1;
   /** The monkey's jump this hazard was last jumped in. */
   jumpedIn: number;
+  /** The monkey's jump this hazard can score in: one that took off from its girder. */
+  jumpable: number;
 }
 
 /** The girder whose top is within `tol` of y at x, the nearest if more than one. */
@@ -264,6 +266,7 @@ export class Run {
           m.airTop = m.y;
           m.jumps++;
           m.moving = false;
+          this.markJumpable(groundUnder(floor, m.x, m.y, 2));
           this.onSound("jump");
         } else if (up !== undefined || down !== undefined) {
           const l = up ?? down;
@@ -328,6 +331,21 @@ export class Run {
     }
   }
 
+  /** The hazards on girder `g`, or on a ladder it meets, can score in the jump just started. */
+  private markJumpable(g: Girder | undefined): void {
+    if (g === undefined) return;
+    const floor = this.currentFloor();
+    const meets = (y: number, x: number): boolean => x >= g.x0 && x < g.x1 && Math.abs(girderTop(g, x) - y) <= 2;
+    for (const h of this.hazards) {
+      const l = h.ladder;
+      const on =
+        h.footing === "climb" && l !== null
+          ? meets(ladderHead(l), ladderMiddle(l)) || meets(ladderFoot(l), ladderMiddle(l))
+          : h.footing === "ground" && groundUnder(floor, h.x, h.y, 2) === g;
+      if (on) h.jumpable = this.monkey.jumps;
+    }
+  }
+
   /** The monkey stands on the girder under it, or starts to fall. */
   private settle(): void {
     const m = this.monkey;
@@ -358,6 +376,7 @@ export class Run {
       ladder: null,
       climbDir: 1,
       jumpedIn: 0,
+      jumpable: 0,
     });
     if (--this.gearTimer <= 0) {
       this.hazards.push(at("gear"));
@@ -481,7 +500,14 @@ export class Run {
         return;
       }
       const below = h.y - m.y;
-      if (m.footing === "air" && h.jumpedIn !== m.jumps && dx < t.jumpOverX && below > 0 && below <= t.jumpOverHeight) {
+      if (
+        m.footing === "air" &&
+        h.jumpable === m.jumps &&
+        h.jumpedIn !== m.jumps &&
+        dx < t.jumpOverX &&
+        below > 0 &&
+        below <= t.jumpOverHeight
+      ) {
         h.jumpedIn = m.jumps;
         this.score += t.hazardPoints;
         this.onSound("hazard");

@@ -37,6 +37,7 @@ const hazard = (kind: Hazard["kind"], x: number, y: number, dir: -1 | 1 = 1): Ha
   ladder: null,
   climbDir: 1,
   jumpedIn: 0,
+  jumpable: 0,
 });
 
 beforeEach(() => {
@@ -222,6 +223,34 @@ describe("score", () => {
     expect(run.phase).toBe("play");
     expect(run.score).toBe(t.hazardPoints);
     expect(sounds).toEqual(["jump", "hazard"]);
+  });
+
+  test("an ember jumped over on the monkey's girder scores", () => {
+    const { run, sounds } = quiet();
+    run.monkey.x = 60;
+    run.hazards = [hazard("ember", 76, 248, -1)];
+    step(run, 1, { space: true, right: true });
+    step(run, 30);
+    expect(run.phase).toBe("play");
+    expect(run.score).toBe(t.hazardPoints);
+    expect(sounds).toEqual(["jump", "hazard"]);
+  });
+
+  test("a gear on the girder below does not score", () => {
+    const { run, sounds } = quiet();
+    const girders = floors[0]?.girders ?? [];
+    const lower = girders.find((g) => g.y === 208);
+    const upper = girders.find((g) => g.y === 187);
+    if (lower === undefined || upper === undefined) throw new Error("no girders");
+    run.monkey.x = 20;
+    run.monkey.y = girderTop(upper, 20);
+    run.hazards = [hazard("gear", 24, girderTop(lower, 24), -1)];
+    expect([run.monkey.y, run.hazards[0]?.y]).toEqual([187, 209]);
+    step(run, 1, { space: true });
+    step(run, 30);
+    expect(run.phase).toBe("play");
+    expect(run.score).toBe(0);
+    expect(sounds).toEqual(["jump"]);
   });
 
   test("a bolt scores and is gone", () => {
