@@ -4,7 +4,8 @@
 // or, once the cabinet is beaten, its HI and a gold star at the top right;
 // facing the prize desk, it shows PRIZE COUNTER and INTERACT (#136); facing
 // the change machine, CHANGE MACHINE and its price, blinking after a denied
-// trade, or LAST CHANCE after the last-chance token (#144).
+// trade, or LAST CHANCE after the last-chance token (#144). Right after the
+// arcade win, a banner covers it all until the action key (#143).
 // The board itself is in the room image; this lays out and draws its lit
 // letters, and lights its marquee's bulbs in a chase (#92)
 // (src/ui/tickerArt.ts).
@@ -19,6 +20,7 @@ import { sweetie } from "../ui/sweetie16.ts";
 import {
   bulbLit,
   tickerBulbs,
+  tickerFace,
   tickerGap,
   tickerGlyphHeight,
   tickerGlyphs,
@@ -51,6 +53,8 @@ export interface TickerView {
   notice?: "price" | "lastChance" | null;
   /** The tick, for the blinking price. */
   tick?: number;
+  /** The arcade win banner is up: it covers everything else until the action key. */
+  arcadeWinBanner: boolean;
 }
 
 export const tokensLabel = "TOKENS";
@@ -64,6 +68,7 @@ export const changeMachinePrice = `${ticketsPerToken} TICKETS = 1 TOKEN`;
 export const lastChanceLabel = "LAST CHANCE";
 export const star = "*";
 export const hiLabel = "HI";
+export const arcadeWinLabel = "YOU BEAT THE ARCADE";
 /** The largest count the board shows; more reads as this. */
 export const maxShown = 999_999;
 
@@ -99,6 +104,7 @@ const shown = (n: number): string => String(Math.min(maxShown, Math.max(0, Math.
 
 /** Every lit letter on the board for `v`. */
 export function tickerLetters(v: TickerView): TickerGlyph[] {
+  if (v.arcadeWinBanner) return arcadeWinBanner();
   if (v.faced === "prizeCounter") return named(prizeCounterLabel, "orange", interactPrompt);
   if (v.faced === "changeMachine") return changeMachineLetters(v.notice ?? null, v.tick ?? 0);
   if (v.faced !== null) {
@@ -137,6 +143,18 @@ function changeMachineLetters(notice: "price" | "lastChance" | null, tick: numbe
   if (notice === "price" && Math.trunc(tick / blinkStep) % 2 === 1)
     return tickerText(changeMachineLabel, "orange", tickerLeft);
   return named(changeMachineLabel, "orange", changeMachinePrice);
+}
+
+/** YOU BEAT THE ARCADE between two gold stars, centred on the board. */
+function arcadeWinBanner(): TickerGlyph[] {
+  const text = `${star} ${arcadeWinLabel} ${star}`;
+  const x = tickerFace.x + Math.trunc((tickerFace.w - tickerTextWidth(text)) / 2);
+  const labelX = x + tickerTextWidth(`${star} `) + tickerGap;
+  return [
+    ...tickerText(star, "yellow", x),
+    ...tickerText(arcadeWinLabel, "white", labelX),
+    ...tickerText(star, "yellow", x + tickerTextWidth(text) - tickerTextWidth(star)),
+  ];
 }
 
 /** `name` at the left in `ink`, `prompt` in white at the right. */

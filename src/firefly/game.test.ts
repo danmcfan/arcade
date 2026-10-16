@@ -163,6 +163,17 @@ function settled(): FireflySoftware {
   return f;
 }
 
+/** The curve step of the first diver on `stage`, from the same seed and formation. */
+function diveStep(stage: number): number {
+  rng.seed(9);
+  const f = settled();
+  f.stage = stage;
+  f.update(NO_INPUT);
+  const diver = f.enemies.find((e) => e.state === "diving");
+  if (diver === undefined) throw new Error("no dive started");
+  return diver.tStep;
+}
+
 describe("dives", () => {
   test("once every enemy is in, they break off and dive, Wasps most often", () => {
     rng.seed(7);
@@ -203,6 +214,26 @@ describe("dives", () => {
       f.update(NO_INPUT);
       expect(f.enemies.filter((e) => e.state === "diving").length).toBe(difficulty(stage).diversPerDive);
       expect(f.diveTimer).toBe(difficulty(stage).diveInterval);
+    }
+  });
+
+  test("on later stages a diver flies its dive faster", () => {
+    expect(diveStep(10) / diveStep(5)).toBeCloseTo(difficulty(10).diveSpeed / difficulty(5).diveSpeed);
+  });
+
+  test("on later stages a shot drifts further sideways at the firefly", () => {
+    for (const stage of [5, 10]) {
+      const f = settled();
+      f.stage = stage;
+      f.diveTimer = 1_000_000;
+      const e = f.enemies[0];
+      if (e === undefined) throw new Error("no enemy");
+      divingAt(e, 20, 20);
+      e.shotsLeft = 1;
+      e.shotTimer = 1;
+      f.player.x = 200;
+      f.update(NO_INPUT);
+      expect(f.shots.map((s) => s.dx)).toEqual([difficulty(stage).shotDrift]);
     }
   });
 });
@@ -423,7 +454,14 @@ describe("payout", () => {
   test("a paid run played to game over pays its score in tickets", () => {
     rng.seed(1);
     const game = new Game(null, {
-      restore: { highScores: noHighScores, tokens: 1, tickets: 0, prizes: [], player: { x: 80, y: 92, dir: "DOWN" } },
+      restore: {
+        highScores: noHighScores,
+        tokens: 1,
+        tickets: 0,
+        arcadeWon: false,
+        prizes: [],
+        player: { x: 80, y: 92, dir: "DOWN" },
+      },
     });
     games.push(game);
     // Walk up to the Firefly cabinet and press Space.

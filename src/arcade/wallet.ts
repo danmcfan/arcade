@@ -1,7 +1,8 @@
 // The Wallet: the arcade's economy in one place. It owns the player's tokens,
 // tickets, owned prizes and the player's high score on each machine, and every rule that changes
 // them: what a cabinet start costs, what a run pays, what the change machine
-// exchanges and what the prize counter sells. Nothing else changes those numbers; the snapshot and the
+// exchanges, what the prize counter sells, and when the player has the arcade
+// win. Nothing else changes those numbers; the snapshot and the
 // save are projections of `toProgress()`, and `version` tells the title scene
 // when to save.
 
@@ -73,9 +74,17 @@ export interface WalletProgress {
   tickets: number;
   /** Owned prizes, in catalogue order. */
   prizes: PrizeId[];
+  /** Whether the player has had the arcade win: every house high score beaten, once per save. */
+  arcadeWon: boolean;
 }
 
-const newGame: WalletProgress = { highScores: noHighScores, tokens: startingTokens, tickets: 0, prizes: [] };
+const newGame: WalletProgress = {
+  highScores: noHighScores,
+  tokens: startingTokens,
+  tickets: 0,
+  prizes: [],
+  arcadeWon: false,
+};
 
 /** `ids` without repeats, in catalogue order: how owned prizes are kept. */
 function inCatalogueOrder(ids: readonly PrizeId[]): PrizeId[] {
@@ -87,6 +96,7 @@ export class Wallet {
   private _tokens: number;
   private _tickets: number;
   private _prizes: PrizeId[];
+  private _arcadeWon: boolean;
   private _version = 0;
 
   /** A New game's wallet, or one restored from a save. */
@@ -95,6 +105,7 @@ export class Wallet {
     this._tokens = from.tokens;
     this._tickets = from.tickets;
     this._prizes = inCatalogueOrder(from.prizes);
+    this._arcadeWon = from.arcadeWon;
   }
 
   /** The player's high score on `machine`. */
@@ -115,6 +126,22 @@ export class Wallet {
   /** What the machine's HI shows: the house high score until it is beaten, then the player's. */
   shownHighScore(machine: SoftwareName): number {
     return this.beaten(machine) ? this._highScores[machine] : houseHighScores[machine];
+  }
+
+  /** Whether the player has had the arcade win. */
+  get arcadeWon(): boolean {
+    return this._arcadeWon;
+  }
+
+  /**
+   * After a run's payout: the arcade win, when every machine is beaten and
+   * this save has not had it yet. True only the once it happens.
+   */
+  winArcade(): boolean {
+    if (this._arcadeWon || !Object.values(eachMachine((m) => (this.beaten(m) ? 1 : 0))).every(Boolean)) return false;
+    this._arcadeWon = true;
+    this._version++;
+    return true;
   }
 
   get tokens(): number {
@@ -204,6 +231,7 @@ export class Wallet {
       tokens: this._tokens,
       tickets: this._tickets,
       prizes: [...this._prizes],
+      arcadeWon: this._arcadeWon,
     };
   }
 

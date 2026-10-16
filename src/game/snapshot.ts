@@ -71,6 +71,12 @@ export interface ArcadeSnapshot {
    * existed (which own none) still match key for key.
    */
   prizes?: PrizeId[];
+  /**
+   * The arcade win (#143): "banner" from the run that won it until the action
+   * key closes the scoreboard's banner, then "won". Absent until the player
+   * has had it, so older traces still match key for key.
+   */
+  arcadeWin?: "banner" | "won";
 }
 
 /** How the running minigame was started (`RunKind` in src/arcade/wallet.ts). */
@@ -133,7 +139,8 @@ export interface PayoutSnapshot {
 // sweetSam (the Go port's Sweet Sam package)
 
 /** Go `StateID` values. */
-export type SweetSamStateId = "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR";
+export type SweetSamStateId =
+  "START" | "PLAY" | "PAUSE" | "DEATHWAIT" | "FINALDEATHWAIT" | "GAMEOVER" | "LEVELCLEAR" | "INTERMISSION";
 
 /** Enemy identity; Go compares `e.color` against `colorRed`, `colorPink`, `colorTeal`, `colorOrange`. */
 export type SweetSamEnemyKind = "red" | "pink" | "teal" | "orange";
