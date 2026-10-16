@@ -54,7 +54,7 @@ export const imageScoreLabels: Sprite = whole(sweetSamImages.scoreLabels);
 /** The points for eating a sleepy bee: 200, 400, 800, 1600. */
 export const imagePoints: Sprite = whole(sweetSamImages.points);
 
-// Firefly's sprites, from src/firefly/art.ts. The Moth, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
+// Firefly's sprites, from src/firefly/art.ts. The Moth, morph, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
 // of 90°, clockwise from facing up.
 /** The player in Firefly. */
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
@@ -62,6 +62,8 @@ export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageCaptive: Sprite = whole(fireflyImages.captive);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
+/** What a Moth splits into from stage 4. */
+export const imageMorph: Sprite = whole(fireflyImages.morph);
 export const imageWasp: Sprite = whole(fireflyImages.wasp);
 export const imageOwl: Sprite = whole(fireflyImages.owl);
 /** The Owl after its first hit. */

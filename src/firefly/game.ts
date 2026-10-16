@@ -42,6 +42,10 @@ import {
   firstShotDelay,
   formation,
   hitEffectTicks,
+  morphBonus,
+  morphChance,
+  morphFromStage,
+  morphSpacing,
   points,
   respawnTicks,
   shotSpacing,
@@ -180,6 +184,7 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     escortOf: null,
     escortDx: 0,
     escortsKilled: 0,
+    trio: null,
   };
   followPath(e, [{ ...curve, p3: home }]);
   return e;
@@ -415,6 +420,11 @@ export class FireflySoftware implements FixedViewport {
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    if (e.kind === "morph") {
+      // A morph flies off the bottom for good, unscored.
+      e.hp = 0;
+      return;
+    }
     if (e.beamTicks > 0) {
       e.state = "beaming";
       return;
@@ -460,6 +470,20 @@ export class FireflySoftware implements FixedViewport {
     const path: Path = beamDive
       ? [{ p0, p1, p2: { x: aim, y: beamY - 60 }, p3: { x: aim, y: beamY } }]
       : divePath(e.kind, p0, p1, aim, side);
+    // One trio at a time.
+    const morphing =
+      e.kind === "moth" &&
+      this.stage >= morphFromStage &&
+      !this.enemies.some((m) => m.kind === "morph") &&
+      rng.intn(morphChance) === 0;
+    if (morphing) {
+      this.morph(e, path, d);
+      return;
+    }
+    this.sendDiving(e, path, d);
+  }
+
+  private sendDiving(e: Enemy, path: Path, d: Difficulty): void {
     e.state = "diving";
     e.outOfFormation = true;
     followPath(e, path, d.diveSpeed);
@@ -541,6 +565,18 @@ export class FireflySoftware implements FixedViewport {
     c.y = ty;
   }
 
+  /** The Moth splits into a trio of morphs that fly its dive side by side. */
+  private morph(moth: Enemy, path: Path, d: Difficulty): void {
+    const trio = { kills: 0 };
+    this.enemies = this.enemies.filter((e) => e !== moth);
+    for (const k of [-1, 0, 1]) {
+      const shift = (p: Vec): Vec => ({ x: p.x + k * morphSpacing, y: p.y });
+      const m: Enemy = { ...moth, kind: "morph", hp: enemyHp.morph, x: moth.x + k * morphSpacing, trio };
+      this.sendDiving(m, path.map((c) => ({ p0: shift(c.p0), p1: shift(c.p1), p2: shift(c.p2), p3: shift(c.p3) })), d);
+      this.enemies.push(m);
+    }
+  }
+
   /** A diving enemy above the firefly drops its shots, aimed down at it. */
   private dropShot(e: Enemy): void {
     if (e.shotsLeft === 0 || e.state !== "diving") return;
@@ -586,6 +622,7 @@ export class FireflySoftware implements FixedViewport {
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
+    if (e.trio !== null && ++e.trio.kills === 3) this.points += morphBonus;
   }
 
   /** The enemy bursts and is gone, scoring nothing. */

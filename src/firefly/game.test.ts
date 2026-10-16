@@ -22,6 +22,8 @@ import {
   formation,
   hitEffectTicks,
   maxSparks,
+  morphBonus,
+  morphFromStage,
   points,
   respawnTicks,
   sparkSpeed,
@@ -218,7 +220,7 @@ function diveStep(stage: number): number {
 describe("dives", () => {
   test("once every enemy is in, they break off and dive, Wasps most often", () => {
     rng.seed(7);
-    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0 };
+    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0, morph: 0 };
     for (let i = 0; i < 300; i++) {
       const f = settled();
       f.update(NO_INPUT);
@@ -396,6 +398,79 @@ describe("escort-kill bonus", () => {
     expect(f.bonuses.map((b) => b.points)).toEqual([800]);
     run(f, bonusTicks);
     expect(f.bonuses).toEqual([]);
+  });
+});
+
+/** A settled stage `stage` with only Moths left, a dive due next tick; tries seeds until `want` (or 200 tries). */
+function mothDives(stage: number, want: (f: FireflySoftware) => boolean): FireflySoftware | null {
+  for (let i = 0; i < 200; i++) {
+    rng.seed(100 + i);
+    const f = settled();
+    f.stage = stage;
+    f.enemies = f.enemies.filter((e) => e.kind === "moth");
+    f.update(NO_INPUT);
+    if (want(f)) return f;
+  }
+  return null;
+}
+
+const morphs = (f: FireflySoftware): Enemy[] => f.enemies.filter((e) => e.kind === "morph");
+
+describe("morphs", () => {
+  test(`from stage ${morphFromStage} a diving Moth can split into 3 morphs that dive together`, () => {
+    const mothCount = formation().filter((s) => s.kind === "moth").length;
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph in 200 dives");
+    expect(morphs(f).length).toBe(3);
+    expect(morphs(f).every((e) => e.state === "diving")).toBe(true);
+    expect(f.enemies.filter((e) => e.kind === "moth").length).toBe(mothCount - 1);
+  });
+
+  test(`no Moth morphs before stage ${morphFromStage}`, () => {
+    expect(mothDives(morphFromStage - 1, (g) => morphs(g).length > 0)).toBeNull();
+  });
+
+  test("shooting all 3 morphs pays the bonus on top of their points", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    let expected = 0;
+    for (const m of trio) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+      expected += points("morph", true);
+    }
+    expect(trio.every((m) => m.hp === 0)).toBe(true);
+    expect(f.points).toBe(expected + morphBonus);
+  });
+
+  test("shooting only 2 of the 3 pays no bonus", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    for (const m of trio.slice(0, 2)) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+    }
+    expect(f.points).toBe(2 * points("morph", true));
+  });
+
+  test("a morph that flies off the bottom is gone for the stage", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    f.lives = 99;
+    for (let t = 0; t < 2000 && morphs(f).length > 0; t++) f.update(NO_INPUT);
+    expect(morphs(f).length).toBe(0);
+    expect(f.enemies.every((e) => e.kind === "moth")).toBe(true);
   });
 });
 
