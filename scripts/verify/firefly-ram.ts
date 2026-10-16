@@ -8,12 +8,7 @@
 import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
 import { points } from "../../src/firefly/rules.ts";
-import { isTitleSnapshot, verify, type Verify } from "../harness.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
+import { check, isTitleSnapshot, startFirefly, type Verify, verify } from "../harness.ts";
 
 function game(v: Verify): GameSnapshot {
   const g = v.snapshot(isTitleSnapshot).game;
@@ -33,18 +28,6 @@ function botInput(s: FireflySnapshot): Partial<Input> {
   const target = targets.toSorted((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px))[0];
   if (target === undefined || Math.abs(target.x - px) <= 2) return { space: true };
   return target.x > px ? { space: true, right: true } : { space: true, left: true };
-}
-
-function startFirefly(v: Verify, seed: number): void {
-  v.openHook();
-  v.page.eval("localStorage.clear()");
-  v.openHook();
-  v.page.eval(`window.__arcade.seed(${seed}); "ok"`);
-  v.tap("space"); // New game -> intro
-  v.tap("space"); // intro -> hub
-  v.step(31, { up: true });
-  v.step(40, { right: true });
-  v.step(1, { up: true, space: true });
 }
 
 type SnapEnemy = FireflySnapshot["enemies"][number];
