@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
-import { conveyorFloor } from "./floors.ts";
+import { conveyorFloor, floors, girderTop } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
 
@@ -309,5 +309,61 @@ describe("the escape and the next loop", () => {
       // but "ember climb at most 0.9 x the monkey's climb" caps it at 0.675. The cap wins.
       expect(t.tuningFor(floor, 2).emberClimbSpeed).toBe(t.maxEmberClimbSpeed);
     }
+  });
+});
+
+describe("landing on a slope", () => {
+  test("a jump left from (94, 147) lands on the girder at y 142, not the one below", () => {
+    const { run } = quiet();
+    run.monkey.x = 94;
+    run.monkey.y = 147;
+    step(run, 1, { left: true, space: true });
+    until(run, () => run.monkey.footing !== "air", { left: true });
+    const girder = floors[0]?.girders.find((g) => g.y === 142);
+    if (girder === undefined) throw new Error("no girder at y 142");
+    expect([run.phase, run.lives, run.monkey.y]).toEqual(["play", 3, girderTop(girder, run.monkey.x)]);
+  });
+
+  test("jumping left or right in place on any sloped girder lands back on it", () => {
+    floors.forEach((floor, f) => {
+      for (const g of floor.girders) {
+        if (g.drop === 0) continue;
+        for (let x = g.x0; x < g.x1; x++) {
+          for (const dir of [{ left: true }, { right: true }]) {
+            const { run } = quiet({ floor: f });
+            run.monkey.x = x;
+            run.monkey.y = girderTop(g, x);
+            step(run, 1, { ...dir, space: true });
+            until(run, () => run.monkey.footing !== "air", {}, 200);
+            const at = `floor ${f} girder ${g.x0}-${g.x1} x ${x} ${Object.keys(dir)[0]}`;
+            // A jump carried past the girder's end is a real fall, not this bug (and may kill).
+            if (run.monkey.x < g.x0 || run.monkey.x >= g.x1) continue;
+            expect([at, run.monkey.y, run.lives, run.phase]).toEqual([at, girderTop(g, run.monkey.x), 3, "play"]);
+          }
+        }
+      }
+    });
+  });
+
+  test("a fall longer than maxFall onto a girder still kills", () => {
+    const { run } = quiet();
+    const girder = floors[0]?.girders.find((g) => g.y === 142);
+    if (girder === undefined) throw new Error("no girder at y 142");
+    run.monkey.x = 94;
+    run.monkey.y = girderTop(girder, 94) - t.maxFall - 10;
+    run.monkey.airTop = run.monkey.y;
+    run.monkey.footing = "air";
+    until(run, () => run.monkey.footing !== "air" || run.phase !== "play", {}, 200);
+    expect(run.phase).toBe("dying");
+  });
+
+  test("walking off a girder's end still falls to the girder below", () => {
+    const { run } = quiet();
+    run.monkey.x = 200;
+    run.monkey.y = 220;
+    until(run, () => run.monkey.footing === "air", { right: true }, 100);
+    const y0 = run.monkey.y;
+    until(run, () => run.monkey.footing !== "air", {}, 200);
+    expect(run.monkey.y).toBeGreaterThan(y0 + 8);
   });
 });
