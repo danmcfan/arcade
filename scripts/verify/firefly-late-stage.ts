@@ -2,12 +2,12 @@
 // (`bun run verify firefly-late-stage`). No bot clears seven stages, so the
 // check serves the real game behind a small page that starts each Firefly run
 // on the stage in its URL (`?stage=`); everything else is the game as shipped.
-// It plays a paid run on stage 5 (the last stage as it was) and on stage 8 with
-// the same seed and a bot
-// that only fires and dodges, and checks that on stage 8 the divers fly about
-// 15% faster (2.3 px per tick rather than 2) and shots drift up to 1.3 px per
-// tick sideways (rather than 1). Frames of a stage 8 dive and a recording of
-// stage 8 played with the keyboard go to out/verify/firefly-late-stage/.
+// It plays a paid run on stage 5 (the last stage as it was) and on stage 8
+// with the same seed and a bot that only fires and dodges, and checks that on
+// stage 8 the divers fly about 15% faster (2.3 px per tick rather than 2) and
+// shots drift up to 1.3 px per tick sideways (rather than 1). Frames of a
+// stage 8 dive and a recording of stage 8 played with the keyboard go to
+// out/verify/firefly-late-stage/.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
