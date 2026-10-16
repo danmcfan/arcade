@@ -12,11 +12,11 @@ import { NO_INPUT, type Input } from "../../src/engine/input.ts";
 import * as rng from "../../src/engine/rng.ts";
 import { createScene } from "../../src/game/registry.ts";
 import type { BrassMonkeySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
-import type { InputScript } from "../../src/game/script.ts";
 import { boltPoints, hazardPoints } from "../../src/brass-monkey/tuning.ts";
 import { play } from "../gen-brass-monkey-play.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
 
+// play() throws if the bot fails to enter the cabinet from the hub.
 const seed = 163;
 const run = play(seed, true);
 if (!run.escaped) throw new Error(`seed ${seed} no longer escapes: re-pick it with the bot`);
@@ -98,13 +98,18 @@ function expected(ticks: readonly number[]): Map<number, GameSnapshot> {
   return out;
 }
 
-const script = (from: number, to: number): InputScript => ({
-  name: "brass-monkey-verify",
-  scene: "game",
-  seed,
-  captureTicks: [],
-  steps: inputs.slice(from, to).map((input) => ({ ticks: 1, input })),
-});
+/** One character a tick, its bits the held keys: too many ticks for a JSON array on agent-browser's command line. */
+const packed = inputs
+  .map((i) => String.fromCodePoint(64 + (+i.up | (+i.down << 1) | (+i.left << 2) | (+i.right << 3) | (+i.space << 4))))
+  .join("");
+
+/** Step the page through inputs[from, to) (packed: a JSON script of them is too long for the command line). */
+const stepPage = (from: number, to: number): string =>
+  `{ const p = ${JSON.stringify(packed.slice(from, to))};
+   for (let k = 0; k < p.length; k++) {
+     const b = p.charCodeAt(k) - 64;
+     window.__arcade.step(1, { up: (b & 1) > 0, down: (b & 2) > 0, left: (b & 4) > 0, right: (b & 8) > 0, space: (b & 16) > 0 });
+   } } "ok"`;
 
 function walkthrough(v: Verify): void {
   const shots = moments();
@@ -113,7 +118,7 @@ function walkthrough(v: Verify): void {
   v.page.eval(`window.__arcade.seed(${seed}); window.__arcade.load("game"); "ok"`);
   let at = 0;
   for (const [name, tick] of shots) {
-    v.page.eval(`window.__arcade.runScript(${JSON.stringify(script(at, tick))}); "ok"`);
+    v.page.eval(stepPage(at, tick));
     at = tick;
     const got = v.snapshot(isGameSnapshot);
     const exp = want.get(tick);
@@ -138,11 +143,6 @@ function walkthrough(v: Verify): void {
     v.frame(name, 2);
   }
 }
-
-/** One character a tick, its bits the held keys: too many ticks for a JSON array on agent-browser's command line. */
-const packed = inputs
-  .map((i) => String.fromCodePoint(64 + (+i.up | (+i.down << 1) | (+i.left << 2) | (+i.right << 3) | (+i.space << 4))))
-  .join("");
 
 function video(v: Verify): void {
   console.log("video:");
