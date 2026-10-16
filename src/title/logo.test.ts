@@ -33,6 +33,20 @@ describe("logoOverlay", () => {
     expect(white.length).toBeGreaterThan(0);
   });
 
+  test("one sweep of the sheen crosses every letter of ARCADE", () => {
+    const litColumns = new Set<number>();
+    for (let tick = 0; tick < sheenPeriod; tick++) {
+      for (const p of logoOverlay(tick)) {
+        if (p.colour === sweetie.w && "yor".includes(inLayer(titleWord, p.x, p.y))) litColumns.add(p.x);
+      }
+    }
+    for (let i = 0; i < 6; i++) {
+      // Each letter's face is 28 columns wide, one every 31 columns from the word's left edge.
+      const left = titleWord.x + i * 31;
+      expect([...litColumns].some((x) => x >= left && x < left + 28)).toBe(true);
+    }
+  });
+
   test("between sweeps no letter face changes", () => {
     const overlay = logoOverlay(sheenPeriod - 1);
     expect(overlay.some((p) => "yor".includes(inLayer(titleWord, p.x, p.y)))).toBe(false);

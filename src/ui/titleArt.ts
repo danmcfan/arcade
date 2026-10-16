@@ -104,62 +104,224 @@ export const titleBar: TitleLayer = {
   ],
 };
 
-/** ARCADE: faces in the logo's yellow, orange and red bands, block sides in purple, the letters' holes filled dark so the cabinet stays behind them. */
-export const titleWord: TitleLayer = {
-  x: 8,
-  y: 17,
-  rows: [
-    ".....................................................................................................................................................yyyyyyyyyyyyyyyyyyyy.......",
-    ".....................................................................................................................................................yyyyyyyyyyyyyyyyyyyyp......",
-    ".................................................................................................................................................yyyyyyyyyyyyyyyyyyyyyyyyyyyy...",
-    "....................................................................................................................yyyyyyyyyyyyyyyyyyyyyy.......yyyyyyyyyyyyyyyyyyyyyyyyyyyyp..",
-    "....................................................................................................................yyyyyyyyyyyyyyyyyyyyyyp......yyyyyyyyyyyyyyyyyyyyyyyyyyyypp.",
-    "....................................................................................................................yyyyyyyyyyyyyyyyyyyyyyyyyy...yyyyyyyyyyyyyyyyyyyyyyyyyyyyppk",
-    "...........................................................................................yyyyyyyyyyyyyyyyyyyy.....yyyyyyyyyyyyyyyyyyyyyyyyyyp..yyyyyyppppppppppppppppppppppppk",
-    "...........................................................................................yyyyyyyyyyyyyyyyyyyyp....yyyyyyyyyyyyyyyyyyyyyyyyyypp.yyyyyyppppppppppppppppppppppppk",
-    ".........................................................................................yyyyyyyyyyyyyyyyyyyyyyyy...yyyyyyyyyyyyyyyyyyyyyyyyyyppkyyyyppppkkkkkkkkkkkkkkkkkkkkkkk",
-    "............................................................yyyyyyyyyyyyyyyyyyyyyyyy.....yyyyyyyyyyyyyyyyyyyyyyyyp..yyyyyyppppppppppppppyyyyyyyykyyyyppppk......................",
-    "............................................................yyyyyyyyyyyyyyyyyyyyyyyyp..yyyyyyyyppppppppppppyyyyyyyy.yyyyyyppppppppppppppyyyyyyyypooooppkkk......................",
-    "..........................................................yyyyyyyyyyyyyyyyyyyyyyyyyyyy.yyyyyyyyppppppppppppyyyyyyyypyyyyyyppkkkkkkkkkkkkkpyyyyyypooooppk........................",
-    "..........................................................yyyyyyyyyyyyyyyyyyyyyyyyyyyypyyyyyyppppkkkkkkkkkkkpyyyyyypyyyyyyppkkkkkkkkkkkkkkyyyyyypoooooooooooooooooooo...........",
-    ".............................yyyyyyyyyyyyyyyyyyyyyyyy.....yyyyyyyyyyyyyyyyyyyyyyyyyyyypyyyyyyppppkkkkkkkkkkkkyyyyyypooooooppkkkkkkkkkkkkkkoooooopoooooooooooooooooooop..........",
-    ".............................yyyyyyyyyyyyyyyyyyyyyyyyp....yyyyyyyyyyyyyyyyyyyyyyyyyyyypyyyyyyppkkkkkkkkkkkkkkyyyyyypooooooppkkkkkkkkkkkkkkoooooopoooooooooooooooooooopp.........",
-    ".............................yyyyyyyyyyyyyyyyyyyyyyyyyy...yyyyyyppppppppppppppppyyyyyypyyyyyyppkkkkkkkkkkkkkkyyyyyypooooooppkkkkkkkkkkkkkkoooooopooooooooooooooooooooppk........",
-    "....yyyyyyyyyyyyyyyyyyyy.....yyyyyyyyyyyyyyyyyyyyyyyyyyp..yyyyyyppppppppppppppppyyyyyypooooooppkkkkkkkkkkkkkkoooooopooooooppkkkkkkkkkkkkkkoooooopooooooooooooooooooooppk........",
-    "....yyyyyyyyyyyyyyyyyyyyp....yyyyyyyyyyyyyyyyyyyyyyyyyyyy.yyyyyyppkkkkkkkkkkkkkkkppppppooooooppkkkkkkkkkkkkkkoooooopooooooppkkkkkkkkkkkkkkoooooopooooooooooooooooooooppk........",
-    "..yyyyyyyyyyyyyyyyyyyyyyyy...yyyyyyyyyyyyyyyyyyyyyyyyyyyypyyyyyyppkkkkkkkkkkkkkkkkpppppooooooookkkkkkkkkkkkoooooooopooooooppkkkkkkkkkkkkkkoooooopooooppppppppppppppppppk........",
-    "..yyyyyyyyyyyyyyyyyyyyyyyyp..yyyyyyppppppppppppppyyyyyyyypooooooppkkkkkkkkkkkkkkkkkkkkkoooooooopkkkkkkkkkkkoooooooopooooooppkkkkkkkkkkkkkkoooooopooooppppppppppppppppppk........",
-    "yyyyyyyyppppppppppppyyyyyyyy.yyyyyyppppppppppppppyyyyyyyypooooooppkkkkkkkkkkkkkkkkkkkkkoooooooooooooooooooooooooooopooooooppkkkkkkkkkkkkkkooooooprrrrppkkkkkkkkkkkkkkkkk........",
-    "yyyyyyyyppppppppppppyyyyyyyypyyyyyyppkkkkkkkkkkkkyyyyyyyypooooooppkkkkkkkkkkkkkkkkkkkkkoooooooooooooooooooooooooooopooooooppkkkkkkkkkkkkkkooooooprrrrppk........................",
-    "yyyyyyppppkkkkkkkkkkkpyyyyyypyyyyyyppkkkkkkkkkkkkyyyyyyyypooooooppkkkkkkkkkkkkkkkkkkkkkoooooooooooooooooooooooooooopooooooppkkkkkkkkkkkkkkooooooprrrrrrk........................",
-    "yyyyyyppppkkkkkkkkkkkkyyyyyypooooooppkkkkkkkkkkkkoooooooopooooooppkkkkkkkkkkkkkkkkkkkkkooooooooooooooooooooooooooooprrrrrrppkkkkkkkkkkkkkkrrrrrrprrrrrrp........................",
-    "yyyyyyppkkkkkkkkkkkkkkyyyyyypooooooppkkkkkkkkkkkkoooooooopooooooppkkkkkkkkkkkkkkkkkkkkkooooooooooooooooooooooooooooprrrrrrppkkkkkkkkkkkkkkrrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrrr...",
-    "yyyyyyppkkkkkkkkkkkkkkyyyyyypoooooooooooooooooooooooooopppooooooppkkkkkkkkkkkkkkkkkkkkkooooooooooooooooooooooooooooprrrrrrppkkkkkkkkkkkkrrrrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrrrp..",
-    "ooooooppkkkkkkkkkkkkkkoooooopoooooooooooooooooooooooooopppooooooppkkkkkkkkkkkkkkkkkkkkkrrrrrrpppppppppppppppprrrrrrprrrrrrppkkkkkkkkkkkkrrrrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrrrpp.",
-    "ooooooppkkkkkkkkkkkkkkoooooopooooooooooooooooooooooooppppkooooooppkkkkkkkkkkkkkkkkkkkkkrrrrrrpppppppppppppppprrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrppprrrrrrrrrrrrrrrrrrrrrrrrrrrrppk",
-    "ooooooookkkkkkkkkkkkoooooooopooooooooooooooooooooooooppppkooooooppkkkkkkkkkkkkkkkkkkkkkrrrrrrppkkkkkkkkkkkkkkrrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrppppppprrrrrrrrrrrrrrrrrrrrppppppk",
-    "oooooooopkkkkkkkkkkkoooooooopooooooppppppppooooooppppppkkkrrrrrrppkkkkkkkkkkkkkkkkkkkkkrrrrrrppk.............rrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrppkkkpprrrrrrrrrrrrrrrrrrrrppppppk",
-    "oooooooooooooooooooooooooooopooooooppppppppooooooppppppk..rrrrrrppkkkkkkkkkkkkkkkkkkkkkrrrrrrppk.............rrrrrrprrrrrrrrrrrrrrrrrrrrrrrrrrppk...kkpppppppppppppppppppppkkkkk",
-    "oooooooooooooooooooooooooooopooooooppkkkkkkkpooooookkkkk..rrrrrrppkkkkkkkkkkkkkkrrrrrrkrrrrrrppk.............rrrrrrprrrrrrrrrrrrrrrrrrrrrrppppppk......ppppppppppppppppppppk....",
-    "oooooooooooooooooooooooooooopooooooppk.......oooooop......rrrrrrppkkkkkkkkkkkkkkrrrrrrprrrrrrppk.............rrrrrrprrrrrrrrrrrrrrrrrrrrrrppppppk.......kkkkkkkkkkkkkkkkkkkk....",
-    "ooooooooooooooooooooooooooooprrrrrrppk.......rrrrrrpp.....rrrrrrrrrrrrrrrrrrrrrrrrrrrrprrrrrrppk.............rrrrrrpppppppppppppppppppppppppkkkkk...............................",
-    "ooooooooooooooooooooooooooooprrrrrrppk.......rrrrrrppk....rrrrrrrrrrrrrrrrrrrrrrrrrrrrprrrrppppk..............prrrrppkppppppppppppppppppppppk...................................",
-    "ooooooooooooooooooooooooooooprrrrrrppk........prrrrrrk....rrrrrrrrrrrrrrrrrrrrrrrrrrrrprrrrppppk...............rrrrppk.kkkkkkkkkkkkkkkkkkkkkk...................................",
-    "rrrrrrpppppppppppppppprrrrrrprrrrrrppk.........rrrrrrp....rrrrrrrrrrrrrrrrrrrrrrrrrrrrpppppppkkk................pppppk..........................................................",
-    "rrrrrrpppppppppppppppprrrrrrprrrrrrppk.........rrrrrrpp....prrrrrrrrrrrrrrrrrrrrrrrrppppkppppk...................ppppk..........................................................",
-    "rrrrrrppkkkkkkkkkkkkkkrrrrrrprrrrrrppk.........rrrrrrppk....rrrrrrrrrrrrrrrrrrrrrrrrppppk.kkkk....................kkkk..........................................................",
-    "rrrrrrppk.............rrrrrrprrrrrrppk..........prrrrrrk.....pppppppppppppppppppppppppkkk.......................................................................................",
-    "rrrrrrppk.............rrrrrrprrrrrrppk...........rrrrrrp......ppppppppppppppppppppppppk.........................................................................................",
-    "rrrrrrppk.............rrrrrrprrrrrrppk...........rrrrrrpp......kkkkkkkkkkkkkkkkkkkkkkkk.........................................................................................",
-    "rrrrrrppk.............rrrrrrprrrrrrppk...........rrrrrrppk......................................................................................................................",
-    "rrrrrrppk.............rrrrrrpppppppppk............pppppppk......................................................................................................................",
-    "rrrrppppk..............prrrrppkppppppk.............ppppppk......................................................................................................................",
-    "rrrrppppk...............rrrrppk.kkkkkk..............kkkkkk......................................................................................................................",
-    ".pppppkkk................pppppk.................................................................................................................................................",
-    "..ppppk...................ppppk.................................................................................................................................................",
-    "...kkkk....................kkkk.................................................................................................................................................",
+/** The face of each of ARCADE's letters, in the logo's yellow, orange and red bands: a 14x15 letter doubled. */
+export const titleLetterFaces: Readonly<Record<string, readonly string[]>> = {
+  A: [
+    "....yyyyyyyyyyyyyyyyyyyy....",
+    "....yyyyyyyyyyyyyyyyyyyy....",
+    "..yyyyyyyyyyyyyyyyyyyyyyyy..",
+    "..yyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyy............yyyyyyyy",
+    "yyyyyyyy............yyyyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy................yyyyyy",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooooo............oooooooo",
+    "oooooooo............oooooooo",
+    "oooooooooooooooooooooooooooo",
+    "oooooooooooooooooooooooooooo",
+    "oooooooooooooooooooooooooooo",
+    "oooooooooooooooooooooooooooo",
+    "oooooooooooooooooooooooooooo",
+    "oooooooooooooooooooooooooooo",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrr....................rrrr",
+    "rrrr....................rrrr",
+  ],
+  R: [
+    "yyyyyyyyyyyyyyyyyyyyyyyy....",
+    "yyyyyyyyyyyyyyyyyyyyyyyy....",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyy..............yyyyyyyy",
+    "yyyyyy..............yyyyyyyy",
+    "yyyyyy..............yyyyyyyy",
+    "yyyyyy..............yyyyyyyy",
+    "oooooo..............oooooooo",
+    "oooooo..............oooooooo",
+    "oooooooooooooooooooooooooo..",
+    "oooooooooooooooooooooooooo..",
+    "oooooooooooooooooooooooo....",
+    "oooooooooooooooooooooooo....",
+    "oooooo........oooooo........",
+    "oooooo........oooooo........",
+    "oooooo..........oooooo......",
+    "oooooo..........oooooo......",
+    "rrrrrr..........rrrrrr......",
+    "rrrrrr..........rrrrrr......",
+    "rrrrrr............rrrrrr....",
+    "rrrrrr............rrrrrr....",
+    "rrrrrr............rrrrrr....",
+    "rrrrrr............rrrrrr....",
+    "rrrrrr..............rrrrrr..",
+    "rrrrrr..............rrrrrr..",
+    "rrrrrr..............rrrrrr..",
+    "rrrrrr..............rrrrrr..",
+  ],
+  C: [
+    "..yyyyyyyyyyyyyyyyyyyyyyyy..",
+    "..yyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy......................",
+    "yyyyyy......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "oooooo......................",
+    "rrrrrr......................",
+    "rrrrrr......................",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "..rrrrrrrrrrrrrrrrrrrrrrrr..",
+    "..rrrrrrrrrrrrrrrrrrrrrrrr..",
+  ],
+  D: [
+    "yyyyyyyyyyyyyyyyyyyyyy......",
+    "yyyyyyyyyyyyyyyyyyyyyy......",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyy..",
+    "yyyyyy..............yyyyyyyy",
+    "yyyyyy..............yyyyyyyy",
+    "yyyyyy................yyyyyy",
+    "yyyyyy................yyyyyy",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "oooooo................oooooo",
+    "rrrrrr................rrrrrr",
+    "rrrrrr................rrrrrr",
+    "rrrrrr..............rrrrrrrr",
+    "rrrrrr..............rrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrr..",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrr..",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrr..",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrr..",
+    "rrrrrrrrrrrrrrrrrrrrrr......",
+    "rrrrrrrrrrrrrrrrrrrrrr......",
+  ],
+  E: [
+    "....yyyyyyyyyyyyyyyyyyyy....",
+    "....yyyyyyyyyyyyyyyyyyyy....",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "yyyyyy......................",
+    "yyyyyy......................",
+    "yyyy........................",
+    "yyyy........................",
+    "oooo........................",
+    "oooo........................",
+    "oooooooooooooooooooo........",
+    "oooooooooooooooooooo........",
+    "oooooooooooooooooooo........",
+    "oooooooooooooooooooo........",
+    "oooooooooooooooooooo........",
+    "oooooooooooooooooooo........",
+    "oooo........................",
+    "oooo........................",
+    "rrrr........................",
+    "rrrr........................",
+    "rrrrrr......................",
+    "rrrrrr......................",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "....rrrrrrrrrrrrrrrrrrrr....",
+    "....rrrrrrrrrrrrrrrrrrrr....",
   ],
 };
+
+/** Logo pixels from one letter's face to the next's: the face, its block side and nothing between, so every gap is the same. */
+const letterPitch = 31;
+/** Logo pixels each letter sits higher than the one before it. */
+const letterRise = 3;
+
+/** ARCADE: the faces left to right, each rising, with block sides in purple and the letters' holes filled dark so the cabinet stays behind them. */
+export const titleWord: TitleLayer = { x: 3, y: 18, rows: blockWord(["A", "R", "C", "A", "D", "E"]) };
+
+/**
+ * `letters`' faces placed `letterPitch` apart, each `letterRise` above the
+ * last, every face trailing a block side down and to the right (two purple
+ * steps, then a dark edge); a letter covers the side of the one before it.
+ */
+function blockWord(letters: readonly string[]): string[] {
+  const faces = letters.map((ch) => titleLetterFaces[ch] ?? []);
+  const faceW = faces[0]?.[0]?.length ?? 0;
+  const faceH = faces[0]?.length ?? 0;
+  const side = 3;
+  const w = (faces.length - 1) * letterPitch + faceW + side;
+  const h = (faces.length - 1) * letterRise + faceH + side;
+  const painted = new Map<number, string>();
+  faces.forEach((face, i) => {
+    const left = i * letterPitch;
+    const top = (faces.length - 1 - i) * letterRise;
+    for (let d = side; d >= 0; d--) {
+      face.forEach((row, y) => {
+        Array.from(row).forEach((c, x) => {
+          if (c !== ".") painted.set((top + y + d) * w + left + x + d, d === 0 ? c : d === side ? "k" : "p");
+        });
+      });
+    }
+  });
+  const outside = reachable(w, h, (i) => !painted.has(i));
+  return Array.from({ length: h }, (_, y) =>
+    Array.from({ length: w }, (__, x) => painted.get(y * w + x) ?? (outside.has(y * w + x) ? "." : "k")).join(""),
+  );
+}
+
+/** The cells of a `w` x `h` grid, numbered row by row, that `open` cells join to its edge. */
+function reachable(w: number, h: number, open: (i: number) => boolean): Set<number> {
+  const seen = new Set<number>();
+  const todo: [number, number][] = [];
+  for (let x = 0; x < w; x++) todo.push([x, 0], [x, h - 1]);
+  for (let y = 0; y < h; y++) todo.push([0, y], [w - 1, y]);
+  for (let next = todo.pop(); next !== undefined; next = todo.pop()) {
+    const [x, y] = next;
+    const i = y * w + x;
+    if (x < 0 || y < 0 || x >= w || y >= h || seen.has(i) || !open(i)) continue;
+    seen.add(i);
+    todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+  }
+  return seen;
+}
+
 /** Where the cabinet's screen sits in the logo, and its size. */
 export const titleScreenSpot = { x: 27, y: 13 } as const;
 export const titleScreenWidth = 15;
