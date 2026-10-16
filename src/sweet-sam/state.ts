@@ -28,6 +28,7 @@ import {
   isSleepy,
   newItems,
   pointToTile,
+  tileEq,
   tunnelLeftX,
   tunnelRightX,
   tunnelRowY,
@@ -40,7 +41,6 @@ import {
   becomeEyes,
   collideWithDistance,
   deathRoundDelayTicks,
-  distanceThreshold,
   findTarget,
   moveEyes,
   restartAfterDeath,
@@ -302,7 +302,8 @@ export class PlayState implements State {
         continue;
       }
 
-      if (!collideWithDistance(item, s.player, distanceThreshold)) {
+      // Pac-Man eats a dot on entering its tile, so a cornering bear still clears the junction's.
+      if (!tileEq(pointToTile(item.x, item.y), pointToTile(s.player.x, s.player.y))) {
         continue;
       }
 
