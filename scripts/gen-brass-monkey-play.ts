@@ -84,12 +84,42 @@ function snapshotOf(scene: ReturnType<typeof createScene>): BrassMonkeySnapshot 
   return "arcade" in s ? sw(s) : null;
 }
 
-/** From the hub's spawn: walk to the Brass Monkey cabinet and put in a token. */
-export const enterFromHub: readonly Input[] = [
-  ...Array.from({ length: 31 }, (): Input => ({ ...NO_INPUT, up: true })),
-  ...Array.from({ length: 24 }, (): Input => ({ ...NO_INPUT, left: true })),
-  { ...NO_INPUT, up: true, space: true },
-];
+type Scene = ReturnType<typeof createScene>;
+
+/**
+ * From the hub's spawn: walk up to the cabinets' wall, then left along it
+ * until the scoreboard names Brass Monkey (read from the scene, not a fixed
+ * route), and put in a token. Steps `scene` and returns the inputs it used;
+ * throws if the run did not start.
+ */
+export function enterFromHub(scene: Scene): Input[] {
+  const inputs: Input[] = [];
+  const press = (i: Input): void => {
+    inputs.push(i);
+    scene.step(i);
+  };
+  const arcade = (): { y: number; faced: unknown } => {
+    const s = scene.snapshot();
+    if (!("arcade" in s)) throw new Error("enterFromHub: the scene is not the hub");
+    return { y: s.arcade.player.y, faced: s.arcade.faced };
+  };
+  const up: Input = { ...NO_INPUT, up: true };
+  for (let y = Infinity; arcade().y < y && inputs.length < 600;) {
+    y = arcade().y;
+    press(up);
+  }
+  // Step left, then face the wall to see which cabinet is there.
+  while (arcade().faced !== "brassMonkey" && inputs.length < 1200) {
+    press({ ...NO_INPUT, left: true });
+    press(up);
+  }
+  press({ ...up, space: true });
+  const s = scene.snapshot();
+  const software = "arcade" in s ? s.software : null;
+  if (software !== "brassMonkey")
+    throw new Error(`enterFromHub: the bot did not enter the Brass Monkey cabinet (software ${String(software)})`);
+  return inputs;
+}
 
 /**
  * Play a run from `seed`: straight into Brass Monkey (`game.New`), or from the
@@ -99,8 +129,12 @@ export const enterFromHub: readonly Input[] = [
 export function play(seed: number, fromHub = false): Played {
   rng.seed(seed);
   const scene = createScene("game", fromHub ? {} : { software: "brassMonkey" });
-  const inputs: Input[] = fromHub ? [...enterFromHub] : [NO_INPUT];
-  for (const i of inputs) scene.step(i);
+  const inputs: Input[] = [];
+  if (fromHub) inputs.push(...enterFromHub(scene));
+  else {
+    inputs.push(NO_INPUT);
+    scene.step(NO_INPUT);
+  }
   let leg = 0;
   let floor = 0;
   let lives = startLives;
