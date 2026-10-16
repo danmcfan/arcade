@@ -5,16 +5,10 @@
 // same. Frames before and after the ram, and a recording of a run, go to
 // out/verify/firefly-ram/.
 
-import type { FireflySnapshot, GameSnapshot } from "../../src/game/snapshot.ts";
+import type { FireflySnapshot } from "../../src/game/snapshot.ts";
 import type { Input } from "../../src/engine/input.ts";
 import { points } from "../../src/firefly/rules.ts";
-import { check, isTitleSnapshot, startFirefly, type Verify, verify } from "../harness.ts";
-
-function game(v: Verify): GameSnapshot {
-  const g = v.snapshot(isTitleSnapshot).game;
-  if (g === null) throw new Error("no game running");
-  return g;
-}
+import { check, gameIn as game, startFirefly, type Verify, verify } from "../harness.ts";
 
 function firefly(v: Verify): FireflySnapshot | null {
   const g = game(v);

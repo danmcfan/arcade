@@ -13,13 +13,8 @@ import { modeChase } from "../../src/sweet-sam/levels.ts";
 import { findTarget } from "../../src/sweet-sam/update.ts";
 import type { Direction } from "../../src/engine/input.ts";
 import { loadFixture, replayLive, skipTo } from "../fixture-replay.ts";
-import { isGameSnapshot, verify, type Verify } from "../harness.ts";
+import { check, isGameSnapshot, verify, type Verify } from "../harness.ts";
 import { compress, stepFrom, play } from "../sweet-sam-bot.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
 
 function sweetSam(v: Verify): SweetSamSnapshot {
   const g = v.snapshot(isGameSnapshot);

@@ -115,11 +115,7 @@ export class Game implements Scene {
     this.debugPanel = newDebugPanel(0, 0, 120, deps.debugPrint);
   }
 
-  /**
-   * A position in or beyond a wall or the prize counter (a stale or edited
-   * save) keeps the start position. The walls frame the hub image, so
-   * "inside the image and touching no wall" means "on the floor".
-   */
+  /** Jump the running minigame to `stage` (test hook); throws when it has no stages. */
   jumpTo(stage: number): void {
     const software = this.run?.software;
     if (software?.jumpTo === undefined)
@@ -127,6 +123,11 @@ export class Game implements Scene {
     software.jumpTo(stage);
   }
 
+  /**
+   * A position in or beyond a wall or the prize counter (a stale or edited
+   * save) keeps the start position. The walls frame the hub image, so
+   * "inside the image and touching no wall" means "on the floor".
+   */
   private restore(p: Progress): void {
     const player = this.arcade.player;
     this.arcade.wallet = new Wallet(p);

@@ -5,12 +5,7 @@
 // firefly. Frames go to out/verify/firefly-game-over/.
 
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
-import { isTitleSnapshot, verify, type Verify } from "../harness.ts";
-
-function check(ok: boolean, what: string, got?: unknown): void {
-  if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
-  console.log(`  ok  ${what}`);
-}
+import { check, isTitleSnapshot, verify, type Verify } from "../harness.ts";
 
 function firefly(v: Verify): FireflySnapshot | null {
   const g = v.snapshot(isTitleSnapshot).game;
