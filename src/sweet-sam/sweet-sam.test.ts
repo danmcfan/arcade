@@ -137,6 +137,7 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "mode",
         "modeTicks",
         "pauseTicks",
+        "eatPauseTicks",
         "startTicks",
         "respawnBlinkRemaining",
         "scaredEatAwardNext",

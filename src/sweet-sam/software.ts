@@ -257,6 +257,7 @@ export class SweetSamSoftware implements FixedViewport {
         elroySuspended: this.release.elroySuspended,
       },
       pauseTicks: this.pauseTicks,
+      eatPauseTicks: this.eatPauseTicks,
       startTicks: this.startTicks,
       respawnBlinkRemaining: this.startState.respawnBlinkRemaining,
       scaredEatAwardNext: this.scaredEatAwardNext,
