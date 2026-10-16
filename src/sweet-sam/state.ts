@@ -313,13 +313,12 @@ export class PlayState implements State {
 
         const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
+        // Every bee turns sleepy, home ones too; only maze bees turn around.
         for (const e of s.enemies) {
-          if (e.home) {
-            continue;
+          if (!e.home) {
+            e.reverseDirection = true;
+            e.reverseTile = pointToTile(e.x, e.y);
           }
-
-          e.reverseDirection = true;
-          e.reverseTile = pointToTile(e.x, e.y);
 
           e.blueFrames = sleepyFrames;
           e.flashFrames = 0;

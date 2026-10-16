@@ -232,7 +232,7 @@ describe("eating", () => {
     if (!power) throw new Error("power");
     power.x = s.player.x - 1;
     power.y = 212;
-    const pink = enemy(s, 1); // still home: not scared
+    const pink = enemy(s, 1); // still home: sleepy too
     step(s);
     expect(s.scoreValue).toBe(70);
     expect(sounds).toEqual([
@@ -246,7 +246,26 @@ describe("eating", () => {
     expect([s.camera.shakeTicksRemaining, s.camera.shakeIntensity]).toEqual([6, 4]);
     expect(enemy(s, 0).blueFrames).toBe(600);
     expect(enemy(s, 0).reverseDirection).toBe(true);
-    expect(pink.blueFrames).toBe(0);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
+    expect(s.enemies.every((e) => e.blueFrames === 600)).toBe(true);
+  });
+
+  test("a bee that leaves the home still sleepy can be eaten for points", () => {
+    const s = playing();
+    const pink = enemy(s, 1);
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = 212;
+    step(s);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
+    let n = 0;
+    while (pink.home && n++ < 300) step(s);
+    expect([pink.home, pink.blueFrames > 0]).toEqual([false, true]);
+    onPlayer(s, pink);
+    const before = s.scoreValue;
+    step(s);
+    expect([s.snapshot().state, s.scoreValue - before]).toEqual(["PAUSE", 200]);
   });
 
   test("scared bee eaten: 200, popup, shake, particles, power sound, PAUSE", () => {

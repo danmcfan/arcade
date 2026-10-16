@@ -22,7 +22,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
-import type { GameSnapshot, SceneSnapshot, TitleSnapshot } from "../src/game/snapshot.ts";
+import type { GameSnapshot, SceneSnapshot, SweetSamSnapshot, TitleSnapshot } from "../src/game/snapshot.ts";
 import type { SceneName } from "../src/game/software.ts";
 import type { Input } from "../src/engine/input.ts";
 import { repoRoot } from "../test/parity/fixtures.ts";
@@ -205,6 +205,23 @@ export function isGameSnapshot(x: unknown): x is GameSnapshot {
     "menu" in x &&
     "sw" in x
   );
+}
+
+/** A `SweetSamSnapshot` by its shape. */
+export function isSweetSamSnapshot(x: unknown): x is SweetSamSnapshot {
+  return (
+    isRecord(x) &&
+    typeof x["level"] === "number" &&
+    typeof x["lives"] === "number" &&
+    Array.isArray(x["enemies"]) &&
+    isRecord(x["player"])
+  );
+}
+
+/** The Sweet Sam snapshot inside a game snapshot; throws when another software is running. */
+export function sweetSamIn(g: GameSnapshot): SweetSamSnapshot {
+  if (g.software !== "sweetSam" || !isSweetSamSnapshot(g.sw)) throw new Error(`not in Sweet Sam: ${g.software}`);
+  return g.sw;
 }
 
 /** A `TitleSnapshot` by its shape. */

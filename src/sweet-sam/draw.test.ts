@@ -113,6 +113,19 @@ describe("SweetSamSoftware.draw", () => {
     ]);
   });
 
+  test("a sleepy bee in the home is drawn in its sleepy rows", () => {
+    const s = new SweetSamSoftware(0);
+    const teal = s.enemies[2];
+    if (teal?.home !== true) throw new Error("teal bee in the home");
+    teal.blueFrames = 10;
+    // teal RIGHT: row 0, +2 asleep; teal's sheet starts 192 down bees.png
+    expect(
+      render(s)
+        .filter((o) => name(o) === "draw:bees.png")[2]
+        ?.slice(1, 6),
+    ).toEqual(["bees.png", 0, 192 + 32, 16, 16]);
+  });
+
   test("shake offsets the playfield, not the cabinet; sleepy/waking rows; popups; particles", () => {
     const s = new SweetSamSoftware(0);
     s.startTicks = 0;
