@@ -270,7 +270,7 @@ describe("SweetSamSoftware.draw", () => {
   test("rolling digit: old glyph scrolls up, new glyph rises from below inside the cell", () => {
     const s = new SweetSamSoftware(0);
     s.scoreValue = 10;
-    const reel = s.scoreDial[4];
+    const reel = s.dials.score[4];
     reel.syncTarget(1);
     reel.stepFrame(); // t = 1/18
     render(s);

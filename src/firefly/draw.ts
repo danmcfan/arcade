@@ -17,8 +17,7 @@ import {
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
-import type { DigitReels } from "../ui/digitReel.ts";
-import { drawScoreDials, drawScoreLabels, type ScoreDialsCache } from "../ui/scoreDials.ts";
+import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { fieldWidth, hitEffectTicks, respawnTicks, stageIntroTicks, type EnemyKind } from "./rules.ts";
@@ -75,9 +74,7 @@ export interface FireflyView {
   enemies: readonly Enemy[];
   shots: readonly Shot[];
   highScore: number;
-  scoreDial: DigitReels;
-  highScoreDial: DigitReels;
-  drawCache: ScoreDialsCache;
+  dials: ScoreDials;
   score(): number;
 }
 
@@ -105,7 +102,7 @@ function drawField(screen: Surface, f: FireflyView): void {
 
   // Sweet Sam's HUD: the high score follows the score once the score passes it.
   drawScoreLabels(screen, ox, oy);
-  drawScoreDials(f.drawCache, screen, ox, oy, f.score(), f.highScore, f.scoreDial, f.highScoreDial);
+  f.dials.draw(screen, ox, oy, f.score(), f.highScore);
   drawLives(screen, Math.max(0, f.lives - 1));
 
   if (f.stageTick <= stageIntroTicks) {

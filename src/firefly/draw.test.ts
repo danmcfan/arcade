@@ -132,8 +132,8 @@ describe("firefly draw", () => {
     f.stageTick = stageIntroTicks + 1;
     f.points = 12500;
     for (let i = 0; i < 60; i++) f.update(NO_INPUT);
-    expect(f.scoreDial.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
-    expect(f.highScoreDial.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
+    expect(f.dials.score.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
+    expect(f.dials.high.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
   });
 
   test("an enemy in formation faces down: row 2 of its sheet, centred on it", () => {

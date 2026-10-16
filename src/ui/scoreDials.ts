@@ -7,7 +7,7 @@ import { sub, type Sprite } from "../engine/image.ts";
 import { Surface } from "../engine/surface.ts";
 import { imageDigits, imageScoreLabels } from "../engine/assets.ts";
 import { goRound } from "../engine/gomath.ts";
-import { digits6, type DigitReels } from "./digitReel.ts";
+import { bootReels, digits6, newDigitReels, syncAndTick, type DigitReels } from "./digitReel.ts";
 import { scoreLabelsX } from "../sweet-sam/art.ts";
 
 /** Where the score and high score dials start: tile columns on tile row `scoreDialsRow`. */
@@ -15,31 +15,36 @@ export const scoreDialColumn = 1;
 export const highScoreDialColumn = 11;
 export const scoreDialsRow = 1;
 
-/** Lazily created draw resources. */
-export interface ScoreDialsCache {
-  /** Reused cell for clipped score/high-score draws (Go `digitDialScratch`). */
-  digitDialScratch: Surface | null;
+/** The score and high score dials, with the scratch cell their draw reuses. */
+export class ScoreDials {
+  readonly score: DigitReels = newDigitReels();
+  readonly high: DigitReels = newDigitReels();
+  /** Reused cell for clipped digit draws (Go `digitDialScratch`); lazily created, never touched by update. */
+  scratch: Surface | null = null;
+
+  /** Settle the score dial on 0 and the high score dial on `highScore` (clamped to 0..999999), with no spin. */
+  constructor(highScore: number) {
+    bootReels(this.score, 0);
+    bootReels(this.high, Math.min(999_999, Math.max(0, highScore)));
+  }
+
+  /** Point the dials at the score and the high score shown (never below the score), and advance them a tick. */
+  tick(score: number, highScore: number): void {
+    syncAndTick(this.score, digits6(score));
+    syncAndTick(this.high, digits6(Math.max(score, highScore)));
+  }
+
+  /** The score and high score dials; the high score shown is never below the score. */
+  draw(screen: Surface, bufX: number, bufY: number, score: number, highScore: number): void {
+    drawRollingInteger(this, screen, bufX, bufY, score, scoreDialColumn, scoreDialsRow, this.score);
+    const shownHigh = Math.trunc(Math.max(score, highScore));
+    drawRollingInteger(this, screen, bufX, bufY, shownHigh, highScoreDialColumn, scoreDialsRow, this.high);
+  }
 }
 
 /** "1UP" and "HIGH SCORE" on the top row, for a screen whose background does not have them. */
 export function drawScoreLabels(screen: Surface, bufX: number, bufY: number): void {
   screen.draw(imageScoreLabels, scoreLabelsX + bufX, bufY);
-}
-
-/** The score and high score dials; the high score shown is never below the score. */
-export function drawScoreDials(
-  cache: ScoreDialsCache,
-  screen: Surface,
-  bufX: number,
-  bufY: number,
-  score: number,
-  highScore: number,
-  scoreDial: DigitReels,
-  highScoreDial: DigitReels,
-): void {
-  drawRollingInteger(cache, screen, bufX, bufY, score, scoreDialColumn, scoreDialsRow, scoreDial);
-  const shownHigh = Math.trunc(Math.max(score, highScore));
-  drawRollingInteger(cache, screen, bufX, bufY, shownHigh, highScoreDialColumn, scoreDialsRow, highScoreDial);
 }
 
 function digitGlyphSize(): [number, number] {
@@ -57,13 +62,13 @@ function digitFrame(digit: number): Sprite {
   return sub(imageDigits, d * dw, 0, (d + 1) * dw, dh);
 }
 
-function digitDialCell(cache: ScoreDialsCache, dw: number, dh: number): Surface {
-  const cached = cache.digitDialScratch;
+function digitDialCell(cache: ScoreDials, dw: number, dh: number): Surface {
+  const cached = cache.scratch;
   if (cached !== null && cached.width === dw && cached.height === dh) {
     return cached;
   }
   const cell = Surface.offscreen(dw, dh);
-  cache.digitDialScratch = cell;
+  cache.scratch = cell;
   return cell;
 }
 
@@ -72,7 +77,7 @@ function digitDialCell(cache: ScoreDialsCache, dw: number, dh: number): Surface 
  * composites that cell onto the HUD. The last 2 digits always draw.
  */
 function drawRollingInteger(
-  cache: ScoreDialsCache,
+  cache: ScoreDials,
   screen: Surface,
   bufX: number,
   bufY: number,

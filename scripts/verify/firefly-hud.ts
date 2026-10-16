@@ -7,11 +7,37 @@
 // Files go to out/verify/firefly-hud/.
 
 import type { FireflySnapshot } from "../../src/game/snapshot.ts";
+import { PNG } from "pngjs";
+import { decodeDataUrl } from "../browser.ts";
 import { isGameSnapshot, verify, type Verify } from "../harness.ts";
 
 function check(ok: boolean, what: string, got?: unknown): void {
   if (!ok) throw new Error(`FAILED: ${what}${got === undefined ? "" : `\n  got: ${JSON.stringify(got)}`}`);
   console.log(`  ok  ${what}`);
+}
+
+/** The screen's top-left corner in the frame, and the HUD's tile rows and dial columns (src/ui/scoreDials.ts). */
+const screenX = 8;
+const screenY = 8;
+
+/** The pixels of the tile rectangle (columns c0..c1, rows r0..r1 of the screen) as "r,g,b,a" strings, one per pixel. */
+function tiles(png: PNG, c0: number, c1: number, r0: number, r1: number): string[] {
+  const out: string[] = [];
+  for (let y = screenY + 8 * r0; y < screenY + 8 * r1; y++)
+    for (let x = screenX + 8 * c0; x < screenX + 8 * c1; x++) {
+      const i = (y * png.width + x) * 4;
+      out.push(`${png.data[i]},${png.data[i + 1]},${png.data[i + 2]},${png.data[i + 3]}`);
+    }
+  return out;
+}
+
+function lit(px: string[]): number {
+  return px.filter((p) =>
+    p
+      .split(",")
+      .slice(0, 3)
+      .some((c) => Number(c) > 128),
+  ).length;
 }
 
 function load(v: Verify, software: "sweetSam" | "firefly"): void {
@@ -45,6 +71,18 @@ await verify("firefly-hud", (v) => {
   check(score > 0, `the firefly scores (${score})`, score);
   v.step(30);
   v.frame("3-firefly-scored", 3);
+
+  // The HUD: labels on row 0, the score on the dials under "1UP", and the high score (no hub
+  // high score here, so max(score, 0) = the score) on the same dials under "HIGH SCORE".
+  const png = PNG.sync.read(decodeDataUrl(v.page.eval("window.__arcade.frame()")));
+  check(lit(tiles(png, 1, 5, 0, 1)) > 0, "the 1UP label is drawn on the top row");
+  check(lit(tiles(png, 11, 21, 0, 1)) > 0, "the HIGH SCORE label is drawn on the top row");
+  const scoreDial = tiles(png, 1, 7, 1, 2);
+  check(lit(scoreDial) > 0, "the score dial is drawn");
+  check(
+    JSON.stringify(scoreDial) === JSON.stringify(tiles(png, 11, 17, 1, 2)),
+    "the high score dial shows the score once the score passes the high score",
+  );
 
   v.record(
     "firefly-hud",

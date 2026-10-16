@@ -6,7 +6,6 @@ import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
 import { levelValues, modeScatter, type Mode } from "./levels.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
-import { syncAndTickHighScoreRollingDials, syncAndTickScoreRollingDials } from "./digitReel.ts";
 import {
   dirAxis,
   dirOpposite,
@@ -49,8 +48,7 @@ export function update(s: SweetSamSoftware, i: Input): void {
   s.stateMachine.update(i);
   tickBonusEatPopups(s);
   tickFlowerPopup(s);
-  syncAndTickScoreRollingDials(s);
-  syncAndTickHighScoreRollingDials(s);
+  s.dials.tick(s.scoreValue, s.highScore);
 }
 
 export function winner(s: SweetSamSoftware): boolean {

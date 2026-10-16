@@ -18,16 +18,12 @@ import { drawBonusEatIndicators } from "./bonusEat.ts";
 import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
-import { drawScoreDials, type ScoreDialsCache } from "../ui/scoreDials.ts";
 import { frameSize, itemCellHeight, itemCellWidth, mazeHeight } from "./art.ts";
 import { pelletAnimFrameCount, pelletAnimHoldTicks, pointToTile, tileSize, type Entity, type Tile } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
 const debug = false;
-
-/** Lazily created draw resources. */
-export type DrawCache = ScoreDialsCache;
 
 /** Go `Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
 export function draw(s: SweetSamSoftware, screen: Surface): void {
@@ -43,7 +39,7 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;
   drawBackground(s, screen, bufX, bufY);
-  drawScoreDials(s.drawCache, screen, bufX, bufY, s.scoreValue, s.highScore, s.scoreDial, s.highScoreDial);
+  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
   drawLives(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
