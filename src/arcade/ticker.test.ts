@@ -38,14 +38,14 @@ function onBoard(v: TickerView): void {
 
 describe("LED scoreboard", () => {
   test("reads TOKENS and the count, TICKETS and the count", () => {
-    const v = { tokens: 3, tickets: 1250, faced: null, beatenHi: null };
+    const v = { tokens: 3, tickets: 1250, faced: null, beatenHi: null, arcadeWinBanner: false };
     expect(text(v, "orange")).toBe("TOKENSTICKETS");
     expect(text(v, "yellow")).toBe("31250");
     onBoard(v);
   });
 
   test("at 0 tokens the count reads FREE PLAY", () => {
-    const v = { tokens: 0, tickets: 0, faced: null, beatenHi: null };
+    const v = { tokens: 0, tickets: 0, faced: null, beatenHi: null, arcadeWinBanner: false };
     expect(text(v, "orange")).toBe("TOKENSFREEPLAYTICKETS");
     expect(text(v, "yellow")).toBe("0");
     onBoard(v);
@@ -53,8 +53,8 @@ describe("LED scoreboard", () => {
 
   test("the widest counts still fit beside their labels; more than 999999 reads 999999", () => {
     for (const v of [
-      { tokens: 0, tickets: maxShown, faced: null, beatenHi: null },
-      { tokens: 9999, tickets: 123_456_789, faced: null, beatenHi: null },
+      { tokens: 0, tickets: maxShown, faced: null, beatenHi: null, arcadeWinBanner: false },
+      { tokens: 9999, tickets: 123_456_789, faced: null, beatenHi: null, arcadeWinBanner: false },
     ]) {
       onBoard(v);
       expect(text(v, "yellow").endsWith("999999")).toBe(true);
@@ -64,7 +64,7 @@ describe("LED scoreboard", () => {
   test("the ticket count is right-aligned, 8 px in from the board's right edge", () => {
     expect(tickerRight).toBe(tickerRect.x + tickerRect.w - 8);
     for (const tickets of [7, 1250, 99_999]) {
-      const letters = tickerLetters({ tokens: 1, tickets, faced: null, beatenHi: null });
+      const letters = tickerLetters({ tokens: 1, tickets, faced: null, beatenHi: null, arcadeWinBanner: false });
       const last = letters.at(-1);
       expect((last?.x ?? 0) + 3).toBe(tickerRight);
     }
@@ -72,7 +72,7 @@ describe("LED scoreboard", () => {
 
   test("facing a cabinet, it shows the cabinet's name in its colour and INTERACT TO PLAY", () => {
     for (const { title, titleCard: t } of minigames) {
-      const v = { tokens: 3, tickets: 1250, faced: title, beatenHi: null };
+      const v = { tokens: 3, tickets: 1250, faced: title, beatenHi: null, arcadeWinBanner: false };
       expect(text(v, t.ink)).toBe(t.text.replaceAll(" ", ""));
       expect(text(v, "white")).toBe("INTERACTTOPLAY");
       onBoard(v);
@@ -81,7 +81,7 @@ describe("LED scoreboard", () => {
 
   test("facing a beaten cabinet, it shows the cabinet's name, its HI and a gold star at the top right", () => {
     for (const { title, titleCard: t } of minigames) {
-      const v = { tokens: 3, tickets: 1250, faced: title, beatenHi: 123_450 };
+      const v = { tokens: 3, tickets: 1250, faced: title, beatenHi: 123_450, arcadeWinBanner: false };
       expect(text(v)).toBe(`${t.text.replaceAll(" ", "")}HI123450*`);
       expect(text(v, "white")).toBe("HI");
       const star = tickerLetters(v).at(-1);
@@ -93,7 +93,7 @@ describe("LED scoreboard", () => {
   });
 
   test("facing the prize desk, it shows PRIZE COUNTER and INTERACT", () => {
-    const v = { tokens: 3, tickets: 1250, faced: "prizeCounter" as const, beatenHi: null };
+    const v = { tokens: 3, tickets: 1250, faced: "prizeCounter" as const, beatenHi: null, arcadeWinBanner: false };
     expect(text(v)).toBe("PRIZECOUNTERINTERACT");
     expect(text(v, "white")).toBe("INTERACT");
     onBoard(v);
@@ -141,5 +141,18 @@ describe("marquee bulbs", () => {
     expect(litOn(24)).toEqual(litOn(0));
     // Over one cycle every bulb is dark once.
     for (const b of tickerBulbs) expect([0, 8, 16].filter((t) => !litOn(t).includes(key(b)))).toHaveLength(1);
+  });
+
+  test("the arcade win banner, centred between gold stars, covers whatever else it would show", () => {
+    for (const faced of [null, "sweet", "prizeCounter"] as const) {
+      const v = { tokens: 3, tickets: 1250, faced, beatenHi: null, arcadeWinBanner: true };
+      expect(text(v)).toBe("*YOUBEATTHEARCADE*");
+      expect(text(v, "yellow")).toBe("**");
+      onBoard(v);
+      const xs = tickerLetters(v).map((g) => g.x);
+      const left = Math.min(...xs) - tickerFace.x;
+      const right = tickerFace.x + tickerFace.w - (Math.max(...xs) + 5);
+      expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
+    }
   });
 });

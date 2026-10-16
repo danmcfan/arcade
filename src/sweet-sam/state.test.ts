@@ -576,7 +576,56 @@ describe("clearing a level", () => {
     step(s, levelClearTicks + 1 + levelBannerTicks + 121);
     s.items = s.items.map(() => null);
     step(s, 2 + levelClearTicks);
-    expect([s.snapshot().state, s.snapshot().level]).toEqual(["START", 3]);
+    expect([s.snapshot().state, s.snapshot().level]).toEqual(["INTERMISSION", 3]);
+  });
+});
+
+/** A game on `level` whose last honey drop the bear has just eaten. */
+function clearedLevel(level: number): SweetSamSoftware {
+  const s = cleared();
+  s.level = level;
+  return s;
+}
+
+/** The states a cleared level passes through on its way to the next START. */
+function statesAfterClear(s: SweetSamSoftware, i: Input = NO_INPUT): string[] {
+  const seen: string[] = [];
+  for (let t = 0; t < 5000 && s.snapshot().state !== "START"; t++) {
+    step(s, 1, i);
+    const state = s.snapshot().state;
+    if (seen.at(-1) !== state) seen.push(state);
+  }
+  return seen;
+}
+
+describe("intermissions (#160)", () => {
+  test.each([2, 5, 9])("clearing level %i plays an intermission before the next level", (level) => {
+    const s = clearedLevel(level);
+    expect(statesAfterClear(s)).toEqual(["LEVELCLEAR", "INTERMISSION", "START"]);
+    expect(s.level).toBe(level + 1);
+  });
+
+  test.each([1, 3, 4, 6, 7, 8, 10, 13])("clearing level %i goes straight to the next level", (level) => {
+    expect(statesAfterClear(clearedLevel(level))).toEqual(["LEVELCLEAR", "START"]);
+  });
+
+  test("the action key skips the scene straight to the next level's START", () => {
+    const s = clearedLevel(2);
+    step(s, levelClearTicks + 1);
+    expect(s.snapshot().state).toBe("INTERMISSION");
+    step(s, 30);
+    step(s, 1, { ...NO_INPUT, space: true });
+    const snap = s.snapshot();
+    expect([snap.state, snap.level, snap.items, snap.levelBannerTicks]).toEqual(["START", 3, 244, levelBannerTicks]);
+  });
+
+  test("the scene plays the intermission music", () => {
+    const s = clearedLevel(5);
+    step(s, levelClearTicks);
+    sounds = [];
+    step(s);
+    expect(s.snapshot().state).toBe("INTERMISSION");
+    expect(sounds).toEqual(["rewind:sweetStart", "play:sweetStart"]);
   });
 });
 

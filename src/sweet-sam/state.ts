@@ -54,6 +54,7 @@ import {
 } from "./update.ts";
 import { itemsEaten, updateFlower } from "./flower.ts";
 import type { SweetSamSoftware } from "./software.ts";
+import { intermissionAfter } from "./intermission.ts";
 
 export type StateID = SweetSamStateId;
 
@@ -64,6 +65,7 @@ export const stateIDDeathWait: StateID = "DEATHWAIT";
 export const stateIDFinalDeathWait: StateID = "FINALDEATHWAIT";
 export const stateIDGameOver: StateID = "GAMEOVER";
 export const stateIDLevelClear: StateID = "LEVELCLEAR";
+export const stateIDIntermission: StateID = "INTERMISSION";
 
 /** Ticks everything stops while the maze flashes after a level is cleared. */
 export const levelClearTicks = framesPerSecond * 2;
@@ -455,10 +457,40 @@ export class LevelClearState implements State {
     s.flowersShown = 0;
     restartRound(s);
     s.levelBannerTicks = levelBannerTicks;
-    return stateIDStart;
+    return intermissionAfter(s.level - 1) === null ? stateIDStart : stateIDIntermission;
   }
 
   onExit(): void {}
+}
+
+/**
+ * A cutscene between two levels (#160), after levels 2, 5 and 9 as in
+ * Pac-Man. The next level is already set up; the scene plays over a black
+ * screen with its music, and the action key skips it.
+ */
+export class IntermissionState implements State {
+  private readonly s: SweetSamSoftware;
+
+  constructor(s: SweetSamSoftware) {
+    this.s = s;
+  }
+
+  onEnter(): void {
+    this.s.pauseTicks = this.s.intermission()?.ticks ?? 0;
+    playSound(sounds.sweetStart);
+  }
+
+  update(i: Input): StateID {
+    if (i.space || this.s.pauseTicks <= 0) {
+      return stateIDStart;
+    }
+    this.s.pauseTicks--;
+    return stateIDIntermission;
+  }
+
+  onExit(): void {
+    this.s.pauseTicks = 0;
+  }
 }
 
 /** Active when the player runs out of lives. */

@@ -1,5 +1,6 @@
 // The title menu (`bun run verify title-menu`): no high score and no key
-// hints, with the logo, tagline and menu centred on the screen. Frames of the
+// hints; the logo on the top margin, the menu in a panel that stays put with
+// or without Continue, the site address on the bottom margin. Frames of the
 // menu without and with a save (Continue), the New game check and the hub
 // pause menu, plus a live screenshot and a short video, go to
 // out/verify/title-menu/.
@@ -25,6 +26,8 @@ await verify("title-menu", (v) => {
   v.openHook();
   if (v.snapshot(isTitleSnapshot).canContinue) throw new Error("expected no save");
   v.frame("0-menu-new");
+  const newOnly = v.snapshot(isTitleSnapshot);
+  if (newOnly.items.join() !== "NEW GAME") throw new Error(`expected only New game: ${newOnly.items.join()}`);
   v.page.eval(`localStorage.setItem(${JSON.stringify(saveKey)}, ${JSON.stringify(storage[saveKey])}); "ok"`);
   v.openHook();
   let s = v.snapshot(isTitleSnapshot);

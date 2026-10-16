@@ -162,6 +162,10 @@ _Avoid_: target score, par
 A machine is beaten when the player's high score on it is above its house high score. Facing its cabinet, the scoreboard then shows its HI and a gold star, and its HI shows the player's score instead of the house's.
 _Avoid_: cleared, conquered
 
+**Arcade win**:
+The moment the player has beaten every machine's house high score. It happens once per save, and leaves the cake and the trophy in the hub.
+_Avoid_: victory, game complete, ending
+
 **Score**:
 Points earned inside one minigame run. The wallet keeps the player's high score for each machine.
 _Avoid_: tickets (they are separate)
@@ -173,7 +177,7 @@ What the page opens on: the logo plus Continue and New game.
 _Avoid_: main menu, start screen
 
 **Save**:
-What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, and the prizes they own) and where the player stood. Minigame progress is not part of it.
+What Continue restores: the wallet (the player's high score on each machine, the player's tokens and tickets, the prizes they own, and whether the player has had the arcade win) and where the player stood. Minigame progress is not part of it.
 _Avoid_: save file, progress, slot
 
 **Continue**:
