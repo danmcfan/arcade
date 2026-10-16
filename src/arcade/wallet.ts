@@ -15,9 +15,6 @@ export const startingTokens = 5;
 /** A high score per machine. */
 export type HighScores = Readonly<Record<SoftwareName, number>>;
 
-/** Every machine, in the order a high score per machine lists them. */
-const machines: readonly SoftwareName[] = ["sweetSam", "firefly", "brassMonkey"];
-
 /** A high score per machine, each one `of` its machine. */
 export function eachMachine(of: (machine: SoftwareName) => number): HighScores {
   return { sweetSam: of("sweetSam"), firefly: of("firefly"), brassMonkey: of("brassMonkey") };
@@ -140,7 +137,7 @@ export class Wallet {
    * this save has not had it yet. True only the once it happens.
    */
   winArcade(): boolean {
-    if (this._arcadeWon || !machines.every((m) => this.beaten(m))) return false;
+    if (this._arcadeWon || !Object.values(eachMachine((m) => (this.beaten(m) ? 1 : 0))).every(Boolean)) return false;
     this._arcadeWon = true;
     this._version++;
     return true;

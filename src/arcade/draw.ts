@@ -24,8 +24,6 @@ export interface ArcadeWinView {
   confettiAge: number | null;
 }
 
-const noArcadeWin: ArcadeWinView = { banner: false, confettiAge: null };
-
 /** Draw the hub; the scoreboard names `named` (see `faced`), or shows the counts when null. */
 export function draw(
   screen: Surface,
@@ -34,7 +32,7 @@ export function draw(
   buffer: number,
   debugMode: boolean,
   named: Faced | null,
-  win: ArcadeWinView = noArcadeWin,
+  win: ArcadeWinView,
 ): void {
   drawImage(screen, imageArcade, buffer, buffer);
   // A screen's frame covers its cabinet and the carpet its light falls on.

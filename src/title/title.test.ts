@@ -561,7 +561,7 @@ describe("prize counter inside the title scene", () => {
     again.dispose();
   });
 
-  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v4", () => {
+  test("a v2 save (from before prizes) Continues with no prizes, and is saved back as v5", () => {
     const store = memoryStore();
     const raw = { v: 2, highScore: 40, tokens: 2, tickets: 30, player: { x: 80, y: 92, dir: "DOWN" } };
     const parsed = parseSave(raw);

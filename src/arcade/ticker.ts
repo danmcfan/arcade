@@ -47,7 +47,7 @@ export interface TickerView {
   /** The faced cabinet's HI once it is beaten; null while it is not. */
   beatenHi: number | null;
   /** The arcade win banner is up: it covers everything else until the action key. */
-  arcadeWinBanner?: boolean;
+  arcadeWinBanner: boolean;
 }
 
 export const tokensLabel = "TOKENS";
@@ -94,7 +94,7 @@ const shown = (n: number): string => String(Math.min(maxShown, Math.max(0, Math.
 
 /** Every lit letter on the board for `v`. */
 export function tickerLetters(v: TickerView): TickerGlyph[] {
-  if (v.arcadeWinBanner === true) return arcadeWinBanner();
+  if (v.arcadeWinBanner) return arcadeWinBanner();
   if (v.faced === "prizeCounter") return named(prizeCounterLabel, "orange", interactPrompt);
   if (v.faced !== null) {
     const t = minigameTitled(v.faced).titleCard;
