@@ -441,12 +441,17 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:sweetDeath",
   "pause:sweetClear",
   "pause:spark",
-  "pause:hit",
+  "pause:mothHit",
+  "pause:waspHit",
+  "pause:owlHurt",
+  "pause:owlKill",
+  "pause:dive",
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
   "pause:stage",
   "pause:extraLife",
+  "pause:fireflyStart",
   "pause:monkeyWrench",
 ];
 

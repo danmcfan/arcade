@@ -17,6 +17,8 @@ export const scoreLabelsArt: readonly string[] = [
   "wwwwww..wwwww..ww..............................ww...ww..wwwwww...wwwww.ww...ww..........wwwww....wwww...wwwww..ww..www..wwwwww",
 ];
 export const scoreLabelsX = 26;
+/** Where the score and high-score dials sit, under the labels. */
+export const scoreDialsAt = { score: { x: 8, y: 8 }, high: { x: 8 * 11, y: 8 } };
 
 function labelLetter(x: number): readonly string[] {
   return scoreLabelsArt.map((row) => row.slice(x, x + 7));

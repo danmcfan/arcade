@@ -1,6 +1,7 @@
 // Port of the Go Sweet Sam minigame's software.go (docs/port-notes.md gives its
 // old Go name). Its constants live in ./constants.ts.
 
+import { scoreDialsAt } from "../ui/hudArt";
 import { newRelease, type Release } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
@@ -16,7 +17,7 @@ import { ParticleSystem } from "./particle.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { type DigitReel } from "../ui/digitReel.ts";
-import { ScoreDials } from "../ui/scoreDials.ts";
+import { ScoreDials } from "../ui/dials.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import {
   DeathWaitState,
@@ -81,10 +82,10 @@ export class SweetSamSoftware implements FixedViewport {
   levelBannerTicks = 0;
   /** Go `score` (renamed: `score()` is the Software method). */
   scoreValue = 0;
-  highScore: number;
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
   readonly advantages: Readonly<SweetSamAdvantages>;
 
+  /** The Score and high score on the maze's second tile row, under 1UP and HIGH SCORE. */
   readonly dials: ScoreDials;
 
   /** Advances every Sweet Sam update; food atlases cycle (tick/holdTicks % frameCount) per pellet row. */
@@ -102,7 +103,6 @@ export class SweetSamSoftware implements FixedViewport {
   scaredEatAwardNext = 0;
 
   constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages) {
-    this.highScore = highscore;
     this.advantages = advantages;
 
     this.startState = new StartState(this);
@@ -119,7 +119,7 @@ export class SweetSamSoftware implements FixedViewport {
     this.scoreValue = 0;
     this.items = newItems();
 
-    this.dials = new ScoreDials(highscore);
+    this.dials = new ScoreDials(highscore, scoreDialsAt);
 
     restartRound(this);
 
@@ -247,7 +247,7 @@ export class SweetSamSoftware implements FixedViewport {
       itemsHash: fnv1a32(present),
       score: this.scoreValue,
       lives: this.lives,
-      highScore: this.highScore,
+      highScore: this.dials.highScore,
       modeIndex: this.modeIndex,
       mode: this.modeCurrent,
       modeTicks: this.modeTicks,
@@ -270,7 +270,7 @@ export class SweetSamSoftware implements FixedViewport {
       ],
       particlesActive: this.particles.activeCount(),
       pelletAnimTick: this.pelletAnimTick,
-      dials: [...this.dials.score.map(dial), ...this.dials.high.map(dial)],
+      dials: [...this.dials.score.reels.map(dial), ...this.dials.high.reels.map(dial)],
       level: this.level,
       levelBannerTicks: this.levelBannerTicks,
       mazeFlash: this.mazeFlash(),

@@ -232,7 +232,7 @@ export interface SweetSamSnapshot {
   score: number;
   /** `SweetSamSoftware.lives`. */
   lives: number;
-  /** `SweetSamSoftware.highScore`. */
+  /** `SweetSamSoftware.dials.highScore`. */
   highScore: number;
   /** `SweetSamSoftware.modeIndex`. */
   modeIndex: number;
@@ -379,6 +379,20 @@ export interface BrassMonkeyHazardSnapshot {
   y: number;
   dir: -1 | 1;
   footing: "ground" | "air" | "climb";
+  /** A hot gear lights the furnace when it reaches it. */
+  hot: boolean;
+}
+
+/** A collected bolt's points, shown where it was. */
+export interface BrassMonkeyPopupSnapshot {
+  /** Across, where the bolt was. */
+  x: number;
+  /** Down, where the bolt was. */
+  y: number;
+  /** The score shown. */
+  points: number;
+  /** Ticks left before it fades. */
+  ticks: number;
 }
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
@@ -410,6 +424,10 @@ export interface BrassMonkeySnapshot {
   wrenches: boolean[];
   /** The smashes whose points are showing, where each hazard was. */
   smashes: BrassMonkeySmashSnapshot[];
+  /** Points floating where bolts were just collected, with the ticks each has left. */
+  popups: BrassMonkeyPopupSnapshot[];
+  /** A hot gear has reached the floor's furnace since the floor (re)started. */
+  furnaceLit: boolean;
   gearTimer: number;
   emberTimer: number;
 }

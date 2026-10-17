@@ -85,7 +85,7 @@ describe("Sound (D4: web.go semantics)", () => {
 
   test("once ready, calls reach the element", () => {
     const fake = new FakeAudio(false);
-    const s = new Sound("hit", "hit.wav", false);
+    const s = new Sound("spark", "spark.wav", false);
     s.element = asElement(fake);
     s.ready = true;
     s.rewind();

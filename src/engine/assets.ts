@@ -82,8 +82,10 @@ export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
-/** Two turns, each 12×12. */
+/** Two turns, then the same two hot, each 12×12. */
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
+/** The furnace, each 16×24: cold, then lit with two flickers of flame. */
+export const imageFurnace: Sprite = whole(brassMonkeyImages.furnace);
 /** Two flickers and their mirrors, each 12×12. */
 export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
 /** At rest, then three glint frames, each 10×14. */
