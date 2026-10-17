@@ -268,6 +268,19 @@ export class Run {
     return Math.min(gear, ember) <= t.throwTicks;
   }
 
+  /** Test hook only: start stage `stage` afresh, counting every loop's floors from the first floor of loop 0. */
+  jumpTo(stage: number): void {
+    let loop = 0;
+    let rest = stage;
+    while (rest >= floorsFor(loop).length) rest -= floorsFor(loop++).length;
+    const floor = floorsFor(loop)[rest];
+    if (floor === undefined) throw new Error(`no stage ${stage}`);
+    this.loop = loop;
+    this.floor = floors.indexOf(floor);
+    this.nextStage = rest + 1;
+    this.startFloor();
+  }
+
   /** The floor starts again: the monkey at the bottom, no hazards, every bolt back, the full bonus. */
   startFloor(): void {
     const floor = this.currentFloor();

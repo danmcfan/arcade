@@ -213,6 +213,10 @@ export class BrassMonkeySoftware implements FixedViewport {
     return this.run.phase === "over";
   }
 
+  jumpTo(stage: number): void {
+    this.run.jumpTo(stage);
+  }
+
   score(): number {
     return this.run.score;
   }

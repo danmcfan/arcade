@@ -500,6 +500,19 @@ describe("the escape and the next loop", () => {
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 4]);
   });
 
+  test("jumping to stage n starts the nth floor of the plans run end to end", () => {
+    const { run } = quiet();
+    run.jumpTo(1);
+    expect([run.phase, run.floor, run.loop]).toEqual(["play", 3, 0]);
+    // Loop 0 has 2 floors, loop 1 has 3: stage 6 is loop 2's second floor.
+    run.jumpTo(6);
+    expect([run.phase, run.floor, run.loop]).toEqual(["play", 1, 2]);
+    run.phase = "clear";
+    run.phaseTicks = 1;
+    run.update(NO_INPUT);
+    expect(run.floor).toBe(2);
+  });
+
   test("after the rivet floor the escaped scene plays, then the girder floor again, harder", () => {
     const { run, sounds } = quiet({ floor: 3 });
     run.rivets = run.rivets.map((_, n) => n !== 0);
