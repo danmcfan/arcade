@@ -449,6 +449,10 @@ describe("extra lives", () => {
     expect([f.score(), f.lives]).toEqual([20_000, startLives]);
     f.update(NO_INPUT);
     expect(f.lives).toBe(startLives + 1);
+    f.scoreTo(19_990);
+    f.scoreTo(20_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
   });
 
   const moth = points("moth", false);
