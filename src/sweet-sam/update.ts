@@ -48,7 +48,7 @@ export function update(s: SweetSamSoftware, i: Input): void {
   s.stateMachine.update(i);
   tickBonusEatPopups(s);
   tickFlowerPopup(s);
-  s.dials.tick(s.scoreValue, s.highScore);
+  s.dials.tick(s.scoreValue);
 }
 
 export function winner(s: SweetSamSoftware): boolean {

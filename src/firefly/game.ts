@@ -14,7 +14,7 @@ import type { FixedViewport } from "../game/software.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
-import { ScoreDials } from "../ui/scoreDials.ts";
+import { ScoreDials } from "../ui/dials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
@@ -238,14 +238,10 @@ export class FireflySoftware implements FixedViewport {
   /** What the player's prizes change in this run (./advantages.ts). */
   readonly advantages: Readonly<FireflyAdvantages>;
 
-  /** The hub high score this run is chasing; HI shows it until the score passes it. */
-  readonly highScore: number;
-
   constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
-    this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
-    this.dials = new ScoreDials(highScore);
+    this.dials = new ScoreDials(highScore, { score: { x: 8, y: 8 }, high: { x: 8 * 11, y: 8 } });
   }
 
   stage = 1;
@@ -273,7 +269,7 @@ export class FireflySoftware implements FixedViewport {
   formationPhase: FormationPhase = "sway";
   /** `ticks` when the formation began to breathe. */
   breatheFrom = 0;
-  /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
+  /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
   update(i: Input): void {
@@ -298,7 +294,7 @@ export class FireflySoftware implements FixedViewport {
     // With no lives left the run ends on this stage, even if the field is clear.
     if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
 
-    this.dials.tick(this.score(), this.highScore);
+    this.dials.tick(this.score());
   }
 
   /** The formation's x offset this tick: 0 once it breathes. */
