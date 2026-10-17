@@ -189,7 +189,7 @@ describe("respawn", () => {
     f.stage = 2;
     run(f, stageIntroTicks + 1);
     const arriving = (): boolean =>
-      f.enemies.some((e) => e.hp > 0 && (e.state === "waiting" || e.state === "entering"));
+      f.enemies.some((e) => e.deadFrames === 0 && e.hp > 0 && (e.state === "waiting" || e.state === "entering"));
     expect(arriving()).toBe(true);
     f.loseLife();
     let t = 0;
@@ -200,6 +200,18 @@ describe("respawn", () => {
     }
     expect(t).toBeGreaterThan(respawnTicks);
     expect(t).toBeLessThan(respawnTicks + respawnHoldTicks);
+  });
+
+  test("a life lost on a Challenging Stage is not held for its fly-through", () => {
+    const f = new FireflySoftware();
+    f.stage = 2;
+    f.enemies = [];
+    f.update(NO_INPUT);
+    expect(f.challenge).not.toBeNull();
+    run(f, stageIntroTicks + 1);
+    f.loseLife();
+    run(f, respawnTicks);
+    expect(f.respawn).toBe(0);
   });
 
   test("an enemy that never gets home holds READY only for respawnHoldTicks", () => {

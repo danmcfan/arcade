@@ -952,10 +952,13 @@ export class FireflySoftware implements FixedViewport {
   private countDownRespawn(): void {
     if (this.respawn === 0) return;
     // As in Galaga, the new firefly waits until every enemy flying in or diving is in its slot,
-    // except that a stage still on its STAGE n intro has the firefly back before it flies in.
+    // except that a stage still on its STAGE n intro has the firefly back before it flies in (a
+    // stage cleared by the death opens a hit effect later, well inside respawnTicks), and a
+    // Challenging Stage, whose enemies never take a slot, waits only for its divers.
     // Capped, so an enemy that never gets home cannot hold READY forever.
-    const settling = this.stageTick > stageIntroTicks && this.enemies.some(unsettled);
-    if (this.respawn === 1 && this.lives > 0 && settling && this.respawnHeld < respawnHoldTicks) {
+    const enemiesUnsettled =
+      this.stageTick > stageIntroTicks && this.challenge === null && this.enemies.some(unsettled);
+    if (this.respawn === 1 && this.lives > 0 && enemiesUnsettled && this.respawnHeld < respawnHoldTicks) {
       this.respawnHeld++;
       return;
     }
