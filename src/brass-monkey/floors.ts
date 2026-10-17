@@ -293,18 +293,19 @@ export const rivetFloor: Floor = {
 /** The floors in the order they are played. */
 export const floors: readonly Floor[] = [girderFloor, conveyorFloor, elevatorFloor, rivetFloor];
 
+/** Each loop's floors in order, as Donkey Kong's international board order; the last repeats. */
+const plans: readonly (readonly Floor[])[] = [
+  [girderFloor, rivetFloor],
+  [girderFloor, elevatorFloor, rivetFloor],
+  [girderFloor, conveyorFloor, elevatorFloor, rivetFloor],
+  [girderFloor, conveyorFloor, girderFloor, elevatorFloor, rivetFloor],
+  [girderFloor, conveyorFloor, girderFloor, elevatorFloor, girderFloor, rivetFloor],
+];
+
 /**
- * The floors loop `loop` plays, in order, as Donkey Kong's international board
- * order: 25-100, then 25-75-100, 25-50-75-100, 25-50-25-75-100, and
- * 25-50-25-75-25-100 from the fifth loop on.
+ * The floors loop `loop` plays, in order: 25-100, then 25-75-100,
+ * 25-50-75-100, 25-50-25-75-100, and 25-50-25-75-25-100 from the fifth loop on.
  */
 export function floorsFor(loop: number): readonly Floor[] {
-  const plans: readonly (readonly Floor[])[] = [
-    [girderFloor, rivetFloor],
-    [girderFloor, elevatorFloor, rivetFloor],
-    [girderFloor, conveyorFloor, elevatorFloor, rivetFloor],
-    [girderFloor, conveyorFloor, girderFloor, elevatorFloor, rivetFloor],
-    [girderFloor, conveyorFloor, girderFloor, elevatorFloor, girderFloor, rivetFloor],
-  ];
   return plans[Math.min(loop, plans.length - 1)] ?? floors;
 }
