@@ -40,10 +40,10 @@ function makeGenerator(seed: number): (s: SweetSamSoftware) => Input {
       if (k === 4) cur = [rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0, rnd() < 0.5 ? 1 : 0];
     }
     // "greedy": steer towards the nearest remaining item most of the time.
-    const p = s.player;
+    const p = s.level.player();
     let best: { x: number; y: number } | null = null;
     let bd = Infinity;
-    for (const it of s.items) {
+    for (const it of s.level.items()) {
       if (!it) continue;
       const d = Math.abs(it.x - p.x) + Math.abs(it.y - p.y);
       if (d < bd) {

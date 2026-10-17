@@ -4,8 +4,12 @@ import type { Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
 import { imageCabinet } from "../engine/assets.ts";
 import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
+import { NO_INPUT } from "../engine/input.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { particleColorCyan } from "./particle.ts";
+import { draw as drawScene, type SweetSamScene } from "./draw.ts";
+import { Entity } from "./entity.ts";
+import type { LevelSetup, LevelView } from "./level.ts";
 
 type Op = [string, ...unknown[]];
 
@@ -52,10 +56,27 @@ afterAll(() => {
   Surface.offscreen = realOffscreen;
 });
 
-function render(s: SweetSamSoftware): Op[] {
+function render(s: SweetSamScene): Op[] {
   const screen = new Recorder(240, 304, "screen");
-  s.draw(screen, 0);
+  drawScene(s, screen);
   return screen.ops;
+}
+
+/** `s` with some of its Level's queries answering `answers` instead. */
+function showing(s: SweetSamSoftware, answers: Partial<LevelView>): SweetSamScene {
+  const level = new Proxy(s.level, {
+    get: (target, key: keyof LevelView): unknown => answers[key] ?? target[key].bind(target),
+  });
+  return { level, camera: s.camera, particles: s.particles, dials: s.dials };
+}
+
+/** A copy of `e` with `fields` changed, as a query could answer it. */
+function changed(e: Readonly<Entity>, fields: Partial<Entity>): Entity {
+  return Object.assign(new Entity(), e, fields);
+}
+
+function from(setup: LevelSetup): SweetSamSoftware {
+  return new SweetSamSoftware(0, undefined, setup);
 }
 
 /** The flower draws at the bonus flower's spot below the bee home (the level counter's are lower). */
@@ -117,10 +138,8 @@ describe("SweetSamSoftware.draw", () => {
   });
 
   test("a sleepy bee in the home is drawn in its sleepy rows", () => {
-    const s = new SweetSamSoftware(0);
-    const teal = s.enemies[2];
-    if (teal?.home !== true) throw new Error("teal bee in the home");
-    teal.blueFrames = 10;
+    const s = from({ bees: [undefined, undefined, { blueFrames: 10 }] });
+    if (s.level.enemies()[2]?.home !== true) throw new Error("teal bee in the home");
     // teal RIGHT: row 0, +2 asleep; teal's sheet starts 192 down bees.png
     expect(
       render(s)
@@ -131,14 +150,11 @@ describe("SweetSamSoftware.draw", () => {
 
   test("an eaten bee is drawn as its eyes sprite, the frame facing its way, centred on it", () => {
     const s = new SweetSamSoftware(0);
-    const red = s.enemies[0];
+    const [red, ...others] = s.level.enemies();
     if (red === undefined) throw new Error("red bee");
-    red.eyes = true;
-    red.x = 100;
-    red.y = 116;
-    const eyeDraws = (direction: typeof red.direction): Op[] => {
-      red.direction = direction;
-      const ops = render(s);
+    const eyeDraws = (direction: Entity["direction"]): Op[] => {
+      const eyes = changed(red, { eyes: true, x: 100, y: 116, direction });
+      const ops = render(showing(s, { enemies: () => [eyes, ...others] }));
       expect(ops.filter((o) => name(o) === "draw:bees.png")).toHaveLength(3);
       return ops.filter((o) => name(o) === "draw:bee-eyes.png");
     };
@@ -151,30 +167,30 @@ describe("SweetSamSoftware.draw", () => {
 
   test("shake offsets the playfield, not the cabinet; sleepy/waking rows; popups; particles", () => {
     const s = new SweetSamSoftware(0);
-    s.startTicks = 0;
-    s.player.hidden = false;
-    s.player.frame = 2.7;
-    s.player.direction = "LEFT";
     s.camera.shakeOffsetX = 1.25;
     s.camera.shakeOffsetY = -0.5;
-    s.items = s.items.map(() => null);
-    s.lives = 1;
-    s.pelletAnimTick = 47; // frame (47/15)%4 = 3 (no items to show it here)
-    const red = s.enemies[0];
-    const pink = s.enemies[1];
+    const [red, pink, ...others] = s.level.enemies();
     if (!red || !pink) throw new Error("bees");
-    red.blueFrames = 10;
-    red.direction = "UP";
-    pink.blueFrames = 10;
-    pink.flash = true;
-    s.bonusEatPopups.push({ x: 100, y: 120, frameIdx: 2, ticksRemain: 10 });
+    const scene = showing(s, {
+      startTicks: () => 0,
+      player: () => changed(s.level.player(), { hidden: false, frame: 2.7, direction: "LEFT" }),
+      items: () => s.level.items().map(() => null),
+      lives: () => 1,
+      pelletAnimTick: () => 47, // frame (47/15)%4 = 3 (no items to show it here)
+      enemies: () => [
+        changed(red, { blueFrames: 10, direction: "UP" }),
+        changed(pink, { blueFrames: 10, flash: true }),
+        ...others,
+      ],
+      popups: () => [{ x: 100, y: 120, frameIdx: 2, ticksRemain: 10 }],
+    });
     s.particles.spawnBurst(50, 60, particleColorCyan, 1);
     const p = s.particles.pool[0];
     if (!p) throw new Error("particle");
     p.lifeTicks = 7;
     p.maxLifeTicks = 40;
 
-    const ops = render(s);
+    const ops = render(scene);
     expect(ops[0]).toEqual(["draw", "cabinet.png", 0, 0, 240, 304, 0, 0]);
     expect(ops[1]).toEqual(["draw", "maze.png", 0, 0, 224, 288, 9.25, 7.5]);
     const rest = ops.slice(2);
@@ -206,13 +222,10 @@ describe("SweetSamSoftware.draw", () => {
   });
 
   test("the bonus flower stands below the bee home; its points show in the pixel font when eaten", () => {
-    const s = new SweetSamSoftware(0);
-    s.flowerTicks = 100;
+    const s = from({ flowerTicks: 100 });
     let ops = render(s);
     expect(atFlower(ops)).toEqual([["draw", "flower.png", 0, 0, 16, 16, 112 - 8 + 8, 164 - 8 + 8]]);
-    s.flowerTicks = 0;
-    s.flowerPopup = { points: 300, ticks: 50 };
-    ops = render(s);
+    ops = render(showing(s, { flowerShowing: () => false, flowerPopup: () => ({ points: 300, ticks: 50 }) }));
     expect(atFlower(ops)).toEqual([]);
     // "300" after everything but the particles: three glyphs centred on the flower.
     const popup = ops.slice(-3);
@@ -223,8 +236,7 @@ describe("SweetSamSoftware.draw", () => {
   });
 
   test("each level shows its flower kind (Pac-Man's fruit table); the last holds from level 13 on", () => {
-    const s = new SweetSamSoftware(0);
-    s.flowerTicks = 100;
+    const s = from({ flowerTicks: 100 });
     for (const [level, frame] of [
       [1, 0],
       [2, 1],
@@ -236,44 +248,38 @@ describe("SweetSamSoftware.draw", () => {
       [13, 7],
       [40, 7],
     ] as const) {
-      s.level = level;
-      expect(flowerFrames(render(s)).at(-1)).toBe(frame);
+      expect(flowerFrames(render(showing(s, { levelNumber: () => level }))).at(-1)).toBe(frame);
     }
   });
 
   test("the level counter is a row of the last seven levels' flowers, ending at x 208", () => {
-    const s = new SweetSamSoftware(0);
-    s.level = 3;
-    let ops = render(s).filter((o) => name(o) === "draw:flower.png");
+    let ops = render(from({ level: 3 })).filter((o) => name(o) === "draw:flower.png");
     expect(flowerFrames(ops)).toEqual([0, 1, 2]);
     expect(ops.map((o) => o[6])).toEqual([160 + 8, 176 + 8, 192 + 8]);
-    s.level = 12;
-    ops = render(s).filter((o) => name(o) === "draw:flower.png");
+    ops = render(from({ level: 12 })).filter((o) => name(o) === "draw:flower.png");
     expect(flowerFrames(ops)).toEqual([3, 4, 4, 5, 5, 6, 6]);
     expect(ops.at(-1)?.[6]).toBe(192 + 8);
   });
 
   test("LEVEL n shows in place of READY, then READY", () => {
     const s = new SweetSamSoftware(0);
-    s.level = 2;
-    s.levelBannerTicks = 10;
-    let ops = render(s);
+    let ops = render(showing(s, { levelNumber: () => 2, levelBannerTicks: () => 10 }));
     expect(ops.filter((o) => name(o) === "draw:ready.png")).toEqual([]);
     expect(ops.filter((o) => name(o) === "draw:font.png").length).toBe(7); // "LEVEL 2" without the space
-    s.levelBannerTicks = 0;
-    ops = render(s);
+    ops = render(showing(s, { levelNumber: () => 2 }));
     expect(ops.filter((o) => name(o) === "draw:ready.png").length).toBe(6);
   });
 
   test("clearing a level: the maze flashes and the bees leave", () => {
-    const s = new SweetSamSoftware(0);
-    s.stateMachine.changeState("LEVELCLEAR");
+    const s = from({ items: () => null });
+    s.update(NO_INPUT);
+    expect(s.snapshot().state).toBe("LEVELCLEAR");
     const mazes: string[] = [];
     for (let t = 0; t < 30; t++) {
       const ops = render(s);
       mazes.push(String(ops[1]?.[1]));
       expect(ops.filter((o) => name(o) === "draw:bees.png")).toEqual([]);
-      s.update({ up: false, down: false, left: false, right: false, space: false, escape: false, shiftP: false });
+      s.update(NO_INPUT);
     }
     expect(mazes.slice(0, 12).every((m) => m === "maze.png")).toBe(true);
     expect(mazes.slice(12, 24).every((m) => m === "maze-flash.png")).toBe(true);
@@ -281,18 +287,17 @@ describe("SweetSamSoftware.draw", () => {
   });
 
   test("a lost life: the bear's death frames from bear.png's last row, where it was caught", () => {
-    const s = new SweetSamSoftware(0);
-    s.stateMachine.changeState("DEATHWAIT");
-    s.player.hidden = true;
+    const s = from({ bees: [{ onPlayer: true }] });
+    s.update(NO_INPUT);
+    expect(s.snapshot().state).toBe("DEATHWAIT");
     const bear = (): Op[] => render(s).filter((o) => name(o) === "draw:bear.png" && o[3] === 64);
     expect(bear()).toEqual([["draw", "bear.png", 0, 64, 16, 16, 112 - 8 + 8, 212 - 8 + 8]]);
-    s.pauseTicks = 0;
+    for (let t = 0; t < 120; t++) s.update(NO_INPUT);
     expect(bear()).toEqual([["draw", "bear.png", 48, 64, 16, 16, 112 - 8 + 8, 212 - 8 + 8]]);
   });
 
   test("rolling digit: old glyph scrolls up, new glyph rises from below inside the cell", () => {
-    const s = new SweetSamSoftware(0);
-    s.scoreValue = 10;
+    const s = from({ score: 10 });
     const reel = s.dials.score[4];
     reel.syncTarget(1);
     reel.stepFrame(); // t = 1/18

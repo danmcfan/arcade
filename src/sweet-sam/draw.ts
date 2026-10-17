@@ -34,12 +34,23 @@ import {
   type Tile,
 } from "./entity.ts";
 import { findTarget, startTicks } from "./update.ts";
-import type { SweetSamSoftware } from "./software.ts";
+import type { LevelView } from "./level.ts";
+import type { CameraSystem } from "./camera.ts";
+import type { ParticleSystem } from "./particle.ts";
+import type { ScoreDials } from "../ui/scoreDials.ts";
+
+/** What a frame shows: the Level, read through its queries, and the software's camera, particles and dials. */
+export interface SweetSamScene {
+  readonly level: LevelView;
+  readonly camera: CameraSystem;
+  readonly particles: ParticleSystem;
+  readonly dials: ScoreDials;
+}
 
 const debug = false;
 
 /** Go `Draw`; the order is exactly Go's. The cabinet is drawn unshaken. */
-export function draw(s: SweetSamSoftware, screen: Surface): void {
+export function draw(s: SweetSamScene, screen: Surface): void {
   screen.draw(imageCabinet, 0, 0);
   drawOnScreen(screen, () => {
     drawScreen(s, screen);
@@ -47,39 +58,41 @@ export function draw(s: SweetSamSoftware, screen: Surface): void {
 }
 
 /** Everything inside the cabinet's screen, shaken by the camera. */
-function drawScreen(s: SweetSamSoftware, screen: Surface): void {
+function drawScreen(s: SweetSamScene, screen: Surface): void {
   const [ox, oy] = s.camera.cameraOffset();
   const bufX = cabinetInsetLeft + ox;
   const bufY = cabinetInsetTop + oy;
-  if (s.intermission() !== null) {
+  const l = s.level;
+  if (l.intermission() !== null) {
     drawIntermission(s, screen, bufX, bufY);
     return;
   }
-  drawBackground(s, screen, bufX, bufY);
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
-  drawLives(s, screen, bufX, bufY);
-  drawLevel(s, screen, bufX, bufY);
-  drawReady(s, screen, bufX, bufY);
-  drawLevelBanner(s, screen, bufX, bufY);
-  drawItems(s, screen, bufX, bufY);
-  drawFlower(s, screen, bufX, bufY);
-  drawPlayer(s, screen, bufX, bufY);
-  drawTiles(s, screen, bufX, bufY, debug);
-  drawLines(s, screen, bufX, bufY, debug);
-  drawEnemies(s, screen, bufX, bufY);
-  drawBonusEatIndicators(s, screen, bufX, bufY);
-  drawFlowerPopup(s, screen, bufX, bufY);
+  drawBackground(l, screen, bufX, bufY);
+  s.dials.draw(screen, bufX, bufY, l.score(), l.highScore());
+  drawLives(l, screen, bufX, bufY);
+  drawLevel(l, screen, bufX, bufY);
+  drawReady(l, screen, bufX, bufY);
+  drawLevelBanner(l, screen, bufX, bufY);
+  drawItems(l, screen, bufX, bufY);
+  drawFlower(l, screen, bufX, bufY);
+  drawPlayer(l, screen, bufX, bufY);
+  drawTiles(l, screen, bufX, bufY, debug);
+  drawLines(l, screen, bufX, bufY, debug);
+  drawEnemies(l, screen, bufX, bufY);
+  drawBonusEatIndicators(l.popups(), screen, bufX, bufY);
+  drawFlowerPopup(l, screen, bufX, bufY);
   s.particles.draw(screen, bufX, bufY);
-  drawMode(s, screen, bufX, bufY, debug);
+  drawMode(l, screen, bufX, bufY, debug);
 }
 
 /** A cutscene (#160): its actors over a black screen, under the score and lives. */
-function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const poses = s.intermissionPoses();
+function drawIntermission(s: SweetSamScene, screen: Surface, bufX: number, bufY: number): void {
+  const l = s.level;
+  const poses = l.intermissionPoses();
   if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
-  drawLevel(s, screen, bufX, bufY);
+  s.dials.draw(screen, bufX, bufY, l.score(), l.highScore());
+  drawLevel(l, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
     for (const pose of poses) {
       drawPose(pose, screen, bufX, bufY);
@@ -97,12 +110,12 @@ function drawPose(p: IntermissionPose, screen: Surface, bufX: number, bufY: numb
   screen.draw(frame, p.x - half + bufX, intermissionY - half + bufY, { scale: p.scale });
 }
 
-function drawBackground(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  screen.draw(s.mazeFlash() ? imageSweetSamMazeFlash : imageSweetSamMaze, bufX, bufY);
+function drawBackground(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  screen.draw(l.mazeFlash() ? imageSweetSamMazeFlash : imageSweetSamMaze, bufX, bufY);
 }
 
-function drawLives(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  for (let i = 0; i < s.lives - 1; i++) {
+function drawLives(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  for (let i = 0; i < l.lives() - 1; i++) {
     // The first frame of bear.png: the bear facing down, standing.
     const spriteFrame = sub(imageBear, 0, 0, frameSize, frameSize);
 
@@ -120,10 +133,10 @@ export function flowerSprite(level: number): Sprite {
   return sub(imageFlower, x, 0, x + frameSize, frameSize);
 }
 
-function drawLevel(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const first = Math.max(1, s.level - levelCounterLength + 1);
-  for (let level = first; level <= s.level; level++) {
-    const x = levelCounterRight - (s.level - level + 1) * frameSize;
+function drawLevel(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  const first = Math.max(1, l.levelNumber() - levelCounterLength + 1);
+  for (let level = first; level <= l.levelNumber(); level++) {
+    const x = levelCounterRight - (l.levelNumber() - level + 1) * frameSize;
     screen.draw(flowerSprite(level), x + bufX, mazeHeight - frameSize + bufY);
   }
 }
@@ -133,26 +146,21 @@ const readyCentreX = 8 * 14;
 const readyTop = 8 * 20 + 1;
 
 /** "LEVEL n" before READY on every level after the first. */
-function drawLevelBanner(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.levelBannerTicks <= 0) return;
-  drawTextCentered(screen, `LEVEL ${s.level}`, readyCentreX + bufX, readyTop + bufY, "yellow");
+function drawLevelBanner(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  if (l.levelBannerTicks() <= 0) return;
+  drawTextCentered(screen, `LEVEL ${l.levelNumber()}`, readyCentreX + bufX, readyTop + bufY, "yellow");
 }
 
-function drawFlower(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.flowerTicks <= 0) return;
-  screen.draw(flowerSprite(s.level), flowerX - frameSize / 2 + bufX, flowerY - frameSize / 2 + bufY);
+function drawFlower(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  if (!l.flowerShowing()) return;
+  screen.draw(flowerSprite(l.levelNumber()), flowerX - frameSize / 2 + bufX, flowerY - frameSize / 2 + bufY);
 }
 
 /** An eaten flower's points, in the pixel font where it stood. */
-function drawFlowerPopup(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.flowerPopup === null) return;
-  drawTextCentered(
-    screen,
-    String(s.flowerPopup.points),
-    flowerX + bufX,
-    flowerY - Math.trunc(textHeight / 2) + bufY,
-    "white",
-  );
+function drawFlowerPopup(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  const popup = l.flowerPopup();
+  if (popup === null) return;
+  drawTextCentered(screen, String(popup.points), flowerX + bufX, flowerY - Math.trunc(textHeight / 2) + bufY, "white");
 }
 
 /** ImageReady ("READY!") strips: 48×8 → six 8×8 glyphs. */
@@ -164,8 +172,8 @@ export const readyWaveTimeRad = 0.14;
 /** Phase step between adjacent glyphs (radians). */
 export const readyWaveGlyphPhaseRad = 1.05;
 
-function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.startTicks <= 0 || s.levelBannerTicks > 0) {
+function drawReady(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  if (l.startTicks() <= 0 || l.levelBannerTicks() > 0) {
     return;
   }
 
@@ -179,7 +187,7 @@ function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   const baseY = readyTop + bufY;
 
   // startTicks counts down during START; more elapsed ⇒ larger phase progression.
-  const intoReady = startTicks - s.startTicks;
+  const intoReady = startTicks - l.startTicks();
 
   for (let i = 0; i < count; i++) {
     const rx = i * readyGlyphWidth;
@@ -192,9 +200,9 @@ function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-function drawItems(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const pelletFrame = Math.trunc(s.pelletAnimTick / pelletAnimHoldTicks) % pelletAnimFrameCount;
-  for (const item of s.items) {
+function drawItems(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  const pelletFrame = Math.trunc(l.pelletAnimTick() / pelletAnimHoldTicks) % pelletAnimFrameCount;
+  for (const item of l.items()) {
     if (item === null) {
       continue;
     }
@@ -219,42 +227,43 @@ function drawFoodAtlas(e: Entity, screen: Surface, bufX: number, bufY: number, a
   screen.draw(frameRect, goRound(bufX + e.x - e.width / 2), goRound(bufY + e.y - e.height / 2));
 }
 
-function drawPlayer(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  const death = s.deathFrame();
+function drawPlayer(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
+  const death = l.deathFrame();
+  const player = l.player();
   if (death !== null) {
     const sx = death * frameSize;
     const sy = bearDeathRow * frameSize;
     const frame = sub(imageBear, sx, sy, sx + frameSize, sy + frameSize);
-    screen.draw(frame, s.player.x - frameSize / 2 + bufX, s.player.y - frameSize / 2 + bufY);
+    screen.draw(frame, player.x - frameSize / 2 + bufX, player.y - frameSize / 2 + bufY);
     return;
   }
 
-  if (s.player.hidden) {
+  if (player.hidden) {
     return;
   }
 
-  drawEntity(s.player, screen, bufX, bufY);
+  drawEntity(player, screen, bufX, bufY);
 }
 
-function drawTiles(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number, dbg: boolean): void {
+function drawTiles(l: LevelView, screen: Surface, bufX: number, bufY: number, dbg: boolean): void {
   if (!dbg) {
     return;
   }
 
-  for (const e of s.enemies) {
+  for (const e of l.enemies()) {
     const c = e.color ?? { r: 0, g: 0, b: 0, a: 0 };
     drawTile(screen, bufX, bufY, pointToTile(e.x, e.y), c);
-    drawTile(screen, bufX, bufY, findTarget(e, s.enemies, s.player, s.modeCurrent), c);
+    drawTile(screen, bufX, bufY, findTarget(e, l.enemies(), l.player(), l.mode().current), c);
   }
 }
 
-function drawLines(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number, dbg: boolean): void {
+function drawLines(l: LevelView, screen: Surface, bufX: number, bufY: number, dbg: boolean): void {
   if (!dbg) {
     return;
   }
 
-  for (const e of s.enemies) {
-    const target = findTarget(e, s.enemies, s.player, s.modeCurrent);
+  for (const e of l.enemies()) {
+    const target = findTarget(e, l.enemies(), l.player(), l.mode().current);
 
     const sx = Math.fround(e.x + bufX);
     const sy = Math.fround(e.y + bufY);
@@ -268,12 +277,12 @@ function drawLines(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-function drawEnemies(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
+function drawEnemies(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
   // The bees leave the maze to the bear while it flashes.
-  if (s.stateMachine.currentId() === stateIDLevelClear) {
+  if (l.state() === stateIDLevelClear) {
     return;
   }
-  for (const enemy of s.enemies) {
+  for (const enemy of l.enemies()) {
     if (enemy.eyes) {
       drawEyes(enemy, screen, bufX, bufY);
     } else {
@@ -301,13 +310,14 @@ function drawEyes(e: Entity, screen: Surface, bufX: number, bufY: number): void 
  * `debug` is a compile-time false, so this never draws; the text is built for
  * reference only (see docs/port-notes.md).
  */
-function drawMode(s: SweetSamSoftware, _screen: Surface, _bufX: number, _bufY: number, dbg: boolean): string {
+function drawMode(l: LevelView, _screen: Surface, _bufX: number, _bufY: number, dbg: boolean): string {
   if (!dbg) {
     return "";
   }
 
   let mode = "";
-  switch (s.modeCurrent) {
+  const { index, current, ticks } = l.mode();
+  switch (current) {
     case 0:
       mode = "Scatter";
       break;
@@ -315,7 +325,7 @@ function drawMode(s: SweetSamSoftware, _screen: Surface, _bufX: number, _bufY: n
       mode = "Chase";
       break;
   }
-  return `[${s.modeIndex}] ${mode}: ${s.modeTicks}`;
+  return `[${index}] ${mode}: ${ticks}`;
 }
 
 function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): void {
