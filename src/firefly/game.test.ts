@@ -158,6 +158,62 @@ describe("stage start", () => {
   });
 });
 
+/** A shot as it left its enemy: where it is, the firefly's x and the respawn count then. */
+interface FiredShot {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  px: number;
+  respawn: number;
+}
+
+/** Runs stage `stage`'s fly-in to the end, holding still; returns each new shot as fired, with the firefly's x then. */
+function flyIn(seed: number, stage = 1, onTick?: (f: FireflySoftware) => void): FiredShot[] {
+  rng.seed(seed);
+  const f = new FireflySoftware();
+  if (stage > 1) f.jumpTo(stage);
+  const seen = new Set<object>();
+  const fired: FiredShot[] = [];
+  let t = 0;
+  while (f.formationPhase !== "breathe" && t++ < 3000) {
+    onTick?.(f);
+    const respawn = f.respawn;
+    f.update(NO_INPUT);
+    for (const s of f.shots) {
+      if (seen.has(s)) continue;
+      seen.add(s);
+      fired.push({ ...s, px: f.player.x, respawn });
+    }
+  }
+  expect(f.enemies.some((e) => e.state === "diving")).toBe(false);
+  return fired;
+}
+
+describe("entry shots", () => {
+  test("with a fixed seed, an entering enemy fires down at the firefly from above the cut-off", () => {
+    const fired = flyIn(3, 3);
+    expect(fired.length).toBeGreaterThan(0);
+    for (const s of fired) {
+      expect(s.dy).toBeGreaterThan(0);
+      expect(s.y - 8 - s.dy).toBeLessThanOrEqual(playerY - 48);
+      expect(Math.sign(s.dx)).toBe(Math.sign(s.px - (s.x - s.dx)));
+      expect(Math.abs(s.dx)).toBeLessThanOrEqual(difficulty(3).shotDrift);
+    }
+  });
+
+  test("stage 1's fly-in fires on some seeds", () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].some((seed) => flyIn(seed).length > 0)).toBe(true);
+  });
+
+  test("no entry shot is fired while the firefly respawns", () => {
+    const fired = flyIn(3, 3, (f) => {
+      f.respawn = respawnTicks;
+    });
+    expect(fired.filter((s) => s.respawn > 0)).toEqual([]);
+  });
+});
+
 describe("breathing", () => {
   test("once every enemy is in formation, the edges move in and out about a fixed centre", () => {
     rng.seed(1);

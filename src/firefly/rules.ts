@@ -216,6 +216,10 @@ export interface Difficulty {
   diversPerDive: number;
   /** Shots each diving enemy drops. */
   shotsPerDive: number;
+  /** The chance an enemy flying in at the stage start fires at the firefly. */
+  entryShotChance: number;
+  /** The most shots such an enemy fires on its way in (1 up to this many). */
+  entryShots: number;
   /** Speed of a diving enemy, in px per tick. Entering and joining the formation stay at `enemySpeed`. */
   diveSpeed: number;
   /** The most a shot drifts sideways per tick, aiming at the firefly. */
@@ -229,6 +233,11 @@ const firstDiversPerDive = 1;
 const maxDiversPerDive = 4;
 const firstShotsPerDive = 1;
 const maxShotsPerDive = 4;
+const firstEntryShotChance = 0.08;
+const entryShotChanceStep = 0.04;
+const maxEntryShotChance = 0.25;
+const firstEntryShots = 1;
+const maxEntryShots = 2;
 /** Dive speed and shot drift grow by these fractions each stage after `lastFlatStage`, up to `lastHarderStage`. */
 const lastFlatStage = 5;
 const lastHarderStage = 10;
@@ -247,6 +256,8 @@ export function difficulty(stage: number): Difficulty {
     diveInterval: Math.max(minDiveInterval, firstDiveInterval - n * diveIntervalStep),
     diversPerDive: Math.min(maxDiversPerDive, firstDiversPerDive + n),
     shotsPerDive: Math.min(maxShotsPerDive, firstShotsPerDive + n),
+    entryShotChance: Math.min(maxEntryShotChance, firstEntryShotChance + n * entryShotChanceStep),
+    entryShots: Math.min(maxEntryShots, firstEntryShots + n),
     diveSpeed: enemySpeed * (1 + diveSpeedGrowth * late),
     shotDrift: shotMaxDrift * (1 + shotDriftGrowth * late),
   };
