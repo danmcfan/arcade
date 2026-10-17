@@ -1,11 +1,11 @@
 import { defineConfig } from "sandworm";
-import { evidenceGate, noticeGate } from "./gates.ts";
+import { BASE, evidenceGate, noticeGate } from "./gates.ts";
 
 // The Sandcastle pipeline lives in sandworm (github.com/danmcfan/sandworm); this is what is
 // particular to arcade. A file in .sandcastle/ named like one of sandworm's prompts replaces it.
 export default defineConfig({
   repo: "arcade",
-  base: "origin/main",
+  base: BASE,
   prompts: {
     verify:
       "For any change the player can see or hear, capture screenshots and video with a throwaway script in `out/capture/` (`docs/agents/visual-verification.md`). Leave the script uncommitted and its output in `out/verify/`.",

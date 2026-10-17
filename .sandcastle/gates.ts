@@ -5,19 +5,14 @@ import { PNG } from "pngjs";
 // Arcade's own gate rules (issue #265): a run whose evidence would mislead the owner opens no PR.
 // The artefacts carry evidence paths but not the worktree or the diff, so each rule finds the
 // run's worktree by its branch and reads them there; the checks themselves are pure.
-// The types are sandworm's GateFailure and the part of RunArtefacts the rules read, restated so
-// the tests need not load sandworm's pipeline.
 
+// Structural copies of sandworm's GateFailure and GateRule: importing its types drags in
+// sandcastle's declarations, which need @standard-schema/spec and fail the strict typecheck.
 interface GateFailure {
   rule: string;
   message: string;
 }
-
-interface RunArtefacts {
-  issue: { number: number };
-  evidenceDir: string;
-  evidence: string[];
-}
+type GateRule = (run: { issue: { number: number }; evidenceDir: string; evidence: string[] }) => Promise<GateFailure[]>;
 
 /** The notice's background (src/ui/notice.ts): the page around it is black. */
 const NOTICE_BACKGROUND = [0x1a, 0x1c, 0x2c] as const;
@@ -81,6 +76,9 @@ const VISIBLE = [
 ];
 const visible = (file: string): boolean => !file.endsWith(".test.ts") && VISIBLE.some((re) => re.test(file));
 
+// readdirSync(recursive) lists directories too; only an entry with an extension is a file.
+const isFile = (path: string): boolean => /\.[^/.]+$/u.test(path);
+
 /** A failure when the diff touches what the player sees or hears and the evidence directory is empty. */
 export function evidenceFailures(
   changed: readonly string[],
@@ -88,7 +86,7 @@ export function evidenceFailures(
   evidenceDir: string,
 ): GateFailure[] {
   const shown = changed.filter((file) => visible(file));
-  if (shown.length === 0 || evidence.length > 0) return [];
+  if (shown.length === 0 || evidence.some((path) => isFile(path))) return [];
   return [
     {
       rule: "visual-evidence",
@@ -97,12 +95,17 @@ export function evidenceFailures(
   ];
 }
 
-// The run's worktree: the one with the issue's branch checked out (sandworm's `agent/<issue>`).
+/** The base the config diffs against; config.ts passes it as `base`, so sandworm's `compare` is the same ref. A stacked run is measured from it, not from its parent. */
+export const BASE = "origin/main";
+/** sandworm's branch naming for a run (`<prefix>/<issue>`); the worktree is found by it. */
+const BRANCH_PREFIX = "agent";
+
+// The run's worktree: the one with the issue's branch checked out.
 async function worktree(issue: number): Promise<string> {
   const list = await $`git worktree list --porcelain`.quiet().text();
   for (const entry of list.split("\n\n")) {
     const path = /^worktree (.+)$/mu.exec(entry)?.[1];
-    if (path !== undefined && entry.includes(`branch refs/heads/agent/${issue}\n`)) return path;
+    if (path !== undefined && entry.includes(`branch refs/heads/${BRANCH_PREFIX}/${issue}\n`)) return path;
   }
   throw new Error(`no worktree has agent/${issue} checked out`);
 }
@@ -110,17 +113,17 @@ async function worktree(issue: number): Promise<string> {
 const referenceFrame = new URL("notice.png", import.meta.url);
 
 /** The notice gate: no attached evidence PNG may show the keyboard notice. */
-export async function noticeGate({ issue, evidence }: RunArtefacts): Promise<GateFailure[]> {
+export const noticeGate: GateRule = async ({ issue, evidence }) => {
   const root = await worktree(issue.number);
   const pngs = evidence
     .filter((path) => path.endsWith(".png"))
     .map((path) => [path, PNG.sync.read(readFileSync(`${root}/${path}`))] as const);
   return noticeFailures(pngs, PNG.sync.read(readFileSync(referenceFrame)));
-}
+};
 
 /** The evidence gate: a diff the player can see or hear comes with evidence. */
-export async function evidenceGate({ issue, evidence, evidenceDir }: RunArtefacts): Promise<GateFailure[]> {
+export const evidenceGate: GateRule = async ({ issue, evidence, evidenceDir }) => {
   const root = await worktree(issue.number);
-  const diff = await $`git diff --name-only origin/main...HEAD`.cwd(root).quiet().text();
+  const diff = await $`git diff --name-only ${BASE}...HEAD`.cwd(root).quiet().text();
   return evidenceFailures(diff.split("\n").filter(Boolean), evidence, evidenceDir);
-}
+};

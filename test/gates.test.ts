@@ -47,6 +47,10 @@ describe("evidence gate", () => {
     expect(evidenceFailures(["src/sweet-sam/draw.ts"], ["out/verify/x/a.png"], "out/verify")).toEqual([]);
   });
 
+  test("an evidence directory holding only empty subdirectories fails", () => {
+    expect(evidenceFailures(["src/sweet-sam/draw.ts"], ["out/verify/x"], "out/verify")).toHaveLength(1);
+  });
+
   test("a logic-only diff with no evidence passes", () => {
     expect(evidenceFailures(["src/sweet-sam/game.ts", "src/sweet-sam/draw.test.ts"], [], "out/verify")).toEqual([]);
   });
