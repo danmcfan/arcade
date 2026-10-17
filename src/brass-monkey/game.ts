@@ -43,7 +43,7 @@ import { drawTextCentered } from "../ui/text.ts";
 import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial } from "../ui/rollingDials.ts";
-import { girderTop, type Floor } from "./floors.ts";
+import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
@@ -67,8 +67,11 @@ const hud = {
   loopTop: 20,
 } as const;
 
-/** Each floor's music, in the order of `floors`. */
-const floorMusic: readonly Sound[] = [sounds.monkeyGirder, sounds.monkeyConveyor];
+/** Each floor's music. */
+const floorMusic: ReadonlyMap<Floor, Sound> = new Map([
+  [girderFloor, sounds.monkeyGirder],
+  [conveyorFloor, sounds.monkeyConveyor],
+]);
 
 /** The sound for each of the run's sound cues. */
 const runSounds: Readonly<Record<RunSound, Sound>> = {
@@ -125,8 +128,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   /** In play, the floor's music; none otherwise. */
   private playMusic(): void {
-    const { phase, floor } = this.run;
-    const music = phase === "play" ? (floorMusic[floor] ?? null) : null;
+    const music = this.run.phase === "play" ? (floorMusic.get(this.run.currentFloor()) ?? null) : null;
     if (music === this.music) return;
     this.music?.pause();
     this.music = music;
