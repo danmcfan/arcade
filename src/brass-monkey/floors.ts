@@ -65,20 +65,23 @@ export interface Springs {
  * floor starts, and `bolts` the feet of the bolts to collect. A floor with
  * `pans` sends no gears: its conveyors carry pans. On a floor with `lifts`,
  * the monkey rides their platforms; on one with `springs`, the Gnome sends
- * springs instead of gears.
+ * springs instead of gears. The rivet floor has no door: `rivets` are the
+ * feet of its 8 rivet slots, each in the middle of an 8 px girder tile,
+ * pulled to clear it.
  */
 export interface Floor {
   width: number;
   height: number;
   girders: readonly Girder[];
   ladders: readonly Ladder[];
-  door: Spot;
+  door?: Spot;
   gnome: Spot;
   start: Spot;
   bolts: readonly Spot[];
   pans?: boolean;
   lifts?: readonly Shaft[];
   springs?: Springs;
+  rivets?: readonly Spot[];
 }
 
 /** The top of `g` at x. */
@@ -244,5 +247,48 @@ export const elevatorFloor: Floor = {
   ],
 };
 
+/**
+ * The rivet floor, as Donkey Kong's 100m board: five flat girders, the four
+ * upper ones each held by two rivet slots, one either side, and the Gnome on
+ * the top one. Ladders join each pair, clear of the slots. No exit door: the
+ * floor is cleared by pulling all 8 rivets.
+ */
+export const rivetFloor: Floor = {
+  width: 224,
+  height: 256,
+  girders: [
+    { x0: 0, x1: 224, y: 248, drop: 0 },
+    { x0: 0, x1: 224, y: 208, drop: 0 },
+    { x0: 0, x1: 224, y: 168, drop: 0 },
+    { x0: 0, x1: 224, y: 128, drop: 0 },
+    { x0: 16, x1: 208, y: 88, drop: 0 },
+  ],
+  ladders: [
+    { x: 8, top: 216, bottom: 247 },
+    { x: 104, top: 216, bottom: 247 },
+    { x: 208, top: 216, bottom: 247 },
+    { x: 24, top: 176, bottom: 207 },
+    { x: 192, top: 176, bottom: 207 },
+    { x: 8, top: 136, bottom: 167 },
+    { x: 104, top: 136, bottom: 167 },
+    { x: 208, top: 136, bottom: 167 },
+    { x: 32, top: 96, bottom: 127 },
+    { x: 184, top: 96, bottom: 127 },
+  ],
+  gnome: { x: 96, y: 56 },
+  start: { x: 56, y: 248 },
+  bolts: [],
+  rivets: [
+    { x: 52, y: 208 },
+    { x: 172, y: 208 },
+    { x: 52, y: 168 },
+    { x: 172, y: 168 },
+    { x: 52, y: 128 },
+    { x: 172, y: 128 },
+    { x: 52, y: 88 },
+    { x: 172, y: 88 },
+  ],
+};
+
 /** The floors in the order they are played. */
-export const floors: readonly Floor[] = [girderFloor, conveyorFloor, elevatorFloor];
+export const floors: readonly Floor[] = [girderFloor, conveyorFloor, elevatorFloor, rivetFloor];
