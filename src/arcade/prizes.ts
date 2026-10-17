@@ -2,8 +2,8 @@
 // owned, a prize is always on: it shows by its minigame's cabinet and gives
 // the player an advantage in every run of that minigame. Each minigame
 // declares its own prizes and what they do (e.g. src/sweet-sam/advantages.ts);
-// this catalogue derives from them and adds where each hangs on the wall. The Wallet (./wallet.ts) owns which are
-// owned and the rule for buying them.
+// this catalogue derives from them and adds where each hangs on the wall. The
+// Wallet (./wallet.ts) owns which are owned and the rule for buying them.
 
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
@@ -63,7 +63,8 @@ function decoration(id: PrizeId, y = 0): Sprite {
 /**
  * Where each prize hangs: the hour on a clock face round its cabinet's top
  * (`hang`): Brass Monkey's at 9, 10:30 and 12, Firefly's at 3, 1:30 and 12,
- * and Sweet Sam's in a rainbow at 10:15, 12 and 1:45.
+ * and Sweet Sam's in a rainbow at 10:15, 12 and 1:45. A new prize needs its
+ * hour here too; the compiler asks for it.
  */
 const hours: Readonly<Record<PrizeId, number>> = {
   honeyJar: 10.25,

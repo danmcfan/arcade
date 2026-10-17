@@ -1,10 +1,10 @@
 // Every minigame, described once (#51): its names, where its cabinet stands
 // in the hub, its title card, its cabinet strip, its controls panel and how
 // to start a run (the sounds the minigame pause menu silences are its Channel,
-// declared with each sound in src/ui/sounds.ts). The hub's
-// machines, the scoreboard, the pause menu and the verify cabinet walks all
-// read this list, and so does the prize catalogue (#272); adding a minigame means a new entry here plus its own
-// module. The snapshot names (`SoftwareName`, `ArcadeTitle`) stay hand-written
+// declared with each sound in src/ui/sounds.ts). The hub's machines, the
+// scoreboard, the pause menu and the verify cabinet walks all read this list,
+// and so does the prize catalogue (#272); adding a minigame means a new entry
+// here plus its own module. The snapshot names (`SoftwareName`, `ArcadeTitle`) stay hand-written
 // in the contract (ADR 0004); `descriptors` fails to compile when a
 // `SoftwareName` has no entry.
 
@@ -51,7 +51,10 @@ export interface Minigame {
   readonly cabinetStrip: Sprite;
   /** Its controls panel in the minigame pause menu. */
   readonly controls: readonly ControlRow[];
-  /** Its prizes, in the order the prize counter lists them (#272). */
+  /**
+   * Its prizes, in the order the prize counter lists them (#272). The
+   * `satisfies` in its advantages.ts checks each prize's `advantage` key.
+   */
   readonly prizes: readonly (PrizeSpec<Record<string, number>> & { readonly id: PrizeId })[];
   /** The values a run starts with when the player owns `owned`; other minigames' prizes do nothing. */
   advantages(owned: readonly PrizeId[]): Readonly<Record<string, number>>;
