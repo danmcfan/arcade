@@ -193,7 +193,7 @@ describe("BrassMonkeySoftware", () => {
       lives: 3,
       score: 0,
       bonus: 5000,
-      x: 17,
+      x: 25,
       y: 248,
       footing: "ground",
       moving: true,
@@ -233,7 +233,7 @@ describe("draw", () => {
     const g = quiet();
     const monkey = (): DrawCall | undefined =>
       record(g).calls.find((c) => c.sprite.asset === imageMonkey.asset && c.sprite.h === 16 && c.y > 100);
-    expect(monkey()).toMatchObject({ x: 8 + 16 - 8, y: 40 + 248 - 16 });
+    expect(monkey()).toMatchObject({ x: 8 + 24 - 8, y: 40 + 248 - 16 });
     g.update(held({ space: true }));
     expect(monkey()?.sprite.sx).toBe(3 * 16);
   });

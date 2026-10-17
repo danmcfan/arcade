@@ -17,6 +17,12 @@ describe("the girder floor", () => {
     for (const x of [24, 32, 40, 48]) expect(topsAt(girderFloor, x)).toContain(84);
   });
 
+  test("the furnace stands on the bottom girder at its left end, clear of the monkey's start", () => {
+    const { furnace, start } = girderFloor;
+    expect(furnace).toEqual({ x: 8, y: 248 });
+    expect(start.x - (furnace?.x ?? 0)).toBeGreaterThanOrEqual(16);
+  });
+
   test("a broken ladder's gap is inside it", () => {
     const broken = girderFloor.ladders.filter((l) => l.gap !== undefined);
     expect(broken.map((l) => l.x)).toEqual([64, 80, 88, 168]);
@@ -72,6 +78,10 @@ describe.each([
     for (const b of floor.bolts)
       expect({ bolt: b, on: topsAt(floor, b.x).includes(b.y) }).toEqual({ bolt: b, on: true });
   });
+});
+
+test("only the girder floor has a furnace", () => {
+  expect(conveyorFloor.furnace).toBeUndefined();
 });
 
 test("the floors are played girder floor, then conveyor floor", () => {

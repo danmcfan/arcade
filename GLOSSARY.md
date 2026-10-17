@@ -97,15 +97,23 @@ One factory floor in Brass Monkey. The monkey escapes it by climbing to its exit
 _Avoid_: level, stage, board
 
 **Hazard**:
-Anything the gnome sends that costs the monkey a life when it touches the monkey: a gear or an ember.
+Anything that costs the monkey a life when it touches the monkey: a gear or an ember. The gnome sends the gears; on the girder floor the embers come out of the furnace.
 _Avoid_: enemy, obstacle
 
 **Gear**:
 A hazard that rolls down the girders. The monkey jumps over it.
 _Avoid_: barrel, cog
 
+**Hot gear**:
+A gear that lights the furnace when it reaches it, so an ember comes out (Donkey Kong's blue barrel). The first gear of each life is hot.
+_Avoid_: blue barrel, fire gear
+
+**Furnace**:
+The fire at the bottom left of the girder floor. Every gear that rolls into it ends there; a hot gear lights it and sends an ember out.
+_Avoid_: oil drum, oil can (the oil can is a prize)
+
 **Ember**:
-A hazard that moves along the girders and climbs ladders.
+A hazard that moves along the girders and climbs ladders. On the girder floor it comes out of the furnace; on the conveyor floor the gnome throws it.
 _Avoid_: spark (a spark is the firefly's light), fireball
 
 **Bolt**:
