@@ -70,6 +70,8 @@ export const imageOwlHurt: Sprite = whole(fireflyImages.owlHurt);
 export const imageShot: Sprite = whole(fireflyImages.shot);
 export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
+/** The stage badges in `badgeValues` order (50, 30, 20, 10, 5, 1), each in a 16×16 slot; 1 and 5 are 8 wide. */
+export const imageBadges: Sprite = whole(fireflyImages.badges);
 
 // Brass Monkey's characters, items and floors, from src/brass-monkey/art.ts and floors.ts.
 /** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */

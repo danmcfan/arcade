@@ -27,6 +27,7 @@ import fireflyOwlUrl from "../assets/images/firefly/owl.png";
 import fireflyOwlHurtUrl from "../assets/images/firefly/owl-hurt.png";
 import fireflyShotUrl from "../assets/images/firefly/shot.png";
 import fireflyHitUrl from "../assets/images/firefly/hit.png";
+import fireflyBadgesUrl from "../assets/images/firefly/badges.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
@@ -80,6 +81,7 @@ export const fireflyImages = {
   owlHurt: imageAsset(fireflyOwlHurtUrl, 96, 64),
   shot: imageAsset(fireflyShotUrl, 4, 8),
   hit: imageAsset(fireflyHitUrl, 160, 32),
+  badges: imageAsset(fireflyBadgesUrl, 96, 16),
   background: imageAsset(fireflyBackgroundUrl, 224, 288),
 } as const;
 

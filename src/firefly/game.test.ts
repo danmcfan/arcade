@@ -136,12 +136,21 @@ describe("a new run", () => {
 });
 
 describe("stage start", () => {
+  test("ticks once per stage badge as each is added", () => {
+    const f = new FireflySoftware();
+    f.stage = 27; // 20, 5, 1, 1
+    const rec = recordSounds();
+    run(f, stageIntroTicks);
+    rec.stop();
+    expect(rec.events.filter((e) => e === "play:badgeTick").length).toBe(4);
+  });
+
   test("plays the stage sound, then the enemies wait out the STAGE n text before flying in", () => {
     const f = new FireflySoftware();
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();
-    expect(rec.events).toEqual(["rewind:stage", "play:stage"]);
+    expect(rec.events).toEqual(["rewind:stage", "play:stage", "rewind:badgeTick", "play:badgeTick"]);
     run(f, stageIntroTicks - 2);
     expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
     run(f, 2);

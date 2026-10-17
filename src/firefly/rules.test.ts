@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  badgeTickSpacing,
+  badgesShown,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -12,6 +14,7 @@ import {
   fieldHeight,
   formation,
   formationPos,
+  stageBadges,
   points,
   swayOffset,
   swayAmplitude,
@@ -213,5 +216,23 @@ describe("tractor beam", () => {
   test("an Owl beams from the bottom third, a beam 24 px wide, for 3 seconds, on half its dives", () => {
     expect(fieldHeight - (264 - beamHeight)).toBeLessThanOrEqual(fieldHeight / 3);
     expect([beamHeight, beamWidth, beamTicks, beamDiveChance]).toEqual([72, 24, 180, 0.5]);
+  });
+});
+
+describe("stage badges", () => {
+  test("the stage splits greedily into 50, 30, 20, 10, 5 and 1 badges", () => {
+    expect(stageBadges(1)).toEqual([1]);
+    expect(stageBadges(4)).toEqual([1, 1, 1, 1]);
+    expect(stageBadges(7)).toEqual([5, 1, 1]);
+    expect(stageBadges(27)).toEqual([20, 5, 1, 1]);
+    expect(stageBadges(86)).toEqual([50, 30, 5, 1]);
+  });
+
+  test("badges are added one at a time, `badgeTickSpacing` ticks apart, from the stage's first tick", () => {
+    expect(badgesShown(27, 0)).toBe(0);
+    expect(badgesShown(27, 1)).toBe(1);
+    expect(badgesShown(27, badgeTickSpacing)).toBe(1);
+    expect(badgesShown(27, badgeTickSpacing + 1)).toBe(2);
+    expect(badgesShown(27, 1000)).toBe(4);
   });
 });

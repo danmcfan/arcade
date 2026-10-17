@@ -19,6 +19,7 @@ import { drawFirefly } from "./draw.ts";
 import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
+  badgesShown,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -287,6 +288,7 @@ export class FireflySoftware implements FixedViewport {
 
     if (this.stageTick === 0) play(sounds.stage);
     this.stageTick++;
+    if (badgesShown(this.stage, this.stageTick) > badgesShown(this.stage, this.stageTick - 1)) play(sounds.badgeTick);
     this.ticks++;
 
     if (this.respawn === 0) this.movePlayer(i);
