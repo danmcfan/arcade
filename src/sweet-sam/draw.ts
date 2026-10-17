@@ -7,6 +7,7 @@ import { Surface, type PremulColor } from "../engine/surface.ts";
 import {
   imageBear,
   imageCabinet,
+  imageBeeEyes,
   imageFlower,
   imageReady,
   imageSweetSamMaze,
@@ -19,7 +20,7 @@ import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { intermissionY, type IntermissionPose } from "./intermission.ts";
-import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
+import { bearDeathRow, beeEyesOrder, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
 import {
   beeRows,
   bearRows,
@@ -32,7 +33,6 @@ import {
   type Entity,
   type Tile,
 } from "./entity.ts";
-import { sweetie } from "../ui/sweetie16.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -282,22 +282,18 @@ function drawEnemies(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: n
   }
 }
 
-const eyeWhite = sweetie.w;
-const eyePupil = sweetie.b;
-
 /**
- * An eaten bee's eyes: two white 2×3 eyes, each with a 1 px pupil toward its
- * direction of travel. A placeholder until the eye sprites (#196).
+ * An eaten bee's eyes: the bee-eyes.png frame for its direction, centred on it
+ * like a bee. Before it has a direction it looks right.
  */
 function drawEyes(e: Entity, screen: Surface, bufX: number, bufY: number): void {
-  const cx = e.x + bufX;
-  const cy = e.y + bufY;
-  const px = e.direction === "RIGHT" ? 1 : 0;
-  const py = e.direction === "UP" ? 0 : e.direction === "DOWN" ? 2 : 1;
-  for (const ex of [cx - 4, cx + 2]) {
-    screen.fillRect(ex, cy - 2, 2, 3, eyeWhite);
-    screen.fillRect(ex + px, cy - 2 + py, 1, 1, eyePupil);
-  }
+  const x =
+    Math.max(
+      0,
+      beeEyesOrder.findIndex((d) => d === e.direction),
+    ) * frameSize;
+  const eyes = sub(imageBeeEyes, x, 0, x + frameSize, frameSize);
+  screen.draw(eyes, e.x - frameSize / 2 + bufX, e.y - frameSize / 2 + bufY);
 }
 
 /**

@@ -33,8 +33,8 @@ export const emberDownChance = 0.5;
 /** ...and at a ladder up, this often. */
 export const emberUpChance = 0.25;
 
-/** Points for a hazard the monkey jumps over. */
-export const hazardPoints = 100;
+/** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
+export const jumpPoints = [100, 300, 800] as const;
 /** Points for a bolt. */
 export const boltPoints = 300;
 /** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
@@ -125,11 +125,11 @@ export const bonusTicks = 120;
 export const loopSpawnFactor = 0.8;
 /** ...and their speeds by this (faster)... */
 export const loopSpeedFactor = 1.2;
-/** ...and takes this off the bonus the floor starts with... */
-export const loopBonusDrop = 1000;
-/** ...but the bonus never starts below this, and hazards never come more often than every `minSpawnEvery` ticks. */
-export const minBonusStart = 2000;
+/** ...but hazards never come more often than every `minSpawnEvery` ticks. */
 export const minSpawnEvery = 60;
+/** As in Donkey Kong, each loop adds this to the bonus the floor starts with, up to `maxBonusStart`. */
+export const loopBonusRise = 1000;
+export const maxBonusStart = 8000;
 /** Hazards speed up only so far: an ember always walks and climbs slower than the monkey, so it can be outrun. */
 export const maxGearSpeed = 2;
 export const maxEmberWalkSpeed = 0.9 * walkSpeed;
@@ -148,7 +148,7 @@ export function tuningFor(floor: number, loop: number): FloorTuning {
     gearSpeed: speed(base.gearSpeed, maxGearSpeed),
     emberWalkSpeed: speed(base.emberWalkSpeed, maxEmberWalkSpeed),
     emberClimbSpeed: speed(base.emberClimbSpeed, maxEmberClimbSpeed),
-    bonusStart: Math.max(minBonusStart, base.bonusStart - loopBonusDrop * loop),
+    bonusStart: Math.min(maxBonusStart, base.bonusStart + loopBonusRise * loop),
   };
 }
 

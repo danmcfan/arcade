@@ -190,6 +190,10 @@ export const sparkCooldown = 8;
 /** Ticks after a dive starts before its first shot, and between its shots. */
 export const firstShotDelay = 18;
 export const shotSpacing = 14;
+/** An enemy stops shooting once it is within this many pixels of the firefly's row. */
+export const shotCutoffMargin = 48;
+/** How far below an enemy's centre its shot appears. */
+export const shotSpawnOffset = 8;
 
 /** How likely each kind is to be picked for a dive, relative to the others. Wasps dive most. */
 export const diveWeight: Readonly<Record<EnemyKind, number>> = { moth: 2, wasp: 5, owl: 2 };
@@ -227,6 +231,10 @@ export interface Difficulty {
   diversPerDive: number;
   /** Shots each diving enemy drops. */
   shotsPerDive: number;
+  /** The chance an enemy flying in at the stage start fires at the firefly. */
+  entryShotChance: number;
+  /** The most shots such an enemy fires on its way in (1 up to this many). */
+  entryShots: number;
   /** Speed of a diving enemy, in px per tick. Entering and joining the formation stay at `enemySpeed`. */
   diveSpeed: number;
   /** The most a shot drifts sideways per tick, aiming at the firefly. */
@@ -240,6 +248,11 @@ const firstDiversPerDive = 1;
 const maxDiversPerDive = 4;
 const firstShotsPerDive = 1;
 const maxShotsPerDive = 4;
+const firstEntryShotChance = 0.08;
+const entryShotChanceStep = 0.04;
+const maxEntryShotChance = 0.25;
+const firstEntryShots = 1;
+const maxEntryShots = 2;
 /** Dive speed and shot drift grow by these fractions each stage after `lastFlatStage`, up to `lastHarderStage`. */
 const lastFlatStage = 5;
 const lastHarderStage = 10;
@@ -258,6 +271,8 @@ export function difficulty(stage: number): Difficulty {
     diveInterval: Math.max(minDiveInterval, firstDiveInterval - n * diveIntervalStep),
     diversPerDive: Math.min(maxDiversPerDive, firstDiversPerDive + n),
     shotsPerDive: Math.min(maxShotsPerDive, firstShotsPerDive + n),
+    entryShotChance: Math.min(maxEntryShotChance, firstEntryShotChance + n * entryShotChanceStep),
+    entryShots: Math.min(maxEntryShots, firstEntryShots + n),
     diveSpeed: enemySpeed * (1 + diveSpeedGrowth * late),
     shotDrift: shotMaxDrift * (1 + shotDriftGrowth * late),
   };

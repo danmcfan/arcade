@@ -116,11 +116,51 @@ describe("formationPos", () => {
 describe("difficulty", () => {
   test("pins every knob at stages 1, 5, 6, 10 and 15", () => {
     expect([1, 5, 6, 10, 15].map((s) => difficulty(s))).toEqual([
-      { diveInterval: 150, diversPerDive: 1, shotsPerDive: 1, diveSpeed: 2, shotDrift: 1 },
-      { diveInterval: 50, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2, shotDrift: 1 },
-      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.1, shotDrift: 1.1 },
-      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.5, shotDrift: 1.5 },
-      { diveInterval: 40, diversPerDive: 4, shotsPerDive: 4, diveSpeed: 2.5, shotDrift: 1.5 },
+      {
+        diveInterval: 150,
+        diversPerDive: 1,
+        shotsPerDive: 1,
+        entryShotChance: 0.08,
+        entryShots: 1,
+        diveSpeed: 2,
+        shotDrift: 1,
+      },
+      {
+        diveInterval: 50,
+        diversPerDive: 4,
+        shotsPerDive: 4,
+        entryShotChance: 0.24,
+        entryShots: 2,
+        diveSpeed: 2,
+        shotDrift: 1,
+      },
+      {
+        diveInterval: 40,
+        diversPerDive: 4,
+        shotsPerDive: 4,
+        entryShotChance: 0.25,
+        entryShots: 2,
+        diveSpeed: 2.1,
+        shotDrift: 1.1,
+      },
+      {
+        diveInterval: 40,
+        diversPerDive: 4,
+        shotsPerDive: 4,
+        entryShotChance: 0.25,
+        entryShots: 2,
+        diveSpeed: 2.5,
+        shotDrift: 1.5,
+      },
+      {
+        diveInterval: 40,
+        diversPerDive: 4,
+        shotsPerDive: 4,
+        entryShotChance: 0.25,
+        entryShots: 2,
+        diveSpeed: 2.5,
+        shotDrift: 1.5,
+      },
     ]);
   });
 
@@ -140,6 +180,8 @@ describe("difficulty", () => {
       const next = difficulty(s + 1);
       expect(next.diveInterval).toBeLessThanOrEqual(now.diveInterval);
       expect(next.diversPerDive).toBeGreaterThanOrEqual(now.diversPerDive);
+      expect(next.entryShotChance).toBeGreaterThanOrEqual(now.entryShotChance);
+      expect(next.entryShots).toBeGreaterThanOrEqual(now.entryShots);
       expect(next.shotsPerDive).toBeGreaterThanOrEqual(now.shotsPerDive);
       expect(next.diveSpeed).toBeGreaterThanOrEqual(now.diveSpeed);
       expect(next.shotDrift).toBeGreaterThanOrEqual(now.shotDrift);

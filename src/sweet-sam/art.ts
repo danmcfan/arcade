@@ -11,6 +11,7 @@
 // outlines are gone (#209): the maze is black, so an outline would not show.
 // Where an outline carried a shape, a darker shade of the body draws it.
 
+import type { Direction } from "../engine/input.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import type { SweetieLetter } from "../ui/sweetie16.ts";
 
@@ -304,11 +305,76 @@ export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
 /** The bees' order in bees.png, one 64×96 sheet each, top to bottom. */
 export const beeOrder: readonly SweetSamEnemyKind[] = ["red", "pink", "teal", "orange"];
 
-/** A sleepy bee: grey, wings dull, eyes shut. */
-export const sleepyLook = { body: "m", wings: "l" } as const;
+/**
+ * An eaten bee flying home: its eyes and antennae, 16×16 like the bee,
+ * looking right, up and down; looking left is the first mirrored. The pupils
+ * look the way it travels and the whole head leans a pixel that way.
+ */
+export const beeEyes: readonly (readonly string[])[] = [
+  [
+    "................",
+    "...y..........y.",
+    "....m........m..",
+    ".....m......m...",
+    "................",
+    ".....ww....ww...",
+    "....wwww..wwww..",
+    "....wwbb..wwbb..",
+    "....wwbb..wwbb..",
+    ".....ww....ww...",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....bb....bb....",
+    "...wbbw..wbbw...",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "....ww....ww....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "................",
+    "................",
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....ww....ww....",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "...wbbw..wbbw...",
+    "....bb....bb....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+];
 
-/** A sleepy bee about to wake: pale, eyes wide open. Alternates with the sleepy look. */
-export const wakingLook = { body: "w", wings: "l" } as const;
+/** The direction each frame of bee-eyes.png faces: `beeEyes` with the left look added second. */
+export const beeEyesOrder: readonly Direction[] = ["RIGHT", "LEFT", "UP", "DOWN"];
+
+/** A sleepy bee: bright silver, grey wings with white veins, eyes shut. */
+export const sleepyLook = { body: "l", wings: "m", veins: "w" } as const;
+
+/** A sleepy bee about to wake: white, silver wings with grey veins, eyes wide open. Alternates with the sleepy look. */
+export const wakingLook = { body: "w", wings: "l", veins: "m" } as const;
 
 /** Honey drop and honey pot cells: 8×12, 4 frames, as in the Go game. */
 export const itemCellWidth = 8;

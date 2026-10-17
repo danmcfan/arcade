@@ -22,7 +22,7 @@ import {
 } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
 import { sub, type Sprite } from "../engine/image.ts";
-import type { Input } from "../engine/input.ts";
+import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
@@ -116,6 +116,12 @@ export class BrassMonkeySoftware implements FixedViewport {
       if (held) sounds.monkeyWrench.blip();
       else sounds.monkeyWrench.pause();
     }
+  }
+
+  /** Start loop `stage` (as the player counts it, from 1) afresh on the first floor. */
+  jumpTo(stage: number): void {
+    this.run.startLoop(stage - 1);
+    this.update(NO_INPUT);
   }
 
   fixedViewportSize(): [number, number] {

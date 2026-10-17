@@ -37,10 +37,12 @@ export const imagePanel: Sprite = whole(images.panel);
 export const imageCards: Sprite = whole(images.cards);
 
 // Sweet Sam's sprites, from src/sweet-sam/art.ts. Sprite frames are 16×16; bees.png is one 64×96 sheet per bee
-// (`beeOrder`), the honey drop and honey pot are 4 frames of 8×12, and the points are 4 popup frames of 16×16.
+// (`beeOrder`), the honey drop and honey pot are 4 frames of 8×12, the points are 4 popup frames of 16×16,
+// and bee-eyes.png is an eaten bee's eyes, one frame per direction (`beeEyesOrder`).
 export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
 export const imageSweetSamMazeFlash: Sprite = whole(sweetSamImages.mazeFlash);
 export const imageFlower: Sprite = whole(sweetSamImages.flower);
+export const imageBeeEyes: Sprite = whole(sweetSamImages.beeEyes);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);

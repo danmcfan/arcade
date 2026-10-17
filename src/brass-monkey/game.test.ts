@@ -391,3 +391,11 @@ describe("in the arcade", () => {
     }
   });
 });
+
+describe("jumpTo", () => {
+  test("starts loop `stage` (counted from 1) on the girder floor, at that loop's bonus", () => {
+    const game = new BrassMonkeySoftware();
+    game.jumpTo(2);
+    expect([game.run.loop, game.run.floor, game.run.phase, game.run.bonus]).toEqual([1, 0, "play", 6000]);
+  });
+});

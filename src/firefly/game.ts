@@ -45,7 +45,9 @@ import {
   nextExtraLife,
   points,
   respawnTicks,
+  shotCutoffMargin,
   shotSpacing,
+  shotSpawnOffset,
   type Slot,
   shotSpeed,
   sparkCooldown,
@@ -352,12 +354,12 @@ export class FireflySoftware implements FixedViewport {
       const py = e.y;
       switch (e.state) {
         case "waiting":
-          if (--e.wait <= 0) e.state = "entering";
+          if (--e.wait <= 0) this.startEntry(e, d);
           break;
         case "entering":
         case "diving":
           this.stepPath(e);
-          if (e.state === "diving") this.dropShot(e);
+          this.dropShot(e);
           break;
         case "beaming":
           this.beam(e);
@@ -419,6 +421,7 @@ export class FireflySoftware implements FixedViewport {
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    e.shotsLeft = 0;
     if (e.beamTicks > 0) {
       e.state = "beaming";
       return;
@@ -429,6 +432,14 @@ export class FireflySoftware implements FixedViewport {
       e.x = this.slotPos(e.home).x;
       e.y = -offscreenMargin;
     }
+  }
+
+  /** `e` sets off on its entry curve; some fire at the firefly on the way in (Galaga's). */
+  private startEntry(e: Enemy, d: Difficulty): void {
+    e.state = "entering";
+    if (rng.float() >= d.entryShotChance) return;
+    e.shotsLeft = 1 + rng.intn(d.entryShots);
+    e.shotTimer = firstShotDelay;
   }
 
   /** An escort whose Owl is no longer diving flies back to its slot. */
@@ -545,15 +556,15 @@ export class FireflySoftware implements FixedViewport {
     c.y = ty;
   }
 
-  /** A diving enemy above the firefly drops its shots, aimed down at it. */
+  /** A diving or entering enemy above the firefly drops its shots, aimed down at it. */
   private dropShot(e: Enemy): void {
-    if (e.shotsLeft === 0 || e.state !== "diving") return;
+    if (e.shotsLeft === 0 || (e.state !== "diving" && e.state !== "entering")) return;
     if (e.shotTimer > 0) e.shotTimer--;
-    if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
+    if (e.shotTimer > 0 || e.y > playerY - shotCutoffMargin || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
     const maxDrift = difficulty(this.stage).shotDrift;
     const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
-    this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
+    this.shots.push({ x: e.x, y: e.y + shotSpawnOffset, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
   }
