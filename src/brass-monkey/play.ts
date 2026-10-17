@@ -1,6 +1,7 @@
 // Brass Monkey's game logic, headless and on ticks (ADR 0002, ADR 0003): the
 // monkey runs, jumps and climbs up each floor past the gears and embers the
-// Gnome sends (on the girder floor the embers come out of the furnace, lit by hot gears), collecting bolts and swinging wrenches, to the exit door; then the next floor, the
+// Gnome sends, collecting bolts and swinging wrenches, to the exit door (on the
+// girder floor the embers come out of the furnace, lit by hot gears); then the next floor, the
 // escaped scene, and the floors again, harder. Every random choice goes
 // through the seeded RNG. Positions are in floor pixels; an entity's `x` is
 // its middle and its `y` the row its foot stands on. game.ts draws it.
@@ -182,8 +183,9 @@ export class Run {
   furnaceLit = false;
   /** The Gnome has sent a gear since the floor (re)started: the first is hot. */
   private sentGear = false;
-  /** Ticks until the Gnome sends its next gear and ember (no ember on a floor with a furnace). */
+  /** Ticks until the Gnome sends its next gear. */
   gearTimer = 0;
+  /** Ticks until the Gnome throws its next ember; only counts down on a floor without a furnace. */
   emberTimer = 0;
   /** Ticks since the run started, for animations. */
   ticks = 0;
@@ -218,8 +220,7 @@ export class Run {
   /** The Gnome has its arms up: a hazard is about to leave its hands. */
   gnomeThrowing(): boolean {
     if (this.phase !== "play") return false;
-    const throws = this.currentFloor().furnace === undefined && this.embers() < this.tuning.maxEmbers;
-    const ember = throws ? this.emberTimer : Infinity;
+    const ember = this.gnomeThrowsEmbers() && this.embers() < this.tuning.maxEmbers ? this.emberTimer : Infinity;
     return Math.min(this.gearTimer, ember) <= t.throwTicks;
   }
 
@@ -433,6 +434,11 @@ export class Run {
     return this.hazards.filter((h) => h.kind === "ember").length;
   }
 
+  /** The Gnome throws the embers unless the floor's furnace makes them. */
+  private gnomeThrowsEmbers(): boolean {
+    return this.currentFloor().furnace === undefined;
+  }
+
   private sendHazards(): void {
     const { gnome, furnace } = this.currentFloor();
     if (--this.gearTimer <= 0) {
@@ -441,7 +447,7 @@ export class Run {
       this.sentGear = true;
       this.gearTimer = this.tuning.gearEvery;
     }
-    if (furnace !== undefined) return;
+    if (!this.gnomeThrowsEmbers()) return;
     if (this.embers() >= this.tuning.maxEmbers) {
       this.emberTimer = Math.max(this.emberTimer, t.throwTicks + 1);
     } else if (--this.emberTimer <= 0) {

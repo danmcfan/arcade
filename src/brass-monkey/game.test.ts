@@ -186,6 +186,27 @@ describe("BrassMonkeySoftware", () => {
     });
   });
 
+  test("the snapshot holds whether the furnace is lit and which gears are hot", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: 1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+      },
+    ];
+    expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({ furnaceLit: false, hazards: [{ hot: true }] });
+    g.run.furnaceLit = true;
+    expect(brassMonkeySnapshot(g.snapshot()).furnaceLit).toBe(true);
+  });
+
   test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {
     const g = quiet();
     g.update(held({ right: true }));

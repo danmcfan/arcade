@@ -173,18 +173,10 @@ const rolling = (hot: boolean): Hazard => ({ ...hazard("gear", 20, 248, -1), hot
 
 describe("the furnace", () => {
   test("no ember is ever thrown on the girder floor: the Gnome only sends gears", () => {
-    const run = new Run();
-    // Out of reach of every hazard, holding still.
-    run.monkey.y = -100;
-    run.monkey.footing = "climb";
-    for (let n = 0; n < 3000; n++) {
-      run.update(NO_INPUT);
-      for (const h of run.hazards)
-        if (h.kind === "ember")
-          expect(Math.abs(h.x - 8) <= 2 && Math.abs(h.y - 248) <= 2 && h.footing === "ground").toBe(true);
-      if (run.hazards.some((h) => h.kind === "ember")) break;
-    }
-    expect(run.hazards.filter((h) => h.kind === "ember").length).toBeLessThanOrEqual(1);
+    const { run } = quiet();
+    run.emberTimer = 1;
+    step(run, 600);
+    expect(run.hazards.filter((h) => h.kind === "ember")).toEqual([]);
   });
 
   test("no ember exists until a hot gear reaches the furnace; then exactly one appears there and the furnace is lit", () => {
