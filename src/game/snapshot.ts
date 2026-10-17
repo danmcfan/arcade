@@ -367,6 +367,8 @@ export interface FireflySnapshot {
   challenge?: { hits: number; tally: number };
   /** Ticks left of the -RESULTS- screen after GAME OVER; 0 otherwise. */
   results: number;
+  /** Banner text in mid-field: "PLAYER 1", "STAGE n", "CHALLENGING STAGE", "READY", or null. */
+  banner: string | null;
 }
 
 // ---------------------------------------------------------------------------

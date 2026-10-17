@@ -28,6 +28,9 @@ import {
   beamWidth,
   hitEffectTicks,
   respawnTicks,
+  playerBannerTicks,
+  readyTicks,
+  stageBannerTicks,
   stageIntroTicks,
   tallyBonusDelay,
   tallyTicks,
@@ -140,11 +143,43 @@ describe("firefly draw", () => {
     expect(of(drawCalls(f), imageBadges).map((c) => c.x)).toEqual([8 + 182, 8 + 198]);
   });
 
-  test("STAGE n is drawn in the pixel font only while the stage opens", () => {
+  test("a run opens on PLAYER 1, then STAGE 1, then READY, each in its phase", () => {
     const f = new FireflySoftware();
-    expect(of(drawCalls(f), imageFont).length).toBe("STAGE 1".length);
+    const glyphs = (tick: number): number => {
+      f.stageTick = tick;
+      return of(drawCalls(f), imageFont).length;
+    };
+    expect(glyphs(1)).toBe("PLAYER 1".length);
+    expect(glyphs(playerBannerTicks)).toBe("PLAYER 1".length);
+    expect(glyphs(playerBannerTicks + 1)).toBe("STAGE 1".length);
+    expect(glyphs(playerBannerTicks + stageBannerTicks + 1)).toBe("READY".length);
+    expect(glyphs(stageIntroTicks)).toBe("READY".length);
+    expect(glyphs(stageIntroTicks + 1)).toBe(0);
+  });
+
+  test("a later stage opens on STAGE n alone", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    f.stageTick = stageIntroTicks;
+    expect(of(drawCalls(f), imageFont).length).toBe("STAGE 2".length);
+  });
+
+  test("READY is drawn before a respawn, not during the burst", () => {
+    const f = new FireflySoftware();
     f.stageTick = stageIntroTicks + 1;
+    f.respawn = respawnTicks - 1;
     expect(of(drawCalls(f), imageFont)).toEqual([]);
+    f.respawn = readyTicks + 1;
+    expect(of(drawCalls(f), imageFont)).toEqual([]);
+    f.respawn = readyTicks;
+    expect(of(drawCalls(f), imageFont).length).toBe("READY".length);
+  });
+
+  test("a stage cleared during the burst still shows STAGE n", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    f.respawn = respawnTicks - 1;
+    expect(of(drawCalls(f), imageFont).length).toBe("STAGE 2".length);
   });
 
   test("an escort-kill bonus shows its points in the pixel font, centred where the Owl was shot", () => {
