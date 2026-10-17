@@ -17,12 +17,9 @@
     "format:check": "prettier --check .",
     "lint": "oxlint --type-aware --deny-warnings --report-unused-disable-directives && bun scripts/lint-guards.ts",
     "lint:fix": "oxlint --type-aware --fix",
-    "knip": "knip --no-progress",
-    "sandcastle": "bun .sandcastle/main.ts",
-    "sandcastle:batch": "bun .sandcastle/batch.ts"
+    "knip": "knip --no-progress"
   },
   "devDependencies": {
-    "@ai-hero/sandcastle": "0.12.0",
     "@types/bun": "1.4.2",
     "@types/pngjs": "6.0.5",
     "knip": "6.41.0",
@@ -30,7 +27,6 @@
     "oxlint-tsgolint": "7.0.2004",
     "pngjs": "7.0.0",
     "prettier": "3.9.10",
-    "sandworm": "github:danmcfan/sandworm#v0.2.1",
     "typescript": "7.0.2"
   }
 }

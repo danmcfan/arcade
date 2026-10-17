@@ -28,7 +28,7 @@ import { sceneFor, type Scene } from "./pixel-scenes.ts";
 const playDir = join(tmpdir(), `arcade-pixel-play-${Bun.hash(repoRoot).toString(36)}`);
 
 /** Top-level entries a game build does not need; node_modules is linked, not copied. */
-const skipped = new Set([".git", ".claude", ".sandcastle", "node_modules", "out", "dist"]);
+const skipped = new Set([".git", ".claude", "node_modules", "out", "dist"]);
 
 /** The variants file at `file`, checked to be an object. */
 function readVariants(file: string): Record<string, unknown> {

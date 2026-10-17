@@ -35,9 +35,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
-      - name: Link sandworm
-        # package.json links sandworm from a local checkout (`link:sandworm`); CI clones and links it the same way.
-        run: git clone --depth 1 https://github.com/danmcfan/sandworm ../sandworm && cd ../sandworm && bun install --frozen-lockfile && bun link
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Typecheck

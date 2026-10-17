@@ -22,7 +22,7 @@ Apply it to every art request (creating, redrawing or specifying art) that does 
 
 ## Work type
 
-Every issue also carries exactly one work-type label, so Sandcastle and other tooling can switch behaviour on the kind of work:
+Every issue also carries exactly one work-type label, so tooling can switch behaviour on the kind of work:
 
 | Label         | Use it when                                                                           |
 | ------------- | ------------------------------------------------------------------------------------- |
@@ -31,5 +31,3 @@ Every issue also carries exactly one work-type label, so Sandcastle and other to
 | `refactor`    | Restructures code with no change in behaviour                                         |
 
 When a skill asks for an issue's category (for example `/triage`), choose from these three; a behaviour-preserving restructure is `refactor`, not `enhancement`.
-
-Only `bug` changes how the batch runner delivers: it merges green `bug` PRs itself (ADR 0009). `enhancement` and `refactor` PRs wait for the owner.

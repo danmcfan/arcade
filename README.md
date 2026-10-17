@@ -71,4 +71,4 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=game`)
 
 ## Port history
 
-This is a port of an earlier Go version of the game. A parity suite once replayed 16 scenarios recorded from Go and checked every tick; it was retired once the games had been reworked on purpose (ADR 0011). Behaviour differences found during the port, and the Go quirks kept on purpose, are listed in `docs/port-notes.md`.
+This is a port of an earlier Go version of the game. A parity suite once replayed 16 scenarios recorded from Go and checked every tick; it was retired once the games had been reworked on purpose (ADR 0009). Behaviour differences found during the port, and the Go quirks kept on purpose, are listed in `docs/port-notes.md`.

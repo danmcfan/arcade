@@ -26,5 +26,5 @@
     "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "test", "scripts", ".sandcastle"]
+  "include": ["src", "test", "scripts"]
 }

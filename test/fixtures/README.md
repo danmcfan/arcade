@@ -7,4 +7,4 @@
 
 The Go-recorded parity fixtures (input scripts, per-tick traces and golden
 frames) and the Go RNG reference `rng.json` that used to live here were
-retired with their harness (ADR 0011).
+retired with their harness (ADR 0009).
