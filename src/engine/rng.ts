@@ -5,7 +5,7 @@
 
 let a = 0;
 
-/** Normal play seeds from `Date.now()`; parity replays use the script seed. */
+/** Normal play seeds from `Date.now()`; tests and scripts seed it themselves. */
 export function seed(s: number): void {
   a = s >>> 0;
 }

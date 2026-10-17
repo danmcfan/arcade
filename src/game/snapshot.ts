@@ -1,8 +1,6 @@
-// Per-tick state snapshots (§4.3). THIS FILE IS THE CONTRACT: the recorded
-// traces (Go-recorded, or re-recorded from the TS game with `bun run traces`)
-// hold exactly these JSON keys, every porter's `snapshot()`
-// returns exactly these keys, and `test/parity/harness.ts` diffs them
-// field for field. Do not add, rename or drop keys without updating all three.
+// Per-tick state snapshots (§4.3): every scene's `snapshot()` returns exactly
+// these keys, and the test hook (`__arcade.snapshot`) hands them to tests and
+// capture scripts.
 //
 // Conventions
 // - One JSON object per tick (JSONL), written AFTER the tick's update. The
@@ -405,7 +403,7 @@ export interface BrassMonkeySnapshot {
 export type SoftwareSnapshot = SweetSamSnapshot | FireflySnapshot | BrassMonkeySnapshot;
 
 // ---------------------------------------------------------------------------
-// title (src/title): no Go original, so no parity trace.
+// title (src/title): no Go original.
 
 /** Which screen the title scene shows. */
 export type TitlePhase = "menu" | "confirm" | "intro" | "playing" | "paused" | "controls";

@@ -949,7 +949,7 @@ describe("progress", () => {
     expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees", "lantern", "wings"]);
   });
 
-  test("a fresh hub owns no prizes, and its snapshot has no prizes key (the parity traces predate prizes)", () => {
+  test("a fresh hub owns no prizes, and its snapshot has no prizes key", () => {
     const { game } = newGame();
     expect(game.progress().prizes).toEqual([]);
     expect("prizes" in snap(game).arcade).toBe(false);

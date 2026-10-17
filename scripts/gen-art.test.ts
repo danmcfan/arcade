@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import { PNG } from "pngjs";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { allOutputs, imageTable, tableEntries, tablePath } from "./gen-art.ts";
 import { imageOutput } from "./image-outputs.ts";
 

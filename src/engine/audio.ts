@@ -1,6 +1,6 @@
 // Sounds (D4, D5, D12). Port of internal/assets/web.go. T3 (engine) owns the
-// browser half; the recorder half below is the contract porters and parity
-// tests rely on, and it works with no DOM.
+// browser half; the recorder half below is the contract the tests
+// rely on, and it works with no DOM.
 
 import type { SoundName } from "./sounds.generated.ts";
 

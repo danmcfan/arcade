@@ -1,5 +1,7 @@
 # Parity fixtures are frozen and cannot be re-recorded
 
+Superseded by ADR 0011: the parity fixtures and their harness were removed.
+
 `test/fixtures/` holds 16 scenarios recorded from the Go game: input scripts, a state trace for every tick, and golden frames. `bun test` replays them and must match every field on every tick. The Go game and its capture harness were deleted after the port (they survive only at commit `34840f8`), so the fixtures cannot be regenerated from this tree. During the port, behaviour was copied as is, bugs included (D11). Known quirks are listed in `docs/port-notes.md`.
 
 The Go recordings stay frozen. When behaviour changes on purpose, the affected fixtures are re-recorded from the TypeScript game instead (first done for tokens and tickets, #16).

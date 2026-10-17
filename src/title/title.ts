@@ -7,8 +7,8 @@
 // Title music plays until the Game starts; menus blip when the cursor moves
 // and chirp when a choice is made.
 //
-// The Game runs unchanged inside this scene, so `?scene=game` and the parity
-// fixtures still start straight in the hub.
+// The Game runs unchanged inside this scene, so `?scene=game` still starts
+// straight in the hub.
 
 import { sounds } from "../engine/assets.ts";
 import { MenuKeys, type Input, type MenuEdges } from "../engine/input.ts";

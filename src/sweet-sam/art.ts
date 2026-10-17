@@ -292,8 +292,7 @@ export const beeEye: readonly [number, number] = [11, 6];
 
 /**
  * Each bee's body colour, so the player can tell the four apart. The keys are
- * the bees' identities from the Go game (`SweetSamEnemyKind`, which the
- * parity traces record), not their colours.
+ * the bees' identities from the Go game (`SweetSamEnemyKind`), not their colours.
  */
 export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
   red: "y",

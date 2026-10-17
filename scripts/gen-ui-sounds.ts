@@ -24,7 +24,7 @@ import {
   type SoundSource,
   type Tune,
 } from "../src/ui/sounds.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 
 type Wave = (phase: number) => number;
 

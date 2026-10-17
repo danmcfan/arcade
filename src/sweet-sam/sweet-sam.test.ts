@@ -3,7 +3,6 @@
 //
 // It once compared against a trimmed Go reference (seed 8, "greedy", 6000 ticks); since #157 the bear
 // pre-turns as in Pac-Man and leaves Go's path within its first turns, so that reference was retired.
-// The golden fixtures (test/parity/sweet-sam.test.ts) cover the full traces.
 
 import { describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
@@ -78,7 +77,7 @@ function isTick(v: unknown): v is Tick {
   return typeof v.tick === "number" && typeof v.rng === "number" && Array.isArray(v.sounds) && typeof v.sw === "object";
 }
 
-/** JSON round trip: what the parity harness compares. */
+/** JSON round trip, as the test hook hands snapshots over. */
 function roundTrip(t: Tick): Tick {
   const back: unknown = JSON.parse(JSON.stringify(t));
   if (!isTick(back)) throw new Error(`tick ${t.tick} did not survive a JSON round trip`);

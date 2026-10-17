@@ -70,7 +70,3 @@ await verify("pause-menu", (v) => {
 - **zsh does not word-split a command held in a variable** (`B="agent-browser --session x"; $B open` fails). In ad-hoc shell work, use a function: `ab() { agent-browser --session x "$@"; }`.
 - **A headless browser can look touch-first** and show the "needs a keyboard" notice instead of the game. `open()` and `record()` add `?keyboard`, which skips it; after `phone()` (and in `recordPhone()`) they leave it off, so a phone still sees the notice.
 - **Browser zoom emulation** at fractional device-pixel ratios can lose a device pixel at the edges. That is an emulation artifact, not a game bug (`docs/port-notes.md`, T12).
-
-## Parity frames
-
-Separate from capture scripts: `bun run frames` captures the parity-fixture frames (it starts its own server), and `bun run frames:report` diffs them against the golden frames into `out/frame-report.md`.

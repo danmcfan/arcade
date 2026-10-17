@@ -51,7 +51,7 @@ import { cardArt, cardRects, cardSheetHeight, cardSheetWidth, panelFrame } from 
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { tickerSheetRows } from "../src/ui/tickerArt.ts";
 import { titleBar, titleCabinet, titleLogoHeight, titleLogoWidth, titleWord } from "../src/ui/titleArt.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, mirrorX, outline, paint, plot, recolour, toPng } from "./pixel-art.ts";
 

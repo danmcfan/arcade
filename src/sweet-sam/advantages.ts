@@ -1,6 +1,6 @@
 // What the player's prizes do in Sweet Sam (#22). The hub hands over the
 // owned prizes when a run starts; with none, every value is the game's own
-// (./levels.ts), so the parity fixtures (which own no prizes) are unchanged.
+// (./levels.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
 import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";

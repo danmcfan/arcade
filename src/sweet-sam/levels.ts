@@ -83,7 +83,7 @@ function modes(
 // 1/32 and 1/16 px/tick (Pac-Man's +5%/+10% steps, scaled) but stop at 1, so from level 3 the
 // second step changes only red's scatter target, and on level 5 both do.
 
-// Tuned with scripts/sweet-sam-bot.ts (#47): with a fifth of a second's
+// Tuned with a scripted bot (#47, since removed): with a fifth of a second's
 // reaction time, a good run (the top quarter of 200 seeds) scores about what
 // it did when every level was level 1; the bonus flower makes up for most of
 // what the harder levels take.

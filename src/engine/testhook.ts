@@ -1,6 +1,6 @@
 // `window.__arcade` test hook (§3.5, D7). Installed by main.ts only with the
 // `?debug` query param; inert otherwise. T3 (engine) implements it; these
-// types are the contract scripts/capture-frames.ts and agents code against.
+// types are the contract scripts/harness.ts and agents code against.
 
 import type { Input } from "./input.ts";
 import { addSoundListener, type SoundEvent } from "./audio.ts";

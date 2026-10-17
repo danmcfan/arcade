@@ -24,11 +24,11 @@ Apply it to every art request (creating, redrawing or specifying art) that does 
 
 Every issue also carries exactly one work-type label, so Sandcastle and other tooling can switch behaviour on the kind of work:
 
-| Label         | Use it when                                                                                     |
-| ------------- | ----------------------------------------------------------------------------------------------- |
-| `bug`         | Something a player or tool can observe is broken; the fix restores intended behaviour           |
-| `enhancement` | Adds or changes behaviour: a new feature, rule, art, sound or tool capability                   |
-| `refactor`    | Restructures code with no change in behaviour; Parity fixtures and Golden frames stay unchanged |
+| Label         | Use it when                                                                           |
+| ------------- | ------------------------------------------------------------------------------------- |
+| `bug`         | Something a player or tool can observe is broken; the fix restores intended behaviour |
+| `enhancement` | Adds or changes behaviour: a new feature, rule, art, sound or tool capability         |
+| `refactor`    | Restructures code with no change in behaviour                                         |
 
 When a skill asks for an issue's category (for example `/triage`), choose from these three; a behaviour-preserving restructure is `refactor`, not `enhancement`.
 

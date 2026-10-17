@@ -1,6 +1,6 @@
 // What the player's prizes do in Firefly (#35). The hub hands over the owned
 // prizes when a run starts; with none, every value is the game's own
-// (./rules.ts), so the parity fixtures (which own no prizes) are unchanged.
+// (./rules.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
 import { maxSparks, playerSpeed, startLives } from "./rules.ts";

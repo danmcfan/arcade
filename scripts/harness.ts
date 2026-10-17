@@ -34,7 +34,7 @@ import type {
 } from "../src/game/snapshot.ts";
 import type { SceneName } from "../src/game/software.ts";
 import type { Input } from "../src/engine/input.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { browser, decodeDataUrl, isRecord, type Browser } from "./browser.ts";
 
 export interface Server {

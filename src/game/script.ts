@@ -1,6 +1,4 @@
-// Input script format (§4.2), shared by the Go golden harness, the parity
-// harness (test/parity/harness.ts) and the test hook (`__arcade.runScript`).
-// Files live in test/fixtures/inputs/<name>.json.
+// Input script format (§4.2), run by the test hook (`__arcade.runScript`).
 
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { SceneName, SoftwareName } from "./software.ts";
@@ -26,7 +24,7 @@ export interface InputScript {
   /** `rng.seed(seed)` before the scene is constructed. */
   seed: number;
   steps: InputStep[];
-  /** Ticks (1-based, after that tick's update) at which golden frames are captured. */
+  /** Ticks (1-based, after that tick's update) at which frames are captured. */
   captureTicks: number[];
 }
 

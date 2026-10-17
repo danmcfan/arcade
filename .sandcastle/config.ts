@@ -1,8 +1,7 @@
 import { defineConfig } from "sandworm";
 
 // The Sandcastle pipeline lives in sandworm (github.com/danmcfan/sandworm); this is what is
-// particular to arcade. A file in .sandcastle/ named like one of sandworm's prompts replaces it:
-// sync.md does, for the parity fixtures.
+// particular to arcade. A file in .sandcastle/ named like one of sandworm's prompts replaces it.
 export default defineConfig({
   repo: "arcade",
   base: "origin/main",
