@@ -90,6 +90,7 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   stomp: sounds.monkeyStomp,
   step: sounds.monkeyStep,
   extraLife: sounds.ticket,
+  howHigh: sounds.monkeyHowHigh,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
@@ -168,6 +169,10 @@ export class BrassMonkeySoftware implements FixedViewport {
     if (run.phase === "escape") {
       drawEscape(screen, left, top, escapeTicks - run.phaseTicks);
       drawTextCentered(screen, lapLabel(run.loop + 1), left + cabinetPlayfieldWidth / 2, top + 84, "dark");
+      return;
+    }
+    if (run.phase === "howHigh") {
+      drawHowHigh(screen, left, top, run.howHighStack());
       return;
     }
     const floor = run.currentFloor();
@@ -282,6 +287,27 @@ export class BrassMonkeySoftware implements FixedViewport {
       lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
     };
   }
+}
+
+/** How far each Gnome stands above the one below on the "How high can you get?" screen, in px: on its head. */
+const howHighRung = 26;
+
+/**
+ * The "How high can you get?" screen: `stack` Gnomes stacked up from the
+ * floor, each labelled with its height (25 m a floor), the top one with its
+ * arms up, and the question beneath them.
+ */
+function drawHowHigh(screen: Surface, left: number, top: number, stack: number): void {
+  const w = cabinetPlayfieldWidth;
+  const ground = 208;
+  screen.fillRect(left, top, w, 256, sweetie.k);
+  const x = w / 2 - 16;
+  for (let n = 0; n < stack; n++) {
+    const y = ground - (n + 1) * howHighRung;
+    screen.draw(frame(imageGnome, n === stack - 1 ? 1 : 0, 32, 32), left + x, top + y);
+    drawTextCentered(screen, `${(n + 1) * 25}M`, left + x + 56, top + y + 12, "yellow");
+  }
+  drawTextCentered(screen, "HOW HIGH CAN YOU GET?", left + w / 2, top + ground + 16);
 }
 
 /**

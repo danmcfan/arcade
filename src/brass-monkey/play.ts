@@ -23,8 +23,8 @@ import {
 import * as t from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
-/** What the run is doing: the Gnome's intro before the first floor, playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
-export type Phase = "intro" | "play" | "dying" | "clear" | "escape" | "over";
+/** What the run is doing: the Gnome's intro before the first floor, the "How high can you get?" screen before each floor, playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
+export type Phase = "intro" | "howHigh" | "play" | "dying" | "clear" | "escape" | "over";
 
 /** On a girder, in the air (jumping or falling), or on a ladder. */
 export type Footing = "ground" | "air" | "climb";
@@ -39,7 +39,7 @@ export interface Popup {
 
 /** The sounds the run makes; game.ts plays them. */
 export type RunSound =
-  "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape" | "extraLife" | "stomp" | "step";
+  "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape" | "extraLife" | "stomp" | "step" | "howHigh";
 
 export interface Monkey {
   x: number;
@@ -189,7 +189,7 @@ function newMonkey(start: Spot): Monkey {
 /** One run of Brass Monkey, from 3 lives (more with the oil can) to game over. */
 export class Run {
   phase: Phase = "play";
-  /** Ticks left in `intro`, `dying`, `clear` or `escape`. */
+  /** Ticks left in `intro`, `howHigh`, `dying`, `clear` or `escape`. */
   phaseTicks = 0;
   /** Index into `floors`. */
   floor: number;
@@ -270,6 +270,18 @@ export class Run {
       this.phase = "intro";
       this.phaseTicks = t.introTicks;
     }
+  }
+
+  /** The Gnomes stacked on the "How high can you get?" screen: the floor's position in its loop plus 1. */
+  howHighStack(): number {
+    return this.nextStage;
+  }
+
+  /** The "How high can you get?" screen holds before the floor (already started) is played. */
+  private howHigh(): void {
+    this.phase = "howHigh";
+    this.phaseTicks = t.howHighTicks;
+    this.onSound("howHigh");
   }
 
   /** Ticks since the intro started. */
@@ -391,14 +403,18 @@ export class Run {
     this.ticks++;
     const jumpPressed = i.space && !this.prevSpace;
     this.prevSpace = i.space;
-    if (this.lapBanner > 0) this.lapBanner--;
+    if (this.lapBanner > 0 && this.phase === "play") this.lapBanner--;
     for (const p of this.popups) p.ticks--;
     this.popups = this.popups.filter((p) => p.ticks > 0);
     switch (this.phase) {
       case "intro":
         // The input does nothing until the floor starts.
-        if (--this.phaseTicks <= 0) this.phase = "play";
+        if (--this.phaseTicks <= 0) this.howHigh();
         else if (t.introStomps.includes(this.introElapsed())) this.onSound("stomp");
+        return;
+      case "howHigh":
+        // The input does nothing until the floor starts.
+        if (--this.phaseTicks <= 0) this.phase = "play";
         return;
       case "play":
         this.play(i, jumpPressed);
@@ -406,7 +422,10 @@ export class Run {
       case "dying":
         if (--this.phaseTicks > 0) return;
         if (this.lives <= 0) this.phase = "over";
-        else this.startFloor();
+        else {
+          this.startFloor();
+          this.howHigh();
+        }
         return;
       case "clear": {
         if (--this.phaseTicks > 0) return;
@@ -419,12 +438,14 @@ export class Run {
           this.floor = floors.indexOf(next);
           this.nextStage++;
           this.startFloor();
+          this.howHigh();
         }
         return;
       }
       case "escape":
         if (--this.phaseTicks > 0) return;
         this.startLoop(this.loop + 1);
+        this.howHigh();
         this.lapBanner = t.lapBannerTicks;
         break;
       case "over":

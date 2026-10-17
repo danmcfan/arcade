@@ -408,7 +408,7 @@ export interface BrassMonkeyPopupSnapshot {
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
 export interface BrassMonkeySnapshot {
-  phase: "intro" | "play" | "dying" | "clear" | "escape" | "over";
+  phase: "intro" | "howHigh" | "play" | "dying" | "clear" | "escape" | "over";
   phaseTicks: number;
   /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor, 3 the rivet floor. */
   floor: number;

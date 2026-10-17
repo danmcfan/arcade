@@ -200,6 +200,10 @@ describe("BrassMonkeySoftware", () => {
     expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("intro");
     for (let n = 0; n < t.introTicks; n++) g.update(held({ space: true }));
     expect(events.filter((e) => e === "play:monkeyStomp")).toHaveLength(t.introStomps.length);
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("howHigh");
+    expect(events).toContain("play:monkeyHowHigh");
+    expect(words(g)).toEqual(["25M", "HOW HIGH CAN YOU GET?"]);
+    for (let n = 0; n < t.howHighTicks; n++) g.update(NO_INPUT);
     expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("play");
   });
 
@@ -586,6 +590,7 @@ describe("the loop", () => {
     g.run.phaseTicks = 1;
     g.update(NO_INPUT);
     expect(g.run.loop).toBe(1);
+    for (let n = 0; n < t.howHighTicks; n++) g.update(NO_INPUT);
     expect(words(g)).toEqual(["LOOP 2"]);
     for (let n = 0; n < t.lapBannerTicks; n++) g.update(NO_INPUT);
     expect(words(g)).toEqual([]);
