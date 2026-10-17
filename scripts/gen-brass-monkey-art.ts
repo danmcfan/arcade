@@ -12,10 +12,12 @@
 // head) are one row of frames each. The floor tiles are girder.png (8×8),
 // ladder.png (8×4, its rows by height), conveyor.png (8×8: the left end,
 // middle and right end, 4 frames each), door.png (16×24, outlined but for its
-// foot) and wall.png (32×32), none outlined but the door. girder-floor.png
-// and conveyor-floor.png (224×256) are the two floors drawn from them, laid
-// out by src/brass-monkey/floors.ts (the conveyors in their first frame; the
-// game moves them). gen-art.test.ts fails when the
+// foot), wall.png (32×32) and lift.png (16×8, two girder tiles in steel),
+// none outlined but the door; spring.png (12×12: stretched, squashed) is
+// outlined. girder-floor.png, conveyor-floor.png and elevator-floor.png
+// (224×256) are the three floors drawn from them, laid out by
+// src/brass-monkey/floors.ts (the conveyors in their first frame, each lift
+// shaft as a winch over two cables; the game moves the belts and platforms). gen-art.test.ts fails when the
 // committed PNGs drift.
 
 import { join } from "node:path";
@@ -42,12 +44,32 @@ import {
   monkeyStand,
   monkeyStep,
   type Part,
+  spring,
   wallPanel,
 } from "../src/brass-monkey/art.ts";
-import { conveyorFloor, girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
+import {
+  conveyorFloor,
+  elevatorFloor,
+  girderFloor,
+  girderTop,
+  liftWidth,
+  type Floor,
+} from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
-import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
+import {
+  blank,
+  checkRows,
+  empty,
+  flipX,
+  glint,
+  mirrorX,
+  outline,
+  overlay,
+  paint,
+  recolour,
+  type Rows,
+} from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
 
@@ -94,6 +116,22 @@ export function emberFrames(): Rows[] {
 }
 
 /** The pan's sheet frames, outlined: the tray with each frame's scraps. */
+/** The spring's sheet frames, outlined: stretched, then squashed. */
+export function springFrames(): Rows[] {
+  return spring.map((rows) => outline(rows));
+}
+
+/** The girder's reds turned to the ladder's steel greys, lightest to darkest. */
+const steel = { o: "w", r: "l", p: "m" } as const;
+
+/** A lift platform, and the winch over each shaft: two girder tiles in steel. */
+export function liftFrame(): Rows {
+  return recolour(
+    girder.map((row) => row + row),
+    steel,
+  );
+}
+
 export function panFrames(): Rows[] {
   return panScraps.map((s) => outline(overlay(panTray, s.rows, s.x, s.y)));
 }
@@ -146,7 +184,7 @@ function beltTile(x: number, x0: number, x1: number): Rows {
   return frames[at] ?? [];
 }
 
-/** `floor` drawn from the tiles: the wall, then the ladders, the girders (a conveyor's in its first frame) and the exit door. */
+/** `floor` drawn from the tiles: the wall, then the ladders, the lift shafts, the girders (a conveyor's in its first frame) and the exit door. */
 function floorRows(floor: Floor): Rows {
   const tile = wallPanel.length;
   let rows: Rows = Array.from({ length: floor.height }, (_, y) =>
@@ -157,6 +195,11 @@ function floorRows(floor: Floor): Rows {
       if (piece.gap && y >= piece.gap[0] && y <= piece.gap[1]) continue;
       rows = overlay(rows, [ladder[y % ladder.length] ?? ""], piece.x, y);
     }
+  }
+  for (const shaft of floor.lifts ?? []) {
+    for (let y = shaft.top; y < floor.height; y++)
+      for (const x of [3, liftWidth - 4]) rows = overlay(rows, ["m"], shaft.x + x, y);
+    rows = overlay(rows, liftFrame(), shaft.x, shaft.top - 8);
   }
   const step = girder[0]?.length ?? 0;
   for (const g of floor.girders) {
@@ -174,6 +217,11 @@ export function girderFloorRows(): Rows {
 /** The conveyor floor. */
 export function conveyorFloorRows(): Rows {
   return floorRows(conveyorFloor);
+}
+
+/** The elevator floor, its lift shafts empty: the game draws the platforms. */
+export function elevatorFloorRows(): Rows {
+  return floorRows(elevatorFloor);
 }
 
 /** `frames` side by side; they must all be one size. */
@@ -197,6 +245,8 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
   imageOutput(join(brassMonkeyImagesDir, "pan.png"), 24, 12, () => sheet(panFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "spring.png"), 24, 12, () => sheet(springFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "lift.png"), 16, 8, () => sheet([liftFrame()])),
   imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
   imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
   imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),
@@ -205,4 +255,5 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "wall.png"), 32, 32, () => sheet([wallPanel])),
   imageOutput(join(brassMonkeyImagesDir, "girder-floor.png"), 224, 256, () => sheet([girderFloorRows()])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor-floor.png"), 224, 256, () => sheet([conveyorFloorRows()])),
+  imageOutput(join(brassMonkeyImagesDir, "elevator-floor.png"), 224, 256, () => sheet([elevatorFloorRows()])),
 ];

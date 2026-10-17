@@ -20,9 +20,10 @@ import {
   monkeyStep,
   panScraps,
   panTray,
+  spring,
   wallPanel,
 } from "../src/brass-monkey/art.ts";
-import { girderFloor } from "../src/brass-monkey/floors.ts";
+import { elevatorFloor, girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, empty, flipX, glint, outline, type Rows } from "./pixel-art.ts";
 import {
@@ -35,6 +36,9 @@ import {
   gearFrames,
   girderFloorRows,
   conveyorFloorRows,
+  elevatorFloorRows,
+  liftFrame,
+  springFrames,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
@@ -178,6 +182,35 @@ describe("generated frames", () => {
     expect(at(16)[0]?.[0]).not.toBe("o");
     // A plain girder is not a conveyor.
     expect(rows[248]?.slice(0, 224)).toBe("o".repeat(224));
+  });
+
+  test("the spring is two 12×12 fills, stretched then squashed, outlined in its sheet", () => {
+    expect(spring.length).toBe(2);
+    for (const rows of spring) checkRows("spring", rows, { w: 12, h: 12 });
+    const frames = springFrames();
+    expect(frames).toEqual(spring.map((rows) => outline(rows)));
+  });
+
+  test("a lift platform is two girder tiles in the ladder's steel greys", () => {
+    const lift = liftFrame();
+    checkRows("lift", lift, { w: 16, h: 8 });
+    expect(lift.join("")).not.toMatch(/[orp]/u);
+    expect(lift[0]).toBe("w".repeat(16));
+  });
+
+  test("the elevator floor is 224×256, each shaft a winch over two cables, with no girder inside the shaft", () => {
+    const rows = elevatorFloorRows();
+    checkRows("elevator floor", rows, { w: 224, h: 256 });
+    for (const shaft of elevatorFloor.lifts ?? []) {
+      expect(rows.slice(shaft.top - 8, shaft.top - 1).map((r) => r.slice(shaft.x, shaft.x + 16))).toEqual(
+        liftFrame().slice(0, 7),
+      );
+      for (let y = shaft.top; y < 256; y += 16) {
+        const row = rows[y]?.slice(shaft.x, shaft.x + 16) ?? "";
+        expect([row[3], row[12]]).toEqual(["m", "m"]);
+        expect(row).not.toContain("o");
+      }
+    }
   });
 
   test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {

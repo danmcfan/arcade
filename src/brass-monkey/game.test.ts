@@ -2,6 +2,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test
 import {
   imageCabinetBrassMonkey,
   imageConveyorFloor,
+  imageElevatorFloor,
+  imageLift,
+  imageSpring,
   imageGirderFloor,
   imageFont,
   imagePan,
@@ -124,6 +127,22 @@ describe("BrassMonkeySoftware", () => {
     expect(g.background()).toBe(imageGirderFloor);
     g.run.floor = 1;
     expect(g.background()).toBe(imageConveyorFloor);
+    g.run.floor = 2;
+    expect(g.background()).toBe(imageElevatorFloor);
+  });
+
+  test("on the elevator floor the snapshot holds each lift platform's left edge and top", () => {
+    const g = quiet();
+    g.run.floor = 2;
+    g.run.startFloor();
+    g.update(NO_INPUT);
+    expect(brassMonkeySnapshot(g.snapshot()).lifts).toEqual([
+      { x: 40, y: 253.5 },
+      { x: 40, y: 203.5 },
+      { x: 40, y: 153.5 },
+      { x: 152, y: 136.5 },
+      { x: 152, y: 196.5 },
+    ]);
   });
 
   test("plays the run's sounds", () => {
@@ -154,6 +173,20 @@ describe("BrassMonkeySoftware", () => {
   });
 });
 
+/** A spring in the air at x 100, row y. */
+const springAt100 = (y: number): Hazard => ({
+  kind: "spring",
+  x: 100,
+  y,
+  dir: 1,
+  vy: 1,
+  footing: "air",
+  ladder: null,
+  climbDir: 1,
+  scorableIn: 0,
+  wild: false,
+});
+
 describe("draw", () => {
   test("only the cabinet draws outside the 224x288 screen; everything else is clipped to it", () => {
     const paints = screenPaints((screen) => {
@@ -178,6 +211,24 @@ describe("draw", () => {
     expect(gnome()).toBe(0);
     g.run.gearTimer = t.throwTicks;
     expect(gnome()).toBe(32);
+  });
+
+  test("the elevator floor's lift platforms are drawn where they are, and a spring stretched in flight, squashed landing", () => {
+    const g = quiet();
+    g.run.floor = 2;
+    g.run.startFloor();
+    const lifts = record(g)
+      .calls.filter((c) => c.sprite.asset === imageLift.asset)
+      .map((c) => [c.x, c.y]);
+    expect(lifts).toEqual(g.run.lifts().map((l) => [8 + l.x0, 8 + 32 + l.y]));
+    const springAt = (): { col: number; x: number; y: number }[] =>
+      record(g)
+        .calls.filter((c) => c.sprite.asset === imageSpring.asset)
+        .map((c) => ({ col: c.sprite.sx / 12, x: c.x, y: c.y }));
+    g.run.hazards = [springAt100(70)];
+    expect(springAt()).toEqual([{ col: 0, x: 8 + 94, y: 40 + 58 }]);
+    g.run.hazards = [springAt100(87)];
+    expect(springAt()).toEqual([{ col: 1, x: 8 + 94, y: 40 + 75 }]);
   });
 
   test("a pan is drawn from the pan sheet, its two frames alternating as it rides", () => {

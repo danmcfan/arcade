@@ -80,6 +80,11 @@ export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
+export const imageElevatorFloor: Sprite = whole(brassMonkeyImages.elevatorFloor);
+/** A lift platform, 16×8. */
+export const imageLift: Sprite = whole(brassMonkeyImages.lift);
+/** The spring, each 12×12: stretched, then squashed. */
+export const imageSpring: Sprite = whole(brassMonkeyImages.spring);
 /** Two turns, each 12×12. */
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
 /** Two flickers and their mirrors, each 12×12. */

@@ -9,13 +9,16 @@ import {
   imageCabinetBrassMonkey,
   imageConveyor,
   imageConveyorFloor,
+  imageElevatorFloor,
   imageDoor,
   imageEmber,
   imageGear,
   imagePan,
   imageGirderFloor,
   imageGnome,
+  imageLift,
   imageMonkey,
+  imageSpring,
   imageWall,
   sounds,
 } from "../engine/assets.ts";
@@ -46,7 +49,7 @@ import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 /** The band at the top of the screen holding the score, high score and bonus. */
 const hudHeight = 32;
 
-const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor];
+const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
@@ -133,6 +136,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     const floor = run.currentFloor();
     screen.draw(this.background(), left, top);
     drawConveyors(screen, floor, left, top, run.ticks);
+    for (const l of run.lifts()) screen.draw(imageLift, left + l.x0, top + l.y);
     floor.bolts.forEach((b, n) => {
       if (run.bolts[n] === true) return;
       const t = run.ticks % 120;
@@ -140,7 +144,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
     screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
-    for (const h of run.hazards) drawHazard(screen, h, left, top, run.ticks);
+    for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
     // The monkey blinks while it loses a life.
     if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
     if (run.lapBanner > 0 && run.phase === "play")
@@ -195,6 +199,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       bolts: [...run.bolts],
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
+      lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
     };
   }
 }
@@ -228,7 +233,14 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
   );
 }
 
-function drawHazard(screen: Surface, h: Hazard, left: number, top: number, ticks: number): void {
+function drawHazard(screen: Surface, h: Hazard, floor: Floor, left: number, top: number, ticks: number): void {
+  if (h.kind === "spring") {
+    // Squashed as it lands on the Gnome's girder, stretched in flight.
+    const { springs } = floor;
+    const landing = springs !== undefined && h.x < springs.dropX && h.y >= springs.y - 3;
+    screen.draw(frame(imageSpring, landing ? 1 : 0, 12, 12), left + h.x - 6, top + h.y - 12);
+    return;
+  }
   // A pan's scraps jolt as it rides.
   const turn = Math.trunc(Math.abs(h.x) / 4) % 2;
   const [image, col] =

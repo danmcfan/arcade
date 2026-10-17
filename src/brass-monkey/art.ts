@@ -1,5 +1,5 @@
 // Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, the
-// items (the gear and ember hazards and the bolt) and the floor tiles (the
+// items (the gear, spring and ember hazards and the bolt) and the floor tiles (the
 // girder, the ladder, the conveyor's slats, the exit door and the wall), as
 // fills in rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.`
 // is blank). Frames are built from shared parts (a head over a body, a body
@@ -306,6 +306,43 @@ export const girder: readonly string[] = [
   "rrrrrrrr",
   "pppppppp",
   "........",
+];
+
+/**
+ * The spring: a hazard the Gnome sends on the elevator floor, bouncing along
+ * its girder, as Donkey Kong's jacks. A steel coil between two plates in the
+ * girder's reds, 12×12, its foot on the bottom plate: stretched in flight,
+ * then squashed as it lands. Lit from the top left like the gear.
+ */
+export const spring: readonly (readonly string[])[] = [
+  [
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
+  [
+    "............",
+    "............",
+    "............",
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wlllld...",
+    "...wmmmmd...",
+    "...wlllld...",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
 ];
 
 /**
