@@ -593,6 +593,11 @@ const brassMonkeyJingles = {
     ],
     eighth: 0.07,
   },
+  /** A footstep on each frame of the walk cycle: a soft low tick. */
+  step: {
+    notes: [[40, 1]],
+    eighth: 0.025,
+  },
   /** The escape: the attract loop's tune played out in full into the daylight. */
   escape: {
     notes: [
@@ -613,6 +618,63 @@ const brassMonkeyJingles = {
 } as const satisfies Record<string, Effect>;
 for (const [name, effect] of Object.entries(brassMonkeyJingles)) {
   defineSound(`monkey${capitalized(name)}`, { effect }, { channel: "arcade" });
+}
+
+/**
+ * Brass Monkey's floor music (#256): a short loop for each floor while it is
+ * played, in place of Donkey Kong's board music. It stops when the monkey
+ * dies, the floor clears and with the pause menu.
+ */
+const floorTunes = {
+  /** The girders: a bouncy bass-and-answer riff in C. */
+  girder: {
+    notes: [
+      [48, 1],
+      [null, 1],
+      [55, 1],
+      [60, 1],
+      [48, 1],
+      [null, 1],
+      [55, 1],
+      [58, 1],
+      [53, 1],
+      [null, 1],
+      [57, 1],
+      [60, 1],
+      [55, 1],
+      [null, 1],
+      [59, 1],
+      [62, 1],
+    ],
+    eighth: 0.13,
+    wave: "triangle",
+  },
+  /** The conveyors: a churning, machine-like minor figure. */
+  conveyor: {
+    notes: [
+      [45, 1],
+      [52, 1],
+      [57, 1],
+      [52, 1],
+      [45, 1],
+      [52, 1],
+      [56, 1],
+      [52, 1],
+      [43, 1],
+      [50, 1],
+      [55, 1],
+      [50, 1],
+      [44, 1],
+      [52, 1],
+      [56, 1],
+      [59, 1],
+    ],
+    eighth: 0.11,
+    wave: "triangle",
+  },
+} as const satisfies Record<string, Tune>;
+for (const [name, tune] of Object.entries(floorTunes)) {
+  defineSound(`monkey${capitalized(name)}`, { tune }, { channel: "minigame", loop: true, volume: 0.35 });
 }
 
 function capitalized(s: string): string {

@@ -380,7 +380,7 @@ export interface BrassMonkeyHazardSnapshot {
 export interface BrassMonkeySnapshot {
   phase: "intro" | "play" | "dying" | "clear" | "escape" | "over";
   phaseTicks: number;
-  /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor. */
+  /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor, 3 the rivet floor. */
   floor: number;
   /** Escapes so far: each loop is harder. */
   loop: number;
@@ -399,6 +399,9 @@ export interface BrassMonkeySnapshot {
   hazards: BrassMonkeyHazardSnapshot[];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[];
+  /** Whether each of the rivet floor's rivets has been pulled; empty on the other floors. */
+  rivets: boolean[];
+  /** Ticks left holding the wrench; 0 without it. */
   gearTimer: number;
   emberTimer: number;
   /** The lift platforms on the elevator floor, each its left edge and top; empty on the other floors. */
