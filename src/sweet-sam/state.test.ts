@@ -280,10 +280,23 @@ describe("eating", () => {
       "play:sweetSmoke",
     ]);
     expect([s.camera.shakeTicksRemaining, s.camera.shakeIntensity]).toEqual([6, 4]);
-    expect(enemy(s, 0).blueFrames).toBe(600);
+    expect(enemy(s, 0).blueFrames).toBe(360);
     expect(enemy(s, 0).reverseDirection).toBe(true);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
-    expect(s.enemies.every((e) => e.blueFrames === 600)).toBe(true);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
+    expect(s.enemies.every((e) => e.blueFrames === 360)).toBe(true);
+  });
+
+  test.each([17, 19, 21])("on level %p a honey pot scores 50 and turns the bees round, but none sleeps", (level) => {
+    const s = playing();
+    s.level = level;
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = 212;
+    step(s);
+    expect(s.scoreValue).toBe(50);
+    expect(enemy(s, 0).reverseDirection).toBe(true);
+    expect(s.enemies.some((e) => e.blueFrames > 0)).toBe(false);
   });
 
   test("a bee that leaves the home still sleepy can be eaten for points", () => {
@@ -294,7 +307,7 @@ describe("eating", () => {
     power.x = s.player.x - 1;
     power.y = 212;
     step(s);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
     let n = 0;
     while (pink.home && n++ < 300) step(s);
     expect([pink.home, pink.blueFrames > 0]).toEqual([false, true]);

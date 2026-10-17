@@ -17,7 +17,7 @@ export const honeyJarExtraLives = 1;
  */
 export const runningShoesSpeedFactor = 1.125;
 
-/** Sleepy bees: each level's sleepy time is multiplied by this (15 s rather than 10 on level 1). */
+/** Sleepy bees: each level's sleepy time is multiplied by this (9 s rather than 6 on level 1). */
 export const sleepyBeesFactor = 1.5;
 
 /** The values a Sweet Sam run starts with. */

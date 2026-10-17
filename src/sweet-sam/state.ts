@@ -236,7 +236,7 @@ export class PlayState implements State {
     // Each bee's target this tick, for the junctions it reaches between sub-steps.
     const targets = new Map<Entity, Tile>();
     for (const e of s.enemies) {
-      updateBlue(e);
+      updateBlue(e, values.flashes);
       // Eyes steer themselves home (update.ts `moveEyes`) and cannot hurt or be eaten.
       if (e.eyes) {
         continue;

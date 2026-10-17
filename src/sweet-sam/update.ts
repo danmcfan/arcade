@@ -162,13 +162,17 @@ export function updateFrame(e: Entity): void {
   }
 }
 
-export function updateBlue(e: Entity): void {
+/** Ticks a flashing bee stays white, then blue: one flash is twice this. */
+export const flashToggleTicks = 10;
+
+/** Counts down a sleepy bee's ticks; in its last ones it flashes white `flashes` times. */
+export function updateBlue(e: Entity, flashes: number): void {
   if (e.blueFrames > 0) {
     e.blueFrames--;
-    if (e.blueFrames <= framesPerSecond * 2) {
+    if (e.blueFrames < flashes * 2 * flashToggleTicks) {
       if (e.flashFrames === 0) {
         e.flash = !e.flash;
-        e.flashFrames = 5;
+        e.flashFrames = flashToggleTicks - 1;
       } else {
         e.flashFrames--;
       }

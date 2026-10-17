@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { NO_INPUT } from "../engine/input.ts";
 import { addSoundListener } from "../engine/audio.ts";
-import { blueFramesDuration } from "./constants.ts";
 import { levelValues } from "./levels.ts";
 import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";
 import {
@@ -54,7 +53,7 @@ describe("sweetSamAdvantages", () => {
   test("with no prizes, the original game: 3 lives, speed 1.0, each level's sleepy time as it is", () => {
     expect(sweetSamAdvantages([])).toEqual(noAdvantages);
     expect(noAdvantages).toEqual({ lives: 3, playerSpeedFactor: 1, sleepyFactor: 1 });
-    expect([startingLives, velocityPlayerNormal, blueFramesDuration]).toEqual([3, 1.0, 600]);
+    expect([startingLives, velocityPlayerNormal]).toEqual([3, 1.0]);
   });
 
   test("each prize changes only its own value", () => {
@@ -71,11 +70,11 @@ describe("sweetSamAdvantages", () => {
 });
 
 describe("Sweet Sam with prizes", () => {
-  test("no prizes: 3 lives, the bear at 1.0, power pellets scare for 600 ticks", () => {
+  test("no prizes: 3 lives, the bear at 1.0, power pellets scare for 360 ticks (6 s)", () => {
     const s = playing([]);
     expect(s.snapshot().lives).toBe(3);
     expect(s.player.velocity).toBe(1.0);
-    expect(eatPowerPellet(s)).toBe(600);
+    expect(eatPowerPellet(s)).toBe(360);
   });
 
   test("honey jar: a run starts with 4 lives", () => {
@@ -117,9 +116,9 @@ describe("Sweet Sam with prizes", () => {
     expect(s.player.velocity).toBe(1.25 * 1.125);
   });
 
-  test("sleepy bees: smoke pots make the bees sleepy for 900 ticks (15 s) on level 1", () => {
+  test("sleepy bees: smoke pots make the bees sleepy for 540 ticks (9 s) on level 1", () => {
     const s = playing(["sleepyBees"]);
-    expect(eatPowerPellet(s)).toBe(900);
+    expect(eatPowerPellet(s)).toBe(540);
   });
 
   test("sleepy bees: 1.5 times a later level's sleepy time", () => {
@@ -127,8 +126,8 @@ describe("Sweet Sam with prizes", () => {
     plain.level = 3;
     const sleepy = playing(["sleepyBees"]);
     sleepy.level = 3;
-    expect(levelValues(3).sleepyFrames).toBe(480);
-    expect(eatPowerPellet(plain)).toBe(480);
-    expect(eatPowerPellet(sleepy)).toBe(720);
+    expect(levelValues(3).sleepyFrames).toBe(240);
+    expect(eatPowerPellet(plain)).toBe(240);
+    expect(eatPowerPellet(sleepy)).toBe(360);
   });
 });
