@@ -23,6 +23,9 @@ import {
 import * as t from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
+/** The Gnome's height, in px: its sprite's. */
+const gnomeHeight = 32;
+
 /** What the run is doing: the Gnome's intro before the first floor, the "How high can you get?" screen before each floor, playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
 export type Phase = "intro" | "howHigh" | "play" | "dying" | "clear" | "escape" | "over";
 
@@ -321,11 +324,16 @@ export class Run {
     if (this.phase !== "clear") return perch;
     const elapsed = t.clearTicks - this.phaseTicks;
     if (this.finalClear()) {
-      const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32;
+      const bottom = Math.max(...floor.girders.map((g) => g.y)) - gnomeHeight;
       return Math.min(bottom, perch + Math.trunc((elapsed * elapsed) / 16));
     }
     const climbed = Math.max(0, elapsed - t.gnomeClimbBeat) * t.gnomeClimbSpeed;
-    return Math.max(-32, perch - climbed);
+    return Math.max(-gnomeHeight, perch - climbed);
+  }
+
+  /** Whether the Gnome is climbing away from a cleared floor (not the loop's last). */
+  gnomeClimbing(): boolean {
+    return this.phase === "clear" && !this.finalClear() && t.clearTicks - this.phaseTicks > t.gnomeClimbBeat;
   }
 
   /** How far the girders have been bent into their slopes, 0 flat to 1; 1 out of the intro. */

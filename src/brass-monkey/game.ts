@@ -356,11 +356,8 @@ export function deathColumn(phaseTicks: number): number {
 
 /** The Gnome's sheet column: reaching as it climbs (in the intro and away from a clear) and as it hops to stomp, arms up as it throws and as it falls at the loop's end, else idle. */
 export function gnomeColumn(run: Run): number {
-  if (run.phase === "clear") {
-    if (run.finalClear()) return 1;
-    if (run.gnomeY() < run.currentFloor().gnome.y) return Math.trunc(run.ticks / 8) % 2 === 0 ? 2 : 0;
-  }
-  if (run.introGnomeRise() > 0) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
+  if (run.finalClear()) return 1;
+  if (run.introGnomeRise() > 0 || run.gnomeClimbing()) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
   if (run.introHop() > 0) return 2;
   return run.gnomeThrowing() ? 1 : 0;
 }
