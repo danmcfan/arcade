@@ -299,18 +299,34 @@ export interface BannerState {
   challenging: boolean;
 }
 
-/** Banner text in the middle of the field this tick, or null: STAGE n while a stage opens, PLAYER 1 / STAGE 1 / READY at the run start, READY before a respawn. */
-export function banner(b: BannerState): string | null {
+/** A banner in the middle of the field: PLAYER 1, STAGE n, CHALLENGING STAGE or READY. */
+export type Banner =
+  { kind: "player" } | { kind: "stage"; stage: number } | { kind: "challenging" } | { kind: "ready" };
+
+/** The words of each banner but STAGE n, which carries its number. */
+const fixedBannerText: Readonly<Record<Exclude<Banner["kind"], "stage">, string>> = {
+  player: "PLAYER 1",
+  challenging: "CHALLENGING STAGE",
+  ready: "READY",
+};
+
+/** The words a banner shows. */
+export function bannerText(b: Banner): string {
+  return b.kind === "stage" ? `STAGE ${b.stage}` : fixedBannerText[b.kind];
+}
+
+/** The banner in the middle of the field this tick, or null: STAGE n while a stage opens, PLAYER 1 / STAGE 1 / READY at the run start, READY before a respawn. */
+export function banner(b: BannerState): Banner | null {
   if (b.lives === 0) return null;
-  if (b.respawn > 0 && b.respawn <= readyTicks) return "READY";
+  if (b.respawn > 0 && b.respawn <= readyTicks) return { kind: "ready" };
   // A stage cleared during the burst still opens on its STAGE n.
   if (b.stageTick > stageIntroTicks) return null;
-  if (b.challenging) return "CHALLENGING STAGE";
+  if (b.challenging) return { kind: "challenging" };
   if (b.stage === 1) {
-    if (b.stageTick <= playerBannerTicks) return "PLAYER 1";
-    if (b.stageTick > playerBannerTicks + stageBannerTicks) return "READY";
+    if (b.stageTick <= playerBannerTicks) return { kind: "player" };
+    if (b.stageTick > playerBannerTicks + stageBannerTicks) return { kind: "ready" };
   }
-  return `STAGE ${b.stage}`;
+  return { kind: "stage", stage: b.stage };
 }
 
 /** What each stage asks of the player. */

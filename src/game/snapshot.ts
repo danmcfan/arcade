@@ -18,6 +18,7 @@ import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import type { NoticeKind } from "../arcade/changeMachine.ts";
 import type { HighScores } from "../arcade/wallet.ts";
+import type { Banner } from "../firefly/rules.ts";
 import type { Faced } from "../arcade/update.ts";
 
 /** Fields every top-level scene snapshot carries. */
@@ -367,8 +368,8 @@ export interface FireflySnapshot {
   challenge?: { hits: number; tally: number };
   /** Ticks left of the -RESULTS- screen after GAME OVER; 0 otherwise. */
   results: number;
-  /** Banner text in mid-field: "PLAYER 1", "STAGE n", "CHALLENGING STAGE", "READY", or null. */
-  banner: string | null;
+  /** The banner in mid-field (src/firefly/rules.ts), or null. */
+  banner: Banner | null;
 }
 
 // ---------------------------------------------------------------------------
