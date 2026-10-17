@@ -21,6 +21,8 @@ import {
   imageMonkey,
   imageMonkeyDeath,
   imageSpring,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
   sounds,
 } from "../engine/assets.ts";
@@ -45,13 +47,13 @@ import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial } from "../ui/rollingDials.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { dyingTicks, escapeTicks } from "./tuning.ts";
+import { clearTicks, dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
 const hudHeight = 32;
 
-const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor];
+const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor, imageRivetFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
@@ -171,10 +173,14 @@ export class BrassMonkeySoftware implements FixedViewport {
       const glint = t < 18 ? 1 + Math.trunc(t / 6) : 0;
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
+    floor.rivets?.forEach((r, n) => {
+      if (run.rivets[n] !== true) screen.draw(imageRivet, left + r.x - 4, top + r.y);
+    });
+    const gnomeY = floor.gnome.y + (run.phase === "clear" ? gnomeFall(floor, clearTicks - run.phaseTicks) : 0);
     screen.draw(
       frame(imageGnome, gnomeColumn(run), 32, 32),
       left + floor.gnome.x,
-      top + floor.gnome.y + run.introGnomeRise() - run.introHop(),
+      top + gnomeY + run.introGnomeRise() - run.introHop(),
     );
     for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
     // The monkey comes on when the floor starts; losing a life, it spins and falls (deathColumn).
@@ -232,11 +238,22 @@ export class BrassMonkeySoftware implements FixedViewport {
       moving: m.moving,
       hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing, wild: h.wild })),
       bolts: [...run.bolts],
+      rivets: [...run.rivets],
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
       lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
     };
   }
+}
+
+/**
+ * How far the Gnome has fallen `t` ticks after the floor cleared: on the
+ * rivet floor it drops, gathering speed, to the bottom girder; elsewhere it stays.
+ */
+function gnomeFall(floor: Floor, t: number): number {
+  if (floor.rivets === undefined) return 0;
+  const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32 - floor.gnome.y;
+  return Math.min(bottom, Math.trunc((t * t) / 16));
 }
 
 /** The lap as the player counts it, from 1: `run.loop` counts escapes. */

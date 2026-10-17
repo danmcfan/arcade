@@ -89,6 +89,9 @@ export const imageElevatorFloor: Sprite = whole(brassMonkeyImages.elevatorFloor)
 export const imageLift: Sprite = whole(brassMonkeyImages.lift);
 /** The spring, each 12×12: stretched, then squashed. */
 export const imageSpring: Sprite = whole(brassMonkeyImages.spring);
+export const imageRivetFloor: Sprite = whole(brassMonkeyImages.rivetFloor);
+/** A rivet in its slot in a rivet floor girder, 8×8. */
+export const imageRivet: Sprite = whole(brassMonkeyImages.rivet);
 /** Two turns, each 12×12. */
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
 /** Two flickers and their mirrors, each 12×12. */

@@ -407,6 +407,23 @@ export const spring: readonly (readonly string[])[] = [
 ];
 
 /**
+ * A rivet (#250), tweaked from the bolt: its brass, lit on the left and
+ * shaded on the right, as a stubby plug 8×8 that fills a slot in the rivet
+ * floor's girders, a cap above and below the girder's web; the last row is
+ * blank as the girder's.
+ */
+export const rivet: readonly string[] = [
+  ".wyyyyo.",
+  ".wyyyyo.",
+  "..wyyo..",
+  "..wyyo..",
+  "..wyyo..",
+  ".wyyyyo.",
+  ".oooooor",
+  "........",
+];
+
+/**
  * The ladder: 8 wide, steel rails 2 px thick, lit on the left and shaded on
  * the right. Row `y % 4` is drawn at height y, so every rung (row 1) lines up
  * across the floor.
