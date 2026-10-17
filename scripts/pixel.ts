@@ -25,7 +25,7 @@
 //   path.ts:name         rows exported by an art source, drawn without `bun run art`:
 //                        a list of rows, a list of lists, or a record of them (one image each);
 //                        glyph rows (`#` and `.`) draw in white
-//   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.honeyJar
+//   path.ts:name.key     one entry of such a list or record, e.g. src/ui/prizeArt.ts:prizeArt.smokeBomb
 //
 // Options: --scale N (default: fits each image to about 256 px, at most 8x),
 // --out <file> (show, before, place, preview and export), --ref <rev> (before; default

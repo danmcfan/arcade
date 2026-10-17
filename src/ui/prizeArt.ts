@@ -10,14 +10,14 @@ import { sweetie } from "./sweetie16.ts";
 import { stripRects } from "./strip.ts";
 
 export const prizeArt = {
-  /** A jar of honey with a red lid: hangs at 10:15 round the Sweet Sam cabinet. */
-  honeyJar: [".kkkkkk.", "krrwrrrk", "kkkkkkkk", ".kwyyok.", ".kywwok.", ".kyyyok.", ".kyyook.", "..kkkk.."],
+  /** A green smoke canister with a white label: hangs at 10:15 round the Sweet Sam cabinet. */
+  smokeBomb: ["..kkkk..", "..kmmk..", ".kkkkkk.", ".kGGGGk.", ".kGwGGk.", ".kGGGGk.", ".kGGGGk.", "..kkkk.."],
   /** A red running shoe with a white sole: hangs at 1:45 round the Sweet Sam cabinet. */
   runningShoes: ["........", "kkk.....", "krrk....", "krwkk...", "krrrwkk.", "krwwrrrk", "kwwwwwwk", ".kkkkkk."],
   /** A framed picture of a bee asleep under a "z": hangs at 12 above the Sweet Sam cabinet. */
   sleepyBees: ["kkkkkkkk", "kooooook", "konnnwok", "konwnnok", "koykykok", "koGGGGok", "kooooook", "kkkkkkkk"],
-  /** A brass storm lantern, its flame lit: hangs at 3 round the Firefly cabinet. */
-  lantern: ["..kkkk..", ".k....k.", ".kkkkkk.", "kmyooymk", "kmowwomk", "kmyooymk", ".kkkkkk.", "..kkkk.."],
+  /** A red firecracker, its fuse lit: hangs at 3 round the Firefly cabinet. */
+  firecracker: ["....y...", "...o....", "..kkkk..", "..krrk..", "..kwwk..", "..krrk..", "..krrk..", "..kkkk.."],
   /** A cyan glow stick on a hook: hangs at 1:30 round the Firefly cabinet. */
   glowStick: ["...kk...", "..k..k..", "..kkkk..", "..kcwk..", "..kcwk..", "..kcBk..", "..kBBk..", "..kkkk.."],
   /**
@@ -26,8 +26,8 @@ export const prizeArt = {
    * (`mirroredPrizes`).
    */
   wings: ["kk..", "kcwk", "kcBk", ".kkk", "kcBy", "kBky", ".kkg", "...k"],
-  /** A squat brass oil can with a red label: hangs at 9 round the Brass Monkey cabinet. */
-  oilCan: ["......k.", ".....km.", "..k.km..", ".kkkkk..", "kywyyok.", "kyrrrok.", "kyrwrok.", ".kkkkk.."],
+  /** A red umbrella, open, on a crook handle: hangs at 9 round the Brass Monkey cabinet. */
+  umbrella: ["..kkkk..", ".krrwrk.", "krrwrrrk", "kkkkkkkk", "...km...", "...km...", ".k.km...", "..kk...."],
   /** A red boot with a white sole on a brass spring: hangs at 12 above the Brass Monkey cabinet. */
   springBoots: ["kkkk....", "krwk....", "krrkkk..", "krrrrrk.", "kwwwwwk.", "..kyyk..", "..kook..", "..kyyk.."],
   /** A brass pocket watch: hangs at 10:30 round the Brass Monkey cabinet. */

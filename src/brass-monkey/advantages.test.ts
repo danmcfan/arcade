@@ -5,14 +5,14 @@ import type { PrizeId } from "../game/minigames.ts";
 import {
   brassMonkeyAdvantages,
   noAdvantages,
-  oilCanExtraLives,
   pocketWatchBonusTicks,
   springBootsJumpSpeed,
+  umbrellaHits,
 } from "./advantages.ts";
 import { floors, girderTop } from "./floors.ts";
 import { BrassMonkeySoftware } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
-import { Run } from "./play.ts";
+import { Run, type Hazard } from "./play.ts";
 import * as t from "./tuning.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
@@ -57,19 +57,76 @@ function firstBonusStep(prizes: readonly PrizeId[]): number {
 describe("Brass Monkey with no prizes", () => {
   test("matches #39's tuning: 3 lives, a 15 px jump, the bonus drops every 120 ticks", () => {
     expect(brassMonkeyAdvantages([])).toEqual(noAdvantages);
-    expect(noAdvantages).toEqual({ lives: t.startLives, jumpSpeed: t.jumpSpeed, bonusTicks: t.bonusTicks });
+    expect(noAdvantages).toEqual({
+      lives: t.startLives,
+      umbrellas: 0,
+      jumpSpeed: t.jumpSpeed,
+      bonusTicks: t.bonusTicks,
+    });
     expect(quiet([]).lives).toBe(3);
     expect(jumpRise([]).rise).toBe(15);
     expect(firstBonusStep([])).toBe(120);
   });
 });
 
-describe("oil can", () => {
-  test("a run starts with 4 lives", () => {
-    expect(oilCanExtraLives).toBe(1);
-    expect(quiet(["oilCan"]).lives).toBe(4);
-    const sw = minigame("brassMonkey").create({ highScore: 0, prizes: ["oilCan"] });
-    expect(sw instanceof BrassMonkeySoftware && sw.run.lives).toBe(4);
+/** A gear rolling on the bottom girder, touching the monkey. */
+function gearOn(run: Run): Hazard {
+  return {
+    kind: "gear",
+    x: run.monkey.x + 4,
+    y: run.monkey.y,
+    dir: -1,
+    vy: 0,
+    footing: "ground",
+    ladder: null,
+    climbDir: 1,
+    scorableIn: 0,
+    hot: false,
+    wild: false,
+  };
+}
+
+describe("umbrella", () => {
+  test("the first hazard to touch the monkey bounces off and is gone; the second costs a life", () => {
+    expect(umbrellaHits).toBe(1);
+    const sounds: string[] = [];
+    const run = new Run({
+      advantages: brassMonkeyAdvantages(["umbrella"]),
+      onSound: (s): void => {
+        sounds.push(s);
+      },
+    });
+    run.gearTimer = Infinity;
+    run.emberTimer = Infinity;
+    expect(run.lives).toBe(3);
+    expect(run.umbrellas).toBe(1);
+
+    run.hazards = [gearOn(run)];
+    run.update(NO_INPUT);
+    expect([run.phase, run.lives, run.hazards.length, run.umbrellas]).toEqual(["play", 3, 0, 0]);
+    expect(sounds).toContain("stomp");
+
+    run.hazards = [gearOn(run)];
+    run.update(NO_INPUT);
+    expect([run.phase, run.lives]).toEqual(["dying", 2]);
+  });
+
+  test("without it, the first hazard costs a life", () => {
+    const run = quiet([]);
+    run.hazards = [gearOn(run)];
+    run.update(NO_INPUT);
+    expect(run.phase).toBe("dying");
+  });
+
+  test("it lasts the run: a lost life does not bring it back", () => {
+    const run = quiet(["umbrella"]);
+    run.umbrellas = 0;
+    run.hazards = [gearOn(run)];
+    run.update(NO_INPUT);
+    expect(run.phase).toBe("dying");
+    expect(run.umbrellas).toBe(0);
+    const sw = minigame("brassMonkey").create({ highScore: 0, prizes: ["umbrella"] });
+    expect(sw instanceof BrassMonkeySoftware && sw.run.umbrellas).toBe(1);
   });
 });
 

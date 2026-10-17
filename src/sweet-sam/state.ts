@@ -41,6 +41,7 @@ import {
 } from "./update.ts";
 import { itemsEaten, updateFlower } from "./flower.ts";
 import type { Board } from "./board.ts";
+import { smokeTicks } from "./advantages.ts";
 import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 
 export type StateID = SweetSamStateId;
@@ -162,6 +163,21 @@ export class StartState implements State {
 }
 
 /** Active during normal gameplay. */
+/**
+ * The smoke bomb (#268): a fresh press of the action button, with a bomb left
+ * this life, hides the bear from the bees for `smokeTicks`. They keep chasing
+ * it, but pass through it, and it can't eat a sleepy bee.
+ */
+function useSmokeBomb(s: Board, i: Input): void {
+  const pressed = i.space && !s.spaceWasDown;
+  s.spaceWasDown = i.space;
+  if (s.smokeTicks > 0) s.smokeTicks--;
+  if (!pressed || s.smokeBombs === 0 || s.smokeTicks > 0) return;
+  s.smokeBombs--;
+  s.smokeTicks = smokeTicks;
+  s.sound("sweetSmoke");
+}
+
 export class PlayState implements State {
   private readonly s: Board;
 
@@ -225,6 +241,7 @@ export class PlayState implements State {
     }
 
     applyInput(s, i);
+    useSmokeBomb(s, i);
 
     // Each bee's target this tick, for the junctions it reaches between sub-steps.
     const targets = new Map<Entity, Tile>();
@@ -240,8 +257,8 @@ export class PlayState implements State {
       updateDirection(e, s.corners, target);
 
       // A bee catches the bear in the same tile, so the two can swap tiles and pass through
-      // (Dossier, "Just Passing Through").
-      if (!tileEq(pointToTile(e.x, e.y), pointToTile(s.player.x, s.player.y))) {
+      // (Dossier, "Just Passing Through"). In a smoke bomb's smoke, every bee passes through.
+      if (!tileEq(pointToTile(e.x, e.y), pointToTile(s.player.x, s.player.y)) || s.smokeTicks > 0) {
         continue;
       }
 

@@ -1327,8 +1327,8 @@ describe("extra life", () => {
     expect(sounds.filter((s) => s === "extraLife")).toHaveLength(1);
   });
 
-  test("stacks with the oil can's extra life", () => {
-    const { run } = onBolt(t.extraLifeAt - 100, brassMonkeyAdvantages(["oilCan"]));
+  test("stacks on a run that started with 4 lives", () => {
+    const { run } = onBolt(t.extraLifeAt - 100, { ...brassMonkeyAdvantages([]), lives: 4 });
     step(run, 8, { right: true });
     expect(run.lives).toBe(5);
   });

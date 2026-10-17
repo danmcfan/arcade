@@ -21,7 +21,8 @@ describe("save version guard", () => {
       highScores: { sweetSam: 1000, firefly: 2000, brassMonkey: 3000 },
       tokens: 7,
       tickets: 42,
-      prizes: ["lantern"],
+      // The firecracker was retired by #268: the firecracker took its place.
+      prizes: ["firecracker"],
       player: { x: 120, y: 96, dir: "LEFT" },
     });
   });

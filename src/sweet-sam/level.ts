@@ -14,7 +14,10 @@ import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import { newItems, type Entity } from "./entity.ts";
 import { afterDeath } from "./release.ts";
-import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
+import { noAdvantages, smokeWarningTicks, type SweetSamAdvantages } from "./advantages.ts";
+
+/** Ticks each grey or colour flash lasts while the smoke clears. */
+const smokeFlashTicks = 8;
 import type { LevelValues, Mode } from "./levels.ts";
 import type { IntermissionPose, IntermissionScene } from "./intermission.ts";
 import {
@@ -101,6 +104,7 @@ export type LevelView = Pick<
   | "flowerPopup"
   | "popups"
   | "mazeFlash"
+  | "smoked"
   | "intermission"
   | "intermissionPoses"
   | "deathFrame"
@@ -248,6 +252,20 @@ export class Level {
   }
 
   /** The maze shows its flash colours this tick (the level-clear flash). */
+  /**
+   * Whether the bear is drawn in smoke (#268): grey while a smoke bomb hides
+   * it, flashing back into colour over its last `smokeWarningTicks`.
+   */
+  smoked(): boolean {
+    const t = this.#board.smokeTicks;
+    return t > 0 && (t > smokeWarningTicks || Math.trunc(t / smokeFlashTicks) % 2 === 1);
+  }
+
+  /** Smoke bombs this life has left, and ticks the bear stays hidden. */
+  smoke(): { bombs: number; ticks: number } {
+    return { bombs: this.#board.smokeBombs, ticks: this.#board.smokeTicks };
+  }
+
   mazeFlash(): boolean {
     return this.#stateMachine.currentId() === stateIDLevelClear && this.#levelClear.flash();
   }

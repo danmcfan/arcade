@@ -6,6 +6,7 @@ import { sub, type Sprite } from "../engine/image.ts";
 import { Surface, type PremulColor } from "../engine/surface.ts";
 import {
   imageBear,
+  imageBearSmoked,
   imageCabinet,
   imageBeeEyes,
   imageIntermission,
@@ -268,7 +269,7 @@ function drawPlayer(l: LevelView, screen: Surface, bufX: number, bufY: number): 
     return;
   }
 
-  drawEntity(player, screen, bufX, bufY);
+  drawEntity(player, screen, bufX, bufY, l.smoked() ? imageBearSmoked : undefined);
 }
 
 function drawTiles(l: LevelView, screen: Surface, bufX: number, bufY: number, dbg: boolean): void {
@@ -354,8 +355,10 @@ function drawMode(l: LevelView, _screen: Surface, _bufX: number, _bufY: number, 
   return `[${index}] ${mode}: ${ticks}`;
 }
 
-function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): void {
-  if (e.sprite === null) {
+/** `e` at its frame; `sheet` stands in for its own sheet, laid out the same (the smoked bear). */
+function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number, sheet?: Sprite): void {
+  const sprite = sheet ?? e.sprite;
+  if (sprite === null) {
     return;
   }
 
@@ -370,12 +373,12 @@ function drawEntity(e: Entity, screen: Surface, bufX: number, bufY: number): voi
   }
 
   // A bee's sheet is a sub-image of bees.png, so frames count from its corner.
-  const sx = e.sprite.sx + e.width * Math.trunc(e.frame);
-  const sy = e.sprite.sy + e.height * Math.trunc(row);
+  const sx = sprite.sx + e.width * Math.trunc(e.frame);
+  const sy = sprite.sy + e.height * Math.trunc(row);
   const sw = e.width;
   const sh = e.height;
 
-  const spriteFrame = sub(e.sprite, Math.trunc(sx), Math.trunc(sy), Math.trunc(sx + sw), Math.trunc(sy + sh));
+  const spriteFrame = sub(sprite, Math.trunc(sx), Math.trunc(sy), Math.trunc(sx + sw), Math.trunc(sy + sh));
 
   screen.draw(spriteFrame, e.x - e.width / 2 + bufX, e.y - e.height / 2 + bufY);
 }

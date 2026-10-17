@@ -6,8 +6,8 @@
 import { advantagesFrom, type PrizeSpec } from "../game/prize.ts";
 import { maxSparks, playerSpeed, startLives } from "./rules.ts";
 
-/** Lantern: extra lives a run starts with (4 rather than 3). */
-export const lanternExtraLives = 1;
+/** Firecracker: screen clears each stage gets, set off with up (#268). */
+export const firecrackerUses = 1;
 
 /** Glow stick: sparks allowed on the screen at once (rather than 2). */
 export const glowStickMaxSparks = 3;
@@ -18,22 +18,24 @@ export const wingsPlayerSpeed = 2.5;
 /** The values a Firefly run starts with. */
 export type FireflyAdvantages = {
   lives: number;
+  /** Firecrackers each stage gets: up shoots down every enemy in the sky. */
+  firecrackers: number;
   maxSparks: number;
   playerSpeed: number;
 };
 
 /** No prizes: the original game. */
-export const noAdvantages: Readonly<FireflyAdvantages> = { lives: startLives, maxSparks, playerSpeed };
+export const noAdvantages: Readonly<FireflyAdvantages> = { lives: startLives, firecrackers: 0, maxSparks, playerSpeed };
 
 /** Firefly's prizes, in the order the prize counter lists them. */
 export const fireflyPrizes = [
   {
-    id: "lantern",
-    name: "LANTERN",
+    id: "firecracker",
+    name: "FIRECRACKER",
     price: 25,
-    effect: "+1 LIFE IN FIREFLY",
-    advantage: "lives",
-    give: (lives: number): number => lives + lanternExtraLives,
+    effect: "UP: CLEARS THE SKY",
+    advantage: "firecrackers",
+    give: (): number => firecrackerUses,
   },
   {
     id: "glowStick",

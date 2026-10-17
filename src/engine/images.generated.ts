@@ -55,6 +55,7 @@ import brassMonkeyRivetUrl from "../assets/images/brass-monkey/rivet.png";
 import brassMonkeyRivetFloorUrl from "../assets/images/brass-monkey/rivet-floor.png";
 import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
 import sweetSamBearUrl from "../assets/images/sweet-sam/bear.png";
+import sweetSamBearSmokedUrl from "../assets/images/sweet-sam/bear-smoked.png";
 import sweetSamBeesUrl from "../assets/images/sweet-sam/bees.png";
 import sweetSamHoneyDropUrl from "../assets/images/sweet-sam/honey-drop.png";
 import sweetSamHoneyPotUrl from "../assets/images/sweet-sam/honey-pot.png";
@@ -129,6 +130,7 @@ export const brassMonkeyImages = {
 export const sweetSamImages = {
   maze: imageAsset(sweetSamMazeUrl, 224, 288),
   bear: imageAsset(sweetSamBearUrl, 64, 80),
+  bearSmoked: imageAsset(sweetSamBearSmokedUrl, 64, 64),
   bees: imageAsset(sweetSamBeesUrl, 64, 384),
   honeyDrop: imageAsset(sweetSamHoneyDropUrl, 32, 12),
   honeyPot: imageAsset(sweetSamHoneyPotUrl, 32, 12),

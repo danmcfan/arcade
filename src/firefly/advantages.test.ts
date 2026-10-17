@@ -5,8 +5,8 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { PrizeId } from "../game/minigames.ts";
 import {
   fireflyAdvantages,
+  firecrackerUses,
   glowStickMaxSparks,
-  lanternExtraLives,
   noAdvantages,
   wingsPlayerSpeed,
 } from "./advantages.ts";
@@ -51,17 +51,59 @@ function stride(f: FireflySoftware): number {
 
 describe("Firefly prize advantages", () => {
   test("no prizes: the game's own values (3 lives, 2 sparks, 2 px a tick)", () => {
-    expect(fireflyAdvantages([])).toEqual({ lives: 3, maxSparks: 2, playerSpeed: 2 });
-    expect(noAdvantages).toEqual({ lives: startLives, maxSparks, playerSpeed });
+    expect(fireflyAdvantages([])).toEqual({ lives: 3, firecrackers: 0, maxSparks: 2, playerSpeed: 2 });
+    expect(noAdvantages).toEqual({ lives: startLives, firecrackers: 0, maxSparks, playerSpeed });
     const f = run([]);
     expect(f.lives).toBe(3);
     expect(mostSparks(f)).toBe(2);
     expect(stride(run([]))).toBe(20);
   });
 
-  test("the lantern: a run starts with 4 lives", () => {
-    expect(lanternExtraLives).toBe(1);
-    expect(run(["lantern"]).lives).toBe(4);
+  test("the firecracker: up shoots down every enemy in the sky, once a stage, scoring each", () => {
+    expect(firecrackerUses).toBe(1);
+    const f = run(["firecracker"]);
+    expect(f.lives).toBe(3);
+    expect(f.firecrackers).toBe(1);
+    const inSky = (): number => f.enemies.filter((e) => e.deadFrames === 0 && e.state !== "waiting").length;
+    while (inSky() < 5) f.update(NO_INPUT);
+    const before = { n: inSky(), points: f.points };
+    f.update({ ...NO_INPUT, up: true });
+    expect(inSky()).toBe(0);
+    expect(f.points).toBeGreaterThan(before.points);
+    expect(f.shots).toEqual([]);
+    expect(f.firecrackers).toBe(0);
+
+    // Spent: with up let go and pressed again later in the stage, nothing happens.
+    f.update(NO_INPUT);
+    while (inSky() === 0) f.update(NO_INPUT);
+    const left = inSky();
+    f.update({ ...NO_INPUT, up: true });
+    expect(inSky()).toBe(left);
+
+    // The next stage brings it back.
+    f.jumpTo(f.stage + 1);
+    expect(f.firecrackers).toBe(1);
+  });
+
+  test("without the firecracker, up does nothing", () => {
+    const f = run([]);
+    expect(f.firecrackers).toBe(0);
+    while (f.enemies.filter((e) => e.state !== "waiting").length < 5) f.update(NO_INPUT);
+    const points = f.points;
+    f.update({ ...NO_INPUT, up: true });
+    expect(f.points).toBe(points);
+    expect(f.enemies.every((e) => e.deadFrames === 0)).toBe(true);
+  });
+
+  test("a firecracker isn't wasted on an empty sky", () => {
+    const f = minigame("firefly").create({ highScore: 0, prizes: ["firecracker"] });
+    if (!(f instanceof FireflySoftware)) throw new Error("Firefly's create did not return a FireflySoftware");
+    for (let k = 0; k < stageIntroTicks; k++) f.update(NO_INPUT);
+    // Every enemy still waiting to fly in: none is in the sky yet.
+    for (const e of f.enemies) e.state = "waiting";
+    f.update({ ...NO_INPUT, up: true });
+    expect(f.firecrackers).toBe(1);
+    expect(f.enemies.every((e) => e.deadFrames === 0)).toBe(true);
   });
 
   test("the glow stick: up to 3 sparks on the screen at once", () => {

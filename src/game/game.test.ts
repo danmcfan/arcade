@@ -596,9 +596,9 @@ const shelfCell: Record<PrizeId, number> = {
   springBoots: 3,
   runningShoes: 4,
   glowStick: 5,
-  oilCan: 6,
-  honeyJar: 7,
-  lantern: 8,
+  umbrella: 6,
+  smokeBomb: 7,
+  firecracker: 8,
 };
 /** The cursor on CLOSE, the row below the shelf. */
 const closeCursor = 9;
@@ -800,7 +800,7 @@ describe("prize counter", () => {
     expect(snap(game).cursor).toBe(closeCursor);
     tap(game, "left");
     expect(snap(game).cursor).toBe(closeCursor);
-    tap(game, "up"); // lantern
+    tap(game, "up"); // firecracker
     tap(game, "right"); // oil can
     const seen: number[] = [];
     for (let i = 0; i < 3; i++) {
@@ -813,22 +813,22 @@ describe("prize counter", () => {
   });
 
   test("an owned prize can't be chosen: no sound, nothing taken", () => {
-    const { game } = atPrize(200, "honeyJar", ["honeyJar"]);
+    const { game } = atPrize(200, "smokeBomb", ["smokeBomb"]);
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(sounds).toEqual([]);
-    expect(snap(game).arcade).toMatchObject({ tickets: 200, prizes: ["honeyJar"] });
+    expect(snap(game).arcade).toMatchObject({ tickets: 200, prizes: ["smokeBomb"] });
   });
 
   test("Space on a prize the player can afford buys it: its price comes off once and it is owned", () => {
-    const { game } = atPrize(60, "honeyJar");
+    const { game } = atPrize(60, "smokeBomb");
     const sounds = heard(game, () => {
       tap(game, "space");
     });
     expect(sounds).toEqual(["rewind:select", "play:select"]);
-    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
-    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["honeyJar"] });
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["smokeBomb"] });
+    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["smokeBomb"] });
     expect(snap(game).menu).toBe("prizeCounter");
   });
 
@@ -843,13 +843,13 @@ describe("prize counter", () => {
   });
 
   test("owned prizes go to every minigame the player starts, paid or free play", () => {
-    const { game, built } = atPrize(60, "honeyJar");
+    const { game, built } = atPrize(60, "smokeBomb");
     tap(game, "space");
     tap(game, "escape");
     run(game, 40, { up: true });
     game.step(input({ up: true, space: true }));
     expect(snap(game)).toMatchObject({ software: "sweetSam", run: "paid" });
-    expect(defined(built[0]).prizes).toEqual(["honeyJar"]);
+    expect(defined(built[0]).prizes).toEqual(["smokeBomb"]);
 
     const free = newGame(null, {
       highScores: noHighScores,
@@ -865,22 +865,22 @@ describe("prize counter", () => {
   });
 
   test("a Firefly prize is bought the same way, and goes to the Firefly run", () => {
-    const { game, built } = atPrize(60, "lantern");
+    const { game, built } = atPrize(60, "firecracker");
     tap(game, "space");
-    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
-    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["lantern"] });
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["firecracker"] });
+    expect(game.progress()).toMatchObject({ tickets: 35, prizes: ["firecracker"] });
     tap(game, "space");
     expect(snap(game).arcade.tickets).toBe(35);
     tap(game, "up"); // glow stick, 50: too few tickets
     expect(snap(game).cursor).toBe(shelfCell.glowStick);
     tap(game, "space");
-    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["lantern"] });
+    expect(snap(game).arcade).toMatchObject({ tickets: 35, prizes: ["firecracker"] });
     tap(game, "escape");
     run(game, 40, { up: true });
     run(game, 40, { right: true });
     game.step(input({ up: true, space: true }));
     expect(snap(game).software).toBe("firefly");
-    expect(defined(built[0]).prizes).toEqual(["lantern"]);
+    expect(defined(built[0]).prizes).toEqual(["firecracker"]);
   });
 
   test("the menu offers no token: the shelf then CLOSE", () => {
@@ -993,11 +993,11 @@ describe("progress", () => {
       tokens: 5,
       tickets: 0,
       arcadeWon: false,
-      prizes: ["wings", "sleepyBees", "lantern", "honeyJar"],
+      prizes: ["wings", "sleepyBees", "firecracker", "smokeBomb"],
       player: { x: 80, y: 92, dir: "UP" },
     });
-    expect(game.progress().prizes).toEqual(["honeyJar", "sleepyBees", "lantern", "wings"]);
-    expect(snap(game).arcade.prizes).toEqual(["honeyJar", "sleepyBees", "lantern", "wings"]);
+    expect(game.progress().prizes).toEqual(["smokeBomb", "sleepyBees", "firecracker", "wings"]);
+    expect(snap(game).arcade.prizes).toEqual(["smokeBomb", "sleepyBees", "firecracker", "wings"]);
   });
 
   test("a fresh hub owns no prizes, and its snapshot has no prizes key", () => {

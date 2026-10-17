@@ -31,11 +31,11 @@ describe("newMachines", () => {
   test("newSoftware builds the matching software and passes the high score and owned prizes through", () => {
     const { calls, factory } = recordingFactory();
     const ms = newMachines(factory);
-    expect(ms.map((m) => m.newSoftware(1234, ["honeyJar"]).name)).toEqual(["brassMonkey", "sweetSam", "firefly"]);
+    expect(ms.map((m) => m.newSoftware(1234, ["smokeBomb"]).name)).toEqual(["brassMonkey", "sweetSam", "firefly"]);
     expect(calls).toEqual([
-      ["brassMonkey", 1234, ["honeyJar"]],
-      ["sweetSam", 1234, ["honeyJar"]],
-      ["firefly", 1234, ["honeyJar"]],
+      ["brassMonkey", 1234, ["smokeBomb"]],
+      ["sweetSam", 1234, ["smokeBomb"]],
+      ["firefly", 1234, ["smokeBomb"]],
     ]);
   });
 });

@@ -52,6 +52,7 @@ import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours, flipX, type Rows } from "./pixel-art.ts";
 import {
   bearFrames,
+  smokedBearFrames,
   dazedBear,
   beeFrame,
   liftRows,
@@ -136,6 +137,20 @@ describe("Sweet Sam art source", () => {
       ...tearFrames().map((f, i): [string, Rows] => [`bee tear ${i}`, f]),
     ];
     for (const [name, rows] of sprites) expect({ name, edge: blackOnEdge(rows) }).toEqual({ name, edge: [] });
+  });
+
+  test("the smoked bear is the walking bear in grey, the same size, with no colour of its own left", () => {
+    const smoked = smokedBearFrames();
+    expect(smoked.map((r) => r.length)).toEqual([4, 4, 4, 4]);
+    for (const [r, row] of smoked.entries()) {
+      for (const [c, f] of row.entries()) {
+        checkRows(`smoked bear ${r},${c}`, f, { w: 16, h: 16 });
+        expect(f.join("")).toMatch(/^[.mdw]*$/u);
+        expect(f.map((line) => line.replaceAll(/[^.]/gu, "#"))).toEqual(
+          (bearFrames()[r]?.[c] ?? []).map((line) => line.replaceAll(/[^.]/gu, "#")),
+        );
+      }
+    }
   });
 
   test("the bear sheet keeps the Go layout, 4 facings of 4 walk frames, and adds 4 death frames below", () => {

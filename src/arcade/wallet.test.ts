@@ -39,18 +39,18 @@ describe("a new Wallet", () => {
   });
 
   test("keeps restored prizes once each, in catalogue order", () => {
-    expect(wallet({ prizes: ["sleepyBees", "honeyJar", "sleepyBees"] }).prizes).toEqual(["honeyJar", "sleepyBees"]);
-    expect(wallet({ prizes: ["wings", "honeyJar", "lantern", "wings"] }).prizes).toEqual([
-      "honeyJar",
-      "lantern",
+    expect(wallet({ prizes: ["sleepyBees", "smokeBomb", "sleepyBees"] }).prizes).toEqual(["smokeBomb", "sleepyBees"]);
+    expect(wallet({ prizes: ["wings", "smokeBomb", "firecracker", "wings"] }).prizes).toEqual([
+      "smokeBomb",
+      "firecracker",
       "wings",
     ]);
   });
 
   test("toProgress is a copy", () => {
-    const w = wallet({ prizes: ["honeyJar"] });
+    const w = wallet({ prizes: ["smokeBomb"] });
     w.toProgress().prizes.push("wings");
-    expect(w.prizes).toEqual(["honeyJar"]);
+    expect(w.prizes).toEqual(["smokeBomb"]);
   });
 });
 
@@ -179,24 +179,24 @@ describe("prizes at the counter", () => {
     expect(w.prizes).toEqual(["runningShoes", "sleepyBees"]);
     expect(w.owns("runningShoes")).toBe(true);
 
-    const b = wallet({ tickets: 175, prizes: ["oilCan", "honeyJar"] });
+    const b = wallet({ tickets: 175, prizes: ["umbrella", "smokeBomb"] });
     expect(b.buy("pocketWatch")).toBe(true);
     expect(b.tickets).toBe(75);
-    expect(b.prizes).toEqual(["honeyJar", "oilCan", "pocketWatch"]);
+    expect(b.prizes).toEqual(["smokeBomb", "umbrella", "pocketWatch"]);
   });
 
   test("an owned prize can't be bought again", () => {
     const w = wallet({ tickets: 60 });
-    expect(w.buy("honeyJar")).toBe(true);
+    expect(w.buy("smokeBomb")).toBe(true);
     expect(w.tickets).toBe(35);
-    expect(w.buy("honeyJar")).toBe(false);
+    expect(w.buy("smokeBomb")).toBe(false);
     expect(w.tickets).toBe(35);
   });
 
   test("an unaffordable prize can't be bought", () => {
     for (const [tickets, owned, id] of [
-      [24, [], "honeyJar"],
-      [49, ["honeyJar"], "runningShoes"],
+      [24, [], "smokeBomb"],
+      [49, ["smokeBomb"], "runningShoes"],
       [99, [], "sleepyBees"],
       [49, [], "springBoots"],
     ] as const) {
@@ -208,7 +208,7 @@ describe("prizes at the counter", () => {
   });
 
   test("counter lists every prize's offer in catalogue order", () => {
-    expect(wallet({ tickets: 60, prizes: ["honeyJar", "glowStick"] }).counter().prizes).toEqual([
+    expect(wallet({ tickets: 60, prizes: ["smokeBomb", "glowStick"] }).counter().prizes).toEqual([
       "owned",
       "buy",
       "short",
@@ -225,8 +225,8 @@ describe("prizes at the counter", () => {
 
 describe("canBuy", () => {
   test("says whether the counter would sell an item", () => {
-    const w = wallet({ tokens: 1, tickets: 60, prizes: ["honeyJar"] });
-    expect(w.canBuy("honeyJar")).toBe(false);
+    const w = wallet({ tokens: 1, tickets: 60, prizes: ["smokeBomb"] });
+    expect(w.canBuy("smokeBomb")).toBe(false);
     expect(w.canBuy("glowStick")).toBe(true);
     expect(wallet({ tickets: 0 }).canBuy("glowStick")).toBe(false);
   });
@@ -242,8 +242,8 @@ describe("version", () => {
       ["free settle, no new best", () => w.settleRun("sweetSam", 0, "free"), false],
       ["direct settle, new best", () => w.settleRun("sweetSam", 50, "direct"), true],
       ["token", () => w.exchange(), true],
-      ["prize", () => w.buy("honeyJar" satisfies PrizeId), true],
-      ["owned prize", () => w.buy("honeyJar"), false],
+      ["prize", () => w.buy("smokeBomb" satisfies PrizeId), true],
+      ["owned prize", () => w.buy("smokeBomb"), false],
       ["short token", () => w.exchange(), false],
     ];
     for (const [name, act, changes] of steps) {

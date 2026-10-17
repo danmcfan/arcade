@@ -114,7 +114,7 @@ _Avoid_: blue barrel, fire gear
 
 **Furnace**:
 The fire at the bottom left of the girder floor. Every gear that rolls into it ends there; a hot gear lights it and sends an ember out.
-_Avoid_: oil drum, oil can (the oil can is a prize)
+_Avoid_: oil drum, oil can
 
 **Ember**:
 A hazard that moves along the girders and climbs ladders. On the girder floor it comes out of the furnace; on the conveyor floor the gnome throws it.

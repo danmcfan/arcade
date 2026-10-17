@@ -6,7 +6,7 @@ import type { SweetSamEnemySnapshot } from "../game/snapshot.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
-import { sweetSamAdvantages, type SweetSamAdvantages } from "./advantages.ts";
+import type { SweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
@@ -767,12 +767,8 @@ describe("the extra life at 10,000 points (#154)", () => {
     expect([s.score(), s.snapshot().lives]).toEqual([20_000, 4]);
   });
 
-  test("a run started with the honey jar still gets the extra life", () => {
-    const jar = sweetSamAdvantages(["honeyJar"]);
-    const fresh = new SweetSamSoftware(0, jar);
-    step(fresh, 122);
-    expect(fresh.snapshot().lives).toBe(4);
-    const s = from({ score: 9_990, items: eating(1) }, jar);
+  test("a run on 4 lives still gets the extra life", () => {
+    const s = from({ score: 9_990, lives: 4, items: eating(1) });
     step(s);
     expect(s.snapshot().lives).toBe(5);
   });

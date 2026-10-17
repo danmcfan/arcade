@@ -65,6 +65,7 @@ import {
   pointsTop,
   readyArt,
   sleepyLook,
+  smokedLook,
   wakingLook,
   walkCycle,
   waxCornerCap,
@@ -215,6 +216,13 @@ export function bearFrames(): Rows[][] {
   return [walk(bearWalk.down), walk(bearWalk.up), left, left.map((f) => flipX(f)), [dazedBear(), ...bearDeath]];
 }
 
+/** Rows of bear-smoked.png: bear.png's four walking facings in `smokedLook` (#268). */
+export function smokedBearFrames(): Rows[][] {
+  return bearFrames()
+    .slice(0, 4)
+    .map((row) => row.map((f) => recolour(f, smokedLook)));
+}
+
 /** `rows` moved up `n` rows, blank rows coming in at the bottom. */
 export function liftRows(rows: Rows, n: number): string[] {
   const blankRow = ".".repeat(rows[0]?.length ?? 0);
@@ -325,6 +333,7 @@ export function renderIntermission(): PNG {
 export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "maze.png"), 224, 288, renderMaze),
   imageOutput(join(sweetSamImagesDir, "bear.png"), 64, 80, () => sheet(bearFrames())),
+  imageOutput(join(sweetSamImagesDir, "bear-smoked.png"), 64, 64, () => sheet(smokedBearFrames())),
   imageOutput(join(sweetSamImagesDir, "bees.png"), 64, 384, () => sheet(beeOrder.flatMap((kind) => beeFrames(kind)))),
   imageOutput(join(sweetSamImagesDir, "honey-drop.png"), 32, 12, renderHoneyDrop),
   imageOutput(join(sweetSamImagesDir, "honey-pot.png"), 32, 12, renderHoneyPot),

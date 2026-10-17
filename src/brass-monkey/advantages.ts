@@ -6,8 +6,8 @@
 import { advantagesFrom, type PrizeSpec } from "../game/prize.ts";
 import { bonusTicks, jumpSpeed, startLives } from "./tuning.ts";
 
-/** Oil can: extra lives a run starts with (4 rather than 3). */
-export const oilCanExtraLives = 1;
+/** Umbrella: hazards a run shrugs off; the first to touch the monkey bounces away (#268). */
+export const umbrellaHits = 1;
 
 /**
  * Spring boots: a jump's upward speed, in px a tick. With `gravity` the
@@ -23,6 +23,8 @@ export const pocketWatchBonusTicks = 180;
 /** The values a Brass Monkey run starts with. */
 export type BrassMonkeyAdvantages = {
   lives: number;
+  /** Hazards the run shrugs off: each touch uses one, and the hazard bounces away. */
+  umbrellas: number;
   /** A jump's upward speed, px a tick. */
   jumpSpeed: number;
   /** Ticks between the bonus's steps down. */
@@ -30,17 +32,17 @@ export type BrassMonkeyAdvantages = {
 };
 
 /** No prizes: the game as #39 tuned it. */
-export const noAdvantages: Readonly<BrassMonkeyAdvantages> = { lives: startLives, jumpSpeed, bonusTicks };
+export const noAdvantages: Readonly<BrassMonkeyAdvantages> = { lives: startLives, umbrellas: 0, jumpSpeed, bonusTicks };
 
 /** Brass Monkey's prizes, in the order the prize counter lists them. */
 export const brassMonkeyPrizes = [
   {
-    id: "oilCan",
-    name: "OIL CAN",
+    id: "umbrella",
+    name: "UMBRELLA",
     price: 25,
-    effect: "+1 LIFE IN BRASS MONKEY",
-    advantage: "lives",
-    give: (lives: number): number => lives + oilCanExtraLives,
+    effect: "FIRST HIT BOUNCES OFF",
+    advantage: "umbrellas",
+    give: (): number => umbrellaHits,
   },
   {
     id: "springBoots",

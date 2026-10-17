@@ -300,7 +300,7 @@ describe("hub draw", () => {
   });
 
   test("Sweet Sam's prizes hang on the wall round its cabinet (art x 72..87, y 40..63), under the player", () => {
-    const game = newGame(null, 5, ["honeyJar", "runningShoes", "sleepyBees"]);
+    const game = newGame(null, 5, ["smokeBomb", "runningShoes", "sleepyBees"]);
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     const r = prizeRects;
@@ -308,7 +308,7 @@ describe("hub draw", () => {
       ["draw", "arcade", 0, 0, 160, 144, 16, 16],
       ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // The jar left of the picture, the shoes right of it, the picture above the cabinet; + the buffer.
-      ["draw", "prizes", r.honeyJar.x, 0, 8, 8, 80, 47],
+      ["draw", "prizes", r.smokeBomb.x, 0, 8, 8, 80, 47],
       ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 104, 47],
       ["draw", "prizes", r.sleepyBees.x, 0, 8, 8, 92, 41],
       ["draw", "player", 0, 24, 16, 24, 88, 96],
@@ -319,26 +319,26 @@ describe("hub draw", () => {
   });
 
   test("each owned Firefly prize hangs on the wall by the Firefly cabinet (art x 112..127, y 40..63)", () => {
-    const game = newGame(null, 5, ["lantern", "glowStick", "wings"]);
+    const game = newGame(null, 5, ["firecracker", "glowStick", "wings"]);
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     const r = prizeRects;
-    // The lantern right of the cabinet, the glow stick left of it, the wings above it; + the buffer.
+    // The firecracker right of the cabinet, the glow stick left of it, the wings above it; + the buffer.
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", r.lantern.x, 0, 8, 8, 147, 56],
+      ["draw", "prizes", r.firecracker.x, 0, 8, 8, 147, 56],
       ["draw", "prizes", r.glowStick.x, 0, 8, 8, 143, 45],
       ["draw", "prizes", r.wings.x, 0, 8, 8, 132, 41],
     ]);
   });
 
   test("each owned Brass Monkey prize hangs on the wall by the Brass Monkey cabinet (art x 32..47, y 40..63)", () => {
-    const game = newGame(null, 5, ["oilCan", "springBoots", "pocketWatch"]);
+    const game = newGame(null, 5, ["umbrella", "springBoots", "pocketWatch"]);
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     const r = prizeRects;
     // The oil can on a shelf left of the cabinet, the boots and the watch on pegs above it; + the buffer.
     expect(calls.filter((c) => c[1] === "prizes")).toEqual([
-      ["draw", "prizes", r.oilCan.x, 0, 8, 8, 37, 56],
+      ["draw", "prizes", r.umbrella.x, 0, 8, 8, 37, 56],
       ["draw", "prizes", r.springBoots.x, 0, 8, 8, 52, 41],
       ["draw", "prizes", r.pocketWatch.x, 0, 8, 8, 41, 45],
     ]);
@@ -630,13 +630,13 @@ describe("the arcade win", () => {
 describe("the Game Boy frame", () => {
   test("nothing in the hub draws outside the 160x144 hub image: room, desk, prizes, scoreboard, player, menu", () => {
     const owned: PrizeId[] = [
-      "honeyJar",
+      "smokeBomb",
       "runningShoes",
       "sleepyBees",
-      "lantern",
+      "firecracker",
       "glowStick",
       "wings",
-      "oilCan",
+      "umbrella",
       "springBoots",
       "pocketWatch",
     ];
@@ -850,9 +850,9 @@ describe("prize counter menu", () => {
       ["springBoots", false],
       ["runningShoes", false],
       ["glowStick", false],
-      ["oilCan", false],
-      ["honeyJar", false],
-      ["lantern", false],
+      ["umbrella", false],
+      ["smokeBomb", false],
+      ["firecracker", false],
     ]);
     // No title, ticket count or key hints (the scoreboard shows the counts): the prices row by row, in the
     // scoreboard's small letters, then the selected CLOSE.
@@ -873,14 +873,14 @@ describe("prize counter menu", () => {
     }
     r = recordingSurface();
     game.draw(r.surface);
-    expect(r.text("white")).toBe("CLOSEHONEY JAR25+1 LIFE IN SWEET SAM");
+    expect(r.text("white")).toBe("CLOSESMOKE BOMB25SPACE: HIDE FROM BEES");
   });
 
   test("an owned prize is greyed out and reads OWNED; on a grey card; one the player can't afford is on a red card, its price white", () => {
     const r = recordingSurface();
-    atCounter(1, 60, ["honeyJar"]).draw(r.surface);
+    atCounter(1, 60, ["smokeBomb"]).draw(r.surface);
     const pictures = shelfPictures(r);
-    expect(pictures.filter(([, grey]) => grey).map(([id]) => id)).toEqual(["honeyJar"]);
+    expect(pictures.filter(([, grey]) => grey).map(([id]) => id)).toEqual(["smokeBomb"]);
     expect(r.cards("white")).toBe("100100100");
     expect(r.cards("pale")).toBe("OWNED");
   });

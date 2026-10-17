@@ -54,11 +54,19 @@ export class Board {
   /** Index for next 200→400→800→1600 payout while bees stay scared. */
   scaredEatAwardNext = 0;
 
+  /** Smoke bombs this life has left (#268); a lost life brings them back. */
+  smokeBombs: number;
+  /** Ticks the bear stays invisible to the bees after a smoke bomb; 0 when it is seen. */
+  smokeTicks = 0;
+  /** The action button was down last tick: a smoke bomb needs a fresh press. */
+  spaceWasDown = false;
+
   readonly emit: (e: LevelEffect) => void;
 
   constructor(advantages: Readonly<SweetSamAdvantages>, emit: (e: LevelEffect) => void) {
     this.advantages = advantages;
     this.lives = advantages.lives;
+    this.smokeBombs = advantages.smokeBombs;
     this.emit = emit;
   }
 

@@ -67,13 +67,13 @@ function decoration(id: PrizeId, y = 0): Sprite {
  * hour here too; the compiler asks for it.
  */
 const hours: Readonly<Record<PrizeId, number>> = {
-  honeyJar: 10.25,
+  smokeBomb: 10.25,
   runningShoes: 1.75,
   sleepyBees: 12,
-  lantern: 3,
+  firecracker: 3,
   glowStick: 1.5,
   wings: 12,
-  oilCan: 9,
+  umbrella: 9,
   springBoots: 12,
   pocketWatch: 10.5,
 };
@@ -97,6 +97,21 @@ export const prizes: readonly Prize[] = minigames.flatMap((m) =>
 );
 
 const prizeIds: ReadonlySet<string> = new Set(prizes.map((p) => p.id));
+
+/**
+ * Prizes retired by #268, each with the prize that took its place on the
+ * wall: a save that owns one owns its successor, so no tickets are lost.
+ */
+const successors: Readonly<Record<string, PrizeId>> = {
+  honeyJar: "smokeBomb",
+  lantern: "firecracker",
+  oilCan: "umbrella",
+};
+
+/** A saved prize id as it is today: a retired prize's successor, any other id as it was. */
+export function currentPrizeId(v: unknown): unknown {
+  return typeof v === "string" ? (successors[v] ?? v) : v;
+}
 
 export function isPrizeId(v: unknown): v is PrizeId {
   return typeof v === "string" && prizeIds.has(v);

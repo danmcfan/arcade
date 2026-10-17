@@ -180,7 +180,7 @@ describe("new game", () => {
       tokens: 0,
       tickets: 88,
       arcadeWon: false,
-      prizes: ["honeyJar", "runningShoes", "sleepyBees", "lantern", "glowStick", "wings"],
+      prizes: ["smokeBomb", "runningShoes", "sleepyBees", "firecracker", "glowStick", "wings"],
       player: { x: 50, y: 90, dir: "LEFT" },
     });
     const t = new Title({ store });
@@ -474,7 +474,7 @@ describe("saving when the wallet changes", () => {
     tap(t, "right");
     tap(t, "space"); // the honey jar: 0 tickets left
     expect(store.saves).toBe(saves + 1);
-    expect(store.load()).toMatchObject({ tokens: 1, tickets: 0, prizes: ["honeyJar"] });
+    expect(store.load()).toMatchObject({ tokens: 1, tickets: 0, prizes: ["smokeBomb"] });
     saves = store.saves;
     tap(t, "up");
     tap(t, "space"); // the running shoes: too few tickets
@@ -560,19 +560,19 @@ describe("prize counter inside the title scene", () => {
   test("a prize purchase saves at once as a v3 save, and Continue brings the prize back", () => {
     const store = spyStore();
     const t = atCounter(store, 3, 40);
-    tap(t, "up"); // the lantern, bottom right of the shelf
+    tap(t, "up"); // the firecracker, bottom right of the shelf
     tap(t, "right"); // round to the oil can
     tap(t, "right"); // the honey jar
     const saves = store.saves;
     tap(t, "space");
-    expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["honeyJar"] });
+    expect(game(t).arcade).toMatchObject({ tickets: 15, prizes: ["smokeBomb"] });
     expect(store.saves).toBe(saves + 1);
     expect(store.load()).toEqual({
       v: 5,
       highScores: noHighScores,
       tokens: 3,
       tickets: 15,
-      prizes: ["honeyJar"],
+      prizes: ["smokeBomb"],
       arcadeWon: false,
       player: { x: 80, y: 95, dir: "DOWN" },
     });
@@ -580,7 +580,7 @@ describe("prize counter inside the title scene", () => {
 
     const again = new Title({ store });
     tap(again, "space"); // Continue
-    expect(game(again).arcade).toMatchObject({ tokens: 3, tickets: 15, prizes: ["honeyJar"] });
+    expect(game(again).arcade).toMatchObject({ tokens: 3, tickets: 15, prizes: ["smokeBomb"] });
     again.dispose();
   });
 
@@ -770,7 +770,7 @@ describe("parseSave", () => {
     highScores: { sweetSam: 3, firefly: 0, brassMonkey: 7 },
     tokens: 4,
     tickets: 12,
-    prizes: ["honeyJar", "sleepyBees"],
+    prizes: ["smokeBomb", "sleepyBees"],
     arcadeWon: false,
     player: { x: 1, y: 2, dir: "UP" },
   };
@@ -783,26 +783,26 @@ describe("parseSave", () => {
   });
 
   test("keeps owned prizes in catalogue order, once each", () => {
-    expect(parseSave({ ...ok, prizes: ["sleepyBees", "runningShoes", "sleepyBees", "honeyJar"] })?.prizes).toEqual([
-      "honeyJar",
+    expect(parseSave({ ...ok, prizes: ["sleepyBees", "runningShoes", "sleepyBees", "smokeBomb"] })?.prizes).toEqual([
+      "smokeBomb",
       "runningShoes",
       "sleepyBees",
     ]);
   });
 
   test("keeps the Firefly prizes too, after the Sweet Sam ones", () => {
-    expect(parseSave({ ...ok, prizes: ["wings", "glowStick", "honeyJar", "lantern"] })?.prizes).toEqual([
-      "honeyJar",
-      "lantern",
+    expect(parseSave({ ...ok, prizes: ["wings", "glowStick", "smokeBomb", "firecracker"] })?.prizes).toEqual([
+      "smokeBomb",
+      "firecracker",
       "glowStick",
       "wings",
     ]);
   });
 
   test("keeps the Brass Monkey prizes alongside the Sweet Sam ones", () => {
-    expect(parseSave({ ...ok, prizes: ["pocketWatch", "sleepyBees", "oilCan", "springBoots"] })?.prizes).toEqual([
+    expect(parseSave({ ...ok, prizes: ["pocketWatch", "sleepyBees", "umbrella", "springBoots"] })?.prizes).toEqual([
       "sleepyBees",
-      "oilCan",
+      "umbrella",
       "springBoots",
       "pocketWatch",
     ]);
@@ -820,7 +820,7 @@ describe("parseSave", () => {
       player: { x: 1, y: 2, dir: "UP" },
     });
     // A v2 save never had prizes: anything under that key is ignored.
-    expect(parseSave({ ...v2, prizes: ["honeyJar"] })?.prizes).toEqual([]);
+    expect(parseSave({ ...v2, prizes: ["smokeBomb"] })?.prizes).toEqual([]);
     expect(parseSave({ ...v2, tokens: -1 })).toBeNull();
   });
 
@@ -833,7 +833,7 @@ describe("parseSave", () => {
       highScores: noHighScores,
       tokens: 2,
       tickets: 9,
-      prizes: ["honeyJar", "runningShoes", "sleepyBees"],
+      prizes: ["smokeBomb", "runningShoes", "sleepyBees"],
       arcadeWon: false,
       player: { x: 70, y: 53, dir: "UP" },
     });
@@ -877,7 +877,7 @@ describe("parseSave", () => {
       { ...ok, arcadeWon: undefined },
       { ...ok, arcadeWon: "yes" },
       { ...ok, prizes: undefined },
-      { ...ok, prizes: "honeyJar" },
+      { ...ok, prizes: "smokeBomb" },
       { ...ok, prizes: ["goldenTrophy"] },
       { ...ok, highScores: undefined },
       { ...ok, highScores: { sweetSam: 1, firefly: 2 } },

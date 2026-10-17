@@ -189,7 +189,7 @@ function newMonkey(start: Spot): Monkey {
   };
 }
 
-/** One run of Brass Monkey, from 3 lives (more with the oil can) to game over. */
+/** One run of Brass Monkey, from 3 lives to game over. */
 export class Run {
   phase: Phase = "play";
   /** Ticks left in `intro`, `howHigh`, `dying`, `clear` or `escape`. */
@@ -203,6 +203,8 @@ export class Run {
   /** Ticks left showing the new lap's number over its first floor; it holds through the How-high screen. */
   lapBanner = 0;
   lives: number;
+  /** Hazards the umbrella will still bounce off this run (#268). */
+  umbrellas: number;
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
   readonly advantages: Readonly<BrassMonkeyAdvantages>;
   score = 0;
@@ -258,6 +260,7 @@ export class Run {
   ) {
     this.advantages = opts.advantages ?? noAdvantages;
     this.lives = this.advantages.lives;
+    this.umbrellas = this.advantages.umbrellas;
     this.floor = opts.floor ?? 0;
     this.loop = opts.loop ?? 0;
     // A floor off this loop's plan stands in for the next plan floor past it in `floors`.
@@ -988,8 +991,15 @@ export class Run {
     for (const h of this.hazards) {
       const dx = Math.abs(h.x - m.x);
       if (dx < t.touchX && this.sameHeight(h)) {
-        this.die();
-        return;
+        if (this.umbrellas === 0) {
+          this.die();
+          return;
+        }
+        // The umbrella (#268): the hazard bounces off it and is gone, and the umbrella is spent.
+        this.umbrellas--;
+        this.hazards = this.hazards.filter((o) => o !== h);
+        this.onSound("stomp");
+        continue;
       }
       const below = h.y - m.y;
       if (

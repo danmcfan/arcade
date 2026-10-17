@@ -351,6 +351,7 @@ export class FireflySoftware implements FixedViewport {
   constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
     this.advantages = advantages;
     this.lives = advantages.lives;
+    this.firecrackers = advantages.firecrackers;
     this.dials = new ScoreDials(highScore, scoreDialsAt);
   }
 
@@ -392,6 +393,10 @@ export class FireflySoftware implements FixedViewport {
   results = 0;
   /** Fire was down last tick: a skip needs a fresh press, not fire held on from play. */
   private fireWasDown = false;
+  /** Firecrackers this stage has left (#268); each stage brings them back. */
+  firecrackers: number;
+  /** Up was down last tick: a firecracker needs a fresh press. */
+  private upWasDown = false;
   /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
@@ -399,6 +404,8 @@ export class FireflySoftware implements FixedViewport {
     if (this.over) return;
     const firePressed = i.space && !this.fireWasDown;
     this.fireWasDown = i.space;
+    const upPressed = i.up && !this.upWasDown;
+    this.upWasDown = i.up;
     if (this.results > 0) {
       const skip = firePressed && resultsTicks - this.results >= resultsSkipTicks;
       this.results = skip ? 0 : this.results - 1;
@@ -417,7 +424,10 @@ export class FireflySoftware implements FixedViewport {
 
     // As in Galaga, the firefly is held until the start theme ends.
     const opening = this.stage === 1 && this.stageTick <= stageIntroTicks;
-    if (this.respawn === 0 && !opening) this.movePlayer(i);
+    if (this.respawn === 0 && !opening) {
+      this.movePlayer(i);
+      if (upPressed) this.setOffFirecracker();
+    }
     this.moveSparks();
     this.moveEnemies();
     this.moveCaptive();
@@ -945,6 +955,21 @@ export class FireflySoftware implements FixedViewport {
     }
   }
 
+  /**
+   * A firecracker (#268) shoots down every enemy in the sky, scoring each as
+   * a spark would, and clears their shots. One that would find the sky empty
+   * stays unlit.
+   */
+  private setOffFirecracker(): void {
+    if (this.firecrackers === 0) return;
+    const inSky = this.enemies.filter((e) => e.deadFrames === 0 && e.state !== "waiting");
+    if (inSky.length === 0) return;
+    this.firecrackers--;
+    for (const e of inSky) this.shootDown(e);
+    this.shots = [];
+    play(sounds.owlKill);
+  }
+
   /** The firefly is eaten or shot: one life gone, and the next after a pause. */
   loseLife(sound: typeof sounds.lifeLost = sounds.lifeLost): void {
     this.lives--;
@@ -996,6 +1021,7 @@ export class FireflySoftware implements FixedViewport {
   private nextStage(): void {
     this.stage++;
     this.stageTick = 0;
+    this.firecrackers = this.advantages.firecrackers;
     const challenging = isChallengingStage(this.stage);
     this.challenge = challenging ? { hits: 0, tally: 0 } : null;
     this.enemies = challenging ? newChallengeEnemies(this.stage) : newStageEnemies();

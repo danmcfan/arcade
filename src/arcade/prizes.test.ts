@@ -15,13 +15,13 @@ import { tickerRect } from "../ui/tickerArt.ts";
 describe("prize catalogue", () => {
   test("three prizes each for Sweet Sam, Firefly and Brass Monkey, 25, 50 and 100 tickets each", () => {
     expect(prizes.map((p) => [p.id, p.name, p.price, p.software])).toEqual([
-      ["honeyJar", "HONEY JAR", 25, "sweetSam"],
+      ["smokeBomb", "SMOKE BOMB", 25, "sweetSam"],
       ["runningShoes", "RUNNING SHOES", 50, "sweetSam"],
       ["sleepyBees", "SLEEPY BEES", 100, "sweetSam"],
-      ["lantern", "LANTERN", 25, "firefly"],
+      ["firecracker", "FIRECRACKER", 25, "firefly"],
       ["glowStick", "GLOW STICK", 50, "firefly"],
       ["wings", "WINGS", 100, "firefly"],
-      ["oilCan", "OIL CAN", 25, "brassMonkey"],
+      ["umbrella", "UMBRELLA", 25, "brassMonkey"],
       ["springBoots", "SPRING BOOTS", 50, "brassMonkey"],
       ["pocketWatch", "POCKET WATCH", 100, "brassMonkey"],
     ]);
@@ -49,17 +49,17 @@ describe("prize catalogue", () => {
     };
     // Box top-lefts from the cabinet's top-left, on a 15 px circle centred 4 px below its top.
     expect(placed("brassMonkey")).toEqual([
-      { id: "oilCan", dx: -11, dy: 0 }, // 9 o'clock
+      { id: "umbrella", dx: -11, dy: 0 }, // 9 o'clock
       { id: "springBoots", dx: 4, dy: -15 }, // 12
       { id: "pocketWatch", dx: -7, dy: -11 }, // 10:30
     ]);
     expect(placed("sweet")).toEqual([
-      { id: "honeyJar", dx: -8, dy: -9 }, // 10:15
+      { id: "smokeBomb", dx: -8, dy: -9 }, // 10:15
       { id: "runningShoes", dx: 16, dy: -9 }, // 1:45
       { id: "sleepyBees", dx: 4, dy: -15 }, // 12
     ]);
     expect(placed("firefly")).toEqual([
-      { id: "lantern", dx: 19, dy: 0 }, // 3
+      { id: "firecracker", dx: 19, dy: 0 }, // 3
       { id: "glowStick", dx: 15, dy: -11 }, // 1:30
       { id: "wings", dx: 4, dy: -15 }, // 12
     ]);

@@ -385,11 +385,13 @@ export function restartRound(s: Board): void {
  */
 export function restartAfterDeath(s: Board): void {
   s.enemies = afterDeath(s.release, s.enemies);
+  s.smokeBombs = s.advantages.smokeBombs;
   resetRound(s);
 }
 
 function resetRound(s: Board): void {
   s.player = newPlayer();
+  s.smokeTicks = 0;
   s.eatPauseTicks = 0;
   s.modeIndex = 0;
   s.modeTicks = 0;

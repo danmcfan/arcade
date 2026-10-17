@@ -370,6 +370,9 @@ export const beeEyes: readonly (readonly string[])[] = [
 /** The direction each frame of bee-eyes.png faces: `beeEyes` with the left look added second. */
 export const beeEyesOrder: readonly Direction[] = ["RIGHT", "LEFT", "UP", "DOWN"];
 
+/** The bear in a smoke bomb's smoke (#268): grey, its outline dark grey, its eyes still white. */
+export const smokedLook = { r: "m", o: "m", p: "d" } as const;
+
 /** A sleepy bee: bright silver, grey wings with white veins, eyes shut. */
 export const sleepyLook = { body: "l", wings: "m", veins: "w" } as const;
 

@@ -4,7 +4,7 @@
 // pass `memoryStore()`.
 
 import type { Direction } from "../engine/input.ts";
-import { isPrizeId, type PrizeId } from "../arcade/prizes.ts";
+import { currentPrizeId, isPrizeId, type PrizeId } from "../arcade/prizes.ts";
 import { eachMachine, noHighScores, startingTokens, Wallet, type HighScores } from "../arcade/wallet.ts";
 import type { Progress } from "../game/game.ts";
 
@@ -79,8 +79,11 @@ export function parseSave(raw: unknown): SaveData | null {
   const tickets = v === 1 ? v1Upgrade.tickets : o["tickets"];
   if (!count(tokens) || !count(tickets)) return null;
   // v1 and v2 saves own no prizes.
-  const prizes = v >= 3 ? o["prizes"] : [];
-  if (!Array.isArray(prizes) || !prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
+  const saved = v >= 3 ? o["prizes"] : [];
+  if (!Array.isArray(saved)) return null;
+  // A prize retired by #268 comes back as the prize that replaced it.
+  const prizes: unknown[] = saved.map((id) => currentPrizeId(id));
+  if (!prizes.every((id): id is PrizeId => isPrizeId(id))) return null;
   // Saves before v5 have not had the arcade win.
   const arcadeWon = v === 5 ? o["arcadeWon"] : false;
   if (typeof arcadeWon !== "boolean") return null;

@@ -38,7 +38,7 @@ describe("load", () => {
     expect(panels.map((p) => p.label)).toEqual(Object.keys(prizeArt).map((k) => `prizeArt ${k}`));
     const [first] = panels;
     if (first === undefined) throw new Error("no panels");
-    expect(toRows(first.png)).toEqual([...prizeArt.honeyJar]);
+    expect(toRows(first.png)).toEqual([...prizeArt.smokeBomb]);
   });
 
   test("name.key picks one entry", async () => {
@@ -56,8 +56,8 @@ describe("load", () => {
   });
 
   test("with a rev, an art source is read as committed there", async () => {
-    const panel = await onlyPanel(`${prizeSource}:prizeArt.honeyJar`, "HEAD");
-    expect(toRows(panel.png)).toEqual([...prizeArt.honeyJar]);
+    const panel = await onlyPanel(`${prizeSource}:prizeArt.runningShoes`, "HEAD");
+    expect(toRows(panel.png)).toEqual([...prizeArt.runningShoes]);
   });
 
   test("an export with no rows is an error", async () => {
@@ -149,7 +149,7 @@ describe("previewOptions", () => {
     "draws prize decorations on the hub wall, where each one hangs",
     async () => {
       const [plain, inked] = await previewOptions({
-        "src/ui/prizeArt.ts:prizeArt.honeyJar": { Blank: ["."], Inked: ["k"] },
+        "src/ui/prizeArt.ts:prizeArt.smokeBomb": { Blank: ["."], Inked: ["k"] },
       });
       expect(plain?.screens[0]).toBeDefined();
       expect(inked?.screens[0]).not.toEqual(plain?.screens[0]);

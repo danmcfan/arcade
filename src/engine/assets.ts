@@ -48,6 +48,8 @@ export const imageBeeEyes: Sprite = whole(sweetSamImages.beeEyes);
 /** The intermissions' wing-tear frames and props (#199, src/sweet-sam/art.ts `beeTear`). */
 export const imageIntermission: Sprite = whole(sweetSamImages.intermission);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
+/** The bear in a smoke bomb's smoke (#268): bear.png's walking rows in grey. */
+export const imageBearSmoked: Sprite = whole(sweetSamImages.bearSmoked);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);
 export const imageHoneyPot: Sprite = whole(sweetSamImages.honeyPot);

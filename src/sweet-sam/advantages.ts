@@ -8,8 +8,14 @@ import { advantagesFrom, type PrizeSpec } from "../game/prize.ts";
 /** Lives a run starts with. */
 export const startingLives = 3;
 
-/** Honey jar: extra lives a run starts with. */
-export const honeyJarExtraLives = 1;
+/** Smoke bomb: uses a life gets, each one turning the bear invisible to the bees (#268). */
+export const smokeBombUses = 1;
+
+/** Ticks a smoke bomb keeps the bear invisible: 5 s, about level 2's sleepy time (Dossier, Table A.1). */
+export const smokeTicks = 300;
+
+/** Ticks before the smoke clears that the bear flashes back into colour, as a warning. */
+export const smokeWarningTicks = 60;
 
 /** Running shoes: the bear's normal speed (`LevelValues.bearVelocity`) is 12.5% faster on every level. */
 export const runningShoesSpeedFactor = 1.125;
@@ -20,6 +26,8 @@ export const sleepyBeesFactor = 1.5;
 /** The values a Sweet Sam run starts with. */
 export type SweetSamAdvantages = {
   lives: number;
+  /** Smoke bombs each life gets: the action button turns the bear invisible to the bees for `smokeTicks`. */
+  smokeBombs: number;
   /** Multiplies the level's bear speed while no bee is sleepy (`LevelValues.bearVelocity`). */
   playerSpeedFactor: number;
   /** Multiplies the level's sleepy time (`LevelValues.sleepyFrames`). */
@@ -29,6 +37,7 @@ export type SweetSamAdvantages = {
 /** No prizes: the original game. */
 export const noAdvantages: Readonly<SweetSamAdvantages> = {
   lives: startingLives,
+  smokeBombs: 0,
   playerSpeedFactor: 1,
   sleepyFactor: 1,
 };
@@ -36,12 +45,12 @@ export const noAdvantages: Readonly<SweetSamAdvantages> = {
 /** Sweet Sam's prizes, in the order the prize counter lists them. */
 export const sweetSamPrizes = [
   {
-    id: "honeyJar",
-    name: "HONEY JAR",
+    id: "smokeBomb",
+    name: "SMOKE BOMB",
     price: 25,
-    effect: "+1 LIFE IN SWEET SAM",
-    advantage: "lives",
-    give: (lives: number): number => lives + honeyJarExtraLives,
+    effect: "SPACE: HIDE FROM BEES",
+    advantage: "smokeBombs",
+    give: (): number => smokeBombUses,
   },
   {
     id: "runningShoes",
