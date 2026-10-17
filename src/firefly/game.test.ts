@@ -506,6 +506,64 @@ describe("sparks", () => {
   });
 });
 
+/** Kills a lone moth in formation with the score at `score` beforehand; returns lives gained and sounds. */
+function killAt(f: FireflySoftware, score: number): { gained: number; sounds: SoundEvent[] } {
+  const e = f.enemies[0];
+  if (e === undefined) throw new Error("no enemy");
+  e.hp = 1;
+  e.deadFrames = 0;
+  e.outOfFormation = false;
+  sparkAt(f, e.x, e.y);
+  f.points = score;
+  const before = f.lives;
+  const rec = recordSounds();
+  f.update(NO_INPUT);
+  rec.stop();
+  return { gained: f.lives - before, sounds: rec.events };
+}
+
+describe("extra lives", () => {
+  test("scoreTo sets the score, and the next tick pays any extra life it reaches", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.scoreTo(20_000);
+    expect([f.score(), f.lives]).toEqual([20_000, startLives]);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 1);
+    f.scoreTo(19_990);
+    f.scoreTo(20_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+  });
+
+  const moth = points("moth", false);
+
+  test("crossing 20,000, 70,000 and 140,000 each adds one life with the extra-life jingle", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    for (const t of [20_000, 70_000, 140_000]) {
+      const below = killAt(f, t - moth - 10);
+      expect(below.gained).toBe(0);
+      expect(below.sounds).not.toContain("play:extraLife");
+      const across = killAt(f, t - 10);
+      expect(across.gained).toBe(1);
+      expect(across.sounds).toContain("play:extraLife");
+      expect(killAt(f, t + 10).gained).toBe(0);
+    }
+  });
+
+  test("one jump across two thresholds pays two lives, once", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.points = 19_990;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives);
+    f.points = 75_000;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+    expect(f.snapshot().nextLife).toBe(140_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+  });
+});
+
 describe("hits", () => {
   for (const kind of ["moth", "wasp"] as const) {
     test(`one spark kills a ${kind}`, () => {

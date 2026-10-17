@@ -42,6 +42,7 @@ import {
   firstShotDelay,
   formation,
   hitEffectTicks,
+  nextExtraLife,
   points,
   respawnTicks,
   shotCutoffMargin,
@@ -253,6 +254,8 @@ export class FireflySoftware implements FixedViewport {
   stageTick = 0;
   lives: number;
   points = 0;
+  /** The score that gives the next extra life. */
+  nextLife = nextExtraLife(0);
   over = false;
   player: Vec = { ...playerStart };
   respawn = 0;
@@ -288,6 +291,7 @@ export class FireflySoftware implements FixedViewport {
     this.moveCaptive();
     this.moveShots();
     this.hitEnemies();
+    this.awardExtraLives();
     if (this.respawn === 0) this.hitPlayer();
     this.endHitEffects();
     this.countDownBonuses();
@@ -599,6 +603,15 @@ export class FireflySoftware implements FixedViewport {
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
   }
 
+  /** A life, with the extra-life jingle, for each threshold the score has reached. */
+  private awardExtraLives(): void {
+    while (this.points >= this.nextLife) {
+      this.lives++;
+      this.nextLife = nextExtraLife(this.nextLife);
+      play(sounds.extraLife);
+    }
+  }
+
   /** The enemy bursts and is gone, scoring nothing. */
   private destroy(e: Enemy): void {
     e.hp = 0;
@@ -655,6 +668,11 @@ export class FireflySoftware implements FixedViewport {
     this.fireDelay = 0;
   }
 
+  scoreTo(score: number): void {
+    this.points = score;
+    this.nextLife = nextExtraLife(score - 1);
+  }
+
   jumpTo(stage: number): void {
     this.stage = stage - 1;
     this.nextStage();
@@ -697,6 +715,7 @@ export class FireflySoftware implements FixedViewport {
       stage: this.stage,
       stageTick: this.stageTick,
       lives: this.lives,
+      nextLife: this.nextLife,
       score: this.points,
       over: this.over,
       player: { x: this.player.x, y: this.player.y },
