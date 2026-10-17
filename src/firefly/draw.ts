@@ -157,7 +157,7 @@ export interface FireflyView {
   shotsFired: number;
   hits: number;
   score(): number;
-  /** PLAYER 1, STAGE n, READY or CHALLENGING STAGE while one shows. */
+  /** The banner showing (its kind: PLAYER 1, STAGE n, READY or CHALLENGING STAGE), or null. */
   banner(): Banner | null;
 }
 

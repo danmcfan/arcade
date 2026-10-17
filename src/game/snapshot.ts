@@ -18,7 +18,6 @@ import type { SoftwareName } from "./software.ts";
 import type { PrizeId } from "../arcade/prizes.ts";
 import type { NoticeKind } from "../arcade/changeMachine.ts";
 import type { HighScores } from "../arcade/wallet.ts";
-import type { Banner } from "../firefly/rules.ts";
 import type { Faced } from "../arcade/update.ts";
 
 /** Fields every top-level scene snapshot carries. */
@@ -286,6 +285,10 @@ export interface SweetSamSnapshot {
 /** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
 export type FireflyEnemyKind = "moth" | "wasp" | "owl" | "morph";
 
+/** A Firefly banner in mid-field (`Banner` in src/firefly/rules.ts). */
+export type FireflyBanner =
+  { kind: "player" } | { kind: "stage"; stage: number } | { kind: "challenging" } | { kind: "ready" };
+
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,
  * flying straight to its slot, in the formation, diving at the firefly, or
@@ -369,7 +372,7 @@ export interface FireflySnapshot {
   /** Ticks left of the -RESULTS- screen after GAME OVER; 0 otherwise. */
   results: number;
   /** The banner in mid-field (src/firefly/rules.ts), or null. */
-  banner: Banner | null;
+  banner: FireflyBanner | null;
 }
 
 // ---------------------------------------------------------------------------
