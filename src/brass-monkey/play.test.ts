@@ -288,10 +288,40 @@ describe("score", () => {
     run.monkey.y = 211;
     step(run, 8, { right: true });
     expect(run.bolts[0]).toBe(true);
-    expect(run.score).toBe(t.boltPoints);
+    expect(run.score).toBe(300);
     expect(sounds).toEqual(["bolt"]);
     step(run, 8, { left: true });
-    expect(run.score).toBe(t.boltPoints);
+    expect(run.score).toBe(300);
+  });
+
+  test("a bolt scores 300 on loop 0, 500 on loop 1 and 800 from loop 2", () => {
+    expect([0, 1, 2, 3, 7].map((l) => t.boltPointsFor(l))).toEqual([300, 500, 800, 800, 800]);
+    const { run } = quiet({ loop: 1 });
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.score).toBe(500);
+  });
+
+  test("a bolt shows its points where it was picked up, briefly", () => {
+    const { run } = quiet();
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.popups.map(({ x, y, points }) => ({ x, y, points }))).toEqual([{ x: 64, y: 212, points: 300 }]);
+    step(run, t.popupTicks);
+    expect(run.popups).toEqual([]);
+  });
+
+  test("a collected bolt comes back when the floor restarts", () => {
+    const { run } = quiet();
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.bolts[0]).toBe(true);
+    run.startFloor();
+    expect(run.bolts[0]).toBe(false);
+    expect(run.popups).toEqual([]);
   });
 
   test("the bonus is added at the exit, and the girder floor leads to the conveyor floor", () => {

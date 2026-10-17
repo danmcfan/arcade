@@ -410,6 +410,8 @@ export interface BrassMonkeySnapshot {
   wrenches: boolean[];
   /** The smashes whose points are showing, where each hazard was. */
   smashes: BrassMonkeySmashSnapshot[];
+  /** Points floating where bolts were just collected, with the ticks each has left. */
+  popups: { x: number; y: number; points: number; ticks: number }[];
   gearTimer: number;
   emberTimer: number;
 }

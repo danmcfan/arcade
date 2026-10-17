@@ -162,6 +162,8 @@ export class BrassMonkeySoftware implements FixedViewport {
         drawWrench(screen, run.monkey, left, top, run.ticks);
     }
     for (const s of run.smashes) drawTextCentered(screen, `${s.points}`, left + s.x, top + s.y - 16);
+    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
+    for (const p of run.popups) drawTextCentered(screen, String(p.points), left + p.x, top + p.y - 22);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -215,6 +217,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       wrench: m.wrench,
       wrenches: [...run.wrenches],
       smashes: run.smashes.map(({ x, y, points }) => ({ x, y, points })),
+      popups: run.popups.map((p) => ({ ...p })),
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
     };
