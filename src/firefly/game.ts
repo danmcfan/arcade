@@ -94,6 +94,10 @@ const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">
 };
 
 const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
+/** The whole path slid `dx` sideways. */
+const shiftPath = (path: Path, dx: number): Path =>
+  path.map((c) => ({ p0: slide(c.p0, dx), p1: slide(c.p1, dx), p2: slide(c.p2, dx), p3: slide(c.p3, dx) }));
+const slide = (p: Vec, dx: number): Vec => ({ x: p.x + dx, y: p.y });
 const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
 /** Where the second of a pair flies: mirrored on a split wave, else `beside` the first. */
 const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p) : shift(p, beside));
@@ -572,13 +576,19 @@ export class FireflySoftware implements FixedViewport {
     this.enemies = this.enemies.filter((e) => e !== moth);
     for (let i = 0; i < morphTrioSize; i++) {
       const k = i - (morphTrioSize - 1) / 2;
-      const beside = (p: Vec): Vec => ({ x: p.x + k * morphSpacing, y: p.y });
-      const m: Enemy = { ...moth, kind: "morph", hp: enemyHp.morph, x: moth.x + k * morphSpacing, trio };
-      this.sendDiving(
-        m,
-        path.map((c) => ({ p0: beside(c.p0), p1: beside(c.p1), p2: beside(c.p2), p3: beside(c.p3) })),
-        d,
-      );
+      const dx = k * morphSpacing;
+      const m: Enemy = {
+        ...moth,
+        kind: "morph",
+        hp: enemyHp.morph,
+        x: moth.x + dx,
+        trio,
+        escortOf: null,
+        escortDx: 0,
+        escortsKilled: 0,
+        beamTicks: 0,
+      };
+      this.sendDiving(m, shiftPath(path, dx), d);
       this.enemies.push(m);
     }
   }
@@ -628,7 +638,10 @@ export class FireflySoftware implements FixedViewport {
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
-    if (e.trio !== null && ++e.trio.kills === morphTrioSize) this.points += morphBonus;
+    if (e.trio !== null && ++e.trio.kills === morphTrioSize) {
+      this.points += morphBonus;
+      this.bonuses.push({ points: morphBonus, x: e.x, y: e.y, ticks: bonusTicks });
+    }
   }
 
   /** The enemy bursts and is gone, scoring nothing. */

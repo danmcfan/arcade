@@ -446,6 +446,7 @@ describe("morphs", () => {
     }
     expect(trio.every((m) => m.hp === 0)).toBe(true);
     expect(f.points).toBe(expected + morphBonus);
+    expect(f.bonuses.map((b) => b.points)).toEqual([morphBonus]);
   });
 
   test("shooting only 2 of the 3 pays no bonus", () => {
