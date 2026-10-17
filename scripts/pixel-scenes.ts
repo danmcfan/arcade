@@ -13,9 +13,9 @@ import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { blank, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
+import { blank, flipX, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
-import { flowers } from "../src/sweet-sam/art.ts";
+import { beeEyes, flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { saveKey, saveVersion } from "../src/title/save.ts";
 import { noHighScores, Wallet } from "../src/arcade/wallet.ts";
@@ -100,17 +100,21 @@ function paintPrizes(room: PNG): void {
   }
 }
 
-/** Sweet Sam's level counter on the black maze: every bonus flower in level order, one frame, 8 px apart. */
-function flowerRow(): PNG[] {
+/** Sweet Sam's black maze with every bonus flower in level order, 8 px apart, and under them an eaten bee's eyes, right, left, up and down. */
+function flowersAndEyesRow(): PNG[] {
   const gap = 8;
-  const png = blank(gap + flowers.length * (16 + gap), 32);
+  const png = blank(gap + Math.max(flowers.length, beeEyes.length) * (16 + gap), 56);
   paint(
     png,
-    Array.from({ length: 32 }, () => "k".repeat(png.width)),
+    Array.from({ length: png.height }, () => "k".repeat(png.width)),
     sweetie,
   );
   flowers.forEach((f, i) => {
     paint(png, f, sweetie, gap + i * (16 + gap), 8);
+  });
+  const [right = [], ...upDown] = beeEyes;
+  [right, flipX(right), ...upDown].forEach((e, i) => {
+    paint(png, e, sweetie, gap + i * (16 + gap), 32);
   });
   return [png];
 }
@@ -270,7 +274,7 @@ export const scenes: readonly Scene[] = [
   },
   { name: "hub with every prize", sources: ["src/ui/prizeArt.ts"], render: () => hubFrames(paintPrizes) },
   { name: "title", sources: ["src/ui/titleArt.ts"], render: titleTop },
-  { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
+  { name: "sweet-sam flowers and bee eyes", sources: ["src/sweet-sam/art.ts"], render: flowersAndEyesRow },
 ];
 
 /** The scene that shows `file`'s art; throws naming this file when none does. */
