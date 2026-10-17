@@ -12,7 +12,8 @@ import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { type DigitReel } from "../ui/digitReel.ts";
-import { ScoreDials } from "../ui/scoreDials.ts";
+import { ScoreDials } from "../ui/dials.ts";
+import { scoreDialsAt } from "../ui/hudArt.ts";
 import type { LevelEffect } from "./levelEffect.ts";
 import { Level, type LevelSetup } from "./level.ts";
 import { draw } from "./draw.ts";
@@ -29,13 +30,13 @@ export class SweetSamSoftware implements FixedViewport {
   readonly camera = new CameraSystem();
   readonly particles = new ParticleSystem();
   readonly level: Level;
+  /** The Score and high score on the maze's second tile row, under 1UP and HIGH SCORE. */
   readonly dials: ScoreDials;
 
   /** `setup` starts the Level mid-PLAY from a described position (level.ts). */
   constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages, setup?: LevelSetup) {
-    this.dials = new ScoreDials(highscore);
+    this.dials = new ScoreDials(highscore, scoreDialsAt);
     this.level = new Level(
-      highscore,
       advantages,
       (e) => {
         this.effect(e);
@@ -80,7 +81,12 @@ export class SweetSamSoftware implements FixedViewport {
     this.camera.update();
     this.particles.update();
     this.level.step(i);
-    this.dials.tick(this.level.score(), this.level.highScore());
+    this.dials.tick(this.level.score());
+  }
+
+  /** Test hook: start `level` from READY!, as a level clear would. */
+  jumpTo(level: number): void {
+    this.level.jumpTo(level);
   }
 
   draw(screen: Surface, _buffer: number): void {
@@ -94,6 +100,7 @@ export class SweetSamSoftware implements FixedViewport {
   snapshot(): SweetSamSnapshot {
     return {
       ...this.level.snapshot(),
+      highScore: this.dials.highScore,
       shake: [
         this.camera.shakeOffsetX,
         this.camera.shakeOffsetY,
@@ -101,7 +108,7 @@ export class SweetSamSoftware implements FixedViewport {
         this.camera.shakeIntensity,
       ],
       particlesActive: this.particles.activeCount(),
-      dials: [...this.dials.score.map(dial), ...this.dials.high.map(dial)],
+      dials: [...this.dials.score.reels.map(dial), ...this.dials.high.reels.map(dial)],
     };
   }
 }

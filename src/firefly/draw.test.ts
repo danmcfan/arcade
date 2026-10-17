@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
+  imageBadges,
   imageCaptive,
   imageCabinetFirefly,
   imageFirefly,
@@ -22,7 +23,7 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { captiveColours } from "./art.ts";
 import { FireflySoftware, beamY, newFireflySoftware, playerY } from "./game.ts";
-import { beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
+import { badgeTickSpacing, beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 // The score dials draw each digit through an offscreen cell, so give it a canvas.
 beforeAll(() => {
@@ -116,6 +117,21 @@ describe("firefly draw", () => {
     ]);
   });
 
+  test("the stage's badges stand at the bottom right, largest first, each added in turn", () => {
+    const f = new FireflySoftware();
+    f.stage = 27; // 20, 5, 1, 1: 16 + 8 + 8 + 8 wide, ending 2 short of the right edge
+    f.stageTick = 1000;
+    expect(of(drawCalls(f), imageBadges).map((c) => [rect(c.sprite), c.x, c.y])).toEqual([
+      [[32, 0, 16, 16], 8 + 182, 8 + 272],
+      [[64, 0, 8, 16], 8 + 198, 8 + 272],
+      [[80, 0, 8, 16], 8 + 206, 8 + 272],
+      [[80, 0, 8, 16], 8 + 214, 8 + 272],
+    ]);
+    // Early in the stage only the first badges are in, already where they end up.
+    f.stageTick = badgeTickSpacing + 1;
+    expect(of(drawCalls(f), imageBadges).map((c) => c.x)).toEqual([8 + 182, 8 + 198]);
+  });
+
   test("STAGE n is drawn in the pixel font only while the stage opens", () => {
     const f = new FireflySoftware();
     expect(of(drawCalls(f), imageFont).length).toBe("STAGE 1".length);
@@ -145,8 +161,8 @@ describe("firefly draw", () => {
     f.stageTick = stageIntroTicks + 1;
     f.points = 12500;
     for (let i = 0; i < 60; i++) f.update(NO_INPUT);
-    expect(f.dials.score.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
-    expect(f.dials.high.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
+    expect(f.dials.score.reels.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
+    expect(f.dials.high.reels.map((r) => r.settledDigit)).toEqual([0, 1, 2, 5, 0, 0]);
   });
 
   test("an enemy in formation faces down: row 2 of its sheet, centred on it", () => {
@@ -220,7 +236,7 @@ describe("firefly tractor beam", () => {
     const { f, e } = onlyEnemy("owl", 100, 60);
     f.respawn = respawnTicks;
     f.captured = true;
-    f.captive = { owl: e, x: 100, y: 44 };
+    f.captive = { owl: e, x: 100, y: 44, hostile: false };
     const calls = drawCalls(f);
     expect(of(calls, imageHit)).toEqual([]);
     expect(of(calls, imageCaptive).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 8, 44 + 8 - 8]]);
@@ -252,5 +268,24 @@ describe("firefly tractor beam", () => {
     const rects: number[][] = [];
     f.draw(stubSurface({ draw: () => {}, fillRect: (x, y, w, h) => void rects.push([x, y, w, h]) }), 0);
     expect(rects).toEqual([]);
+  });
+});
+
+describe("dual firefly", () => {
+  test("draws two fireflies, 8px either side of the player's x", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.dual = true;
+    const xs = of(drawCalls(f), imageFirefly)
+      .filter((c) => c.y === playerY)
+      .map((c) => c.x);
+    expect(xs).toEqual([f.player.x - 8, f.player.x + 8]);
+  });
+
+  test("a hostile captive, without its Owl, is still drawn red", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.captive = { owl: null, x: 50, y: 120, hostile: true };
+    expect(of(drawCalls(f), imageCaptive).map((c) => [c.x, c.y])).toEqual([[50, 120]]);
   });
 });

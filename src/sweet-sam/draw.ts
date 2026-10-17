@@ -37,7 +37,7 @@ import { findTarget, startTicks } from "./update.ts";
 import type { LevelView } from "./level.ts";
 import type { CameraSystem } from "./camera.ts";
 import type { ParticleSystem } from "./particle.ts";
-import type { ScoreDials } from "../ui/scoreDials.ts";
+import type { ScoreDials } from "../ui/dials.ts";
 
 /** What a frame shows: the Level, read through its queries, and the software's camera, particles and dials. */
 export interface SweetSamScene {
@@ -68,11 +68,10 @@ function drawScreen(s: SweetSamScene, screen: Surface): void {
     return;
   }
   drawBackground(l, screen, bufX, bufY);
-  s.dials.draw(screen, bufX, bufY, l.score(), l.highScore());
+  s.dials.draw(screen, bufX, bufY);
   drawLives(l, screen, bufX, bufY);
   drawLevel(l, screen, bufX, bufY);
   drawReady(l, screen, bufX, bufY);
-  drawLevelBanner(l, screen, bufX, bufY);
   drawItems(l, screen, bufX, bufY);
   drawFlower(l, screen, bufX, bufY);
   drawPlayer(l, screen, bufX, bufY);
@@ -91,7 +90,7 @@ function drawIntermission(s: SweetSamScene, screen: Surface, bufX: number, bufY:
   const poses = l.intermissionPoses();
   if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
-  s.dials.draw(screen, bufX, bufY, l.score(), l.highScore());
+  s.dials.draw(screen, bufX, bufY);
   drawLevel(l, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
     for (const pose of poses) {
@@ -141,15 +140,9 @@ function drawLevel(l: LevelView, screen: Surface, bufX: number, bufY: number): v
   }
 }
 
-/** Where READY! and "LEVEL n" stand: centred under the bee home. */
+/** Where READY! stands: centred under the bee home. */
 const readyCentreX = 8 * 14;
 const readyTop = 8 * 20 + 1;
-
-/** "LEVEL n" before READY on every level after the first. */
-function drawLevelBanner(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
-  if (l.levelBannerTicks() <= 0) return;
-  drawTextCentered(screen, `LEVEL ${l.levelNumber()}`, readyCentreX + bufX, readyTop + bufY, "yellow");
-}
 
 function drawFlower(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
   if (!l.flowerShowing()) return;
@@ -173,7 +166,7 @@ export const readyWaveTimeRad = 0.14;
 export const readyWaveGlyphPhaseRad = 1.05;
 
 function drawReady(l: LevelView, screen: Surface, bufX: number, bufY: number): void {
-  if (l.startTicks() <= 0 || l.levelBannerTicks() > 0) {
+  if (l.startTicks() <= 0) {
     return;
   }
 

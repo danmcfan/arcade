@@ -1,8 +1,8 @@
 // The layout of Brass Monkey's floors: where the girders, conveyors, ladders,
-// exit door, Gnome, bolts and wrenches stand, in the floor's own pixels (224×256,
+// exit door, Gnome, furnace, bolts and wrenches stand, in the floor's own pixels (224×256,
 // top-left 0, 0). scripts/gen-brass-monkey-art.ts draws each floor from this
-// and the tiles in art.ts into girder-floor.png and conveyor-floor.png; play.ts
-// plays on them.
+// and the tiles in art.ts into girder-floor.png, conveyor-floor.png and
+// elevator-floor.png; play.ts plays on them.
 
 /**
  * A girder: its tiles from x0 up to x1 (exclusive), 8 px apart. Its top is at
@@ -36,22 +36,56 @@ export interface Ladder {
 }
 
 /**
+ * A lift shaft `liftWidth` px wide from x, its platforms moving `dir` (up -1,
+ * down 1) on a loop: a platform's top runs between rows `top` and `bottom`,
+ * and one that reaches an end comes back at the other. `platforms` are spaced
+ * evenly along it.
+ */
+export interface Shaft {
+  x: number;
+  top: number;
+  bottom: number;
+  dir: -1 | 1;
+  platforms: number;
+}
+
+/** A lift platform's width, and its shaft's: two girder tiles. */
+export const liftWidth = 16;
+
+/** Where the springs go: they bounce right along the girder whose top is at y, then drop at x `dropX`. */
+export interface Springs {
+  y: number;
+  dropX: number;
+}
+
+/**
  * A floor, `width` by `height` px, and where its pieces stand; `door` is the
  * exit door's foot, its left edge at x and its bottom row at y - 1. `gnome` is
  * the top-left of the Gnome's 32×32 frame, `start` the monkey's foot when the
  * floor starts, `bolts` the feet of the bolts to collect and `wrenches` the
- * feet of the wrenches to pick up (two a floor, as Donkey Kong's hammers).
+ * feet of the wrenches to pick up (as Donkey Kong's hammers). `furnace`, on a
+ * floor that has one, is the foot of the furnace's middle, 16 px wide: gears
+ * end in it and embers come out of it. A floor with `pans` sends no gears: its
+ * conveyors carry pans. On a floor with `lifts`, the monkey rides their
+ * platforms; on one with `springs`, the Gnome sends springs instead of gears.
+ * The rivet floor has no door: `rivets` are the feet of its 8 rivet slots,
+ * each in the middle of an 8 px girder tile, pulled to clear it.
  */
 export interface Floor {
   width: number;
   height: number;
   girders: readonly Girder[];
   ladders: readonly Ladder[];
-  door: Spot;
+  door?: Spot;
   gnome: Spot;
   start: Spot;
   bolts: readonly Spot[];
   wrenches: readonly Spot[];
+  furnace?: Spot;
+  pans?: boolean;
+  lifts?: readonly Shaft[];
+  springs?: Springs;
+  rivets?: readonly Spot[];
 }
 
 /** The top of `g` at x. */
@@ -105,7 +139,9 @@ export const girderFloor: Floor = {
   ],
   door: { x: 104, y: 56 },
   gnome: { x: 24, y: 52 },
-  start: { x: 16, y: 248 },
+  // As Donkey Kong's oil drum: at the bottom left, the monkey starting just right of it.
+  furnace: { x: 8, y: 248 },
+  start: { x: 24, y: 248 },
   bolts: [
     { x: 64, y: 212 },
     { x: 150, y: 179 },
@@ -123,7 +159,8 @@ export const girderFloor: Floor = {
  * The conveyor floor: three conveyors between a flat bottom girder and the
  * Gnome's girder, each running the other way to the one below it, so a gear
  * zigzags down; one ladder joins each pair, at alternate ends. The top
- * platform and its ladder are the girder floor's.
+ * platform and its ladder are the girder floor's. As Donkey Kong's 50m board,
+ * the belts carry pans.
  */
 export const conveyorFloor: Floor = {
   width: 224,
@@ -148,6 +185,7 @@ export const conveyorFloor: Floor = {
   ],
   door: { x: 104, y: 56 },
   gnome: { x: 24, y: 56 },
+  pans: true,
   start: { x: 16, y: 248 },
   bolts: [
     { x: 120, y: 208 },
@@ -161,5 +199,117 @@ export const conveyorFloor: Floor = {
   ],
 };
 
+/**
+ * The tops of `shaft`'s platforms once they have moved `travel` px, in order:
+ * the first starts at the end they move away from.
+ */
+export function liftTops(shaft: Shaft, travel: number): number[] {
+  const span = shaft.bottom - shaft.top;
+  return Array.from({ length: shaft.platforms }, (_, n) => {
+    const along = (((travel + (n * span) / shaft.platforms) % span) + span) % span;
+    return shaft.dir > 0 ? shaft.top + along : shaft.bottom - along;
+  });
+}
+
+/**
+ * The elevator floor, as Donkey Kong's 75m board: the monkey starts on a
+ * stub of girder at the bottom left, rides the up lift (x 40) to two islands
+ * joined by a ladder, crosses on the down lift (x 152) to the right-hand
+ * girders, climbs them to a ledge under the Gnome's girder and jumps the gap
+ * to it, then goes left to the top platform's ladder. The Gnome's springs
+ * bounce along its girder and drop through that gap (x 192), past the
+ * right-hand ladders. Being carried off the top of the up shaft, or off the
+ * bottom of the down one, costs a life.
+ */
+export const elevatorFloor: Floor = {
+  width: 224,
+  height: 256,
+  girders: [
+    { x0: 0, x1: 40, y: 248, drop: 0 },
+    // The islands between the shafts.
+    { x0: 56, x1: 112, y: 192, drop: 0 },
+    { x0: 96, x1: 152, y: 152, drop: 0 },
+    // The right-hand girders, then the ledge under the Gnome's girder.
+    { x0: 168, x1: 224, y: 232, drop: 0 },
+    { x0: 168, x1: 224, y: 192, drop: 0 },
+    { x0: 168, x1: 224, y: 144, drop: 0 },
+    { x0: 200, x1: 224, y: 88, drop: 0 },
+    // The Gnome's girder: springs bounce off its right end.
+    { x0: 0, x1: 184, y: 88, drop: 0 },
+    // The top platform.
+    { x0: 88, x1: 136, y: 56, drop: 0 },
+  ],
+  ladders: [
+    { x: 100, top: 160, bottom: 191 },
+    { x: 208, top: 200, bottom: 231 },
+    { x: 176, top: 152, bottom: 191 },
+    { x: 208, top: 96, bottom: 143 },
+    { x: 128, top: 64, bottom: 87 },
+  ],
+  lifts: [
+    { x: 40, top: 104, bottom: 254, dir: -1, platforms: 3 },
+    { x: 152, top: 136, bottom: 256, dir: 1, platforms: 2 },
+  ],
+  springs: { y: 88, dropX: 192 },
+  door: { x: 104, y: 56 },
+  gnome: { x: 24, y: 56 },
+  start: { x: 16, y: 248 },
+  bolts: [
+    { x: 76, y: 192 },
+    { x: 136, y: 152 },
+    { x: 216, y: 232 },
+    { x: 160, y: 88 },
+  ],
+  // No wrenches, as Donkey Kong's 75m board has no hammers.
+  wrenches: [],
+};
+
+/**
+ * The rivet floor, as Donkey Kong's 100m board: five flat girders, the four
+ * upper ones each held by two rivet slots, one either side, and the Gnome on
+ * the top one. Ladders join each pair, clear of the slots. No exit door: the
+ * floor is cleared by pulling all 8 rivets.
+ */
+export const rivetFloor: Floor = {
+  width: 224,
+  height: 256,
+  girders: [
+    { x0: 0, x1: 224, y: 248, drop: 0 },
+    { x0: 0, x1: 224, y: 208, drop: 0 },
+    { x0: 0, x1: 224, y: 168, drop: 0 },
+    { x0: 0, x1: 224, y: 128, drop: 0 },
+    { x0: 16, x1: 208, y: 88, drop: 0 },
+  ],
+  ladders: [
+    { x: 8, top: 216, bottom: 247 },
+    { x: 104, top: 216, bottom: 247 },
+    { x: 208, top: 216, bottom: 247 },
+    { x: 24, top: 176, bottom: 207 },
+    { x: 192, top: 176, bottom: 207 },
+    { x: 8, top: 136, bottom: 167 },
+    { x: 104, top: 136, bottom: 167 },
+    { x: 208, top: 136, bottom: 167 },
+    { x: 32, top: 96, bottom: 127 },
+    { x: 184, top: 96, bottom: 127 },
+  ],
+  gnome: { x: 96, y: 56 },
+  start: { x: 56, y: 248 },
+  bolts: [],
+  wrenches: [
+    { x: 140, y: 208 },
+    { x: 84, y: 128 },
+  ],
+  rivets: [
+    { x: 52, y: 208 },
+    { x: 172, y: 208 },
+    { x: 52, y: 168 },
+    { x: 172, y: 168 },
+    { x: 52, y: 128 },
+    { x: 172, y: 128 },
+    { x: 52, y: 88 },
+    { x: 172, y: 88 },
+  ],
+};
+
 /** The floors in the order they are played. */
-export const floors: readonly Floor[] = [girderFloor, conveyorFloor];
+export const floors: readonly Floor[] = [girderFloor, conveyorFloor, elevatorFloor, rivetFloor];

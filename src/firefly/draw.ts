@@ -1,13 +1,15 @@
 // Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
 // effects), an Owl's tractor beam, a captured firefly, enemy shots, sparks, the firefly (or its death effect), the
-// score HUD shared with Sweet Sam (src/ui/scoreDials.ts) and spare lives, escort-kill bonuses, and "STAGE n" while a stage opens.
+// score HUD shared with Sweet Sam (src/ui/dials.ts) and spare lives, stage badges, escort-kill bonuses, and "STAGE n" while a stage opens.
 
 import {
+  imageBadges,
   imageCaptive,
   imageCabinetFirefly,
   imageFirefly,
   imageFireflyBackground,
   imageHit,
+  imageMorph,
   imageMoth,
   imageOwl,
   imageOwlHurt,
@@ -19,15 +21,20 @@ import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
+import { drawScoreLabels, type ScoreDials } from "../ui/dials.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import {
+  badgesShown,
+  badgeValues,
   beamHeight,
   beamWidth,
+  fieldHeight,
   fieldWidth,
+  halves,
   hitEffectTicks,
   respawnTicks,
+  stageBadges,
   stageIntroTicks,
   type EnemyKind,
 } from "./rules.ts";
@@ -40,6 +47,7 @@ const enemySheets: Readonly<Record<EnemyKind, Sprite>> = {
   moth: imageMoth,
   wasp: imageWasp,
   owl: imageOwl,
+  morph: imageMorph,
 };
 
 /** Every enemy frame is 16×16. */
@@ -96,6 +104,27 @@ function drawLives(screen: Surface, spare: number): void {
   for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + 8 * (2 + i * 2), oy + 8 * 34 + 1);
 }
 
+/** Badge slots in imageBadges are 16 wide; the 1 and 5 pennants fill half of theirs. */
+const badgeSlot = 16;
+
+function badgeWidth(v: number): number {
+  return v < 10 ? badgeSlot / 2 : badgeSlot;
+}
+
+/**
+ * The stage's badges along the bottom right, largest first and ending 2 short
+ * of the edge. Each stands where it ends up, so they are added left to right.
+ */
+function drawBadges(screen: Surface, stage: number, stageTick: number): void {
+  const badges = stageBadges(stage);
+  let x = fieldWidth - 2 - badges.reduce((w, v) => w + badgeWidth(v), 0);
+  for (const v of badges.slice(0, badgesShown(stage, stageTick))) {
+    const sx = badgeValues.indexOf(v) * badgeSlot;
+    screen.draw(sub(imageBadges, sx, 0, sx + badgeWidth(v), badgeSlot), ox + x, oy + fieldHeight - badgeSlot);
+    x += badgeWidth(v);
+  }
+}
+
 /** What drawing needs of the game (`FireflySoftware`). */
 export interface FireflyView {
   stage: number;
@@ -111,7 +140,8 @@ export interface FireflyView {
   /** The firefly in play was taken by a beam: no burst while it respawns. */
   captured: boolean;
   captive: Captive | null;
-  highScore: number;
+  /** Two fireflies, `dualOffset` either side of `player.x`. */
+  dual: boolean;
   dials: ScoreDials;
   score(): number;
 }
@@ -140,13 +170,14 @@ function drawField(screen: Surface, f: FireflyView): void {
     if (!f.captured) drawHit(screen, Math.max(0, hitEffectTicks - (respawnTicks - f.respawn)), f.player.x, f.player.y);
   } else if (!f.over) {
     // Once the last life is gone the firefly stays gone, under GAME OVER and the payout.
-    screen.draw(imageFirefly, ox + f.player.x - 8, oy + f.player.y - 8);
+    for (const x of halves(f.player.x, f.dual)) screen.draw(imageFirefly, ox + x - 8, oy + f.player.y - 8);
   }
 
   // Sweet Sam's HUD: the high score follows the score once the score passes it.
   drawScoreLabels(screen, ox, oy);
-  f.dials.draw(screen, ox, oy, f.score(), f.highScore);
+  f.dials.draw(screen, ox, oy);
   drawLives(screen, Math.max(0, f.lives - 1));
+  drawBadges(screen, f.stage, f.stageTick);
 
   if (f.stageTick <= stageIntroTicks) {
     drawTextCentered(screen, `STAGE ${f.stage}`, ox + fieldWidth / 2, oy + 150, "yellow");

@@ -4,23 +4,29 @@
 //
 // firefly.png, captive.png (the firefly in reds), spark.png and shot.png are
 // their rows as drawn. moth.png,
-// wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
+// morph.png, wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
 // sheets: the up-facing source turned clockwise in 15° steps, one frame per heading (`rotationRows` × `rotationColumns`). Quarter
 // turns are exact; the other angles use RotSprite (scale the source up 8×
 // with Scale2x, rotate, sample back down), which keeps the outlines whole and
 // adds no colours. hit.png is the hit frames, each mirrored from its quarter.
 // background.png is the dithered sky, the stars and the grass tiled along the
-// bottom. gen-art.test.ts fails when the committed PNGs drift.
+// bottom. badges.png is the stage badges, the chevrons recoloured per value.
+// gen-art.test.ts fails when the committed PNGs drift.
 
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import {
   backgroundHeight,
+  badge1Art,
+  badge5Art,
+  chevronBadge,
+  chevronColours,
   backgroundWidth,
   captiveColours,
   fireflyArt,
   grassTile,
   hitQuarters,
+  morphArt,
   mothArt,
   owlArt,
   owlHurtColours,
@@ -34,6 +40,7 @@ import {
   stars,
   waspArt,
 } from "../src/firefly/art.ts";
+import { badgeValues, type BadgeValue } from "../src/firefly/rules.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 import { blank, empty, mirrorX, mirrorY, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
@@ -176,6 +183,22 @@ export function renderBackground(): PNG {
   return png;
 }
 
+/** Each stage badge's rows: the pennants as drawn, the chevrons recoloured. */
+export function badgeRows(value: BadgeValue): readonly string[] {
+  if (value === 1) return badge1Art;
+  if (value === 5) return badge5Art;
+  return recolour(chevronBadge, chevronColours[value]);
+}
+
+/** The badges in `badgeValues` order, each left-aligned in a 16×16 slot. */
+export function renderBadges(): PNG {
+  const png = blank(16 * badgeValues.length, 16);
+  badgeValues.forEach((v, i) => {
+    paint(png, badgeRows(v), sweetie, i * 16, 0);
+  });
+  return png;
+}
+
 export const fireflyImagesDir = "src/assets/images/firefly";
 
 /** Every generated Firefly image: its file, its size and how to draw it. */
@@ -184,10 +207,12 @@ export const fireflyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(fireflyImagesDir, "captive.png"), 16, 16, () => toPng(recolour(fireflyArt, captiveColours))),
   imageOutput(join(fireflyImagesDir, "spark.png"), 8, 8, () => toPng(sparkArt)),
   imageOutput(join(fireflyImagesDir, "moth.png"), 96, 64, () => rotationSheet(mothArt)),
+  imageOutput(join(fireflyImagesDir, "morph.png"), 96, 64, () => rotationSheet(morphArt)),
   imageOutput(join(fireflyImagesDir, "wasp.png"), 96, 64, () => rotationSheet(waspArt)),
   imageOutput(join(fireflyImagesDir, "owl.png"), 96, 64, () => rotationSheet(owlArt)),
   imageOutput(join(fireflyImagesDir, "owl-hurt.png"), 96, 64, () => rotationSheet(recolour(owlArt, owlHurtColours))),
   imageOutput(join(fireflyImagesDir, "shot.png"), 4, 8, () => toPng(shotArt)),
   imageOutput(join(fireflyImagesDir, "hit.png"), 160, 32, renderHit),
+  imageOutput(join(fireflyImagesDir, "badges.png"), 96, 16, renderBadges),
   imageOutput(join(fireflyImagesDir, "background.png"), 224, 288, renderBackground),
 ];

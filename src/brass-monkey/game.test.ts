@@ -2,11 +2,19 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test
 import {
   imageCabinetBrassMonkey,
   imageConveyorFloor,
+  imageElevatorFloor,
+  imageLift,
+  imageSpring,
   imageGirderFloor,
   imageFont,
+  imagePan,
+  imageFurnace,
+  imageGear,
   imageGnome,
   imageHud,
   imageMonkey,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
   imageWrench,
   imageWrenchSwing,
@@ -22,7 +30,8 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { BrassMonkeySoftware } from "./game.ts";
+import { BrassMonkeySoftware, deathColumn, gnomeColumn } from "./game.ts";
+import type { Hazard } from "./play.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
 import { bandRows, cell, charset, sheetColumns } from "../ui/glyphs.ts";
@@ -42,6 +51,7 @@ function holding(): BrassMonkeySoftware {
 /** A run with no hazards coming. */
 function quiet(highScore = 0): BrassMonkeySoftware {
   const g = new BrassMonkeySoftware(highScore);
+  g.run.startFloor(); // past the intro
   g.run.gearTimer = Infinity;
   g.run.emberTimer = Infinity;
   return g;
@@ -134,23 +144,122 @@ describe("BrassMonkeySoftware", () => {
     expect(g.background()).toBe(imageGirderFloor);
     g.run.floor = 1;
     expect(g.background()).toBe(imageConveyorFloor);
+    g.run.floor = 2;
+    expect(g.background()).toBe(imageElevatorFloor);
+    g.run.floor = 3;
+    expect(g.background()).toBe(imageRivetFloor);
+  });
+
+  test("the rivet floor draws each rivet in its slot until it is pulled", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const rivets = (): DrawCall[] => record(g).calls.filter((c) => c.sprite.asset === imageRivet.asset);
+    expect(rivets().length).toBe(8);
+    expect(rivets()[0]).toMatchObject({ x: 8 + 48, y: 40 + 208 });
+    g.run.rivets[0] = true;
+    expect(rivets().length).toBe(7);
+    expect(brassMonkeySnapshot(g.snapshot()).rivets.filter(Boolean).length).toBe(1);
+  });
+
+  test("when the rivet floor clears, the Gnome falls to the bottom girder", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const gnomeY = (): number => record(g).calls.find((c) => c.sprite.asset === imageGnome.asset)?.y ?? -1;
+    expect(gnomeY()).toBe(40 + 56);
+    g.run.phase = "clear";
+    g.run.phaseTicks = t.clearTicks;
+    const ys = [gnomeY()];
+    for (let n = 0; n < t.clearTicks - 1; n++) {
+      g.run.phaseTicks--;
+      ys.push(gnomeY());
+    }
+    expect(ys.every((y, n) => n === 0 || y >= (ys[n - 1] ?? 0))).toBe(true);
+    expect(ys.at(-1)).toBe(40 + 248 - 32);
+  });
+
+  test("on the elevator floor the snapshot holds each lift platform's left edge and top", () => {
+    const g = quiet();
+    g.run.floor = 2;
+    g.run.startFloor();
+    g.update(NO_INPUT);
+    expect(brassMonkeySnapshot(g.snapshot()).lifts).toEqual([
+      { x: 40, y: 253.5 },
+      { x: 40, y: 203.5 },
+      { x: 40, y: 153.5 },
+      { x: 152, y: 136.5 },
+      { x: 152, y: 196.5 },
+    ]);
+  });
+
+  test("a new run starts with the Gnome's intro, stomping with a sound, then plays", () => {
+    const events: SoundEvent[] = [];
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    const g = new BrassMonkeySoftware();
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("intro");
+    for (let n = 0; n < t.introTicks; n++) g.update(held({ space: true }));
+    expect(events.filter((e) => e === "play:monkeyStomp")).toHaveLength(t.introStomps.length);
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("play");
+  });
+
+  test("the Gnome reaches up as it climbs and as it hops to stomp, then stands idle", () => {
+    const g = new BrassMonkeySoftware();
+    g.run.gearTimer = Infinity;
+    g.run.emberTimer = Infinity;
+    const seen = new Set<number>();
+    while (g.run.phase === "intro") {
+      if (g.run.introGnomeRise() > 0 || g.run.introHop() > 0) seen.add(gnomeColumn(g.run));
+      else expect(gnomeColumn(g.run)).toBe(0);
+      g.update(NO_INPUT);
+    }
+    expect(seen).toEqual(new Set([0, 2]));
+    expect(gnomeColumn(g.run)).toBe(0);
   });
 
   test("plays the run's sounds", () => {
     const events: SoundEvent[] = [];
     unsubscribe.push(addSoundListener((e) => void events.push(e)));
     const g = quiet();
+    g.update(NO_INPUT);
+    events.length = 0;
     g.update(held({ space: true }));
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
   });
 
-  test("plays the wrench music while the wrench is held, and stops it when it runs out", () => {
+  test("the floor's music starts with play and stops when the monkey dies, the floor clears or the run is over", () => {
+    for (const phase of ["dying", "clear", "over"] as const) {
+      const events: SoundEvent[] = [];
+      const off = addSoundListener((e) => void events.push(e));
+      const g = quiet();
+      g.update(NO_INPUT);
+      expect(events.slice(-2)).toEqual(["rewind:monkeyGirder", "play:monkeyGirder"]);
+      events.length = 0;
+      g.run.phase = phase;
+      g.run.phaseTicks = 100;
+      g.update(NO_INPUT);
+      expect(events).toEqual(["pause:monkeyGirder"]);
+      off();
+    }
+  });
+
+  test("each floor has its own music", () => {
+    const events: SoundEvent[] = [];
+    const g = quiet();
+    g.update(NO_INPUT);
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    g.run.floor = 1;
+    g.update(NO_INPUT);
+    expect(events.slice(0, 3)).toEqual(["pause:monkeyGirder", "rewind:monkeyConveyor", "play:monkeyConveyor"]);
+  });
+
+  test("plays the wrench music in place of the floor's while the wrench is held, then the floor's again", () => {
     const events: SoundEvent[] = [];
     unsubscribe.push(addSoundListener((e) => void events.push(e)));
     const g = holding();
     expect(events).toEqual(["rewind:monkeyWrench", "play:monkeyWrench"]);
     for (let n = 0; n < t.wrenchTicks; n++) g.update(NO_INPUT);
-    expect(events.slice(2)).toEqual(["pause:monkeyWrench"]);
+    expect(events.slice(2)).toEqual(["pause:monkeyWrench", "rewind:monkeyGirder", "play:monkeyGirder"]);
   });
 
   test("stops the wrench music when the monkey loses a life holding it", () => {
@@ -168,6 +277,8 @@ describe("BrassMonkeySoftware", () => {
         ladder: null,
         climbDir: 1,
         scorableIn: 0,
+        hot: false,
+        wild: false,
       },
     ];
     g.update(NO_INPUT);
@@ -183,6 +294,28 @@ describe("BrassMonkeySoftware", () => {
     });
   });
 
+  test("the snapshot holds whether the furnace is lit and which gears are hot", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: 1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+        wild: false,
+      },
+    ];
+    expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({ furnaceLit: false, hazards: [{ hot: true }] });
+    g.run.furnaceLit = true;
+    expect(brassMonkeySnapshot(g.snapshot()).furnaceLit).toBe(true);
+  });
+
   test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {
     const g = quiet();
     g.update(held({ right: true }));
@@ -193,7 +326,7 @@ describe("BrassMonkeySoftware", () => {
       lives: 3,
       score: 0,
       bonus: 5000,
-      x: 17,
+      x: 25,
       y: 248,
       footing: "ground",
       moving: true,
@@ -201,6 +334,21 @@ describe("BrassMonkeySoftware", () => {
       bolts: [false, false, false, false],
     });
   });
+});
+
+/** A spring in the air at x 100, row y. */
+const springAt100 = (y: number): Hazard => ({
+  kind: "spring",
+  x: 100,
+  y,
+  dir: 1,
+  vy: 1,
+  footing: "air",
+  ladder: null,
+  climbDir: 1,
+  scorableIn: 0,
+  hot: false,
+  wild: false,
 });
 
 describe("draw", () => {
@@ -229,11 +377,94 @@ describe("draw", () => {
     expect(gnome()).toBe(32);
   });
 
+  test("the elevator floor's lift platforms are drawn where they are, and a spring stretched in flight, squashed landing", () => {
+    const g = quiet();
+    g.run.floor = 2;
+    g.run.startFloor();
+    const lifts = record(g)
+      .calls.filter((c) => c.sprite.asset === imageLift.asset)
+      .map((c) => [c.x, c.y]);
+    expect(lifts).toEqual(g.run.lifts().map((l) => [8 + l.x0, 8 + 32 + l.y]));
+    const springAt = (): { col: number; x: number; y: number }[] =>
+      record(g)
+        .calls.filter((c) => c.sprite.asset === imageSpring.asset)
+        .map((c) => ({ col: c.sprite.sx / 12, x: c.x, y: c.y }));
+    g.run.hazards = [springAt100(70)];
+    expect(springAt()).toEqual([{ col: 0, x: 8 + 94, y: 40 + 58 }]);
+    g.run.hazards = [springAt100(87)];
+    expect(springAt()).toEqual([{ col: 1, x: 8 + 94, y: 40 + 75 }]);
+  });
+
+  test("a pan is drawn from the pan sheet, its two frames alternating as it rides", () => {
+    const g = quiet();
+    g.run.floor = 1;
+    g.run.startFloor();
+    const ridden: Hazard = {
+      kind: "pan",
+      x: 96,
+      y: 168,
+      dir: 1,
+      vy: 0,
+      footing: "ground",
+      ladder: null,
+      climbDir: 1,
+      scorableIn: 0,
+      hot: false,
+      wild: false,
+    };
+    g.run.hazards = [ridden];
+    const pan = (): DrawCall | undefined => record(g).calls.find((c) => c.sprite.asset === imagePan.asset);
+    expect(pan()).toMatchObject({ x: 8 + 96 - 6, y: 40 + 168 - 12, sprite: { sx: 0 } });
+    ridden.x = 100;
+    expect(pan()?.sprite.sx).toBe(12);
+  });
+
+  test("the girder floor's furnace stands at its bottom left, cold until a hot gear lights it, then flickering", () => {
+    const g = quiet();
+    const furnace = (): DrawCall | undefined => record(g).calls.find((c) => c.sprite.asset === imageFurnace.asset);
+    expect(furnace()).toMatchObject({ x: 8 + 0, y: 40 + 248 - 24, sprite: { sx: 0 } });
+    g.run.furnaceLit = true;
+    const lit = new Set<number>();
+    for (let n = 0; n < 16; n++) {
+      g.update(NO_INPUT);
+      lit.add(furnace()?.sprite.sx ?? -1);
+    }
+    expect([...lit].toSorted((a, b) => a - b)).toEqual([16, 32]);
+  });
+
+  test("the conveyor floor has no furnace", () => {
+    const g = quiet();
+    g.run.floor = 1;
+    g.run.startFloor();
+    expect(record(g).calls.some((c) => c.sprite.asset === imageFurnace.asset)).toBe(false);
+  });
+
+  test("a hot gear is drawn from the gear sheet's hot frames", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: -1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+        wild: false,
+      },
+    ];
+    const gear = record(g).calls.find((c) => c.sprite.asset === imageGear.asset);
+    expect([24, 36]).toContain(gear?.sprite.sx ?? -1);
+  });
+
   test("the monkey stands on its girder; jumping shows the jump frame", () => {
     const g = quiet();
     const monkey = (): DrawCall | undefined =>
       record(g).calls.find((c) => c.sprite.asset === imageMonkey.asset && c.sprite.h === 16 && c.y > 100);
-    expect(monkey()).toMatchObject({ x: 8 + 16 - 8, y: 40 + 248 - 16 });
+    expect(monkey()).toMatchObject({ x: 8 + 24 - 8, y: 40 + 248 - 16 });
     g.update(held({ space: true }));
     expect(monkey()?.sprite.sx).toBe(3 * 16);
   });
@@ -389,6 +620,21 @@ describe("in the arcade", () => {
     } finally {
       game.dispose();
     }
+  });
+});
+
+/** The death sheet's column `elapsed` ticks into losing a life. */
+const deathAt = (elapsed: number): number => deathColumn(t.dyingTicks - elapsed);
+
+describe("the monkey's death", () => {
+  test("it spins a quarter turn every 6 ticks, twice round, then lies down", () => {
+    expect([0, 5, 6, 12, 18, 24, 30, 36, 42, 47].map((n) => deathAt(n))).toEqual([0, 0, 1, 2, 3, 0, 1, 2, 3, 3]);
+    expect(deathAt(48)).toBeGreaterThanOrEqual(4);
+  });
+
+  test("down, its smoke puffs between two frames every 8 ticks until the life is lost", () => {
+    expect([48, 55, 56, 64, 72].map((n) => deathAt(n))).toEqual([4, 4, 5, 4, 5]);
+    expect(deathColumn(1)).toBeGreaterThanOrEqual(4);
   });
 });
 

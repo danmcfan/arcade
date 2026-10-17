@@ -1,5 +1,5 @@
 // Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, the
-// items (the gear and ember hazards and the bolt) and the floor tiles (the
+// items (the gear, spring and ember hazards and the bolt) and the floor tiles (the
 // girder, the ladder, the conveyor's slats, the exit door and the wall), as
 // fills in rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.`
 // is blank). Frames are built from shared parts (a head over a body, a body
@@ -92,6 +92,34 @@ export const monkeyClimb: readonly string[] = [
   "................",
 ];
 
+/**
+ * Smoke over the downed monkey (#252): a robot's halo, a grey puff with a
+ * spark in it, rising from its head. It puffs between these two, each 16×8
+ * drawn over the 8 rows above the monkey lying on its back.
+ */
+export const monkeySmoke: readonly (readonly string[])[] = [
+  [
+    "................",
+    "........ll......",
+    ".......lwwl.....",
+    "......lwwml.y...",
+    ".......lmml.....",
+    "........ml......",
+    ".........m......",
+    "................",
+  ],
+  [
+    "................",
+    "......ll........",
+    ".y...lwwl.......",
+    ".....lwmwl......",
+    "......lml.......",
+    ".......lm.......",
+    "........m.......",
+    "................",
+  ],
+];
+
 /** A part drawn over a sprite with its top-left at (x, y). */
 export interface Part {
   x: number;
@@ -174,6 +202,39 @@ export const gnomeArmsUp: Part = {
 };
 
 /**
+ * Climbing and stomping in the intro (#253): the throw's arms, reaching up
+ * with empty hands, the gear left out.
+ */
+export const gnomeArmsReach: Part = {
+  x: 2,
+  y: 2,
+  rows: [
+    "..............",
+    "..............",
+    "..............",
+    ".......oo.....",
+    "......noo.....",
+    ".....nn.......",
+    "....nn........",
+    "...nn.........",
+    "..nn..........",
+    ".nn...........",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    ".nn...........",
+    ".nn...........",
+    "..nn..........",
+    "..nn..........",
+    "...nn.........",
+    "...nn.........",
+  ],
+};
+
+/**
  * The gear: a hazard the Gnome throws, rolling down the girders. A small steel
  * gear, 12×12, with eight teeth and a square hub, lit from the top left like
  * the gear the Gnome holds in its throw. Two frames, the second turned half a
@@ -234,6 +295,84 @@ export const emberFlame: readonly string[] = [
 export const emberTips: readonly Part[] = [
   { x: 6, y: 2, rows: ["y"] },
   { x: 5, y: 2, rows: ["y"] },
+];
+
+/**
+ * The pan (#248): a scrap tray the conveyor floor's belts carry, as Donkey
+ * Kong's cement pans. Started from the gear: its steel greys, lit from the top
+ * left, made into a shallow tray, 12×12 with its foot on the bottom row. The
+ * scraps it holds are `panScraps`.
+ */
+export const panTray: readonly string[] = [
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  ".wwwwwwwwwm.",
+  ".wlllllllmd.",
+  "..lmmmmmmd..",
+  "..dddddddd..",
+  "............",
+];
+
+/** The two frames' scraps over the tray's rim: a brass bolt end and a gear tooth, then both jolted a pixel by the belt. */
+export const panScraps: readonly Part[] = [
+  { x: 3, y: 4, rows: ["y...ll", "yo.lmd", "yo.md."] },
+  { x: 3, y: 3, rows: ["..ll..", "y.lmd.", "yolmd.", "yo...."] },
+];
+
+/**
+ * The furnace: the girder floor's fire at the bottom left, where the gears end
+ * and the embers come out (Donkey Kong's oil drum). A squat iron stove, 16×16,
+ * two banded rims and a riveted front round a dark mouth.
+ */
+export const furnace: readonly string[] = [
+  "................",
+  ".dmmmmmmmmmmmmd.",
+  ".mllwllllllllmd.",
+  ".dmmmmmmmmmmmdd.",
+  "..mlllllllllmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlwllllllwmd..",
+  "..mlllllllllmd..",
+  ".dmmmmmmmmmmmdd.",
+  ".mllwllllllllmd.",
+  ".dmmmmmmmmmmmdd.",
+  "..mlllllllllmd..",
+  "..mddddddddddd..",
+  "................",
+];
+
+/** Lit, the furnace's mouth glows: drawn over its dark mouth (x 4, rows 5-7). */
+export const furnaceMouth: Part = { x: 4, y: 5, rows: ["oyoyyoyo", "rooyyoor", "rrorrorr"] };
+
+/** Lit, flames burn on the furnace's top, 16×8 above it: two flickers, the second leaning the other way. */
+export const furnaceFlames: readonly (readonly string[])[] = [
+  [
+    "................",
+    "......y.........",
+    ".....yy...y.....",
+    "....yyo..yy.....",
+    "...yoooyyoy.y...",
+    "...orrrooorry...",
+    "..orrrrrrrrro...",
+    "..rrrrrrrrrrrr..",
+  ],
+  [
+    "................",
+    ".........y......",
+    "....y...yy......",
+    "....yy.oyyy.....",
+    "...yoyyoooy.y...",
+    "...yrroooorro...",
+    "...orrrrrrrrro..",
+    "..rrrrrrrrrrrr..",
+  ],
 ];
 
 /**
@@ -301,6 +440,60 @@ export const girder: readonly string[] = [
   "pppppppp",
   "rrrrrrrr",
   "pppppppp",
+  "........",
+];
+
+/**
+ * The spring: a hazard the Gnome sends on the elevator floor, bouncing along
+ * its girder, as Donkey Kong's jacks. A steel coil between two plates in the
+ * girder's reds, 12×12, its foot on the bottom plate: stretched in flight,
+ * then squashed as it lands. Lit from the top left like the gear.
+ */
+export const spring: readonly (readonly string[])[] = [
+  [
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
+  [
+    "............",
+    "............",
+    "............",
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wlllld...",
+    "...wmmmmd...",
+    "...wlllld...",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
+];
+
+/**
+ * A rivet (#250), tweaked from the bolt: its brass, lit on the left and
+ * shaded on the right, as a stubby plug 8×8 that fills a slot in the rivet
+ * floor's girders, a cap above and below the girder's web; the last row is
+ * blank as the girder's.
+ */
+export const rivet: readonly string[] = [
+  ".wyyyyo.",
+  ".wyyyyo.",
+  "..wyyo..",
+  "..wyyo..",
+  "..wyyo..",
+  ".wyyyyo.",
+  ".oooooor",
   "........",
 ];
 

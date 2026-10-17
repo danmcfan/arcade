@@ -12,7 +12,7 @@ import { Board } from "./board.ts";
 import type { LevelEffect } from "./levelEffect.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
-import type { Entity } from "./entity.ts";
+import { newItems, type Entity } from "./entity.ts";
 import { afterDeath } from "./release.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 import type { LevelValues, Mode } from "./levels.ts";
@@ -39,8 +39,8 @@ import {
 } from "./state.ts";
 import { restartRound } from "./update.ts";
 
-/** The Level's part of the snapshot; the software adds the camera, particles and dials. */
-export type LevelSnapshot = Omit<SweetSamSnapshot, "shake" | "particlesActive" | "dials">;
+/** The Level's part of the snapshot; the software adds the camera, particles and dials (with the high score). */
+export type LevelSnapshot = Omit<SweetSamSnapshot, "shake" | "particlesActive" | "dials" | "highScore">;
 
 /** A honey drop or pot, as a setup sees and places it. */
 export interface ItemSetup {
@@ -89,7 +89,6 @@ export type LevelView = Pick<
   Level,
   | "state"
   | "score"
-  | "highScore"
   | "lives"
   | "levelNumber"
   | "player"
@@ -97,7 +96,6 @@ export type LevelView = Pick<
   | "items"
   | "mode"
   | "startTicks"
-  | "levelBannerTicks"
   | "pelletAnimTick"
   | "flowerShowing"
   | "flowerPopup"
@@ -119,12 +117,11 @@ export class Level {
   readonly #intermission: IntermissionState;
 
   constructor(
-    highScore: number,
     advantages: Readonly<SweetSamAdvantages> = noAdvantages,
     effects: (e: LevelEffect) => void = (): void => {},
     setup?: LevelSetup,
   ) {
-    const b = new Board(highScore, advantages, effects);
+    const b = new Board(advantages, effects);
     this.#board = b;
     this.#startState = new StartState(b);
     this.#deathWait = new DeathWaitState(b);
@@ -163,6 +160,16 @@ export class Level {
     tickFlowerPopup(b);
   }
 
+  /** Test hook: start `level` from READY!, as a level clear would. */
+  jumpTo(level: number): void {
+    const b = this.#board;
+    b.level = level;
+    b.items = newItems();
+    b.flowersShown = 0;
+    restartRound(b);
+    this.#stateMachine.changeState(stateIDStart);
+  }
+
   state(): StateID {
     const state = this.#stateMachine.currentId();
     if (state === "") {
@@ -173,10 +180,6 @@ export class Level {
 
   score(): number {
     return this.#board.score;
-  }
-
-  highScore(): number {
-    return this.#board.highScore;
   }
 
   lives(): number {
@@ -223,11 +226,6 @@ export class Level {
   /** START ticks left before PLAY. */
   startTicks(): number {
     return this.#board.startTicks;
-  }
-
-  /** START ticks left showing "LEVEL n" before READY. */
-  levelBannerTicks(): number {
-    return this.#board.levelBannerTicks;
   }
 
   pelletAnimTick(): number {
@@ -313,7 +311,6 @@ export class Level {
       itemsHash: fnv1a32(present),
       score: b.score,
       lives: b.lives,
-      highScore: b.highScore,
       modeIndex: b.modeIndex,
       mode: b.modeCurrent,
       modeTicks: b.modeTicks,
@@ -330,7 +327,6 @@ export class Level {
       popups: b.bonusEatPopups.map((pop) => ({ x: pop.x, y: pop.y, frameIdx: pop.frameIdx, ticks: pop.ticksRemain })),
       pelletAnimTick: b.pelletAnimTick,
       level: b.level,
-      levelBannerTicks: b.levelBannerTicks,
       mazeFlash: this.mazeFlash(),
       flower: { ticks: b.flowerTicks, shown: b.flowersShown },
       flowerPopup: b.flowerPopup === null ? null : { ...b.flowerPopup },

@@ -1,13 +1,13 @@
 // Port of internal/arcade/draw.go, plus the cabinet screens switching on, the
 // prize desk's employee, the decorations of the prizes the player owns, the
-// arcade win's cake, trophy and confetti, and the LED scoreboard. Everything is drawn inside the hub image (the 160x144
+// arcade win's cake, trophy, balloons and confetti, and the LED scoreboard. Everything is drawn inside the hub image (the 160x144
 // Game Boy frame, #72); Go's title card is now the scoreboard's text.
 
 import { imageArcade, imageScreens } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { drawChangeMachine } from "./changeMachine.ts";
-import { drawCake, drawConfetti, drawTrophy } from "./arcadeWin.ts";
+import { drawConfetti, drawWinPieces } from "./arcadeWin.ts";
 import { drawDebugOverlay } from "./debug.ts";
 import { drawEmployee } from "./employee.ts";
 import { prize } from "./prizes.ts";
@@ -57,11 +57,6 @@ export function draw(
     const p = prize(id);
     drawImage(screen, p.sprite, p.x + buffer, p.y + buffer);
   }
-  // The arcade win's cake and trophy stand on the desk for good.
-  if (s.wallet.arcadeWon) {
-    drawCake(screen, buffer);
-    drawTrophy(screen, buffer);
-  }
 
   const player = s.player;
   const row = player.frameDirection[player.direction];
@@ -73,6 +68,9 @@ export function draw(
     player.height,
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
+  // The arcade win's cake, trophy and balloons stand on the desk for good, in
+  // front of the player, who can only ever stand behind the desk.
+  if (s.wallet.arcadeWon) drawWinPieces(screen, buffer);
 
   const machine = s.machines.find((m) => m.title === named);
   const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);

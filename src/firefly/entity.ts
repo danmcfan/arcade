@@ -41,11 +41,16 @@ export interface Enemy {
   escortDx: number;
   /** An Owl's escorts shot down on its current dive: its kill scores the escort-kill bonus. */
   escortsKilled: number;
+  /** A morph's trio, shared by its three: how many have been shot down. Null for the others. */
+  trio: { kills: number } | null;
 }
 
 /** A captured firefly, red, above the Owl that took it; `y` climbs while the beam pulls it up. */
 export interface Captive {
-  owl: Enemy;
+  /** The Owl holding it; null once it turned hostile. */
+  owl: Enemy | null;
+  /** Its Owl was shot in formation: it dives at the firefly like an enemy. */
+  hostile: boolean;
   x: number;
   y: number;
 }

@@ -10,7 +10,7 @@ beforeEach(() => {
 
 describe("Level", () => {
   test("starts in START with three lives and a full maze, and reaches PLAY after READY", () => {
-    const level = new Level(0);
+    const level = new Level();
     expect(level.snapshot().state).toBe("START");
     for (let t = 0; t < 121; t++) level.step(NO_INPUT);
     const snap = level.snapshot();
@@ -20,7 +20,6 @@ describe("Level", () => {
   test("reports its sounds, shakes and bursts as effects, in order", () => {
     const effects: LevelEffect[] = [];
     const level = new Level(
-      0,
       undefined,
       (e) => {
         effects.push(e);
@@ -36,7 +35,7 @@ describe("Level", () => {
   });
 
   test("a setup starts mid-PLAY from the described position", () => {
-    const level = new Level(0, undefined, undefined, { level: 3, lives: 2, score: 1234, player: { x: 124 } });
+    const level = new Level(undefined, undefined, { level: 3, lives: 2, score: 1234, player: { x: 124 } });
     const snap = level.snapshot();
     expect([snap.state, snap.level, snap.lives, snap.score, snap.player.x, snap.player.dir]).toEqual([
       "PLAY",

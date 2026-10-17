@@ -441,12 +441,21 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:sweetDeath",
   "pause:sweetClear",
   "pause:spark",
-  "pause:hit",
+  "pause:mothHit",
+  "pause:waspHit",
+  "pause:owlHurt",
+  "pause:owlKill",
+  "pause:dive",
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
+  "pause:rescue",
   "pause:stage",
   "pause:extraLife",
+  "pause:badgeTick",
+  "pause:fireflyStart",
+  "pause:monkeyGirder",
+  "pause:monkeyConveyor",
   "pause:monkeyWrench",
 ];
 
@@ -629,6 +638,26 @@ describe("the arcade win", () => {
     expect(s.software).toBeNull();
     expect(s.arcade.arcadeWin).toBe("banner");
     expect(game.progress().arcadeWon).toBe(true);
+  });
+
+  test("the win plays the victory jingle, with the hub song quiet until the banner closes", () => {
+    const { game } = endRun(beatSweetSam, 5, twoBeaten);
+    const atWin = soundsDuring(() => {
+      closePayout(game);
+    });
+    expect(atWin.filter((e) => e.endsWith(":victory"))).toEqual(["rewind:victory", "play:victory"]);
+    expect(atWin.filter((e) => e.endsWith(":hub"))).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        run(game, 300);
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        game.step(input({ space: true }));
+        game.step(input());
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual(["play:hub"]);
   });
 
   test("a run that leaves a machine unbeaten does not", () => {

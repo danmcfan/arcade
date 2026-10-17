@@ -32,6 +32,8 @@ import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
 import { titleBar, titleCabinet, titleWord } from "../src/ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod } from "../src/title/logo.ts";
+import { confetti, winPlaces } from "../src/arcade/arcadeWin.ts";
+import { confettiFrames, confettiLetters, winArt } from "../src/ui/winArt.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
 export interface Scene {
@@ -98,6 +100,21 @@ function paintPrizes(room: PNG): void {
     const rows = prizeArt[p.id];
     paint(room, mirroredPrizes.has(p.id) ? mirrorX(rows) : rows, sweetie, p.x, p.y);
   }
+}
+
+/** The hub just after the arcade win: the cake, trophy and balloons on the desk, and confetti falling as the game drops it. */
+function arcadeWinFrames(): PNG[] {
+  const frames = hubFrames((room) => {
+    for (const { piece, rect } of winPlaces) paint(room, winArt[piece], sweetie, rect.x, rect.y);
+  });
+  return frames.map((png, i) => {
+    // Two seconds in, when the most pieces are falling, at twice the game's speed so the loop shows their fall.
+    for (const p of confetti(120 + i * 2)) {
+      const frame = confettiFrames[p.frame] ?? [];
+      paint(png, recolour(frame, { w: confettiLetters[p.colour] ?? "w" }), sweetie, p.x, p.y);
+    }
+    return png;
+  });
 }
 
 /** Sweet Sam's black maze with every bonus flower in level order, 8 px apart, and under them an eaten bee's eyes, right, left, up and down. */
@@ -273,6 +290,7 @@ export const scenes: readonly Scene[] = [
     },
   },
   { name: "hub with every prize", sources: ["src/ui/prizeArt.ts"], render: () => hubFrames(paintPrizes) },
+  { name: "hub on the arcade win", sources: ["src/ui/winArt.ts"], render: arcadeWinFrames },
   { name: "title", sources: ["src/ui/titleArt.ts"], render: titleTop },
   { name: "sweet-sam flowers and bee eyes", sources: ["src/sweet-sam/art.ts"], render: flowersAndEyesRow },
 ];

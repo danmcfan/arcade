@@ -10,9 +10,11 @@ import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
 import { beamY, bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
+import { fireflyStartTune, tuneSeconds } from "../ui/sounds.ts";
 import {
   beamTicks,
   beamWidth,
+  captivePoints,
   difficulty,
   entryPairOffset,
   entryWaves,
@@ -22,6 +24,8 @@ import {
   formation,
   hitEffectTicks,
   maxSparks,
+  morphBonus,
+  morphFromStage,
   points,
   respawnTicks,
   shotCutoffMargin,
@@ -137,12 +141,46 @@ describe("a new run", () => {
 });
 
 describe("stage start", () => {
-  test("plays the stage sound, then the enemies wait out the STAGE n text before flying in", () => {
+  test("ticks once per stage badge as each is added", () => {
+    const f = new FireflySoftware();
+    f.stage = 27; // 20, 5, 1, 1
+    const rec = recordSounds();
+    run(f, stageIntroTicks);
+    rec.stop();
+    expect(rec.events.filter((e) => e === "play:badgeTick").length).toBe(4);
+  });
+
+  test("a new run opens on the start theme, not the stage fanfare", () => {
     const f = new FireflySoftware();
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();
-    expect(rec.events).toEqual(["rewind:stage", "play:stage"]);
+    expect(rec.events).toEqual(["rewind:fireflyStart", "play:fireflyStart", "rewind:badgeTick", "play:badgeTick"]);
+  });
+
+  test("the start theme ends within the intro, and the firefly is held until it does", () => {
+    expect(tuneSeconds(fireflyStartTune) * 60).toBeLessThanOrEqual(stageIntroTicks);
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks, { left: true, space: true });
+    expect(f.player.x).toBe(112);
+    expect(f.sparks).toEqual([]);
+    run(f, 1, { left: true });
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("later stages play the stage fanfare, and the firefly moves during their intro", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    const rec = recordSounds();
+    f.update(held({ left: true }));
+    rec.stop();
+    expect(rec.events).toEqual(["rewind:stage", "play:stage", "rewind:badgeTick", "play:badgeTick"]);
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("the enemies wait out the STAGE n text before flying in", () => {
+    const f = new FireflySoftware();
+    f.update(NO_INPUT);
     run(f, stageIntroTicks - 2);
     expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
     run(f, 2);
@@ -276,7 +314,7 @@ function diveStep(stage: number): number {
 describe("dives", () => {
   test("once every enemy is in, they break off and dive, Wasps most often", () => {
     rng.seed(7);
-    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0 };
+    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0, morph: 0 };
     for (let i = 0; i < 300; i++) {
       const f = settled();
       f.update(NO_INPUT);
@@ -479,9 +517,84 @@ describe("escort-kill bonus", () => {
   });
 });
 
+/** A settled stage `stage` with only Moths left, a dive due next tick; tries seeds until `want` (or 200 tries). */
+function mothDives(stage: number, want: (f: FireflySoftware) => boolean): FireflySoftware | null {
+  for (let i = 0; i < 200; i++) {
+    rng.seed(100 + i);
+    const f = settled();
+    f.stage = stage;
+    f.enemies = f.enemies.filter((e) => e.kind === "moth");
+    f.update(NO_INPUT);
+    if (want(f)) return f;
+  }
+  return null;
+}
+
+const morphs = (f: FireflySoftware): Enemy[] => f.enemies.filter((e) => e.kind === "morph");
+
+describe("morphs", () => {
+  test(`from stage ${morphFromStage} a diving Moth can split into 3 morphs that dive together`, () => {
+    const mothCount = formation().filter((s) => s.kind === "moth").length;
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph in 200 dives");
+    expect(morphs(f).length).toBe(3);
+    expect(morphs(f).every((e) => e.state === "diving")).toBe(true);
+    expect(f.enemies.filter((e) => e.kind === "moth").length).toBe(mothCount - 1);
+  });
+
+  test(`no Moth morphs before stage ${morphFromStage}`, () => {
+    expect(mothDives(morphFromStage - 1, (g) => morphs(g).length > 0)).toBeNull();
+  });
+
+  test("shooting all 3 morphs pays the bonus on top of their points", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    let expected = 0;
+    for (const m of trio) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+      expected += points("morph", true);
+    }
+    expect(trio.every((m) => m.hp === 0)).toBe(true);
+    expect(f.points).toBe(expected + morphBonus);
+    expect(f.bonuses.map((b) => b.points)).toEqual([morphBonus]);
+  });
+
+  test("shooting only 2 of the 3 pays no bonus", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    for (const m of trio.slice(0, 2)) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+    }
+    expect(f.points).toBe(2 * points("morph", true));
+  });
+
+  test("a morph that flies off the bottom is gone for the stage", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    f.lives = 99;
+    for (let t = 0; t < 2000 && morphs(f).length > 0; t++) f.update(NO_INPUT);
+    expect(morphs(f).length).toBe(0);
+    expect(f.enemies.every((e) => e.kind === "moth")).toBe(true);
+  });
+});
+
 describe("sparks", () => {
   test("Space fires a spark that flies up, with never more than 2 on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     const rec = recordSounds();
     f.update(held({ space: true }));
     rec.stop();
@@ -497,6 +610,7 @@ describe("sparks", () => {
 
   test("the firefly moves left and right only, kept on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     run(f, 10, { left: true });
     expect(f.player).toEqual({ x: 92, y: playerY });
     run(f, 10, { up: true });
@@ -572,7 +686,7 @@ describe("hits", () => {
       const rec = recordSounds();
       f.update(NO_INPUT);
       rec.stop();
-      expect(rec.events).toContain("play:hit");
+      expect(rec.events).toEqual([`rewind:${kind}Hit`, `play:${kind}Hit`]);
       expect([e.hp, e.deadFrames]).toEqual([0, hitEffectTicks - 1]);
       expect(f.sparks).toEqual([]);
     });
@@ -883,11 +997,11 @@ describe("tractor beam", () => {
     expect(captive?.y).toBeGreaterThan(beamY);
     for (let t = 0; t < 400 && e.state !== "formation"; t++) f.update(NO_INPUT);
     expect(e.state).toBe("formation");
-    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16, hostile: false });
     divingAt(e, 60, 150);
     e.hp = 2;
     run(f, 5);
-    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16, hostile: false });
   });
 
   test("an Owl holding a captive does not beam again", () => {
@@ -910,6 +1024,135 @@ describe("tractor beam", () => {
     expect(f.gameOver()).toBe(false);
     f.update(NO_INPUT);
     expect(f.gameOver()).toBe(true);
+  });
+});
+
+/** A software with only an Owl at (x, y) holding a captive above it, and the firefly back in play. */
+function holding(x: number, y: number): { f: FireflySoftware; e: Enemy } {
+  const r = withOnly("owl", { x, y });
+  r.f.captive = { owl: r.e, x, y: y - 16, hostile: false };
+  return r;
+}
+
+describe("rescue", () => {
+  test("shooting a diving Owl that holds a captive frees it: the firefly turns dual, with the rescue sound", () => {
+    const { f, e } = holding(60, 150);
+    divingAt(e, 60, 150);
+    sparkAt(f, 60, 150);
+    const rec = recordSounds();
+    f.update(NO_INPUT);
+    expect(f.dual).toBe(false);
+    expect(f.captive?.hostile).toBe(false);
+    expect(f.captive?.owl).toBeNull();
+    for (let i = 0; i < 200 && !f.dual; i++) f.update(NO_INPUT);
+    rec.stop();
+    expect(f.dual).toBe(true);
+    expect(f.captive).toBeNull();
+    expect(rec.events).toContain("play:rescue");
+  });
+
+  test("a captive that is docking cannot be shot", () => {
+    const { f } = holding(60, 60);
+    f.captive = { owl: null, x: 60, y: 40, hostile: false };
+    sparkAt(f, 60, 42);
+    f.update(NO_INPUT);
+    expect(f.captive).not.toBeNull();
+    expect(f.score()).toBe(0);
+  });
+
+  test("a rescue while the firefly is respawning or the game is over does not turn it dual", () => {
+    for (const state of ["respawn", "over"] as const) {
+      const { f, e } = holding(60, 150);
+      divingAt(e, 60, 150);
+      if (state === "respawn") f.respawn = 30;
+      else f.over = true;
+      f["shootDown"](e);
+      expect(f.captive).toBeNull();
+      expect(f.dual).toBe(false);
+    }
+  });
+
+  test("shooting the Owl in formation leaves the firefly single; the captive turns hostile and dives", () => {
+    const { f, e } = holding(60, 60);
+    e.hp = 1;
+    sparkAt(f, 60, 60);
+    f.update(NO_INPUT);
+    expect(f.dual).toBe(false);
+    expect(f.captive?.hostile).toBe(true);
+    const y = f.captive?.y ?? 0;
+    run(f, 5);
+    expect(f.captive?.y).toBeGreaterThan(y);
+    run(f, 400);
+    expect(f.captive).toBeNull();
+  });
+
+  test("a hostile captive touching the firefly costs a life", () => {
+    const { f } = holding(60, 60);
+    f.enemies = [];
+    f.captive = { owl: null, x: 112, y: playerY - 4, hostile: true };
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives - 1);
+  });
+
+  for (const t of [
+    { where: "in formation", diving: false, pts: captivePoints.formation },
+    { where: "diving", diving: true, pts: captivePoints.diving },
+  ]) {
+    test(`a spark that hits the captive ${t.where} destroys it for ${t.pts}, and the firefly stays single`, () => {
+      const { f, e } = holding(60, 100);
+      if (t.diving) divingAt(e, 60, 100);
+      e.hp = 2;
+      sparkAt(f, 60, 84);
+      f.update(NO_INPUT);
+      expect(f.captive).toBeNull();
+      expect(f.dual).toBe(false);
+      expect(e.hp).toBe(2);
+      expect(f.score()).toBe(t.pts);
+    });
+  }
+});
+
+describe("dual firefly", () => {
+  test("fires 2 sparks per press, 8px either side, with the cap doubled", () => {
+    const f = new FireflySoftware();
+    f.stageTick = stageIntroTicks + 1;
+    f.dual = true;
+    f.update(held({ space: true }));
+    expect(f.sparks.map((s) => s.x)).toEqual([104, 120]);
+    let most = 0;
+    for (let t = 0; t < 200; t++) {
+      f.update(held({ space: true }));
+      most = Math.max(most, f.sparks.length);
+    }
+    expect(most).toBe(2 * maxSparks);
+  });
+
+  test("a shot 8px to the side hits the dual but misses the single", () => {
+    const single = new FireflySoftware();
+    single.enemies = [];
+    single.shots = [{ x: 120, y: playerY, dx: 0, dy: 0 }];
+    single.update(NO_INPUT);
+    expect(single.lives).toBe(startLives);
+
+    const dual = new FireflySoftware();
+    dual.enemies = [];
+    dual.dual = true;
+    dual.shots = [{ x: 120, y: playerY, dx: 0, dy: 0 }];
+    dual.update(NO_INPUT);
+    expect(dual.dual).toBe(false);
+    expect(dual.lives).toBe(startLives);
+    expect(dual.respawn).toBe(0);
+    expect(dual.shots).toEqual([]);
+    // The left half lives on, where it was.
+    expect(dual.player.x).toBe(104);
+  });
+
+  test("a dual firefly is not beamed", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    f.dual = true;
+    beamingAt(e, 112);
+    run(f, 5);
+    expect([f.captured, f.lives, f.dual]).toEqual([false, startLives, true]);
   });
 });
 
@@ -950,5 +1193,33 @@ describe("dive shapes", () => {
     const last = track.at(-1);
     expect(Math.hypot((last?.x ?? 0) - start.x, (last?.y ?? 0) - start.y)).toBeLessThan(4);
     expect(back).toBe(true);
+  });
+});
+
+describe("hit sounds", () => {
+  test("an Owl's first spark plays owlHurt and its second plays owlKill", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 120 });
+    expect(e.hp).toBe(enemyHp.owl);
+    const rec = recordSounds();
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    expect(e.hp).toBe(1);
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    rec.stop();
+    expect(e.hp).toBe(0);
+    expect(rec.events).toEqual(["rewind:owlHurt", "play:owlHurt", "rewind:owlKill", "play:owlKill"]);
+  });
+});
+
+describe("dive sound", () => {
+  test("starting a dive plays the dive swoop once", () => {
+    const f = new FireflySoftware();
+    const e = f.enemies.find((en) => en.kind === "moth");
+    if (e === undefined) throw new Error("no moth");
+    const rec = recordSounds();
+    f.dive(e);
+    rec.stop();
+    expect(rec.events).toEqual(["rewind:dive", "play:dive"]);
   });
 });

@@ -4,6 +4,8 @@
 
 /** Lives at the start of a run. */
 export const startLives = 3;
+/** The score that earns the run's one extra life (Donkey Kong's 7,000). */
+export const extraLifeAt = 7000;
 
 /** The monkey walks this many px a tick. */
 export const walkSpeed = 1;
@@ -25,20 +27,110 @@ export const maxFall = 20;
 export const ladderReach = 4;
 /** A conveyor carries what stands on it this many px a tick. */
 export const beltSpeed = 0.5;
+/** A lift's platforms move this many px a tick. */
+export const liftSpeed = 0.5;
+/** A spring moves right this many px a tick along the Gnome's girder... */
+export const springSpeed = 1;
+/** ...bouncing off it at this upward speed, in px a tick: with `gravity`, 16 px high. */
+export const springBounce = 2;
+/**
+ * The conveyors all reverse this often. Donkey Kong's 50m belts change
+ * direction, but no source gives a timer (StrategyWiki ties it to Kong's
+ * position), so 10 s is our call: long enough for a pan to ride a whole belt.
+ */
+export const beltReverseTicks = 600;
 
-/** At the head of a ladder, a gear rolls down it this often. */
+/**
+ * At the head of a ladder, a gear rolls down it this often on loop 0 as the
+ * floor starts. As in Donkey Kong, where Kong steers barrels down ladders more
+ * as the difficulty rises, the chance grows with the loop and the time on the floor...
+ */
 export const gearLadderChance = 0.25;
-/** At a ladder down, an ember takes it this often... */
+/** ...by this much each loop... */
+export const gearLadderLoopRise = 0.1;
+/** ...and this much every `gearLadderRiseTicks` on the floor... */
+export const gearLadderTimeRise = 0.05;
+export const gearLadderRiseTicks = 600;
+/** ...up to this. */
+export const maxGearLadderChance = 0.75;
+/** With the monkey below the ladder the chance is multiplied by this; with it level or above, by `gearAwayFactor`. */
+export const gearTowardFactor = 1.5;
+export const gearAwayFactor = 0.5;
+
+/** The gear's ladder chance on loop `loop`, `floorTicks` into the floor, the monkey below the ladder or not. */
+export function gearLadderChanceFor(loop: number, floorTicks: number, monkeyBelow: boolean): number {
+  const rise = gearLadderLoopRise * loop + gearLadderTimeRise * Math.floor(floorTicks / gearLadderRiseTicks);
+  const base = Math.min(maxGearLadderChance, gearLadderChance + rise);
+  return monkeyBelow ? Math.min(maxGearLadderChance, base * gearTowardFactor) : base * gearAwayFactor;
+}
+
+/** At a ladder towards the monkey (up when it is higher, down when lower), an ember takes it this often... */
+export const emberTowardChance = 0.6;
+/** ...and at a ladder away from it, this often. */
+export const emberAwayChance = 0.15;
+/** With the monkey level (this close up and down), at a ladder down an ember takes it this often... */
+export const emberLevelY = 8;
 export const emberDownChance = 0.5;
 /** ...and at a ladder up, this often. */
 export const emberUpChance = 0.25;
 
+/** An ember on a girder turns to face the monkey every this many ticks on loop 0... */
+export const emberTurnEvery = 120;
+/** ...this many fewer each loop... */
+export const emberTurnLoopStep = 20;
+/** ...but no more often than this. */
+export const minEmberTurnEvery = 40;
+
+/** Ticks between an ember's turns towards the monkey on loop `loop`. */
+export function emberTurnEveryFor(loop: number): number {
+  return Math.max(minEmberTurnEvery, emberTurnEvery - emberTurnLoopStep * loop);
+}
+
+/**
+ * Wild gears, as Donkey Kong's diagonal barrels: from loop `wildFromLoop` on,
+ * a gear is wild this often per loop past the first, up to `maxWildChance`. A
+ * wild gear ignores the girders and drops in hops towards the monkey.
+ */
+export const wildFromLoop = 1;
+export const wildChancePerLoop = 0.15;
+export const maxWildChance = 0.5;
+
+/** The chance a gear the Gnome sends on loop `loop` is wild. */
+export function wildChanceFor(loop: number): number {
+  return loop < wildFromLoop ? 0 : Math.min(maxWildChance, wildChancePerLoop * loop);
+}
+
+/** A wild gear's hop lasts this many ticks, starting down at `wildHopSpeed` px a tick and speeding up with `gravity`. */
+export const wildHopTicks = 20;
+export const wildHopSpeed = 0.25;
+/** Across, it moves this fraction of the gear speed towards the monkey. */
+export const wildDrift = 0.75;
+
+/**
+ * Of the gears after the first of each life (always hot), this many are hot,
+ * as Donkey Kong's blue barrels: one that reaches the furnace lights it and
+ * sends out an ember.
+ */
+export const hotGearChance = 0.25;
+
 /** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
 export const jumpPoints = [100, 300, 800] as const;
-/** Points for a bolt. */
-export const boltPoints = 300;
 /** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
 export const smashPoints = [300, 500, 800] as const;
+/** Points for a bolt on each loop, as Pauline's hat, parasol and purse score in Donkey Kong; the last holds from then on. */
+const boltPointsByLoop = [300, 500, 800] as const;
+
+/** Points for a bolt on loop `loop` (0 the first time through). */
+export function boltPointsFor(loop: number): number {
+  return boltPointsByLoop[Math.min(loop, boltPointsByLoop.length - 1)] ?? 0;
+}
+
+/** Ticks a collected bolt's points float where it was. */
+export const popupTicks = 60;
+/** Points for pulling a rivet, as in Donkey Kong. */
+export const rivetPoints = 100;
+/** A pulled rivet leaves a hole this many px either side of its middle: the monkey falls in walking onto it. */
+export const holeHalf = 4;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;
@@ -73,10 +165,10 @@ export const smashShowTicks = 45;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {
-  /** Ticks between gears; the first comes after `firstGear`. */
+  /** Ticks between gears (pans, on a floor with pans; springs on the elevator floor); the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
-  /** Ticks between embers; the first comes after `firstEmber`. */
+  /** Ticks between embers the Gnome throws, on a floor without a furnace; the first comes after `firstEmber`. */
   emberEvery: number;
   firstEmber: number;
   /** The most embers on the floor at once. */
@@ -91,7 +183,7 @@ export interface FloorTuning {
   bonusStart: number;
 }
 
-/** The girder floor, then the conveyor floor. */
+/** The girder floor, the conveyor floor, the elevator floor, then the rivet floor (no gears: embers come in from the sides). */
 export const floorTunings: readonly FloorTuning[] = [
   {
     gearEvery: 150,
@@ -110,6 +202,28 @@ export const floorTunings: readonly FloorTuning[] = [
     emberEvery: 420,
     firstEmber: 180,
     maxEmbers: 3,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: 120,
+    firstGear: 90,
+    emberEvery: 600,
+    firstEmber: 300,
+    maxEmbers: 2,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: Infinity,
+    firstGear: Infinity,
+    emberEvery: 300,
+    firstEmber: 120,
+    maxEmbers: 4,
     gearSpeed: 1,
     emberWalkSpeed: 0.5,
     emberClimbSpeed: 0.5,
@@ -162,3 +276,15 @@ export const escapeTicks = 180;
 export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
 export const throwTicks = 20;
+/** Ticks of the intro before the first floor of a run: about 4 s. */
+export const introTicks = 240;
+/** The intro's first ticks, the Gnome climbing up to its perch. */
+export const introClimbTicks = 140;
+/** The ticks into the intro when the Gnome lands a stomp; each bends the girders further. */
+export const introStomps: readonly number[] = [165, 190, 215];
+/** How high each stomp's hop lifts the Gnome, in px. */
+export const introHop = 4;
+/** Ticks each stomp's hop lasts, up and back down. */
+export const introHopTicks = 8;
+/** Ticks a stomp shakes the floor. */
+export const introShakeTicks = 8;

@@ -232,7 +232,7 @@ export interface SweetSamSnapshot {
   score: number;
   /** The Level's `lives`. */
   lives: number;
-  /** The Level's `highScore`. */
+  /** `SweetSamSoftware.dials.highScore`. */
   highScore: number;
   /** The Level's `modeIndex`. */
   modeIndex: number;
@@ -269,8 +269,6 @@ export interface SweetSamSnapshot {
   dials: SweetSamDialSnapshot[];
   /** The level being played, from 1 (#47). */
   level: number;
-  /** START ticks left showing "LEVEL n" before READY (0 on level 1 and after a lost life). */
-  levelBannerTicks: number;
   /** The maze is drawn in its flash colours this tick (the level-clear flash). */
   mazeFlash: boolean;
   /** The bonus flower: ticks it has left (0 = not there) and how many have appeared on this level. */
@@ -285,7 +283,7 @@ export interface SweetSamSnapshot {
 // firefly (internal/firefly)
 
 /** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
-export type FireflyEnemyKind = "moth" | "wasp" | "owl";
+export type FireflyEnemyKind = "moth" | "wasp" | "owl" | "morph";
 
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,
@@ -358,8 +356,10 @@ export interface FireflySnapshot {
   formationPhase: "sway" | "breathe";
   /** The firefly lost to the tractor beam is being pulled up (only while respawning); absent otherwise. */
   captured?: true;
-  /** The captured firefly above its Owl (the Owl's row and column); absent while there is none. */
-  captive?: { row: number; col: number; x: number; y: number };
+  /** The captured firefly above its Owl (the Owl's row and column, none once hostile); absent while there is none. */
+  captive?: { row?: number; col?: number; x: number; y: number; hostile: boolean };
+  /** A rescued captive docked beside the firefly. */
+  dual?: true;
 }
 
 // ---------------------------------------------------------------------------
@@ -372,20 +372,36 @@ export interface BrassMonkeySmashSnapshot {
   points: number;
 }
 
-/** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
+/** A gear, an ember, a pan or a spring (`Hazard` in src/brass-monkey/play.ts). */
 export interface BrassMonkeyHazardSnapshot {
-  kind: "gear" | "ember";
+  kind: "gear" | "ember" | "pan" | "spring";
   x: number;
   y: number;
   dir: -1 | 1;
   footing: "ground" | "air" | "climb";
+  /** A hot gear lights the furnace when it reaches it. */
+  hot: boolean;
+  /** A wild gear drops through the girders towards the monkey. */
+  wild: boolean;
+}
+
+/** A collected bolt's points, shown where it was. */
+export interface BrassMonkeyPopupSnapshot {
+  /** Across, where the bolt was. */
+  x: number;
+  /** Down, where the bolt was. */
+  y: number;
+  /** The score shown. */
+  points: number;
+  /** Ticks left before it fades. */
+  ticks: number;
 }
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
 export interface BrassMonkeySnapshot {
-  phase: "play" | "dying" | "clear" | "escape" | "over";
+  phase: "intro" | "play" | "dying" | "clear" | "escape" | "over";
   phaseTicks: number;
-  /** 0 the girder floor, 1 the conveyor floor. */
+  /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor, 3 the rivet floor. */
   floor: number;
   /** Escapes so far: each loop is harder. */
   loop: number;
@@ -404,14 +420,22 @@ export interface BrassMonkeySnapshot {
   hazards: BrassMonkeyHazardSnapshot[];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[];
+  /** Whether each of the rivet floor's rivets has been pulled; empty on the other floors. */
+  rivets: boolean[];
   /** Ticks left holding the wrench; 0 without it. */
   wrench: number;
   /** Whether each of the floor's wrenches has been picked up. */
   wrenches: boolean[];
   /** The smashes whose points are showing, where each hazard was. */
   smashes: BrassMonkeySmashSnapshot[];
+  /** Points floating where bolts were just collected, with the ticks each has left. */
+  popups: BrassMonkeyPopupSnapshot[];
+  /** A hot gear has reached the floor's furnace since the floor (re)started. */
+  furnaceLit: boolean;
   gearTimer: number;
   emberTimer: number;
+  /** The lift platforms on the elevator floor, each its left edge and top; empty on the other floors. */
+  lifts: { x: number; y: number }[];
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */

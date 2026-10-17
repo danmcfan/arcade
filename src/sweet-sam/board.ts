@@ -36,10 +36,7 @@ export class Board {
   lives: number;
   /** The level being played, from 1 (#47). */
   level = 1;
-  /** START ticks left showing "LEVEL n" before READY; only after a level clear. */
-  levelBannerTicks = 0;
   score = 0;
-  readonly highScore: number;
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
   readonly advantages: Readonly<SweetSamAdvantages>;
 
@@ -59,8 +56,7 @@ export class Board {
 
   readonly emit: (e: LevelEffect) => void;
 
-  constructor(highScore: number, advantages: Readonly<SweetSamAdvantages>, emit: (e: LevelEffect) => void) {
-    this.highScore = highScore;
+  constructor(advantages: Readonly<SweetSamAdvantages>, emit: (e: LevelEffect) => void) {
     this.advantages = advantages;
     this.lives = advantages.lives;
     this.emit = emit;

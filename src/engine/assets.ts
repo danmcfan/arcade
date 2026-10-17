@@ -32,6 +32,8 @@ export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
+/** The arcade win's cake, trophy, balloons and confetti (src/ui/winArt.ts). */
+export const imageWin: Sprite = whole(images.win);
 /** The menu panel's nine-slice frame and the prize counter's card frames (src/ui/panelArt.ts). */
 export const imagePanel: Sprite = whole(images.panel);
 export const imageCards: Sprite = whole(images.cards);
@@ -56,7 +58,7 @@ export const imageScoreLabels: Sprite = whole(sweetSamImages.scoreLabels);
 /** The points for eating a sleepy bee: 200, 400, 800, 1600. */
 export const imagePoints: Sprite = whole(sweetSamImages.points);
 
-// Firefly's sprites, from src/firefly/art.ts. The Moth, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
+// Firefly's sprites, from src/firefly/art.ts. The Moth, morph, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
 // of 90°, clockwise from facing up.
 /** The player in Firefly. */
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
@@ -64,6 +66,8 @@ export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageCaptive: Sprite = whole(fireflyImages.captive);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
+/** What a Moth splits into from stage 4. */
+export const imageMorph: Sprite = whole(fireflyImages.morph);
 export const imageWasp: Sprite = whole(fireflyImages.wasp);
 export const imageOwl: Sprite = whole(fireflyImages.owl);
 /** The Owl after its first hit. */
@@ -72,18 +76,36 @@ export const imageOwlHurt: Sprite = whole(fireflyImages.owlHurt);
 export const imageShot: Sprite = whole(fireflyImages.shot);
 export const imageHit: Sprite = whole(fireflyImages.hit);
 export const imageFireflyBackground: Sprite = whole(fireflyImages.background);
+/** The stage badges in `badgeValues` order (50, 30, 20, 10, 5, 1), each in a 16×16 slot; 1 and 5 are 8 wide. */
+export const imageBadges: Sprite = whole(fireflyImages.badges);
 
 // Brass Monkey's characters, items and floors, from src/brass-monkey/art.ts and floors.ts.
 /** The monkey's sheet: walk 1-3, jump, climb 1-2, each 16×16. */
 export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
-/** The Gnome's sheet: idle, throw, each 32×32. */
+/** The monkey losing a life, each 16×24: the spin's four quarter turns, then down with two puffs of smoke. */
+export const imageMonkeyDeath: Sprite = whole(brassMonkeyImages.monkeyDeath);
+/** The Gnome's sheet: idle, throw, reach (climbing and stomping in the intro), each 32×32. */
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
+/** One girder tile, 8×8: the intro bends the girders by drawing them itself. */
+export const imageGirder: Sprite = whole(brassMonkeyImages.girder);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
-/** Two turns, each 12×12. */
+export const imageElevatorFloor: Sprite = whole(brassMonkeyImages.elevatorFloor);
+/** A lift platform, 16×8. */
+export const imageLift: Sprite = whole(brassMonkeyImages.lift);
+/** The spring, each 12×12: stretched, then squashed. */
+export const imageSpring: Sprite = whole(brassMonkeyImages.spring);
+export const imageRivetFloor: Sprite = whole(brassMonkeyImages.rivetFloor);
+/** A rivet in its slot in a rivet floor girder, 8×8. */
+export const imageRivet: Sprite = whole(brassMonkeyImages.rivet);
+/** Two turns, then the same two hot, each 12×12. */
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
+/** The furnace, each 16×24: cold, then lit with two flickers of flame. */
+export const imageFurnace: Sprite = whole(brassMonkeyImages.furnace);
 /** Two flickers and their mirrors, each 12×12. */
 export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
+/** The scrap tray, each 12×12: its scraps, then the same jolted by the belt. */
+export const imagePan: Sprite = whole(brassMonkeyImages.pan);
 /** At rest, then three glint frames, each 10×14. */
 export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
 /** The wrench upright, 8×14: on the floor, and raised over the monkey's head. */

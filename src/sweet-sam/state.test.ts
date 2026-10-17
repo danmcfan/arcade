@@ -4,13 +4,13 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { SweetSamEnemySnapshot } from "../game/snapshot.ts";
 import { SweetSamSoftware } from "./software.ts";
-import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
+import { levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
 import { sweetSamAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
-import { deathRoundDelayTicks } from "./update.ts";
+import { deathRoundDelayTicks, startTicks } from "./update.ts";
 import type { ItemSetup, LevelSetup } from "./level.ts";
 
 let sounds: SoundEvent[] = [];
@@ -296,17 +296,25 @@ describe("eating", () => {
       "play:sweetSmoke",
     ]);
     expect([snap.shake[2], snap.shake[3]]).toEqual([6, 4]);
-    expect(enemy(s, 0).blue).toBe(600);
+    expect(enemy(s, 0).blue).toBe(360);
     expect(enemy(s, 0).reverse).toBe(true);
-    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 600]); // still home: sleepy too
-    expect(snap.enemies.every((e) => e.blue === 600)).toBe(true);
+    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 360]); // still home: sleepy too
+    expect(snap.enemies.every((e) => e.blue === 360)).toBe(true);
+  });
+
+  test.each([17, 19, 21])("on level %p a honey pot scores 50 and turns the bees round, but none sleeps", (level) => {
+    const s = from({ level, items: potAt({ x: start.x - 1, y: start.y }) });
+    step(s);
+    expect(s.score()).toBe(50);
+    expect(enemy(s, 0).reverse).toBe(true);
+    expect(s.snapshot().enemies.some((e) => e.blue > 0)).toBe(false);
   });
 
   test("a bee that leaves the home still sleepy can be eaten for points", () => {
     const eyes = { home: false, eyes: true, x: 8 * 2, y: 8 * 4 + 4 };
     const s = from({ bees: [eyes, undefined, eyes, eyes], items: potAt({ x: start.x - 1, y: start.y }) });
     step(s);
-    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 600]);
+    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 360]);
     let n = 0;
     while (enemy(s, 1).home && n++ < 300) step(s);
     expect([enemy(s, 1).home, enemy(s, 1).blue > 0]).toEqual([false, true]);
@@ -623,10 +631,10 @@ describe("clearing a level", () => {
     expect(flashes).toContain(false);
   });
 
-  test("then the next level: maze refilled, bear and bees home, LEVEL 2 before READY", () => {
+  test("then the next level: maze refilled, bear and bees home, straight to READY", () => {
     const s = cleared();
     step(s, levelClearTicks + 1);
-    let snap = s.snapshot();
+    const snap = s.snapshot();
     expect([snap.state, snap.level, snap.items, snap.score, snap.lives]).toEqual(["START", 2, 244, 1234, 3]);
     expect([snap.player.x, snap.player.y, snap.modeIndex, snap.modeTicks]).toEqual([112, 212, 0, 0]);
     expect(snap.enemies.map((e) => [e.kind, e.x, e.y, e.dotMin])).toEqual([
@@ -635,17 +643,14 @@ describe("clearing a level", () => {
       ["teal", 96, 140, levelValues(2).dotMinimums.teal],
       ["orange", 128, 140, levelValues(2).dotMinimums.orange],
     ]);
-    expect(snap.levelBannerTicks).toBe(levelBannerTicks);
-    step(s, levelBannerTicks);
-    snap = s.snapshot();
-    expect([snap.state, snap.levelBannerTicks, snap.startTicks]).toEqual(["START", 0, 120]);
+    expect(snap.startTicks).toBe(startTicks);
     step(s, 122);
     expect(s.snapshot().state).toBe("PLAY");
   });
 
   test("level 2's bees fly faster and its modes are level 2's", () => {
     const s = cleared();
-    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    step(s, levelClearTicks + 1 + 122);
     const snap = s.snapshot();
     expect(snap.state).toBe("PLAY");
     expect(snap.enemies[1]?.velocity).toBe(levelValues(2).beeVelocity);
@@ -688,7 +693,7 @@ describe("intermissions (#160)", () => {
     step(s, 30);
     step(s, 1, { ...NO_INPUT, space: true });
     const snap = s.snapshot();
-    expect([snap.state, snap.level, snap.items, snap.levelBannerTicks]).toEqual(["START", 3, 244, levelBannerTicks]);
+    expect([snap.state, snap.level, snap.items, snap.startTicks]).toEqual(["START", 3, 244, startTicks]);
   });
 
   test("the scene plays the intermission music", () => {
@@ -709,7 +714,7 @@ describe("game over pays out", () => {
     step(s, 2);
     expect(s.snapshot().items).toBe(0);
     expect(s.snapshot().state).toBe("LEVELCLEAR");
-    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    step(s, levelClearTicks + 1 + 122);
     expect([s.snapshot().state, s.snapshot().level]).toEqual(["PLAY", 2]);
     for (let t = 0; t < 20_000 && !s.gameOver(); t++) step(s);
     expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1234, "GAMEOVER", 2]); // 1154 + the last drop and the drops eaten on level 2
@@ -803,8 +808,8 @@ function speeds(left: number): number[] {
 describe("Cruise Elroy (#156)", () => {
   test("on level 1 red speeds up at 20 drops left, then again at 10; the others don't", () => {
     expect(speeds(21)).toEqual([0.9375, 0.9375]);
-    expect(speeds(20)).toEqual([0.96875, 0.9375]);
-    expect(speeds(10)).toEqual([1, 0.9375]);
+    expect(speeds(20)).toEqual([1, 0.9375]);
+    expect(speeds(10)).toEqual([1.0625, 0.9375]);
   });
 
   test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
@@ -823,7 +828,7 @@ describe("Cruise Elroy (#156)", () => {
     for (let t = 0; t < 20 && s.snapshot().items === 10; t++) step(s);
     expect(s.snapshot().release.elroySuspended).toBe(false);
     step(s);
-    expect(enemy(s, 0).velocity).toBe(1);
+    expect(enemy(s, 0).velocity).toBe(1.0625);
   });
 
   test("a red bee in the home or flying home ignores Elroy's speed", () => {
@@ -877,5 +882,17 @@ describe("an eaten bee becomes eyes (#153)", () => {
     const red = enemy(s, 0);
     expect([red.eyes, red.blue, red.reverse]).toEqual([true, 0, false]);
     expect(enemy(s, 1).blue).toBeGreaterThan(0);
+  });
+});
+
+describe("jumpTo (the test hook's level jump)", () => {
+  test("starts the given level from READY!, maze refilled, at that level's speeds", () => {
+    const s = from({ items: (it, idx) => (idx === 0 ? null : it) });
+    expect(s.snapshot().items).toBe(243);
+    s.jumpTo(5);
+    expect([s.snapshot().level, s.snapshot().state, s.snapshot().items]).toEqual([5, "START", 244]);
+    for (let n = 0; n < 400 && s.snapshot().state !== "PLAY"; n++) step(s);
+    step(s);
+    expect([s.snapshot().player.velocity, enemy(s, 0).velocity]).toEqual([1.25, levelValues(5).beeVelocity]);
   });
 });
