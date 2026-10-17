@@ -37,10 +37,18 @@ export const emberUpChance = 0.25;
 
 /** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
 export const jumpPoints = [100, 300, 800] as const;
-/** Points for a bolt. */
-export const boltPoints = 300;
 /** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
 export const smashPoints = [300, 500, 800] as const;
+/** Points for a bolt on each loop, as Pauline's hat, parasol and purse score in Donkey Kong; the last holds from then on. */
+const boltPointsByLoop = [300, 500, 800] as const;
+
+/** Points for a bolt on loop `loop` (0 the first time through). */
+export function boltPointsFor(loop: number): number {
+  return boltPointsByLoop[Math.min(loop, boltPointsByLoop.length - 1)] ?? 0;
+}
+
+/** Ticks a collected bolt's points float where it was. */
+export const popupTicks = 60;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;

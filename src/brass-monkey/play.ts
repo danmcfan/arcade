@@ -18,6 +18,14 @@ export type Phase = "play" | "dying" | "clear" | "escape" | "over";
 export type Footing = "ground" | "air" | "climb";
 
 /** The sounds the run makes; game.ts plays them. */
+/** A collected bolt's points, shown where it was. */
+export interface Popup {
+  x: number;
+  y: number;
+  points: number;
+  ticks: number;
+}
+
 export type RunSound = "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape" | "extraLife";
 
 export interface Monkey {
@@ -171,6 +179,8 @@ export class Run {
   wrenches: boolean[] = [];
   /** The smashes whose points are showing. */
   smashes: Smash[] = [];
+  /** Points floating where bolts were just collected, each with the ticks it has left. */
+  popups: Popup[] = [];
   /** Ticks until the Gnome sends its next gear and ember. */
   gearTimer = 0;
   emberTimer = 0;
@@ -235,6 +245,7 @@ export class Run {
     this.bolts = floor.bolts.map(() => false);
     this.wrenches = floor.wrenches.map(() => false);
     this.smashes = [];
+    this.popups = [];
     this.bonus = this.tuning.bonusStart;
     this.bonusTimer = 0;
     this.gearTimer = this.tuning.firstGear;
@@ -246,6 +257,8 @@ export class Run {
     const jumpPressed = i.space && !this.prevSpace;
     this.prevSpace = i.space;
     if (this.lapBanner > 0) this.lapBanner--;
+    for (const p of this.popups) p.ticks--;
+    this.popups = this.popups.filter((p) => p.ticks > 0);
     switch (this.phase) {
       case "play":
         this.play(i, jumpPressed);
@@ -603,8 +616,10 @@ export class Run {
     floor.bolts.forEach((b, n) => {
       if (this.bolts[n] === true || Math.abs(b.x - m.x) >= t.boltReach || Math.abs(b.y - m.y) >= t.boltReach) return;
       this.bolts[n] = true;
+      const points = t.boltPointsFor(this.loop);
+      this.popups.push({ x: b.x, y: b.y, points, ticks: t.popupTicks });
       this.onSound("bolt");
-      this.addScore(t.boltPoints);
+      this.addScore(points);
     });
     floor.wrenches.forEach((w, n) => {
       if (this.wrenches[n] === true || m.footing === "climb" || m.wrench > 0) return;
