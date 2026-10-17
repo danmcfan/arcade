@@ -76,8 +76,8 @@ for (const [name, size] of real) {
         "pause:capture",
         "pause:stage",
         "pause:extraLife",
-        "pause:monkeyWrench",
         "pause:fireflyStart",
+        "pause:monkeyWrench",
       ]);
       expect(scene.layout()).toEqual(size);
       for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }])

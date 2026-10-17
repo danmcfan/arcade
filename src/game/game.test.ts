@@ -451,8 +451,8 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:capture",
   "pause:stage",
   "pause:extraLife",
-  "pause:monkeyWrench",
   "pause:fireflyStart",
+  "pause:monkeyWrench",
 ];
 
 // The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.
