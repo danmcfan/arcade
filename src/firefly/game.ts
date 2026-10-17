@@ -42,6 +42,11 @@ import {
   firstShotDelay,
   formation,
   hitEffectTicks,
+  morphBonus,
+  morphTrioSize,
+  morphChance,
+  morphFromStage,
+  morphSpacing,
   nextExtraLife,
   points,
   respawnTicks,
@@ -92,6 +97,10 @@ const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">
 };
 
 const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
+/** The whole path slid `dx` sideways. */
+const shiftPath = (path: Path, dx: number): Path =>
+  path.map((c) => ({ p0: slide(c.p0, dx), p1: slide(c.p1, dx), p2: slide(c.p2, dx), p3: slide(c.p3, dx) }));
+const slide = (p: Vec, dx: number): Vec => ({ x: p.x + dx, y: p.y });
 const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
 /** Where the second of a pair flies: mirrored on a split wave, else `beside` the first. */
 const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p) : shift(p, beside));
@@ -183,6 +192,7 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     escortOf: null,
     escortDx: 0,
     escortsKilled: 0,
+    trio: null,
   };
   followPath(e, [{ ...curve, p3: home }]);
   return e;
@@ -422,6 +432,11 @@ export class FireflySoftware implements FixedViewport {
     if (e.t < 1) return;
     e.path = null;
     e.shotsLeft = 0;
+    if (e.kind === "morph") {
+      // A morph flies off the bottom for good, unscored.
+      e.hp = 0;
+      return;
+    }
     if (e.beamTicks > 0) {
       e.state = "beaming";
       return;
@@ -475,6 +490,20 @@ export class FireflySoftware implements FixedViewport {
     const path: Path = beamDive
       ? [{ p0, p1, p2: { x: aim, y: beamY - 60 }, p3: { x: aim, y: beamY } }]
       : divePath(e.kind, p0, p1, aim, side);
+    // One trio at a time.
+    const morphing =
+      e.kind === "moth" &&
+      this.stage >= morphFromStage &&
+      !this.enemies.some((m) => m.kind === "morph") &&
+      rng.intn(morphChance) === 0;
+    if (morphing) {
+      this.morph(e, path, d);
+      return;
+    }
+    this.sendDiving(e, path, d, beamDive);
+  }
+
+  private sendDiving(e: Enemy, path: Path, d: Difficulty, beamDive = false): void {
     e.state = "diving";
     e.outOfFormation = true;
     followPath(e, path, d.diveSpeed);
@@ -556,6 +585,29 @@ export class FireflySoftware implements FixedViewport {
     c.y = ty;
   }
 
+  /** The Moth splits into a trio of morphs that fly its dive side by side. */
+  private morph(moth: Enemy, path: Path, d: Difficulty): void {
+    const trio = { kills: 0 };
+    this.enemies = this.enemies.filter((e) => e !== moth);
+    for (let i = 0; i < morphTrioSize; i++) {
+      const k = i - (morphTrioSize - 1) / 2;
+      const dx = k * morphSpacing;
+      const m: Enemy = {
+        ...moth,
+        kind: "morph",
+        hp: enemyHp.morph,
+        x: moth.x + dx,
+        trio,
+        escortOf: null,
+        escortDx: 0,
+        escortsKilled: 0,
+        beamTicks: 0,
+      };
+      this.sendDiving(m, shiftPath(path, dx), d);
+      this.enemies.push(m);
+    }
+  }
+
   /** A diving or entering enemy above the firefly drops its shots, aimed down at it. */
   private dropShot(e: Enemy): void {
     if (e.shotsLeft === 0 || (e.state !== "diving" && e.state !== "entering")) return;
@@ -601,6 +653,10 @@ export class FireflySoftware implements FixedViewport {
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
+    if (e.trio !== null && ++e.trio.kills === morphTrioSize) {
+      this.points += morphBonus;
+      this.bonuses.push({ points: morphBonus, x: e.x, y: e.y, ticks: bonusTicks });
+    }
   }
 
   /** A life, with the extra-life jingle, for each threshold the score has reached. */

@@ -285,7 +285,7 @@ export interface SweetSamSnapshot {
 // firefly (internal/firefly)
 
 /** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
-export type FireflyEnemyKind = "moth" | "wasp" | "owl";
+export type FireflyEnemyKind = "moth" | "wasp" | "owl" | "morph";
 
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,

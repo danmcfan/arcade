@@ -8,6 +8,7 @@ import {
   imageFirefly,
   imageFireflyBackground,
   imageHit,
+  imageMorph,
   imageMoth,
   imageOwl,
   imageOwlHurt,
@@ -40,6 +41,7 @@ const enemySheets: Readonly<Record<EnemyKind, Sprite>> = {
   moth: imageMoth,
   wasp: imageWasp,
   owl: imageOwl,
+  morph: imageMorph,
 };
 
 /** Every enemy frame is 16×16. */

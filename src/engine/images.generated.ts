@@ -22,6 +22,7 @@ import fireflyFireflyUrl from "../assets/images/firefly/firefly.png";
 import fireflyCaptiveUrl from "../assets/images/firefly/captive.png";
 import fireflySparkUrl from "../assets/images/firefly/spark.png";
 import fireflyMothUrl from "../assets/images/firefly/moth.png";
+import fireflyMorphUrl from "../assets/images/firefly/morph.png";
 import fireflyWaspUrl from "../assets/images/firefly/wasp.png";
 import fireflyOwlUrl from "../assets/images/firefly/owl.png";
 import fireflyOwlHurtUrl from "../assets/images/firefly/owl-hurt.png";
@@ -78,6 +79,7 @@ export const fireflyImages = {
   captive: imageAsset(fireflyCaptiveUrl, 16, 16),
   spark: imageAsset(fireflySparkUrl, 8, 8),
   moth: imageAsset(fireflyMothUrl, 96, 64),
+  morph: imageAsset(fireflyMorphUrl, 96, 64),
   wasp: imageAsset(fireflyWaspUrl, 96, 64),
   owl: imageAsset(fireflyOwlUrl, 96, 64),
   owlHurt: imageAsset(fireflyOwlHurtUrl, 96, 64),
