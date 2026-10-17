@@ -28,6 +28,7 @@ import {
   challengeWaves,
   isChallengingStage,
   resultsTicks,
+  resultsSkipTicks,
   tallyBonus,
   tallyTicks,
   waveBonus,
@@ -388,13 +389,21 @@ export class FireflySoftware implements FixedViewport {
   challenge: ChallengeState | null = null;
   /** Ticks left of the -RESULTS- screen after GAME OVER; the run ends when it reaches 0. */
   results = 0;
+  /** Fire was down last tick: a skip needs a fresh press, not fire held on from play. */
+  private fireWasDown = false;
   /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
   update(i: Input): void {
     if (this.over) return;
+    const firePressed = i.space && !this.fireWasDown;
+    this.fireWasDown = i.space;
     if (this.results > 0) {
-      if (--this.results === 0) this.over = true;
+      const skip = firePressed && resultsTicks - this.results >= resultsSkipTicks;
+      if (--this.results === 0 || skip) {
+        this.results = 0;
+        this.over = true;
+      }
       return;
     }
     if (this.challenge !== null && this.challenge.tally > 0) {
