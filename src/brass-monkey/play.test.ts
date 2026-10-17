@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
+import { brassMonkeyAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 import { conveyorFloor, floors, girderTop } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
-import { brassMonkeyAdvantages } from "./advantages.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
 
@@ -581,10 +581,7 @@ describe("landing on a slope", () => {
 });
 
 /** A run on the girder floor's first bolt, `score` points in. */
-function onBolt(
-  score: number,
-  advantages?: ReturnType<typeof brassMonkeyAdvantages>,
-): { run: Run; sounds: RunSound[] } {
+function onBolt(score: number, advantages?: BrassMonkeyAdvantages): { run: Run; sounds: RunSound[] } {
   const sounds: RunSound[] = [];
   const run = new Run({ onSound: (s): void => void sounds.push(s), ...(advantages && { advantages }) });
   run.gearTimer = Infinity;
@@ -624,14 +621,16 @@ describe("extra life", () => {
   });
 
   test("only once: reaching 14000 adds none", () => {
-    const { run } = onBolt(t.extraLifeAt - 100);
+    const { run, sounds } = onBolt(t.extraLifeAt - 100);
     step(run, 8, { right: true });
     run.score = 2 * t.extraLifeAt - 100;
     run.monkey.x = 56;
     run.bolts[0] = false;
     step(run, 8, { left: true });
     step(run, 8, { right: true });
-    expect([run.score >= 2 * t.extraLifeAt, run.lives]).toEqual([true, 4]);
+    expect(run.score).toBeGreaterThanOrEqual(2 * t.extraLifeAt);
+    expect(run.lives).toBe(4);
+    expect(sounds.filter((s) => s === "extraLife")).toHaveLength(1);
   });
 
   test("stacks with the oil can's extra life", () => {
