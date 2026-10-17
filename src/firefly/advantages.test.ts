@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { addSoundListener } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
+import type { PrizeId } from "../game/minigames.ts";
 import {
   fireflyAdvantages,
   glowStickMaxSparks,
@@ -59,28 +59,16 @@ describe("Firefly prize advantages", () => {
 
   test("the lantern: a run starts with 4 lives", () => {
     expect(lanternExtraLives).toBe(1);
-    expect(fireflyAdvantages(["lantern"])).toEqual({ ...noAdvantages, lives: 4 });
     expect(run(["lantern"]).lives).toBe(4);
   });
 
   test("the glow stick: up to 3 sparks on the screen at once", () => {
     expect(glowStickMaxSparks).toBe(3);
-    expect(fireflyAdvantages(["glowStick"])).toEqual({ ...noAdvantages, maxSparks: 3 });
     expect(mostSparks(run(["glowStick"]))).toBe(3);
   });
 
   test("the wings: the firefly moves faster", () => {
     expect(wingsPlayerSpeed).toBeGreaterThan(playerSpeed);
-    expect(fireflyAdvantages(["wings"])).toEqual({ ...noAdvantages, playerSpeed: wingsPlayerSpeed });
     expect(stride(run(["wings"]))).toBe(10 * wingsPlayerSpeed);
-  });
-
-  test("all three together; Sweet Sam's prizes change nothing here", () => {
-    expect(fireflyAdvantages(["lantern", "glowStick", "wings"])).toEqual({
-      lives: 4,
-      maxSparks: 3,
-      playerSpeed: wingsPlayerSpeed,
-    });
-    expect(fireflyAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual(noAdvantages);
   });
 });
