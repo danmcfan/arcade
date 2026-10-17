@@ -1,13 +1,13 @@
 // Brass Monkey's game logic, headless and on ticks (ADR 0002, ADR 0003): the
-// monkey runs, jumps and climbs up each floor past the gears and embers the
-// Gnome sends, collecting bolts, to the exit door; then the next floor, the
+// monkey runs, jumps, climbs and rides lifts up each floor past the gears,
+// springs and embers the Gnome sends, collecting bolts, to the exit door; then the next floor, the
 // escaped scene, and the floors again, harder. Every random choice goes
 // through the seeded RNG. Positions are in floor pixels; an entity's `x` is
 // its middle and its `y` the row its foot stands on. game.ts draws it.
 
 import type { Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
-import { floors, girderTop, type Floor, type Girder, type Ladder, type Spot } from "./floors.ts";
+import { floors, girderTop, liftTops, liftWidth, type Floor, type Girder, type Ladder, type Spot } from "./floors.ts";
 import * as t from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
@@ -41,7 +41,7 @@ export interface Monkey {
 }
 
 export interface Hazard {
-  kind: "gear" | "ember" | "pan";
+  kind: "gear" | "ember" | "pan" | "spring";
   x: number;
   y: number;
   dir: -1 | 1;
@@ -67,10 +67,10 @@ function ladderMeetsGirder(l: Ladder, g: Girder): boolean {
 }
 
 /** The girder whose top is within `tol` of y at x, the nearest if more than one. */
-function groundUnder(floor: Floor, x: number, y: number, tol: number): Girder | undefined {
+function groundUnder(girders: readonly Girder[], x: number, y: number, tol: number): Girder | undefined {
   let best: Girder | undefined;
   let bestD = Infinity;
-  for (const g of floor.girders) {
+  for (const g of girders) {
     if (x < g.x0 || x >= g.x1) continue;
     const d = Math.abs(girderTop(g, x) - y);
     if (d <= tol && d < bestD) {
@@ -86,9 +86,9 @@ function groundUnder(floor: Floor, x: number, y: number, tol: number): Girder | 
  * crosses: its feet end on or below the top at x1, having been above the top
  * at x0 or at x1, so a slope's 1 px step can't slip between two ticks.
  */
-function landing(floor: Floor, x0: number, y0: number, x1: number, y1: number): Girder | undefined {
+function landing(girders: readonly Girder[], x0: number, y0: number, x1: number, y1: number): Girder | undefined {
   let best: Girder | undefined;
-  for (const g of floor.girders) {
+  for (const g of girders) {
     if (x1 < g.x0 || x1 >= g.x1) continue;
     const top = girderTop(g, x1);
     const lowerTop = Math.max(top, x0 >= g.x0 && x0 < g.x1 ? girderTop(g, x0) : top);
@@ -153,6 +153,8 @@ export class Run {
   beltDir: -1 | 1 = 1;
   /** Ticks until the conveyors next reverse. */
   beltTimer = 0;
+  /** How far each lift's platforms have moved since the floor (re)started, in px. */
+  liftTravel = 0;
   /** Ticks since the run started, for animations. */
   ticks = 0;
   tuning: t.FloorTuning;
@@ -183,6 +185,18 @@ export class Run {
     return floor;
   }
 
+  /** The lift platforms where they are now, as flat girders. */
+  lifts(): Girder[] {
+    return (this.currentFloor().lifts ?? []).flatMap((s) =>
+      liftTops(s, this.liftTravel).map((y): Girder => ({ x0: s.x, x1: s.x + liftWidth, y, drop: 0 })),
+    );
+  }
+
+  /** What the monkey can stand on: the girders and the lift platforms. */
+  private surfaces(): Girder[] {
+    return [...this.currentFloor().girders, ...this.lifts()];
+  }
+
   /** The Gnome has its arms up: a hazard is about to leave its hands. */
   gnomeThrowing(): boolean {
     if (this.phase !== "play") return false;
@@ -208,6 +222,7 @@ export class Run {
     this.emberTimer = this.tuning.firstEmber;
     this.beltDir = 1;
     this.beltTimer = t.beltReverseTicks;
+    this.liftTravel = 0;
   }
 
   update(i: Input): void {
@@ -248,6 +263,8 @@ export class Run {
   }
 
   private play(i: Input, jumpPressed: boolean): void {
+    this.moveLifts();
+    if (this.phase !== "play") return;
     this.moveMonkey(i, jumpPressed);
     if (this.phase !== "play") return;
     this.floorTicks++;
@@ -263,7 +280,7 @@ export class Run {
         h.x > -8 &&
         h.x < floor.width + 8 &&
         h.y < floor.height + 16 &&
-        (h.kind !== "pan" || groundUnder(floor, h.x, h.y, 2) !== undefined),
+        (h.kind !== "pan" || groundUnder(floor.girders, h.x, h.y, 2) !== undefined),
     );
     this.meet();
     if (this.phase !== "play") return;
@@ -278,6 +295,32 @@ export class Run {
     this.phaseTicks = t.dyingTicks;
     this.lives--;
     this.onSound("death");
+  }
+
+  /**
+   * The lifts move on, carrying the monkey if it stands on a platform. A
+   * platform carried off the top of its shaft takes a life; one going back
+   * round from the bottom leaves the monkey to fall.
+   */
+  private moveLifts(): void {
+    const travel = this.liftTravel;
+    this.liftTravel += t.liftSpeed;
+    const m = this.monkey;
+    if (m.footing !== "ground") return;
+    for (const shaft of this.currentFloor().lifts ?? []) {
+      if (m.x < shaft.x || m.x >= shaft.x + liftWidth) continue;
+      const n = liftTops(shaft, travel).findIndex((y) => Math.abs(y - m.y) < t.liftSpeed / 2);
+      const y = liftTops(shaft, this.liftTravel)[n];
+      if (y === undefined) continue;
+      if ((y - m.y) * shaft.dir > 0) {
+        m.y = y;
+      } else if (shaft.dir < 0) {
+        this.die();
+      } else {
+        this.settle();
+      }
+      return;
+    }
   }
 
   private clampX(x: number): number {
@@ -300,7 +343,7 @@ export class Run {
           m.airTop = m.y;
           m.jumps++;
           m.moving = false;
-          this.markJumpable(groundUnder(floor, m.x, m.y, 2));
+          this.markJumpable(groundUnder(this.surfaces(), m.x, m.y, 2));
           this.onSound("jump");
         } else if (up !== undefined || down !== undefined) {
           const l = up ?? down;
@@ -312,7 +355,7 @@ export class Run {
           m.moving = false;
           m.frame = 0;
         } else {
-          const belt = this.beltOr(groundUnder(floor, m.x, m.y, 2)) ?? 0;
+          const belt = this.beltOr(groundUnder(floor.girders, m.x, m.y, 2)) ?? 0;
           if (dir === 0) {
             m.moving = false;
             m.frame = 0;
@@ -334,7 +377,7 @@ export class Run {
         const y0 = m.y;
         m.y += m.vy;
         m.airTop = Math.min(m.airTop, m.y);
-        const g = m.vy > 0 ? landing(floor, x0, y0, m.x, m.y) : undefined;
+        const g = m.vy > 0 ? landing(this.surfaces(), x0, y0, m.x, m.y) : undefined;
         if (g !== undefined) {
           m.y = girderTop(g, m.x);
           m.footing = "ground";
@@ -374,7 +417,7 @@ export class Run {
       const on =
         h.footing === "climb" && l !== null
           ? ladderMeetsGirder(l, g)
-          : h.footing === "ground" && groundUnder(floor, h.x, h.y, 2) === g;
+          : h.footing === "ground" && groundUnder(floor.girders, h.x, h.y, 2) === g;
       // A wild gear can be jumped from any girder it drops past.
       if (on || h.wild) h.scorableIn = this.monkey.jumps;
     }
@@ -383,7 +426,7 @@ export class Run {
   /** The monkey stands on the girder under it, or starts to fall. */
   private settle(): void {
     const m = this.monkey;
-    const g = groundUnder(this.currentFloor(), m.x, m.y, 2);
+    const g = groundUnder(this.surfaces(), m.x, m.y, 2);
     if (g !== undefined) {
       m.y = girderTop(g, m.x);
       return;
@@ -413,7 +456,7 @@ export class Run {
   }
 
   private sendHazards(): void {
-    const { gnome, pans } = this.currentFloor();
+    const { gnome, pans, springs } = this.currentFloor();
     const at = (kind: Hazard["kind"]): Hazard => ({
       kind,
       x: gnome.x + 36,
@@ -426,7 +469,10 @@ export class Run {
       scorableIn: 0,
       wild: false,
     });
-    if (--this.gearTimer <= 0 && pans === true) {
+    if (--this.gearTimer <= 0 && springs !== undefined) {
+      this.hazards.push({ ...at("spring"), y: springs.y });
+      this.gearTimer = this.tuning.gearEvery;
+    } else if (this.gearTimer <= 0 && pans === true) {
       this.sendPan(at);
       this.gearTimer = this.tuning.gearEvery;
     } else if (this.gearTimer <= 0) {
@@ -448,12 +494,32 @@ export class Run {
   private moveHazard(h: Hazard): void {
     if (h.kind === "gear") this.rollGear(h);
     else if (h.kind === "pan") this.carryPan(h);
+    else if (h.kind === "spring") this.bounceSpring(h);
     else this.moveEmber(h);
+  }
+
+  /** A spring bounces right along the Gnome's girder until it reaches the drop, then falls straight down. */
+  private bounceSpring(h: Hazard): void {
+    const { springs } = this.currentFloor();
+    if (springs === undefined) return;
+    h.x = Math.min(springs.dropX, h.x + t.springSpeed);
+    if (h.footing === "ground") {
+      h.footing = "air";
+      h.vy = -t.springBounce;
+      return;
+    }
+    h.vy = Math.min(h.vy + t.gravity, t.maxFallSpeed);
+    h.y += h.vy;
+    if (h.x < springs.dropX && h.y >= springs.y) {
+      h.y = springs.y;
+      h.footing = "ground";
+      h.vy = 0;
+    }
   }
 
   /** A pan rides its belt, whichever way it runs, and is gone past either end. */
   private carryPan(h: Hazard): void {
-    const g = groundUnder(this.currentFloor(), h.x, h.y, 2);
+    const g = groundUnder(this.currentFloor().girders, h.x, h.y, 2);
     const dir = this.beltOr(g);
     if (g === undefined || dir === undefined) return;
     h.dir = dir;
@@ -478,14 +544,14 @@ export class Run {
       h.y = ladderFoot(h.ladder);
       h.footing = "ground";
       h.ladder = null;
-      const g = groundUnder(floor, h.x, h.y, 2);
+      const g = groundUnder(floor.girders, h.x, h.y, 2);
       h.dir = this.beltOr(g) ?? (g === undefined || g.drop === 0 ? (h.dir < 0 ? 1 : -1) : g.drop);
       return;
     }
     if (h.footing === "ground") {
       const x0 = h.x;
       h.x += h.dir * speed;
-      const g = groundUnder(floor, h.x, h.y, 2);
+      const g = groundUnder(floor.girders, h.x, h.y, 2);
       if (g === undefined) {
         h.footing = "air";
         h.vy = 0;
@@ -506,7 +572,7 @@ export class Run {
     h.vy = Math.min(h.vy + t.gravity, t.maxFallSpeed);
     const y0 = h.y;
     h.y += h.vy;
-    const g = landing(floor, h.x, y0, h.x, h.y);
+    const g = landing(floor.girders, h.x, y0, h.x, h.y);
     if (g === undefined) return;
     h.y = girderTop(g, h.x);
     h.footing = "ground";
@@ -550,10 +616,10 @@ export class Run {
     if (this.floorTicks % t.emberTurnEveryFor(this.loop) === 0 && this.monkey.x !== h.x) {
       h.dir = this.monkey.x < h.x ? -1 : 1;
     }
-    const belt = this.beltOr(groundUnder(floor, h.x, h.y, 2)) ?? 0;
+    const belt = this.beltOr(groundUnder(floor.girders, h.x, h.y, 2)) ?? 0;
     const x0 = h.x;
     const x = x0 + h.dir * this.tuning.emberWalkSpeed + belt * t.beltSpeed;
-    const g = groundUnder(floor, x, h.y, 2);
+    const g = groundUnder(floor.girders, x, h.y, 2);
     if (g === undefined || x < 6 || x > floor.width - 6) {
       h.dir = h.dir < 0 ? 1 : -1;
       return;

@@ -25,6 +25,12 @@ export const maxFall = 20;
 export const ladderReach = 4;
 /** A conveyor carries what stands on it this many px a tick. */
 export const beltSpeed = 0.5;
+/** A lift's platforms move this many px a tick. */
+export const liftSpeed = 0.5;
+/** A spring moves right this many px a tick along the Gnome's girder... */
+export const springSpeed = 1;
+/** ...bouncing off it at this upward speed, in px a tick: with `gravity`, 16 px high. */
+export const springBounce = 2;
 /**
  * The conveyors all reverse this often. Donkey Kong's 50m belts change
  * direction, but no source gives a timer (StrategyWiki ties it to Kong's
@@ -116,7 +122,7 @@ export const boltReach = 10;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {
-  /** Ticks between gears (pans, on a floor with pans); the first comes after `firstGear`. */
+  /** Ticks between gears (pans, on a floor with pans; springs on the elevator floor); the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
   /** Ticks between embers; the first comes after `firstEmber`. */
@@ -134,7 +140,7 @@ export interface FloorTuning {
   bonusStart: number;
 }
 
-/** The girder floor, then the conveyor floor. */
+/** The girder floor, the conveyor floor, then the elevator floor. */
 export const floorTunings: readonly FloorTuning[] = [
   {
     gearEvery: 150,
@@ -153,6 +159,17 @@ export const floorTunings: readonly FloorTuning[] = [
     emberEvery: 420,
     firstEmber: 180,
     maxEmbers: 3,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: 120,
+    firstGear: 90,
+    emberEvery: 600,
+    firstEmber: 300,
+    maxEmbers: 2,
     gearSpeed: 1,
     emberWalkSpeed: 0.5,
     emberClimbSpeed: 0.5,
