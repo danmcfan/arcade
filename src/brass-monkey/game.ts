@@ -27,6 +27,7 @@ import {
   imageWall,
   imageWrench,
   imageWrenchSwing,
+  imageUmbrella,
   sounds,
 } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
@@ -51,7 +52,7 @@ import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial, ScoreDials } from "../ui/dials.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { dyingTicks, escapeTicks } from "./tuning.ts";
+import { dyingTicks, escapeTicks, umbrellaFurledTicks, umbrellaPopTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
@@ -224,6 +225,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       // In its last ticks the wrench flashes: drawn 4 ticks, hidden 4.
       if (run.monkey.wrench > 0 && (!run.wrenchFlashing() || Math.trunc(run.ticks / 4) % 2 === 0))
         drawWrench(screen, run.monkey, left, top, run.ticks);
+      if (run.umbrellaPop > 0) drawUmbrella(screen, run.monkey, left, top, run.umbrellaPop);
     }
     for (const s of run.smashes) drawTextCentered(screen, `${s.points}`, left + s.x, top + s.y - 16);
     for (const p of run.popups) drawTextCentered(screen, String(p.points), left + p.x, top + p.y - 22);
@@ -398,6 +400,15 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
     top + m.y - 16,
     flip ? { flipX: true } : undefined,
   );
+}
+
+/**
+ * The umbrella that just saved the monkey (#268), at twice its prize size
+ * over the monkey's head: furled for its first ticks, then open until it goes.
+ */
+function drawUmbrella(screen: Surface, m: Monkey, left: number, top: number, pop: number): void {
+  const open = umbrellaPopTicks - pop >= umbrellaFurledTicks;
+  screen.draw(frame(imageUmbrella, open ? 1 : 0, 8, 8), left + m.x - 8, top + m.y - 32, { scale: 2 });
 }
 
 /** The held wrench, swinging every 8 ticks: raised over the monkey's head, then down in front of it. */

@@ -294,3 +294,9 @@ export const introHop = 4;
 export const introHopTicks = 8;
 /** Ticks a stomp shakes the floor. */
 export const introShakeTicks = 8;
+
+/** Ticks the umbrella shows over the monkey after it saves it (#268): furled, open, then gone. */
+export const umbrellaPopTicks = 48;
+
+/** Ticks of that pop the umbrella stays furled before it opens. */
+export const umbrellaFurledTicks = 6;

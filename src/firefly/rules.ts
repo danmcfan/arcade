@@ -458,3 +458,9 @@ export function hitMissRatio(shotsFired: number, hits: number): string {
   if (shotsFired === 0) return "0.0";
   return ((hits / shotsFired) * 100).toFixed(1);
 }
+
+/** A second tap of up within this many ticks of the first is a double tap: the firecracker (#268). */
+export const upDoubleTapTicks = 18;
+
+/** Ticks the firecracker's flash bang takes to fade: one white flash, about a fifth of a second. */
+export const flashBangTicks = 12;

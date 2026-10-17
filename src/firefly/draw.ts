@@ -45,6 +45,7 @@ import {
   type EnemyKind,
   bannerText,
   type Banner,
+  flashBangTicks,
 } from "./rules.ts";
 
 const ox = cabinetInsetLeft;
@@ -155,6 +156,8 @@ export interface FireflyView {
   challenge: Readonly<ChallengeState> | null;
   /** Sparks fired and sparks that hit, for the -RESULTS- screen. */
   shotsFired: number;
+  /** Ticks left of the firecracker's flash bang (#268). */
+  flashBang: number;
   hits: number;
   score(): number;
   /** The banner showing (its kind: PLAYER 1, STAGE n, READY or CHALLENGING STAGE), or null. */
@@ -182,6 +185,12 @@ function drawField(screen: Surface, f: FireflyView): void {
   } else if (f.lives > 0) {
     // Once the last life is gone the firefly stays gone, under GAME OVER, the results and the payout.
     for (const x of halves(f.player.x, f.dual)) screen.draw(imageFirefly, ox + x - 8, oy + f.player.y - 8);
+  }
+
+  // The firecracker's flash bang: one white flash over the field, fading out.
+  if (f.flashBang > 0) {
+    const a = (0.85 * f.flashBang) / flashBangTicks;
+    screen.fillRect(ox, oy, fieldWidth, fieldHeight, `rgba(244, 244, 244, ${a.toFixed(3)})`);
   }
 
   // Sweet Sam's HUD: the high score follows the score once the score passes it.

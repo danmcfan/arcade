@@ -86,6 +86,8 @@ import {
   swayOffset,
   type FormationPhase,
   type FormationState,
+  upDoubleTapTicks,
+  flashBangTicks,
 } from "./rules.ts";
 
 /** The firefly's row and where it starts, centred. */
@@ -395,8 +397,12 @@ export class FireflySoftware implements FixedViewport {
   private fireWasDown = false;
   /** Firecrackers this stage has left (#268); each stage brings them back. */
   firecrackers: number;
-  /** Up was down last tick: a firecracker needs a fresh press. */
+  /** Up was down last tick: a tap is a fresh press. */
   private upWasDown = false;
+  /** `ticks` at the last tap of up that has not yet made a double tap. */
+  private lastUpTap = -Infinity;
+  /** Ticks left of the firecracker's flash bang; it fades out as they run down. */
+  flashBang = 0;
   /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
@@ -421,12 +427,15 @@ export class FireflySoftware implements FixedViewport {
     this.stageTick++;
     if (badgesShown(this.stage, this.stageTick) > badgesShown(this.stage, this.stageTick - 1)) play(sounds.badgeTick);
     this.ticks++;
+    const doubleTap = upPressed && this.ticks - this.lastUpTap <= upDoubleTapTicks;
+    if (upPressed) this.lastUpTap = doubleTap ? -Infinity : this.ticks;
+    if (this.flashBang > 0) this.flashBang--;
 
     // As in Galaga, the firefly is held until the start theme ends.
     const opening = this.stage === 1 && this.stageTick <= stageIntroTicks;
     if (this.respawn === 0 && !opening) {
       this.movePlayer(i);
-      if (upPressed) this.setOffFirecracker();
+      if (doubleTap) this.setOffFirecracker();
     }
     this.moveSparks();
     this.moveEnemies();
@@ -967,6 +976,7 @@ export class FireflySoftware implements FixedViewport {
     this.firecrackers--;
     for (const e of inSky) this.shootDown(e);
     this.shots = [];
+    this.flashBang = flashBangTicks;
     play(sounds.owlKill);
   }
 

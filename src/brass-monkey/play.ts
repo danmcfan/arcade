@@ -205,6 +205,8 @@ export class Run {
   lives: number;
   /** Hazards the umbrella will still bounce off this run (#268). */
   umbrellas: number;
+  /** Ticks left of the umbrella's pop over the monkey after it saves it; 0 when it isn't showing. */
+  umbrellaPop = 0;
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
   readonly advantages: Readonly<BrassMonkeyAdvantages>;
   score = 0;
@@ -496,6 +498,7 @@ export class Run {
     this.moveLifts();
     if (this.phase !== "play") return;
     if (this.monkey.wrench > 0) this.monkey.wrench--;
+    if (this.umbrellaPop > 0) this.umbrellaPop--;
     for (const s of this.smashes) s.ticks--;
     this.smashes = this.smashes.filter((s) => s.ticks > 0);
     const x0 = this.monkey.x;
@@ -997,6 +1000,7 @@ export class Run {
         }
         // The umbrella (#268): the hazard bounces off it and is gone, and the umbrella is spent.
         this.umbrellas--;
+        this.umbrellaPop = t.umbrellaPopTicks;
         this.hazards = this.hazards.filter((o) => o !== h);
         this.onSound("stomp");
         continue;

@@ -55,9 +55,11 @@ import {
   rivet,
   type Part,
   spring,
+  umbrellaFurled,
   wallPanel,
   wrench,
 } from "../src/brass-monkey/art.ts";
+import { prizeArt } from "../src/ui/prizeArt.ts";
 import {
   conveyorFloor,
   elevatorFloor,
@@ -206,6 +208,11 @@ export function wrenchSwingFrames(): Rows[] {
   return wrenchFrames().map((rows) => quarterTurn(rows));
 }
 
+/** The umbrella's pop over a saved monkey (#268): furled, then open as the prize hangs in the hub. */
+export function umbrellaFrames(): Rows[] {
+  return [umbrellaFurled, prizeArt.umbrella];
+}
+
 /** `row` (one period) laid along `w` px, moved `shift` px right. */
 function slide(row: string, w: number, shift: number): string {
   const n = row.length;
@@ -332,6 +339,7 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
   imageOutput(join(brassMonkeyImagesDir, "wrench.png"), 8, 14, () => sheet(wrenchFrames())),
   imageOutput(join(brassMonkeyImagesDir, "wrench-swing.png"), 14, 8, () => sheet(wrenchSwingFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "umbrella.png"), 16, 8, () => sheet(umbrellaFrames())),
   imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
   imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor.png"), 96, 8, () => sheet(conveyorFrames())),

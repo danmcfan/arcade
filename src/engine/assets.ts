@@ -118,6 +118,8 @@ export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
 export const imageWrench: Sprite = whole(brassMonkeyImages.wrench);
 /** The wrench swung down in front of the monkey, 14×8, its jaws to the right. */
 export const imageWrenchSwing: Sprite = whole(brassMonkeyImages.wrenchSwing);
+/** The umbrella's pop over a saved monkey (#268): furled, then open, 8×8 each. */
+export const imageUmbrella: Sprite = whole(brassMonkeyImages.umbrella);
 /** The left end, middle and right end, 4 frames each, 8×8. */
 export const imageConveyor: Sprite = whole(brassMonkeyImages.conveyor);
 export const imageDoor: Sprite = whole(brassMonkeyImages.door);

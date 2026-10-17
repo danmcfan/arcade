@@ -44,6 +44,7 @@ import brassMonkeyLiftUrl from "../assets/images/brass-monkey/lift.png";
 import brassMonkeyBoltUrl from "../assets/images/brass-monkey/bolt.png";
 import brassMonkeyWrenchUrl from "../assets/images/brass-monkey/wrench.png";
 import brassMonkeyWrenchSwingUrl from "../assets/images/brass-monkey/wrench-swing.png";
+import brassMonkeyUmbrellaUrl from "../assets/images/brass-monkey/umbrella.png";
 import brassMonkeyGirderUrl from "../assets/images/brass-monkey/girder.png";
 import brassMonkeyLadderUrl from "../assets/images/brass-monkey/ladder.png";
 import brassMonkeyConveyorUrl from "../assets/images/brass-monkey/conveyor.png";
@@ -117,6 +118,7 @@ export const brassMonkeyImages = {
   bolt: imageAsset(brassMonkeyBoltUrl, 40, 14),
   wrench: imageAsset(brassMonkeyWrenchUrl, 8, 14),
   wrenchSwing: imageAsset(brassMonkeyWrenchSwingUrl, 14, 8),
+  umbrella: imageAsset(brassMonkeyUmbrellaUrl, 16, 8),
   girder: imageAsset(brassMonkeyGirderUrl, 8, 8),
   ladder: imageAsset(brassMonkeyLadderUrl, 8, 4),
   conveyor: imageAsset(brassMonkeyConveyorUrl, 96, 8),

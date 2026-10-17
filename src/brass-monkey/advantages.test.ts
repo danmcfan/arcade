@@ -105,6 +105,10 @@ describe("umbrella", () => {
     run.update(NO_INPUT);
     expect([run.phase, run.lives, run.hazards.length, run.umbrellas]).toEqual(["play", 3, 0, 0]);
     expect(sounds).toContain("stomp");
+    // The umbrella pops up over the monkey, then goes.
+    expect(run.umbrellaPop).toBe(t.umbrellaPopTicks);
+    for (let n = 0; n < t.umbrellaPopTicks; n++) run.update(NO_INPUT);
+    expect(run.umbrellaPop).toBe(0);
 
     run.hazards = [gearOn(run)];
     run.update(NO_INPUT);

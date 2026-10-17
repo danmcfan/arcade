@@ -578,3 +578,19 @@ export const wallPanel: readonly string[] = [
   "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkd",
   "dddddddddddddddddddddddddddddddd",
 ];
+
+/**
+ * The umbrella furled (#268): the first frame of its pop over the monkey when
+ * it saves it, before it opens into the prize's own art (`prizeArt.umbrella`).
+ * Same 8×8 box, the same crook handle.
+ */
+export const umbrellaFurled: readonly string[] = [
+  "...kk...",
+  "..krrk..",
+  "..krwk..",
+  "..krrk..",
+  "...km...",
+  "...km...",
+  ".k.km...",
+  "..kk....",
+];

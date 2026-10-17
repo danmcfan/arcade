@@ -6,7 +6,7 @@
 import { advantagesFrom, type PrizeSpec } from "../game/prize.ts";
 import { maxSparks, playerSpeed, startLives } from "./rules.ts";
 
-/** Firecracker: screen clears each stage gets, set off with up (#268). */
+/** Firecracker: screen clears each stage gets, set off with a double tap of up (#268). */
 export const firecrackerUses = 1;
 
 /** Glow stick: sparks allowed on the screen at once (rather than 2). */
@@ -33,7 +33,7 @@ export const fireflyPrizes = [
     id: "firecracker",
     name: "FIRECRACKER",
     price: 25,
-    effect: "UP: CLEARS THE SKY",
+    effect: "UP UP: CLEARS THE SKY",
     advantage: "firecrackers",
     give: (): number => firecrackerUses,
   },

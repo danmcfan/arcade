@@ -54,11 +54,15 @@ import {
   monkeyFrames,
   wrenchFrames,
   wrenchSwingFrames,
+  umbrellaFrames,
 } from "./gen-brass-monkey-art.ts";
+import { umbrellaFurled } from "../src/brass-monkey/art.ts";
+import { prizeArt } from "../src/ui/prizeArt.ts";
 
 describe("Brass Monkey art source", () => {
   test("the monkey is a 16×10 head over 16×6 bodies (16×5 for the steps, drawn 1 px lower), and a 16×16 climb", () => {
     checkRows("head", monkeyHead, { w: 16, h: 10 });
+    checkRows("umbrella furled", umbrellaFurled, { w: 8, h: 8 });
     checkRows("stand", monkeyStand, { w: 16, h: 6 });
     checkRows("step", monkeyStep, { w: 16, h: 5 });
     checkRows("other step", monkeyOtherStep, { w: 16, h: 5 });
@@ -294,4 +298,13 @@ describe("generated Brass Monkey PNGs", () => {
         expect({ file, colour: c, ok: allowed.has(c) }).toEqual({ file, colour: c, ok: true });
     });
   }
+});
+
+describe("the umbrella's pop (#268)", () => {
+  test("furled, then open as the prize art, both 8×8, sharing the prize's handle", () => {
+    const [furled, open] = umbrellaFrames();
+    expect(open).toEqual(prizeArt.umbrella);
+    for (const f of [furled, open]) checkRows("umbrella", f ?? [], { w: 8, h: 8 });
+    expect(furled?.slice(4)).toEqual(prizeArt.umbrella.slice(4));
+  });
 });
