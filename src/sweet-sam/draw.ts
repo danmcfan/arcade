@@ -7,6 +7,7 @@ import { Surface, type PremulColor } from "../engine/surface.ts";
 import {
   imageBear,
   imageCabinet,
+  imageBeeEyes,
   imageFlower,
   imageReady,
   imageSweetSamMaze,
@@ -19,7 +20,7 @@ import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { intermissionY, type IntermissionPose } from "./intermission.ts";
-import { bearDeathRow, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
+import { bearDeathRow, beeEyesOrder, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
 import {
   beeRows,
   bearRows,
@@ -32,7 +33,6 @@ import {
   type Entity,
   type Tile,
 } from "./entity.ts";
-import { sweetie } from "../ui/sweetie16.ts";
 import { findTarget, startTicks } from "./update.ts";
 import type { SweetSamSoftware } from "./software.ts";
 
@@ -56,11 +56,10 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
     return;
   }
   drawBackground(s, screen, bufX, bufY);
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
+  s.dials.draw(screen, bufX, bufY);
   drawLives(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
-  drawLevelBanner(s, screen, bufX, bufY);
   drawItems(s, screen, bufX, bufY);
   drawFlower(s, screen, bufX, bufY);
   drawPlayer(s, screen, bufX, bufY);
@@ -78,7 +77,7 @@ function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bu
   const poses = s.intermissionPoses();
   if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
+  s.dials.draw(screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
     for (const pose of poses) {
@@ -128,15 +127,9 @@ function drawLevel(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-/** Where READY! and "LEVEL n" stand: centred under the bee home. */
+/** Where READY! stands: centred under the bee home. */
 const readyCentreX = 8 * 14;
 const readyTop = 8 * 20 + 1;
-
-/** "LEVEL n" before READY on every level after the first. */
-function drawLevelBanner(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.levelBannerTicks <= 0) return;
-  drawTextCentered(screen, `LEVEL ${s.level}`, readyCentreX + bufX, readyTop + bufY, "yellow");
-}
 
 function drawFlower(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   if (s.flowerTicks <= 0) return;
@@ -165,7 +158,7 @@ export const readyWaveTimeRad = 0.14;
 export const readyWaveGlyphPhaseRad = 1.05;
 
 function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.startTicks <= 0 || s.levelBannerTicks > 0) {
+  if (s.startTicks <= 0) {
     return;
   }
 
@@ -282,22 +275,18 @@ function drawEnemies(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: n
   }
 }
 
-const eyeWhite = sweetie.w;
-const eyePupil = sweetie.b;
-
 /**
- * An eaten bee's eyes: two white 2×3 eyes, each with a 1 px pupil toward its
- * direction of travel. A placeholder until the eye sprites (#196).
+ * An eaten bee's eyes: the bee-eyes.png frame for its direction, centred on it
+ * like a bee. Before it has a direction it looks right.
  */
 function drawEyes(e: Entity, screen: Surface, bufX: number, bufY: number): void {
-  const cx = e.x + bufX;
-  const cy = e.y + bufY;
-  const px = e.direction === "RIGHT" ? 1 : 0;
-  const py = e.direction === "UP" ? 0 : e.direction === "DOWN" ? 2 : 1;
-  for (const ex of [cx - 4, cx + 2]) {
-    screen.fillRect(ex, cy - 2, 2, 3, eyeWhite);
-    screen.fillRect(ex + px, cy - 2 + py, 1, 1, eyePupil);
-  }
+  const x =
+    Math.max(
+      0,
+      beeEyesOrder.findIndex((d) => d === e.direction),
+    ) * frameSize;
+  const eyes = sub(imageBeeEyes, x, 0, x + frameSize, frameSize);
+  screen.draw(eyes, e.x - frameSize / 2 + bufX, e.y - frameSize / 2 + bufY);
 }
 
 /**

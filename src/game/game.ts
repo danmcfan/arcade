@@ -5,8 +5,8 @@
 // payout, which turns its score into tickets, before the hub comes back.
 // Space at the prize desk opens the prize counter menu over the hub, where
 // tickets buy tokens and prizes. The payout that leaves every machine beaten
-// is the arcade win: confetti, and a scoreboard banner the hub waits on until
-// the action key.
+// is the arcade win: confetti, a victory jingle in place of the hub song, and
+// a scoreboard banner the hub waits on until the action key.
 
 import { addSoundListener, type Sound, type SoundEvent } from "../engine/audio.ts";
 import { imageArcade, attractSounds, sounds } from "../engine/assets.ts";
@@ -123,6 +123,14 @@ export class Game implements Scene {
     software.jumpTo(stage);
   }
 
+  /** Set the running minigame's score to `score` (test hook); throws when it has none to set. */
+  scoreTo(score: number): void {
+    const software = this.run?.software;
+    if (software?.scoreTo === undefined)
+      throw new Error(`Game.scoreTo: ${software?.name ?? "the hub"} has no score to set`);
+    software.scoreTo(score);
+  }
+
   /**
    * A position in or beyond a wall or the prize counter (a stale or edited
    * save) keeps the start position. The walls frame the hub image, so
@@ -199,9 +207,13 @@ export class Game implements Scene {
     this.pendingSounds = [];
   }
 
-  /** Play the hub song in the hub (its menus too), pause it in a minigame, and pick up where it left off after. */
+  /**
+   * Play the hub song in the hub (its menus too), pause it in a minigame and
+   * under the arcade win's banner (the victory jingle plays alone), and pick
+   * up where it left off after.
+   */
   private updateHubSong(): void {
-    const want = this.run === null;
+    const want = this.run === null && !this.banner;
     if (want === this.hubSongOn) return;
     this.hubSongOn = want;
     if (want) sounds.hub.play();
@@ -224,6 +236,7 @@ export class Game implements Scene {
       if (paidOut && this.arcade.wallet.winArcade()) {
         this.winTick = this.tick;
         this.banner = true;
+        sounds.victory.blip();
       }
       return;
     }

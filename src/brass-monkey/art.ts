@@ -325,6 +325,57 @@ export const panScraps: readonly Part[] = [
 ];
 
 /**
+ * The furnace: the girder floor's fire at the bottom left, where the gears end
+ * and the embers come out (Donkey Kong's oil drum). A squat iron stove, 16×16,
+ * two banded rims and a riveted front round a dark mouth.
+ */
+export const furnace: readonly string[] = [
+  "................",
+  ".dmmmmmmmmmmmmd.",
+  ".mllwllllllllmd.",
+  ".dmmmmmmmmmmmdd.",
+  "..mlllllllllmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlkkkkkkkkmd..",
+  "..mlwllllllwmd..",
+  "..mlllllllllmd..",
+  ".dmmmmmmmmmmmdd.",
+  ".mllwllllllllmd.",
+  ".dmmmmmmmmmmmdd.",
+  "..mlllllllllmd..",
+  "..mddddddddddd..",
+  "................",
+];
+
+/** Lit, the furnace's mouth glows: drawn over its dark mouth (x 4, rows 5-7). */
+export const furnaceMouth: Part = { x: 4, y: 5, rows: ["oyoyyoyo", "rooyyoor", "rrorrorr"] };
+
+/** Lit, flames burn on the furnace's top, 16×8 above it: two flickers, the second leaning the other way. */
+export const furnaceFlames: readonly (readonly string[])[] = [
+  [
+    "................",
+    "......y.........",
+    ".....yy...y.....",
+    "....yyo..yy.....",
+    "...yoooyyoy.y...",
+    "...orrrooorry...",
+    "..orrrrrrrrro...",
+    "..rrrrrrrrrrrr..",
+  ],
+  [
+    "................",
+    ".........y......",
+    "....y...yy......",
+    "....yy.oyyy.....",
+    "...yoyyoooy.y...",
+    "...yrroooorro...",
+    "...orrrrrrrrro..",
+    "..rrrrrrrrrrrr..",
+  ],
+];
+
+/**
  * The bolt: collected for points. A brass hex bolt standing on its threads,
  * 10×14: a hex head with a lit face, a front face and a shaded face over a
  * threaded shank. Not used until #39.
@@ -344,6 +395,29 @@ export const bolt: readonly string[] = [
   "...ooor...",
   "....yo....",
   "..........",
+];
+
+/**
+ * The wrench (#243): picked up, the monkey swings it to smash hazards. A steel
+ * open-ended spanner standing on its ring end, 8×14: lit on the left, shaded
+ * on the right, its jaws open at the top. The swing is the same rows turned a
+ * quarter clockwise, so the jaws point the way the monkey faces.
+ */
+export const wrench: readonly string[] = [
+  "........",
+  ".l....m.",
+  ".wl..lm.",
+  ".wllllm.",
+  "..wllm..",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "..wllm..",
+  "..l.dm..",
+  "..wllm..",
+  "........",
 ];
 
 /** Where the glint that runs over the bolt's head is centred, frame by frame: a white + over the bolt's pixels. */

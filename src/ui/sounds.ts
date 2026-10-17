@@ -1,5 +1,6 @@
-// Chiptune source for every sound: the title music, the hub song, the
-// cabinets' attract loops, the menu sounds and the minigames' sounds. Notes are
+// Chiptune source for every sound: the title music, the hub song, the arcade
+// win's victory jingle, the cabinets' attract loops, the menu sounds and the
+// minigames' sounds. Notes are
 // MIDI numbers (69 = A4), lengths are in eighth notes. Each sound is declared
 // once, next to its notes, with `defineSound`. scripts/gen-ui-sounds.ts
 // synthesises them into the WAVs in src/assets/sounds/ and writes
@@ -96,6 +97,47 @@ const melody: readonly Note[] = [
 /** The title music: 140 bpm. */
 export const titleSong: Song = { eighthsPerMinute: 280, bass, arpeggio, melody, hats: 0.05 };
 defineSound("title", { song: titleSong }, { channel: "arcade", loop: true });
+
+/** C, then F – G – C: two bars of fanfare, the root in octaves under each chord. */
+const victoryBass: readonly Note[] = [
+  ...Array.from({ length: 8 }, (_, i): Note => [i % 2 === 0 ? 48 : 60, 1]),
+  ...Array.from({ length: 4 }, (_, i): Note => [i % 2 === 0 ? 41 : 53, 1]),
+  [43, 1],
+  [55, 1],
+  [48, 2],
+];
+const victoryArpeggio: readonly Note[] = [
+  ...[60, 64, 67, 72, 67, 72, 76, 79].map((n): Note => [n, 1]),
+  ...[65, 69, 72, 77].map((n): Note => [n, 1]),
+  [67, 1],
+  [71, 1],
+  [72, 2],
+];
+const victoryMelody: readonly Note[] = [
+  [67, 1],
+  [72, 1],
+  [76, 1],
+  [79, 2],
+  [76, 1],
+  [79, 2],
+  [81, 1],
+  [79, 1],
+  [77, 1],
+  [76, 1],
+  [74, 1],
+  [76, 1],
+  [84, 2],
+];
+
+/** The arcade win: a victory jingle, once, as the confetti starts to fall. 150 bpm. */
+export const victorySong: Song = {
+  eighthsPerMinute: 300,
+  bass: victoryBass,
+  arpeggio: victoryArpeggio,
+  melody: victoryMelody,
+  hats: 0.05,
+};
+defineSound("victory", { song: victorySong }, { channel: "arcade" });
 
 /** Cursor moved: one short square-wave blip. */
 defineSound("move", { blip: [[84, 1]] }, { channel: "arcade" });
@@ -436,13 +478,59 @@ const fireflyEffects = {
     ],
     eighth: 0.02,
   },
-  /** A spark hits an enemy: a short crunch falling away. */
-  hit: {
+  /** A Moth shot down: a light, high crunch falling away. */
+  mothHit: {
+    notes: [
+      [76, 1],
+      [69, 1],
+      [64, 1],
+      [57, 2],
+    ],
+    eighth: 0.025,
+  },
+  /** A Wasp shot down: a lower, buzzier crunch. */
+  waspHit: {
     notes: [
       [64, 1],
+      [65, 1],
       [57, 1],
       [52, 1],
       [45, 2],
+    ],
+    eighth: 0.03,
+  },
+  /** An Owl's first wound: a sharp two-note squawk, and it lives on. */
+  owlHurt: {
+    notes: [
+      [84, 1],
+      [79, 1],
+      [84, 1],
+    ],
+    eighth: 0.035,
+  },
+  /** An Owl shot down: a long, heavy crash down to the bottom. */
+  owlKill: {
+    notes: [
+      [67, 1],
+      [60, 1],
+      [55, 1],
+      [48, 1],
+      [43, 1],
+      [36, 3],
+    ],
+    eighth: 0.04,
+  },
+  /** An enemy peels off to dive: a swoop up, then down. */
+  dive: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [77, 1],
+      [74, 1],
+      [70, 1],
+      [67, 1],
+      [64, 1],
     ],
     eighth: 0.03,
   },
@@ -513,6 +601,19 @@ const fireflyEffects = {
     ],
     eighth: 0.09,
   },
+  /** A spare firefly earned: a bright rising arpeggio that lands high and holds. */
+  extraLife: {
+    notes: [
+      [76, 1],
+      [80, 1],
+      [83, 1],
+      [88, 1],
+      [83, 1],
+      [88, 1],
+      [95, 3],
+    ],
+    eighth: 0.06,
+  },
   /** A stage badge is added: a short high tick. */
   badgeTick: {
     notes: [[96, 1]],
@@ -520,6 +621,33 @@ const fireflyEffects = {
   },
 } as const satisfies Record<string, Effect>;
 for (const [name, effect] of Object.entries(fireflyEffects)) defineSound(name, { effect }, { channel: "minigame" });
+
+/**
+ * A new run's opening theme: plays once in place of stage 1's fanfare and
+ * ends inside the STAGE 1 intro (2 s), while the firefly is held.
+ */
+export const fireflyStartTune: Tune = {
+  notes: [
+    [72, 1],
+    [79, 1],
+    [84, 1],
+    [79, 1],
+    [74, 1],
+    [81, 1],
+    [86, 1],
+    [81, 1],
+    [76, 1],
+    [83, 1],
+    [88, 1],
+    [83, 1],
+    [84, 2],
+    [91, 1],
+    [96, 3],
+  ],
+  eighth: 0.1,
+  wave: "square",
+};
+defineSound("fireflyStart", { tune: fireflyStartTune }, { channel: "minigame" });
 
 /** Seconds a tune lasts. */
 export function tuneSeconds(t: Tune): number {
@@ -556,6 +684,16 @@ const brassMonkeyJingles = {
       [84, 2],
     ],
     eighth: 0.04,
+  },
+  /** A hazard smashed by the wrench: a clank, then a bright ring. */
+  smash: {
+    notes: [
+      [48, 1],
+      [43, 1],
+      [88, 1],
+      [91, 2],
+    ],
+    eighth: 0.035,
   },
   /** A life lost: a falling chromatic run down to a low thud. */
   death: {
@@ -623,7 +761,7 @@ for (const [name, effect] of Object.entries(brassMonkeyJingles)) {
 /**
  * Brass Monkey's floor music (#256): a short loop for each floor while it is
  * played, in place of Donkey Kong's board music. It stops when the monkey
- * dies, the floor clears and with the pause menu.
+ * dies, the floor clears, while the wrench music plays and with the pause menu.
  */
 const floorTunes = {
   /** The girders: a bouncy bass-and-answer riff in C. */
@@ -676,6 +814,35 @@ const floorTunes = {
 for (const [name, tune] of Object.entries(floorTunes)) {
   defineSound(`monkey${capitalized(name)}`, { tune }, { channel: "minigame", loop: true, volume: 0.35 });
 }
+
+/**
+ * Brass Monkey's wrench music (#243): a quick hammering riff that loops while
+ * the monkey holds the wrench, in place of Donkey Kong's hammer music. It
+ * stops with the pause menu.
+ */
+const wrenchTune: Tune = {
+  notes: [
+    [72, 1],
+    [72, 1],
+    [79, 1],
+    [72, 1],
+    [77, 1],
+    [72, 1],
+    [76, 1],
+    [74, 1],
+    [72, 1],
+    [72, 1],
+    [79, 1],
+    [72, 1],
+    [81, 1],
+    [79, 1],
+    [77, 1],
+    [76, 1],
+  ],
+  eighth: 0.09,
+  wave: "square",
+};
+defineSound("monkeyWrench", { tune: wrenchTune }, { channel: "minigame", loop: true, volume: 0.5 });
 
 function capitalized(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
