@@ -70,6 +70,7 @@ import {
   nextExtraLife,
   points,
   respawnTicks,
+  respawnHoldTicks,
   banner,
   shotCutoffMargin,
   shotSpacing,
@@ -360,6 +361,8 @@ export class FireflySoftware implements FixedViewport {
   over = false;
   player: Vec = { ...playerStart };
   respawn = 0;
+  /** Ticks the respawn has held on its last tick for enemies still in flight. */
+  respawnHeld = 0;
   fireDelay = 0;
   sparks: Spark[] = [];
   enemies: Enemy[] = newStageEnemies();
@@ -949,8 +952,13 @@ export class FireflySoftware implements FixedViewport {
   private countDownRespawn(): void {
     if (this.respawn === 0) return;
     // As in Galaga, the new firefly waits until every diver is back in its slot.
-    if (this.respawn === 1 && this.lives > 0 && this.enemies.some(inFlight)) return;
+    // Capped, so an enemy that never gets home cannot hold READY forever.
+    if (this.respawn === 1 && this.lives > 0 && this.enemies.some(inFlight) && this.respawnHeld < respawnHoldTicks) {
+      this.respawnHeld++;
+      return;
+    }
     if (--this.respawn > 0) return;
+    this.respawnHeld = 0;
     if (this.lives === 0) {
       this.results = resultsTicks;
       return;
