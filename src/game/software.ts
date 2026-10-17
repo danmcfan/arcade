@@ -20,7 +20,7 @@ export interface Software {
   score(): number;
   /** §4.3; the matching type in snapshot.ts (`SweetSamSnapshot`, …). */
   snapshot(): SoftwareSnapshot;
-  /** Optional, test hook only: start stage (or level) `stage` afresh, for verify checks. */
+  /** Optional, test hook only: start stage (or level) `stage` afresh, for capture scripts. */
   jumpTo?(stage: number): void;
 }
 

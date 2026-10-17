@@ -217,7 +217,7 @@ export function isStringArray(x: unknown): x is string[] {
   return Array.isArray(x) && x.every((e) => typeof e === "string");
 }
 
-/** A `GameSnapshot` by its shape (checks the fields the verify checks rely on to tell scenes apart). */
+/** A `GameSnapshot` by its shape (checks the fields capture scripts rely on to tell scenes apart). */
 export function isGameSnapshot(x: unknown): x is GameSnapshot {
   return (
     isRecord(x) &&

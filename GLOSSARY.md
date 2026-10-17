@@ -226,6 +226,6 @@ _Avoid_: canvas size, native size
 The `window.__arcade` API that `?debug` installs, so a check can pause, step, seed and read back the game.
 _Avoid_: debug API, cheat mode
 
-**Verify check**:
-A browser script in `scripts/verify/` that drives the real page and produces the screenshots and video for a PR.
+**Capture script**:
+A throwaway browser script on `scripts/harness.ts` that drives the real page and produces the screenshots and video for a PR. It is never committed.
 _Avoid_: e2e test, smoke test

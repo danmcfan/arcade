@@ -1,5 +1,5 @@
 // Replaying a parity fixture's input script in the browser through the
-// `?debug` test hook, for verify checks: load the scene, jump to a tick, or
+// `?debug` test hook, for capture scripts: load the scene, jump to a tick, or
 // replay a stretch at about game speed for a video.
 
 import type { InputScript, InputStep } from "../src/game/script.ts";

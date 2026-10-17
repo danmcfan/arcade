@@ -28,5 +28,5 @@ Read at review time (`/code-review`, Standards axis). These rules are judgement 
 
 ## Verification and PRs
 
-- **User-visible changes come with a verify check.** Every change a player can see or hear adds or updates a script in `scripts/verify/` that asserts on the new behaviour. Screenshots or a video from it are attached to the PR (`docs/agents/visual-verification.md`, `docs/agents/delivery.md`).
+- **User-visible changes come with screenshots or video.** Every change a player can see or hear shows it in the running game in the PR, and unit tests cover the behaviour. Capture scripts stay out of the repo (`docs/agents/visual-verification.md`).
 - **One-off scripts become shared tools.** A browser or art helper written for a single change belongs in `scripts/harness.ts` or a `bun run` script when it is general, not duplicated in a scratch file.

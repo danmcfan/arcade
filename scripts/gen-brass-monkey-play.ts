@@ -10,7 +10,7 @@
 // run escapes the factory; the first seed whose run escapes having lost a life
 // (but not its last) and jumped a hazard is kept, and then the monkey stands
 // still until game over. Only the inputs are kept: the script replays without
-// the bot. The verify check (scripts/verify/brass-monkey.ts) replays it too.
+// the bot.
 
 import { writeFileSync } from "node:fs";
 import { hazardPoints, startLives } from "../src/brass-monkey/tuning.ts";

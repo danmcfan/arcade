@@ -20,7 +20,7 @@ Every change ships as a PR from its own branch; the owner reviews and merges on 
 
 ## Visual verification
 
-Verify any change a player can see or hear with a verify check (`bun run verify <name>`, `scripts/harness.ts`), and attach its screenshots and video to the PR. How to write one and the browser gotchas: `docs/agents/visual-verification.md`.
+Attach screenshots and video of any change a player can see or hear to the PR, captured by a throwaway script on `scripts/harness.ts`; unit tests carry the proof. How, and the browser gotchas: `docs/agents/visual-verification.md`.
 
 ## Pixel art
 

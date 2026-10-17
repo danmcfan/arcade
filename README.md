@@ -29,7 +29,6 @@ bun run build        # production bundle in dist/
 bun run preview      # serve dist/
 bun run check        # typecheck + format check + test + build, as CI does (also run by the pre-push hook)
 bun run format       # rewrite files in Prettier style (bun run format:check only reports)
-bun run verify       # browser checks with screenshots and video (see below)
 bun run art          # rebuild the generated pixel art (UI, prize decorations, hub room and player from src/ui/, cabinets from art/, Firefly from src/firefly/art.ts)
 bun run pixel        # look at art: rows, colours, show, before, place (docs/agents/pixel-art.md)
 bun run sounds       # rebuild the title music and menu sounds from src/ui/sounds.ts
@@ -51,25 +50,25 @@ The page opens the `title` scene. `?scene=game` skips the title and starts strai
 
 With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=game`), the page exposes `window.__arcade` for deterministic browser checks. It can pause the loop, step fixed ticks with scripted input, seed the RNG, load any scene, and read back the state snapshot, the frame as a PNG data URL at logical resolution, and the sound calls. The full contract is `ArcadeTestHook` in `src/engine/testhook.ts`. Without the parameter the hook is not installed.
 
-## Verify checks
+## Screenshots and video
 
-`bun run verify` runs the browser checks in `scripts/verify/` (or `bun run verify title` for one). Each starts its own dev server, drives the real page with agent-browser through the test hook and through real keyboard events, and writes screenshots, frames and an mp4 to `out/verify/<name>/`. It exits non-zero on the first failed check. `scripts/harness.ts` is the shared driver; `docs/agents/visual-verification.md` explains how to write a check.
+`scripts/harness.ts` drives the real page with agent-browser, through the test hook and real keyboard events, and writes screenshots, frames and an mp4 to `out/verify/<name>/`. PRs use it from throwaway capture scripts; `docs/agents/visual-verification.md` explains how.
 
 ## Layout
 
-| Path                                                                 | What                                                                                                     |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `src/main.ts`                                                        | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                                 |
-| `src/engine/`                                                        | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                                  |
-| `src/game/`                                                          | Top-level loop (hub and active minigame), scene registry, snapshot types                                 |
-| `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                           |
-| `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                                       |
-| `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                          |
-| `test/fixtures/`                                                     | Recorded input scripts, per-tick traces and golden frames (see below)                                    |
-| `test/parity/`                                                       | Replays every fixture scenario and compares it tick by tick                                              |
-| `scripts/`                                                           | Verify harness and checks (`scripts/verify/`), frame capture and diff tools, UI art and sound generators |
-| `art/cabinet.ase`                                                    | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)                     |
-| `docs/`                                                              | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                          |
+| Path                                                                 | What                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `src/main.ts`                                                        | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                          |
+| `src/engine/`                                                        | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                           |
+| `src/game/`                                                          | Top-level loop (hub and active minigame), scene registry, snapshot types                          |
+| `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                    |
+| `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                                |
+| `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                   |
+| `test/fixtures/`                                                     | Recorded input scripts, per-tick traces and golden frames (see below)                             |
+| `test/parity/`                                                       | Replays every fixture scenario and compares it tick by tick                                       |
+| `scripts/`                                                           | Capture harness (`scripts/harness.ts`), frame capture and diff tools, UI art and sound generators |
+| `art/cabinet.ase`                                                    | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)              |
+| `docs/`                                                              | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                   |
 
 ## Parity fixtures
 

@@ -17,7 +17,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
   && apt-get update && apt-get install -y gh \
   && rm -rf /var/lib/apt/lists/*
 
-# Bun runs every repo script; agent-browser drives the page for verify checks.
+# Bun runs every repo script; agent-browser drives the page for capture scripts.
 # Versions match the host's. Chrome for Testing has no Linux ARM64 build, so
 # agent-browser uses Debian's Chromium.
 RUN npm install -g bun@1.4.2 agent-browser@0.33.2
