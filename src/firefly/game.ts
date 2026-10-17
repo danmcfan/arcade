@@ -236,8 +236,8 @@ function face(e: Enemy, px: number, py: number): void {
   }
 }
 
-/** The sound of a spark shooting each kind down. */
-const hitSound = { moth: sounds.mothHit, wasp: sounds.waspHit, owl: sounds.owlKill } as const;
+/** The sound of a spark shooting each kind down; a morph, split from a diving Moth, dies with the Moth's. */
+const hitSound = { moth: sounds.mothHit, wasp: sounds.waspHit, owl: sounds.owlKill, morph: sounds.mothHit } as const;
 
 function play(s: Sound): void {
   s.rewind();
