@@ -12,6 +12,7 @@ import { Board, type LevelEffect } from "./board.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import type { Entity } from "./entity.ts";
+import { afterDeath } from "./release.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 import type { LevelValues, Mode } from "./levels.ts";
 import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
@@ -80,8 +81,8 @@ export interface LevelSetup {
   mode?: { index: number; ticks: number };
   scaredEatAwardNext?: number;
   flowerTicks?: number;
-  /** The global drop counter after a lost life (release.ts); null when the bees use their own. */
-  globalDots?: number | null;
+  /** A round after a lost life, with this many drops on the global counter (release.ts). */
+  globalDots?: number;
 }
 
 /** The queries the drawing reads (draw.ts). */
@@ -335,6 +336,10 @@ export class Level {
 
 /** Puts a new round where `setup` says. */
 function arrange(b: Board, setup: LevelSetup): void {
+  if (setup.globalDots !== undefined) {
+    b.enemies = afterDeath(b.release, b.enemies);
+    b.release.globalDots = setup.globalDots;
+  }
   b.lives = setup.lives ?? b.lives;
   b.score = setup.score ?? b.score;
   const p = setup.player;
@@ -377,7 +382,6 @@ function arrange(b: Board, setup: LevelSetup): void {
   }
   b.scaredEatAwardNext = setup.scaredEatAwardNext ?? b.scaredEatAwardNext;
   b.flowerTicks = setup.flowerTicks ?? b.flowerTicks;
-  if (setup.globalDots !== undefined) b.release.globalDots = setup.globalDots;
 }
 
 function realDir<T extends string>(d: T | ""): T {

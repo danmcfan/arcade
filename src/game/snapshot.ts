@@ -219,40 +219,40 @@ export interface SweetSamSnapshot {
   /** `stateMachine.CurrentID()`. */
   state: SweetSamStateId;
   player: SweetSamPlayerSnapshot;
-  /** `SweetSamSoftware.enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
+  /** `Board.enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
   enemies: SweetSamEnemySnapshot[];
-  /** Number of non-nil entries in `SweetSamSoftware.items`. */
+  /** Number of non-nil entries in `Board.items`. */
   items: number;
   /**
    * FNV-1a 32-bit (`fnv1a32` in src/engine/gomath.ts) over the indexes of the
    * non-nil `items` entries, ascending, each as a little-endian uint32.
    */
   itemsHash: number;
-  /** `SweetSamSoftware.score`. */
+  /** `Board.score`. */
   score: number;
-  /** `SweetSamSoftware.lives`. */
+  /** `Board.lives`. */
   lives: number;
-  /** `SweetSamSoftware.highScore`. */
+  /** `Board.highScore`. */
   highScore: number;
-  /** `SweetSamSoftware.modeIndex`. */
+  /** `Board.modeIndex`. */
   modeIndex: number;
-  /** `SweetSamSoftware.modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
+  /** `Board.modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
   mode: number;
-  /** `SweetSamSoftware.modeTicks`. */
+  /** `Board.modeTicks`. */
   modeTicks: number;
-  /** `SweetSamSoftware.release`. */
+  /** `Board.release`. */
   release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
-  /** `SweetSamSoftware.pauseTicks`. */
+  /** `Board.pauseTicks`. */
   pauseTicks: number;
-  /** `SweetSamSoftware.eatPauseTicks`. */
+  /** `Board.eatPauseTicks`. */
   eatPauseTicks: number;
-  /** `SweetSamSoftware.startTicks`. */
+  /** `Board.startTicks`. */
   startTicks: number;
   /** `StartState.respawnBlinkRemaining` (the registered START state's field, whatever the current state). */
   respawnBlinkRemaining: number;
-  /** `SweetSamSoftware.scaredEatAwardNext`. */
+  /** `Board.scaredEatAwardNext`. */
   scaredEatAwardNext: number;
-  /** `SweetSamSoftware.bonusEatPopups` in slice order. */
+  /** `Board.bonusEatPopups` in slice order. */
   popups: SweetSamPopupSnapshot[];
   /**
    * Camera: `[shakeOffsetX, shakeOffsetY, shakeTicksRemaining, shakeIntensity]`.
@@ -263,7 +263,7 @@ export interface SweetSamSnapshot {
    * deliberately excluded: they come from `Sin/Cos` (fact 3).
    */
   particlesActive: number;
-  /** `SweetSamSoftware.pelletAnimTick`. */
+  /** `Board.pelletAnimTick`. */
   pelletAnimTick: number;
   /** 12 dials: `scoreDial[0..5]` then `highScoreDial[0..5]`. */
   dials: SweetSamDialSnapshot[];
