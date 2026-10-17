@@ -958,7 +958,7 @@ describe("an eaten bee becomes eyes (#153)", () => {
 });
 
 describe("jumpTo (the test hook's level jump)", () => {
-  test("starts the given level from its START banner, maze refilled, at that level's speeds", () => {
+  test("starts the given level from READY!, maze refilled, at that level's speeds", () => {
     const s = playing();
     s.items[0] = null;
     s.jumpTo(5);

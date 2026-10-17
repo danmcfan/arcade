@@ -26,7 +26,6 @@ import {
   IntermissionState,
   LevelClearState,
   levelClearFlashTicks,
-  levelBannerTicks,
   levelClearTicks,
   PauseState,
   PlayState,
@@ -155,13 +154,12 @@ export class SweetSamSoftware implements FixedViewport {
     update(this, i);
   }
 
-  /** Test hook: start `level` from its START banner, as a level clear would. */
+  /** Test hook: start `level` from READY!, as a level clear would. */
   jumpTo(level: number): void {
     this.level = level;
     this.items = newItems();
     this.flowersShown = 0;
     restartRound(this);
-    this.levelBannerTicks = levelBannerTicks;
     this.stateMachine.changeState(stateIDStart);
   }
 
