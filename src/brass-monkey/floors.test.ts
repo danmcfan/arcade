@@ -74,6 +74,10 @@ describe.each([
   });
 });
 
+test("only the conveyor floor carries pans", () => {
+  expect([girderFloor.pans, conveyorFloor.pans]).toEqual([undefined, true]);
+});
+
 test("the floors are played girder floor, then conveyor floor", () => {
   expect(floors).toEqual([girderFloor, conveyorFloor]);
 });

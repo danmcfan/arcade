@@ -25,6 +25,12 @@ export const maxFall = 20;
 export const ladderReach = 4;
 /** A conveyor carries what stands on it this many px a tick. */
 export const beltSpeed = 0.5;
+/**
+ * The conveyors all reverse this often. Donkey Kong's 50m belts change
+ * direction, but no source gives a timer (StrategyWiki ties it to Kong's
+ * position), so 10 s is our call: long enough for a pan to ride a whole belt.
+ */
+export const beltReverseTicks = 600;
 
 /**
  * At the head of a ladder, a gear rolls down it this often on loop 0 as the
@@ -110,7 +116,7 @@ export const boltReach = 10;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {
-  /** Ticks between gears; the first comes after `firstGear`. */
+  /** Ticks between gears (pans, on a floor with pans); the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
   /** Ticks between embers; the first comes after `firstEmber`. */

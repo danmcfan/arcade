@@ -7,8 +7,9 @@
 // 1 px lower on a step), jump, climb and climb mirrored. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
 // idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
-// and their mirrors) and bolt.png (10×14: at rest, then a glint running over
-// its head) are one row of frames each. The floor tiles are girder.png (8×8),
+// and their mirrors), pan.png (12×12: the scrap tray, its scraps jolted in
+// the second) and bolt.png (10×14: at rest, then a glint running over its
+// head) are one row of frames each. The floor tiles are girder.png (8×8),
 // ladder.png (8×4, its rows by height), conveyor.png (8×8: the left end,
 // middle and right end, 4 frames each), door.png (16×24, outlined but for its
 // foot) and wall.png (32×32), none outlined but the door. girder-floor.png
@@ -27,6 +28,8 @@ import {
   emberFlame,
   emberTips,
   gear,
+  panScraps,
+  panTray,
   girder,
   gnomeArmsDown,
   gnomeArmsUp,
@@ -88,6 +91,11 @@ export function emberFills(): Rows[] {
 export function emberFrames(): Rows[] {
   const frames = emberFills().map((rows) => outline(rows));
   return [...frames, ...frames.map((rows) => flipX(rows))];
+}
+
+/** The pan's sheet frames, outlined: the tray with each frame's scraps. */
+export function panFrames(): Rows[] {
+  return panScraps.map((s) => outline(overlay(panTray, s.rows, s.x, s.y)));
 }
 
 /** The bolt's sheet frames, outlined: at rest, then one frame for each step of the glint. */
@@ -188,6 +196,7 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "pan.png"), 24, 12, () => sheet(panFrames())),
   imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
   imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
   imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),

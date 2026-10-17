@@ -365,9 +365,9 @@ export interface FireflySnapshot {
 // ---------------------------------------------------------------------------
 // brassMonkey (the Go port's Brass Monkey package)
 
-/** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
+/** A gear, an ember or a pan (`Hazard` in src/brass-monkey/play.ts). */
 export interface BrassMonkeyHazardSnapshot {
-  kind: "gear" | "ember";
+  kind: "gear" | "ember" | "pan";
   x: number;
   y: number;
   dir: -1 | 1;

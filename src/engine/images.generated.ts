@@ -33,6 +33,7 @@ import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import brassMonkeyGearUrl from "../assets/images/brass-monkey/gear.png";
 import brassMonkeyEmberUrl from "../assets/images/brass-monkey/ember.png";
+import brassMonkeyPanUrl from "../assets/images/brass-monkey/pan.png";
 import brassMonkeyBoltUrl from "../assets/images/brass-monkey/bolt.png";
 import brassMonkeyGirderUrl from "../assets/images/brass-monkey/girder.png";
 import brassMonkeyLadderUrl from "../assets/images/brass-monkey/ladder.png";
@@ -90,6 +91,7 @@ export const brassMonkeyImages = {
   gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
   gear: imageAsset(brassMonkeyGearUrl, 24, 12),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),
+  pan: imageAsset(brassMonkeyPanUrl, 24, 12),
   bolt: imageAsset(brassMonkeyBoltUrl, 40, 14),
   girder: imageAsset(brassMonkeyGirderUrl, 8, 8),
   ladder: imageAsset(brassMonkeyLadderUrl, 8, 4),

@@ -237,6 +237,33 @@ export const emberTips: readonly Part[] = [
 ];
 
 /**
+ * The pan (#248): a scrap tray the conveyor floor's belts carry, as Donkey
+ * Kong's cement pans. Started from the gear: its steel greys, lit from the top
+ * left, made into a shallow tray, 12×12 with its foot on the bottom row. The
+ * scraps it holds are `panScraps`.
+ */
+export const panTray: readonly string[] = [
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  "............",
+  ".wwwwwwwwwm.",
+  ".wlllllllmd.",
+  "..lmmmmmmd..",
+  "..dddddddd..",
+  "............",
+];
+
+/** The two frames' scraps over the tray's rim: a brass bolt end and a gear tooth, then both jolted a pixel by the belt. */
+export const panScraps: readonly Part[] = [
+  { x: 3, y: 4, rows: ["y...ll", "yo.lmd", "yo.md."] },
+  { x: 3, y: 3, rows: ["..ll..", "y.lmd.", "yolmd.", "yo...."] },
+];
+
+/**
  * The bolt: collected for points. A brass hex bolt standing on its threads,
  * 10×14: a hex head with a lit face, a front face and a shaded face over a
  * threaded shank. Not used until #39.

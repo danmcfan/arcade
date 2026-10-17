@@ -18,6 +18,8 @@ import {
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
+  panScraps,
+  panTray,
   wallPanel,
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
@@ -64,6 +66,12 @@ describe("Brass Monkey art source", () => {
     for (const rows of gear) checkRows("gear", rows, { w: 12, h: 12 });
     checkRows("ember", emberFlame, { w: 12, h: 12 });
     checkRows("bolt", bolt, { w: 10, h: 14 });
+    checkRows("pan tray", panTray, { w: 12, h: 12 });
+    for (const s of panScraps) {
+      checkRows("pan scraps", s.rows);
+      expect(s.x + (s.rows[0]?.length ?? 0)).toBeLessThanOrEqual(12);
+      expect(s.y + s.rows.length).toBeLessThanOrEqual(7);
+    }
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
   });

@@ -12,6 +12,7 @@ import {
   imageDoor,
   imageEmber,
   imageGear,
+  imagePan,
   imageGirderFloor,
   imageGnome,
   imageMonkey,
@@ -228,8 +229,15 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
 }
 
 function drawHazard(screen: Surface, h: Hazard, left: number, top: number, ticks: number): void {
-  const col = h.kind === "gear" ? Math.trunc(Math.abs(h.x) / 4) % 2 : Math.trunc(ticks / 8) % 4;
-  screen.draw(frame(h.kind === "gear" ? imageGear : imageEmber, col, 12, 12), left + h.x - 6, top + h.y - 12);
+  // A pan's scraps jolt as it rides.
+  const turn = Math.trunc(Math.abs(h.x) / 4) % 2;
+  const [image, col] =
+    h.kind === "gear"
+      ? [imageGear, turn]
+      : h.kind === "pan"
+        ? [imagePan, turn]
+        : [imageEmber, Math.trunc(ticks / 8) % 4];
+  screen.draw(frame(image, col, 12, 12), left + h.x - 6, top + h.y - 12);
 }
 
 /** Each conveyor's tiles, their slats moving the way the belt runs at its speed (1 px every 2 ticks). */

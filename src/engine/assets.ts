@@ -84,6 +84,8 @@ export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor)
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
 /** Two flickers and their mirrors, each 12×12. */
 export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
+/** The scrap tray, each 12×12: its scraps, then the same jolted by the belt. */
+export const imagePan: Sprite = whole(brassMonkeyImages.pan);
 /** At rest, then three glint frames, each 10×14. */
 export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
 /** The left end, middle and right end, 4 frames each, 8×8. */

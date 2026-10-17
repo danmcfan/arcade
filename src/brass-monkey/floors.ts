@@ -39,7 +39,8 @@ export interface Ladder {
  * A floor, `width` by `height` px, and where its pieces stand; `door` is the
  * exit door's foot, its left edge at x and its bottom row at y - 1. `gnome` is
  * the top-left of the Gnome's 32×32 frame, `start` the monkey's foot when the
- * floor starts, and `bolts` the feet of the bolts to collect.
+ * floor starts, and `bolts` the feet of the bolts to collect. A floor with
+ * `pans` sends no gears: its conveyors carry pans.
  */
 export interface Floor {
   width: number;
@@ -50,6 +51,7 @@ export interface Floor {
   gnome: Spot;
   start: Spot;
   bolts: readonly Spot[];
+  pans?: boolean;
 }
 
 /** The top of `g` at x. */
@@ -116,7 +118,8 @@ export const girderFloor: Floor = {
  * The conveyor floor: three conveyors between a flat bottom girder and the
  * Gnome's girder, each running the other way to the one below it, so a gear
  * zigzags down; one ladder joins each pair, at alternate ends. The top
- * platform and its ladder are the girder floor's.
+ * platform and its ladder are the girder floor's. As Donkey Kong's 50m board,
+ * the belts carry pans.
  */
 export const conveyorFloor: Floor = {
   width: 224,
@@ -141,6 +144,7 @@ export const conveyorFloor: Floor = {
   ],
   door: { x: 104, y: 56 },
   gnome: { x: 24, y: 56 },
+  pans: true,
   start: { x: 16, y: 248 },
   bolts: [
     { x: 120, y: 208 },

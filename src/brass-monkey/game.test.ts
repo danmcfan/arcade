@@ -4,6 +4,7 @@ import {
   imageConveyorFloor,
   imageGirderFloor,
   imageFont,
+  imagePan,
   imageGnome,
   imageHud,
   imageMonkey,
@@ -21,6 +22,7 @@ import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { BrassMonkeySoftware } from "./game.ts";
+import type { Hazard } from "./play.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
 import { bandRows, cell, charset, sheetColumns } from "../ui/glyphs.ts";
@@ -176,6 +178,29 @@ describe("draw", () => {
     expect(gnome()).toBe(0);
     g.run.gearTimer = t.throwTicks;
     expect(gnome()).toBe(32);
+  });
+
+  test("a pan is drawn from the pan sheet, its two frames alternating as it rides", () => {
+    const g = quiet();
+    g.run.floor = 1;
+    g.run.startFloor();
+    const ridden: Hazard = {
+      kind: "pan",
+      x: 96,
+      y: 168,
+      dir: 1,
+      vy: 0,
+      footing: "ground",
+      ladder: null,
+      climbDir: 1,
+      scorableIn: 0,
+      wild: false,
+    };
+    g.run.hazards = [ridden];
+    const pan = (): DrawCall | undefined => record(g).calls.find((c) => c.sprite.asset === imagePan.asset);
+    expect(pan()).toMatchObject({ x: 8 + 96 - 6, y: 40 + 168 - 12, sprite: { sx: 0 } });
+    ridden.x = 100;
+    expect(pan()?.sprite.sx).toBe(12);
   });
 
   test("the monkey stands on its girder; jumping shows the jump frame", () => {

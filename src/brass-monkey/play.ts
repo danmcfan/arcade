@@ -41,7 +41,7 @@ export interface Monkey {
 }
 
 export interface Hazard {
-  kind: "gear" | "ember";
+  kind: "gear" | "ember" | "pan";
   x: number;
   y: number;
   dir: -1 | 1;
@@ -142,13 +142,17 @@ export class Run {
   hazards: Hazard[] = [];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[] = [];
-  /** Ticks until the Gnome sends its next gear and ember. */
+  /** Ticks until the Gnome sends its next gear and ember, or the next pan comes onto a belt. */
   gearTimer = 0;
   /** The Gnome has sent a gear since the floor (re)started: the first is never wild. */
   private sentGear = false;
   /** Ticks since the floor (re)started: the gears take ladders more often the longer the monkey takes. */
   floorTicks = 0;
   emberTimer = 0;
+  /** The conveyors run their own way (1) or reversed (-1). */
+  beltDir: -1 | 1 = 1;
+  /** Ticks until the conveyors next reverse. */
+  beltTimer = 0;
   /** Ticks since the run started, for animations. */
   ticks = 0;
   tuning: t.FloorTuning;
@@ -182,8 +186,9 @@ export class Run {
   /** The Gnome has its arms up: a hazard is about to leave its hands. */
   gnomeThrowing(): boolean {
     if (this.phase !== "play") return false;
+    const gear = this.currentFloor().pans === true ? Infinity : this.gearTimer;
     const ember = this.embers() < this.tuning.maxEmbers ? this.emberTimer : Infinity;
-    return Math.min(this.gearTimer, ember) <= t.throwTicks;
+    return Math.min(gear, ember) <= t.throwTicks;
   }
 
   /** The floor starts again: the monkey at the bottom, no hazards, every bolt back, the full bonus. */
@@ -201,6 +206,8 @@ export class Run {
     this.sentGear = false;
     this.gearTimer = this.tuning.firstGear;
     this.emberTimer = this.tuning.firstEmber;
+    this.beltDir = 1;
+    this.beltTimer = t.beltReverseTicks;
   }
 
   update(i: Input): void {
@@ -244,10 +251,20 @@ export class Run {
     this.moveMonkey(i, jumpPressed);
     if (this.phase !== "play") return;
     this.floorTicks++;
+    if (--this.beltTimer <= 0) {
+      this.beltDir = this.beltDir < 0 ? 1 : -1;
+      this.beltTimer = t.beltReverseTicks;
+    }
     this.sendHazards();
     for (const h of this.hazards) this.moveHazard(h);
     const floor = this.currentFloor();
-    this.hazards = this.hazards.filter((h) => h.x > -8 && h.x < floor.width + 8 && h.y < floor.height + 16);
+    this.hazards = this.hazards.filter(
+      (h) =>
+        h.x > -8 &&
+        h.x < floor.width + 8 &&
+        h.y < floor.height + 16 &&
+        (h.kind !== "pan" || groundUnder(floor, h.x, h.y, 2) !== undefined),
+    );
     this.meet();
     if (this.phase !== "play") return;
     if (++this.bonusTimer % this.advantages.bonusTicks === 0) {
@@ -295,7 +312,7 @@ export class Run {
           m.moving = false;
           m.frame = 0;
         } else {
-          const belt = groundUnder(floor, m.x, m.y, 2)?.belt ?? 0;
+          const belt = this.belt(groundUnder(floor, m.x, m.y, 2));
           if (dir === 0) {
             m.moving = false;
             m.frame = 0;
@@ -377,12 +394,30 @@ export class Run {
     m.airTop = m.y;
   }
 
+  /** The way girder `g`'s conveyor runs now, or 0 off a conveyor. */
+  private belt(g: Girder | undefined): number {
+    return this.beltOr(g) ?? 0;
+  }
+
+  private beltOr(g: Girder | undefined): -1 | 1 | undefined {
+    return g?.belt === undefined ? undefined : g.belt === this.beltDir ? 1 : -1;
+  }
+
   private embers(): number {
     return this.hazards.filter((h) => h.kind === "ember").length;
   }
 
+  /** A pan comes onto a belt picked at random, at the end it runs from. */
+  private sendPan(at: (kind: Hazard["kind"]) => Hazard): void {
+    const belts = this.currentFloor().girders.filter((g) => g.belt !== undefined);
+    const g = belts[rng.intn(belts.length)];
+    const dir = this.beltOr(g);
+    if (g === undefined || dir === undefined) return;
+    this.hazards.push({ ...at("pan"), x: dir < 0 ? g.x1 - 4 : g.x0 + 4, y: g.y, dir });
+  }
+
   private sendHazards(): void {
-    const { gnome } = this.currentFloor();
+    const { gnome, pans } = this.currentFloor();
     const at = (kind: Hazard["kind"]): Hazard => ({
       kind,
       x: gnome.x + 36,
@@ -395,7 +430,10 @@ export class Run {
       scorableIn: 0,
       wild: false,
     });
-    if (--this.gearTimer <= 0) {
+    if (--this.gearTimer <= 0 && pans === true) {
+      this.sendPan(at);
+      this.gearTimer = this.tuning.gearEvery;
+    } else if (this.gearTimer <= 0) {
       const wild = this.sentGear && rng.float() < t.wildChanceFor(this.loop);
       const gear = { ...at("gear"), wild };
       if (wild) gear.footing = "air";
@@ -413,7 +451,17 @@ export class Run {
 
   private moveHazard(h: Hazard): void {
     if (h.kind === "gear") this.rollGear(h);
+    else if (h.kind === "pan") this.carryPan(h);
     else this.moveEmber(h);
+  }
+
+  /** A pan rides its belt, whichever way it runs, and is gone past either end. */
+  private carryPan(h: Hazard): void {
+    const g = groundUnder(this.currentFloor(), h.x, h.y, 2);
+    const dir = this.beltOr(g);
+    if (g === undefined || dir === undefined) return;
+    h.dir = dir;
+    h.x += dir * t.beltSpeed;
   }
 
   /**
@@ -435,7 +483,7 @@ export class Run {
       h.footing = "ground";
       h.ladder = null;
       const g = groundUnder(floor, h.x, h.y, 2);
-      h.dir = g?.belt ?? (g === undefined || g.drop === 0 ? (h.dir < 0 ? 1 : -1) : g.drop);
+      h.dir = this.beltOr(g) ?? (g === undefined || g.drop === 0 ? (h.dir < 0 ? 1 : -1) : g.drop);
       return;
     }
     if (h.footing === "ground") {
@@ -467,7 +515,7 @@ export class Run {
     h.y = girderTop(g, h.x);
     h.footing = "ground";
     h.vy = 0;
-    h.dir = g.belt ?? (g.drop === 0 ? h.dir : g.drop);
+    h.dir = this.beltOr(g) ?? (g.drop === 0 ? h.dir : g.drop);
   }
 
   /**
@@ -506,7 +554,7 @@ export class Run {
     if (this.floorTicks % t.emberTurnEveryFor(this.loop) === 0 && this.monkey.x !== h.x) {
       h.dir = this.monkey.x < h.x ? -1 : 1;
     }
-    const belt = groundUnder(floor, h.x, h.y, 2)?.belt ?? 0;
+    const belt = this.belt(groundUnder(floor, h.x, h.y, 2));
     const x0 = h.x;
     const x = x0 + h.dir * this.tuning.emberWalkSpeed + belt * t.beltSpeed;
     const g = groundUnder(floor, x, h.y, 2);

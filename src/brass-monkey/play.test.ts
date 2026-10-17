@@ -146,14 +146,82 @@ describe("hazards", () => {
     until(run, () => ember.footing === "ground");
     expect(ember.y).toBe(87);
   });
+});
 
-  test("a gear on a conveyor rolls the way the belt runs", () => {
+describe("the conveyor floor", () => {
+  test("no gear ever comes: pans ride the belts instead", () => {
     const { run } = quiet({ floor: 1 });
-    const gear = hazard("gear", 180, 100);
-    gear.footing = "air";
-    run.hazards = [gear];
-    until(run, () => gear.footing === "ground");
-    expect([gear.y, gear.dir]).toEqual([128, -1]);
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    run.gearTimer = 1;
+    step(run, 600);
+    expect(run.hazards.some((h) => h.kind === "gear")).toBe(false);
+    expect(run.hazards.some((h) => h.kind === "pan")).toBe(true);
+  });
+
+  test("a pan starts at the upstream end of a belt, moves at the belt's speed and direction, and is gone past the far end", () => {
+    const { run } = quiet({ floor: 1 });
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    run.gearTimer = 1;
+    step(run, 1);
+    const [pan] = run.hazards;
+    if (pan === undefined) throw new Error("no pan");
+    const belt = conveyorFloor.girders.find((g) => g.belt !== undefined && g.y === pan.y);
+    if (belt?.belt === undefined) throw new Error("the pan is not on a belt");
+    // It comes on 4 px in from the end and rides its first half pixel at once.
+    expect(pan.x).toBe(belt.belt < 0 ? belt.x1 - 4.5 : belt.x0 + 4.5);
+    expect(pan.dir).toBe(belt.belt);
+    const x = pan.x;
+    run.gearTimer = Infinity;
+    run.beltTimer = Infinity;
+    step(run, 10);
+    expect(pan.x).toBe(x + belt.belt * t.beltSpeed * 10);
+    until(run, () => !run.hazards.includes(pan));
+    expect(belt.belt < 0 ? pan.x < belt.x0 + 1 : pan.x > belt.x1 - 1).toBe(true);
+  });
+
+  test("the belts reverse every beltReverseTicks, carrying the monkey and the pans the other way", () => {
+    const { run } = quiet({ floor: 1 });
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    step(run, t.beltReverseTicks);
+    run.monkey.x = 100;
+    run.monkey.y = 168; // the conveyor that ran right
+    run.monkey.footing = "ground";
+    step(run, 10);
+    expect(run.monkey.x).toBe(95);
+    const pan = hazard("pan", 100, 168);
+    run.hazards = [pan];
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    step(run, 2);
+    expect(pan.x).toBe(99);
+  });
+
+  test("touching a pan costs a life", () => {
+    const { run } = quiet({ floor: 1 });
+    run.hazards = [hazard("pan", run.monkey.x + 4, 248)];
+    step(run, 1);
+    expect(run.phase).toBe("dying");
+  });
+
+  test("a pan jumped over scores", () => {
+    const { run } = quiet({ floor: 1 });
+    run.monkey.x = 140;
+    run.monkey.y = 208; // the belt running left
+    run.hazards = [hazard("pan", 164, 208, -1)];
+    step(run, 1, { space: true, right: true });
+    step(run, 30);
+    expect(run.phase).toBe("play");
+    expect(run.score).toBe(t.hazardPoints);
+  });
+
+  test("the Gnome never raises its arms for a pan", () => {
+    const { run } = quiet({ floor: 1 });
+    run.gearTimer = 1;
+    run.emberTimer = Infinity;
+    expect(run.gnomeThrowing()).toBe(false);
   });
 });
 
