@@ -324,3 +324,76 @@ export const grassTile: readonly string[] = [
   "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
   "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
 ];
+
+/**
+ * The stage badges at the bottom right, after Galaga's: pennants on a pole
+ * for 1 and 5 (8×16), chevron emblems for 10, 20, 30 and 50 (16×16). Each
+ * value is the next colour up, so a glance reads the stage. badges.png is
+ * them side by side in `badgeValues` order (src/firefly/rules.ts), each in
+ * a 16-wide slot, left-aligned.
+ */
+export const badge1Art: readonly string[] = [
+  "........",
+  ".l......",
+  ".wrr....",
+  ".wrrrr..",
+  ".wrrrrrr",
+  ".wrrrr..",
+  ".wrr....",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  "mlm.....",
+  "........",
+];
+
+export const badge5Art: readonly string[] = [
+  "........",
+  ".l......",
+  ".wBB....",
+  ".wBwBB..",
+  ".wBwwBBB",
+  ".wBwBB..",
+  ".wBB....",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  ".l......",
+  "mlm.....",
+  "........",
+];
+
+/** The chevron emblem the 10 to 50 badges share, `a` its colour, `b` its shade, `c` its rim. */
+export const chevronBadge: readonly string[] = [
+  "................",
+  "......cccc......",
+  "....ccaaaacc....",
+  "...caaaaaaaac...",
+  "..caaaywwyaaac..",
+  "..caaywaawyaac..",
+  ".caaywaaaawyaac.",
+  ".caywaayyaawyac.",
+  ".caaaaywwyaaaac.",
+  ".caaaywaawyaaac.",
+  "..caywaaaawyac..",
+  "..cbbaaaaaabbc..",
+  "...cbbbbbbbbc...",
+  "....ccbbbbcc....",
+  "......cccc......",
+  "................",
+];
+
+/** Each chevron badge's colours for `a`, `b` and `c` in `chevronBadge`; `bun run art` recolours it. */
+export const chevronColours: Readonly<Record<10 | 20 | 30 | 50, Readonly<Record<string, SweetieLetter>>>> = {
+  10: { a: "G", b: "t", c: "k" },
+  20: { a: "b", b: "n", c: "k" },
+  30: { a: "p", b: "k", c: "d" },
+  50: { a: "r", b: "p", c: "k" },
+};
