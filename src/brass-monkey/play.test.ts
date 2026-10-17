@@ -220,8 +220,38 @@ describe("score", () => {
     step(run, 1, { space: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
+  });
+
+  for (const [count, points] of [
+    [2, 300],
+    [3, 800],
+    [4, 800],
+  ] as const) {
+    test(`${count} hazards in one jump score ${points}`, () => {
+      const { run, sounds } = quiet();
+      run.monkey.x = 60;
+      run.hazards = Array.from({ length: count }, (_, n) => hazard("gear", 75 + n, 248, -1));
+      step(run, 1, { space: true });
+      step(run, 30);
+      expect(run.phase).toBe("play");
+      expect(run.score).toBe(points);
+      expect(sounds.filter((s) => s === "hazard")).toHaveLength(count);
+    });
+  }
+
+  test("the count of hazards jumped resets on landing", () => {
+    const { run } = quiet();
+    run.monkey.x = 60;
+    run.hazards = [hazard("gear", 76, 248, -1)];
+    step(run, 1, { space: true });
+    until(run, () => run.monkey.footing === "ground");
+    run.hazards = [hazard("gear", run.monkey.x + 16, 248, -1)];
+    step(run, 1, { space: true });
+    step(run, 30);
+    expect(run.phase).toBe("play");
+    expect(run.score).toBe(2 * t.jumpPoints[0]);
   });
 
   test("an ember jumped over on the monkey's girder scores", () => {
@@ -231,7 +261,7 @@ describe("score", () => {
     step(run, 1, { space: true, right: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
   });
 
@@ -267,7 +297,7 @@ describe("score", () => {
     step(run, 1, { space: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
   });
 
