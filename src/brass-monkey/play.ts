@@ -18,7 +18,7 @@ export type Phase = "play" | "dying" | "clear" | "escape" | "over";
 export type Footing = "ground" | "air" | "climb";
 
 /** The sounds the run makes; game.ts plays them. */
-export type RunSound = "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape";
+export type RunSound = "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape" | "extraLife";
 
 export interface Monkey {
   x: number;
@@ -159,6 +159,8 @@ export class Run {
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
   readonly advantages: Readonly<BrassMonkeyAdvantages>;
   score = 0;
+  /** Whether this run has had its extra life at `extraLifeAt` points (#242). */
+  extraLifeAwarded = false;
   bonus = 0;
   bonusTimer = 0;
   monkey: Monkey;
@@ -566,9 +568,9 @@ export class Run {
     for (const h of smashed) {
       const pick = rng.intn(t.smashPoints.length);
       const points = t.smashPoints.reduce((chosen, p, n) => (n === pick ? p : chosen), 0);
-      this.score += points;
       this.smashes.push({ x: h.x, y: h.y, points, ticks: t.smashShowTicks });
       this.onSound("smash");
+      this.addScore(points);
     }
     this.hazards = this.hazards.filter((h) => !smashed.includes(h));
   }
@@ -594,15 +596,15 @@ export class Run {
       ) {
         h.scorableIn = 0;
         m.cleared++;
-        this.score += jumpTotal(m.cleared) - jumpTotal(m.cleared - 1);
         this.onSound("hazard");
+        this.addScore(jumpTotal(m.cleared) - jumpTotal(m.cleared - 1));
       }
     }
     floor.bolts.forEach((b, n) => {
       if (this.bolts[n] === true || Math.abs(b.x - m.x) >= t.boltReach || Math.abs(b.y - m.y) >= t.boltReach) return;
       this.bolts[n] = true;
-      this.score += t.boltPoints;
       this.onSound("bolt");
+      this.addScore(t.boltPoints);
     });
     floor.wrenches.forEach((w, n) => {
       if (this.wrenches[n] === true || m.footing === "climb" || m.wrench > 0) return;
@@ -612,10 +614,19 @@ export class Run {
     });
     const { door } = floor;
     if (m.footing === "ground" && Math.abs(m.y - door.y) <= 1 && m.x >= door.x + 2 && m.x <= door.x + 14) {
-      this.score += this.bonus;
       this.phase = "clear";
       this.phaseTicks = t.clearTicks;
       this.onSound("floor");
+      this.addScore(this.bonus);
     }
+  }
+
+  /** Adds points; the first time the run reaches `extraLifeAt` it also adds a life. */
+  private addScore(points: number): void {
+    this.score += points;
+    if (this.extraLifeAwarded || this.score < t.extraLifeAt) return;
+    this.extraLifeAwarded = true;
+    this.lives++;
+    this.onSound("extraLife");
   }
 }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
+import { brassMonkeyAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 import { conveyorFloor, floors, girderTop } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
@@ -576,5 +577,65 @@ describe("landing on a slope", () => {
     const y0 = run.monkey.y;
     until(run, () => run.monkey.footing !== "air", {}, 200);
     expect(run.monkey.y).toBeGreaterThan(y0 + 8);
+  });
+});
+
+/** A run on the girder floor's first bolt, `score` points in. */
+function onBolt(score: number, advantages?: BrassMonkeyAdvantages): { run: Run; sounds: RunSound[] } {
+  const sounds: RunSound[] = [];
+  const run = new Run({ onSound: (s): void => void sounds.push(s), ...(advantages && { advantages }) });
+  run.gearTimer = Infinity;
+  run.emberTimer = Infinity;
+  run.score = score;
+  run.monkey.x = 56;
+  run.monkey.y = 211;
+  return { run, sounds };
+}
+
+describe("extra life", () => {
+  test("crossing 7000 with a bolt adds one life and plays its sound", () => {
+    const { run, sounds } = onBolt(t.extraLifeAt - 100);
+    step(run, 8, { right: true });
+    expect([run.score, run.lives]).toEqual([t.extraLifeAt + 200, 4]);
+    expect(sounds).toEqual(["bolt", "extraLife"]);
+  });
+
+  test("crossing 7000 with a jump adds one life", () => {
+    const { run, sounds } = quiet();
+    run.score = t.extraLifeAt - 50;
+    run.monkey.x = 60;
+    run.hazards = [hazard("gear", 76, 248, -1)];
+    step(run, 1, { space: true });
+    step(run, 30);
+    expect(run.lives).toBe(4);
+    expect(sounds).toEqual(["jump", "hazard", "extraLife"]);
+  });
+
+  test("crossing 7000 with the floor bonus adds one life", () => {
+    const { run } = quiet();
+    run.score = t.extraLifeAt - 1;
+    run.monkey.x = 100;
+    run.monkey.y = 56;
+    until(run, () => run.phase === "clear", { right: true });
+    expect(run.lives).toBe(4);
+  });
+
+  test("only once: reaching 14000 adds none", () => {
+    const { run, sounds } = onBolt(t.extraLifeAt - 100);
+    step(run, 8, { right: true });
+    run.score = 2 * t.extraLifeAt - 100;
+    run.monkey.x = 56;
+    run.bolts[0] = false;
+    step(run, 8, { left: true });
+    step(run, 8, { right: true });
+    expect(run.score).toBeGreaterThanOrEqual(2 * t.extraLifeAt);
+    expect(run.lives).toBe(4);
+    expect(sounds.filter((s) => s === "extraLife")).toHaveLength(1);
+  });
+
+  test("stacks with the oil can's extra life", () => {
+    const { run } = onBolt(t.extraLifeAt - 100, brassMonkeyAdvantages(["oilCan"]));
+    step(run, 8, { right: true });
+    expect(run.lives).toBe(5);
   });
 });
