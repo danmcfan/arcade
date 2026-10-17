@@ -1,5 +1,6 @@
-// Chiptune source for every sound: the title music, the hub song, the
-// cabinets' attract loops, the menu sounds and the minigames' sounds. Notes are
+// Chiptune source for every sound: the title music, the hub song, the arcade
+// win's victory jingle, the cabinets' attract loops, the menu sounds and the
+// minigames' sounds. Notes are
 // MIDI numbers (69 = A4), lengths are in eighth notes. Each sound is declared
 // once, next to its notes, with `defineSound`. scripts/gen-ui-sounds.ts
 // synthesises them into the WAVs in src/assets/sounds/ and writes
@@ -96,6 +97,47 @@ const melody: readonly Note[] = [
 /** The title music: 140 bpm. */
 export const titleSong: Song = { eighthsPerMinute: 280, bass, arpeggio, melody, hats: 0.05 };
 defineSound("title", { song: titleSong }, { channel: "arcade", loop: true });
+
+/** C, then F – G – C: two bars of fanfare, the root in octaves under each chord. */
+const victoryBass: readonly Note[] = [
+  ...Array.from({ length: 8 }, (_, i): Note => [i % 2 === 0 ? 48 : 60, 1]),
+  ...Array.from({ length: 4 }, (_, i): Note => [i % 2 === 0 ? 41 : 53, 1]),
+  [43, 1],
+  [55, 1],
+  [48, 2],
+];
+const victoryArpeggio: readonly Note[] = [
+  ...[60, 64, 67, 72, 67, 72, 76, 79].map((n): Note => [n, 1]),
+  ...[65, 69, 72, 77].map((n): Note => [n, 1]),
+  [67, 1],
+  [71, 1],
+  [72, 2],
+];
+const victoryMelody: readonly Note[] = [
+  [67, 1],
+  [72, 1],
+  [76, 1],
+  [79, 2],
+  [76, 1],
+  [79, 2],
+  [81, 1],
+  [79, 1],
+  [77, 1],
+  [76, 1],
+  [74, 1],
+  [76, 1],
+  [84, 2],
+];
+
+/** The arcade win: a victory jingle, once, as the confetti starts to fall. 150 bpm. */
+export const victorySong: Song = {
+  eighthsPerMinute: 300,
+  bass: victoryBass,
+  arpeggio: victoryArpeggio,
+  melody: victoryMelody,
+  hats: 0.05,
+};
+defineSound("victory", { song: victorySong }, { channel: "arcade" });
 
 /** Cursor moved: one short square-wave blip. */
 defineSound("move", { blip: [[84, 1]] }, { channel: "arcade" });

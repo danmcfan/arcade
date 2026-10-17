@@ -17,8 +17,8 @@ import {
 import type { Rect } from "./collision.ts";
 import { deskRect } from "./desk.ts";
 
-/** The row every piece's bottom sits on: 2 px into the desk's back run, so it stands on the counter top. */
-const deskTop = deskRect.y + 2;
+/** The row every piece's bottom sits on: 8 px into the desk's back run, so it stands well onto the counter top. */
+const deskTop = deskRect.y + 8;
 
 /** Where `piece` stands: `fromLeft` of the desk's left edge to its middle, its bottom on the back run. */
 function standing(piece: WinPiece, fromLeft: number): Rect {
