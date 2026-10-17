@@ -79,7 +79,7 @@ If the spec is missing, skip the Spec sub-agent and note this in the final repor
 
 ### 5. Aggregate
 
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
+Lay out the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_). Present them after step 6, so each finding carries its verdict.
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
@@ -89,7 +89,7 @@ A reviewer that hunts for flaws also produces false positives. Before anything g
 
 Each verifier prompt should include the diff command, that axis's findings verbatim, and the sources the reviewer had (standards files and smell baseline, or the spec). The brief: "Try to refute each finding. Read the code around the hunk, not just the hunk; look for the caller, test, guard, or rule that makes it a non-issue. Give each finding a verdict: **Confirmed**, **Refuted**, or **Unsure**, with one line of evidence (a quote or a `file:line`). Under 300 words."
 
-Add each verdict to its finding in the report.
+Then present the step 5 report, once, with each verdict beside its finding.
 
 ### 7. Fix
 
