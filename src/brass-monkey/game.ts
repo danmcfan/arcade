@@ -109,9 +109,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   /** Start loop `stage` (as the player counts it, from 1) afresh on the first floor. */
   jumpTo(stage: number): void {
-    this.run.loop = stage - 1;
-    this.run.floor = 0;
-    this.run.startFloor();
+    this.run.startLoop(stage - 1);
     this.update(NO_INPUT);
   }
 

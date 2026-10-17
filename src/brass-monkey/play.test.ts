@@ -319,7 +319,7 @@ describe("the escape and the next loop", () => {
   });
 
   test("the bonus starts 1000 higher each loop, up to 8000, as in Donkey Kong", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       expect([0, 1, 2, 3, 4].map((loop) => t.tuningFor(floor, loop).bonusStart)).toEqual([
         5000, 6000, 7000, 8000, 8000,
       ]);
@@ -340,7 +340,7 @@ describe("the escape and the next loop", () => {
   });
 
   test("by loop 10 every hazard speed has reached its cap", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       const hard = t.tuningFor(floor, 10);
       expect(hard.gearSpeed).toBe(t.maxGearSpeed);
       expect(hard.emberWalkSpeed).toBe(t.maxEmberWalkSpeed);
@@ -349,7 +349,7 @@ describe("the escape and the next loop", () => {
   });
 
   test("an ember is always slower than the monkey, walking and climbing", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       for (let loop = 0; loop <= 30; loop++) {
         const tuning = t.tuningFor(floor, loop);
         expect(tuning.emberWalkSpeed).toBeLessThan(t.walkSpeed);

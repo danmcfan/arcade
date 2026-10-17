@@ -180,6 +180,13 @@ export class Run {
     return Math.min(this.gearTimer, ember) <= t.throwTicks;
   }
 
+  /** Loop `loop` (from 0) starts afresh on the first floor. */
+  startLoop(loop: number): void {
+    this.loop = loop;
+    this.floor = 0;
+    this.startFloor();
+  }
+
   /** The floor starts again: the monkey at the bottom, no hazards, every bolt back, the full bonus. */
   startFloor(): void {
     const floor = this.currentFloor();
@@ -222,9 +229,7 @@ export class Run {
         return;
       case "escape":
         if (--this.phaseTicks > 0) return;
-        this.loop++;
-        this.floor = 0;
-        this.startFloor();
+        this.startLoop(this.loop + 1);
         this.lapBanner = t.lapBannerTicks;
         break;
       case "over":
