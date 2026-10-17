@@ -6,8 +6,8 @@ Every image in the game is pixel art, and ADR 0006 has it generated from source 
 
 The issue's triage label decides who makes the artistic calls:
 
-- **`ready-for-human`**: the owner wants to iterate. Every art change, new or redrawn, starts with the owner, before any PR. Ask which of the two modes below they want, and let their picks steer it.
-- **`ready-for-agent`**: make the artistic calls yourself and ship the PR without waiting for a pick. Still follow the issue's starting art, the source rules and the bar below, and say in the PR which choices you made and why, so the owner can ask for changes in review.
+- **`ready-for-human`**: the owner wants to iterate. Every art change, new or redrawn, starts with the owner, before any art is committed. Ask which of the two modes below they want, and let their picks steer it.
+- **`ready-for-agent`**: make the artistic calls yourself and ship the change without waiting for a pick. Still follow the issue's starting art, the source rules and the bar below, and tell the owner which choices you made and why, so they can ask for changes.
 
 The two modes:
 
@@ -16,7 +16,7 @@ The two modes:
 
 The owner edits art in Aseprite. `bun run pixel export <path.ts:name>...` writes one PNG sheet to `out/aseprite/`: a row per export, its frames left to right. A record such as `src/sweet-sam/art.ts:bearWalk` is a row per entry, so a character's animations go on one sheet. It prints each row's frame count and size, for Aseprite's Import Sprite Sheet. The owner edits the sheet and saves it as a PNG of the same size. `bun run pixel import <png> <path.ts:name>...`, with the same exports in the same order, writes the rows back and runs `bun run art`; read the change with `git diff` and `bun run pixel before`. Only exports written out as rows can be imported: a derived export, such as `mirrorX(...)`, is edited at the rows it comes from.
 
-When the owner picks, the picks are the brief either way: finish the change around them, and name them in the PR.
+When the owner picks, the picks are the brief either way: finish the change around them, and name them to the owner.
 
 ## Source
 
@@ -56,5 +56,5 @@ In the running game, the capture script shows the art (`docs/agents/visual-verif
 
 ## The bar
 
-- **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the capture screenshots, so the owner judges the change at a glance.
+- **As good as before.** Art that replaces art is at least as good as what it replaces. Show the owner the `pixel before` sheet beside the capture screenshots, so the owner judges the change at a glance.
 - **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the prototypes should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.

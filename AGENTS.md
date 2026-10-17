@@ -16,15 +16,15 @@ Single-context: one `GLOSSARY.md` plus `docs/adr/` at the repo root. See `docs/a
 
 ## Delivery
 
-Every change ships as a PR from its own branch; the owner reviews and merges on GitHub. Steps, evidence and boundaries: `docs/agents/delivery.md`.
+Every change is committed straight to `main` and pushed, with no branch or PR; evidence goes to the owner as an Artifact page. Steps and evidence: `docs/agents/delivery.md`.
 
 ## Visual verification
 
-Attach screenshots and video of any change a player can see or hear to the PR, captured by a throwaway script on `scripts/harness.ts`; unit tests carry the proof. How, and the browser gotchas: `docs/agents/visual-verification.md`.
+Show the owner screenshots and video of any change a player can see or hear, captured by a throwaway script on `scripts/harness.ts`; unit tests carry the proof. How, and the browser gotchas: `docs/agents/visual-verification.md`.
 
 ## Pixel art
 
-On a `ready-for-human` issue, any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any PR; on a `ready-for-agent` issue, make the artistic calls yourself and name them in the PR: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
+On a `ready-for-human` issue, any art request (creating, redrawing or specifying art) starts with the owner, who picks prototype or tweak before any art is committed; on a `ready-for-agent` issue, make the artistic calls yourself and name them to the owner: `docs/agents/pixel-art.md` (modes, variants, sources, helpers, `bun run pixel`, the quality bar).
 
 ## Quality gate
 
