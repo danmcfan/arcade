@@ -17,7 +17,6 @@ export type Phase = "play" | "dying" | "clear" | "escape" | "over";
 /** On a girder, in the air (jumping or falling), or on a ladder. */
 export type Footing = "ground" | "air" | "climb";
 
-/** The sounds the run makes; game.ts plays them. */
 /** A collected bolt's points, shown where it was. */
 export interface Popup {
   x: number;
@@ -26,6 +25,7 @@ export interface Popup {
   ticks: number;
 }
 
+/** The sounds the run makes; game.ts plays them. */
 export type RunSound = "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape" | "extraLife";
 
 export interface Monkey {
