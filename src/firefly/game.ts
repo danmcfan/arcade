@@ -19,6 +19,7 @@ import { drawFirefly } from "./draw.ts";
 import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
+  badgesShown,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -58,7 +59,6 @@ import {
   sparkSpeed,
   stageIntroTicks,
   formationPos,
-  badgesShown,
   swayOffset,
   type FormationPhase,
   type FormationState,
