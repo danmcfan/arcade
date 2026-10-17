@@ -3,6 +3,7 @@
 // dive at the firefly, dropping shots. Headless and on ticks (ADR 0002, ADR
 // 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
+import { scoreDialsAt } from "../ui/hudArt";
 import { noAdvantages, type FireflyAdvantages } from "./advantages.ts";
 import { sounds } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
@@ -241,7 +242,7 @@ export class FireflySoftware implements FixedViewport {
   constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
     this.advantages = advantages;
     this.lives = advantages.lives;
-    this.dials = new ScoreDials(highScore, { score: { x: 8, y: 8 }, high: { x: 8 * 11, y: 8 } });
+    this.dials = new ScoreDials(highScore, scoreDialsAt);
   }
 
   stage = 1;

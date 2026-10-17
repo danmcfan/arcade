@@ -1,6 +1,7 @@
 // Port of the Go Sweet Sam minigame's software.go (docs/port-notes.md gives its
 // old Go name). Its constants live in ./constants.ts.
 
+import { scoreDialsAt } from "../ui/hudArt";
 import { newRelease, type Release } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
@@ -118,7 +119,7 @@ export class SweetSamSoftware implements FixedViewport {
     this.scoreValue = 0;
     this.items = newItems();
 
-    this.dials = new ScoreDials(highscore, { score: { x: 8, y: 8 }, high: { x: 8 * 11, y: 8 } });
+    this.dials = new ScoreDials(highscore, scoreDialsAt);
 
     restartRound(this);
 
