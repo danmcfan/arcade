@@ -10,7 +10,7 @@ import { sweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
-import { deathRoundDelayTicks } from "./update.ts";
+import { deathRoundDelayTicks, startTicks } from "./update.ts";
 import type { Entity } from "./entity.ts";
 
 let sounds: SoundEvent[] = [];
@@ -664,7 +664,7 @@ describe("clearing a level", () => {
   test("then the next level: maze refilled, bear and bees home, straight to READY", () => {
     const s = cleared();
     step(s, levelClearTicks + 1);
-    let snap = s.snapshot();
+    const snap = s.snapshot();
     expect([snap.state, snap.level, snap.items, snap.score, snap.lives]).toEqual(["START", 2, 244, 1234, 3]);
     expect([snap.player.x, snap.player.y, snap.modeIndex, snap.modeTicks]).toEqual([112, 212, 0, 0]);
     expect(snap.enemies.map((e) => [e.kind, e.x, e.y, e.dotMin])).toEqual([
@@ -673,7 +673,7 @@ describe("clearing a level", () => {
       ["teal", 96, 140, levelValues(2).dotMinimums.teal],
       ["orange", 128, 140, levelValues(2).dotMinimums.orange],
     ]);
-    expect(snap.startTicks).toBe(120);
+    expect(snap.startTicks).toBe(startTicks);
     step(s, 122);
     expect(s.snapshot().state).toBe("PLAY");
   });
@@ -732,7 +732,7 @@ describe("intermissions (#160)", () => {
     step(s, 30);
     step(s, 1, { ...NO_INPUT, space: true });
     const snap = s.snapshot();
-    expect([snap.state, snap.level, snap.items, snap.startTicks]).toEqual(["START", 3, 244, 120]);
+    expect([snap.state, snap.level, snap.items, snap.startTicks]).toEqual(["START", 3, 244, startTicks]);
   });
 
   test("the scene plays the intermission music", () => {
