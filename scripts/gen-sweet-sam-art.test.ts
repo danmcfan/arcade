@@ -8,7 +8,16 @@ import {
   beeEyes,
   beeFlight,
   beeOrder,
+  beeTear,
   dazedFace,
+  dustPuff,
+  nailArt,
+  propCellHeight,
+  propCellWidth,
+  propColumn,
+  tearCellWidth,
+  tearColumn,
+  tornWing,
   dialDigitsArt,
   flowers,
   honeyDropArt,
@@ -50,7 +59,9 @@ import {
   isWax,
   mazeLetter,
   mazeTileAt,
+  propFrames,
   sweetSamArtFiles,
+  tearFrames,
 } from "./gen-sweet-sam-art.ts";
 
 /** The black pixels of `rows` next to a blank pixel or the frame's edge, as "x,y". */
@@ -84,6 +95,36 @@ describe("Sweet Sam art source", () => {
     checkRows("dazed face", dazedFace, { w: 12, h: 2 });
   });
 
+  test("the intermission's wing-tear frames and props (#199) are whole rows of palette letters, each fitting its cell", () => {
+    beeTear.stretch.forEach((f, i) => {
+      checkRows(`bee tear stretch ${i}`, f, { h: 16 });
+    });
+    expect(beeTear.stretch.map((f) => f[0]?.length)).toEqual([18, 20, 23]);
+    for (const k of ["torn", "patched"] as const) {
+      beeTear[k].forEach((f, i) => {
+        checkRows(`bee tear ${k} ${i}`, f, { w: 16, h: 16 });
+      });
+    }
+    beeTear.crawl.forEach((f, i) => {
+      checkRows(`bee tear crawl ${i}`, f, { w: tearCellWidth, h: 16 });
+    });
+    checkRows("torn wing", tornWing, { w: 6, h: 4 });
+    dustPuff.forEach((f, i) => {
+      checkRows(`dust puff ${i}`, f, { h: 3 });
+    });
+    checkRows("nail", nailArt, { w: 3, h: propCellHeight });
+    expect(
+      tearFrames()
+        .map((f) => f[0]?.length ?? 0)
+        .every((w) => w <= tearCellWidth),
+    ).toBe(true);
+    expect(propFrames().map((f) => (f[0]?.length ?? 0) <= propCellWidth && f.length <= propCellHeight)).not.toContain(
+      false,
+    );
+    expect(tearFrames()).toHaveLength(tearColumn.crawl + 2);
+    expect(propFrames()).toHaveLength(propColumn.nail + 1);
+  });
+
   test("no sprite drawn on the black maze has black on its outer edge: it would vanish into the background", () => {
     const sprites: [string, Rows][] = [
       ...bearFrames().flatMap((row, r) => row.map((f, c): [string, Rows] => [`bear ${r},${c}`, f])),
@@ -92,6 +133,7 @@ describe("Sweet Sam art source", () => {
       ),
       ...flowers.map((f, i): [string, Rows] => [`flower ${i + 1}`, f]),
       ["honey pot", honeyPotArt],
+      ...tearFrames().map((f, i): [string, Rows] => [`bee tear ${i}`, f]),
     ];
     for (const [name, rows] of sprites) expect({ name, edge: blackOnEdge(rows) }).toEqual({ name, edge: [] });
   });

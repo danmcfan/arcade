@@ -45,6 +45,8 @@ export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
 export const imageSweetSamMazeFlash: Sprite = whole(sweetSamImages.mazeFlash);
 export const imageFlower: Sprite = whole(sweetSamImages.flower);
 export const imageBeeEyes: Sprite = whole(sweetSamImages.beeEyes);
+/** The intermissions' wing-tear frames and props (#199, src/sweet-sam/art.ts `beeTear`). */
+export const imageIntermission: Sprite = whole(sweetSamImages.intermission);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);

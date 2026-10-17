@@ -30,7 +30,14 @@ import {
   beeEyesOrder,
   beeFlight,
   beeOrder,
+  beeTear,
   corridorMargin,
+  dustPuff,
+  nailArt,
+  propCellHeight,
+  propCellWidth,
+  tearCellWidth,
+  tornWing,
   dazedFace,
   dazedFaceAt,
   dialDigitsArt,
@@ -71,7 +78,7 @@ import { scoreLabelsArt, scoreLabelsX } from "../src/ui/hudArt.ts";
 import type { SweetSamEnemyKind } from "../src/game/snapshot.ts";
 import { sweetie, type SweetieLetter } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
-import { blank, flipX, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
+import { blank, flipX, flipY, overlay, paint, plot, recolour, type Rows } from "./pixel-art.ts";
 
 const tile = 8;
 
@@ -287,6 +294,34 @@ function beeEyesFrames(): Rows[] {
   return [right, flipX(right), ...upDown];
 }
 
+/** `beeTear`'s frames in the order intermission.png lays them out (`tearColumn`). */
+export function tearFrames(): Rows[] {
+  return [...beeTear.stretch, ...beeTear.torn, ...beeTear.patched, ...beeTear.crawl];
+}
+
+/** intermission.png's props, in `propColumn` order: the torn wing and its flutter, the dust puff, the nail. */
+export function propFrames(): Rows[] {
+  return [tornWing, flipY(tornWing), ...dustPuff, nailArt];
+}
+
+/** intermission.png (#199): the tear frames facing right, then left, then the props standing on their cells' floors. */
+export function renderIntermission(): PNG {
+  const tears = tearFrames();
+  const props = propFrames();
+  const png = blank(tears.length * tearCellWidth, 2 * frameSize + propCellHeight);
+  tears.forEach((rows, i) => {
+    const w = rows[0]?.length ?? 0;
+    paint(png, rows, sweetie, i * tearCellWidth + tearCellWidth - w, 0);
+    paint(png, flipX(rows), sweetie, i * tearCellWidth, frameSize);
+  });
+  props.forEach((rows, i) => {
+    const w = rows[0]?.length ?? 0;
+    const x = i * propCellWidth + Math.trunc((propCellWidth - w) / 2);
+    paint(png, rows, sweetie, x, 2 * frameSize + propCellHeight - rows.length);
+  });
+  return png;
+}
+
 export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "maze.png"), 224, 288, renderMaze),
   imageOutput(join(sweetSamImagesDir, "bear.png"), 64, 80, () => sheet(bearFrames())),
@@ -300,4 +335,10 @@ export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
   imageOutput(join(sweetSamImagesDir, "flower.png"), 16 * flowers.length, 16, () => sheet([flowers])),
   imageOutput(join(sweetSamImagesDir, "bee-eyes.png"), 16 * beeEyesOrder.length, 16, () => sheet([beeEyesFrames()])),
+  imageOutput(
+    join(sweetSamImagesDir, "intermission.png"),
+    9 * tearCellWidth,
+    2 * frameSize + propCellHeight,
+    renderIntermission,
+  ),
 ];

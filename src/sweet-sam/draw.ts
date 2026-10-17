@@ -8,6 +8,7 @@ import {
   imageBear,
   imageCabinet,
   imageBeeEyes,
+  imageIntermission,
   imageFlower,
   imageReady,
   imageSweetSamMaze,
@@ -20,7 +21,18 @@ import { drawTextCentered, textHeight } from "../ui/text.ts";
 import { flowerKind, flowerX, flowerY } from "./flower.ts";
 import { stateIDLevelClear } from "./state.ts";
 import { intermissionY, type IntermissionPose } from "./intermission.ts";
-import { bearDeathRow, beeEyesOrder, frameSize, itemCellHeight, itemCellWidth, mazeHeight, mazeWidth } from "./art.ts";
+import {
+  bearDeathRow,
+  beeEyesOrder,
+  frameSize,
+  itemCellHeight,
+  itemCellWidth,
+  mazeHeight,
+  mazeWidth,
+  propCellHeight,
+  propCellWidth,
+  tearCellWidth,
+} from "./art.ts";
 import {
   beeRows,
   bearRows,
@@ -100,13 +112,34 @@ function drawIntermission(s: SweetSamScene, screen: Surface, bufX: number, bufY:
 }
 
 function drawPose(p: IntermissionPose, screen: Surface, bufX: number, bufY: number): void {
+  const y = intermissionY + p.y;
+  if (p.sprite === "tornBee") {
+    // intermission.png's tear frames: the bee at the cell's front end, anything wider behind it.
+    const sx = imageIntermission.sx + tearCellWidth * p.frame;
+    const sy = imageIntermission.sy + (p.facing === "LEFT" ? frameSize : 0);
+    const left = p.facing === "LEFT" ? p.x - frameSize / 2 : p.x + frameSize / 2 - tearCellWidth;
+    screen.draw(
+      sub(imageIntermission, sx, sy, sx + tearCellWidth, sy + frameSize),
+      left + bufX,
+      y - frameSize / 2 + bufY,
+    );
+    return;
+  }
+  if (p.sprite === "wing" || p.sprite === "dust" || p.sprite === "nail") {
+    // A prop stands on its cell's bottom edge: the floor, `frameSize / 2` below its y.
+    const sx = imageIntermission.sx + propCellWidth * p.frame;
+    const sy = imageIntermission.sy + 2 * frameSize;
+    const frame = sub(imageIntermission, sx, sy, sx + propCellWidth, sy + propCellHeight);
+    screen.draw(frame, p.x - propCellWidth / 2 + bufX, y + frameSize / 2 - propCellHeight + bufY);
+    return;
+  }
   const sheet = p.sprite === "bear" ? imageBear : beeSheet("red");
   const row = p.sprite === "bear" ? bearRows[p.facing] : beeRows[p.facing] + (p.frightened ? frightenedRowOffset : 0);
   const sx = sheet.sx + frameSize * p.frame;
   const sy = sheet.sy + frameSize * row;
   const frame = sub(sheet, sx, sy, sx + frameSize, sy + frameSize);
   const half = (frameSize * p.scale) / 2;
-  screen.draw(frame, p.x - half + bufX, intermissionY - half + bufY, { scale: p.scale });
+  screen.draw(frame, p.x - half + bufX, y - half + bufY, { scale: p.scale });
 }
 
 function drawBackground(l: LevelView, screen: Surface, bufX: number, bufY: number): void {

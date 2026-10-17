@@ -675,3 +675,235 @@ export const flowers: readonly (readonly string[])[] = [
     ".......GG.......",
   ],
 ];
+
+/**
+ * The red bee's wing tearing on a nail in the intermissions (#199, after
+ * Pac-Man's torn Blinky), drawn facing right like `beeFlight`; facing left
+ * is each frame mirrored. stretch: the nail holds the back of the wing, which
+ * thins to a strand as the bee pulls 2, 4, then 7 px away (wider frames, the
+ * extra width behind the bee). torn: the back of the wing gone, a ragged edge
+ * with loose fibres, wings up and down. patched: the wing mended in grey with
+ * red stitches (Act III). crawl: grounded, wing stub, legs paddling flat along
+ * the floor, with the thread to the torn wing it drags trailing off the back
+ * (24 px wide).
+ */
+export const beeTear: Readonly<Record<"stretch" | "torn" | "patched" | "crawl", readonly (readonly string[])[]>> = {
+  stretch: [
+    [
+      "..................",
+      "..........y...y...",
+      "...........y...y..",
+      "....www.ww..yyy...",
+      ".lwwwwwlwwlyyyyy..",
+      "..wwwwwlwwkyyyyy..",
+      "....wwwkkkkyykyy..",
+      ".....ykkyykyyyyyy.",
+      "....yyykyykyyyyyy.",
+      "...yyyykkyykyyyy..",
+      "....yyyykkyykyy...",
+      ".....yyyykkyyy....",
+      "......yyyyyyy.....",
+      ".....y..y..y......",
+      "....y..y..y.......",
+      "..................",
+    ],
+    [
+      "....................",
+      "............y...y...",
+      ".............y...y..",
+      "......www.ww..yyy...",
+      ".llwwwwwwlwwlyyyyy..",
+      "...wwwwwwlwwkyyyyy..",
+      "......wwwkkkkyykyy..",
+      ".......ykkyykyyyyyy.",
+      "......yyykyykyyyyyy.",
+      ".....yyyykkyykyyyy..",
+      "......yyyykkyykyy...",
+      ".......yyyykkyyy....",
+      "........yyyyyyy.....",
+      ".......y..y..y......",
+      "......y..y..y.......",
+      "....................",
+    ],
+    [
+      ".......................",
+      "...............y...y...",
+      "................y...y..",
+      ".........www.ww..yyy...",
+      ".llllwwwwwwwlwwlyyyyy..",
+      "....wwwwwwwwlwwkyyyyy..",
+      ".........wwwkkkkyykyy..",
+      "..........ykkyykyyyyyy.",
+      ".........yyykyykyyyyyy.",
+      "........yyyykkyykyyyy..",
+      ".........yyyykkyykyy...",
+      "..........yyyykkyyy....",
+      "...........yyyyyyy.....",
+      "..........y..y..y......",
+      ".........y..y..y.......",
+      ".......................",
+    ],
+  ],
+  torn: [
+    [
+      "................",
+      "........y...y...",
+      ".........y...y..",
+      "....w.ww..yyy...",
+      "...lllwwlyyyyy..",
+      "....wlwwkyyyyy..",
+      "...llkkkkyykyy..",
+      "...ykkyykyyyyyy.",
+      "..yyykyykyyyyyy.",
+      ".yyyykkyykyyyy..",
+      "..yyyykkyykyy...",
+      "...yyyykkyyy....",
+      "....yyyyyyy.....",
+      "...y..y..y......",
+      "..y..y..y.......",
+      "................",
+    ],
+    [
+      "................",
+      "........y...y...",
+      ".........y...y..",
+      "..........yyy...",
+      "...ll.wwlyyyyy..",
+      "....wlwwkyyyyy..",
+      "...llkkkkyykyy..",
+      "...ykkyykyyyyyy.",
+      "..yyykyykyyyyyy.",
+      ".yyyykkyykyyyy..",
+      "..yyyykkyykyy...",
+      "...yyyykkyyy....",
+      "....yyyyyyy.....",
+      "...y..y..y......",
+      "..y..y..y.......",
+      "................",
+    ],
+  ],
+  patched: [
+    [
+      "................",
+      "........y...y...",
+      ".........y...y..",
+      "..lwr.ww..yyy...",
+      ".lwlrlwwlyyyyy..",
+      ".wlwrlwwkyyyyy..",
+      "..wlrkkkkyykyy..",
+      "...ykkyykyyyyyy.",
+      "..yyykyykyyyyyy.",
+      ".yyyykkyykyyyy..",
+      "..yyyykkyykyy...",
+      "...yyyykkyyy....",
+      "....yyyyyyy.....",
+      "...y..y..y......",
+      "..y..y..y.......",
+      "................",
+    ],
+    [
+      "................",
+      "........y...y...",
+      ".........y...y..",
+      "..........yyy...",
+      "...lr.wwlyyyyy..",
+      "..lwrlwwkyyyyy..",
+      "..wlrkkkkyykyy..",
+      "...ykkyykyyyyyy.",
+      "..yyykyykyyyyyy.",
+      ".yyyykkyykyyyy..",
+      "..yyyykkyykyy...",
+      "...yyyykkyyy....",
+      "....yyyyyyy.....",
+      "...y..y..y......",
+      "..y..y..y.......",
+      "................",
+    ],
+  ],
+  crawl: [
+    [
+      "........................",
+      "........................",
+      "................y...y...",
+      ".................y...y..",
+      "............w.ww..yyy...",
+      "...........lllwwlyyyyy..",
+      "............wlwwkyyyyy..",
+      "...........llkkkkyykyy..",
+      "...........ykkyykyyyyyy.",
+      "..........yyykyykyyyyyy.",
+      ".........yyyykkyykyyyy..",
+      "..........yyyykkyykyy...",
+      "...........yyyykkyyy....",
+      "llllllllllllyyyyyyy.....",
+      "..........y.y..y........",
+      ".........y.y..y.........",
+    ],
+    [
+      "........................",
+      "........................",
+      "................y...y...",
+      ".................y...y..",
+      "............w.ww..yyy...",
+      "...........lllwwlyyyyy..",
+      "............wlwwkyyyyy..",
+      "...........llkkkkyykyy..",
+      "...........ykkyykyyyyyy.",
+      "..........yyykyykyyyyyy.",
+      ".........yyyykkyykyyyy..",
+      "..........yyyykkyykyy...",
+      "...........yyyykkyyy....",
+      "llllllllllllyyyyyyy.....",
+      ".........y..y.y.........",
+      "........y..y..y.........",
+    ],
+  ],
+};
+
+/** The torn piece of wing, fluttering down and then dragged; its flutter frame is this flipped top to bottom. */
+export const tornWing: readonly string[] = [".www..", "wwlww.", "wwlwwl", ".wlw.."];
+
+/** A dust puff where the grounded bee scrapes along, rising and thinning over 3 frames. */
+export const dustPuff: readonly (readonly string[])[] = [
+  ["...", ".l.", "lml"],
+  [".l.", "l.l", "m.m"],
+  ["l...l", ".....", "m...m"],
+];
+
+/** The nail the bee's wing snags on in Act II: a head and a shaft standing on the floor. */
+export const nailArt: readonly string[] = [
+  "lll",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  ".m.",
+  "mmm",
+];
+
+/**
+ * intermission.png's layout. The top two rows are `beeTear`'s frames in
+ * `tearCellWidth`-wide cells, the bee at the cell's front end and anything
+ * wider behind it: facing right, then facing left. The third row is the props
+ * in `propCellWidth`×`propCellHeight` cells, each standing on the cell's
+ * bottom edge (the floor), centred: `tornWing` and its flutter, `dustPuff`'s
+ * three frames, then `nailArt`.
+ */
+export const tearCellWidth = 24;
+export const propCellWidth = 8;
+export const propCellHeight = 18;
+/** The first column of each `beeTear` entry in intermission.png. */
+export const tearColumn = { stretch: 0, torn: 3, patched: 5, crawl: 7 } as const;
+/** The column of each prop in intermission.png's prop row. */
+export const propColumn = { wing: 0, dust: 2, nail: 5 } as const;
