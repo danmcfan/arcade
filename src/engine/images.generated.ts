@@ -10,6 +10,7 @@ import tickerUrl from "../assets/images/ticker.png";
 import panelUrl from "../assets/images/panel.png";
 import cardsUrl from "../assets/images/cards.png";
 import employeeUrl from "../assets/images/employee.png";
+import changeMachineUrl from "../assets/images/change-machine.png";
 import prizesUrl from "../assets/images/prizes.png";
 import winUrl from "../assets/images/win.png";
 import arcadeUrl from "../assets/images/arcade.png";
@@ -76,6 +77,7 @@ export const images = {
   panel: imageAsset(panelUrl, 16, 16),
   cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
+  changeMachine: imageAsset(changeMachineUrl, 16, 32),
   prizes: imageAsset(prizesUrl, 80, 16),
   win: imageAsset(winUrl, 52, 35),
   arcade: imageAsset(arcadeUrl, 160, 144),

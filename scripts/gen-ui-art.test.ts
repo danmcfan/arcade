@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { glyphHeight, glyphs, inks, titleLetters } from "../src/ui/glyphs.ts";
+import { changeMachine, changeMachineHeight, changeMachineWidth } from "../src/ui/changeMachineArt.ts";
 import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
@@ -96,6 +97,14 @@ describe("UI art source", () => {
       checkRows(`ticker glyph "${ch}"`, rows, { h: tickerGlyphHeight }, { "#": sweetie.w });
     const sheet = tickerSheetRows();
     expect([sheet[0]?.length, sheet.length]).toEqual([images.ticker.width, images.ticker.height]);
+  });
+
+  test("the change machine is one 16x32 frame, in Sweetie 16 letters and .", () => {
+    checkRows("change machine", changeMachine, { w: changeMachineWidth, h: changeMachineHeight });
+    expect([changeMachineWidth, changeMachineHeight]).toEqual([
+      images.changeMachine.width,
+      images.changeMachine.height,
+    ]);
   });
 
   test("the employee is one frame in the player's 16x24 box, in Sweetie 16 letters and .", () => {

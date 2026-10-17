@@ -251,6 +251,7 @@ export const scenes: readonly Scene[] = [
       "src/ui/tickerArt.ts",
       "src/ui/employeeArt.ts",
       "src/ui/playerArt.ts",
+      "src/ui/changeMachineArt.ts",
     ],
     render: () => hubFrames(),
     // Continue (Space) stands the player above the prize desk, facing it, with

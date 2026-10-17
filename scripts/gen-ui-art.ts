@@ -1,13 +1,14 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, win.png, arcade.png, screens.png, player.png, hud.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, change-machine.png, prizes.png, win.png, arcade.png, screens.png, player.png, hud.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. icons.png is the menu icons from
 // src/ui/icons.ts. ticker.png is the hub scoreboard's lit letters from
 // src/ui/tickerArt.ts, panel.png and cards.png the menu panel and prize
 // counter card frames from src/ui/panelArt.ts, employee.png the prize desk's employee from
-// src/ui/employeeArt.ts, prizes.png the hub's prize decorations from
+// src/ui/employeeArt.ts, change-machine.png the hub's change machine from
+// src/ui/changeMachineArt.ts, prizes.png the hub's prize decorations from
 // src/ui/prizeArt.ts, win.png the arcade win's cake, trophy, balloons and
 // confetti from src/ui/winArt.ts. arcade.png is the hub room with its cabinets, scoreboard
 // and prize desk (src/ui/hubArt.ts), screens.png the cabinets' screens
@@ -34,6 +35,7 @@ import {
   titleRows,
 } from "../src/ui/glyphs.ts";
 import { newMachines } from "../src/arcade/machine.ts";
+import { changeMachine, changeMachineHeight, changeMachineWidth } from "../src/ui/changeMachineArt.ts";
 import { employeeHalf } from "../src/ui/employeeArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
@@ -165,6 +167,10 @@ export function renderEmployee(): PNG {
   return toPng(employeeRows());
 }
 
+export function renderChangeMachine(): PNG {
+  return toPng(changeMachine);
+}
+
 /** Where the hub's machines stand, in their order. */
 export function hubCabinets(): CabinetPlace[] {
   const machines = newMachines(() => {
@@ -221,6 +227,7 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "panel.png"), panelFrame[0]?.length ?? 0, panelFrame.length, renderPanel),
   imageOutput(join(imagesDir, "cards.png"), cardSheetWidth, cardSheetHeight, renderCards),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
+  imageOutput(join(imagesDir, "change-machine.png"), changeMachineWidth, changeMachineHeight, renderChangeMachine),
   imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
   imageOutput(join(imagesDir, "win.png"), winSheetWidth, winSheetHeight, renderWin),
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),

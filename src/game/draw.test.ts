@@ -1,3 +1,4 @@
+import { inFrontOfChangeMachine } from "../arcade/changeMachine.ts";
 import { cakeRect, confettiTicks, trophyRect } from "../arcade/arcadeWin.ts";
 import { confettiSize } from "../ui/winArt.ts";
 import { houseHighScores, noHighScores, type HighScores } from "../arcade/wallet.ts";
@@ -286,7 +287,14 @@ describe("hub draw", () => {
       ["draw", "employee", 0, 0, 16, 24, 88, 132],
       // Facing down = row 1; frame 0; at (80 + 16 - 8, 92 + 16 - 12).
       ["draw", "player", 0, 24, 16, 24, 88, 96],
+      // The change machine at (144, 72) + the buffer: its bottom 16 rows on its spot, drawn over a player above its base.
+      ["draw", "changeMachine", 0, 0, 16, 32, 160, 88],
     ]);
+  });
+
+  test("the player is in front of the change machine only once their feet are below its base (y 104)", () => {
+    expect(inFrontOfChangeMachine(104)).toBe(false);
+    expect(inFrontOfChangeMachine(105)).toBe(true);
   });
 
   test("the employee stands still: the one frame on every tick", () => {
@@ -312,6 +320,7 @@ describe("hub draw", () => {
       ["draw", "prizes", r.runningShoes.x, 0, 8, 8, 104, 47],
       ["draw", "prizes", r.sleepyBees.x, 0, 8, 8, 92, 41],
       ["draw", "player", 0, 24, 16, 24, 88, 96],
+      ["draw", "changeMachine", 0, 0, 16, 32, 160, 88],
     ]);
     // On the wall: above the skirting (y 53), clear of the floor.
     for (const c of calls.filter((x) => x[1] === "prizes"))
@@ -413,6 +422,7 @@ describe("hub draw", () => {
     const { calls, surface } = recordingSurface();
     game.draw(surface);
     expect(calls.slice(3)).toEqual([
+      ["draw", "changeMachine", 0, 0, 16, 32, 160, 88],
       ["strokeRect", 88, 96, 15, 23, green],
       ["strokeRect", 16, 16, 159, 47, red],
       ["strokeRect", 8, 16, 7, 143, red],

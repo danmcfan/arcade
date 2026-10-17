@@ -31,6 +31,8 @@ export const imageTitleLogo: Sprite = whole(images.titleLogo);
 export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
+/** The hub's change machine (src/ui/changeMachineArt.ts). */
+export const imageChangeMachine: Sprite = whole(images.changeMachine);
 export const imagePrizes: Sprite = whole(images.prizes);
 /** The arcade win's cake, trophy, balloons and confetti (src/ui/winArt.ts). */
 export const imageWin: Sprite = whole(images.win);
