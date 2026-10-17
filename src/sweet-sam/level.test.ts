@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { NO_INPUT } from "../engine/input.ts";
-import type { LevelEffect } from "./board.ts";
+import type { LevelEffect } from "./levelEffect.ts";
 import { Level } from "./level.ts";
 
 beforeEach(() => {

@@ -13,7 +13,7 @@ import { ParticleSystem } from "./particle.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { type DigitReel } from "../ui/digitReel.ts";
 import { ScoreDials } from "../ui/scoreDials.ts";
-import type { LevelEffect } from "./board.ts";
+import type { LevelEffect } from "./levelEffect.ts";
 import { Level, type LevelSetup } from "./level.ts";
 import { draw } from "./draw.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";

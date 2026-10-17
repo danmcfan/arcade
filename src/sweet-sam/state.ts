@@ -37,6 +37,7 @@ import {
 import {
   applyInput,
   becomeEyes,
+  deathFrameAt,
   deathRoundDelayTicks,
   findTarget,
   moveEyes,
@@ -51,7 +52,7 @@ import {
 } from "./update.ts";
 import { itemsEaten, updateFlower } from "./flower.ts";
 import type { Board } from "./board.ts";
-import { intermissionAfter } from "./intermission.ts";
+import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 
 export type StateID = SweetSamStateId;
 
@@ -420,6 +421,11 @@ export class DeathWaitState implements State {
   }
 
   onExit(): void {}
+
+  /** The bear's death frame (0 dazed … 3 puddle) at this tick of the wait. */
+  deathFrame(): number {
+    return deathFrameAt(deathRoundDelayTicks - this.s.pauseTicks);
+  }
 }
 
 /**
@@ -447,6 +453,11 @@ export class FinalDeathWaitState implements State {
   }
 
   onExit(): void {}
+
+  /** The bear's death frame (0 dazed … 3 puddle) at this tick of the wait. */
+  deathFrame(): number {
+    return deathFrameAt(deathRoundDelayTicks - this.s.pauseTicks);
+  }
 }
 
 /**
@@ -479,6 +490,11 @@ export class LevelClearState implements State {
     return intermissionAfter(s.level - 1) === null ? stateIDStart : stateIDIntermission;
   }
 
+  /** The maze shows its flash colours this tick. */
+  flash(): boolean {
+    return Math.trunc((levelClearTicks - this.s.pauseTicks) / levelClearFlashTicks) % 2 === 1;
+  }
+
   onExit(): void {}
 }
 
@@ -509,6 +525,17 @@ export class IntermissionState implements State {
 
   onExit(): void {
     this.s.pauseTicks = 0;
+  }
+
+  /** The cutscene playing (after the level before this one). */
+  scene(): IntermissionScene | null {
+    return intermissionAfter(this.s.level - 1);
+  }
+
+  /** The cutscene's actors at this tick. */
+  poses(): IntermissionPose[] | null {
+    const scene = this.scene();
+    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.s.pauseTicks);
   }
 }
 

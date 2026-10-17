@@ -5,23 +5,13 @@
 // through `Level`'s queries.
 
 import type { SoundName } from "../engine/sounds.generated.ts";
-import type { PremulColor } from "../engine/surface.ts";
+import type { LevelEffect } from "./levelEffect.ts";
 import { extraLifeScore } from "./constants.ts";
 import { newRelease, type Release } from "./release.ts";
 import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
 import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import type { SweetSamAdvantages } from "./advantages.ts";
-
-/**
- * What the Level asks of the world around it, in the order it happens: a
- * sound, a screen shake, a burst of particles. The software wires them up;
- * the Level itself stays headless.
- */
-export type LevelEffect =
-  | { kind: "sound"; sound: SoundName }
-  | { kind: "shake"; ticks: number; intensity: number }
-  | { kind: "burst"; x: number; y: number; color: Readonly<PremulColor>; count: number };
 
 export class Board {
   // Assigned by restartRound() in the Level's constructor (Go leaves them nil until then).

@@ -8,22 +8,21 @@
 import type { Direction, Input } from "../engine/input.ts";
 import { fnv1a32 } from "../engine/gomath.ts";
 import type { SweetSamSnapshot } from "../game/snapshot.ts";
-import { Board, type LevelEffect } from "./board.ts";
+import { Board } from "./board.ts";
+import type { LevelEffect } from "./levelEffect.ts";
 import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import type { Entity } from "./entity.ts";
 import { afterDeath } from "./release.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 import type { LevelValues, Mode } from "./levels.ts";
-import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
+import type { IntermissionPose, IntermissionScene } from "./intermission.ts";
 import {
   DeathWaitState,
   FinalDeathWaitState,
   GameOverState,
   IntermissionState,
   LevelClearState,
-  levelClearFlashTicks,
-  levelClearTicks,
   PauseState,
   PlayState,
   StartState,
@@ -38,7 +37,7 @@ import {
   stateIDStart,
   type StateID,
 } from "./state.ts";
-import { deathFrameAt, deathRoundDelayTicks, restartRound } from "./update.ts";
+import { restartRound } from "./update.ts";
 
 /** The Level's part of the snapshot; the software adds the camera, particles and dials. */
 export type LevelSnapshot = Omit<SweetSamSnapshot, "shake" | "particlesActive" | "dials">;
@@ -114,6 +113,10 @@ export class Level {
   readonly #stateMachine = new StateMachine();
   /** Kept to snapshot `respawnBlinkRemaining` whatever the current state. */
   readonly #startState: StartState;
+  readonly #deathWait: DeathWaitState;
+  readonly #finalDeathWait: FinalDeathWaitState;
+  readonly #levelClear: LevelClearState;
+  readonly #intermission: IntermissionState;
 
   constructor(
     highScore: number,
@@ -124,14 +127,18 @@ export class Level {
     const b = new Board(highScore, advantages, effects);
     this.#board = b;
     this.#startState = new StartState(b);
+    this.#deathWait = new DeathWaitState(b);
+    this.#finalDeathWait = new FinalDeathWaitState(b);
+    this.#levelClear = new LevelClearState(b);
+    this.#intermission = new IntermissionState(b);
     this.#stateMachine.registerState(stateIDStart, this.#startState);
     this.#stateMachine.registerState(stateIDPlay, new PlayState(b));
     this.#stateMachine.registerState(stateIDPause, new PauseState(b));
-    this.#stateMachine.registerState(stateIDDeathWait, new DeathWaitState(b));
-    this.#stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(b));
+    this.#stateMachine.registerState(stateIDDeathWait, this.#deathWait);
+    this.#stateMachine.registerState(stateIDFinalDeathWait, this.#finalDeathWait);
     this.#stateMachine.registerState(stateIDGameOver, new GameOverState());
-    this.#stateMachine.registerState(stateIDLevelClear, new LevelClearState(b));
-    this.#stateMachine.registerState(stateIDIntermission, new IntermissionState(b));
+    this.#stateMachine.registerState(stateIDLevelClear, this.#levelClear);
+    this.#stateMachine.registerState(stateIDIntermission, this.#intermission);
 
     if (setup === undefined) {
       restartRound(b);
@@ -244,27 +251,25 @@ export class Level {
 
   /** The maze shows its flash colours this tick (the level-clear flash). */
   mazeFlash(): boolean {
-    if (this.#stateMachine.currentId() !== stateIDLevelClear) return false;
-    return Math.trunc((levelClearTicks - this.#board.pauseTicks) / levelClearFlashTicks) % 2 === 1;
+    return this.#stateMachine.currentId() === stateIDLevelClear && this.#levelClear.flash();
   }
 
   /** The cutscene playing (after the level before this one), or null outside INTERMISSION. */
   intermission(): IntermissionScene | null {
-    if (this.#stateMachine.currentId() !== stateIDIntermission) return null;
-    return intermissionAfter(this.#board.level - 1);
+    return this.#stateMachine.currentId() === stateIDIntermission ? this.#intermission.scene() : null;
   }
 
   /** The cutscene's actors at this tick, or null outside INTERMISSION. */
   intermissionPoses(): IntermissionPose[] | null {
-    const scene = this.intermission();
-    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.#board.pauseTicks);
+    return this.#stateMachine.currentId() === stateIDIntermission ? this.#intermission.poses() : null;
   }
 
   /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */
   deathFrame(): number | null {
     const id = this.#stateMachine.currentId();
-    if (id !== stateIDDeathWait && id !== stateIDFinalDeathWait) return null;
-    return deathFrameAt(deathRoundDelayTicks - this.#board.pauseTicks);
+    if (id === stateIDDeathWait) return this.#deathWait.deathFrame();
+    if (id === stateIDFinalDeathWait) return this.#finalDeathWait.deathFrame();
+    return null;
   }
 
   snapshot(): LevelSnapshot {
