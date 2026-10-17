@@ -59,8 +59,6 @@ export const stateIDIntermission: StateID = "INTERMISSION";
 export const levelClearTicks = framesPerSecond * 2;
 /** Ticks the maze shows each colour while it flashes. */
 export const levelClearFlashTicks = 12;
-/** START ticks "LEVEL n" shows before READY on every level after the first. */
-export const levelBannerTicks = framesPerSecond;
 
 /**
  * How many START-state frames each visible or hidden slice lasts during
@@ -143,10 +141,6 @@ export class StartState implements State {
   }
 
   update(_i: Input): StateID {
-    if (this.s.levelBannerTicks > 0) {
-      this.s.levelBannerTicks--;
-      return stateIDStart;
-    }
     if (this.s.startTicks > 0) {
       if (this.respawnBlinkRemaining > 0) {
         const elapsed = startTicks - this.respawnBlinkRemaining;
@@ -466,7 +460,6 @@ export class LevelClearState implements State {
     s.items = newItems();
     s.flowersShown = 0;
     restartRound(s);
-    s.levelBannerTicks = levelBannerTicks;
     return intermissionAfter(s.level - 1) === null ? stateIDStart : stateIDIntermission;
   }
 

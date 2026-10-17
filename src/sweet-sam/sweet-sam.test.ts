@@ -146,7 +146,6 @@ describe("Sweet Sam invariants over a scripted run", () => {
         "pelletAnimTick",
         "dials",
         "level",
-        "levelBannerTicks",
         "mazeFlash",
         "flower",
         "flowerPopup",

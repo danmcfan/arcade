@@ -60,7 +60,6 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
   drawLives(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
-  drawLevelBanner(s, screen, bufX, bufY);
   drawItems(s, screen, bufX, bufY);
   drawFlower(s, screen, bufX, bufY);
   drawPlayer(s, screen, bufX, bufY);
@@ -128,15 +127,9 @@ function drawLevel(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: num
   }
 }
 
-/** Where READY! and "LEVEL n" stand: centred under the bee home. */
+/** Where READY! stands: centred under the bee home. */
 const readyCentreX = 8 * 14;
 const readyTop = 8 * 20 + 1;
-
-/** "LEVEL n" before READY on every level after the first. */
-function drawLevelBanner(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.levelBannerTicks <= 0) return;
-  drawTextCentered(screen, `LEVEL ${s.level}`, readyCentreX + bufX, readyTop + bufY, "yellow");
-}
 
 function drawFlower(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
   if (s.flowerTicks <= 0) return;
@@ -165,7 +158,7 @@ export const readyWaveTimeRad = 0.14;
 export const readyWaveGlyphPhaseRad = 1.05;
 
 function drawReady(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  if (s.startTicks <= 0 || s.levelBannerTicks > 0) {
+  if (s.startTicks <= 0) {
     return;
   }
 

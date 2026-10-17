@@ -269,8 +269,6 @@ export interface SweetSamSnapshot {
   dials: SweetSamDialSnapshot[];
   /** The level being played, from 1 (#47). */
   level: number;
-  /** START ticks left showing "LEVEL n" before READY (0 on level 1 and after a lost life). */
-  levelBannerTicks: number;
   /** The maze is drawn in its flash colours this tick (the level-clear flash). */
   mazeFlash: boolean;
   /** The bonus flower: ticks it has left (0 = not there) and how many have appeared on this level. */

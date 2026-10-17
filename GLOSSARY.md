@@ -60,6 +60,10 @@ _Avoid_: scared bee, blue bee, frightened
 An item that appears in the Sweet Sam maze twice per level for a short time, worth points if the bear eats it.
 _Avoid_: fruit, bonus item, pickup
 
+**Flower counter**:
+The row of bonus flowers at the bottom right of Sweet Sam: one for each of the last six levels cleared and one for the current level. A flower repeats when it belongs to more than one of those levels.
+_Avoid_: level counter, fruit row, level indicator
+
 **Firefly**:
 The Galaga-style shooter: a firefly fighting off the insects and birds that try to eat it.
 _Avoid_: galaxy, space shooter
