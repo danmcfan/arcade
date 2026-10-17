@@ -21,6 +21,14 @@ import {
   swayOffset,
   swayAmplitude,
   type EnemyKind,
+  challengeIndex,
+  challengeWaveSize,
+  challengeWaves,
+  hitMissRatio,
+  isChallengingStage,
+  perfectBonus,
+  tallyBonus,
+  waveBonus,
 } from "./rules.ts";
 
 describe("formation", () => {
@@ -287,5 +295,34 @@ describe("stage badges", () => {
     expect(badgesShown(27, badgeTickSpacing)).toBe(1);
     expect(badgesShown(27, badgeTickSpacing + 1)).toBe(2);
     expect(badgesShown(27, 1000)).toBe(4);
+  });
+});
+
+describe("Challenging Stage", () => {
+  test("is every fourth stage from stage 3", () => {
+    const stages = Array.from({ length: 12 }, (_, i) => i + 1).filter((s) => isChallengingStage(s));
+    expect(stages).toEqual([3, 7, 11]);
+    expect([3, 7, 11].map((s) => challengeIndex(s))).toEqual([0, 1, 2]);
+  });
+
+  test("a wave bonus rises with each Challenging Stage, then holds", () => {
+    expect([3, 7, 11, 15, 19, 23, 27, 31, 99].map((s) => waveBonus(s))).toEqual([
+      1000, 1000, 1500, 1500, 2000, 2000, 3000, 3000, 3000,
+    ]);
+  });
+
+  test("the tally pays 100 a hit, or 10,000 for all 40", () => {
+    expect(challengeWaves * challengeWaveSize).toBe(40);
+    expect([0, 1, 39, 40].map((h) => tallyBonus(h))).toEqual([0, 100, 3900, perfectBonus]);
+    expect(perfectBonus).toBe(10_000);
+  });
+});
+
+describe("hitMissRatio", () => {
+  test("is hits per shot as a percentage to 1 decimal, 0.0 with no shots", () => {
+    expect(hitMissRatio(0, 0)).toBe("0.0");
+    expect(hitMissRatio(100, 53)).toBe("53.0");
+    expect(hitMissRatio(3, 1)).toBe("33.3");
+    expect(hitMissRatio(4, 4)).toBe("100.0");
   });
 });

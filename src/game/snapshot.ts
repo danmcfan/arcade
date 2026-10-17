@@ -294,7 +294,7 @@ export type FireflyEnemyState = "waiting" | "entering" | "joining" | "formation"
 
 export interface FireflyEnemySnapshot {
   kind: FireflyEnemyKind;
-  /** Its formation slot: row (0 at the top) and column. */
+  /** Its formation slot: row (0 at the top) and column; on a Challenging Stage, its wave and place in it. */
   row: number;
   col: number;
   state: FireflyEnemyState;
@@ -360,6 +360,11 @@ export interface FireflySnapshot {
   captive?: { row?: number; col?: number; x: number; y: number; hostile: boolean };
   /** A rescued captive docked beside the firefly. */
   dual?: true;
+  /** Sparks fired this run, and sparks that hit an enemy or a captive: the -RESULTS- screen. */
+  shotsFired: number;
+  hits: number;
+  /** On a Challenging Stage: enemies shot down, and ticks left of the "NUMBER OF HITS" tally (0 while it flies). */
+  challenge?: { hits: number; tally: number };
 }
 
 // ---------------------------------------------------------------------------

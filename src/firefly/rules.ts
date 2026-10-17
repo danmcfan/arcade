@@ -354,3 +354,48 @@ export function points(kind: EnemyKind, diving: boolean, escortsKilled = 0): num
   if (kind === "owl" && diving) return owlEscortPoints[escortsKilled] ?? p.diving;
   return diving ? p.diving : p.formation;
 }
+
+/** Every fourth stage from stage 3 (3, 7, 11, ...) is a Challenging Stage: Galaga's bonus round. */
+export function isChallengingStage(stage: number): boolean {
+  return stage % 4 === 3;
+}
+
+/** Which Challenging Stage `stage` is: 0 for stage 3, 1 for stage 7, and so on. */
+export function challengeIndex(stage: number): number {
+  return Math.floor((stage - 3) / 4);
+}
+
+/** A Challenging Stage flies `challengeWaves` waves of `challengeWaveSize` past the firefly. */
+export const challengeWaves = 5;
+export const challengeWaveSize = 8;
+/** Ticks between two waves of a Challenging Stage setting off, and between two enemies of a wave. */
+export const challengeWaveGap = 160;
+export const challengeSpacing = 8;
+/** Points for each enemy shot down on a Challenging Stage, whatever its kind. */
+export const challengeHitPoints = 100;
+/** The bonus for a perfect Challenging Stage: every one of its 40 enemies. */
+export const perfectBonus = 10_000;
+export const challengeTotal = challengeWaves * challengeWaveSize;
+
+/** Galaga's bonus for shooting down a whole wave, rising with each Challenging Stage. */
+const waveBonuses: readonly number[] = [1000, 1000, 1500, 1500, 2000, 2000, 3000];
+
+export function waveBonus(stage: number): number {
+  return waveBonuses[Math.min(waveBonuses.length - 1, challengeIndex(stage))] ?? 1000;
+}
+
+/** The tally's bonus for `hits` enemies shot down: 100 each, or the perfect bonus for all 40. */
+export function tallyBonus(hits: number): number {
+  return hits === challengeTotal ? perfectBonus : hits * challengeHitPoints;
+}
+
+/** Ticks the "NUMBER OF HITS" tally shows after a Challenging Stage, before the next stage. */
+export const tallyTicks = 240;
+/** Ticks the -RESULTS- screen shows after GAME OVER, before the run ends. */
+export const resultsTicks = 300;
+
+/** Galaga's hit-miss ratio: hits as a percentage of shots fired, to 1 decimal ("0.0" with no shots). */
+export function hitMissRatio(shotsFired: number, hits: number): string {
+  if (shotsFired === 0) return "0.0";
+  return ((hits / shotsFired) * 100).toFixed(1);
+}

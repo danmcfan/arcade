@@ -43,6 +43,8 @@ export interface Enemy {
   escortsKilled: number;
   /** A morph's trio, shared by its three: how many have been shot down. Null for the others. */
   trio: { kills: number } | null;
+  /** A Challenging Stage enemy's wave, shared by its eight: how many have been shot down. Null for the others. */
+  wave: { kills: number } | null;
 }
 
 /** A captured firefly, red, above the Owl that took it; `y` climbs while the beam pulls it up. */
