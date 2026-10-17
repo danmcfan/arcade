@@ -4,6 +4,8 @@
 
 /** Lives at the start of a run. */
 export const startLives = 3;
+/** The score that earns the run's one extra life (Donkey Kong's 7,000). */
+export const extraLifeAt = 7000;
 
 /** The monkey walks this many px a tick. */
 export const walkSpeed = 1;

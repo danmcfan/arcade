@@ -72,6 +72,7 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
+  extraLife: sounds.ticket,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
