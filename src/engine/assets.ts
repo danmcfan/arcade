@@ -32,15 +32,19 @@ export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
+/** The arcade win's cake, trophy, balloons and confetti (src/ui/winArt.ts). */
+export const imageWin: Sprite = whole(images.win);
 /** The menu panel's nine-slice frame and the prize counter's card frames (src/ui/panelArt.ts). */
 export const imagePanel: Sprite = whole(images.panel);
 export const imageCards: Sprite = whole(images.cards);
 
 // Sweet Sam's sprites, from src/sweet-sam/art.ts. Sprite frames are 16×16; bees.png is one 64×96 sheet per bee
-// (`beeOrder`), the honey drop and honey pot are 4 frames of 8×12, and the points are 4 popup frames of 16×16.
+// (`beeOrder`), the honey drop and honey pot are 4 frames of 8×12, the points are 4 popup frames of 16×16,
+// and bee-eyes.png is an eaten bee's eyes, one frame per direction (`beeEyesOrder`).
 export const imageSweetSamMaze: Sprite = whole(sweetSamImages.maze);
 export const imageSweetSamMazeFlash: Sprite = whole(sweetSamImages.mazeFlash);
 export const imageFlower: Sprite = whole(sweetSamImages.flower);
+export const imageBeeEyes: Sprite = whole(sweetSamImages.beeEyes);
 export const imageBear: Sprite = whole(sweetSamImages.bear);
 export const imageBees: Sprite = whole(sweetSamImages.bees);
 export const imageHoneyDrop: Sprite = whole(sweetSamImages.honeyDrop);
@@ -54,7 +58,7 @@ export const imageScoreLabels: Sprite = whole(sweetSamImages.scoreLabels);
 /** The points for eating a sleepy bee: 200, 400, 800, 1600. */
 export const imagePoints: Sprite = whole(sweetSamImages.points);
 
-// Firefly's sprites, from src/firefly/art.ts. The Moth, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
+// Firefly's sprites, from src/firefly/art.ts. The Moth, morph, Wasp and Owl are rotation sheets: 6 columns of 15° by 4 rows
 // of 90°, clockwise from facing up.
 /** The player in Firefly. */
 export const imageFirefly: Sprite = whole(fireflyImages.firefly);
@@ -62,6 +66,8 @@ export const imageFirefly: Sprite = whole(fireflyImages.firefly);
 export const imageCaptive: Sprite = whole(fireflyImages.captive);
 export const imageSpark: Sprite = whole(fireflyImages.spark);
 export const imageMoth: Sprite = whole(fireflyImages.moth);
+/** What a Moth splits into from stage 4. */
+export const imageMorph: Sprite = whole(fireflyImages.morph);
 export const imageWasp: Sprite = whole(fireflyImages.wasp);
 export const imageOwl: Sprite = whole(fireflyImages.owl);
 /** The Owl after its first hit. */
@@ -80,12 +86,18 @@ export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
-/** Two turns, each 12×12. */
+/** Two turns, then the same two hot, each 12×12. */
 export const imageGear: Sprite = whole(brassMonkeyImages.gear);
+/** The furnace, each 16×24: cold, then lit with two flickers of flame. */
+export const imageFurnace: Sprite = whole(brassMonkeyImages.furnace);
 /** Two flickers and their mirrors, each 12×12. */
 export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
 /** At rest, then three glint frames, each 10×14. */
 export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
+/** The wrench upright, 8×14: on the floor, and raised over the monkey's head. */
+export const imageWrench: Sprite = whole(brassMonkeyImages.wrench);
+/** The wrench swung down in front of the monkey, 14×8, its jaws to the right. */
+export const imageWrenchSwing: Sprite = whole(brassMonkeyImages.wrenchSwing);
 /** The left end, middle and right end, 4 frames each, 8×8. */
 export const imageConveyor: Sprite = whole(brassMonkeyImages.conveyor);
 export const imageDoor: Sprite = whole(brassMonkeyImages.door);

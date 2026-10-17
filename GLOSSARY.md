@@ -60,6 +60,10 @@ _Avoid_: scared bee, blue bee, frightened
 An item that appears in the Sweet Sam maze twice per level for a short time, worth points if the bear eats it.
 _Avoid_: fruit, bonus item, pickup
 
+**Flower counter**:
+The row of bonus flowers at the bottom right of Sweet Sam: one for each of the last six levels cleared and one for the current level. A flower repeats when it belongs to more than one of those levels.
+_Avoid_: fruit row, level indicator
+
 **Firefly**:
 The Galaga-style shooter: a firefly fighting off the insects and birds that try to eat it.
 _Avoid_: galaxy, space shooter
@@ -97,20 +101,32 @@ One factory floor in Brass Monkey. The monkey escapes it by climbing to its exit
 _Avoid_: level, stage, board
 
 **Hazard**:
-Anything the gnome sends that costs the monkey a life when it touches the monkey: a gear or an ember.
+Anything that costs the monkey a life when it touches the monkey: a gear or an ember. The gnome sends the gears; on the girder floor the embers come out of the furnace.
 _Avoid_: enemy, obstacle
 
 **Gear**:
 A hazard that rolls down the girders. The monkey jumps over it.
 _Avoid_: barrel, cog
 
+**Hot gear**:
+A gear that lights the furnace when it reaches it, so an ember comes out (Donkey Kong's blue barrel). The first gear of each life is hot.
+_Avoid_: blue barrel, fire gear
+
+**Furnace**:
+The fire at the bottom left of the girder floor. Every gear that rolls into it ends there; a hot gear lights it and sends an ember out.
+_Avoid_: oil drum, oil can (the oil can is a prize)
+
 **Ember**:
-A hazard that moves along the girders and climbs ladders.
+A hazard that moves along the girders and climbs ladders. On the girder floor it comes out of the furnace; on the conveyor floor the gnome throws it.
 _Avoid_: spark (a spark is the firefly's light), fireball
 
 **Bolt**:
 An item the monkey collects in Brass Monkey for points.
 _Avoid_: coin, pickup
+
+**Wrench**:
+An item the monkey picks up in Brass Monkey. For a few seconds the monkey swings it, smashing any hazard it hits for points, and can't jump or climb.
+_Avoid_: hammer, power-up
 
 ## Economy
 

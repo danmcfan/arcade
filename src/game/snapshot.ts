@@ -232,7 +232,7 @@ export interface SweetSamSnapshot {
   score: number;
   /** `SweetSamSoftware.lives`. */
   lives: number;
-  /** `SweetSamSoftware.highScore`. */
+  /** `SweetSamSoftware.dials.highScore`. */
   highScore: number;
   /** `SweetSamSoftware.modeIndex`. */
   modeIndex: number;
@@ -269,8 +269,6 @@ export interface SweetSamSnapshot {
   dials: SweetSamDialSnapshot[];
   /** The level being played, from 1 (#47). */
   level: number;
-  /** START ticks left showing "LEVEL n" before READY (0 on level 1 and after a lost life). */
-  levelBannerTicks: number;
   /** The maze is drawn in its flash colours this tick (the level-clear flash). */
   mazeFlash: boolean;
   /** The bonus flower: ticks it has left (0 = not there) and how many have appeared on this level. */
@@ -285,7 +283,7 @@ export interface SweetSamSnapshot {
 // firefly (internal/firefly)
 
 /** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
-export type FireflyEnemyKind = "moth" | "wasp" | "owl";
+export type FireflyEnemyKind = "moth" | "wasp" | "owl" | "morph";
 
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,
@@ -331,6 +329,8 @@ export interface FireflySnapshot {
   stageTick: number;
   /** Lives left, the firefly in play included. */
   lives: number;
+  /** The score that pays the next extra life. */
+  nextLife: number;
   score: number;
   /** The run is over: `gameOver()`. */
   over: boolean;
@@ -365,6 +365,13 @@ export interface FireflySnapshot {
 // ---------------------------------------------------------------------------
 // brassMonkey (the Go port's Brass Monkey package)
 
+/** A smash's points showing, where the hazard was. */
+export interface BrassMonkeySmashSnapshot {
+  x: number;
+  y: number;
+  points: number;
+}
+
 /** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
 export interface BrassMonkeyHazardSnapshot {
   kind: "gear" | "ember";
@@ -372,8 +379,22 @@ export interface BrassMonkeyHazardSnapshot {
   y: number;
   dir: -1 | 1;
   footing: "ground" | "air" | "climb";
+  /** A hot gear lights the furnace when it reaches it. */
+  hot: boolean;
   /** A wild gear drops through the girders towards the monkey. */
   wild: boolean;
+}
+
+/** A collected bolt's points, shown where it was. */
+export interface BrassMonkeyPopupSnapshot {
+  /** Across, where the bolt was. */
+  x: number;
+  /** Down, where the bolt was. */
+  y: number;
+  /** The score shown. */
+  points: number;
+  /** Ticks left before it fades. */
+  ticks: number;
 }
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
@@ -399,6 +420,16 @@ export interface BrassMonkeySnapshot {
   hazards: BrassMonkeyHazardSnapshot[];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[];
+  /** Ticks left holding the wrench; 0 without it. */
+  wrench: number;
+  /** Whether each of the floor's wrenches has been picked up. */
+  wrenches: boolean[];
+  /** The smashes whose points are showing, where each hazard was. */
+  smashes: BrassMonkeySmashSnapshot[];
+  /** Points floating where bolts were just collected, with the ticks each has left. */
+  popups: BrassMonkeyPopupSnapshot[];
+  /** A hot gear has reached the floor's furnace since the floor (re)started. */
+  furnaceLit: boolean;
   gearTimer: number;
   emberTimer: number;
 }

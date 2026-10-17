@@ -4,6 +4,8 @@
 
 /** Lives at the start of a run. */
 export const startLives = 3;
+/** The score that earns the run's one extra life (Donkey Kong's 7,000). */
+export const extraLifeAt = 7000;
 
 /** The monkey walks this many px a tick. */
 export const walkSpeed = 1;
@@ -92,10 +94,27 @@ export const wildHopSpeed = 0.25;
 /** Across, it moves this fraction of the gear speed towards the monkey. */
 export const wildDrift = 0.75;
 
-/** Points for a hazard the monkey jumps over. */
-export const hazardPoints = 100;
-/** Points for a bolt. */
-export const boltPoints = 300;
+/**
+ * Of the gears after the first of each life (always hot), this many are hot,
+ * as Donkey Kong's blue barrels: one that reaches the furnace lights it and
+ * sends out an ember.
+ */
+export const hotGearChance = 0.25;
+
+/** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
+export const jumpPoints = [100, 300, 800] as const;
+/** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
+export const smashPoints = [300, 500, 800] as const;
+/** Points for a bolt on each loop, as Pauline's hat, parasol and purse score in Donkey Kong; the last holds from then on. */
+const boltPointsByLoop = [300, 500, 800] as const;
+
+/** Points for a bolt on loop `loop` (0 the first time through). */
+export function boltPointsFor(loop: number): number {
+  return boltPointsByLoop[Math.min(loop, boltPointsByLoop.length - 1)] ?? 0;
+}
+
+/** Ticks a collected bolt's points float where it was. */
+export const popupTicks = 60;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;
@@ -107,13 +126,33 @@ export const jumpOverX = 6;
 export const jumpOverHeight = 32;
 /** The monkey picks up a bolt this close across and up and down. */
 export const boltReach = 10;
+/** ...and a wrench this close. */
+export const wrenchReach = 8;
+/**
+ * Ticks the wrench lasts: 10 s, the hammer time commonly quoted for Donkey
+ * Kong (MarioWiki gives none). Jumping and climbing do nothing until it ends.
+ */
+export const wrenchTicks = 600;
+/** The wrench flashes for its last 2 s. */
+export const wrenchFlashTicks = 120;
+/**
+ * The swing smashes a hazard whose centre is up to this far in front of the
+ * monkey's middle, as close up and down as a touch (`touchY`)...
+ */
+export const smashReach = 18;
+/** ...or this far behind it; any further behind, the hazard touches the monkey as it would without the wrench. */
+export const smashBehind = 2;
+/** On the raised frames the swing also smashes this far above the monkey's middle, drawn over its head. */
+export const smashRaisedY = 20;
+/** Ticks a smash's points show where the hazard was. */
+export const smashShowTicks = 45;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {
   /** Ticks between gears; the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
-  /** Ticks between embers; the first comes after `firstEmber`. */
+  /** Ticks between embers the Gnome throws, on a floor without a furnace; the first comes after `firstEmber`. */
   emberEvery: number;
   firstEmber: number;
   /** The most embers on the floor at once. */
@@ -162,11 +201,11 @@ export const bonusTicks = 120;
 export const loopSpawnFactor = 0.8;
 /** ...and their speeds by this (faster)... */
 export const loopSpeedFactor = 1.2;
-/** ...and takes this off the bonus the floor starts with... */
-export const loopBonusDrop = 1000;
-/** ...but the bonus never starts below this, and hazards never come more often than every `minSpawnEvery` ticks. */
-export const minBonusStart = 2000;
+/** ...but hazards never come more often than every `minSpawnEvery` ticks. */
 export const minSpawnEvery = 60;
+/** As in Donkey Kong, each loop adds this to the bonus the floor starts with, up to `maxBonusStart`. */
+export const loopBonusRise = 1000;
+export const maxBonusStart = 8000;
 /** Hazards speed up only so far: an ember always walks and climbs slower than the monkey, so it can be outrun. */
 export const maxGearSpeed = 2;
 export const maxEmberWalkSpeed = 0.9 * walkSpeed;
@@ -185,7 +224,7 @@ export function tuningFor(floor: number, loop: number): FloorTuning {
     gearSpeed: speed(base.gearSpeed, maxGearSpeed),
     emberWalkSpeed: speed(base.emberWalkSpeed, maxEmberWalkSpeed),
     emberClimbSpeed: speed(base.emberClimbSpeed, maxEmberClimbSpeed),
-    bonusStart: Math.max(minBonusStart, base.bonusStart - loopBonusDrop * loop),
+    bonusStart: Math.min(maxBonusStart, base.bonusStart + loopBonusRise * loop),
   };
 }
 

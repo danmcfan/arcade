@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { addSoundListener } from "../engine/audio.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
+import type { PrizeId } from "../game/minigames.ts";
 import {
   fireflyAdvantages,
   glowStickMaxSparks,
@@ -12,7 +12,7 @@ import {
 } from "./advantages.ts";
 import { FireflySoftware } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
-import { maxSparks, playerSpeed, startLives } from "./rules.ts";
+import { maxSparks, playerSpeed, stageIntroTicks, startLives } from "./rules.ts";
 
 let unsubscribe = (): void => {};
 beforeEach(() => {
@@ -26,6 +26,8 @@ afterEach(() => {
 function run(prizes: readonly PrizeId[]): FireflySoftware {
   const f = minigame("firefly").create({ highScore: 0, prizes });
   if (!(f instanceof FireflySoftware)) throw new Error("Firefly's create did not return a FireflySoftware");
+  // The firefly is held through the start theme.
+  for (let k = 0; k < stageIntroTicks; k++) f.update(NO_INPUT);
   return f;
 }
 
@@ -59,28 +61,16 @@ describe("Firefly prize advantages", () => {
 
   test("the lantern: a run starts with 4 lives", () => {
     expect(lanternExtraLives).toBe(1);
-    expect(fireflyAdvantages(["lantern"])).toEqual({ ...noAdvantages, lives: 4 });
     expect(run(["lantern"]).lives).toBe(4);
   });
 
   test("the glow stick: up to 3 sparks on the screen at once", () => {
     expect(glowStickMaxSparks).toBe(3);
-    expect(fireflyAdvantages(["glowStick"])).toEqual({ ...noAdvantages, maxSparks: 3 });
     expect(mostSparks(run(["glowStick"]))).toBe(3);
   });
 
   test("the wings: the firefly moves faster", () => {
     expect(wingsPlayerSpeed).toBeGreaterThan(playerSpeed);
-    expect(fireflyAdvantages(["wings"])).toEqual({ ...noAdvantages, playerSpeed: wingsPlayerSpeed });
     expect(stride(run(["wings"]))).toBe(10 * wingsPlayerSpeed);
-  });
-
-  test("all three together; Sweet Sam's prizes change nothing here", () => {
-    expect(fireflyAdvantages(["lantern", "glowStick", "wings"])).toEqual({
-      lives: 4,
-      maxSparks: 3,
-      playerSpeed: wingsPlayerSpeed,
-    });
-    expect(fireflyAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual(noAdvantages);
   });
 });

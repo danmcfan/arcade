@@ -205,6 +205,10 @@ export class Title implements Scene {
     this.hostedGame().jumpTo(stage);
   }
 
+  scoreTo(score: number): void {
+    this.hostedGame().scoreTo(score);
+  }
+
   private startGame(restore?: Progress): void {
     this.game = this.createGame(restore);
     this.phase = "playing";

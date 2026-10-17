@@ -6,9 +6,11 @@
 // monkey.png is one row of 16×16 frames: walk 1-3 (the head over each body,
 // 1 px lower on a step), jump, climb and climb mirrored. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
-// idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
+// idle, throw. gear.png (12×12: two turns, then both hot), furnace.png (16×24:
+// cold, then lit with two flickers of flame), ember.png (12×12: two flickers
 // and their mirrors) and bolt.png (10×14: at rest, then a glint running over
-// its head) are one row of frames each. The floor tiles are girder.png (8×8),
+// its head) are one row of frames each; wrench.png (8×14) is the wrench
+// upright and wrench-swing.png (14×8) the same turned a quarter clockwise. The floor tiles are girder.png (8×8),
 // ladder.png (8×4, its rows by height), conveyor.png (8×8: the left end,
 // middle and right end, 4 frames each), door.png (16×24, outlined but for its
 // foot) and wall.png (32×32), none outlined but the door. girder-floor.png
@@ -26,6 +28,9 @@ import {
   door,
   emberFlame,
   emberTips,
+  furnace,
+  furnaceFlames,
+  furnaceMouth,
   gear,
   girder,
   gnomeArmsDown,
@@ -40,11 +45,25 @@ import {
   monkeyStep,
   type Part,
   wallPanel,
+  wrench,
 } from "../src/brass-monkey/art.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
-import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
+import {
+  blank,
+  checkRows,
+  empty,
+  flipX,
+  glint,
+  mirrorX,
+  outline,
+  overlay,
+  paint,
+  quarterTurn,
+  recolour,
+  type Rows,
+} from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
 
@@ -76,7 +95,22 @@ export function gnomeFrames(): Rows[] {
 
 /** The gear's sheet frames, outlined: its two turns. */
 export function gearFrames(): Rows[] {
-  return gear.map((rows) => outline(rows));
+  const hot = gear.map((rows) => recolour(rows, hotGear));
+  return [...gear, ...hot].map((rows) => outline(rows));
+}
+
+/** A hot gear glows: its steel greys turned to fire, lightest to darkest. */
+const hotGear = { w: "y", l: "o", m: "r", d: "p" } as const;
+
+/** `rows` with `flames` (or 8 blank rows) on top. */
+function above(rows: Rows, flames: Rows | null): string[] {
+  return [...(flames ?? Array.from({ length: 8 }, () => empty.repeat(16))), ...rows];
+}
+
+/** The furnace's sheet frames, 16×24 with the flames' 8 rows on top, outlined: cold, then lit with each flicker. */
+export function furnaceFrames(): Rows[] {
+  const lit = overlay(furnace, furnaceMouth.rows, furnaceMouth.x, furnaceMouth.y);
+  return [above(furnace, null), ...furnaceFlames.map((f) => above(lit, f))].map((rows) => outline(rows));
 }
 
 /** The ember's fills before outlining: the flame with each tip. */
@@ -94,6 +128,16 @@ export function emberFrames(): Rows[] {
 export function boltFrames(): Rows[] {
   const rest = outline(bolt);
   return [rest, ...boltGlints.map(([x, y]) => glint(rest, x, y))];
+}
+
+/** The wrench, outlined: upright, as it stands on the floor and as the monkey raises it. */
+export function wrenchFrames(): Rows[] {
+  return [outline(wrench)];
+}
+
+/** The wrench swung down, its jaws to the right: the upright frame turned a quarter clockwise. */
+export function wrenchSwingFrames(): Rows[] {
+  return wrenchFrames().map((rows) => quarterTurn(rows));
 }
 
 /** `row` (one period) laid along `w` px, moved `shift` px right. */
@@ -186,9 +230,12 @@ export const brassMonkeyImagesDir = "src/assets/images/brass-monkey";
 export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "monkey.png"), 96, 16, () => sheet(monkeyFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
-  imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "gear.png"), 48, 12, () => sheet(gearFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "furnace.png"), 48, 24, () => sheet(furnaceFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
   imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "wrench.png"), 8, 14, () => sheet(wrenchFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "wrench-swing.png"), 14, 8, () => sheet(wrenchSwingFrames())),
   imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
   imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor.png"), 96, 8, () => sheet(conveyorFrames())),

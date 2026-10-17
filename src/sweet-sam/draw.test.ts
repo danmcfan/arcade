@@ -129,23 +129,24 @@ describe("SweetSamSoftware.draw", () => {
     ).toEqual(["bees.png", 0, 192 + 32, 16, 16]);
   });
 
-  test("an eaten bee is drawn as eyes: two white 2×3 eyes, each with a pupil facing its way", () => {
+  test("an eaten bee is drawn as its eyes sprite, the frame facing its way, centred on it", () => {
     const s = new SweetSamSoftware(0);
     const red = s.enemies[0];
     if (red === undefined) throw new Error("red bee");
     red.eyes = true;
     red.x = 100;
     red.y = 116;
-    red.direction = "LEFT";
-    const ops = render(s);
-    expect(ops.filter((o) => name(o) === "draw:bees.png")).toHaveLength(3);
-    // Centre (108, 124) on screen: eyes 2 px either side, pupils on their left edge.
-    expect(ops.filter((o) => o[0] === "fillRect")).toEqual([
-      ["fillRect", 104, 122, 2, 3, "#f4f4f4"],
-      ["fillRect", 104, 123, 1, 1, "#3b5dc9"],
-      ["fillRect", 110, 122, 2, 3, "#f4f4f4"],
-      ["fillRect", 110, 123, 1, 1, "#3b5dc9"],
-    ]);
+    const eyeDraws = (direction: typeof red.direction): Op[] => {
+      red.direction = direction;
+      const ops = render(s);
+      expect(ops.filter((o) => name(o) === "draw:bees.png")).toHaveLength(3);
+      return ops.filter((o) => name(o) === "draw:bee-eyes.png");
+    };
+    // Centre (108, 124) on screen, so the 16×16 frame's corner is (100, 116); frames go RIGHT, LEFT, UP, DOWN.
+    expect(eyeDraws("LEFT")).toEqual([["draw", "bee-eyes.png", 16, 0, 16, 16, 100, 116]]);
+    expect(eyeDraws("DOWN")).toEqual([["draw", "bee-eyes.png", 48, 0, 16, 16, 100, 116]]);
+    // Before it has a direction it looks right, the first frame.
+    expect(eyeDraws("")).toEqual([["draw", "bee-eyes.png", 0, 0, 16, 16, 100, 116]]);
   });
 
   test("shake offsets the playfield, not the cabinet; sleepy/waking rows; popups; particles", () => {
@@ -252,16 +253,12 @@ describe("SweetSamSoftware.draw", () => {
     expect(ops.at(-1)?.[6]).toBe(192 + 8);
   });
 
-  test("LEVEL n shows in place of READY, then READY", () => {
+  test("a later level starts with READY and no level text", () => {
     const s = new SweetSamSoftware(0);
     s.level = 2;
-    s.levelBannerTicks = 10;
-    let ops = render(s);
-    expect(ops.filter((o) => name(o) === "draw:ready.png")).toEqual([]);
-    expect(ops.filter((o) => name(o) === "draw:font.png").length).toBe(7); // "LEVEL 2" without the space
-    s.levelBannerTicks = 0;
-    ops = render(s);
+    const ops = render(s);
     expect(ops.filter((o) => name(o) === "draw:ready.png").length).toBe(6);
+    expect(ops.filter((o) => name(o) === "draw:font.png")).toEqual([]);
   });
 
   test("clearing a level: the maze flashes and the bees leave", () => {
@@ -291,10 +288,8 @@ describe("SweetSamSoftware.draw", () => {
 
   test("rolling digit: old glyph scrolls up, new glyph rises from below inside the cell", () => {
     const s = new SweetSamSoftware(0);
-    s.scoreValue = 10;
-    const reel = s.dials.score[4];
-    reel.syncTarget(1);
-    reel.stepFrame(); // t = 1/18
+    s.dials.tick(10); // column 4 starts spinning 0→1: t = 1/18
+    const reel = s.dials.score.reels[4];
     render(s);
     const cellOps = cells.at(-1)?.ops ?? [];
     const p = reel.scroll01();

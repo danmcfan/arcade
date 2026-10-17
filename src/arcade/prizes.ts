@@ -1,37 +1,17 @@
 // Prizes: hub decorations bought at the prize counter with tickets. Once
 // owned, a prize is always on: it shows by its minigame's cabinet and gives
-// the player an advantage in every run of that minigame (the minigame applies
-// it; for Sweet Sam see src/sweet-sam/advantages.ts). The catalogue is data, so a
-// later minigame adds its prizes here. The Wallet (./wallet.ts) owns which are
-// owned and the rule for buying them.
+// the player an advantage in every run of that minigame. Each minigame
+// declares its own prizes and what they do (e.g. src/sweet-sam/advantages.ts);
+// this catalogue derives from them and adds where each hangs on the wall. The
+// Wallet (./wallet.ts) owns which are owned and the rule for buying them.
 
 import { imagePrizes } from "../engine/assets.ts";
 import { sub, type Sprite } from "../engine/image.ts";
 import type { SoftwareName } from "../game/software.ts";
 import { prizeGreyY, prizeRects } from "../ui/prizeArt.ts";
-import { minigame } from "../game/minigames.ts";
+import { minigame, minigames, type PrizeId } from "../game/minigames.ts";
 
-export type PrizeId =
-  | "honeyJar"
-  | "runningShoes"
-  | "sleepyBees"
-  | "lantern"
-  | "glowStick"
-  | "wings"
-  | "oilCan"
-  | "springBoots"
-  | "pocketWatch";
-
-/** Tickets each prize costs. */
-export const honeyJarPrice = 25;
-export const runningShoesPrice = 50;
-export const sleepyBeesPrice = 100;
-export const lanternPrice = 25;
-export const glowStickPrice = 50;
-export const wingsPrice = 100;
-export const oilCanPrice = 25;
-export const springBootsPrice = 50;
-export const pocketWatchPrice = 100;
+export type { PrizeId };
 
 /** Every decoration's art is one box this many pixels square (src/ui/prizeArt.ts). */
 export const prizeBox = 8;
@@ -81,103 +61,40 @@ function decoration(id: PrizeId, y = 0): Sprite {
 }
 
 /**
- * Every prize, in the order the prize counter menu lists them, each hung on
- * the wall on a clock face round its cabinet's top (`hang`): Brass Monkey's
- * at 9, 10:30 and 12, Firefly's at 3, 1:30 and 12, and Sweet Sam's in a
- * rainbow at 10:15, 12 and 1:45.
+ * Where each prize hangs: the hour on a clock face round its cabinet's top
+ * (`hang`): Brass Monkey's at 9, 10:30 and 12, Firefly's at 3, 1:30 and 12,
+ * and Sweet Sam's in a rainbow at 10:15, 12 and 1:45. A new prize needs its
+ * hour here too; the compiler asks for it.
  */
-export const prizes: readonly Prize[] = [
-  {
-    id: "honeyJar",
-    name: "HONEY JAR",
-    price: honeyJarPrice,
-    effect: "+1 LIFE IN SWEET SAM",
-    software: "sweetSam",
-    sprite: decoration("honeyJar"),
-    greySprite: decoration("honeyJar", prizeGreyY),
-    ...hang("sweetSam", 10.25),
-  },
-  {
-    id: "runningShoes",
-    name: "RUNNING SHOES",
-    price: runningShoesPrice,
-    effect: "SAM RUNS FASTER",
-    software: "sweetSam",
-    sprite: decoration("runningShoes"),
-    greySprite: decoration("runningShoes", prizeGreyY),
-    ...hang("sweetSam", 1.75),
-  },
-  {
-    id: "sleepyBees",
-    name: "SLEEPY BEES",
-    price: sleepyBeesPrice,
-    effect: "BEES SLEEP LONGER",
-    software: "sweetSam",
-    sprite: decoration("sleepyBees"),
-    greySprite: decoration("sleepyBees", prizeGreyY),
-    ...hang("sweetSam", 12),
-  },
-  {
-    id: "lantern",
-    name: "LANTERN",
-    price: lanternPrice,
-    effect: "+1 LIFE IN FIREFLY",
-    software: "firefly",
-    sprite: decoration("lantern"),
-    greySprite: decoration("lantern", prizeGreyY),
-    ...hang("firefly", 3),
-  },
-  {
-    id: "glowStick",
-    name: "GLOW STICK",
-    price: glowStickPrice,
-    effect: "3 SPARKS AT ONCE",
-    software: "firefly",
-    sprite: decoration("glowStick"),
-    greySprite: decoration("glowStick", prizeGreyY),
-    ...hang("firefly", 1.5),
-  },
-  {
-    id: "wings",
-    name: "WINGS",
-    price: wingsPrice,
-    effect: "FIREFLY FLIES FASTER",
-    software: "firefly",
-    sprite: decoration("wings"),
-    greySprite: decoration("wings", prizeGreyY),
-    ...hang("firefly", 12),
-  },
-  {
-    id: "oilCan",
-    name: "OIL CAN",
-    price: oilCanPrice,
-    effect: "+1 LIFE IN BRASS MONKEY",
-    software: "brassMonkey",
-    sprite: decoration("oilCan"),
-    greySprite: decoration("oilCan", prizeGreyY),
-    ...hang("brassMonkey", 9),
-  },
-  {
-    id: "springBoots",
-    name: "SPRING BOOTS",
-    price: springBootsPrice,
-    effect: "JUMP HIGHER",
-    software: "brassMonkey",
-    sprite: decoration("springBoots"),
-    greySprite: decoration("springBoots", prizeGreyY),
-    ...hang("brassMonkey", 12),
-  },
-  {
-    id: "pocketWatch",
-    name: "POCKET WATCH",
-    price: pocketWatchPrice,
-    effect: "SLOWER BONUS",
-    software: "brassMonkey",
-    sprite: decoration("pocketWatch"),
-    greySprite: decoration("pocketWatch", prizeGreyY),
-    ...hang("brassMonkey", 10.5),
-  },
-];
+const hours: Readonly<Record<PrizeId, number>> = {
+  honeyJar: 10.25,
+  runningShoes: 1.75,
+  sleepyBees: 12,
+  lantern: 3,
+  glowStick: 1.5,
+  wings: 12,
+  oilCan: 9,
+  springBoots: 12,
+  pocketWatch: 10.5,
+};
+
+/**
+ * Every prize, as its minigame declares it (src/game/minigames.ts), in the
+ * order the prize counter menu lists them: each minigame's in turn, hung on
+ * the wall round its cabinet.
+ */
+export const prizes: readonly Prize[] = minigames.flatMap((m) =>
+  m.prizes.map(({ id, name, price, effect }) => ({
+    id,
+    name,
+    price,
+    effect,
+    software: m.name,
+    sprite: decoration(id),
+    greySprite: decoration(id, prizeGreyY),
+    ...hang(m.name, hours[id]),
+  })),
+);
 
 const prizeIds: ReadonlySet<string> = new Set(prizes.map((p) => p.id));
 

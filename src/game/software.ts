@@ -22,6 +22,8 @@ export interface Software {
   snapshot(): SoftwareSnapshot;
   /** Optional, test hook only: start stage (or level) `stage` afresh, for capture scripts. */
   jumpTo?(stage: number): void;
+  /** Optional, test hook only: set the score to `score`, for verify checks. */
+  scoreTo?(score: number): void;
 }
 
 /**
@@ -61,4 +63,6 @@ export interface Scene {
   persist?(): void;
   /** Optional, test hook only: jump the running minigame to stage (or level) `stage`. */
   jumpTo?(stage: number): void;
+  /** Optional, test hook only: set the running minigame's score to `score`. */
+  scoreTo?(score: number): void;
 }

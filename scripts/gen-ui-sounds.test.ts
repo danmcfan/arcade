@@ -7,6 +7,7 @@ import {
   soundDeclarations,
   sweetSamTunes,
   titleSong,
+  victorySong,
   tuneSeconds,
   type Note,
 } from "../src/ui/sounds.ts";
@@ -33,6 +34,12 @@ describe("UI sound source", () => {
   test("the title music's voices are the same length, so the loop lines up", () => {
     expect(length(titleSong.bass)).toBe(length(titleSong.melody));
     expect(length(titleSong.arpeggio)).toBe(length(titleSong.melody));
+  });
+
+  test("the victory jingle's voices end together, inside 4 s", () => {
+    expect(length(victorySong.bass)).toBe(length(victorySong.melody));
+    expect(length(victorySong.arpeggio)).toBe(length(victorySong.melody));
+    expect((length(victorySong.melody) * 60) / victorySong.eighthsPerMinute).toBeLessThanOrEqual(4);
   });
 });
 
