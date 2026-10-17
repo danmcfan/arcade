@@ -57,8 +57,6 @@ export function draw(
     const p = prize(id);
     drawImage(screen, p.sprite, p.x + buffer, p.y + buffer);
   }
-  // The arcade win's cake, trophy and balloons stand on the desk for good.
-  if (s.wallet.arcadeWon) drawWinPieces(screen, buffer);
 
   const player = s.player;
   const row = player.frameDirection[player.direction];
@@ -70,6 +68,9 @@ export function draw(
     player.height,
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
+  // The arcade win's cake, trophy and balloons stand on the desk for good, in
+  // front of the player, who can only ever stand behind the desk.
+  if (s.wallet.arcadeWon) drawWinPieces(screen, buffer);
 
   const machine = s.machines.find((m) => m.title === named);
   const beatenHi = machine === undefined ? null : s.wallet.beatenHighScore(machine.name);

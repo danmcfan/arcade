@@ -32,7 +32,7 @@ import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
 import { titleBar, titleCabinet, titleWord } from "../src/ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod } from "../src/title/logo.ts";
-import { balloonsLeftRect, balloonsRightRect, cakeRect, confetti, trophyRect } from "../src/arcade/arcadeWin.ts";
+import { confetti, winPlaces } from "../src/arcade/arcadeWin.ts";
 import { confettiFrames, confettiLetters, winArt } from "../src/ui/winArt.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
@@ -102,20 +102,13 @@ function paintPrizes(room: PNG): void {
   }
 }
 
-/** Each arcade-win piece and where it stands on the desk. */
-const winPlaces = [
-  { piece: "balloonsLeft", rect: balloonsLeftRect },
-  { piece: "balloonsRight", rect: balloonsRightRect },
-  { piece: "cake", rect: cakeRect },
-  { piece: "trophy", rect: trophyRect },
-] as const;
-
 /** The hub just after the arcade win: the cake, trophy and balloons on the desk, and confetti falling as the game drops it. */
 function arcadeWinFrames(): PNG[] {
   const frames = hubFrames((room) => {
     for (const { piece, rect } of winPlaces) paint(room, winArt[piece], sweetie, rect.x, rect.y);
   });
   return frames.map((png, i) => {
+    // Two seconds in, when the most pieces are falling, at twice the game's speed so the loop shows their fall.
     for (const p of confetti(120 + i * 2)) {
       const frame = confettiFrames[p.frame] ?? [];
       paint(png, recolour(frame, { w: confettiLetters[p.colour] ?? "w" }), sweetie, p.x, p.y);

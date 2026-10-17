@@ -15,46 +15,41 @@ import {
   type WinPiece,
 } from "../ui/winArt.ts";
 import type { Rect } from "./collision.ts";
+import { deskRect } from "./desk.ts";
 
-/** The row of the desk's back run every piece stands on, in hub-image coordinates. */
-const deskTop = 109;
+/** The row every piece's bottom sits on: 2 px into the desk's back run, so it stands on the counter top. */
+const deskTop = deskRect.y + 2;
 
-/** Where `piece` stands: centred on `cx`, its bottom on the desk's back run. */
-function standing(piece: WinPiece, cx: number): Rect {
+/** Where `piece` stands: `fromLeft` of the desk's left edge to its middle, its bottom on the back run. */
+function standing(piece: WinPiece, fromLeft: number): Rect {
   const { w, h } = winRects[piece];
-  return { x: Math.round(cx - w / 2), y: deskTop - h, w, h };
+  return { x: Math.round(deskRect.x + fromLeft - w / 2), y: deskTop - h, w, h };
 }
 
 /** The cake on the desk's back run, left of the employee. */
-export const cakeRect: Rect = standing("cake", 55);
+export const cakeRect: Rect = standing("cake", 19);
 /** The gold trophy on the desk's back run, right of the employee. */
-export const trophyRect: Rect = standing("trophy", 104.5);
-/** The balloons, tied at each end of the desk's back run. */
-export const balloonsLeftRect: Rect = standing("balloonsLeft", 42.5);
-export const balloonsRightRect: Rect = standing("balloonsRight", 117.5);
+export const trophyRect: Rect = standing("trophy", 68.5);
+/** The balloons, tied at each end of the desk's back run: flush with its left and right edges. */
+export const balloonsLeftRect: Rect = standing("balloonsLeft", winRects.balloonsLeft.w / 2);
+export const balloonsRightRect: Rect = standing("balloonsRight", deskRect.w - winRects.balloonsRight.w / 2);
 
-const placed: readonly { piece: WinPiece; rect: Rect }[] = [
-  { piece: "balloonsLeft", rect: balloonsLeftRect },
-  { piece: "balloonsRight", rect: balloonsRightRect },
-  { piece: "cake", rect: cakeRect },
-  { piece: "trophy", rect: trophyRect },
-];
-
-function pieceSprite(piece: WinPiece): Sprite {
+/** Each piece, where it stands, and its sprite in win.png. */
+export const winPlaces: readonly { piece: WinPiece; rect: Rect; sprite: Sprite }[] = (
+  [
+    ["balloonsLeft", balloonsLeftRect],
+    ["balloonsRight", balloonsRightRect],
+    ["cake", cakeRect],
+    ["trophy", trophyRect],
+  ] as const
+).map(([piece, rect]) => {
   const r = winRects[piece];
-  return sub(imageWin, r.x, 0, r.x + r.w, r.h);
-}
-
-const sprites: Readonly<Record<WinPiece, Sprite>> = {
-  cake: pieceSprite("cake"),
-  trophy: pieceSprite("trophy"),
-  balloonsLeft: pieceSprite("balloonsLeft"),
-  balloonsRight: pieceSprite("balloonsRight"),
-};
+  return { piece, rect, sprite: sub(imageWin, r.x, 0, r.x + r.w, r.h) };
+});
 
 /** The cake, trophy and balloons, standing on the desk. */
 export function drawWinPieces(screen: Surface, buffer: number): void {
-  for (const { piece, rect } of placed) screen.draw(sprites[piece], rect.x + buffer, rect.y + buffer);
+  for (const { rect, sprite } of winPlaces) screen.draw(sprite, rect.x + buffer, rect.y + buffer);
 }
 
 /** One piece of confetti: which piece, where (hub-image coordinates), its colour and its tumble frame. */
@@ -76,6 +71,8 @@ const slowest = 3;
 const fastest = 1.5;
 /** Where a piece's top-left can be and still be wholly in the hub. */
 const maxX = imageArcade.w - confettiSize;
+/** The furthest a piece sways either side of its line. */
+const maxSway = 3;
 const maxY = imageArcade.h - confettiSize;
 
 /** Ticks from the arcade win until the last piece has fallen out of the hub. */
@@ -102,10 +99,11 @@ export function confetti(age: number): ConfettiPiece[] {
     const ticksPerPixel = fastest + scatter(id, 1) * (slowest - fastest);
     const y = Math.trunc(fallen / ticksPerPixel);
     if (y > maxY) continue;
-    const swayWidth = 1 + scatter(id, 2) * 2;
+    const swayWidth = 1 + scatter(id, 2) * (maxSway - 1);
     const swayTicks = 40 + scatter(id, 3) * 50;
     const sway = Math.round(swayWidth * Math.sin(2 * Math.PI * (fallen / swayTicks + scatter(id, 4))));
-    const x = Math.min(maxX, Math.max(0, Math.trunc(scatter(id, 5) * (maxX + 1)) + sway));
+    // Set off at least `maxSway` in from each side, so the sway never pushes a piece out of the hub.
+    const x = maxSway + Math.trunc(scatter(id, 5) * (maxX - 2 * maxSway + 1)) + sway;
     const tumbleTicks = 6 + scatter(id, 6) * 6;
     const frame = Math.trunc(fallen / tumbleTicks + scatter(id, 7) * confettiFrames.length) % confettiFrames.length;
     const colour = Math.trunc(scatter(id, 8) * confettiLetters.length);

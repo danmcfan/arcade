@@ -9,6 +9,35 @@
 import { stripRects } from "./strip.ts";
 import type { SweetieLetter } from "./sweetie16.ts";
 
+/** A red and a blue balloon, their strings meeting at the knot they are tied by. */
+const balloonsLeftRows: readonly string[] = [
+  "..kkk........",
+  ".kwrrk.......",
+  "kwrrrpk......",
+  "krrrrpk.kkk..",
+  "krrrppkkwBBk.",
+  ".kpppkkwBBBbk",
+  "..kkk.kBBBBbk",
+  "...k..kBBBbbk",
+  "...l...kbbbk.",
+  "...l....kkk..",
+  "...l.....k...",
+  "....l....l...",
+  "....l....l...",
+  "....l...l....",
+  "....l...l....",
+  ".....l..l....",
+  ".....l..l....",
+  ".....l.l.....",
+  ".....l.l.....",
+  "......ll.....",
+  "......l......",
+  "......l......",
+];
+
+/** The right bunch's colours for the left's: red and blue become yellow and green, each with its shade. */
+const rightColours: Readonly<Record<string, SweetieLetter>> = { r: "y", p: "o", B: "g", b: "G" };
+
 export const winArt = {
   /** A two-tier cake with one candle: left of the employee on the desk's back run. */
   cake: [
@@ -40,56 +69,10 @@ export const winArt = {
     "..kyyyyok..",
     "..kkkkkkk..",
   ],
-  /** A red and a blue balloon, their strings tied at the desk's left end. */
-  balloonsLeft: [
-    "..kkk........",
-    ".kwrrk.......",
-    "kwrrrpk......",
-    "krrrrpk.kkk..",
-    "krrrppkkwBBk.",
-    ".kpppkkwBBBbk",
-    "..kkk.kBBBBbk",
-    "...k..kBBBbbk",
-    "...l...kbbbk.",
-    "...l....kkk..",
-    "...l.....k...",
-    "....l....l...",
-    "....l....l...",
-    "....l...l....",
-    "....l...l....",
-    ".....l..l....",
-    ".....l..l....",
-    ".....l.l.....",
-    ".....l.l.....",
-    "......ll.....",
-    "......l......",
-    "......l......",
-  ],
-  /** A yellow and a green balloon, tied at the desk's right end. */
-  balloonsRight: [
-    "..kkk........",
-    ".kwyyk.......",
-    "kwyyyok......",
-    "kyyyyok.kkk..",
-    "kyyyookkwggk.",
-    ".koookkwgggGk",
-    "..kkk.kggggGk",
-    "...k..kgggGGk",
-    "...l...kGGGk.",
-    "...l....kkk..",
-    "...l.....k...",
-    "....l....l...",
-    "....l....l...",
-    "....l...l....",
-    "....l...l....",
-    ".....l..l....",
-    ".....l..l....",
-    ".....l.l.....",
-    ".....l.l.....",
-    "......ll.....",
-    "......l......",
-    "......l......",
-  ],
+  /** Tied at the desk's left end. */
+  balloonsLeft: balloonsLeftRows,
+  /** The left bunch recoloured yellow and green, tied at the desk's right end. */
+  balloonsRight: balloonsLeftRows.map((row) => row.replaceAll(/[rpBb]/gu, (ch) => rightColours[ch] ?? ch)),
 } as const satisfies Record<string, readonly string[]>;
 
 export type WinPiece = keyof typeof winArt;
