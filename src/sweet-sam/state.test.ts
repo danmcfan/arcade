@@ -704,7 +704,7 @@ describe("intermissions (#160)", () => {
 describe("game over pays out", () => {
   test("a run that clears level 1 and loses every life on level 2 ends with gameOver() and its score in tickets", () => {
     // One honey drop left, ahead of the bear: eating it clears level 1.
-    const s = from({ score: 1234, items: eating(244) });
+    const s = from({ score: 1154, items: eating(244) });
     expect(s.snapshot().items).toBe(1);
     step(s, 2);
     expect(s.snapshot().items).toBe(0);
@@ -712,7 +712,7 @@ describe("game over pays out", () => {
     step(s, levelClearTicks + 1 + levelBannerTicks + 122);
     expect([s.snapshot().state, s.snapshot().level]).toEqual(["PLAY", 2]);
     for (let t = 0; t < 20_000 && !s.gameOver(); t++) step(s);
-    expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1314, "GAMEOVER", 2]); // 1234 + the last drop + drops eaten on level 2
+    expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1234, "GAMEOVER", 2]); // 1154 + the last drop and the drops eaten on level 2
     expect(ticketsFor(s.score())).toBe(12);
   });
 });
