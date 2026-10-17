@@ -397,6 +397,12 @@ export interface BrassMonkeySnapshot {
   hazards: BrassMonkeyHazardSnapshot[];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[];
+  /** Ticks left holding the wrench; 0 without it. */
+  wrench: number;
+  /** Whether each of the floor's wrenches has been picked up. */
+  wrenches: boolean[];
+  /** The smashes whose points are showing, where each hazard was. */
+  smashes: { x: number; y: number; points: number }[];
   gearTimer: number;
   emberTimer: number;
 }

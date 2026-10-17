@@ -16,6 +16,8 @@ import {
   imageGnome,
   imageMonkey,
   imageWall,
+  imageWrench,
+  imageWrenchSwing,
   sounds,
 } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
@@ -66,6 +68,7 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   jump: sounds.monkeyJump,
   bolt: sounds.monkeyBolt,
   hazard: sounds.monkeyHazard,
+  smash: sounds.monkeySmash,
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
@@ -80,6 +83,8 @@ export class BrassMonkeySoftware implements FixedViewport {
   private readonly highScoreDial: Dial;
   private readonly bonusDial: Dial;
   private readonly loopDial = new Dial(1, 1);
+  /** The wrench music is playing. */
+  private wrenchMusic = false;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
@@ -105,6 +110,12 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.highScoreDial.update(this.highScore);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
+    const held = this.run.phase === "play" && this.run.monkey.wrench > 0;
+    if (held !== this.wrenchMusic) {
+      this.wrenchMusic = held;
+      if (held) sounds.monkeyWrench.blip();
+      else sounds.monkeyWrench.pause();
+    }
   }
 
   fixedViewportSize(): [number, number] {
@@ -138,10 +149,19 @@ export class BrassMonkeySoftware implements FixedViewport {
       const glint = t < 18 ? 1 + Math.trunc(t / 6) : 0;
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
+    floor.wrenches.forEach((w, n) => {
+      if (run.wrenches[n] !== true) screen.draw(imageWrench, left + w.x - 4, top + w.y - 14);
+    });
     screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
     for (const h of run.hazards) drawHazard(screen, h, left, top, run.ticks);
     // The monkey blinks while it loses a life.
-    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
+    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) {
+      drawMonkey(screen, run.monkey, left, top);
+      // In its last ticks the wrench flashes: drawn 4 ticks, hidden 4.
+      if (run.monkey.wrench > 0 && (!run.wrenchFlashing() || Math.trunc(run.ticks / 4) % 2 === 0))
+        drawWrench(screen, run.monkey, left, top, run.ticks);
+    }
+    for (const s of run.smashes) drawTextCentered(screen, `${s.points}`, left + s.x, top + s.y - 16);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -192,6 +212,9 @@ export class BrassMonkeySoftware implements FixedViewport {
       moving: m.moving,
       hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing })),
       bolts: [...run.bolts],
+      wrench: m.wrench,
+      wrenches: [...run.wrenches],
+      smashes: run.smashes.map(({ x, y, points }) => ({ x, y, points })),
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
     };
@@ -225,6 +248,17 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
     top + m.y - 16,
     flip ? { flipX: true } : undefined,
   );
+}
+
+/** The held wrench, swinging every 8 ticks: raised over the monkey's head, then down in front of it. */
+function drawWrench(screen: Surface, m: Monkey, left: number, top: number, ticks: number): void {
+  const face = m.left ? -1 : 1;
+  if (Math.trunc(ticks / 8) % 2 === 0) {
+    screen.draw(imageWrench, left + m.x - 4 + face * 3, top + m.y - 26);
+    return;
+  }
+  const x = m.left ? m.x - 18 : m.x + 4;
+  screen.draw(imageWrenchSwing, left + x, top + m.y - 12, m.left ? { flipX: true } : undefined);
 }
 
 function drawHazard(screen: Surface, h: Hazard, left: number, top: number, ticks: number): void {

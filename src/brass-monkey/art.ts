@@ -258,6 +258,29 @@ export const bolt: readonly string[] = [
   "..........",
 ];
 
+/**
+ * The wrench (#243): picked up, the monkey swings it to smash hazards. A steel
+ * open-ended spanner standing on its ring end, 8×14: lit on the left, shaded
+ * on the right, its jaws open at the top. The swing is the same rows turned a
+ * quarter clockwise, so the jaws point the way the monkey faces.
+ */
+export const wrench: readonly string[] = [
+  "........",
+  ".l....m.",
+  ".wl..lm.",
+  ".wllllm.",
+  "..wllm..",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "...wm...",
+  "..wllm..",
+  "..l.dm..",
+  "..wllm..",
+  "........",
+];
+
 /** Where the glint that runs over the bolt's head is centred, frame by frame: a white + over the bolt's pixels. */
 export const boltGlints: readonly (readonly [number, number])[] = [
   [2, 3],

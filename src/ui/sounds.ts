@@ -550,6 +550,16 @@ const brassMonkeyJingles = {
     ],
     eighth: 0.04,
   },
+  /** A hazard smashed by the wrench: a clank, then a bright ring. */
+  smash: {
+    notes: [
+      [48, 1],
+      [43, 1],
+      [88, 1],
+      [91, 2],
+    ],
+    eighth: 0.035,
+  },
   /** A life lost: a falling chromatic run down to a low thud. */
   death: {
     notes: [
@@ -598,6 +608,35 @@ const brassMonkeyJingles = {
 for (const [name, effect] of Object.entries(brassMonkeyJingles)) {
   defineSound(`monkey${capitalized(name)}`, { effect }, { channel: "arcade" });
 }
+
+/**
+ * Brass Monkey's wrench music (#243): a quick hammering riff that loops while
+ * the monkey holds the wrench, in place of Donkey Kong's hammer music. It
+ * stops with the pause menu.
+ */
+const wrenchTune: Tune = {
+  notes: [
+    [72, 1],
+    [72, 1],
+    [79, 1],
+    [72, 1],
+    [77, 1],
+    [72, 1],
+    [76, 1],
+    [74, 1],
+    [72, 1],
+    [72, 1],
+    [79, 1],
+    [72, 1],
+    [81, 1],
+    [79, 1],
+    [77, 1],
+    [76, 1],
+  ],
+  eighth: 0.09,
+  wave: "square",
+};
+defineSound("monkeyWrench", { tune: wrenchTune }, { channel: "minigame", loop: true, volume: 0.5 });
 
 function capitalized(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);

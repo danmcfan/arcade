@@ -368,7 +368,7 @@ describe("the wrench", () => {
         run.hazards = [hazard(kind, run.monkey.x + 10, run.monkey.y, -1)];
         step(run, 1);
         expect([run.phase, run.hazards.length, sounds]).toEqual(["play", 0, ["smash"]]);
-        expect(t.smashPoints).toContain(run.score);
+        expect(t.smashPoints.some((p) => p === run.score)).toBe(true);
         expect(run.smashes).toMatchObject([{ points: run.score }]);
         scores.add(run.score);
       }
