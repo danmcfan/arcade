@@ -10,6 +10,7 @@ import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
 import { beamY, bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
+import { fireflyStartTune, tuneSeconds } from "../ui/sounds.ts";
 import {
   beamTicks,
   beamWidth,
@@ -23,8 +24,12 @@ import {
   formation,
   hitEffectTicks,
   maxSparks,
+  morphBonus,
+  morphFromStage,
   points,
   respawnTicks,
+  shotCutoffMargin,
+  shotSpawnOffset,
   sparkSpeed,
   stageIntroTicks,
   startLives,
@@ -145,12 +150,37 @@ describe("stage start", () => {
     expect(rec.events.filter((e) => e === "play:badgeTick").length).toBe(4);
   });
 
-  test("plays the stage sound, then the enemies wait out the STAGE n text before flying in", () => {
+  test("a new run opens on the start theme, not the stage fanfare", () => {
     const f = new FireflySoftware();
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();
+    expect(rec.events).toEqual(["rewind:fireflyStart", "play:fireflyStart", "rewind:badgeTick", "play:badgeTick"]);
+  });
+
+  test("the start theme ends within the intro, and the firefly is held until it does", () => {
+    expect(tuneSeconds(fireflyStartTune) * 60).toBeLessThanOrEqual(stageIntroTicks);
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks, { left: true, space: true });
+    expect(f.player.x).toBe(112);
+    expect(f.sparks).toEqual([]);
+    run(f, 1, { left: true });
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("later stages play the stage fanfare, and the firefly moves during their intro", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    const rec = recordSounds();
+    f.update(held({ left: true }));
+    rec.stop();
     expect(rec.events).toEqual(["rewind:stage", "play:stage", "rewind:badgeTick", "play:badgeTick"]);
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("the enemies wait out the STAGE n text before flying in", () => {
+    const f = new FireflySoftware();
+    f.update(NO_INPUT);
     run(f, stageIntroTicks - 2);
     expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
     run(f, 2);
@@ -165,6 +195,62 @@ describe("stage start", () => {
     expect(t).toBeLessThan(2000);
     const sway = swayOffset(f.ticks);
     expect(f.enemies.map((e) => [e.kind, e.x - sway, e.y])).toEqual(formation().map((s) => [s.kind, s.x, s.y]));
+  });
+});
+
+/** A shot as it left its enemy: where it is, the firefly's x and the respawn count then. */
+interface FiredShot {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  px: number;
+  respawn: number;
+}
+
+/** Runs stage `stage`'s fly-in to the end, holding still; returns each new shot as fired, with the firefly's x then. */
+function flyIn(seed: number, stage = 1, onTick?: (f: FireflySoftware) => void): FiredShot[] {
+  rng.seed(seed);
+  const f = new FireflySoftware();
+  if (stage > 1) f.jumpTo(stage);
+  const seen = new Set<object>();
+  const fired: FiredShot[] = [];
+  let t = 0;
+  while (f.formationPhase !== "breathe" && t++ < 3000) {
+    onTick?.(f);
+    const respawn = f.respawn;
+    f.update(NO_INPUT);
+    for (const s of f.shots) {
+      if (seen.has(s)) continue;
+      seen.add(s);
+      fired.push({ ...s, px: f.player.x, respawn });
+    }
+  }
+  expect(f.enemies.some((e) => e.state === "diving")).toBe(false);
+  return fired;
+}
+
+describe("entry shots", () => {
+  test("with a fixed seed, an entering enemy fires down at the firefly from above the cut-off", () => {
+    const fired = flyIn(3, 3);
+    expect(fired.length).toBeGreaterThan(0);
+    for (const s of fired) {
+      expect(s.dy).toBeGreaterThan(0);
+      expect(s.y - shotSpawnOffset - s.dy).toBeLessThanOrEqual(playerY - shotCutoffMargin);
+      expect(Math.sign(s.dx)).toBe(Math.sign(s.px - (s.x - s.dx)));
+      expect(Math.abs(s.dx)).toBeLessThanOrEqual(difficulty(3).shotDrift);
+    }
+  });
+
+  test("stage 1's fly-in fires on some seeds", () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].some((seed) => flyIn(seed).length > 0)).toBe(true);
+  });
+
+  test("no entry shot is fired while the firefly respawns", () => {
+    const fired = flyIn(3, 3, (f) => {
+      f.respawn = respawnTicks;
+    });
+    expect(fired.filter((s) => s.respawn > 0)).toEqual([]);
   });
 });
 
@@ -228,7 +314,7 @@ function diveStep(stage: number): number {
 describe("dives", () => {
   test("once every enemy is in, they break off and dive, Wasps most often", () => {
     rng.seed(7);
-    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0 };
+    const counts: Record<EnemyKind, number> = { moth: 0, wasp: 0, owl: 0, morph: 0 };
     for (let i = 0; i < 300; i++) {
       const f = settled();
       f.update(NO_INPUT);
@@ -271,6 +357,28 @@ describe("dives", () => {
 
   test("on later stages a diver flies its dive faster", () => {
     expect(diveStep(10) / diveStep(5)).toBeCloseTo(difficulty(10).diveSpeed / difficulty(5).diveSpeed);
+  });
+
+  test("a dive still fires its full shotsPerDive after entry shots were added", () => {
+    const f = settled();
+    f.stage = 5;
+    f.diveTimer = 1_000_000;
+    const e = f.enemies[0];
+    if (e === undefined) throw new Error("no enemy");
+    divingAt(e, 20, 20);
+    e.shotsLeft = difficulty(5).shotsPerDive;
+    e.shotTimer = 1;
+    let fired = 0;
+    const seen = new Set<object>();
+    for (let i = 0; i < 400; i++) {
+      f.update(NO_INPUT);
+      for (const s of f.shots) {
+        if (seen.has(s)) continue;
+        seen.add(s);
+        fired++;
+      }
+    }
+    expect(fired).toBe(difficulty(5).shotsPerDive);
   });
 
   test("on later stages a shot drifts further sideways at the firefly", () => {
@@ -409,9 +517,84 @@ describe("escort-kill bonus", () => {
   });
 });
 
+/** A settled stage `stage` with only Moths left, a dive due next tick; tries seeds until `want` (or 200 tries). */
+function mothDives(stage: number, want: (f: FireflySoftware) => boolean): FireflySoftware | null {
+  for (let i = 0; i < 200; i++) {
+    rng.seed(100 + i);
+    const f = settled();
+    f.stage = stage;
+    f.enemies = f.enemies.filter((e) => e.kind === "moth");
+    f.update(NO_INPUT);
+    if (want(f)) return f;
+  }
+  return null;
+}
+
+const morphs = (f: FireflySoftware): Enemy[] => f.enemies.filter((e) => e.kind === "morph");
+
+describe("morphs", () => {
+  test(`from stage ${morphFromStage} a diving Moth can split into 3 morphs that dive together`, () => {
+    const mothCount = formation().filter((s) => s.kind === "moth").length;
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph in 200 dives");
+    expect(morphs(f).length).toBe(3);
+    expect(morphs(f).every((e) => e.state === "diving")).toBe(true);
+    expect(f.enemies.filter((e) => e.kind === "moth").length).toBe(mothCount - 1);
+  });
+
+  test(`no Moth morphs before stage ${morphFromStage}`, () => {
+    expect(mothDives(morphFromStage - 1, (g) => morphs(g).length > 0)).toBeNull();
+  });
+
+  test("shooting all 3 morphs pays the bonus on top of their points", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    let expected = 0;
+    for (const m of trio) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+      expected += points("morph", true);
+    }
+    expect(trio.every((m) => m.hp === 0)).toBe(true);
+    expect(f.points).toBe(expected + morphBonus);
+    expect(f.bonuses.map((b) => b.points)).toEqual([morphBonus]);
+  });
+
+  test("shooting only 2 of the 3 pays no bonus", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    const trio = morphs(f);
+    for (const m of trio) divingAt(m, m.x, m.y);
+    f.enemies = trio;
+    for (const m of trio.slice(0, 2)) {
+      sparkAt(f, m.x, m.y);
+      f.update(NO_INPUT);
+      f.sparks = [];
+    }
+    expect(f.points).toBe(2 * points("morph", true));
+  });
+
+  test("a morph that flies off the bottom is gone for the stage", () => {
+    const f = mothDives(morphFromStage, (g) => morphs(g).length > 0);
+    if (f === null) throw new Error("no morph");
+    f.diveTimer = 1_000_000;
+    f.lives = 99;
+    for (let t = 0; t < 2000 && morphs(f).length > 0; t++) f.update(NO_INPUT);
+    expect(morphs(f).length).toBe(0);
+    expect(f.enemies.every((e) => e.kind === "moth")).toBe(true);
+  });
+});
+
 describe("sparks", () => {
   test("Space fires a spark that flies up, with never more than 2 on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     const rec = recordSounds();
     f.update(held({ space: true }));
     rec.stop();
@@ -427,12 +610,71 @@ describe("sparks", () => {
 
   test("the firefly moves left and right only, kept on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     run(f, 10, { left: true });
     expect(f.player).toEqual({ x: 92, y: playerY });
     run(f, 10, { up: true });
     expect(f.player).toEqual({ x: 92, y: playerY });
     run(f, 200, { right: true });
     expect(f.player.x).toBe(216);
+  });
+});
+
+/** Kills a lone moth in formation with the score at `score` beforehand; returns lives gained and sounds. */
+function killAt(f: FireflySoftware, score: number): { gained: number; sounds: SoundEvent[] } {
+  const e = f.enemies[0];
+  if (e === undefined) throw new Error("no enemy");
+  e.hp = 1;
+  e.deadFrames = 0;
+  e.outOfFormation = false;
+  sparkAt(f, e.x, e.y);
+  f.points = score;
+  const before = f.lives;
+  const rec = recordSounds();
+  f.update(NO_INPUT);
+  rec.stop();
+  return { gained: f.lives - before, sounds: rec.events };
+}
+
+describe("extra lives", () => {
+  test("scoreTo sets the score, and the next tick pays any extra life it reaches", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.scoreTo(20_000);
+    expect([f.score(), f.lives]).toEqual([20_000, startLives]);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 1);
+    f.scoreTo(19_990);
+    f.scoreTo(20_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+  });
+
+  const moth = points("moth", false);
+
+  test("crossing 20,000, 70,000 and 140,000 each adds one life with the extra-life jingle", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    for (const t of [20_000, 70_000, 140_000]) {
+      const below = killAt(f, t - moth - 10);
+      expect(below.gained).toBe(0);
+      expect(below.sounds).not.toContain("play:extraLife");
+      const across = killAt(f, t - 10);
+      expect(across.gained).toBe(1);
+      expect(across.sounds).toContain("play:extraLife");
+      expect(killAt(f, t + 10).gained).toBe(0);
+    }
+  });
+
+  test("one jump across two thresholds pays two lives, once", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.points = 19_990;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives);
+    f.points = 75_000;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+    expect(f.snapshot().nextLife).toBe(140_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
   });
 });
 
@@ -444,7 +686,7 @@ describe("hits", () => {
       const rec = recordSounds();
       f.update(NO_INPUT);
       rec.stop();
-      expect(rec.events).toContain("play:hit");
+      expect(rec.events).toEqual([`rewind:${kind}Hit`, `play:${kind}Hit`]);
       expect([e.hp, e.deadFrames]).toEqual([0, hitEffectTicks - 1]);
       expect(f.sparks).toEqual([]);
     });
@@ -873,6 +1115,7 @@ describe("rescue", () => {
 describe("dual firefly", () => {
   test("fires 2 sparks per press, 8px either side, with the cap doubled", () => {
     const f = new FireflySoftware();
+    f.stageTick = stageIntroTicks + 1;
     f.dual = true;
     f.update(held({ space: true }));
     expect(f.sparks.map((s) => s.x)).toEqual([104, 120]);
@@ -950,5 +1193,33 @@ describe("dive shapes", () => {
     const last = track.at(-1);
     expect(Math.hypot((last?.x ?? 0) - start.x, (last?.y ?? 0) - start.y)).toBeLessThan(4);
     expect(back).toBe(true);
+  });
+});
+
+describe("hit sounds", () => {
+  test("an Owl's first spark plays owlHurt and its second plays owlKill", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 120 });
+    expect(e.hp).toBe(enemyHp.owl);
+    const rec = recordSounds();
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    expect(e.hp).toBe(1);
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    rec.stop();
+    expect(e.hp).toBe(0);
+    expect(rec.events).toEqual(["rewind:owlHurt", "play:owlHurt", "rewind:owlKill", "play:owlKill"]);
+  });
+});
+
+describe("dive sound", () => {
+  test("starting a dive plays the dive swoop once", () => {
+    const f = new FireflySoftware();
+    const e = f.enemies.find((en) => en.kind === "moth");
+    if (e === undefined) throw new Error("no moth");
+    const rec = recordSounds();
+    f.dive(e);
+    rec.stop();
+    expect(rec.events).toEqual(["rewind:dive", "play:dive"]);
   });
 });

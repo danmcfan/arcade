@@ -1,4 +1,4 @@
-// Pixel-art source for Firefly (ADR 0006): the firefly, its spark, the Moth,
+// Pixel-art source for Firefly (ADR 0006): the firefly, its spark, the Moth, its morph,
 // Wasp and Owl, the hit effect and the night background. Every sprite is rows
 // of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.` is blank).
 // scripts/gen-firefly-art.ts writes them to src/assets/images/firefly/
@@ -77,6 +77,29 @@ export const mothArt: readonly string[] = [
   "...mm..yy..mm...",
   ".......oo.......",
   "................",
+  "................",
+];
+
+/**
+ * The morph a Moth splits into: a green scorpion with red claws and a red
+ * sting, after Galaga's scorpion trio. 16×16, facing up.
+ */
+export const morphArt: readonly string[] = [
+  "................",
+  "...r........r...",
+  "..ro........or..",
+  "..r.o......o.r..",
+  "..rr........rr..",
+  "...rk.kGGk.kr...",
+  "....kGgGGgGk....",
+  ".m..kGgyygGk..m.",
+  "..m.kGGGGGGk.m..",
+  ".m..kGgyygGk..m.",
+  "..m..kGGGGk..m..",
+  "......kGGk......",
+  "......krrk......",
+  "......roor......",
+  ".......kk.......",
   "................",
 ];
 

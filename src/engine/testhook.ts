@@ -23,6 +23,8 @@ export interface ArcadeTestHook {
   step(n: number, input?: Partial<Input>): void;
   /** Jump the running minigame to stage (or level) `stage`, then one draw; throws if the scene has none. */
   jump(stage: number): void;
+  /** Set the running minigame's score to `score`, then one draw; throws if the scene has none. */
+  scoreTo(score: number): void;
   /** `rng.seed(n)`. */
   seed(n: number): void;
   /** Replace the current scene with a fresh instance from src/game/registry.ts. */
@@ -80,6 +82,12 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
       const scene = runtime.scene;
       if (scene.jumpTo === undefined) throw new Error(`jump: the ${scene.name} scene has no minigame to jump`);
       scene.jumpTo(stage);
+      host.draw();
+    },
+    scoreTo(score) {
+      const scene = runtime.scene;
+      if (scene.scoreTo === undefined) throw new Error(`scoreTo: the ${scene.name} scene has no minigame to score`);
+      scene.scoreTo(score);
       host.draw();
     },
     seed: (n) => {

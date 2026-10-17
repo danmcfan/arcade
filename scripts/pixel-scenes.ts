@@ -13,9 +13,9 @@ import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
 import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
-import { blank, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
+import { blank, flipX, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
-import { flowers } from "../src/sweet-sam/art.ts";
+import { beeEyes, flowers } from "../src/sweet-sam/art.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { saveKey, saveVersion } from "../src/title/save.ts";
 import { noHighScores, Wallet } from "../src/arcade/wallet.ts";
@@ -32,6 +32,8 @@ import { greyLetters, mirroredPrizes, prizeArt } from "../src/ui/prizeArt.ts";
 import { tickerGlyphs, tickerInks, tickerRect } from "../src/ui/tickerArt.ts";
 import { titleBar, titleCabinet, titleWord } from "../src/ui/titleArt.ts";
 import { backLights, logoOverlay, sheenPeriod } from "../src/title/logo.ts";
+import { confetti, winPlaces } from "../src/arcade/arcadeWin.ts";
+import { confettiFrames, confettiLetters, winArt } from "../src/ui/winArt.ts";
 
 /** One game screen: which art sources it draws, and how to render it. */
 export interface Scene {
@@ -100,17 +102,36 @@ function paintPrizes(room: PNG): void {
   }
 }
 
-/** Sweet Sam's level counter on the black maze: every bonus flower in level order, one frame, 8 px apart. */
-function flowerRow(): PNG[] {
+/** The hub just after the arcade win: the cake, trophy and balloons on the desk, and confetti falling as the game drops it. */
+function arcadeWinFrames(): PNG[] {
+  const frames = hubFrames((room) => {
+    for (const { piece, rect } of winPlaces) paint(room, winArt[piece], sweetie, rect.x, rect.y);
+  });
+  return frames.map((png, i) => {
+    // Two seconds in, when the most pieces are falling, at twice the game's speed so the loop shows their fall.
+    for (const p of confetti(120 + i * 2)) {
+      const frame = confettiFrames[p.frame] ?? [];
+      paint(png, recolour(frame, { w: confettiLetters[p.colour] ?? "w" }), sweetie, p.x, p.y);
+    }
+    return png;
+  });
+}
+
+/** Sweet Sam's black maze with every bonus flower in level order, 8 px apart, and under them an eaten bee's eyes, right, left, up and down. */
+function flowersAndEyesRow(): PNG[] {
   const gap = 8;
-  const png = blank(gap + flowers.length * (16 + gap), 32);
+  const png = blank(gap + Math.max(flowers.length, beeEyes.length) * (16 + gap), 56);
   paint(
     png,
-    Array.from({ length: 32 }, () => "k".repeat(png.width)),
+    Array.from({ length: png.height }, () => "k".repeat(png.width)),
     sweetie,
   );
   flowers.forEach((f, i) => {
     paint(png, f, sweetie, gap + i * (16 + gap), 8);
+  });
+  const [right = [], ...upDown] = beeEyes;
+  [right, flipX(right), ...upDown].forEach((e, i) => {
+    paint(png, e, sweetie, gap + i * (16 + gap), 32);
   });
   return [png];
 }
@@ -269,8 +290,9 @@ export const scenes: readonly Scene[] = [
     },
   },
   { name: "hub with every prize", sources: ["src/ui/prizeArt.ts"], render: () => hubFrames(paintPrizes) },
+  { name: "hub on the arcade win", sources: ["src/ui/winArt.ts"], render: arcadeWinFrames },
   { name: "title", sources: ["src/ui/titleArt.ts"], render: titleTop },
-  { name: "sweet-sam flowers", sources: ["src/sweet-sam/art.ts"], render: flowerRow },
+  { name: "sweet-sam flowers and bee eyes", sources: ["src/sweet-sam/art.ts"], render: flowersAndEyesRow },
 ];
 
 /** The scene that shows `file`'s art; throws naming this file when none does. */

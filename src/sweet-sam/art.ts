@@ -11,6 +11,7 @@
 // outlines are gone (#209): the maze is black, so an outline would not show.
 // Where an outline carried a shape, a darker shade of the body draws it.
 
+import type { Direction } from "../engine/input.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import type { SweetieLetter } from "../ui/sweetie16.ts";
 
@@ -34,7 +35,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "..pprrrrrrrrpp..",
       "...rrrrrrrrrr...",
       "..rrrrwrrwrrrr..",
-      "..rrrrwkkwrrrr..",
+      "..rrrrwppwrrrr..",
       "..rrrrrrrrrrrr..",
       "...rrrrrrrrrr...",
       "....pppppppp....",
@@ -53,7 +54,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "..pprrrrrrrrpp..",
       "...rrrrrrrrrr...",
       "..rrrrwrrwrrrr..",
-      "..rrrrwkkwrrrr..",
+      "..rrrrwppwrrrr..",
       "..rrrrrrrrrrrr..",
       "..rprrrrrrrrr...",
       ".rrppppppppp....",
@@ -110,7 +111,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -129,7 +130,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -147,7 +148,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -169,7 +170,7 @@ export const walkCycle: readonly number[] = [0, 1, 0, 2];
  * `dazedFace` over its eyes), then sinking, squashed flat, and a puddle with
  * stars. Drawn below the walk rows; not played yet (#47).
  */
-export const dazedFace: readonly string[] = ["rrrrrrrrrrrr", "rrwwrkkrwwrr"];
+export const dazedFace: readonly string[] = ["rrrrrrrrrrrr", "rrwwrpprwwrr"];
 /** Where `dazedFace` goes on the standing bear. */
 export const dazedFaceAt: readonly [number, number] = [2, 4];
 
@@ -179,10 +180,11 @@ export const bearDeath: readonly (readonly string[])[] = [
     "................",
     "................",
     "................",
+    "................",
     "..ppp......ppp..",
     "..poprrrrrrpop..",
     "..pprrrrrrrrpp..",
-    "..rrwwrkkrwwrr..",
+    "..rrwwrpprwwrr..",
     "..rrrrrrrrrrrr..",
     "....pppppppp....",
     "..rprroooorrpr..",
@@ -191,9 +193,9 @@ export const bearDeath: readonly (readonly string[])[] = [
     "....rr....rr....",
     "....pp....pp....",
     "................",
-    "................",
   ],
   [
+    "................",
     "................",
     "................",
     "................",
@@ -205,13 +207,13 @@ export const bearDeath: readonly (readonly string[])[] = [
     "...ppp....ppp...",
     "..poprrrrrrpop..",
     ".pprrrrrrrrrrpp.",
-    "rrrwwrrkkrrwwrrr",
+    "rrrwwrrpprrwwrrr",
     "rrroooooooooorrr",
     ".pppppppppppppp.",
     "................",
-    "................",
   ],
   [
+    "................",
     "................",
     "................",
     "....y......y....",
@@ -224,10 +226,9 @@ export const bearDeath: readonly (readonly string[])[] = [
     "........y.......",
     "................",
     "................",
-    "................",
-    "................",
     "..rrroooooorrr..",
     "...pppppppppp...",
+    "................",
   ],
 ];
 
@@ -304,11 +305,76 @@ export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
 /** The bees' order in bees.png, one 64×96 sheet each, top to bottom. */
 export const beeOrder: readonly SweetSamEnemyKind[] = ["red", "pink", "teal", "orange"];
 
-/** A sleepy bee: grey, wings dull, eyes shut. */
-export const sleepyLook = { body: "m", wings: "l" } as const;
+/**
+ * An eaten bee flying home: its eyes and antennae, 16×16 like the bee,
+ * looking right, up and down; looking left is the first mirrored. The pupils
+ * look the way it travels and the whole head leans a pixel that way.
+ */
+export const beeEyes: readonly (readonly string[])[] = [
+  [
+    "................",
+    "...y..........y.",
+    "....m........m..",
+    ".....m......m...",
+    "................",
+    ".....ww....ww...",
+    "....wwww..wwww..",
+    "....wwbb..wwbb..",
+    "....wwbb..wwbb..",
+    ".....ww....ww...",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....bb....bb....",
+    "...wbbw..wbbw...",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "....ww....ww....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "................",
+    "................",
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....ww....ww....",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "...wbbw..wbbw...",
+    "....bb....bb....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+];
 
-/** A sleepy bee about to wake: pale, eyes wide open. Alternates with the sleepy look. */
-export const wakingLook = { body: "w", wings: "l" } as const;
+/** The direction each frame of bee-eyes.png faces: `beeEyes` with the left look added second. */
+export const beeEyesOrder: readonly Direction[] = ["RIGHT", "LEFT", "UP", "DOWN"];
+
+/** A sleepy bee: bright silver, grey wings with white veins, eyes shut. */
+export const sleepyLook = { body: "l", wings: "m", veins: "w" } as const;
+
+/** A sleepy bee about to wake: white, silver wings with grey veins, eyes wide open. Alternates with the sleepy look. */
+export const wakingLook = { body: "w", wings: "l", veins: "m" } as const;
 
 /** Honey drop and honey pot cells: 8×12, 4 frames, as in the Go game. */
 export const itemCellWidth = 8;
@@ -321,13 +387,13 @@ export const itemBob: readonly number[] = [0, 1, 2, 1];
 export const honeyDropArt: readonly string[] = ["yy", "yy"];
 /** Its top row in the cell before bobbing, and its shadow. */
 export const honeyDropTop = 5;
-export const honeyDropShadow: readonly string[] = ["dd"];
+export const honeyDropShadow: readonly string[] = ["mm"];
 export const honeyDropShadowTop = 8;
 
 /** A honey pot, 6×7: a jar of honey with a red lid and a glint, a drop of honey in the air above it. */
-export const honeyPotArt: readonly string[] = [".y....", "......", ".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."];
+export const honeyPotArt: readonly string[] = [".y....", "..y...", ".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."];
 export const honeyPotTop = 2;
-export const honeyPotShadow: readonly string[] = ["dddd"];
+export const honeyPotShadow: readonly string[] = ["mmmm"];
 export const honeyPotShadowTop = 10;
 
 /** The maze image, the size of the playfield. */

@@ -7,6 +7,9 @@ import { cabinetArt } from "../src/ui/hubArt.ts";
 import { down, up } from "../src/ui/playerArt.ts";
 import { autoScale, load, place, previewOptions, sheet, type Panel } from "./pixel.ts";
 
+/** Rendering scenes in the hub is slow on a loaded machine; the default 5s limit is too tight. */
+const SLOW = 30_000;
+
 /** The error `promise` rejects with; fails the test when it resolves or rejects with a non-Error. */
 async function rejection(promise: Promise<unknown>): Promise<Error> {
   try {
@@ -99,47 +102,67 @@ function whitened(frames: readonly (readonly string[])[]): string[][] {
 }
 
 describe("previewOptions", () => {
-  test("draws each option into the hub, then puts the export back", async () => {
-    const current = [...cabinetArt];
-    const blanked = current.map((row) => row.replaceAll(/[^S.]/gu, "k"));
-    const options = await previewOptions({ "src/ui/hubArt.ts:cabinetArt": { Current: current, Blanked: blanked } });
-    expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
-    expect(options[0]?.screens).not.toEqual(options[1]?.screens);
-    // The middle cabinet switches on and off: more than one screen, the dark room first.
-    expect(options[0]?.screens.length).toBeGreaterThan(1);
-    expect(options[0]?.timeline.at(0)).toBe(0);
-    expect([...cabinetArt]).toEqual(current);
-  });
+  test(
+    "draws each option into the hub, then puts the export back",
+    async () => {
+      const current = [...cabinetArt];
+      const blanked = current.map((row) => row.replaceAll(/[^S.]/gu, "k"));
+      const options = await previewOptions({ "src/ui/hubArt.ts:cabinetArt": { Current: current, Blanked: blanked } });
+      expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
+      expect(options[0]?.screens).not.toEqual(options[1]?.screens);
+      // The middle cabinet switches on and off: more than one screen, the dark room first.
+      expect(options[0]?.screens.length).toBeGreaterThan(1);
+      expect(options[0]?.timeline.at(0)).toBe(0);
+      expect([...cabinetArt]).toEqual(current);
+    },
+    SLOW,
+  );
 
-  test("draws player options into the hub, walking, then puts the facing back", async () => {
-    const current = down.map((frame) => frame.slice());
-    const blanked = current.map((frame) => frame.map((row) => row.replaceAll(/[^.]/gu, "w")));
-    const options = await previewOptions({ "src/ui/playerArt.ts:down": { Current: current, Blanked: blanked } });
-    expect(options[0]?.screens).not.toEqual(options[1]?.screens);
-    // The walk cycle changes the screen while the cabinet stays dark.
-    expect(new Set(options[0]?.timeline.slice(0, 40)).size).toBeGreaterThan(1);
-    expect(down.map((frame) => frame.slice())).toEqual(current);
-  });
+  test(
+    "draws player options into the hub, walking, then puts the facing back",
+    async () => {
+      const current = down.map((frame) => frame.slice());
+      const blanked = current.map((frame) => frame.map((row) => row.replaceAll(/[^.]/gu, "w")));
+      const options = await previewOptions({ "src/ui/playerArt.ts:down": { Current: current, Blanked: blanked } });
+      expect(options[0]?.screens).not.toEqual(options[1]?.screens);
+      // The walk cycle changes the screen while the cabinet stays dark.
+      expect(new Set(options[0]?.timeline.slice(0, 40)).size).toBeGreaterThan(1);
+      expect(down.map((frame) => frame.slice())).toEqual(current);
+    },
+    SLOW,
+  );
 
-  test("one option per label, swapping every export that has it", async () => {
-    const options = await previewOptions({
-      "src/ui/playerArt.ts:down": { Current: down.map((f) => f.slice()), Blanked: whitened(down) },
-      "src/ui/playerArt.ts:up": { Current: up.map((f) => f.slice()), Blanked: whitened(up) },
-    });
-    expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
-    expect(options[1]?.frames).toHaveLength(6);
-  });
+  test(
+    "one option per label, swapping every export that has it",
+    async () => {
+      const options = await previewOptions({
+        "src/ui/playerArt.ts:down": { Current: down.map((f) => f.slice()), Blanked: whitened(down) },
+        "src/ui/playerArt.ts:up": { Current: up.map((f) => f.slice()), Blanked: whitened(up) },
+      });
+      expect(options.map((o) => o.label)).toEqual(["Current", "Blanked"]);
+      expect(options[1]?.frames).toHaveLength(6);
+    },
+    SLOW,
+  );
 
-  test("draws prize decorations on the hub wall, where each one hangs", async () => {
-    const [plain, inked] = await previewOptions({
-      "src/ui/prizeArt.ts:prizeArt.honeyJar": { Blank: ["."], Inked: ["k"] },
-    });
-    expect(plain?.screens[0]).toBeDefined();
-    expect(inked?.screens[0]).not.toEqual(plain?.screens[0]);
-  });
+  test(
+    "draws prize decorations on the hub wall, where each one hangs",
+    async () => {
+      const [plain, inked] = await previewOptions({
+        "src/ui/prizeArt.ts:prizeArt.honeyJar": { Blank: ["."], Inked: ["k"] },
+      });
+      expect(plain?.screens[0]).toBeDefined();
+      expect(inked?.screens[0]).not.toEqual(plain?.screens[0]);
+    },
+    SLOW,
+  );
 
-  test("names the scenes file when no scene shows the art", async () => {
-    const e = await rejection(previewOptions({ "src/ui/icons.ts:icons": { A: ["k"] } }));
-    expect(e.message).toContain("scripts/pixel-scenes.ts");
-  });
+  test(
+    "names the scenes file when no scene shows the art",
+    async () => {
+      const e = await rejection(previewOptions({ "src/ui/icons.ts:icons": { A: ["k"] } }));
+      expect(e.message).toContain("scripts/pixel-scenes.ts");
+    },
+    SLOW,
+  );
 });

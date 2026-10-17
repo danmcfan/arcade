@@ -12,6 +12,7 @@ import {
   imageElevatorFloor,
   imageDoor,
   imageEmber,
+  imageFurnace,
   imageGear,
   imagePan,
   imageGirder,
@@ -24,11 +25,13 @@ import {
   imageRivet,
   imageRivetFloor,
   imageWall,
+  imageWrench,
+  imageWrenchSwing,
   sounds,
 } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
 import { sub, type Sprite } from "../engine/image.ts";
-import type { Input } from "../engine/input.ts";
+import { NO_INPUT, type Input } from "../engine/input.ts";
 import type { Surface } from "../engine/surface.ts";
 import type { BrassMonkeySnapshot } from "../game/snapshot.ts";
 import type { FixedViewport } from "../game/software.ts";
@@ -44,9 +47,9 @@ import { sweetie } from "../ui/sweetie16.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
-import { Dial } from "../ui/rollingDials.ts";
+import { Dial, ScoreDials } from "../ui/dials.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
-import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
+import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { clearTicks, dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
@@ -80,28 +83,30 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   jump: sounds.monkeyJump,
   bolt: sounds.monkeyBolt,
   hazard: sounds.monkeyHazard,
+  smash: sounds.monkeySmash,
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
   stomp: sounds.monkeyStomp,
   step: sounds.monkeyStep,
+  extraLife: sounds.ticket,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
   readonly name = "brassMonkey" as const;
 
   readonly run: Run;
-  private highScore: number;
-  private readonly scoreDial = new Dial();
-  private readonly highScoreDial: Dial;
+  private readonly scoreDials: ScoreDials;
   private readonly bonusDial: Dial;
-  private readonly loopDial = new Dial(1, 1);
-  /** The floor's music playing, or none. */
+  private readonly loopDial = new Dial({ x: hud.rightDials, y: hud.loopTop }, 1, 1);
+  /** The music playing (the wrench's while it is held, else the floor's), or none. */
   private music: Sound | null = null;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
-    this.highScore = highScore;
-    this.highScoreDial = new Dial(highScore);
+    this.scoreDials = new ScoreDials(highScore, {
+      score: { x: hud.score, y: hud.dialsTop },
+      high: { x: hud.highScore, y: hud.dialsTop },
+    });
     this.run = new Run({
       advantages,
       intro: true,
@@ -110,7 +115,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         runSounds[s].play();
       },
     });
-    this.bonusDial = new Dial(this.run.bonus);
+    this.bonusDial = new Dial({ x: hud.rightDials, y: hud.dialsTop }, this.run.bonus);
     this.playMusic();
   }
 
@@ -120,21 +125,27 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   update(i: Input): void {
     this.run.update(i);
-    this.highScore = Math.max(this.highScore, this.run.score);
-    this.scoreDial.update(this.run.score);
-    this.highScoreDial.update(this.highScore);
+    this.scoreDials.tick(this.run.score);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
     this.playMusic();
   }
 
-  /** In play, the floor's music; none otherwise. */
+  /** In play, the wrench music while the monkey holds it, else the floor's music; none otherwise. */
   private playMusic(): void {
-    const music = this.run.phase === "play" ? (floorMusic.get(this.run.currentFloor()) ?? null) : null;
+    const run = this.run;
+    const floor = run.monkey.wrench > 0 ? sounds.monkeyWrench : (floorMusic.get(run.currentFloor()) ?? null);
+    const music = run.phase === "play" ? floor : null;
     if (music === this.music) return;
     this.music?.pause();
     this.music = music;
     music?.blip();
+  }
+
+  /** Start loop `stage` (as the player counts it, from 1) afresh on the first floor. */
+  jumpTo(stage: number): void {
+    this.run.startLoop(stage - 1);
+    this.update(NO_INPUT);
   }
 
   fixedViewportSize(): [number, number] {
@@ -176,18 +187,33 @@ export class BrassMonkeySoftware implements FixedViewport {
     floor.rivets?.forEach((r, n) => {
       if (run.rivets[n] !== true) screen.draw(imageRivet, left + r.x - 4, top + r.y);
     });
+    floor.wrenches.forEach((w, n) => {
+      if (run.wrenches[n] !== true) screen.draw(imageWrench, left + w.x - 4, top + w.y - 14);
+    });
     const gnomeY = floor.gnome.y + (run.phase === "clear" ? gnomeFall(floor, clearTicks - run.phaseTicks) : 0);
     screen.draw(
       frame(imageGnome, gnomeColumn(run), 32, 32),
       left + floor.gnome.x,
       top + gnomeY + run.introGnomeRise() - run.introHop(),
     );
+    if (floor.furnace !== undefined) {
+      // Lit, its flames flicker every 8 ticks.
+      const col = run.furnaceLit ? 1 + (Math.trunc(run.ticks / 8) % 2) : 0;
+      screen.draw(frame(imageFurnace, col, 16, 24), left + floor.furnace.x - 8, top + floor.furnace.y - 24);
+    }
     for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
     // The monkey comes on when the floor starts; losing a life, it spins and falls (deathColumn).
     if (run.phase === "dying") {
       const m = run.monkey;
       screen.draw(frame(imageMonkeyDeath, deathColumn(run.phaseTicks), 16, 24), left + m.x - 8, top + m.y - 24);
-    } else if (!intro) drawMonkey(screen, run.monkey, left, top);
+    } else if (!intro) {
+      drawMonkey(screen, run.monkey, left, top);
+      // In its last ticks the wrench flashes: drawn 4 ticks, hidden 4.
+      if (run.monkey.wrench > 0 && (!run.wrenchFlashing() || Math.trunc(run.ticks / 4) % 2 === 0))
+        drawWrench(screen, run.monkey, left, top, run.ticks);
+    }
+    for (const s of run.smashes) drawTextCentered(screen, `${s.points}`, left + s.x, top + s.y - 16);
+    for (const p of run.popups) drawTextCentered(screen, String(p.points), left + p.x, top + p.y - 22);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -199,14 +225,13 @@ export class BrassMonkeySoftware implements FixedViewport {
     const { run } = this;
     screen.draw(hudLabelSprite("scores"), left + scoreLabelsX, top);
     screen.draw(hudLabelSprite("bonus"), left + hud.right, top);
-    this.scoreDial.draw(screen, left + hud.score, top + hud.dialsTop);
-    this.highScoreDial.draw(screen, left + hud.highScore, top + hud.dialsTop);
-    this.bonusDial.draw(screen, left + hud.rightDials, top + hud.dialsTop);
+    this.scoreDials.draw(screen, left, top);
+    this.bonusDial.draw(screen, left, top);
     // Spare lives: the one in play is not counted.
     for (let n = 0; n < run.lives - 1; n++)
       screen.draw(frame(imageMonkey, 0, 16, 16), left + 8 * (2 + n * 2), top + hud.livesTop);
     screen.draw(hudLabelSprite("loop"), left + hud.right, top + hud.loopTop);
-    this.loopDial.draw(screen, left + hud.rightDials, top + hud.loopTop);
+    this.loopDial.draw(screen, left, top);
   }
 
   gameOver(): boolean {
@@ -227,7 +252,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       loop: run.loop,
       lives: run.lives,
       score: run.score,
-      highScore: this.highScore,
+      highScore: this.scoreDials.highScore,
       bonus: run.bonus,
       x: m.x,
       y: m.y,
@@ -236,9 +261,22 @@ export class BrassMonkeySoftware implements FixedViewport {
       frame: m.frame,
       left: m.left,
       moving: m.moving,
-      hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing, wild: h.wild })),
+      hazards: run.hazards.map((h) => ({
+        kind: h.kind,
+        x: h.x,
+        y: h.y,
+        dir: h.dir,
+        footing: h.footing,
+        hot: h.hot,
+        wild: h.wild,
+      })),
       bolts: [...run.bolts],
       rivets: [...run.rivets],
+      wrench: m.wrench,
+      wrenches: [...run.wrenches],
+      smashes: run.smashes.map(({ x, y, points }) => ({ x, y, points })),
+      popups: run.popups.map((p) => ({ ...p })),
+      furnaceLit: run.furnaceLit,
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
       lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
@@ -331,6 +369,17 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
   );
 }
 
+/** The held wrench, swinging every 8 ticks: raised over the monkey's head, then down in front of it. */
+function drawWrench(screen: Surface, m: Monkey, left: number, top: number, ticks: number): void {
+  const face = facing(m);
+  if (Math.trunc(ticks / 8) % 2 === 0) {
+    screen.draw(imageWrench, left + m.x - 4 + face * 3, top + m.y - 26);
+    return;
+  }
+  const x = m.left ? m.x - 18 : m.x + 4;
+  screen.draw(imageWrenchSwing, left + x, top + m.y - 12, m.left ? { flipX: true } : undefined);
+}
+
 function drawHazard(screen: Surface, h: Hazard, floor: Floor, left: number, top: number, ticks: number): void {
   if (h.kind === "spring") {
     // Squashed as it lands on the Gnome's girder, stretched in flight.
@@ -339,11 +388,11 @@ function drawHazard(screen: Surface, h: Hazard, floor: Floor, left: number, top:
     screen.draw(frame(imageSpring, landing ? 1 : 0, 12, 12), left + h.x - 6, top + h.y - 12);
     return;
   }
-  // A pan's scraps jolt as it rides.
+  // A pan's scraps jolt as it rides; a hot gear turns in the gear sheet's last two frames.
   const turn = Math.trunc(Math.abs(h.x) / 4) % 2;
   const [image, col] =
     h.kind === "gear"
-      ? [imageGear, turn]
+      ? [imageGear, turn + (h.hot ? 2 : 0)]
       : h.kind === "pan"
         ? [imagePan, turn]
         : [imageEmber, Math.trunc(ticks / 8) % 4];

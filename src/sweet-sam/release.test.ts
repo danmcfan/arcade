@@ -77,7 +77,8 @@ describe("the idle timer", () => {
     [4, 240],
     [5, 180],
   ])("on level %d the preferred bee leaves after %d ticks without a drop", (level, ticks) => {
-    const bees = newEnemies(levelValues(level).dotMinimums);
+    // Level 1's dot limits, so teal and orange wait on the idle timer alone.
+    const bees = newEnemies(level1.dotMinimums);
     const r = newRelease();
     eat(r, bees, 1);
     for (let i = 0; i < ticks - 1; i++) noDropEaten(r, bees, levelValues(level));
