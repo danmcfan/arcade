@@ -11,6 +11,8 @@ import {
   imageGnome,
   imageHud,
   imageMonkey,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
 } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
@@ -24,7 +26,7 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { BrassMonkeySoftware, deathColumn } from "./game.ts";
+import { BrassMonkeySoftware, deathColumn, gnomeColumn } from "./game.ts";
 import type { Hazard } from "./play.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
@@ -35,6 +37,7 @@ const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
 /** A run with no hazards coming. */
 function quiet(highScore = 0): BrassMonkeySoftware {
   const g = new BrassMonkeySoftware(highScore);
+  g.run.startFloor(); // past the intro
   g.run.gearTimer = Infinity;
   g.run.emberTimer = Infinity;
   return g;
@@ -129,6 +132,37 @@ describe("BrassMonkeySoftware", () => {
     expect(g.background()).toBe(imageConveyorFloor);
     g.run.floor = 2;
     expect(g.background()).toBe(imageElevatorFloor);
+    g.run.floor = 3;
+    expect(g.background()).toBe(imageRivetFloor);
+  });
+
+  test("the rivet floor draws each rivet in its slot until it is pulled", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const rivets = (): DrawCall[] => record(g).calls.filter((c) => c.sprite.asset === imageRivet.asset);
+    expect(rivets().length).toBe(8);
+    expect(rivets()[0]).toMatchObject({ x: 8 + 48, y: 40 + 208 });
+    g.run.rivets[0] = true;
+    expect(rivets().length).toBe(7);
+    expect(brassMonkeySnapshot(g.snapshot()).rivets.filter(Boolean).length).toBe(1);
+  });
+
+  test("when the rivet floor clears, the Gnome falls to the bottom girder", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const gnomeY = (): number => record(g).calls.find((c) => c.sprite.asset === imageGnome.asset)?.y ?? -1;
+    expect(gnomeY()).toBe(40 + 56);
+    g.run.phase = "clear";
+    g.run.phaseTicks = t.clearTicks;
+    const ys = [gnomeY()];
+    for (let n = 0; n < t.clearTicks - 1; n++) {
+      g.run.phaseTicks--;
+      ys.push(gnomeY());
+    }
+    expect(ys.every((y, n) => n === 0 || y >= (ys[n - 1] ?? 0))).toBe(true);
+    expect(ys.at(-1)).toBe(40 + 248 - 32);
   });
 
   test("on the elevator floor the snapshot holds each lift platform's left edge and top", () => {
@@ -145,12 +179,64 @@ describe("BrassMonkeySoftware", () => {
     ]);
   });
 
+  test("a new run starts with the Gnome's intro, stomping with a sound, then plays", () => {
+    const events: SoundEvent[] = [];
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    const g = new BrassMonkeySoftware();
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("intro");
+    for (let n = 0; n < t.introTicks; n++) g.update(held({ space: true }));
+    expect(events.filter((e) => e === "play:monkeyStomp")).toHaveLength(t.introStomps.length);
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("play");
+  });
+
+  test("the Gnome reaches up as it climbs and as it hops to stomp, then stands idle", () => {
+    const g = new BrassMonkeySoftware();
+    g.run.gearTimer = Infinity;
+    g.run.emberTimer = Infinity;
+    const seen = new Set<number>();
+    while (g.run.phase === "intro") {
+      if (g.run.introGnomeRise() > 0 || g.run.introHop() > 0) seen.add(gnomeColumn(g.run));
+      else expect(gnomeColumn(g.run)).toBe(0);
+      g.update(NO_INPUT);
+    }
+    expect(seen).toEqual(new Set([0, 2]));
+    expect(gnomeColumn(g.run)).toBe(0);
+  });
+
   test("plays the run's sounds", () => {
     const events: SoundEvent[] = [];
     unsubscribe.push(addSoundListener((e) => void events.push(e)));
     const g = quiet();
+    g.update(NO_INPUT);
+    events.length = 0;
     g.update(held({ space: true }));
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
+  });
+
+  test("the floor's music starts with play and stops when the monkey dies, the floor clears or the run is over", () => {
+    for (const phase of ["dying", "clear", "over"] as const) {
+      const events: SoundEvent[] = [];
+      const off = addSoundListener((e) => void events.push(e));
+      const g = quiet();
+      g.update(NO_INPUT);
+      expect(events.slice(-2)).toEqual(["rewind:monkeyGirder", "play:monkeyGirder"]);
+      events.length = 0;
+      g.run.phase = phase;
+      g.run.phaseTicks = 100;
+      g.update(NO_INPUT);
+      expect(events).toEqual(["pause:monkeyGirder"]);
+      off();
+    }
+  });
+
+  test("each floor has its own music", () => {
+    const events: SoundEvent[] = [];
+    const g = quiet();
+    g.update(NO_INPUT);
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    g.run.floor = 1;
+    g.update(NO_INPUT);
+    expect(events.slice(0, 3)).toEqual(["pause:monkeyGirder", "rewind:monkeyConveyor", "play:monkeyConveyor"]);
   });
 
   test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {

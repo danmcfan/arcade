@@ -106,6 +106,24 @@ describe("the monkey", () => {
   });
 });
 
+describe("footsteps", () => {
+  test("a step sounds on each frame of the walk cycle", () => {
+    const { run, sounds } = quiet();
+    step(run, 20, { right: true });
+    expect(sounds).toEqual(["step", "step", "step", "step"]);
+  });
+
+  test("no step sounds standing or in the air", () => {
+    const { run, sounds } = quiet();
+    step(run, 20);
+    run.update(held({ space: true }));
+    sounds.length = 0;
+    step(run, 10, { right: true });
+    expect(run.monkey.footing).toBe("air");
+    expect(sounds).not.toContain("step");
+  });
+});
+
 describe("hazards", () => {
   test("the Gnome sends a gear that rolls along its girder, drops off the end and rolls on downhill", () => {
     const { run } = quiet();
@@ -347,7 +365,7 @@ describe("score", () => {
     step(run, 8, { right: true });
     expect(run.bolts[0]).toBe(true);
     expect(run.score).toBe(t.boltPoints);
-    expect(sounds).toEqual(["bolt"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["bolt"]);
     step(run, 8, { left: true });
     expect(run.score).toBe(t.boltPoints);
   });
@@ -360,22 +378,109 @@ describe("score", () => {
     step(run, 8, { right: true });
     expect(run.phase).toBe("clear");
     expect(run.score).toBe(4900);
-    expect(sounds).toEqual(["floor"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
     step(run, t.clearTicks);
     expect([run.phase, run.floor, run.bonus]).toEqual(["play", 1, 5000]);
     expect([run.monkey.x, run.monkey.y]).toEqual([conveyorFloor.start.x, conveyorFloor.start.y]);
   });
 });
 
+/** A quiet run on the rivet floor, the monkey just left of rivet slot `n`. */
+function nearRivet(n: number): { run: Run; sounds: RunSound[]; slot: { x: number; y: number } } {
+  const q = quiet({ floor: 3 });
+  const slot = q.run.currentFloor().rivets?.[n];
+  if (slot === undefined) throw new Error(`the rivet floor has no rivet ${n}`);
+  q.run.monkey.x = slot.x - 10;
+  q.run.monkey.y = slot.y;
+  return { ...q, slot };
+}
+
+describe("the rivet floor", () => {
+  test("walking over a rivet slot pulls it for 100 points and opens a hole", () => {
+    const { run, sounds } = nearRivet(0);
+    step(run, 20, { right: true });
+    expect([run.score, run.rivets[0], run.phase]).toEqual([100, true, "play"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["bolt"]);
+  });
+
+  test("walking back into the hole costs a life", () => {
+    const { run } = nearRivet(0);
+    step(run, 20, { right: true });
+    step(run, 20, { left: true });
+    expect([run.phase, run.lives]).toEqual(["dying", 2]);
+  });
+
+  test("jumping over the hole is safe", () => {
+    const { run } = nearRivet(0);
+    step(run, 20, { right: true });
+    step(run, 1, { left: true, space: true });
+    step(run, 40);
+    expect([run.phase, run.monkey.footing]).toEqual(["play", "ground"]);
+    expect(run.monkey.x).toBeLessThan(run.currentFloor().rivets?.[0]?.x ?? 0);
+  });
+
+  test("jumping over a rivet slot pulls it too", () => {
+    const { run } = nearRivet(0);
+    run.monkey.x -= 10;
+    step(run, 1, { right: true, space: true });
+    step(run, 40);
+    expect([run.score, run.rivets[0], run.phase]).toEqual([100, true, "play"]);
+  });
+
+  test("pulling the 8th rivet clears the floor and pays the bonus", () => {
+    const { run, sounds } = nearRivet(3);
+    run.rivets = run.rivets.map((_, n) => n !== 3);
+    step(run, 20, { right: true });
+    expect(run.phase).toBe("clear");
+    expect(run.score).toBe(100 + run.bonus);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["bolt", "floor"]);
+  });
+
+  test("sends no gears, only embers from the sides, up to the floor's most", () => {
+    const run = new Run({ floor: 3 });
+    // Out of the embers' reach, so it never dies.
+    run.monkey.footing = "climb";
+    run.monkey.y = -100;
+    let most = 0;
+    for (let n = 0; n < 3000; n++) {
+      run.update(NO_INPUT);
+      expect(run.hazards.some((h) => h.kind === "gear")).toBe(false);
+      most = Math.max(most, run.hazards.length);
+    }
+    expect(most).toBe(run.tuning.maxEmbers);
+    expect(run.gnomeThrowing()).toBe(false);
+  });
+
+  test("its embers come in at the left or right edge", () => {
+    const run = new Run({ floor: 3 });
+    run.emberTimer = 1;
+    step(run, 1);
+    const [e] = run.hazards;
+    expect(e === undefined ? undefined : [e.kind, e.x < 16 || e.x > 208]).toEqual(["ember", true]);
+  });
+});
+
 describe("the escape and the next loop", () => {
-  test("after the elevator floor the escaped scene plays, then the girder floor again, harder", () => {
-    const { run, sounds } = quiet({ floor: 2 });
+  test("after the elevator floor comes the rivet floor", () => {
+    const { run } = quiet({ floor: 2 });
     run.monkey.x = 100;
     run.monkey.y = 56;
     step(run, 8, { right: true });
     step(run, t.clearTicks);
+    expect([run.phase, run.floor]).toEqual(["play", 3]);
+  });
+
+  test("after the rivet floor the escaped scene plays, then the girder floor again, harder", () => {
+    const { run, sounds } = quiet({ floor: 3 });
+    run.rivets = run.rivets.map((_, n) => n !== 0);
+    const [slot] = run.currentFloor().rivets ?? [];
+    if (slot === undefined) throw new Error("the rivet floor has no rivets");
+    run.monkey.x = slot.x - 3;
+    run.monkey.y = slot.y;
+    step(run, 6, { right: true });
+    step(run, t.clearTicks);
     expect(run.phase).toBe("escape");
-    expect(sounds).toEqual(["floor", "escape"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["bolt", "floor", "escape"]);
     step(run, t.escapeTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 1]);
     const easy = t.tuningFor(0, 0);
@@ -534,11 +639,11 @@ describe("the elevator floor", () => {
 
   test("reaching the door clears the floor", () => {
     const { run, sounds } = quiet({ floor: 2 });
-    run.monkey.x = elevatorFloor.door.x - 4;
-    run.monkey.y = elevatorFloor.door.y;
+    run.monkey.x = (elevatorFloor.door?.x ?? 0) - 4;
+    run.monkey.y = elevatorFloor.door?.y ?? 0;
     step(run, 8, { right: true });
     expect(run.phase).toBe("clear");
-    expect(sounds).toEqual(["floor"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
   });
 });
 
@@ -727,5 +832,48 @@ describe("wild gears", () => {
     step(run, 1, { space: true });
     expect(sounds).toContain("hazard");
     expect(run.score).toBe(100);
+  });
+});
+
+/** A run that starts with the intro, recording its sounds. */
+function intro(): { run: Run; sounds: RunSound[] } {
+  const sounds: RunSound[] = [];
+  const run = new Run({ intro: true, onSound: (s): void => void sounds.push(s) });
+  return { run, sounds };
+}
+
+describe("the intro", () => {
+  test("a new run with the intro starts in it and plays after introTicks", () => {
+    const { run } = intro();
+    expect(run.phase).toBe("intro");
+    step(run, t.introTicks - 1);
+    expect(run.phase).toBe("intro");
+    step(run, 1);
+    expect(run.phase).toBe("play");
+  });
+
+  test("input does nothing during the intro", () => {
+    const { run, sounds } = intro();
+    const start = run.currentFloor().start;
+    step(run, t.introTicks, { right: true, up: true, space: true });
+    expect([run.monkey.x, run.monkey.y, run.monkey.jumps, run.hazards.length]).toEqual([start.x, start.y, 0, 0]);
+    expect(sounds).not.toContain("jump");
+    expect(run.bonus).toBe(run.tuning.bonusStart);
+  });
+
+  test("the Gnome climbs to its perch, then stomps the girders into slopes with a stomp sound each time", () => {
+    const { run, sounds } = intro();
+    expect(run.introGnomeRise()).toBeGreaterThan(0);
+    expect(run.introTilt()).toBe(0);
+    step(run, t.introClimbTicks);
+    expect(run.introGnomeRise()).toBe(0);
+    expect(sounds).toEqual([]);
+    step(run, t.introTicks - t.introClimbTicks - 1);
+    expect(sounds).toEqual(t.introStomps.map(() => "stomp"));
+    expect(run.introTilt()).toBe(1);
+  });
+
+  test("a run without the intro starts straight into play", () => {
+    expect(new Run().phase).toBe("play");
   });
 });

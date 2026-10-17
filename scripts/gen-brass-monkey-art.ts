@@ -8,7 +8,7 @@
 // is one row of 16×24 frames: the standing frame's four quarter turns, then
 // it on its back under each puff of smoke. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
-// idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
+// idle, throw, reach. gear.png (12×12: two turns), ember.png (12×12: two flickers
 // and their mirrors), pan.png (12×12: the scrap tray, its scraps jolted in
 // the second) and bolt.png (10×14: at rest, then a glint running over its
 // head) are one row of frames each. The floor tiles are girder.png (8×8),
@@ -36,6 +36,7 @@ import {
   panTray,
   girder,
   gnomeArmsDown,
+  gnomeArmsReach,
   gnomeArmsUp,
   gnomeBody,
   ladder,
@@ -46,6 +47,7 @@ import {
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
+  rivet,
   type Part,
   spring,
   wallPanel,
@@ -56,6 +58,7 @@ import {
   girderFloor,
   girderTop,
   liftWidth,
+  rivetFloor,
   type Floor,
 } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -129,9 +132,9 @@ export function monkeyDeathFrames(): Rows[] {
 
 const withArms = (arms: Part): string[] => overlay(gnomeBody, arms.rows, arms.x, arms.y);
 
-/** The Gnome's sheet frames, mirrored and outlined: idle, throw. */
+/** The Gnome's sheet frames, mirrored and outlined: idle, throw, reach (climbing and stomping). */
 export function gnomeFrames(): Rows[] {
-  return [gnomeArmsDown, gnomeArmsUp].map((arms) => outline(mirrorX(withArms(arms))));
+  return [gnomeArmsDown, gnomeArmsUp, gnomeArmsReach].map((arms) => outline(mirrorX(withArms(arms))));
 }
 
 /** The gear's sheet frames, outlined: its two turns. */
@@ -219,7 +222,11 @@ function beltTile(x: number, x0: number, x1: number): Rows {
   return frames[at] ?? [];
 }
 
-/** `floor` drawn from the tiles: the wall, then the ladders, the lift shafts, the girders (a conveyor's in its first frame) and the exit door. */
+/**
+ * `floor` drawn from the tiles: the wall, then the ladders, the lift shafts,
+ * the girders (a conveyor's in its first frame, a rivet slot left open: the
+ * game draws the rivet there until it is pulled) and the exit door.
+ */
 function floorRows(floor: Floor): Rows {
   const tile = wallPanel.length;
   let rows: Rows = Array.from({ length: floor.height }, (_, y) =>
@@ -238,10 +245,12 @@ function floorRows(floor: Floor): Rows {
   }
   const step = girder[0]?.length ?? 0;
   for (const g of floor.girders) {
-    for (let x = g.x0; x < g.x1; x += step)
+    for (let x = g.x0; x < g.x1; x += step) {
+      if (floor.rivets?.some((r) => r.y === girderTop(g, x) && r.x - 4 === x) === true) continue;
       rows = overlay(rows, g.belt === undefined ? girder : beltTile(x, g.x0, g.x1), x, girderTop(g, x));
+    }
   }
-  return overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
+  return floor.door === undefined ? rows : overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
 }
 
 /** The girder floor. */
@@ -257,6 +266,16 @@ export function conveyorFloorRows(): Rows {
 /** The elevator floor, its lift shafts empty: the game draws the platforms. */
 export function elevatorFloorRows(): Rows {
   return floorRows(elevatorFloor);
+}
+
+/** The rivet floor, its rivet slots open. */
+export function rivetFloorRows(): Rows {
+  return floorRows(rivetFloor);
+}
+
+/** The rivet, outlined. */
+export function rivetFrame(): Rows {
+  return outline(rivet);
 }
 
 /** `frames` side by side; they must all be one size. */
@@ -277,7 +296,7 @@ export const brassMonkeyImagesDir = "src/assets/images/brass-monkey";
 export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "monkey.png"), 96, 16, () => sheet(monkeyFrames())),
   imageOutput(join(brassMonkeyImagesDir, "monkey-death.png"), 96, 24, () => sheet(monkeyDeathFrames())),
-  imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 96, 32, () => sheet(gnomeFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
   imageOutput(join(brassMonkeyImagesDir, "pan.png"), 24, 12, () => sheet(panFrames())),
@@ -292,4 +311,6 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "girder-floor.png"), 224, 256, () => sheet([girderFloorRows()])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor-floor.png"), 224, 256, () => sheet([conveyorFloorRows()])),
   imageOutput(join(brassMonkeyImagesDir, "elevator-floor.png"), 224, 256, () => sheet([elevatorFloorRows()])),
+  imageOutput(join(brassMonkeyImagesDir, "rivet.png"), 8, 8, () => sheet([rivetFrame()])),
+  imageOutput(join(brassMonkeyImagesDir, "rivet-floor.png"), 224, 256, () => sheet([rivetFloorRows()])),
 ];

@@ -108,6 +108,10 @@ export const wildDrift = 0.75;
 export const hazardPoints = 100;
 /** Points for a bolt. */
 export const boltPoints = 300;
+/** Points for pulling a rivet, as in Donkey Kong. */
+export const rivetPoints = 100;
+/** A pulled rivet leaves a hole this many px either side of its middle: the monkey falls in walking onto it. */
+export const holeHalf = 4;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;
@@ -140,7 +144,7 @@ export interface FloorTuning {
   bonusStart: number;
 }
 
-/** The girder floor, the conveyor floor, then the elevator floor. */
+/** The girder floor, the conveyor floor, the elevator floor, then the rivet floor (no gears: embers come in from the sides). */
 export const floorTunings: readonly FloorTuning[] = [
   {
     gearEvery: 150,
@@ -170,6 +174,17 @@ export const floorTunings: readonly FloorTuning[] = [
     emberEvery: 600,
     firstEmber: 300,
     maxEmbers: 2,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: Infinity,
+    firstGear: Infinity,
+    emberEvery: 300,
+    firstEmber: 120,
+    maxEmbers: 4,
     gearSpeed: 1,
     emberWalkSpeed: 0.5,
     emberClimbSpeed: 0.5,
@@ -222,3 +237,15 @@ export const escapeTicks = 180;
 export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
 export const throwTicks = 20;
+/** Ticks of the intro before the first floor of a run: about 4 s. */
+export const introTicks = 240;
+/** The intro's first ticks, the Gnome climbing up to its perch. */
+export const introClimbTicks = 140;
+/** The ticks into the intro when the Gnome lands a stomp; each bends the girders further. */
+export const introStomps: readonly number[] = [165, 190, 215];
+/** How high each stomp's hop lifts the Gnome, in px. */
+export const introHop = 4;
+/** Ticks each stomp's hop lasts, up and back down. */
+export const introHopTicks = 8;
+/** Ticks a stomp shakes the floor. */
+export const introShakeTicks = 8;

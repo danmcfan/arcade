@@ -202,6 +202,39 @@ export const gnomeArmsUp: Part = {
 };
 
 /**
+ * Climbing and stomping in the intro (#253): the throw's arms, reaching up
+ * with empty hands, the gear left out.
+ */
+export const gnomeArmsReach: Part = {
+  x: 2,
+  y: 2,
+  rows: [
+    "..............",
+    "..............",
+    "..............",
+    ".......oo.....",
+    "......noo.....",
+    ".....nn.......",
+    "....nn........",
+    "...nn.........",
+    "..nn..........",
+    ".nn...........",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    ".nn...........",
+    ".nn...........",
+    "..nn..........",
+    "..nn..........",
+    "...nn.........",
+    "...nn.........",
+  ],
+};
+
+/**
  * The gear: a hazard the Gnome throws, rolling down the girders. A small steel
  * gear, 12×12, with eight teeth and a square hub, lit from the top left like
  * the gear the Gnome holds in its throw. Two frames, the second turned half a
@@ -371,6 +404,23 @@ export const spring: readonly (readonly string[])[] = [
     "..rrrrrrrp..",
     "............",
   ],
+];
+
+/**
+ * A rivet (#250), tweaked from the bolt: its brass, lit on the left and
+ * shaded on the right, as a stubby plug 8×8 that fills a slot in the rivet
+ * floor's girders, a cap above and below the girder's web; the last row is
+ * blank as the girder's.
+ */
+export const rivet: readonly string[] = [
+  ".wyyyyo.",
+  ".wyyyyo.",
+  "..wyyo..",
+  "..wyyo..",
+  "..wyyo..",
+  ".wyyyyo.",
+  ".oooooor",
+  "........",
 ];
 
 /**
