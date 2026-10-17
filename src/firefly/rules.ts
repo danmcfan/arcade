@@ -174,6 +174,12 @@ export const shotMaxDrift = 1;
 
 /** Sparks on the screen at once, and the fewest ticks between two. */
 export const maxSparks = 2;
+
+/** Points for shooting down the captured firefly: in formation or while its Owl dives (Galaga's 500/1000). */
+/** A dual firefly's two halves sit this far either side of the firefly's x. */
+export const dualOffset = 8;
+
+export const captivePoints = { formation: 500, diving: 1000 } as const;
 export const sparkCooldown = 8;
 
 /** Ticks after a dive starts before its first shot, and between its shots. */

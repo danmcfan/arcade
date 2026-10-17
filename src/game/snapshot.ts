@@ -356,8 +356,10 @@ export interface FireflySnapshot {
   formationPhase: "sway" | "breathe";
   /** The firefly lost to the tractor beam is being pulled up (only while respawning); absent otherwise. */
   captured?: true;
-  /** The captured firefly above its Owl (the Owl's row and column); absent while there is none. */
-  captive?: { row: number; col: number; x: number; y: number };
+  /** The captured firefly above its Owl (the Owl's row and column, none once hostile); absent while there is none. */
+  captive?: { row?: number; col?: number; x: number; y: number; hostile: boolean };
+  /** A rescued captive docked beside the firefly. */
+  dual?: true;
 }
 
 // ---------------------------------------------------------------------------

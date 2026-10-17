@@ -70,6 +70,7 @@ for (const [name, size] of real) {
         "pause:lifeLost",
         "pause:beam",
         "pause:capture",
+        "pause:rescue",
         "pause:stage",
       ]);
       expect(scene.layout()).toEqual(size);

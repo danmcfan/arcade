@@ -425,6 +425,7 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
+  "pause:rescue",
   "pause:stage",
 ];
 

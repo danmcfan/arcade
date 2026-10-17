@@ -485,6 +485,21 @@ const fireflyEffects = {
     ],
     eighth: 0.06,
   },
+  /** A captive set free: a bright run up and a trill as it docks beside the firefly. */
+  rescue: {
+    notes: [
+      [67, 1],
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [84, 2],
+      [79, 1],
+      [84, 1],
+      [79, 1],
+      [84, 3],
+    ],
+    eighth: 0.07,
+  },
   /** STAGE n: a little fanfare. */
   stage: {
     notes: [
