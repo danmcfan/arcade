@@ -11,6 +11,7 @@
 // outlines are gone (#209): the maze is black, so an outline would not show.
 // Where an outline carried a shape, a darker shade of the body draws it.
 
+import type { Direction } from "../engine/input.ts";
 import type { SweetSamEnemyKind } from "../game/snapshot.ts";
 import type { SweetieLetter } from "../ui/sweetie16.ts";
 
@@ -305,9 +306,9 @@ export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
 export const beeOrder: readonly SweetSamEnemyKind[] = ["red", "pink", "teal", "orange"];
 
 /**
- * An eaten bee flying home: its eyes and antennae, 16×16 like the bee, one
- * frame per direction in `beeEyesOrder`. The pupils look the way it travels
- * and the whole head leans a pixel that way.
+ * An eaten bee flying home: its eyes and antennae, 16×16 like the bee,
+ * looking right, up and down; looking left is the first mirrored. The pupils
+ * look the way it travels and the whole head leans a pixel that way.
  */
 export const beeEyes: readonly (readonly string[])[] = [
   [
@@ -321,24 +322,6 @@ export const beeEyes: readonly (readonly string[])[] = [
     "....wwbb..wwbb..",
     "....wwbb..wwbb..",
     ".....ww....ww...",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-  ],
-  [
-    "................",
-    ".y..........y...",
-    "..m........m....",
-    "...m......m.....",
-    "................",
-    "...ww....ww.....",
-    "..wwww..wwww....",
-    "..bbww..bbww....",
-    "..bbww..bbww....",
-    "...ww....ww.....",
     "................",
     "................",
     "................",
@@ -384,8 +367,8 @@ export const beeEyes: readonly (readonly string[])[] = [
   ],
 ];
 
-/** The direction each `beeEyes` frame faces. */
-export const beeEyesOrder = ["RIGHT", "LEFT", "UP", "DOWN"] as const;
+/** The direction each frame of bee-eyes.png faces: `beeEyes` with the left look added second. */
+export const beeEyesOrder: readonly Direction[] = ["RIGHT", "LEFT", "UP", "DOWN"];
 
 /** A sleepy bee: grey, wings dull, eyes shut. */
 export const sleepyLook = { body: "m", wings: "l" } as const;
