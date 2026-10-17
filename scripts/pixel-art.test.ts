@@ -11,6 +11,7 @@ import {
   outline,
   overlay,
   recolour,
+  quarterTurn,
   scale,
   toPng,
   snap,
@@ -89,6 +90,10 @@ describe("checkRows", () => {
 });
 
 describe("derived rows", () => {
+  test("quarterTurn turns rows a quarter turn clockwise: the top row becomes the right column", () => {
+    expect(quarterTurn(["ab", "cd", "ef"])).toEqual(["eca", "fdb"]);
+  });
+
   test("outline rings the drawn pixels along their edges, not their corners", () => {
     expect(outline([".....", "..r..", ".....", "....."])).toEqual(["..k..", ".krk.", "..k..", "....."]);
   });

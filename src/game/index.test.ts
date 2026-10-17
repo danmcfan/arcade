@@ -66,12 +66,19 @@ for (const [name, size] of real) {
         "pause:sweetDeath",
         "pause:sweetClear",
         "pause:spark",
-        "pause:hit",
+        "pause:mothHit",
+        "pause:waspHit",
+        "pause:owlHurt",
+        "pause:owlKill",
+        "pause:dive",
         "pause:lifeLost",
         "pause:beam",
         "pause:capture",
         "pause:rescue",
         "pause:stage",
+        "pause:extraLife",
+        "pause:fireflyStart",
+        "pause:monkeyWrench",
       ]);
       expect(scene.layout()).toEqual(size);
       for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }])

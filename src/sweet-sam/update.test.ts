@@ -275,26 +275,33 @@ describe("updateDirection", () => {
 });
 
 describe("updateBlue", () => {
-  test("counts down, and in the last 120 frames toggles flash every 6 frames", () => {
+  test("in the last 2 × flashes × 10 ticks the bee toggles white every 10 ticks", () => {
     const e = bee();
-    e.blueFrames = 122;
-    updateBlue(e);
-    expect([e.blueFrames, e.flash, e.flashFrames]).toEqual([121, false, 0]);
-    updateBlue(e);
-    expect([e.blueFrames, e.flash, e.flashFrames]).toEqual([120, true, 5]);
-    const flashes: boolean[] = [];
-    for (let i = 0; i < 12; i++) {
-      updateBlue(e);
-      flashes.push(e.flash);
+    e.blueFrames = 101;
+    updateBlue(e, 5);
+    expect([e.blueFrames, e.flash]).toEqual([100, false]);
+    updateBlue(e, 5);
+    expect([e.blueFrames, e.flash, e.flashFrames]).toEqual([99, true, 9]);
+  });
+
+  test.each([5, 3])("a bee flashes exactly %p times before it wakes", (flashes) => {
+    const e = bee();
+    e.blueFrames = 300;
+    let count = 0;
+    while (e.blueFrames > 0) {
+      const was = e.flash;
+      updateBlue(e, flashes);
+      if (e.flash && !was) count++;
     }
-    expect(flashes).toEqual([true, true, true, true, true, false, false, false, false, false, false, true]);
+    expect(count).toBe(flashes);
+    expect(e.flash).toBe(false);
   });
 
   test("when not blue, flash state is cleared", () => {
     const e = bee();
     e.flash = true;
     e.flashFrames = 3;
-    updateBlue(e);
+    updateBlue(e, 5);
     expect([e.blueFrames, e.flash, e.flashFrames]).toEqual([0, false, 0]);
   });
 });

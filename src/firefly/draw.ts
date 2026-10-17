@@ -1,6 +1,6 @@
 // Draws Firefly inside its cabinet: the night sky, the enemies (or their hit
 // effects), an Owl's tractor beam, a captured firefly, enemy shots, sparks, the firefly (or its death effect), the
-// score HUD shared with Sweet Sam (src/ui/scoreDials.ts) and spare lives, escort-kill bonuses, and "STAGE n" while a stage opens.
+// score HUD shared with Sweet Sam (src/ui/dials.ts) and spare lives, escort-kill bonuses, and "STAGE n" while a stage opens.
 
 import {
   imageCaptive,
@@ -8,6 +8,7 @@ import {
   imageFirefly,
   imageFireflyBackground,
   imageHit,
+  imageMorph,
   imageMoth,
   imageOwl,
   imageOwlHurt,
@@ -19,7 +20,7 @@ import { sub, type Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
-import { drawScoreLabels, type ScoreDials } from "../ui/scoreDials.ts";
+import { drawScoreLabels, type ScoreDials } from "../ui/dials.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import {
@@ -41,6 +42,7 @@ const enemySheets: Readonly<Record<EnemyKind, Sprite>> = {
   moth: imageMoth,
   wasp: imageWasp,
   owl: imageOwl,
+  morph: imageMorph,
 };
 
 /** Every enemy frame is 16×16. */
@@ -114,7 +116,6 @@ export interface FireflyView {
   captive: Captive | null;
   /** Two fireflies, `dualOffset` either side of `player.x`. */
   dual: boolean;
-  highScore: number;
   dials: ScoreDials;
   score(): number;
 }
@@ -148,7 +149,7 @@ function drawField(screen: Surface, f: FireflyView): void {
 
   // Sweet Sam's HUD: the high score follows the score once the score passes it.
   drawScoreLabels(screen, ox, oy);
-  f.dials.draw(screen, ox, oy, f.score(), f.highScore);
+  f.dials.draw(screen, ox, oy);
   drawLives(screen, Math.max(0, f.lives - 1));
 
   if (f.stageTick <= stageIntroTicks) {

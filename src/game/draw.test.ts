@@ -1,4 +1,5 @@
 import { cakeRect, confettiTicks, trophyRect } from "../arcade/arcadeWin.ts";
+import { confettiSize } from "../ui/winArt.ts";
 import { houseHighScores, noHighScores, type HighScores } from "../arcade/wallet.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { cabinetInsetLeft, cabinetInsetTop, cabinetPlayfieldHeight, cabinetPlayfieldWidth } from "../ui/cabinet.ts";
@@ -602,7 +603,7 @@ describe("the arcade win", () => {
     expect(filledWithin(r, cakeRect)).toBeGreaterThan(0);
     expect(filledWithin(r, trophyRect)).toBeGreaterThan(0);
     const confettiDots = (rec: ReturnType<typeof recordingSurface>): number =>
-      [sweetie.r, sweetie.g, sweetie.c].reduce((n, css) => n + rec.dots(css).length, 0);
+      rec.boxes.filter(([, , w, h]) => w === confettiSize && h === confettiSize).length;
     for (let t = 0; t < 120; t++) game.step(input());
     const mid = recordingSurface();
     game.draw(mid.surface);

@@ -11,6 +11,7 @@ import panelUrl from "../assets/images/panel.png";
 import cardsUrl from "../assets/images/cards.png";
 import employeeUrl from "../assets/images/employee.png";
 import prizesUrl from "../assets/images/prizes.png";
+import winUrl from "../assets/images/win.png";
 import arcadeUrl from "../assets/images/arcade.png";
 import screensUrl from "../assets/images/screens.png";
 import playerUrl from "../assets/images/player.png";
@@ -22,6 +23,7 @@ import fireflyFireflyUrl from "../assets/images/firefly/firefly.png";
 import fireflyCaptiveUrl from "../assets/images/firefly/captive.png";
 import fireflySparkUrl from "../assets/images/firefly/spark.png";
 import fireflyMothUrl from "../assets/images/firefly/moth.png";
+import fireflyMorphUrl from "../assets/images/firefly/morph.png";
 import fireflyWaspUrl from "../assets/images/firefly/wasp.png";
 import fireflyOwlUrl from "../assets/images/firefly/owl.png";
 import fireflyOwlHurtUrl from "../assets/images/firefly/owl-hurt.png";
@@ -31,8 +33,11 @@ import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import brassMonkeyGearUrl from "../assets/images/brass-monkey/gear.png";
+import brassMonkeyFurnaceUrl from "../assets/images/brass-monkey/furnace.png";
 import brassMonkeyEmberUrl from "../assets/images/brass-monkey/ember.png";
 import brassMonkeyBoltUrl from "../assets/images/brass-monkey/bolt.png";
+import brassMonkeyWrenchUrl from "../assets/images/brass-monkey/wrench.png";
+import brassMonkeyWrenchSwingUrl from "../assets/images/brass-monkey/wrench-swing.png";
 import brassMonkeyGirderUrl from "../assets/images/brass-monkey/girder.png";
 import brassMonkeyLadderUrl from "../assets/images/brass-monkey/ladder.png";
 import brassMonkeyConveyorUrl from "../assets/images/brass-monkey/conveyor.png";
@@ -51,6 +56,7 @@ import sweetSamScoreLabelsUrl from "../assets/images/sweet-sam/score-labels.png"
 import sweetSamPointsUrl from "../assets/images/sweet-sam/points.png";
 import sweetSamMazeFlashUrl from "../assets/images/sweet-sam/maze-flash.png";
 import sweetSamFlowerUrl from "../assets/images/sweet-sam/flower.png";
+import sweetSamBeeEyesUrl from "../assets/images/sweet-sam/bee-eyes.png";
 
 export const images = {
   font: imageAsset(fontUrl, 128, 224),
@@ -61,6 +67,7 @@ export const images = {
   cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
   prizes: imageAsset(prizesUrl, 80, 16),
+  win: imageAsset(winUrl, 52, 35),
   arcade: imageAsset(arcadeUrl, 160, 144),
   screens: imageAsset(screensUrl, 392, 108),
   player: imageAsset(playerUrl, 64, 96),
@@ -75,6 +82,7 @@ export const fireflyImages = {
   captive: imageAsset(fireflyCaptiveUrl, 16, 16),
   spark: imageAsset(fireflySparkUrl, 8, 8),
   moth: imageAsset(fireflyMothUrl, 96, 64),
+  morph: imageAsset(fireflyMorphUrl, 96, 64),
   wasp: imageAsset(fireflyWaspUrl, 96, 64),
   owl: imageAsset(fireflyOwlUrl, 96, 64),
   owlHurt: imageAsset(fireflyOwlHurtUrl, 96, 64),
@@ -86,9 +94,12 @@ export const fireflyImages = {
 export const brassMonkeyImages = {
   monkey: imageAsset(brassMonkeyMonkeyUrl, 96, 16),
   gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
-  gear: imageAsset(brassMonkeyGearUrl, 24, 12),
+  gear: imageAsset(brassMonkeyGearUrl, 48, 12),
+  furnace: imageAsset(brassMonkeyFurnaceUrl, 48, 24),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),
   bolt: imageAsset(brassMonkeyBoltUrl, 40, 14),
+  wrench: imageAsset(brassMonkeyWrenchUrl, 8, 14),
+  wrenchSwing: imageAsset(brassMonkeyWrenchSwingUrl, 14, 8),
   girder: imageAsset(brassMonkeyGirderUrl, 8, 8),
   ladder: imageAsset(brassMonkeyLadderUrl, 8, 4),
   conveyor: imageAsset(brassMonkeyConveyorUrl, 96, 8),
@@ -110,4 +121,5 @@ export const sweetSamImages = {
   points: imageAsset(sweetSamPointsUrl, 64, 16),
   mazeFlash: imageAsset(sweetSamMazeFlashUrl, 224, 288),
   flower: imageAsset(sweetSamFlowerUrl, 128, 16),
+  beeEyes: imageAsset(sweetSamBeeEyesUrl, 64, 16),
 } as const;

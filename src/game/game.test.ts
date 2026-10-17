@@ -40,6 +40,10 @@ class FakeSoftware implements Software {
   jumpTo(stage: number): void {
     this.jumps.push(stage);
   }
+  readonly scores: number[] = [];
+  scoreTo(score: number): void {
+    this.scores.push(score);
+  }
   draw(screen: Surface, buffer: number): void {
     this.draws.push([screen, buffer]);
   }
@@ -134,6 +138,22 @@ describe("jumpTo", () => {
     const { game } = newGame();
     expect(() => {
       game.jumpTo(2);
+    }).toThrow();
+  });
+});
+
+describe("scoreTo", () => {
+  test("sets the running minigame's score", () => {
+    const { game, built } = newGame();
+    enterSweetSam(game);
+    game.scoreTo(19_990);
+    expect(built[0]?.scores).toEqual([19_990]);
+  });
+
+  test("throws in the hub, with no minigame to score", () => {
+    const { game } = newGame();
+    expect(() => {
+      game.scoreTo(100);
     }).toThrow();
   });
 });
@@ -421,12 +441,19 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:sweetDeath",
   "pause:sweetClear",
   "pause:spark",
-  "pause:hit",
+  "pause:mothHit",
+  "pause:waspHit",
+  "pause:owlHurt",
+  "pause:owlKill",
+  "pause:dive",
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
   "pause:rescue",
   "pause:stage",
+  "pause:extraLife",
+  "pause:fireflyStart",
+  "pause:monkeyWrench",
 ];
 
 // The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.
@@ -608,6 +635,26 @@ describe("the arcade win", () => {
     expect(s.software).toBeNull();
     expect(s.arcade.arcadeWin).toBe("banner");
     expect(game.progress().arcadeWon).toBe(true);
+  });
+
+  test("the win plays the victory jingle, with the hub song quiet until the banner closes", () => {
+    const { game } = endRun(beatSweetSam, 5, twoBeaten);
+    const atWin = soundsDuring(() => {
+      closePayout(game);
+    });
+    expect(atWin.filter((e) => e.endsWith(":victory"))).toEqual(["rewind:victory", "play:victory"]);
+    expect(atWin.filter((e) => e.endsWith(":hub"))).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        run(game, 300);
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        game.step(input({ space: true }));
+        game.step(input());
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual(["play:hub"]);
   });
 
   test("a run that leaves a machine unbeaten does not", () => {

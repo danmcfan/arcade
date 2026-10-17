@@ -2,20 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { checkCollision, newWalls } from "./collision.ts";
 import { newMachines } from "./machine.ts";
 import { counterRects } from "./desk.ts";
-import {
-  honeyJarPrice,
-  isPrizeId,
-  oilCanPrice,
-  pocketWatchPrice,
-  prizeBox,
-  prizes,
-  runningShoesPrice,
-  springBootsPrice,
-  sleepyBeesPrice,
-  lanternPrice,
-  glowStickPrice,
-  wingsPrice,
-} from "./prizes.ts";
+import { isPrizeId, prizeBox, prizes } from "./prizes.ts";
 import type { SoftwareName } from "../game/software.ts";
 import type { ArcadeTitle } from "../game/snapshot.ts";
 import { defined } from "../engine/defined.testutil.ts";
@@ -38,9 +25,6 @@ describe("prize catalogue", () => {
       ["springBoots", "SPRING BOOTS", 50, "brassMonkey"],
       ["pocketWatch", "POCKET WATCH", 100, "brassMonkey"],
     ]);
-    expect([honeyJarPrice, runningShoesPrice, sleepyBeesPrice]).toEqual([25, 50, 100]);
-    expect([lanternPrice, glowStickPrice, wingsPrice]).toEqual([25, 50, 100]);
-    expect([oilCanPrice, springBootsPrice, pocketWatchPrice]).toEqual([25, 50, 100]);
   });
 
   const cabinetOf: Readonly<Record<SoftwareName, ArcadeTitle>> = {

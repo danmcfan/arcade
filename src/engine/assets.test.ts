@@ -76,12 +76,12 @@ describe("sound registry", () => {
     }
   });
 
-  test("the songs and attract loops loop, effects don't", () => {
+  test("the songs, attract loops and the wrench music loop, effects don't", () => {
     expect(
       Object.values(sounds)
         .filter((s) => s.loop)
         .map((s) => s.name),
-    ).toEqual(["title", "hub", "attractBrassMonkey", "attractSweet", "attractFirefly"]);
+    ).toEqual(["title", "hub", "attractBrassMonkey", "attractSweet", "attractFirefly", "monkeyWrench"]);
   });
 });
 
