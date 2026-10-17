@@ -44,7 +44,9 @@ import {
   hitEffectTicks,
   points,
   respawnTicks,
+  shotCutoffMargin,
   shotSpacing,
+  shotSpawnOffset,
   type Slot,
   shotSpeed,
   sparkCooldown,
@@ -554,11 +556,11 @@ export class FireflySoftware implements FixedViewport {
   private dropShot(e: Enemy): void {
     if (e.shotsLeft === 0 || (e.state !== "diving" && e.state !== "entering")) return;
     if (e.shotTimer > 0) e.shotTimer--;
-    if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
+    if (e.shotTimer > 0 || e.y > playerY - shotCutoffMargin || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
     const maxDrift = difficulty(this.stage).shotDrift;
     const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
-    this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
+    this.shots.push({ x: e.x, y: e.y + shotSpawnOffset, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
   }

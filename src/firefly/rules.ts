@@ -179,6 +179,10 @@ export const sparkCooldown = 8;
 /** Ticks after a dive starts before its first shot, and between its shots. */
 export const firstShotDelay = 18;
 export const shotSpacing = 14;
+/** An enemy stops shooting once it is within this many pixels of the firefly's row. */
+export const shotCutoffMargin = 48;
+/** How far below an enemy's centre its shot appears. */
+export const shotSpawnOffset = 8;
 
 /** How likely each kind is to be picked for a dive, relative to the others. Wasps dive most. */
 export const diveWeight: Readonly<Record<EnemyKind, number>> = { moth: 2, wasp: 5, owl: 2 };

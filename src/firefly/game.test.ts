@@ -24,6 +24,8 @@ import {
   maxSparks,
   points,
   respawnTicks,
+  shotCutoffMargin,
+  shotSpawnOffset,
   sparkSpeed,
   stageIntroTicks,
   startLives,
@@ -196,7 +198,7 @@ describe("entry shots", () => {
     expect(fired.length).toBeGreaterThan(0);
     for (const s of fired) {
       expect(s.dy).toBeGreaterThan(0);
-      expect(s.y - 8 - s.dy).toBeLessThanOrEqual(playerY - 48);
+      expect(s.y - shotSpawnOffset - s.dy).toBeLessThanOrEqual(playerY - shotCutoffMargin);
       expect(Math.sign(s.dx)).toBe(Math.sign(s.px - (s.x - s.dx)));
       expect(Math.abs(s.dx)).toBeLessThanOrEqual(difficulty(3).shotDrift);
     }
@@ -317,6 +319,28 @@ describe("dives", () => {
 
   test("on later stages a diver flies its dive faster", () => {
     expect(diveStep(10) / diveStep(5)).toBeCloseTo(difficulty(10).diveSpeed / difficulty(5).diveSpeed);
+  });
+
+  test("a dive still fires its full shotsPerDive after entry shots were added", () => {
+    const f = settled();
+    f.stage = 5;
+    f.diveTimer = 1_000_000;
+    const e = f.enemies[0];
+    if (e === undefined) throw new Error("no enemy");
+    divingAt(e, 20, 20);
+    e.shotsLeft = difficulty(5).shotsPerDive;
+    e.shotTimer = 1;
+    let fired = 0;
+    const seen = new Set<object>();
+    for (let i = 0; i < 400; i++) {
+      f.update(NO_INPUT);
+      for (const s of f.shots) {
+        if (seen.has(s)) continue;
+        seen.add(s);
+        fired++;
+      }
+    }
+    expect(fired).toBe(difficulty(5).shotsPerDive);
   });
 
   test("on later stages a shot drifts further sideways at the firefly", () => {
