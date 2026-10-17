@@ -219,40 +219,40 @@ export interface SweetSamSnapshot {
   /** `stateMachine.CurrentID()`. */
   state: SweetSamStateId;
   player: SweetSamPlayerSnapshot;
-  /** `SweetSamSoftware.enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
+  /** The Level's `enemies` in slice order (red, pink, teal, orange as built by `newEnemies`). */
   enemies: SweetSamEnemySnapshot[];
-  /** Number of non-nil entries in `SweetSamSoftware.items`. */
+  /** Number of non-nil entries in the Level's `items`. */
   items: number;
   /**
    * FNV-1a 32-bit (`fnv1a32` in src/engine/gomath.ts) over the indexes of the
    * non-nil `items` entries, ascending, each as a little-endian uint32.
    */
   itemsHash: number;
-  /** `SweetSamSoftware.score`. */
+  /** The Level's `score`. */
   score: number;
-  /** `SweetSamSoftware.lives`. */
+  /** The Level's `lives`. */
   lives: number;
   /** `SweetSamSoftware.dials.highScore`. */
   highScore: number;
-  /** `SweetSamSoftware.modeIndex`. */
+  /** The Level's `modeIndex`. */
   modeIndex: number;
-  /** `SweetSamSoftware.modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
+  /** The Level's `modeCurrent` as the Go `mode` int: 0 = modeScatter, 1 = modeChase. */
   mode: number;
-  /** `SweetSamSoftware.modeTicks`. */
+  /** The Level's `modeTicks`. */
   modeTicks: number;
-  /** `SweetSamSoftware.release`. */
+  /** The Level's `release`. */
   release: { globalDots: number | null; idleTicks: number; elroySuspended: boolean };
-  /** `SweetSamSoftware.pauseTicks`. */
+  /** The Level's `pauseTicks`. */
   pauseTicks: number;
-  /** `SweetSamSoftware.eatPauseTicks`. */
+  /** The Level's `eatPauseTicks`. */
   eatPauseTicks: number;
-  /** `SweetSamSoftware.startTicks`. */
+  /** The Level's `startTicks`. */
   startTicks: number;
   /** `StartState.respawnBlinkRemaining` (the registered START state's field, whatever the current state). */
   respawnBlinkRemaining: number;
-  /** `SweetSamSoftware.scaredEatAwardNext`. */
+  /** The Level's `scaredEatAwardNext`. */
   scaredEatAwardNext: number;
-  /** `SweetSamSoftware.bonusEatPopups` in slice order. */
+  /** The Level's `bonusEatPopups` in slice order. */
   popups: SweetSamPopupSnapshot[];
   /**
    * Camera: `[shakeOffsetX, shakeOffsetY, shakeTicksRemaining, shakeIntensity]`.
@@ -263,7 +263,7 @@ export interface SweetSamSnapshot {
    * deliberately excluded: they come from `Sin/Cos` (fact 3).
    */
   particlesActive: number;
-  /** `SweetSamSoftware.pelletAnimTick`. */
+  /** The Level's `pelletAnimTick`. */
   pelletAnimTick: number;
   /** 12 dials: `scoreDial[0..5]` then `highScoreDial[0..5]`. */
   dials: SweetSamDialSnapshot[];

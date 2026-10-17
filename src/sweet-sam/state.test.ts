@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as rng from "../engine/rng.ts";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
+import type { SweetSamEnemySnapshot } from "../game/snapshot.ts";
 import { SweetSamSoftware } from "./software.ts";
-import { dropEaten } from "./release.ts";
 import { levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
-import { sweetSamAdvantages } from "./advantages.ts";
+import { sweetSamAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { deathRoundDelayTicks, startTicks } from "./update.ts";
-import type { Entity } from "./entity.ts";
+import type { ItemSetup, LevelSetup } from "./level.ts";
 
 let sounds: SoundEvent[] = [];
 let unsubscribe = (): void => {};
@@ -39,48 +39,73 @@ function playing(): SweetSamSoftware {
   return s;
 }
 
-function enemy(s: SweetSamSoftware, i: number): Entity {
-  const e = s.enemies[i];
+/** A game in PLAY from `setup`, before its first PLAY tick. */
+function from(setup: LevelSetup, advantages?: Readonly<SweetSamAdvantages>): SweetSamSoftware {
+  const s = new SweetSamSoftware(0, advantages, setup);
+  expect(s.snapshot().state).toBe("PLAY");
+  sounds = [];
+  return s;
+}
+
+function enemy(s: SweetSamSoftware, i: number): SweetSamEnemySnapshot {
+  const e = s.snapshot().enemies[i];
   if (e === undefined) throw new Error(`no enemy ${i}`);
   return e;
 }
 
-/** Put a bee on the player, away from corners, so it collides this tick. */
-function onPlayer(s: SweetSamSoftware, e: Entity): void {
-  e.x = s.player.x;
-  e.y = s.player.y;
-  e.home = false;
-  e.dotMinimum = 0;
-  e.reverseDirection = false;
+/** Where the bear stands in a fresh round. */
+const start = { x: 112, y: 212 };
+/** Where the bear is after its first PLAY tick. */
+const aheadOfBear = { x: start.x - 1, y: start.y };
+
+/** Items for a setup: `eaten` honey drops gone after the first PLAY tick, the last one eaten on it at `at`. */
+function eating(
+  eaten: number,
+  at: Readonly<{ x: number; y: number }> = aheadOfBear,
+): (it: ItemSetup, idx: number) => ItemSetup | null {
+  return (it, idx) => (idx === 0 ? { ...it, ...at } : idx < eaten ? null : it);
 }
 
-/** Eat honey drops until `eaten` are gone, the last one on this tick. */
-function eatUpTo(s: SweetSamSoftware, eaten: number): void {
-  const present = s.items.flatMap((it, i) => (it === null ? [] : [i]));
-  const already = s.items.length - present.length;
-  for (const i of present.slice(1, eaten - already)) s.items[i] = null;
-  const last = s.items[present[0] ?? -1];
-  if (!last) throw new Error("no item left");
-  last.x = s.player.x - s.player.velocity;
-  last.y = s.player.y;
+/** The first honey pot moved to `at`. */
+function potAt(at: { x: number; y: number }): (it: ItemSetup) => ItemSetup {
+  let moved = false;
+  return (it) => {
+    if (!it.power || moved) return it;
+    moved = true;
+    return { ...it, ...at };
+  };
+}
+
+/** Red one tile left of the bear, heading for it: it catches the bear on the second PLAY tick. */
+const redApproaching = { x: start.x - 7.5, y: start.y, home: false, dir: "RIGHT" } as const;
+
+/**
+ * The bear three steps right of the flower's spot, heading left, the
+ * `eaten`th honey drop just ahead of it: it eats the drop on the first tick
+ * and reaches the flower on the fourth.
+ */
+function nearFlower(eaten: number): LevelSetup {
+  return { player: { x: flowerX + 3, y: flowerY }, items: eating(eaten, { x: flowerX + 2, y: flowerY }) };
+}
+
+/** Steps until the bear eats the flower; the score it added. */
+function eatFlower(s: SweetSamSoftware): number {
+  const before = s.score();
+  for (let t = 0; t < 10 && s.snapshot().flowerPopup === null; t++) step(s);
+  expect(s.snapshot().flowerPopup).not.toBeNull();
+  return s.score() - before;
+}
+
+/** A game on `level` whose last honey drop the bear has just eaten. */
+function clearedLevel(level: number): SweetSamSoftware {
+  const s = from({ level, score: 1234, items: () => null });
   step(s);
-}
-
-/** Move the bear onto the flower's spot, heading left, so it eats it this tick. */
-function bearOnFlower(s: SweetSamSoftware): void {
-  s.player.x = flowerX + s.player.velocity;
-  s.player.y = flowerY;
-  s.player.direction = "LEFT";
-  s.eatPauseTicks = 0;
+  return s;
 }
 
 /** A game on level 1 whose last honey drop the bear has just eaten. */
 function cleared(): SweetSamSoftware {
-  const s = playing();
-  s.scoreValue = 1234;
-  s.items = s.items.map(() => null);
-  step(s);
-  return s;
+  return clearedLevel(1);
 }
 
 describe("respawnBlinkHiddenForElapsed", () => {
@@ -140,12 +165,12 @@ describe("START", () => {
     const hidden: boolean[] = [];
     for (let t = 1; t <= 120; t++) {
       step(s);
-      hidden.push(s.player.hidden);
+      hidden.push(s.snapshot().player.hidden);
       expect(s.snapshot().state).toBe("START");
     }
     expect(hidden.slice(0, 15).every(Boolean)).toBe(true);
     expect(hidden.slice(15, 30).every((h) => !h)).toBe(true);
-    expect([s.startTicks, s.startState.respawnBlinkRemaining]).toEqual([0, 0]);
+    expect([s.snapshot().startTicks, s.snapshot().respawnBlinkRemaining]).toEqual([0, 0]);
     step(s);
     const snap = s.snapshot();
     expect([snap.state, snap.player.dir, snap.player.hidden, snap.modeIndex]).toEqual(["PLAY", "LEFT", false, 0]);
@@ -163,7 +188,7 @@ describe("PLAY modes", () => {
 
   test("the first scatter flags only the red bee; home bees still leave LEFT (#226)", () => {
     const s = playing();
-    expect(s.enemies.map((e) => [e.reverseDirection, e.leaveRight])).toEqual([
+    expect(s.snapshot().enemies.map((e) => [e.reverse, e.leaveRight])).toEqual([
       [true, false],
       [false, false],
       [false, false],
@@ -172,16 +197,16 @@ describe("PLAY modes", () => {
   });
 
   test("a mode change sends home bees out RIGHT instead of reversing them (#226)", () => {
-    const s = playing();
-    s.modeTicks = 0;
+    const s = from({ mode: { index: 1, ticks: 0 } });
     step(s);
-    const [red, pink, teal] = [enemy(s, 0), enemy(s, 1), enemy(s, 2)];
-    expect([red.reverseDirection, red.leaveRight]).toEqual([true, false]);
-    expect([teal.home, teal.reverseDirection, teal.leaveRight]).toEqual([true, false, true]);
-    for (let t = 0; t < 200 && pink.home; t++) step(s);
-    expect([pink.home, pink.direction, pink.leaveRight, pink.reverseDirection]).toEqual([false, "RIGHT", false, false]);
+    const [red, teal] = [enemy(s, 0), enemy(s, 2)];
+    expect([red.reverse, red.leaveRight]).toEqual([true, false]);
+    expect([teal.home, teal.reverse, teal.leaveRight]).toEqual([true, false, true]);
+    for (let t = 0; t < 200 && enemy(s, 1).home; t++) step(s);
+    const pink = enemy(s, 1);
+    expect([pink.home, pink.dir, pink.leaveRight, pink.reverse]).toEqual([false, "RIGHT", false, false]);
     step(s, 6);
-    expect([pink.direction, pink.reverseDirection]).toEqual(["RIGHT", false]);
+    expect([enemy(s, 1).dir, enemy(s, 1).reverse]).toEqual(["RIGHT", false]);
   });
 
   test("bees leave the home on the same ticks as before the bob (#226)", () => {
@@ -190,87 +215,78 @@ describe("PLAY modes", () => {
     const out: Record<string, number> = {};
     for (let t = 1; t < 3000 && Object.keys(out).length < 3; t++) {
       step(s, 1, { ...NO_INPUT, down: true });
-      for (const e of s.enemies)
-        if (e.kind !== null && e.kind !== "red" && !e.home && !(e.kind in out)) out[e.kind] = t;
+      for (const e of s.snapshot().enemies) if (e.kind !== "red" && !e.home && !(e.kind in out)) out[e.kind] = t;
     }
     expect(out).toEqual({ pink: 170, teal: 500, orange: 740 });
   });
 
   test("the scatter/chase timer holds while any bee is sleepy", () => {
-    const s = playing();
-    const before = s.modeTicks;
-    enemy(s, 3).blueFrames = 60;
+    const before = 419;
+    const s = from({ mode: { index: 1, ticks: before }, bees: [undefined, undefined, undefined, { blueFrames: 60 }] });
     step(s, 50);
-    expect(enemy(s, 3).blueFrames).toBeGreaterThan(0);
-    expect([s.modeTicks, s.modeIndex]).toEqual([before, 1]);
+    expect(enemy(s, 3).blue).toBeGreaterThan(0);
+    expect([s.snapshot().modeTicks, s.snapshot().modeIndex]).toEqual([before, 1]);
 
     // Not vacuous: with no sleepy bee the same 50 ticks run the timer down.
     const awake = playing();
+    expect(awake.snapshot().modeTicks).toBe(before);
     step(awake, 50);
-    expect(awake.modeTicks).toBe(before - 50);
+    expect(awake.snapshot().modeTicks).toBe(before - 50);
   });
 
   test("after sleepy time the timer resumes from where it held and the sequence continues", () => {
-    const s = playing();
-    s.modeTicks = 5;
-    for (const e of s.enemies) e.blueFrames = 20;
+    const sleepy = { blueFrames: 20 };
+    const s = from({ mode: { index: 1, ticks: 5 }, bees: [sleepy, sleepy, sleepy, sleepy] });
     step(s, 20);
-    expect(s.enemies.every((e) => e.blueFrames === 0)).toBe(true);
-    expect([s.modeTicks, s.modeIndex, s.modeCurrent]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode ?? -1]);
+    let snap = s.snapshot();
+    expect(snap.enemies.every((e) => e.blue === 0)).toBe(true);
+    expect([snap.modeTicks, snap.modeIndex, snap.mode]).toEqual([5, 1, levelValues(1).modeSequence[0]?.mode ?? -1]);
     step(s, 2);
-    expect(s.modeTicks).toBe(3);
+    expect(s.snapshot().modeTicks).toBe(3);
     step(s, 4);
-    expect([s.modeIndex, s.modeCurrent]).toEqual([2, levelValues(1).modeSequence[1]?.mode ?? -1]);
+    snap = s.snapshot();
+    expect([snap.modeIndex, snap.mode]).toEqual([2, levelValues(1).modeSequence[1]?.mode ?? -1]);
   });
 });
 
 describe("velocities", () => {
   test("normal 1.0 / 0.9375, power 1.125 / 0.625, tunnel 0.5 for bees only", () => {
-    const s = playing();
-    const red = enemy(s, 0);
-    const pink = enemy(s, 1);
-    red.x = 20; // tunnel: row 140, x < 36
-    red.y = 140;
-    red.home = false;
+    // tunnel: row 140, x < 36
+    const inTunnel = { x: 20, y: 140, home: false };
+    let s = from({ bees: [inTunnel] });
     step(s);
-    expect([s.player.velocity, red.velocity, pink.velocity]).toEqual([1.0, 0.5, 0.9375]);
+    expect([s.snapshot().player.velocity, enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1.0, 0.5, 0.9375]);
 
-    pink.blueFrames = 300;
+    s = from({ bees: [inTunnel, { blueFrames: 300 }] });
     step(s);
-    expect([s.player.velocity, pink.velocity]).toEqual([1.125, 0.625]);
+    expect([s.snapshot().player.velocity, enemy(s, 1).velocity]).toEqual([1.125, 0.625]);
 
-    s.player.y = 140; // the player gets no tunnel slowdown
-    s.player.x = 20;
+    // the player gets no tunnel slowdown
+    s = from({ bees: [inTunnel, { blueFrames: 300 }], player: { x: 20, y: 140 } });
     step(s);
-    expect(s.player.velocity).toBe(1.125);
+    expect(s.snapshot().player.velocity).toBe(1.125);
   });
 });
 
 describe("eating", () => {
   test("at most one item per tick; pellets 10 with an alternating chomp, power 50 with a puff, shake and scared bees", () => {
-    const s = playing();
-    // The player moves 1px left this tick, to (x-1, 212).
-    const x = s.player.x - 1;
-    const a = s.items[0];
-    const b = s.items[1];
-    if (!a || !b) throw new Error("items");
-    a.x = x;
-    a.y = 212;
-    b.x = x;
-    b.y = 212;
+    // The player moves 1px left on the first tick, to (x-1, 212): all three are in its tile.
+    const x = start.x - 1;
+    const pot = potAt({ x: x - 1, y: 212 });
+    const s = from({ items: (it, idx) => (idx < 2 ? { ...it, x, y: 212 } : pot(it)) });
     step(s);
-    expect([s.snapshot().items, s.scoreValue, s.items[0], s.items[1] === b]).toEqual([243, 10, null, true]);
-    b.x = s.player.x - 1;
+    expect([s.snapshot().items, s.score(), s.level.items()[0], s.level.items()[1] !== null]).toEqual([
+      243,
+      10,
+      null,
+      true,
+    ]);
     step(s);
-    expect([s.snapshot().items, s.scoreValue]).toEqual([242, 20]);
+    expect([s.snapshot().items, s.score()]).toEqual([242, 20]);
 
-    const power = s.items.find((i) => i?.powerPellet === true);
-    if (!power) throw new Error("power");
-    power.x = s.player.x - 1;
-    power.y = 212;
-    const pink = enemy(s, 1); // still home: sleepy too
     step(s);
-    expect(s.scoreValue).toBe(70);
+    const snap = s.snapshot();
+    expect(snap.score).toBe(70);
     expect(sounds).toEqual([
       "rewind:sweetChompHigh",
       "play:sweetChompHigh",
@@ -279,199 +295,164 @@ describe("eating", () => {
       "rewind:sweetSmoke",
       "play:sweetSmoke",
     ]);
-    expect([s.camera.shakeTicksRemaining, s.camera.shakeIntensity]).toEqual([6, 4]);
-    expect(enemy(s, 0).blueFrames).toBe(360);
-    expect(enemy(s, 0).reverseDirection).toBe(true);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
-    expect(s.enemies.every((e) => e.blueFrames === 360)).toBe(true);
+    expect([snap.shake[2], snap.shake[3]]).toEqual([6, 4]);
+    expect(enemy(s, 0).blue).toBe(360);
+    expect(enemy(s, 0).reverse).toBe(true);
+    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 360]); // still home: sleepy too
+    expect(snap.enemies.every((e) => e.blue === 360)).toBe(true);
   });
 
   test.each([17, 19, 21])("on level %p a honey pot scores 50 and turns the bees round, but none sleeps", (level) => {
-    const s = playing();
-    s.level = level;
-    const power = s.items.find((i) => i?.powerPellet === true);
-    if (!power) throw new Error("power");
-    power.x = s.player.x - 1;
-    power.y = 212;
+    const s = from({ level, items: potAt({ x: start.x - 1, y: start.y }) });
     step(s);
-    expect(s.scoreValue).toBe(50);
-    expect(enemy(s, 0).reverseDirection).toBe(true);
-    expect(s.enemies.some((e) => e.blueFrames > 0)).toBe(false);
+    expect(s.score()).toBe(50);
+    expect(enemy(s, 0).reverse).toBe(true);
+    expect(s.snapshot().enemies.some((e) => e.blue > 0)).toBe(false);
   });
 
   test("a bee that leaves the home still sleepy can be eaten for points", () => {
-    const s = playing();
-    const pink = enemy(s, 1);
-    const power = s.items.find((i) => i?.powerPellet === true);
-    if (!power) throw new Error("power");
-    power.x = s.player.x - 1;
-    power.y = 212;
+    const eyes = { home: false, eyes: true, x: 8 * 2, y: 8 * 4 + 4 };
+    const s = from({ bees: [eyes, undefined, eyes, eyes], items: potAt({ x: start.x - 1, y: start.y }) });
     step(s);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
+    expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 360]);
     let n = 0;
-    while (pink.home && n++ < 300) step(s);
-    expect([pink.home, pink.blueFrames > 0]).toEqual([false, true]);
-    onPlayer(s, pink);
-    const before = s.scoreValue;
-    step(s);
-    expect([s.snapshot().state, s.scoreValue - before]).toEqual(["PAUSE", 200]);
+    while (enemy(s, 1).home && n++ < 300) step(s);
+    expect([enemy(s, 1).home, enemy(s, 1).blue > 0]).toEqual([false, true]);
+    // Steer the bear onto the bee through step(); the others are eyes, which pay nothing.
+    let before = s.score();
+    for (let t = 0; t < 2000 && s.snapshot().state === "PLAY"; t++) {
+      before = s.score();
+      const bee = enemy(s, 1);
+      const p = s.snapshot().player;
+      step(s, 1, { ...NO_INPUT, left: bee.x < p.x, right: bee.x > p.x, up: bee.y < p.y, down: bee.y > p.y });
+    }
+    expect([s.snapshot().state, s.score() - before]).toEqual(["PAUSE", 200]);
   });
 
   test("scared bee eaten: 200, popup, shake, particles, power sound, PAUSE", () => {
-    const s = playing();
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.blueFrames = 300;
+    const s = from({ bees: [{ onPlayer: true, blueFrames: 300 }] });
     step(s);
     const snap = s.snapshot();
     expect(snap.state).toBe("PAUSE");
     expect([snap.score, snap.scaredEatAwardNext, snap.pauseTicks]).toEqual([200, 1, 60]);
     expect(sounds).toEqual(["rewind:sweetBee", "play:sweetBee"]);
     // The popup ticks once on its spawn tick; the shake starts consuming rand next tick.
-    expect(snap.popups).toEqual([{ x: s.player.x, y: s.player.y, frameIdx: 0, ticks: 44 }]);
+    expect(snap.popups).toEqual([{ x: snap.player.x, y: snap.player.y, frameIdx: 0, ticks: 44 }]);
     expect(snap.shake).toEqual([0, 0, 9, 8]);
     expect(snap.particlesActive).toBe(25);
-    expect([red.eyes, red.blueFrames]).toEqual([true, 0]);
+    expect([enemy(s, 0).eyes, enemy(s, 0).blue]).toEqual([true, 0]);
   });
 
   test("award ladder 200 → 400 → 800 → 1600 → 1600 while some bee stays scared", () => {
-    const s = playing();
-    const pink = enemy(s, 1);
-    pink.blueFrames = 10_000; // keeps the ladder alive (blue but home)
+    const sleepy = { onPlayer: true, blueFrames: 10_000 };
+    const s = from({ bees: [sleepy, sleepy, sleepy, sleepy] });
     const awards: number[] = [];
-    for (let k = 0; k < 5; k++) {
-      const red = enemy(s, 0);
-      onPlayer(s, red);
-      red.eyes = false; // revived: the same bee is eaten again
-      red.blueFrames = 300;
-      const before = s.scoreValue;
-      step(s);
-      expect(s.snapshot().state).toBe("PAUSE");
-      awards.push(s.scoreValue - before);
-      step(s, 61); // PAUSE: 60 countdown ticks, then back to PLAY
-      expect(s.snapshot().state).toBe("PLAY");
-    }
+    // Every bee is on the bear and only a honey pot re-scares one, so the fifth eat comes from a fresh game
+    // whose ladder starts at the top rung, eaten through the same step().
+    const eatAll = (g: SweetSamSoftware, n: number): void => {
+      for (let k = 0; k < n; k++) {
+        const before = g.score();
+        step(g);
+        expect(g.snapshot().state).toBe("PAUSE");
+        awards.push(g.score() - before);
+        step(g, 61); // PAUSE: 60 countdown ticks, then back to PLAY
+        expect(g.snapshot().state).toBe("PLAY");
+      }
+    };
+    eatAll(s, 4);
+    expect(s.snapshot().scaredEatAwardNext).toBe(3);
+    // The ladder's state after four eats, carried into a second game with a scared bee left on the bear.
+    eatAll(from({ scaredEatAwardNext: 3, bees: [sleepy, { blueFrames: 10_000 }] }), 1);
     expect(awards).toEqual([200, 400, 800, 1600, 1600]);
-    expect(s.scaredEatAwardNext).toBe(3);
   });
 
   test("a honey pot eaten while bees are sleepy restarts the award at 200", () => {
-    const s = playing();
-    const pink = enemy(s, 1);
-    pink.blueFrames = 10_000; // keeps the ladder alive (blue but home)
-    const eatRed = (): number => {
-      const red = enemy(s, 0);
-      onPlayer(s, red);
-      red.eyes = false;
-      red.blueFrames = 300;
-      const before = s.scoreValue;
+    const sleepy = { onPlayer: true, blueFrames: 10_000 };
+    const s = from({
+      // Red and pink on the bear; teal a tile to its left, meeting it after the pot; orange keeps the ladder alive.
+      bees: [sleepy, sleepy, { ...redApproaching, x: start.x - 7.5, blueFrames: 10_000 }, { blueFrames: 10_000 }],
+      items: potAt({ x: start.x - 1, y: start.y }),
+    });
+    const eat = (): number => {
+      const before = s.score();
       step(s);
-      const award = s.scoreValue - before;
+      expect(s.snapshot().state).toBe("PAUSE");
+      const award = s.score() - before;
       step(s, 61);
       return award;
     };
-    const awards = [eatRed(), eatRed()];
-    const power = s.items.find((i) => i?.powerPellet === true);
-    if (!power) throw new Error("power");
-    power.x = s.player.x - 1;
-    power.y = s.player.y;
-    step(s);
-    awards.push(eatRed());
+    const awards = [eat(), eat()];
+    step(s); // the pot
+    expect(s.snapshot().items).toBe(243);
+    awards.push(eat());
     expect(awards).toEqual([200, 400, 200]);
   });
 
   test("the award resets at the end of a PLAY tick when no bee is scared", () => {
-    const s = playing();
-    s.scaredEatAwardNext = 2;
-    enemy(s, 1).blueFrames = 5;
+    const s = from({ scaredEatAwardNext: 2, bees: [undefined, { blueFrames: 5 }] });
     step(s);
-    expect(s.scaredEatAwardNext).toBe(2);
-    for (const e of s.enemies) e.blueFrames = 0;
-    step(s);
-    expect(s.scaredEatAwardNext).toBe(0);
+    expect(s.snapshot().scaredEatAwardNext).toBe(2);
+    step(s, 3);
+    expect(s.snapshot().scaredEatAwardNext).toBe(2);
+    step(s); // pink wakes
+    expect(s.snapshot().scaredEatAwardNext).toBe(0);
   });
 });
 
 describe("collisions and death", () => {
   test("a bee anywhere in the bear's tile catches it", () => {
-    const s = playing();
-    s.player.x = 112;
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.x = s.player.x + 3; // tile 14 spans x 112..119; the bear is at 112
+    // tile 14 spans x 112..119; the bear is at 112
+    const s = from({ player: { x: 112 }, bees: [{ onPlayer: true, x: 112 + 3 }] });
     step(s);
-    expect([s.snapshot().state, s.lives]).toEqual(["DEATHWAIT", 2]);
+    expect([s.snapshot().state, s.snapshot().lives]).toEqual(["DEATHWAIT", 2]);
   });
 
   test("a sleepy bee anywhere in the bear's tile is eaten", () => {
-    const s = playing();
-    s.player.x = 112;
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.x = s.player.x + 7;
-    red.blueFrames = 50;
+    const s = from({ player: { x: 112 }, bees: [{ onPlayer: true, x: 112 + 7, blueFrames: 50 }] });
     step(s);
-    expect([s.snapshot().state, red.eyes, s.lives]).toEqual(["PAUSE", true, 3]);
+    expect([s.snapshot().state, enemy(s, 0).eyes, s.snapshot().lives]).toEqual(["PAUSE", true, 3]);
   });
 
   test("a bee in the neighbouring tile does not catch the bear, however close", () => {
-    const s = playing();
-    s.player.x = 112;
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.x = s.player.x - 1; // tile 13, 1 px from the bear in tile 14
-    red.direction = "LEFT";
-    s.player.direction = "RIGHT";
+    // tile 13, 1 px from the bear in tile 14
+    const s = from({ player: { x: 112, dir: "RIGHT" }, bees: [{ onPlayer: true, x: 112 - 1, dir: "LEFT" }] });
     step(s);
-    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+    expect([s.snapshot().state, s.snapshot().lives]).toEqual(["PLAY", 3]);
   });
 
   test("bear and bee swapping tiles in one tick pass through each other", () => {
-    const s = playing();
-    s.player.x = 112;
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.x = s.player.x - 0.5; // a bee moves under 1 px a tick
-    red.direction = "RIGHT";
+    // a bee moves under 1 px a tick
+    const s = from({ player: { x: 112 }, bees: [{ onPlayer: true, x: 112 - 0.5, dir: "RIGHT" }] });
     step(s, 1, { ...NO_INPUT, left: true });
-    expect([Math.trunc(s.player.x / 8), Math.trunc(red.x / 8)]).toEqual([13, 14]);
-    expect([s.snapshot().state, s.lives]).toEqual(["PLAY", 3]);
+    expect([Math.trunc(s.snapshot().player.x / 8), Math.trunc(enemy(s, 0).x / 8)]).toEqual([13, 14]);
+    expect([s.snapshot().state, s.snapshot().lives]).toEqual(["PLAY", 3]);
   });
 
   test("a collision returns immediately: later bees skip updateBlue, nothing moves or is eaten", () => {
-    const s = playing();
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    const pink = enemy(s, 1);
-    pink.blueFrames = 50;
-    const [px, py, pinkX] = [s.player.x, s.player.y, pink.x];
-    const item = s.items[0];
-    if (!item) throw new Error("item");
-    item.x = px;
-    item.y = py;
-    s.scaredEatAwardNext = 2;
+    const s = from({
+      bees: [{ onPlayer: true }, { blueFrames: 50 }],
+      items: (it, idx) => (idx === 0 ? { ...it, ...start } : it),
+      scaredEatAwardNext: 2,
+    });
+    const pinkX = enemy(s, 1).x;
     step(s);
     const snap = s.snapshot();
     expect([snap.state, snap.lives]).toEqual(["DEATHWAIT", 2]);
     expect(sounds).toEqual(["rewind:sweetDeath", "play:sweetDeath"]);
-    expect([pink.blueFrames, pink.x]).toEqual([50, pinkX]);
-    expect([s.player.x, s.player.y, s.player.hidden]).toEqual([px, py, true]);
+    expect([enemy(s, 1).blue, enemy(s, 1).x]).toEqual([50, pinkX]);
+    expect([snap.player.x, snap.player.y, snap.player.hidden]).toEqual([start.x, start.y, true]);
     expect(snap.items).toBe(244);
     expect(snap.scaredEatAwardNext).toBe(2);
     expect(snap.particlesActive).toBe(25);
   });
 
   test("DEATHWAIT holds 120 ticks, then restartRound and START", () => {
-    const s = playing();
-    onPlayer(s, enemy(s, 0));
+    const s = from({ bees: [{ onPlayer: true }], items: (it, idx) => (idx === 5 ? null : it), scaredEatAwardNext: 3 });
     step(s);
-    s.items[5] = null;
-    s.bonusEatPopups.push({ x: 1, y: 2, frameIdx: 0, ticksRemain: 999 });
     s.camera.requestScreenShake(500, 1);
-    s.scaredEatAwardNext = 3;
-    const modeCurrent = s.modeCurrent;
+    const modeCurrent = s.snapshot().mode;
     step(s, 120);
-    expect([s.snapshot().state, s.pauseTicks]).toEqual(["DEATHWAIT", 0]);
+    expect([s.snapshot().state, s.snapshot().pauseTicks]).toEqual(["DEATHWAIT", 0]);
     sounds = [];
     step(s);
     const snap = s.snapshot();
@@ -492,14 +473,13 @@ describe("collisions and death", () => {
       ["orange", 128, 140],
     ]);
     // restartRound leaves the camera, particles and modeCurrent alone.
-    expect(s.camera.shakeTicksRemaining).toBeGreaterThan(0);
-    expect(s.modeCurrent).toBe(modeCurrent);
+    expect(snap.shake[2]).toBeGreaterThan(0);
+    expect(snap.mode).toBe(modeCurrent);
   });
 
   test("the bear's death animation plays inside the 2 s death wait, without changing it", () => {
-    const s = playing();
-    expect(s.snapshot().deathFrame).toBeNull();
-    onPlayer(s, enemy(s, 0));
+    expect(playing().snapshot().deathFrame).toBeNull();
+    const s = from({ bees: [{ onPlayer: true }] });
     const frames: (number | null)[] = [];
     let ticks = 0;
     do {
@@ -516,9 +496,7 @@ describe("collisions and death", () => {
   });
 
   test("the last life plays the death animation too", () => {
-    const s = playing();
-    s.lives = 1;
-    onPlayer(s, enemy(s, 0));
+    const s = from({ lives: 1, bees: [{ onPlayer: true }] });
     step(s);
     expect(s.snapshot().deathFrame).toBe(0);
     step(s, deathRoundDelayTicks);
@@ -526,11 +504,10 @@ describe("collisions and death", () => {
   });
 
   test("the last life: FINALDEATHWAIT for 120 ticks, then GAMEOVER for good", () => {
-    const s = playing();
-    s.lives = 1;
-    onPlayer(s, enemy(s, 0));
+    const s = from({ lives: 1, bees: [{ onPlayer: true }] });
     step(s);
-    expect([s.snapshot().state, s.lives, s.player.hidden, s.pauseTicks]).toEqual(["FINALDEATHWAIT", 0, true, 120]);
+    const snap = s.snapshot();
+    expect([snap.state, snap.lives, snap.player.hidden, snap.pauseTicks]).toEqual(["FINALDEATHWAIT", 0, true, 120]);
     expect(s.gameOver()).toBe(false);
     step(s, 120);
     expect(s.snapshot().state).toBe("FINALDEATHWAIT");
@@ -544,71 +521,64 @@ describe("collisions and death", () => {
 
 describe("bonus flower", () => {
   test("appears below the bee home after the set number of honey drops, twice per level", () => {
-    const s = playing();
     expect(flowerDrops).toEqual([70, 170]);
-    eatUpTo(s, flowerDrops[0] - 1);
+    let s = from({ items: eating(flowerDrops[0] - 1) });
+    step(s);
     expect(s.snapshot().flower).toEqual({ ticks: 0, shown: 0 });
-    eatUpTo(s, flowerDrops[0]);
+    s = from({ items: eating(flowerDrops[0]) });
+    step(s);
     const first = s.snapshot().flower;
     expect(first.shown).toBe(1);
     expect(first.ticks).toBeGreaterThanOrEqual(flowerStayMin);
     expect(first.ticks).toBeLessThanOrEqual(flowerStayMax);
     expect([flowerStayMin, flowerStayMax]).toEqual([540, 600]);
     expect([flowerX, flowerY]).toEqual([112, 164]);
-    s.flowerTicks = 0;
-    eatUpTo(s, flowerDrops[1]);
+    s = from({ items: eating(flowerDrops[1]) });
+    step(s, 2);
     expect(s.snapshot().flower.shown).toBe(2);
     expect(s.snapshot().flower.ticks).toBeGreaterThanOrEqual(flowerStayMin);
   });
 
   test("leaves after its time when the bear doesn't eat it", () => {
-    const s = playing();
-    eatUpTo(s, flowerDrops[0]);
-    for (const e of s.enemies) e.dotMinimum = 1_000; // keep the bees home
-    step(s, s.flowerTicks - 1);
+    const held = { dotMinimum: 1_000 }; // keep the bees home
+    const s = from({ items: eating(flowerDrops[0]), bees: [undefined, held, held, held] });
+    step(s);
+    step(s, s.snapshot().flower.ticks - 1);
     expect(s.snapshot().flower.ticks).toBe(1);
     step(s);
     expect(s.snapshot().flower).toEqual({ ticks: 0, shown: 1 });
   });
 
   test("eaten, it scores its level's points with a popup and a sound", () => {
-    const s = playing();
-    eatUpTo(s, flowerDrops[0]);
-    const before = s.scoreValue;
-    sounds = [];
-    bearOnFlower(s);
+    const s = from(nearFlower(flowerDrops[0]));
     step(s);
+    expect(s.snapshot().flower.shown).toBe(1);
+    sounds = [];
+    expect(eatFlower(s)).toBe(flowerPoints(1));
     const snap = s.snapshot();
-    expect(snap.score - before).toBe(flowerPoints(1));
     expect(snap.flower).toEqual({ ticks: 0, shown: 1 });
     expect(snap.flowerPopup).toEqual({ points: flowerPoints(1), ticks: flowerPopupTicks - 1 });
     expect(sounds).toEqual(["rewind:sweetFlower", "play:sweetFlower"]);
   });
 
   test("on a later level it is worth that level's points", () => {
-    const s = playing();
-    s.level = 3;
-    eatUpTo(s, flowerDrops[0]);
-    const before = s.scoreValue;
-    bearOnFlower(s);
+    const s = from({ ...nearFlower(flowerDrops[0]), level: 3 });
     step(s);
-    expect(s.scoreValue - before).toBe(flowerPoints(3));
+    expect(eatFlower(s)).toBe(flowerPoints(3));
     expect(flowerPoints(3)).toBeGreaterThan(flowerPoints(1));
   });
 
   test("a level cleared after a death resets to personal counters with the new level's limits (#155)", () => {
-    const s = playing();
-    onPlayer(s, enemy(s, 0));
+    // The last honey drop waits where the bear starts the next round.
+    const s = from({ bees: [{ onPlayer: true }], items: (it, idx) => (idx === 0 ? { ...it, x: 111, y: 212 } : null) });
     step(s, 1 + deathRoundDelayTicks + 1);
-    expect(s.release.globalDots).toBe(0);
-    step(s, 130);
-    expect(s.snapshot().state).toBe("PLAY");
-    s.items = s.items.map(() => null);
-    step(s, levelClearTicks + 2);
-    expect(s.level).toBe(2);
-    expect(s.release.globalDots).toBeNull();
-    expect(s.enemies.map((e) => e.held)).toEqual([false, false, false, false]);
-    expect(s.enemies.map((e) => e.dotMinimum)).toEqual([
+    expect(s.snapshot().release.globalDots).toBe(0);
+    for (let t = 0; t < 1000 && s.snapshot().level === 1; t++) step(s);
+    const snap = s.snapshot();
+    expect(snap.level).toBe(2);
+    expect(snap.release.globalDots).toBeNull();
+    expect(snap.enemies.map((e) => e.held)).toEqual([false, false, false, false]);
+    expect(snap.enemies.map((e) => e.dotMin)).toEqual([
       0,
       levelValues(2).dotMinimums.pink,
       levelValues(2).dotMinimums.teal,
@@ -617,12 +587,12 @@ describe("bonus flower", () => {
   });
 
   test("after a lost life the bees wait on the global drop counter, keeping their personal ones (#155)", () => {
-    const s = playing();
-    eatUpTo(s, 10);
-    onPlayer(s, enemy(s, 0));
+    const s = from({ items: eating(10), bees: [redApproaching] });
+    step(s);
+    expect(s.snapshot().items).toBe(234);
     step(s, 1 + deathRoundDelayTicks + 1);
-    expect(s.release.globalDots).toBe(0);
-    expect(s.enemies.map((e) => [e.kind, e.held, e.dotMinimum])).toEqual([
+    expect(s.snapshot().release.globalDots).toBe(0);
+    expect(s.snapshot().enemies.map((e) => [e.kind, e.held, e.dotMin])).toEqual([
       ["red", false, 0],
       ["pink", true, 0],
       ["teal", true, 29],
@@ -631,9 +601,9 @@ describe("bonus flower", () => {
   });
 
   test("a lost life takes the flower away", () => {
-    const s = playing();
-    eatUpTo(s, flowerDrops[0]);
-    onPlayer(s, enemy(s, 0));
+    const s = from({ items: eating(flowerDrops[0]), bees: [redApproaching] });
+    step(s);
+    expect(s.snapshot().flower.shown).toBe(1);
     step(s, 1 + deathRoundDelayTicks + 1);
     expect(s.snapshot().state).toBe("START");
     expect(s.snapshot().flower).toEqual({ ticks: 0, shown: 1 });
@@ -647,16 +617,16 @@ describe("clearing a level", () => {
     expect([snap.state, snap.level, snap.items, snap.score, snap.lives]).toEqual(["LEVELCLEAR", 1, 0, 1234, 3]);
     expect(snap.pauseTicks).toBe(levelClearTicks);
     expect(levelClearTicks).toBe(120);
-    const [px, py] = [s.player.x, s.player.y];
-    const bees = s.enemies.map((e) => [e.x, e.y]);
+    const [px, py] = [snap.player.x, snap.player.y];
+    const bees = snap.enemies.map((e) => [e.x, e.y]);
     const flashes: boolean[] = [];
     for (let t = 0; t < levelClearTicks; t++) {
       step(s, 1, { ...NO_INPUT, up: true });
       flashes.push(s.snapshot().mazeFlash);
       expect(s.snapshot().state).toBe("LEVELCLEAR");
     }
-    expect([s.player.x, s.player.y]).toEqual([px, py]);
-    expect(s.enemies.map((e) => [e.x, e.y])).toEqual(bees);
+    expect([s.snapshot().player.x, s.snapshot().player.y]).toEqual([px, py]);
+    expect(s.snapshot().enemies.map((e) => [e.x, e.y])).toEqual(bees);
     expect(flashes).toContain(true);
     expect(flashes).toContain(false);
   });
@@ -688,20 +658,11 @@ describe("clearing a level", () => {
   });
 
   test("each clear raises the level by 1", () => {
-    const s = cleared();
-    step(s, levelClearTicks + 1 + 121);
-    s.items = s.items.map(() => null);
+    const s = from({ level: 2, items: () => null });
     step(s, 2 + levelClearTicks);
     expect([s.snapshot().state, s.snapshot().level]).toEqual(["INTERMISSION", 3]);
   });
 });
-
-/** A game on `level` whose last honey drop the bear has just eaten. */
-function clearedLevel(level: number): SweetSamSoftware {
-  const s = cleared();
-  s.level = level;
-  return s;
-}
 
 /** The states a cleared level passes through on its way to the next START. */
 function statesAfterClear(s: SweetSamSoftware, i: Input = NO_INPUT): string[] {
@@ -718,7 +679,7 @@ describe("intermissions (#160)", () => {
   test.each([2, 5, 9])("clearing level %i plays an intermission before the next level", (level) => {
     const s = clearedLevel(level);
     expect(statesAfterClear(s)).toEqual(["LEVELCLEAR", "INTERMISSION", "START"]);
-    expect(s.level).toBe(level + 1);
+    expect(s.snapshot().level).toBe(level + 1);
   });
 
   test.each([1, 3, 4, 6, 7, 8, 10, 13])("clearing level %i goes straight to the next level", (level) => {
@@ -747,14 +708,16 @@ describe("intermissions (#160)", () => {
 
 describe("game over pays out", () => {
   test("a run that clears level 1 and loses every life on level 2 ends with gameOver() and its score in tickets", () => {
-    const s = cleared(); // score 1234
+    // One honey drop left, ahead of the bear: eating it clears level 1.
+    const s = from({ score: 1154, items: eating(244) });
+    expect(s.snapshot().items).toBe(1);
+    step(s, 2);
+    expect(s.snapshot().items).toBe(0);
+    expect(s.snapshot().state).toBe("LEVELCLEAR");
     step(s, levelClearTicks + 1 + 122);
-    expect([s.snapshot().state, s.level]).toEqual(["PLAY", 2]);
-    while (!s.gameOver()) {
-      if (s.snapshot().state === "PLAY") onPlayer(s, enemy(s, 0));
-      step(s);
-    }
-    expect([s.lives, s.score(), s.snapshot().state]).toEqual([0, 1234, "GAMEOVER"]);
+    expect([s.snapshot().state, s.snapshot().level]).toEqual(["PLAY", 2]);
+    for (let t = 0; t < 20_000 && !s.gameOver(); t++) step(s);
+    expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1234, "GAMEOVER", 2]); // 1154 + the last drop and the drops eaten on level 2
     expect(ticketsFor(s.score())).toBe(12);
   });
 });
@@ -763,23 +726,22 @@ describe("input", () => {
   test("off a corner the player may only reverse along its axis", () => {
     const s = playing(); // facing LEFT between corners
     step(s, 1, { ...NO_INPUT, up: true });
-    expect(s.player.direction).toBe("LEFT");
+    expect(s.snapshot().player.dir).toBe("LEFT");
     step(s, 1, { ...NO_INPUT, right: true });
-    expect(s.player.direction).toBe("RIGHT");
+    expect(s.snapshot().player.dir).toBe("RIGHT");
   });
 
   test("at a corner a perpendicular turn snaps the player onto it", () => {
-    const s = playing();
-    s.player.x = 124.4; // corner (15, 23) at (124, 212) allows UP, LEFT, RIGHT
+    const s = from({ player: { x: 124.4 } }); // corner (15, 23) at (124, 212) allows UP, LEFT, RIGHT
     step(s, 1, { ...NO_INPUT, up: true });
-    expect([s.player.direction, s.player.x, s.player.y]).toEqual(["UP", 124, 211]);
+    const p = s.snapshot().player;
+    expect([p.dir, p.x, p.y]).toEqual(["UP", 124, 211]);
   });
 });
 
 describe("rolling dials", () => {
   test("score digits spin for 18 ticks, high score dials follow max(score, highScore)", () => {
-    const s = playing();
-    s.scoreValue = 10;
+    const s = from({ score: 10 });
     step(s);
     let snap = s.snapshot();
     expect(snap.dials[4]).toEqual([0, true, 0, 1, 1 / 18]);
@@ -792,101 +754,85 @@ describe("rolling dials", () => {
 
 describe("the extra life at 10,000 points (#154)", () => {
   test("a honey drop that takes the score from 9,990 to 10,000 adds one life and its sound", () => {
-    const s = playing();
-    s.scoreValue = 9_990;
-    eatUpTo(s, 1);
-    expect([s.scoreValue, s.lives]).toEqual([10_000, 4]);
+    const s = from({ score: 9_990, items: eating(1) });
+    step(s);
+    expect([s.score(), s.snapshot().lives]).toEqual([10_000, 4]);
     expect(sounds).toContain("play:ticket");
   });
 
   test("passing 20,000 adds no second life", () => {
-    const s = playing();
-    s.scoreValue = 9_990;
-    eatUpTo(s, 1);
-    s.scoreValue = 19_990;
-    eatUpTo(s, 2);
-    expect([s.scoreValue, s.lives]).toEqual([20_000, 4]);
+    // A run past 10,000 has had its extra life: 3 + 1.
+    const s = from({ score: 19_990, lives: 4, items: eating(1) });
+    step(s);
+    expect([s.score(), s.snapshot().lives]).toEqual([20_000, 4]);
   });
 
   test("a run started with the honey jar still gets the extra life", () => {
-    const s = new SweetSamSoftware(0, sweetSamAdvantages(["honeyJar"]));
-    step(s, 122);
-    expect(s.lives).toBe(4);
-    s.scoreValue = 9_990;
-    eatUpTo(s, 1);
-    expect(s.lives).toBe(5);
+    const jar = sweetSamAdvantages(["honeyJar"]);
+    const fresh = new SweetSamSoftware(0, jar);
+    step(fresh, 122);
+    expect(fresh.snapshot().lives).toBe(4);
+    const s = from({ score: 9_990, items: eating(1) }, jar);
+    step(s);
+    expect(s.snapshot().lives).toBe(5);
   });
 
   test("a sleepy bee award that crosses 10,000 also grants the life", () => {
-    const s = playing();
-    s.scoreValue = 9_900;
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.blueFrames = 300;
+    const s = from({ score: 9_900, bees: [{ onPlayer: true, blueFrames: 300 }] });
     step(s);
-    expect([s.scoreValue, s.lives]).toEqual([10_100, 4]);
+    expect([s.score(), s.snapshot().lives]).toEqual([10_100, 4]);
     expect(sounds).toContain("play:ticket");
   });
 
   test("a flower that crosses 10,000 also grants the life", () => {
-    const s = playing();
-    s.scoreValue = 9_950;
-    s.flowerTicks = 100;
-    bearOnFlower(s);
+    const s = from({ score: 9_950, flowerTicks: 100, player: { x: flowerX + 1, y: flowerY } });
     step(s);
-    expect([s.scoreValue, s.lives]).toEqual([10_000 + flowerPoints(1) - 50, 4]);
+    expect([s.score(), s.snapshot().lives]).toEqual([10_000 + flowerPoints(1) - 50, 4]);
   });
 });
 
-/** Leaves `left` honey drops in the maze, none of them near the bear. */
-function dropsLeft(s: SweetSamSoftware, left: number): void {
+/** Leaves `left` honey drops in the maze, none of them near the bear, and `also` those it keeps besides. */
+function dropsLeft(left: number, also: (it: ItemSetup) => boolean = () => false): (it: ItemSetup) => ItemSetup | null {
   let kept = 0;
-  s.items = s.items.map((it) => (it !== null && Math.abs(it.y - s.player.y) > 16 && kept++ < left ? it : null));
-  expect(s.items.filter((it) => it !== null).length).toBe(left);
+  return (it) => (also(it) || (Math.abs(it.y - start.y) > 16 && kept++ < left) ? it : null);
+}
+
+/** Red's and pink's speeds on the first tick with `left` honey drops left. */
+function speeds(left: number): number[] {
+  const s = from({ items: dropsLeft(left) });
+  expect(s.snapshot().items).toBe(left);
+  step(s);
+  return [enemy(s, 0).velocity, enemy(s, 1).velocity];
 }
 
 describe("Cruise Elroy (#156)", () => {
   test("on level 1 red speeds up at 20 drops left, then again at 10; the others don't", () => {
-    const s = playing();
-    dropsLeft(s, 21);
-    step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.9375, 0.9375]);
-    dropsLeft(s, 20);
-    step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
-    dropsLeft(s, 10);
-    step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1.0625, 0.9375]);
+    expect(speeds(21)).toEqual([0.9375, 0.9375]);
+    expect(speeds(20)).toEqual([1, 0.9375]);
+    expect(speeds(10)).toEqual([1.0625, 0.9375]);
   });
 
   test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
-    const s = playing();
-    dropsLeft(s, 10);
-    enemy(s, 0).blueFrames = 300;
+    const s = from({ items: dropsLeft(10), bees: [{ blueFrames: 300 }] });
     step(s);
     expect(enemy(s, 0).velocity).toBe(0.625);
   });
 
   test("after a lost life Elroy stays off until orange has left the home", () => {
-    const s = playing();
-    dropsLeft(s, 10);
-    onPlayer(s, enemy(s, 0));
-    step(s, 1 + deathRoundDelayTicks + 1);
-    step(s, 122);
-    expect(s.snapshot().state).toBe("PLAY");
-    const orange = enemy(s, 3);
-    expect(orange.home).toBe(true);
+    // 31 drops on the global counter: the drop at (100, 212), ahead of the bear, frees orange.
+    const s = from({ globalDots: 31, items: dropsLeft(9, (it) => it.x === 100 && it.y === start.y) });
+    step(s);
+    expect(enemy(s, 3).home).toBe(true);
+    expect(s.snapshot().release.elroySuspended).toBe(true);
     expect(enemy(s, 0).velocity).toBe(0.9375);
-    s.release.globalDots = 31;
-    dropEaten(s.release, s.enemies);
+    for (let t = 0; t < 20 && s.snapshot().items === 10; t++) step(s);
+    expect(s.snapshot().release.elroySuspended).toBe(false);
     step(s);
     expect(enemy(s, 0).velocity).toBe(1.0625);
   });
 
   test("a red bee in the home or flying home ignores Elroy's speed", () => {
-    const s = playing();
-    dropsLeft(s, 10);
-    enemy(s, 0).home = true;
+    const s = from({ items: dropsLeft(10), bees: [{ home: true }] });
     step(s);
     expect(enemy(s, 0).velocity).toBe(levelValues(1).beeVelocity);
   });
@@ -894,10 +840,7 @@ describe("Cruise Elroy (#156)", () => {
 
 /** A game whose red bee the bear has just eaten. */
 function redEaten(): SweetSamSoftware {
-  const s = playing();
-  const red = enemy(s, 0);
-  onPlayer(s, red);
-  red.blueFrames = 300;
+  const s = from({ bees: [{ onPlayer: true, blueFrames: 300 }] });
   step(s);
   expect(s.snapshot().state).toBe("PAUSE");
   return s;
@@ -907,64 +850,49 @@ describe("an eaten bee becomes eyes (#153)", () => {
   test("the tick after, the bee is eyes where it was eaten", () => {
     const s = redEaten();
     const red = enemy(s, 0);
-    expect([red.x, red.y, red.home]).toEqual([s.player.x, s.player.y, false]);
-    expect(s.snapshot().enemies[0]?.eyes).toBe(true);
-    expect(red.blueFrames).toBe(0);
+    const p = s.snapshot().player;
+    expect([red.x, red.y, red.home]).toEqual([p.x, p.y, false]);
+    expect(red.eyes).toBe(true);
+    expect(red.blue).toBe(0);
   });
 
   test("touching the eyes neither kills the bear nor scores", () => {
-    const s = redEaten();
-    step(s, 61);
-    expect(s.snapshot().state).toBe("PLAY");
-    const red = enemy(s, 0);
-    onPlayer(s, red);
-    red.eyes = true;
-    const [lives, score] = [s.lives, s.scoreValue];
+    const s = from({ bees: [{ onPlayer: true, eyes: true }] });
     step(s);
-    expect([s.snapshot().state, s.lives, s.scoreValue]).toEqual(["PLAY", lives, score]);
+    expect([s.snapshot().state, s.snapshot().lives, s.score()]).toEqual(["PLAY", 3, 0]);
   });
 
   test("from the far corner the eyes reach the home within 240 ticks, then the bee revives and leaves", () => {
-    const s = redEaten();
-    const red = enemy(s, 0);
     // The bottom-right corner, heading down into it.
-    red.x = 8 * 26 + 4;
-    red.y = 8 * (29 + 3) + 4 - 4;
-    red.direction = "DOWN";
-    step(s, 61);
-    expect(s.snapshot().state).toBe("PLAY");
+    const s = from({ bees: [{ x: 8 * 26 + 4, y: 8 * (29 + 3) + 4 - 4, dir: "DOWN", home: false, eyes: true }] });
     let ticks = 0;
-    while (red.eyes && ticks < 240) {
+    while (enemy(s, 0).eyes && ticks < 240) {
       step(s);
       ticks++;
     }
+    const red = enemy(s, 0);
     expect([red.eyes, red.home, red.x, red.y]).toEqual([false, true, 112, 140]);
     step(s, 60);
-    expect(red.home).toBe(false);
+    expect(enemy(s, 0).home).toBe(false);
   });
 
   test("a second honey pot leaves the eyes awake", () => {
-    const s = redEaten();
-    step(s, 61);
-    const power = s.items.find((i) => i?.powerPellet === true);
-    if (!power) throw new Error("power");
-    power.x = s.player.x - 1;
-    power.y = s.player.y;
+    const s = from({ bees: [{ home: false, eyes: true }], items: potAt({ x: start.x - 1, y: start.y }) });
     step(s);
     const red = enemy(s, 0);
-    expect([red.eyes, red.blueFrames, red.reverseDirection]).toEqual([true, 0, false]);
-    expect(enemy(s, 1).blueFrames).toBeGreaterThan(0);
+    expect([red.eyes, red.blue, red.reverse]).toEqual([true, 0, false]);
+    expect(enemy(s, 1).blue).toBeGreaterThan(0);
   });
 });
 
 describe("jumpTo (the test hook's level jump)", () => {
   test("starts the given level from READY!, maze refilled, at that level's speeds", () => {
-    const s = playing();
-    s.items[0] = null;
+    const s = from({ items: (it, idx) => (idx === 0 ? null : it) });
+    expect(s.snapshot().items).toBe(243);
     s.jumpTo(5);
-    expect([s.level, s.snapshot().state, s.items.every((i) => i !== null)]).toEqual([5, "START", true]);
+    expect([s.snapshot().level, s.snapshot().state, s.snapshot().items]).toEqual([5, "START", 244]);
     for (let n = 0; n < 400 && s.snapshot().state !== "PLAY"; n++) step(s);
     step(s);
-    expect([s.player.velocity, s.enemies[0]?.velocity]).toEqual([1.25, levelValues(5).beeVelocity]);
+    expect([s.snapshot().player.velocity, enemy(s, 0).velocity]).toEqual([1.25, levelValues(5).beeVelocity]);
   });
 });

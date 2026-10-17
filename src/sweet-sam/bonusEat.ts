@@ -5,7 +5,7 @@ import type { Surface } from "../engine/surface.ts";
 import { imagePoints } from "../engine/assets.ts";
 import { pointsFrameSize } from "./art.ts";
 import { tileSize } from "./entity.ts";
-import type { SweetSamSoftware } from "./software.ts";
+import type { Board } from "./board.ts";
 
 export const bonusEatFrameCount = 4;
 /** Go `int(bonusEatIndicatorTTLSecs * float64(framesPerSecond))` with a 0.75 s TTL, a constant expression (fact 3). */
@@ -47,7 +47,7 @@ export function bonusEatFrameRect(frameIdx: number): [number, number, number, nu
   return [x0, 0, x0 + pointsFrameSize, pointsFrameSize];
 }
 
-export function spawnBonusEatIndicator(s: SweetSamSoftware, worldX: number, worldY: number, frameIdx: number): void {
+export function spawnBonusEatIndicator(s: Board, worldX: number, worldY: number, frameIdx: number): void {
   s.bonusEatPopups.push({
     x: worldX,
     y: worldY,
@@ -56,7 +56,7 @@ export function spawnBonusEatIndicator(s: SweetSamSoftware, worldX: number, worl
   });
 }
 
-export function tickBonusEatPopups(s: SweetSamSoftware): void {
+export function tickBonusEatPopups(s: Board): void {
   if (s.bonusEatPopups.length === 0) {
     return;
   }
@@ -71,13 +71,13 @@ export function tickBonusEatPopups(s: SweetSamSoftware): void {
 }
 
 /** Counts the eaten flower's points down; runs every tick, like the sleepy-bee points. */
-export function tickFlowerPopup(s: SweetSamSoftware): void {
+export function tickFlowerPopup(s: Board): void {
   if (s.flowerPopup === null) return;
   s.flowerPopup.ticks--;
   if (s.flowerPopup.ticks <= 0) s.flowerPopup = null;
 }
 
-export function anyBeeInScaredMode(s: SweetSamSoftware): boolean {
+export function anyBeeInScaredMode(s: Board): boolean {
   for (const e of s.enemies) {
     if (e.blueFrames > 0) {
       return true;
@@ -86,15 +86,20 @@ export function anyBeeInScaredMode(s: SweetSamSoftware): boolean {
   return false;
 }
 
-export function resetScaredEatAwardIfNobodyScared(s: SweetSamSoftware): void {
+export function resetScaredEatAwardIfNobodyScared(s: Board): void {
   if (anyBeeInScaredMode(s)) {
     return;
   }
   s.scaredEatAwardNext = 0;
 }
 
-export function drawBonusEatIndicators(s: SweetSamSoftware, screen: Surface, bufX: number, bufY: number): void {
-  for (const p of s.bonusEatPopups) {
+export function drawBonusEatIndicators(
+  popups: readonly Readonly<BonusEatPopup>[],
+  screen: Surface,
+  bufX: number,
+  bufY: number,
+): void {
+  for (const p of popups) {
     const [x0, y0, x1, y1] = bonusEatFrameRect(p.frameIdx);
     const frame = sub(imagePoints, x0, y0, x1, y1);
     // Centred on the bee; one tile gap above the bee, the frame flush above that gap.

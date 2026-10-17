@@ -4,14 +4,12 @@
 // `flowerPoints`, shown in the pixel font where it stood. The kinds and points
 // are Pac-Man's fruit table (#68, the Dossier's Table A.1).
 
-import { sounds } from "../engine/assets.ts";
-import { playSound } from "../engine/audio.ts";
 import * as rng from "../engine/rng.ts";
 import { framesPerSecond } from "./constants.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
 import { collideWithDistance, distanceThreshold } from "./update.ts";
 import { Entity, newItems } from "./entity.ts";
-import type { SweetSamSoftware } from "./software.ts";
+import type { Board } from "./board.ts";
 
 /** Honey drops eaten on a level when the first and the second flower appear. */
 export const flowerDrops = [70, 170] as const;
@@ -71,14 +69,14 @@ flowerSpot.y = flowerY;
  * it stands on, otherwise the flower's time runs down; then a new flower
  * appears when enough honey drops are gone.
  */
-export function updateFlower(s: SweetSamSoftware): void {
+export function updateFlower(s: Board): void {
   if (s.flowerTicks > 0) {
     if (collideWithDistance(flowerSpot, s.player, distanceThreshold)) {
       const points = flowerPoints(s.level);
       s.addScore(points);
       s.flowerPopup = { points, ticks: flowerPopupTicks };
       s.flowerTicks = 0;
-      playSound(sounds.sweetFlower);
+      s.sound("sweetFlower");
     } else {
       s.flowerTicks--;
     }
@@ -92,6 +90,6 @@ export function updateFlower(s: SweetSamSoftware): void {
 }
 
 /** Honey drops and smoke pots eaten on this level. */
-export function itemsEaten(s: SweetSamSoftware): number {
+export function itemsEaten(s: Board): number {
   return itemCount - s.items.filter((it) => it !== null).length;
 }

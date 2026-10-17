@@ -5,7 +5,6 @@ import * as rng from "../engine/rng.ts";
 import { direction, type Direction, type Input } from "../engine/input.ts";
 import { framesPerSecond } from "./constants.ts";
 import { levelValues, modeScatter, type Mode } from "./levels.ts";
-import { tickBonusEatPopups, tickFlowerPopup } from "./bonusEat.ts";
 import {
   dirAxis,
   dirOpposite,
@@ -21,7 +20,7 @@ import {
   velocityEnemyTunnel,
   type Tile,
 } from "./entity.ts";
-import type { SweetSamSoftware } from "./software.ts";
+import type { Board } from "./board.ts";
 
 export const distanceThreshold = 0.5;
 export const startTicks = framesPerSecond * 2;
@@ -37,21 +36,7 @@ export function deathFrameAt(elapsed: number): number {
   return Math.min(deathFrameCount - 1, Math.trunc(elapsed / deathFrameTicks));
 }
 
-/**
- * Go `Update`. The order is part of the spec (Go's joystick step drew only
- * the cabinet's joystick, gone since #113): pelletAnimTick, camera (rand), particles, state machine, popups, dials.
- */
-export function update(s: SweetSamSoftware, i: Input): void {
-  s.pelletAnimTick++;
-  s.camera.update();
-  s.particles.update();
-  s.stateMachine.update(i);
-  tickBonusEatPopups(s);
-  tickFlowerPopup(s);
-  s.dials.tick(s.scoreValue);
-}
-
-export function winner(s: SweetSamSoftware): boolean {
+export function winner(s: Board): boolean {
   for (const item of s.items) {
     if (item !== null) {
       return false;
@@ -60,7 +45,7 @@ export function winner(s: SweetSamSoftware): boolean {
   return true;
 }
 
-export function applyInput(s: SweetSamSoftware, i: Input): void {
+export function applyInput(s: Board, i: Input): void {
   steer(s.player, s.corners, direction(i));
 }
 
@@ -388,7 +373,7 @@ export function updateDirection(e: Entity, cs: readonly Entity[], target: Tile):
  * Go `restartRound` for a new level: the bees start on the level's personal
  * counters. Leaves camera, particles, items and `modeCurrent` alone (D11).
  */
-export function restartRound(s: SweetSamSoftware): void {
+export function restartRound(s: Board): void {
   s.release = newRelease();
   s.enemies = newEnemies(levelValues(s.level).dotMinimums);
   resetRound(s);
@@ -398,12 +383,12 @@ export function restartRound(s: SweetSamSoftware): void {
  * Go `restartRound` after a lost life: the bees keep their personal counters
  * and wait on the global one (release.ts).
  */
-export function restartAfterDeath(s: SweetSamSoftware): void {
+export function restartAfterDeath(s: Board): void {
   s.enemies = afterDeath(s.release, s.enemies);
   resetRound(s);
 }
 
-function resetRound(s: SweetSamSoftware): void {
+function resetRound(s: Board): void {
   s.player = newPlayer();
   s.eatPauseTicks = 0;
   s.modeIndex = 0;

@@ -2,8 +2,6 @@
 
 import { dropEaten, elroyStep, noDropEaten } from "./release.ts";
 import type { Input } from "../engine/input.ts";
-import { sounds } from "../engine/assets.ts";
-import { playSound } from "../engine/audio.ts";
 import type { SweetSamStateId } from "../game/snapshot.ts";
 import { framesPerSecond } from "./constants.ts";
 import {
@@ -28,6 +26,7 @@ import { inTunnel, isSleepy, newItems, pointToTile, tileEq, type Entity, type Ti
 import {
   applyInput,
   becomeEyes,
+  deathFrameAt,
   deathRoundDelayTicks,
   findTarget,
   moveEyes,
@@ -41,8 +40,8 @@ import {
   winner,
 } from "./update.ts";
 import { itemsEaten, updateFlower } from "./flower.ts";
-import type { SweetSamSoftware } from "./software.ts";
-import { intermissionAfter } from "./intermission.ts";
+import type { Board } from "./board.ts";
+import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 
 export type StateID = SweetSamStateId;
 
@@ -125,9 +124,9 @@ export class StartState implements State {
   /** Counts down START frames while the player blink-in plays. */
   respawnBlinkRemaining = 0;
 
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
@@ -137,7 +136,7 @@ export class StartState implements State {
 
     this.s.player.hidden = respawnBlinkHiddenForElapsed(0);
 
-    playSound(sounds.sweetStart);
+    this.s.sound("sweetStart");
   }
 
   update(_i: Input): StateID {
@@ -164,9 +163,9 @@ export class StartState implements State {
 
 /** Active during normal gameplay. */
 export class PlayState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
@@ -249,10 +248,10 @@ export class PlayState implements State {
       // D11: both branches return immediately; later bees skip updateBlue /
       // updateDirection, nothing moves, nothing is eaten, no award reset.
       if (isSleepy(e)) {
-        playSound(sounds.sweetBee);
+        s.sound("sweetBee");
 
-        s.camera.requestScreenShake(cameraShakeEnemyEatTicks, cameraShakeEnemyEatIntensity);
-        s.particles.spawnBurst(e.x, e.y, particleColorCyan, particleBurstBeeEatenCount);
+        s.emit({ kind: "shake", ticks: cameraShakeEnemyEatTicks, intensity: cameraShakeEnemyEatIntensity });
+        s.emit({ kind: "burst", x: e.x, y: e.y, color: particleColorCyan, count: particleBurstBeeEatenCount });
 
         let awardIdx = s.scaredEatAwardNext;
         if (awardIdx >= bonusEatFrameCount) {
@@ -269,9 +268,15 @@ export class PlayState implements State {
         return stateIDPause;
       }
 
-      playSound(sounds.sweetDeath);
+      s.sound("sweetDeath");
 
-      s.particles.spawnBurst(s.player.x, s.player.y, particleColorRed, particleBurstPlayerEatenCount);
+      s.emit({
+        kind: "burst",
+        x: s.player.x,
+        y: s.player.y,
+        color: particleColorRed,
+        count: particleBurstPlayerEatenCount,
+      });
 
       s.lives--;
       if (s.lives <= 0) {
@@ -315,17 +320,17 @@ export class PlayState implements State {
         s.addScore(10);
         s.eatPauseTicks = 1;
         // The chomp alternates its two notes, one per honey drop.
-        playSound(itemsEaten(s) % 2 === 1 ? sounds.sweetChompHigh : sounds.sweetChompLow);
+        s.sound(itemsEaten(s) % 2 === 1 ? "sweetChompHigh" : "sweetChompLow");
       }
 
       if (item.isPower()) {
         s.addScore(50);
         s.eatPauseTicks = 3;
-        playSound(sounds.sweetSmoke);
+        s.sound("sweetSmoke");
         // A new honey pot starts the sleepy bee award over at 200.
         s.scaredEatAwardNext = 0;
 
-        s.camera.requestScreenShake(cameraShakePowerPelletTicks, cameraShakePowerPelletIntensity);
+        s.emit({ kind: "shake", ticks: cameraShakePowerPelletTicks, intensity: cameraShakePowerPelletIntensity });
 
         const sleepyFrames = Math.round(s.values().sleepyFrames * s.advantages.sleepyFactor);
 
@@ -362,9 +367,9 @@ export class PlayState implements State {
 
 /** Active during a short pause (e.g., when an enemy is eaten). */
 export class PauseState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
@@ -385,9 +390,9 @@ export class PauseState implements State {
 
 /** Holds the maze as-is after a death so the round does not restart immediately. */
 export class DeathWaitState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
@@ -405,6 +410,11 @@ export class DeathWaitState implements State {
   }
 
   onExit(): void {}
+
+  /** The bear's death frame (0 dazed … 3 puddle) at this tick of the wait. */
+  deathFrame(): number {
+    return deathFrameAt(deathRoundDelayTicks - this.s.pauseTicks);
+  }
 }
 
 /**
@@ -412,9 +422,9 @@ export class DeathWaitState implements State {
  * Play — then game over for the host.
  */
 export class FinalDeathWaitState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
@@ -432,6 +442,11 @@ export class FinalDeathWaitState implements State {
   }
 
   onExit(): void {}
+
+  /** The bear's death frame (0 dazed … 3 puddle) at this tick of the wait. */
+  deathFrame(): number {
+    return deathFrameAt(deathRoundDelayTicks - this.s.pauseTicks);
+  }
 }
 
 /**
@@ -439,15 +454,15 @@ export class FinalDeathWaitState implements State {
  * the next level starts with the maze refilled and everyone back home.
  */
 export class LevelClearState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
   onEnter(): void {
     this.s.pauseTicks = levelClearTicks;
-    playSound(sounds.sweetClear);
+    this.s.sound("sweetClear");
   }
 
   update(_i: Input): StateID {
@@ -463,6 +478,11 @@ export class LevelClearState implements State {
     return intermissionAfter(s.level - 1) === null ? stateIDStart : stateIDIntermission;
   }
 
+  /** The maze shows its flash colours this tick. */
+  flash(): boolean {
+    return Math.trunc((levelClearTicks - this.s.pauseTicks) / levelClearFlashTicks) % 2 === 1;
+  }
+
   onExit(): void {}
 }
 
@@ -472,15 +492,15 @@ export class LevelClearState implements State {
  * screen with its music, and the action key skips it.
  */
 export class IntermissionState implements State {
-  private readonly s: SweetSamSoftware;
+  private readonly s: Board;
 
-  constructor(s: SweetSamSoftware) {
+  constructor(s: Board) {
     this.s = s;
   }
 
   onEnter(): void {
-    this.s.pauseTicks = this.s.intermission()?.ticks ?? 0;
-    playSound(sounds.sweetStart);
+    this.s.pauseTicks = intermissionAfter(this.s.level - 1)?.ticks ?? 0;
+    this.s.sound("sweetStart");
   }
 
   update(i: Input): StateID {
@@ -493,6 +513,17 @@ export class IntermissionState implements State {
 
   onExit(): void {
     this.s.pauseTicks = 0;
+  }
+
+  /** The cutscene playing (after the level before this one). */
+  scene(): IntermissionScene | null {
+    return intermissionAfter(this.s.level - 1);
+  }
+
+  /** The cutscene's actors at this tick. */
+  poses(): IntermissionPose[] | null {
+    const scene = this.scene();
+    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.s.pauseTicks);
   }
 }
 

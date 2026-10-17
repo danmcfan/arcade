@@ -1,145 +1,67 @@
 // Port of the Go Sweet Sam minigame's software.go (docs/port-notes.md gives its
 // old Go name). Its constants live in ./constants.ts.
 
-import { scoreDialsAt } from "../ui/hudArt";
-import { newRelease, type Release } from "./release.ts";
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
 import type { Surface } from "../engine/surface.ts";
 import { imageSweetSamMaze, sounds } from "../engine/assets.ts";
 import { playSound } from "../engine/audio.ts";
-import { extraLifeScore } from "./constants.ts";
-import { fnv1a32 } from "../engine/gomath.ts";
 import type { FixedViewport } from "../game/software.ts";
 import type { SweetSamDialSnapshot, SweetSamSnapshot } from "../game/snapshot.ts";
 import { CameraSystem } from "./camera.ts";
 import { ParticleSystem } from "./particle.ts";
-import type { BonusEatPopup, FlowerPopup } from "./bonusEat.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { type DigitReel } from "../ui/digitReel.ts";
 import { ScoreDials } from "../ui/dials.ts";
-import { Entity, newCorners, newItems, newPlayer } from "./entity.ts";
-import {
-  DeathWaitState,
-  FinalDeathWaitState,
-  GameOverState,
-  IntermissionState,
-  LevelClearState,
-  levelClearFlashTicks,
-  levelClearTicks,
-  PauseState,
-  PlayState,
-  StartState,
-  StateMachine,
-  stateIDDeathWait,
-  stateIDFinalDeathWait,
-  stateIDGameOver,
-  stateIDIntermission,
-  stateIDLevelClear,
-  stateIDPause,
-  stateIDPlay,
-  stateIDStart,
-} from "./state.ts";
-import { deathFrameAt, deathRoundDelayTicks, restartRound, update } from "./update.ts";
-import { levelValues, modeScatter, type LevelValues, type Mode } from "./levels.ts";
+import { scoreDialsAt } from "../ui/hudArt.ts";
+import type { LevelEffect } from "./levelEffect.ts";
+import { Level, type LevelSetup } from "./level.ts";
 import { draw } from "./draw.ts";
-import { intermissionAfter, intermissionPoses, type IntermissionPose, type IntermissionScene } from "./intermission.ts";
 import { noAdvantages, type SweetSamAdvantages } from "./advantages.ts";
 
+/**
+ * A thin adapter from the Level loop (level.ts) onto Software (#271): it
+ * plays the Level's sounds, shakes the camera, bursts the particles and rolls
+ * the score dials.
+ */
 export class SweetSamSoftware implements FixedViewport {
   readonly name = "sweetSam";
 
-  readonly stateMachine = new StateMachine();
-  /** Kept to snapshot `respawnBlinkRemaining` whatever the current state. */
-  readonly startState: StartState;
-
   readonly camera = new CameraSystem();
   readonly particles = new ParticleSystem();
-
-  // Assigned by restartRound() in the constructor (Go leaves them nil until then).
-  player: Entity = newPlayer();
-  enemies: Entity[] = [];
-  items: (Entity | null)[] = [];
-  readonly corners: Entity[] = newCorners();
-
-  /** Which bees may leave the home (release.ts). */
-  release: Release = newRelease();
-
-  modeIndex = 0;
-  modeCurrent: Mode = modeScatter;
-  modeTicks = 0;
-
-  pauseTicks = 0;
-  /** Ticks the bear stands still after eating: 1 for a honey drop, 3 for a pot (Dossier, "Speed"). */
-  eatPauseTicks = 0;
-
-  startTicks = 0;
-
-  lives = 0;
-  /** The level being played, from 1 (#47). */
-  level = 1;
-  /** Go `score` (renamed: `score()` is the Software method). */
-  scoreValue = 0;
-  /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
-  readonly advantages: Readonly<SweetSamAdvantages>;
-
+  readonly level: Level;
   /** The Score and high score on the maze's second tile row, under 1UP and HIGH SCORE. */
   readonly dials: ScoreDials;
 
-  /** Advances every Sweet Sam update; food atlases cycle (tick/holdTicks % frameCount) per pellet row. */
-  pelletAnimTick = 0;
-
-  /** Transient sprites when eating scared bees (bonusEat.ts). */
-  bonusEatPopups: BonusEatPopup[] = [];
-  /** Ticks the bonus flower has left; 0 when there is none (#47). */
-  flowerTicks = 0;
-  /** Bonus flowers shown so far on this level. */
-  flowersShown = 0;
-  /** The points of the flower just eaten, while they show. */
-  flowerPopup: FlowerPopup | null = null;
-  /** Index for next 200→400→800→1600 payout while bees stay scared. */
-  scaredEatAwardNext = 0;
-
-  constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages) {
-    this.advantages = advantages;
-
-    this.startState = new StartState(this);
-    this.stateMachine.registerState(stateIDStart, this.startState);
-    this.stateMachine.registerState(stateIDPlay, new PlayState(this));
-    this.stateMachine.registerState(stateIDPause, new PauseState(this));
-    this.stateMachine.registerState(stateIDDeathWait, new DeathWaitState(this));
-    this.stateMachine.registerState(stateIDFinalDeathWait, new FinalDeathWaitState(this));
-    this.stateMachine.registerState(stateIDGameOver, new GameOverState());
-    this.stateMachine.registerState(stateIDLevelClear, new LevelClearState(this));
-    this.stateMachine.registerState(stateIDIntermission, new IntermissionState(this));
-
-    this.lives = advantages.lives;
-    this.scoreValue = 0;
-    this.items = newItems();
-
+  /** `setup` starts the Level mid-PLAY from a described position (level.ts). */
+  constructor(highscore: number, advantages: Readonly<SweetSamAdvantages> = noAdvantages, setup?: LevelSetup) {
     this.dials = new ScoreDials(highscore, scoreDialsAt);
-
-    restartRound(this);
-
-    this.stateMachine.changeState(stateIDStart);
+    this.level = new Level(
+      advantages,
+      (e) => {
+        this.effect(e);
+      },
+      setup,
+    );
   }
 
-  /**
-   * Adds points to the score. The first time a run reaches 10,000 it also
-   * adds a life, once per run (Pac-Man's extra life, #154).
-   */
-  addScore(points: number): void {
-    const before = this.scoreValue;
-    this.scoreValue += points;
-    if (before < extraLifeScore && this.scoreValue >= extraLifeScore) {
-      this.lives++;
-      playSound(sounds.ticket);
+  private effect(e: LevelEffect): void {
+    switch (e.kind) {
+      case "sound":
+        playSound(sounds[e.sound]);
+        break;
+      case "shake":
+        this.camera.requestScreenShake(e.ticks, e.intensity);
+        break;
+      case "burst":
+        this.particles.spawnBurst(e.x, e.y, e.color, e.count);
+        break;
     }
   }
 
   /** Go `Score()`. */
   score(): number {
-    return this.scoreValue;
+    return this.level.score();
   }
 
   background(): Sprite {
@@ -150,17 +72,21 @@ export class SweetSamSoftware implements FixedViewport {
     return [cabinetWidth, cabinetHeight];
   }
 
+  /**
+   * Go `Update`. The order is part of the spec (Go's joystick step drew only
+   * the cabinet's joystick, gone since #113): camera (rand), particles, the
+   * Level (pelletAnimTick, state machine, popups), dials.
+   */
   update(i: Input): void {
-    update(this, i);
+    this.camera.update();
+    this.particles.update();
+    this.level.step(i);
+    this.dials.tick(this.level.score());
   }
 
   /** Test hook: start `level` from READY!, as a level clear would. */
   jumpTo(level: number): void {
-    this.level = level;
-    this.items = newItems();
-    this.flowersShown = 0;
-    restartRound(this);
-    this.stateMachine.changeState(stateIDStart);
+    this.level.jumpTo(level);
   }
 
   draw(screen: Surface, _buffer: number): void {
@@ -168,107 +94,13 @@ export class SweetSamSoftware implements FixedViewport {
   }
 
   gameOver(): boolean {
-    return this.lives <= 0 && this.stateMachine.currentId() === stateIDGameOver;
-  }
-
-  /** How hard the current level is. */
-  values(): LevelValues {
-    return levelValues(this.level);
-  }
-
-  /** The maze shows its flash colours this tick (the level-clear flash). */
-  mazeFlash(): boolean {
-    if (this.stateMachine.currentId() !== stateIDLevelClear) return false;
-    return Math.trunc((levelClearTicks - this.pauseTicks) / levelClearFlashTicks) % 2 === 1;
-  }
-
-  /** The cutscene playing (after the level before this one), or null outside INTERMISSION. */
-  intermission(): IntermissionScene | null {
-    if (this.stateMachine.currentId() !== stateIDIntermission) return null;
-    return intermissionAfter(this.level - 1);
-  }
-
-  /** The cutscene's actors at this tick, or null outside INTERMISSION. */
-  intermissionPoses(): IntermissionPose[] | null {
-    const scene = this.intermission();
-    return scene === null ? null : intermissionPoses(scene, scene.ticks - this.pauseTicks);
-  }
-
-  /** The bear's death frame (0 dazed … 3 puddle) while a death wait runs; null otherwise. */
-  deathFrame(): number | null {
-    const id = this.stateMachine.currentId();
-    if (id !== stateIDDeathWait && id !== stateIDFinalDeathWait) return null;
-    return deathFrameAt(deathRoundDelayTicks - this.pauseTicks);
-  }
-
-  /** The bees that are not eyes. */
-  awakeBees(): Entity[] {
-    return this.enemies.filter((b) => !b.eyes);
-  }
-
-  movingEntities(): Entity[] {
-    return [this.player, ...this.enemies];
+    return this.level.gameOver();
   }
 
   snapshot(): SweetSamSnapshot {
-    const state = this.stateMachine.currentId();
-    if (state === "") {
-      throw new Error("sweetSam: snapshot before the state machine started");
-    }
-    const present: number[] = [];
-    this.items.forEach((it, idx) => {
-      if (it !== null) present.push(idx);
-    });
-    const p = this.player;
     return {
-      state,
-      player: {
-        x: p.x,
-        y: p.y,
-        dir: realDir(p.direction),
-        frame: p.frame,
-        hidden: p.hidden,
-        velocity: p.velocity,
-        turn: p.turn,
-        cornering: p.cornering !== null,
-      },
-      enemies: this.enemies.map((e) => ({
-        kind: realKind(e.kind),
-        x: e.x,
-        y: e.y,
-        dir: realDir(e.direction),
-        frame: e.frame,
-        velocity: e.velocity,
-        blue: e.blueFrames,
-        flashFrames: e.flashFrames,
-        flash: e.flash,
-        home: e.home,
-        dotMin: e.dotMinimum,
-        held: e.held,
-        eyes: e.eyes,
-        reverse: e.reverseDirection,
-        leaveRight: e.leaveRight,
-        reverseTile: [e.reverseTile.x, e.reverseTile.y],
-      })),
-      items: present.length,
-      itemsHash: fnv1a32(present),
-      score: this.scoreValue,
-      lives: this.lives,
+      ...this.level.snapshot(),
       highScore: this.dials.highScore,
-      modeIndex: this.modeIndex,
-      mode: this.modeCurrent,
-      modeTicks: this.modeTicks,
-      release: {
-        globalDots: this.release.globalDots,
-        idleTicks: this.release.idleTicks,
-        elroySuspended: this.release.elroySuspended,
-      },
-      pauseTicks: this.pauseTicks,
-      eatPauseTicks: this.eatPauseTicks,
-      startTicks: this.startTicks,
-      respawnBlinkRemaining: this.startState.respawnBlinkRemaining,
-      scaredEatAwardNext: this.scaredEatAwardNext,
-      popups: this.bonusEatPopups.map((b) => ({ x: b.x, y: b.y, frameIdx: b.frameIdx, ticks: b.ticksRemain })),
       shake: [
         this.camera.shakeOffsetX,
         this.camera.shakeOffsetY,
@@ -276,27 +108,11 @@ export class SweetSamSoftware implements FixedViewport {
         this.camera.shakeIntensity,
       ],
       particlesActive: this.particles.activeCount(),
-      pelletAnimTick: this.pelletAnimTick,
       dials: [...this.dials.score.reels.map(dial), ...this.dials.high.reels.map(dial)],
-      level: this.level,
-      mazeFlash: this.mazeFlash(),
-      flower: { ticks: this.flowerTicks, shown: this.flowersShown },
-      flowerPopup: this.flowerPopup === null ? null : { ...this.flowerPopup },
-      deathFrame: this.deathFrame(),
     };
   }
 }
 
 function dial(r: DigitReel): SweetSamDialSnapshot {
   return [r.settledDigit, r.active, r.from, r.to, r.t];
-}
-
-function realDir<T extends string>(d: T | ""): T {
-  if (d === "") throw new Error("sweetSam: entity has no direction");
-  return d;
-}
-
-function realKind<T extends string>(k: T | null): T {
-  if (k === null) throw new Error("sweetSam: enemy has no kind");
-  return k;
 }

@@ -14,6 +14,7 @@ import {
 } from "./advantages.ts";
 import { minigame } from "../game/minigames.ts";
 import { SweetSamSoftware } from "./software.ts";
+import type { ItemSetup } from "./level.ts";
 import type { PrizeId } from "../game/minigames.ts";
 
 let unsubscribe = (): void => {};
@@ -34,19 +35,27 @@ function playing(prizes: readonly PrizeId[]): SweetSamSoftware {
   return s;
 }
 
-/** Put a power pellet where the bear is about to step, step once, and return the red bee's scared ticks. */
-function eatPowerPellet(s: SweetSamSoftware): number {
-  const idx = s.items.findIndex((i) => i?.powerPellet === true);
-  const power = s.items[idx];
-  if (!power) throw new Error("no power pellet");
-  // The bear is heading left: it reaches the pellet this tick.
-  power.x = s.player.x - s.player.velocity;
-  power.y = s.player.y;
+/**
+ * On `level` with these prizes, put a power pellet where the bear is about to
+ * step, step once, and return the red bee's scared ticks.
+ */
+function eatPowerPellet(prizes: readonly PrizeId[], level = 1): number {
+  const advantages = sweetSamAdvantages(prizes);
+  const bear = new SweetSamSoftware(0, advantages).level.player();
+  let placed = false;
+  const s = new SweetSamSoftware(0, advantages, {
+    level,
+    // The bear is heading left: it reaches the pellet this tick.
+    items: (it): ItemSetup => {
+      if (!it.power || placed) return it;
+      placed = true;
+      return { ...it, x: bear.x - levelValues(level).bearVelocity * advantages.playerSpeedFactor, y: bear.y };
+    },
+  });
   s.update(NO_INPUT);
-  expect(s.items[idx]).toBeNull();
-  const red = s.enemies[0];
-  if (!red) throw new Error("no red bee");
-  return red.blueFrames;
+  const snap = s.snapshot();
+  expect(snap.items).toBe(243);
+  return snap.enemies[0]?.blue ?? -1;
 }
 
 describe("sweetSamAdvantages", () => {
@@ -73,8 +82,8 @@ describe("Sweet Sam with prizes", () => {
   test("no prizes: 3 lives, the bear at 1.0, power pellets scare for 360 ticks (6 s)", () => {
     const s = playing([]);
     expect(s.snapshot().lives).toBe(3);
-    expect(s.player.velocity).toBe(1.0);
-    expect(eatPowerPellet(s)).toBe(360);
+    expect(s.snapshot().player.velocity).toBe(1.0);
+    expect(eatPowerPellet([])).toBe(360);
   });
 
   test("honey jar: a run starts with 4 lives", () => {
@@ -85,49 +94,39 @@ describe("Sweet Sam with prizes", () => {
 
   test("running shoes: the bear moves at 1.125 px a tick, and still turns at corners", () => {
     const s = playing(["runningShoes"]);
-    expect(s.player.velocity).toBe(1.125);
-    const x = s.player.x;
+    expect(s.snapshot().player.velocity).toBe(1.125);
+    const x = s.snapshot().player.x;
     s.update({ ...NO_INPUT, left: true });
-    expect(s.player.x).toBe(x - 1.125);
+    expect(s.snapshot().player.x).toBe(x - 1.125);
     // Run a while holding up: the bear turns off the start row at a corner.
     for (let k = 0; k < 120; k++) s.update({ ...NO_INPUT, up: true });
-    expect(s.player.direction).toBe("UP");
-    expect(s.player.y).toBeLessThan(212);
+    expect(s.snapshot().player.dir).toBe("UP");
+    expect(s.snapshot().player.y).toBeLessThan(212);
   });
 
   test("running shoes: power-pellet speed is unchanged", () => {
-    const s = playing(["runningShoes"]);
-    const red = s.enemies[0];
-    if (!red) throw new Error("no red bee");
-    red.blueFrames = 300;
+    const s = new SweetSamSoftware(0, sweetSamAdvantages(["runningShoes"]), { bees: [{ blueFrames: 300 }] });
     s.update(NO_INPUT);
-    expect(s.player.velocity).toBe(velocityPlayerPower);
+    expect(s.snapshot().player.velocity).toBe(velocityPlayerPower);
   });
 
   test("running shoes: 12.5% faster on later levels too, and never slower while bees are sleepy", () => {
-    const s = playing(["runningShoes"]);
-    s.level = 5;
+    const shoes = sweetSamAdvantages(["runningShoes"]);
+    let s = new SweetSamSoftware(0, shoes, { level: 5 });
     s.update(NO_INPUT);
-    expect(s.player.velocity).toBe(1.25 * 1.125);
-    const red = s.enemies[0];
-    if (!red) throw new Error("no red bee");
-    red.blueFrames = 300;
+    expect(s.snapshot().player.velocity).toBe(1.25 * 1.125);
+    s = new SweetSamSoftware(0, shoes, { level: 5, bees: [{ blueFrames: 300 }] });
     s.update(NO_INPUT);
-    expect(s.player.velocity).toBe(1.25 * 1.125);
+    expect(s.snapshot().player.velocity).toBe(1.25 * 1.125);
   });
 
   test("sleepy bees: smoke pots make the bees sleepy for 540 ticks (9 s) on level 1", () => {
-    const s = playing(["sleepyBees"]);
-    expect(eatPowerPellet(s)).toBe(540);
+    expect(eatPowerPellet(["sleepyBees"])).toBe(540);
   });
 
   test("sleepy bees: 1.5 times a later level's sleepy time", () => {
-    const plain = playing([]);
-    plain.level = 3;
-    const sleepy = playing(["sleepyBees"]);
-    sleepy.level = 3;
     expect(levelValues(3).sleepyFrames).toBe(240);
-    expect(eatPowerPellet(plain)).toBe(240);
-    expect(eatPowerPellet(sleepy)).toBe(360);
+    expect(eatPowerPellet([], 3)).toBe(240);
+    expect(eatPowerPellet(["sleepyBees"], 3)).toBe(360);
   });
 });
