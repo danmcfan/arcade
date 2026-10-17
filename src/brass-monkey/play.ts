@@ -42,6 +42,11 @@ export interface Monkey {
   wrench: number;
 }
 
+/** Which way the monkey faces: -1 left, 1 right. */
+export function facing(m: Monkey): number {
+  return m.left ? -1 : 1;
+}
+
 /** A hazard the wrench smashed: its points show where it was for a while. */
 export interface Smash {
   x: number;
@@ -524,28 +529,43 @@ export class Run {
     }
   }
 
-  /** Whether the wrench's swing reaches `h`: in front of the monkey, or just behind its middle. */
+  /** Whether `h` is as high as the monkey, to a touch. */
+  private sameHeight(h: Hazard): boolean {
+    return Math.abs(h.y - 6 - (this.monkey.y - 8)) < t.touchY;
+  }
+
+  /** Whether the wrench's swing reaches `h`: in front of the monkey, or just behind its middle; on the raised frames also over its head. */
   private swingReaches(h: Hazard): boolean {
     const m = this.monkey;
-    const front = (h.x - m.x) * (m.left ? -1 : 1);
-    return m.wrench > 0 && front > -t.smashBehind && front < t.smashReach && Math.abs(h.y - 6 - (m.y - 8)) < t.touchY;
+    if (m.wrench <= 0) return false;
+    const front = (h.x - m.x) * facing(m);
+    if (front <= -t.smashBehind || front >= t.smashReach) return false;
+    if (this.sameHeight(h)) return true;
+    const raised = Math.trunc(this.ticks / 8) % 2 === 0;
+    return raised && Math.abs(h.y - 6 - (m.y - t.smashRaisedY)) < t.touchY;
+  }
+
+  /** The wrench smashes the hazards its swing reaches, for points. */
+  private smashHazards(): void {
+    const smashed = this.hazards.filter((h) => this.swingReaches(h));
+    for (const h of smashed) {
+      const pick = rng.intn(t.smashPoints.length);
+      const points = t.smashPoints.reduce((chosen, p, n) => (n === pick ? p : chosen), 0);
+      this.score += points;
+      this.smashes.push({ x: h.x, y: h.y, points, ticks: t.smashShowTicks });
+      this.onSound("smash");
+    }
+    this.hazards = this.hazards.filter((h) => !smashed.includes(h));
   }
 
   /** The monkey meets the hazards, the bolts, the wrenches and the exit door. */
   private meet(): void {
     const m = this.monkey;
     const floor = this.currentFloor();
-    const smashed = this.hazards.filter((h) => this.swingReaches(h));
-    for (const h of smashed) {
-      const points = t.smashPoints[rng.intn(t.smashPoints.length)] ?? t.smashPoints[0];
-      this.score += points;
-      this.smashes.push({ x: h.x, y: h.y, points, ticks: t.smashShowTicks });
-      this.onSound("smash");
-    }
-    this.hazards = this.hazards.filter((h) => !smashed.includes(h));
+    this.smashHazards();
     for (const h of this.hazards) {
       const dx = Math.abs(h.x - m.x);
-      if (dx < t.touchX && Math.abs(h.y - 6 - (m.y - 8)) < t.touchY) {
+      if (dx < t.touchX && this.sameHeight(h)) {
         this.die();
         return;
       }

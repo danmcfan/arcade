@@ -23,7 +23,7 @@ import {
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, glint, outline, rotate, type Rows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, quarterTurn, type Rows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
@@ -96,7 +96,7 @@ describe("Brass Monkey art source", () => {
 describe("generated frames", () => {
   test("the wrench stands upright, outlined, and swings down the same wrench turned a quarter clockwise", () => {
     expect(wrenchFrames()).toEqual([outline(wrench)]);
-    expect(wrenchSwingFrames()).toEqual([rotate(outline(wrench))]);
+    expect(wrenchSwingFrames()).toEqual([quarterTurn(outline(wrench))]);
   });
 
   test("the monkey sheet is walk 1-3, jump, then climb and its mirror, each outlined", () => {

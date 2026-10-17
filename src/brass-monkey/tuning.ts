@@ -66,6 +66,8 @@ export const wrenchFlashTicks = 120;
 export const smashReach = 18;
 /** ...or this far behind it; any further behind, the hazard touches the monkey as it would without the wrench. */
 export const smashBehind = 2;
+/** On the raised frames the swing also smashes this far above the monkey's middle, drawn over its head. */
+export const smashRaisedY = 20;
 /** Ticks a smash's points show where the hazard was. */
 export const smashShowTicks = 45;
 

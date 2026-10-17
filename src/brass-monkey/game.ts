@@ -40,7 +40,7 @@ import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial } from "../ui/rollingDials.ts";
 import { girderTop, type Floor } from "./floors.ts";
-import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
+import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
@@ -252,7 +252,7 @@ function drawMonkey(screen: Surface, m: Monkey, left: number, top: number): void
 
 /** The held wrench, swinging every 8 ticks: raised over the monkey's head, then down in front of it. */
 function drawWrench(screen: Surface, m: Monkey, left: number, top: number, ticks: number): void {
-  const face = m.left ? -1 : 1;
+  const face = facing(m);
   if (Math.trunc(ticks / 8) % 2 === 0) {
     screen.draw(imageWrench, left + m.x - 4 + face * 3, top + m.y - 26);
     return;

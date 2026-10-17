@@ -365,6 +365,13 @@ export interface FireflySnapshot {
 // ---------------------------------------------------------------------------
 // brassMonkey (the Go port's Brass Monkey package)
 
+/** A smash's points showing, where the hazard was. */
+export interface BrassMonkeySmashSnapshot {
+  x: number;
+  y: number;
+  points: number;
+}
+
 /** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
 export interface BrassMonkeyHazardSnapshot {
   kind: "gear" | "ember";
@@ -402,7 +409,7 @@ export interface BrassMonkeySnapshot {
   /** Whether each of the floor's wrenches has been picked up. */
   wrenches: boolean[];
   /** The smashes whose points are showing, where each hazard was. */
-  smashes: { x: number; y: number; points: number }[];
+  smashes: BrassMonkeySmashSnapshot[];
   gearTimer: number;
   emberTimer: number;
 }

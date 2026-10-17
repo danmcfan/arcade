@@ -6,7 +6,7 @@
 //   rows), snap (to the nearest palette colour), scale, colours.
 // - Rows: checkRows (size and letters, naming the bad row and column), and
 //   the derivations that save drawing pixels by hand: outline, mirrorX/Y,
-//   flipX/Y, rotate, recolour, overlay, glint.
+//   flipX/Y, quarterTurn, recolour, overlay, glint.
 
 import { PNG } from "pngjs";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -217,7 +217,7 @@ export function flipY(rows: Rows): string[] {
 }
 
 /** A quarter turn clockwise: the top row becomes the right column. */
-export function rotate(rows: Rows): string[] {
+export function quarterTurn(rows: Rows): string[] {
   const w = rows[0]?.length ?? 0;
   return Array.from({ length: w }, (_, x) =>
     rows

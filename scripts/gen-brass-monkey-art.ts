@@ -56,7 +56,7 @@ import {
   outline,
   overlay,
   paint,
-  rotate,
+  quarterTurn,
   type Rows,
 } from "./pixel-art.ts";
 
@@ -117,7 +117,7 @@ export function wrenchFrames(): Rows[] {
 
 /** The wrench swung down, its jaws to the right: the upright frame turned a quarter clockwise. */
 export function wrenchSwingFrames(): Rows[] {
-  return wrenchFrames().map((rows) => rotate(rows));
+  return wrenchFrames().map((rows) => quarterTurn(rows));
 }
 
 /** `row` (one period) laid along `w` px, moved `shift` px right. */
