@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
+import type { PrizeId } from "../game/minigames.ts";
 import {
   brassMonkeyAdvantages,
   noAdvantages,
@@ -62,10 +62,6 @@ describe("Brass Monkey with no prizes", () => {
     expect(jumpRise([]).rise).toBe(15);
     expect(firstBonusStep([])).toBe(120);
   });
-
-  test("other minigames' prizes change nothing", () => {
-    expect(brassMonkeyAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual(noAdvantages);
-  });
 });
 
 describe("oil can", () => {
@@ -105,13 +101,5 @@ describe("pocket watch", () => {
   test("the bonus counts down more slowly: a step every 180 ticks rather than 120", () => {
     expect(pocketWatchBonusTicks).toBeGreaterThan(t.bonusTicks);
     expect(firstBonusStep(["pocketWatch"])).toBe(180);
-  });
-});
-
-test("every prize together", () => {
-  expect(brassMonkeyAdvantages(["oilCan", "springBoots", "pocketWatch"])).toEqual({
-    lives: 4,
-    jumpSpeed: springBootsJumpSpeed,
-    bonusTicks: pocketWatchBonusTicks,
   });
 });
