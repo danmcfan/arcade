@@ -1,5 +1,5 @@
 // Pixel-art source for Brass Monkey (ADR 0006): the monkey and the Gnome, the
-// items (the gear and ember hazards and the bolt) and the floor tiles (the
+// items (the gear, spring and ember hazards and the bolt) and the floor tiles (the
 // girder, the ladder, the conveyor's slats, the exit door and the wall), as
 // fills in rows of Sweetie 16 letters (`sweetie` in src/ui/sweetie16.ts, `.`
 // is blank). Frames are built from shared parts (a head over a body, a body
@@ -92,6 +92,34 @@ export const monkeyClimb: readonly string[] = [
   "................",
 ];
 
+/**
+ * Smoke over the downed monkey (#252): a robot's halo, a grey puff with a
+ * spark in it, rising from its head. It puffs between these two, each 16×8
+ * drawn over the 8 rows above the monkey lying on its back.
+ */
+export const monkeySmoke: readonly (readonly string[])[] = [
+  [
+    "................",
+    "........ll......",
+    ".......lwwl.....",
+    "......lwwml.y...",
+    ".......lmml.....",
+    "........ml......",
+    ".........m......",
+    "................",
+  ],
+  [
+    "................",
+    "......ll........",
+    ".y...lwwl.......",
+    ".....lwmwl......",
+    "......lml.......",
+    ".......lm.......",
+    "........m.......",
+    "................",
+  ],
+];
+
 /** A part drawn over a sprite with its top-left at (x, y). */
 export interface Part {
   x: number;
@@ -156,6 +184,39 @@ export const gnomeArmsUp: Part = {
     ".....nn...llmm",
     "....nn.....lll",
     "...nn.......l.",
+    "..nn..........",
+    ".nn...........",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    ".nn...........",
+    ".nn...........",
+    "..nn..........",
+    "..nn..........",
+    "...nn.........",
+    "...nn.........",
+  ],
+};
+
+/**
+ * Climbing and stomping in the intro (#253): the throw's arms, reaching up
+ * with empty hands, the gear left out.
+ */
+export const gnomeArmsReach: Part = {
+  x: 2,
+  y: 2,
+  rows: [
+    "..............",
+    "..............",
+    "..............",
+    ".......oo.....",
+    "......noo.....",
+    ".....nn.......",
+    "....nn........",
+    "...nn.........",
     "..nn..........",
     ".nn...........",
     "nn............",
@@ -305,6 +366,60 @@ export const girder: readonly string[] = [
   "pppppppp",
   "rrrrrrrr",
   "pppppppp",
+  "........",
+];
+
+/**
+ * The spring: a hazard the Gnome sends on the elevator floor, bouncing along
+ * its girder, as Donkey Kong's jacks. A steel coil between two plates in the
+ * girder's reds, 12×12, its foot on the bottom plate: stretched in flight,
+ * then squashed as it lands. Lit from the top left like the gear.
+ */
+export const spring: readonly (readonly string[])[] = [
+  [
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "...wl..ld...",
+    "....wlld....",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
+  [
+    "............",
+    "............",
+    "............",
+    "............",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "...wlllld...",
+    "...wmmmmd...",
+    "...wlllld...",
+    "..oooooooo..",
+    "..rrrrrrrp..",
+    "............",
+  ],
+];
+
+/**
+ * A rivet (#250), tweaked from the bolt: its brass, lit on the left and
+ * shaded on the right, as a stubby plug 8×8 that fills a slot in the rivet
+ * floor's girders, a cap above and below the girder's web; the last row is
+ * blank as the girder's.
+ */
+export const rivet: readonly string[] = [
+  ".wyyyyo.",
+  ".wyyyyo.",
+  "..wyyo..",
+  "..wyyo..",
+  "..wyyo..",
+  ".wyyyyo.",
+  ".oooooor",
   "........",
 ];
 

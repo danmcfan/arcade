@@ -33,8 +33,12 @@ import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
 import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
 import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
 import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
+import monkeyStompUrl from "../assets/sounds/monkey-stomp.wav";
 import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
+import monkeyStepUrl from "../assets/sounds/monkey-step.wav";
 import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
+import monkeyGirderUrl from "../assets/sounds/monkey-girder.wav";
+import monkeyConveyorUrl from "../assets/sounds/monkey-conveyor.wav";
 
 export type SoundName =
   | "title"
@@ -67,8 +71,12 @@ export type SoundName =
   | "monkeyBolt"
   | "monkeyHazard"
   | "monkeyDeath"
+  | "monkeyStomp"
   | "monkeyFloor"
-  | "monkeyEscape";
+  | "monkeyStep"
+  | "monkeyEscape"
+  | "monkeyGirder"
+  | "monkeyConveyor";
 
 /** Every sound, made by `make` from its name, WAV URL, whether it loops and its volume (0 to 1). */
 export function soundTable<S>(
@@ -105,8 +113,12 @@ export function soundTable<S>(
     monkeyBolt: make("monkeyBolt", monkeyBoltUrl, false, 1),
     monkeyHazard: make("monkeyHazard", monkeyHazardUrl, false, 1),
     monkeyDeath: make("monkeyDeath", monkeyDeathUrl, false, 1),
+    monkeyStomp: make("monkeyStomp", monkeyStompUrl, false, 1),
     monkeyFloor: make("monkeyFloor", monkeyFloorUrl, false, 1),
+    monkeyStep: make("monkeyStep", monkeyStepUrl, false, 1),
     monkeyEscape: make("monkeyEscape", monkeyEscapeUrl, false, 1),
+    monkeyGirder: make("monkeyGirder", monkeyGirderUrl, true, 0.35),
+    monkeyConveyor: make("monkeyConveyor", monkeyConveyorUrl, true, 0.35),
   };
 }
 
@@ -129,6 +141,8 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "rescue",
     "stage",
     "badgeTick",
+    "monkeyGirder",
+    "monkeyConveyor",
   ],
   arcade: [
     "title",
@@ -145,7 +159,9 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "monkeyBolt",
     "monkeyHazard",
     "monkeyDeath",
+    "monkeyStomp",
     "monkeyFloor",
+    "monkeyStep",
     "monkeyEscape",
   ],
 };

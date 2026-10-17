@@ -30,7 +30,7 @@
     "oxlint-tsgolint": "7.0.2004",
     "pngjs": "7.0.0",
     "prettier": "3.9.10",
-    "sandworm": "link:sandworm",
+    "sandworm": "github:danmcfan/sandworm#v0.2.1",
     "typescript": "7.0.2"
   }
 }
