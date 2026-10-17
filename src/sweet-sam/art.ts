@@ -170,13 +170,14 @@ export const walkCycle: readonly number[] = [0, 1, 0, 2];
  * `dazedFace` over its eyes), then sinking, squashed flat, and a puddle with
  * stars. Drawn below the walk rows; not played yet (#47).
  */
-export const dazedFace: readonly string[] = ["rrrrrrrrrrrr", "rrwwrkkrwwrr"];
+export const dazedFace: readonly string[] = ["rrrrrrrrrrrr", "rrwwrpprwwrr"];
 /** Where `dazedFace` goes on the standing bear. */
 export const dazedFaceAt: readonly [number, number] = [2, 4];
 
 /** The death frames after the dazed one. */
 export const bearDeath: readonly (readonly string[])[] = [
   [
+    "................",
     "................",
     "................",
     "................",
@@ -192,9 +193,9 @@ export const bearDeath: readonly (readonly string[])[] = [
     "....rr....rr....",
     "....pp....pp....",
     "................",
-    "................",
   ],
   [
+    "................",
     "................",
     "................",
     "................",
@@ -210,9 +211,9 @@ export const bearDeath: readonly (readonly string[])[] = [
     "rrroooooooooorrr",
     ".pppppppppppppp.",
     "................",
-    "................",
   ],
   [
+    "................",
     "................",
     "................",
     "....y......y....",
@@ -227,7 +228,6 @@ export const bearDeath: readonly (readonly string[])[] = [
     "................",
     "..rrroooooorrr..",
     "...pppppppppp...",
-    "................",
     "................",
   ],
 ];
