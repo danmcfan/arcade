@@ -302,13 +302,23 @@ describe("eating", () => {
     expect(snap.enemies.every((e) => e.blue === 600)).toBe(true);
   });
 
-  test("a bee that leaves the home still sleepy stays sleepy in the maze", () => {
-    const s = from({ items: potAt({ x: start.x - 1, y: start.y }) });
+  test("a bee that leaves the home still sleepy can be eaten for points", () => {
+    const eyes = { home: false, eyes: true, x: 8 * 2, y: 8 * 4 + 4 };
+    const s = from({ bees: [eyes, undefined, eyes, eyes], items: potAt({ x: start.x - 1, y: start.y }) });
     step(s);
     expect([enemy(s, 1).home, enemy(s, 1).blue]).toEqual([true, 600]);
     let n = 0;
     while (enemy(s, 1).home && n++ < 300) step(s);
     expect([enemy(s, 1).home, enemy(s, 1).blue > 0]).toEqual([false, true]);
+    // Steer the bear onto the bee through step(); the others are eyes, which pay nothing.
+    let before = s.score();
+    for (let t = 0; t < 2000 && s.snapshot().state === "PLAY"; t++) {
+      before = s.score();
+      const bee = enemy(s, 1);
+      const p = s.snapshot().player;
+      step(s, 1, { ...NO_INPUT, left: bee.x < p.x, right: bee.x > p.x, up: bee.y < p.y, down: bee.y > p.y });
+    }
+    expect([s.snapshot().state, s.score() - before]).toEqual(["PAUSE", 200]);
   });
 
   test("scared bee eaten: 200, popup, shake, particles, power sound, PAUSE", () => {
@@ -325,20 +335,27 @@ describe("eating", () => {
     expect([enemy(s, 0).eyes, enemy(s, 0).blue]).toEqual([true, 0]);
   });
 
-  test("award ladder 200 → 400 → 800 → 1600, then it stays at 1600 while some bee stays scared", () => {
+  test("award ladder 200 → 400 → 800 → 1600 → 1600 while some bee stays scared", () => {
     const sleepy = { onPlayer: true, blueFrames: 10_000 };
     const s = from({ bees: [sleepy, sleepy, sleepy, sleepy] });
     const awards: number[] = [];
-    for (let k = 0; k < 4; k++) {
-      const before = s.score();
-      step(s);
-      expect(s.snapshot().state).toBe("PAUSE");
-      awards.push(s.score() - before);
-      step(s, 61); // PAUSE: 60 countdown ticks, then back to PLAY
-      expect(s.snapshot().state).toBe("PLAY");
-    }
-    expect(awards).toEqual([200, 400, 800, 1600]);
+    // Every bee is on the bear and only a honey pot re-scares one, so the fifth eat comes from a fresh game
+    // whose ladder starts at the top rung, eaten through the same step().
+    const eatAll = (g: SweetSamSoftware, n: number): void => {
+      for (let k = 0; k < n; k++) {
+        const before = g.score();
+        step(g);
+        expect(g.snapshot().state).toBe("PAUSE");
+        awards.push(g.score() - before);
+        step(g, 61); // PAUSE: 60 countdown ticks, then back to PLAY
+        expect(g.snapshot().state).toBe("PLAY");
+      }
+    };
+    eatAll(s, 4);
     expect(s.snapshot().scaredEatAwardNext).toBe(3);
+    // The ladder's state after four eats, carried into a second game with a scared bee left on the bear.
+    eatAll(from({ scaredEatAwardNext: 3, bees: [sleepy, { blueFrames: 10_000 }] }), 1);
+    expect(awards).toEqual([200, 400, 800, 1600, 1600]);
   });
 
   test("a honey pot eaten while bees are sleepy restarts the award at 200", () => {
@@ -685,12 +702,17 @@ describe("intermissions (#160)", () => {
 });
 
 describe("game over pays out", () => {
-  test("a run on level 2 that loses every life ends with gameOver() and its score in tickets", () => {
-    // One honey drop left, in the far top-left corner, so the level goes on and the score stays.
-    const s = from({ level: 2, score: 1234, items: (it, idx) => (idx === 0 ? it : null) });
+  test("a run that clears level 1 and loses every life on level 2 ends with gameOver() and its score in tickets", () => {
+    // One honey drop left, ahead of the bear: eating it clears level 1.
+    const s = from({ score: 1234, items: eating(244) });
     expect(s.snapshot().items).toBe(1);
+    step(s, 2);
+    expect(s.snapshot().items).toBe(0);
+    expect(s.snapshot().state).toBe("LEVELCLEAR");
+    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    expect([s.snapshot().state, s.snapshot().level]).toEqual(["PLAY", 2]);
     for (let t = 0; t < 20_000 && !s.gameOver(); t++) step(s);
-    expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1234, "GAMEOVER", 2]);
+    expect([s.snapshot().lives, s.score(), s.snapshot().state, s.snapshot().level]).toEqual([0, 1314, "GAMEOVER", 2]); // 1234 + the last drop + drops eaten on level 2
     expect(ticketsFor(s.score())).toBe(12);
   });
 });
