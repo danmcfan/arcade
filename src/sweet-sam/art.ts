@@ -304,6 +304,89 @@ export const beeBodies: Readonly<Record<SweetSamEnemyKind, SweetieLetter>> = {
 /** The bees' order in bees.png, one 64×96 sheet each, top to bottom. */
 export const beeOrder: readonly SweetSamEnemyKind[] = ["red", "pink", "teal", "orange"];
 
+/**
+ * An eaten bee flying home: its eyes and antennae, 16×16 like the bee, one
+ * frame per direction in `beeEyesOrder`. The pupils look the way it travels
+ * and the whole head leans a pixel that way.
+ */
+export const beeEyes: readonly (readonly string[])[] = [
+  [
+    "................",
+    "...y..........y.",
+    "....m........m..",
+    ".....m......m...",
+    "................",
+    ".....ww....ww...",
+    "....wwww..wwww..",
+    "....wwbb..wwbb..",
+    "....wwbb..wwbb..",
+    ".....ww....ww...",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "................",
+    ".y..........y...",
+    "..m........m....",
+    "...m......m.....",
+    "................",
+    "...ww....ww.....",
+    "..wwww..wwww....",
+    "..bbww..bbww....",
+    "..bbww..bbww....",
+    "...ww....ww.....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....bb....bb....",
+    "...wbbw..wbbw...",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "....ww....ww....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+  [
+    "................",
+    "................",
+    "..y..........y..",
+    "...m........m...",
+    "....m......m....",
+    "................",
+    "....ww....ww....",
+    "...wwww..wwww...",
+    "...wwww..wwww...",
+    "...wbbw..wbbw...",
+    "....bb....bb....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
+];
+
+/** The direction each `beeEyes` frame faces. */
+export const beeEyesOrder = ["RIGHT", "LEFT", "UP", "DOWN"] as const;
+
 /** A sleepy bee: grey, wings dull, eyes shut. */
 export const sleepyLook = { body: "m", wings: "l" } as const;
 

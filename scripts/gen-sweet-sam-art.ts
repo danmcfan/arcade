@@ -14,7 +14,8 @@
 // 9, 8×8 each, and score-labels.png the maze's "1UP" and "HIGH SCORE" alone, for
 // Firefly's HUD. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // maze-flash.png is the maze with its wax in the level-clear flash colours,
-// and flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68).
+// flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68),
+// and bee-eyes.png an eaten bee's eyes, one 16×16 frame per direction (#196).
 // gen-art.test.ts fails when the committed PNGs drift.
 
 import { join } from "node:path";
@@ -25,6 +26,7 @@ import {
   beeBeats,
   beeBodies,
   beeEye,
+  beeEyes,
   beeFlight,
   beeOrder,
   corridorMargin,
@@ -290,4 +292,5 @@ export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "points.png"), 64, 16, renderPoints),
   imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
   imageOutput(join(sweetSamImagesDir, "flower.png"), 16 * flowers.length, 16, () => sheet([flowers])),
+  imageOutput(join(sweetSamImagesDir, "bee-eyes.png"), 16 * beeEyes.length, 16, () => sheet([beeEyes])),
 ];
