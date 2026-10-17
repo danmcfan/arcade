@@ -5,6 +5,7 @@ import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import * as rng from "../engine/rng.ts";
 import { Game } from "../game/game.ts";
 import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
+import { defined } from "../engine/defined.testutil.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
@@ -28,6 +29,12 @@ import {
   morphFromStage,
   points,
   respawnTicks,
+  resultsTicks,
+  challengeWaveSize,
+  challengeWaves,
+  perfectBonus,
+  tallyTicks,
+  waveBonus,
   shotCutoffMargin,
   shotSpawnOffset,
   sparkSpeed,
@@ -792,7 +799,7 @@ describe("lives", () => {
     expect(f.score()).toBe(400);
   });
 
-  test("the third lost life ends the run once the firefly's burst has played", () => {
+  test("the third lost life ends the run once the burst and the results have played", () => {
     const { f } = withOnly("moth", { x: 30, y: 40 });
     f.points = 1234;
     for (let life = 0; life < startLives; life++) {
@@ -802,6 +809,9 @@ describe("lives", () => {
       expect(f.lives).toBe(startLives - 1 - life);
       run(f, respawnTicks);
     }
+    expect(f.gameOver()).toBe(false);
+    expect(f.results).toBeGreaterThan(0);
+    run(f, f.results);
     expect(f.gameOver()).toBe(true);
     expect(f.snapshot().over).toBe(true);
     expect(f.score()).toBe(1234);
@@ -813,7 +823,7 @@ describe("stages", () => {
     const { f } = withOnly("wasp", { x: 112, y: playerY });
     f.lives = 1;
     f.update(NO_INPUT);
-    run(f, respawnTicks + hitEffectTicks);
+    run(f, respawnTicks + hitEffectTicks + resultsTicks);
     expect([f.over, f.stage]).toEqual([true, 1]);
   });
 
@@ -833,7 +843,7 @@ describe("stages", () => {
     f.update(NO_INPUT);
     expect(f.lives).toBe(0);
     expect(f.enemies.every((e) => e.deadFrames > 0)).toBe(true);
-    run(f, respawnTicks + hitEffectTicks);
+    run(f, respawnTicks + hitEffectTicks + resultsTicks);
     expect([f.over, f.stage]).toEqual([true, 1]);
   });
 
@@ -1014,13 +1024,13 @@ describe("tractor beam", () => {
     expect(f.lives).toBe(startLives - 1);
   });
 
-  test("a capture on the last life ends the run after respawnTicks", () => {
+  test("a capture on the last life ends the run after respawnTicks and the results", () => {
     const { f, e } = withOnly("owl", { x: 30, y: 40 });
     f.lives = 1;
     beamingAt(e, 112);
     f.update(NO_INPUT);
     expect(f.lives).toBe(0);
-    run(f, respawnTicks - 2);
+    run(f, respawnTicks - 1 + resultsTicks - 1);
     expect(f.gameOver()).toBe(false);
     f.update(NO_INPUT);
     expect(f.gameOver()).toBe(true);
@@ -1221,5 +1231,106 @@ describe("dive sound", () => {
     f.dive(e);
     rec.stop();
     expect(rec.events).toEqual(["rewind:dive", "play:dive"]);
+  });
+});
+
+/** Stage 3, past its intro. */
+function challenge(): FireflySoftware {
+  const f = new FireflySoftware();
+  f.jumpTo(3);
+  f.stageTick = stageIntroTicks + 1;
+  return f;
+}
+
+describe("Challenging Stage", () => {
+  test("stage 3 flies 5 waves of 8 that never shoot, dive or form up, and fly off unscored", () => {
+    rng.seed(1);
+    const f = new FireflySoftware();
+    f.jumpTo(3);
+    expect(f.challenge).toEqual({ hits: 0, tally: 0 });
+    expect(f.enemies.length).toBe(challengeWaves * challengeWaveSize);
+    expect(new Set(f.enemies.map((e) => e.wave)).size).toBe(challengeWaves);
+    f.player.x = 0;
+    const states = new Set<string>();
+    for (let t = 0; t < 3000 && f.enemies.length > 0; t++) {
+      f.update(NO_INPUT);
+      for (const e of f.enemies) states.add(e.state);
+      expect(f.shots).toEqual([]);
+    }
+    expect(f.enemies).toEqual([]);
+    expect([...states].toSorted()).toEqual(["entering", "waiting"]);
+    expect(f.score()).toBe(0);
+    expect(f.challenge?.tally).toBe(tallyTicks);
+  });
+
+  test("an enemy flying through the firefly does not ram it", () => {
+    const f = challenge();
+    const e = defined(f.enemies[0]);
+    divingAt(e, f.player.x, playerY);
+    e.state = "entering";
+    e.x = f.player.x;
+    e.y = playerY;
+    f.enemies = [e];
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives);
+  });
+
+  test("a hit scores as a diving kill, an Owl dies in one hit, and the last of a wave scores its wave bonus", () => {
+    const f = challenge();
+    const wave = f.enemies.filter((e) => e.row === 0);
+    const owls = f.enemies.filter((e) => e.kind === "owl");
+    expect(owls.length).toBeGreaterThan(0);
+    expect(owls.every((e) => e.hp === 1)).toBe(true);
+    f.enemies = wave;
+    wave.forEach((e, i) => {
+      divingAt(e, 20 + i * 24, 100);
+      e.state = "entering";
+      e.x = 20 + i * 24;
+      e.y = 100;
+    });
+    for (const [i, e] of wave.entries()) {
+      sparkAt(f, e.x, e.y);
+      f.update(NO_INPUT);
+      expect(f.challenge?.hits).toBe(i + 1);
+    }
+    const kills = wave.reduce((t, e) => t + points(e.kind, true), 0);
+    expect(f.score()).toBe(kills + waveBonus(3));
+    expect(f.bonuses.map((b) => b.points)).toEqual([waveBonus(3)]);
+  });
+
+  test("once the last enemy is gone the tally pays 100 a hit, then the next stage starts", () => {
+    const f = challenge();
+    f.enemies = [];
+    f.challenge = { hits: 12, tally: 0 };
+    f.update(NO_INPUT);
+    expect(f.challenge.tally).toBe(tallyTicks);
+    expect(f.score()).toBe(1200);
+    run(f, tallyTicks - 1);
+    expect(f.stage).toBe(3);
+    f.update(NO_INPUT);
+    expect(f.stage).toBe(4);
+    expect(f.challenge).toBeNull();
+    expect(f.enemies.length).toBe(40);
+  });
+
+  test("a perfect stage pays the 10,000 special bonus", () => {
+    const f = challenge();
+    f.enemies = [];
+    f.challenge = { hits: 40, tally: 0 };
+    f.update(NO_INPUT);
+    expect(f.score()).toBe(perfectBonus);
+  });
+});
+
+describe("results", () => {
+  test("every spark fired is counted, and every spark that hits", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 100 });
+    f.stageTick = 1000;
+    f.update(held({ space: true }));
+    expect(f.shotsFired).toBe(1);
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    expect(f.hits).toBe(1);
+    expect(f.snapshot()).toMatchObject({ shotsFired: 1, hits: 1 });
   });
 });

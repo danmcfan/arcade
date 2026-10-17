@@ -21,6 +21,17 @@ import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
   badgesShown,
+  challengeIndex,
+  challengeSpacing,
+  challengeWaveGap,
+  challengeWaveSize,
+  challengeWaves,
+  isChallengingStage,
+  resultsTicks,
+  tallyBonus,
+  tallyTicks,
+  waveBonus,
+  type ChallengeState,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -202,9 +213,80 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     escortDx: 0,
     escortsKilled: 0,
     trio: null,
+    wave: null,
   };
   followPath(e, [{ ...curve, p3: home }]);
   return e;
+}
+
+/**
+ * The Challenging Stage flight paths, one per wave: each flies in, loops
+ * through the field and out off an edge, never stopping. The second of each
+ * pair flies the mirror image.
+ */
+const challengePaths: readonly Path[] = [
+  [
+    { p0: { x: 96, y: -16 }, p1: { x: 96, y: 150 }, p2: { x: 16, y: 190 }, p3: { x: 40, y: 120 } },
+    { p0: { x: 40, y: 120 }, p1: { x: 64, y: 50 }, p2: { x: 160, y: 40 }, p3: { x: 240, y: -16 } },
+  ],
+  [
+    { p0: { x: -16, y: 230 }, p1: { x: 80, y: 250 }, p2: { x: 150, y: 160 }, p3: { x: 112, y: 100 } },
+    { p0: { x: 112, y: 100 }, p1: { x: 74, y: 40 }, p2: { x: 20, y: 60 }, p3: { x: -16, y: -16 } },
+  ],
+  [
+    { p0: { x: -16, y: 80 }, p1: { x: 80, y: 80 }, p2: { x: 140, y: 200 }, p3: { x: 112, y: 200 } },
+    { p0: { x: 112, y: 200 }, p1: { x: 70, y: 200 }, p2: { x: 70, y: 120 }, p3: { x: 112, y: 120 } },
+    { p0: { x: 112, y: 120 }, p1: { x: 170, y: 120 }, p2: { x: 200, y: 60 }, p3: { x: 240, y: 40 } },
+  ],
+  [
+    { p0: { x: 60, y: -16 }, p1: { x: 60, y: 100 }, p2: { x: 180, y: 60 }, p3: { x: 180, y: 140 } },
+    { p0: { x: 180, y: 140 }, p1: { x: 180, y: 220 }, p2: { x: 40, y: 200 }, p3: { x: -16, y: 230 } },
+  ],
+  [
+    { p0: { x: 240, y: 140 }, p1: { x: 140, y: 140 }, p2: { x: 140, y: 40 }, p3: { x: 80, y: 60 } },
+    { p0: { x: 80, y: 60 }, p1: { x: 20, y: 80 }, p2: { x: 40, y: 180 }, p3: { x: -16, y: 200 } },
+  ],
+];
+
+/** Each wave's kinds, first and second of its pairs; later Challenging Stages rotate them. */
+const challengeKinds: readonly (readonly [EnemyKind, EnemyKind])[] = [
+  ["moth", "moth"],
+  ["wasp", "wasp"],
+  ["owl", "wasp"],
+  ["wasp", "moth"],
+  ["moth", "wasp"],
+];
+
+/** Challenging Stage enemies fly faster than an entry, at this many times `enemySpeed`. */
+const challengeSpeedFactor = 1.5;
+
+const mirrorPath = (path: Path): Path =>
+  path.map((c) => ({ p0: mirror(c.p0), p1: mirror(c.p1), p2: mirror(c.p2), p3: mirror(c.p3) }));
+
+/** A Challenging Stage: 5 waves of 8, in mirrored pairs, that fly through and away (`challengePaths`). */
+export function newChallengeEnemies(stage: number): Enemy[] {
+  const index = challengeIndex(stage);
+  return Array.from({ length: challengeWaves }, (_, w) => {
+    const path = challengePaths[w] ?? [];
+    const wave = { kills: 0 };
+    const kinds = challengeKinds[(w + index) % challengeKinds.length] ?? ["moth", "moth"];
+    return Array.from({ length: challengeWaveSize }, (_e, i) => {
+      const side = i % 2;
+      const p = side === 0 ? path : mirrorPath(path);
+      const start = p[0]?.p0 ?? { x: 0, y: 0 };
+      const kind = kinds[Math.floor(i / 2) % 2] ?? "moth";
+      const e = waveEnemy(
+        { kind, row: w, col: i, x: start.x, y: start.y },
+        { p0: start, p1: start, p2: start },
+        stageIntroTicks + w * challengeWaveGap + Math.floor(i / 2) * challengeSpacing,
+      );
+      e.wave = wave;
+      // An Owl on a Challenging Stage dies in one hit.
+      e.hp = 1;
+      followPath(e, p, enemySpeed * challengeSpeedFactor);
+      return e;
+    });
+  }).flat();
 }
 
 /** A fresh stage: every slot filled, waiting to fly in wave by wave, two by two (`entryWaves`). */
@@ -295,11 +377,26 @@ export class FireflySoftware implements FixedViewport {
   formationPhase: FormationPhase = "sway";
   /** `ticks` when the formation began to breathe. */
   breatheFrom = 0;
+  /** Sparks fired this run, and sparks that hit something: the -RESULTS- screen. */
+  shotsFired = 0;
+  hits = 0;
+  /** On a Challenging Stage: its hits, and ticks left of the tally once the last wave has gone (0 while it flies). */
+  challenge: ChallengeState | null = null;
+  /** Ticks left of the -RESULTS- screen after GAME OVER; the run ends when it reaches 0. */
+  results = 0;
   /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
   update(i: Input): void {
     if (this.over) return;
+    if (this.results > 0) {
+      if (--this.results === 0) this.over = true;
+      return;
+    }
+    if (this.challenge !== null && this.challenge.tally > 0) {
+      if (--this.challenge.tally === 0) this.nextStage();
+      return;
+    }
 
     if (this.stageTick === 0) play(this.stage === 1 ? sounds.fireflyStart : sounds.stage);
     this.stageTick++;
@@ -321,7 +418,10 @@ export class FireflySoftware implements FixedViewport {
     this.countDownRespawn();
 
     // With no lives left the run ends on this stage, even if the field is clear.
-    if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
+    if (this.enemies.length === 0 && this.lives > 0) {
+      if (this.challenge === null) this.nextStage();
+      else this.startTally(this.challenge);
+    }
 
     this.dials.tick(this.score());
   }
@@ -359,7 +459,10 @@ export class FireflySoftware implements FixedViewport {
 
     const cap = this.advantages.maxSparks * (this.dual ? 2 : 1);
     if (i.space && this.fireDelay === 0 && this.sparks.length < cap) {
-      for (const x of halves(this.player.x, this.dual)) this.sparks.push({ x, y: this.player.y - 10 });
+      for (const x of halves(this.player.x, this.dual)) {
+        this.sparks.push({ x, y: this.player.y - 10 });
+        this.shotsFired++;
+      }
       this.fireDelay = sparkCooldown;
       play(sounds.spark);
     }
@@ -428,6 +531,8 @@ export class FireflySoftware implements FixedViewport {
       this.dropShot(e);
     }
 
+    // A Challenging Stage never forms up or dives.
+    if (this.challenge !== null) return;
     this.startBreathing();
     if (this.formationPhase !== "breathe" || this.respawn > 0) return;
     if (this.diveTimer > 0) this.diveTimer--;
@@ -447,8 +552,8 @@ export class FireflySoftware implements FixedViewport {
     if (e.t < 1) return;
     e.path = null;
     e.shotsLeft = 0;
-    if (e.kind === "morph") {
-      // A morph flies off the bottom for good, unscored.
+    if (e.kind === "morph" || e.wave !== null) {
+      // A morph, or a Challenging Stage enemy, flies off for good, unscored.
       e.hp = 0;
       return;
     }
@@ -467,6 +572,8 @@ export class FireflySoftware implements FixedViewport {
   /** `e` sets off on its entry curve; some fire at the firefly on the way in (Galaga's). */
   private startEntry(e: Enemy, d: Difficulty): void {
     e.state = "entering";
+    // A Challenging Stage never shoots.
+    if (e.wave !== null) return;
     if (rng.float() >= d.entryShotChance) return;
     e.shotsLeft = 1 + rng.intn(d.entryShots);
     e.shotTimer = firstShotDelay;
@@ -681,6 +788,7 @@ export class FireflySoftware implements FixedViewport {
         Math.abs(s.y - c.y) < captiveHalfSize
       ) {
         this.shootCaptive(c);
+        this.hits++;
         return false;
       }
       const e = this.enemies.find(
@@ -691,6 +799,7 @@ export class FireflySoftware implements FixedViewport {
           Math.abs(s.y - en.y) < enemyHalfSize[en.kind] + 4,
       );
       if (e === undefined) return true;
+      this.hits++;
       e.hp--;
       if (e.hp > 0) play(sounds.owlHurt);
       else {
@@ -735,6 +844,10 @@ export class FireflySoftware implements FixedViewport {
       }
     }
     this.destroy(e);
+    if (e.wave !== null) {
+      this.shootChallenger(e, e.wave);
+      return;
+    }
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
@@ -742,6 +855,27 @@ export class FireflySoftware implements FixedViewport {
       this.points += morphBonus;
       this.bonuses.push({ points: morphBonus, x: e.x, y: e.y, ticks: bonusTicks });
     }
+  }
+
+  /** A Challenging Stage hit scores as a diving kill, and the last of a wave scores its wave bonus. */
+  private shootChallenger(e: Enemy, wave: NonNullable<Enemy["wave"]>): void {
+    this.points += points(e.kind, true);
+    if (this.challenge !== null) this.challenge.hits++;
+    if (++wave.kills < challengeWaveSize) return;
+    const bonus = waveBonus(this.stage);
+    this.points += bonus;
+    this.bonuses.push({ points: bonus, x: e.x, y: e.y, ticks: bonusTicks });
+  }
+
+  /** The last wave has gone: the tally shows the hits and pays their bonus, on a clear field. */
+  private startTally(c: ChallengeState): void {
+    c.tally = tallyTicks;
+    this.points += tallyBonus(c.hits);
+    this.sparks = [];
+    this.shots = [];
+    this.bonuses = [];
+    this.awardExtraLives();
+    play(sounds.stage);
   }
 
   /** A life, with the extra-life jingle, for each threshold the score has reached. */
@@ -770,8 +904,10 @@ export class FireflySoftware implements FixedViewport {
   private hitPlayer(): void {
     const y = this.player.y;
     for (const x of halves(this.player.x, this.dual)) {
+      // Challenging Stage enemies fly past the firefly and never ram it.
       const body = this.enemies.find(
         (e) =>
+          e.wave === null &&
           e.deadFrames === 0 &&
           e.state !== "waiting" &&
           Math.abs(e.x - x) < enemyHalfSize[e.kind] + 6 &&
@@ -813,7 +949,7 @@ export class FireflySoftware implements FixedViewport {
     if (this.respawn === 0) return;
     if (--this.respawn > 0) return;
     if (this.lives === 0) {
-      this.over = true;
+      this.results = resultsTicks;
       return;
     }
     this.player = { ...playerStart };
@@ -836,7 +972,9 @@ export class FireflySoftware implements FixedViewport {
   private nextStage(): void {
     this.stage++;
     this.stageTick = 0;
-    this.enemies = newStageEnemies();
+    const challenging = isChallengingStage(this.stage);
+    this.challenge = challenging ? { hits: 0, tally: 0 } : null;
+    this.enemies = challenging ? newChallengeEnemies(this.stage) : newStageEnemies();
     this.formationPhase = "sway";
     this.captive = null;
     this.shots = [];
@@ -909,6 +1047,10 @@ export class FireflySoftware implements FixedViewport {
             },
           }),
       ...(this.dual ? { dual: true as const } : {}),
+      shotsFired: this.shotsFired,
+      hits: this.hits,
+      ...(this.challenge === null ? {} : { challenge: { ...this.challenge } }),
+      results: this.results,
     };
   }
 }

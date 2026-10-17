@@ -31,8 +31,15 @@ import {
   beamWidth,
   fieldHeight,
   fieldWidth,
+  challengeTotal,
   halves,
   hitEffectTicks,
+  hitMissRatio,
+  perfectBonus,
+  tallyBonus,
+  tallyBonusDelay,
+  tallyTicks,
+  type ChallengeState,
   respawnTicks,
   stageBadges,
   stageIntroTicks,
@@ -143,6 +150,11 @@ export interface FireflyView {
   /** Two fireflies, `dualOffset` either side of `player.x`. */
   dual: boolean;
   dials: ScoreDials;
+  /** On a Challenging Stage: its hits, and ticks left of the tally (0 while it flies). */
+  challenge: Readonly<ChallengeState> | null;
+  /** Sparks fired and sparks that hit, for the -RESULTS- screen. */
+  shotsFired: number;
+  hits: number;
   score(): number;
 }
 
@@ -156,20 +168,16 @@ export function drawFirefly(screen: Surface, f: FireflyView): void {
 function drawField(screen: Surface, f: FireflyView): void {
   screen.draw(imageFireflyBackground, ox, oy);
 
-  for (const e of f.enemies) drawBeam(screen, e);
-  for (const e of f.enemies) drawEnemy(screen, e);
-  if (f.captive !== null) screen.draw(imageCaptive, ox + f.captive.x - 8, oy + f.captive.y - 8);
-  for (const s of f.shots) screen.draw(imageShot, ox + s.x - 2, oy + s.y - 4);
-  for (const s of f.sparks) screen.draw(imageSpark, ox + s.x - 4, oy + s.y - 4);
-  // Galaga's escort-kill bonus: the points, where the Owl was shot.
-  for (const b of f.bonuses) drawTextCentered(screen, `${b.points}`, ox + b.x, oy + b.y - 4, "blue");
+  // GAME OVER, the results and the tally show on a clear field.
+  const clear = f.lives === 0 || (f.challenge !== null && f.challenge.tally > 0);
+  if (!clear) drawPlay(screen, f);
 
   if (f.respawn > 0) {
     // The firefly bursts like a hit enemy, over the first part of the pause;
     // one taken by a beam rides up as the captive instead.
     if (!f.captured) drawHit(screen, Math.max(0, hitEffectTicks - (respawnTicks - f.respawn)), f.player.x, f.player.y);
-  } else if (!f.over) {
-    // Once the last life is gone the firefly stays gone, under GAME OVER and the payout.
+  } else if (f.lives > 0) {
+    // Once the last life is gone the firefly stays gone, under GAME OVER, the results and the payout.
     for (const x of halves(f.player.x, f.dual)) screen.draw(imageFirefly, ox + x - 8, oy + f.player.y - 8);
   }
 
@@ -179,10 +187,45 @@ function drawField(screen: Surface, f: FireflyView): void {
   drawLives(screen, Math.max(0, f.lives - 1));
   drawBadges(screen, f.stage, f.stageTick);
 
-  if (f.stageTick <= stageIntroTicks) {
-    drawTextCentered(screen, `STAGE ${f.stage}`, ox + fieldWidth / 2, oy + 150, "yellow");
-  }
+  const cx = ox + fieldWidth / 2;
   if (f.lives === 0) {
-    drawTextCentered(screen, "GAME OVER", ox + fieldWidth / 2, oy + 150, "orange");
+    if (f.respawn > 0) drawTextCentered(screen, "GAME OVER", cx, oy + 150, "orange");
+    else drawResults(screen, f);
+  } else if (f.challenge !== null && f.challenge.tally > 0) {
+    drawTally(screen, f.challenge.hits, tallyTicks - f.challenge.tally);
+  } else if (f.stageTick <= stageIntroTicks) {
+    const banner = f.challenge === null ? `STAGE ${f.stage}` : "CHALLENGING STAGE";
+    drawTextCentered(screen, banner, cx, oy + 150, "yellow");
   }
+}
+
+/** Enemies (or their hit effects), beams, the captive, shots, sparks and bonus points. */
+function drawPlay(screen: Surface, f: FireflyView): void {
+  for (const e of f.enemies) drawBeam(screen, e);
+  for (const e of f.enemies) drawEnemy(screen, e);
+  if (f.captive !== null) screen.draw(imageCaptive, ox + f.captive.x - 8, oy + f.captive.y - 8);
+  for (const s of f.shots) screen.draw(imageShot, ox + s.x - 2, oy + s.y - 4);
+  for (const s of f.sparks) screen.draw(imageSpark, ox + s.x - 4, oy + s.y - 4);
+  // Galaga's escort-kill and wave bonuses: the points, where the enemy was shot.
+  for (const b of f.bonuses) drawTextCentered(screen, `${b.points}`, ox + b.x, oy + b.y - 4, "blue");
+}
+
+/** After a Challenging Stage: "NUMBER OF HITS n", then the bonus, or "PERFECT!" and the special bonus. */
+function drawTally(screen: Surface, hits: number, tick: number): void {
+  const cx = ox + fieldWidth / 2;
+  const perfect = hits === challengeTotal;
+  if (perfect) drawTextCentered(screen, "PERFECT!", cx, oy + 120, "red");
+  drawTextCentered(screen, `NUMBER OF HITS ${hits}`, cx, oy + 140, "blue");
+  if (tick < tallyBonusDelay) return;
+  const bonus = perfect ? `SPECIAL BONUS ${perfectBonus}` : `BONUS ${tallyBonus(hits)}`;
+  drawTextCentered(screen, bonus, cx, oy + 160, "yellow");
+}
+
+/** Galaga's end-of-run results: shots fired, hits and the hit-miss ratio. */
+function drawResults(screen: Surface, f: FireflyView): void {
+  const cx = ox + fieldWidth / 2;
+  drawTextCentered(screen, "-RESULTS-", cx, oy + 110, "red");
+  drawTextCentered(screen, `SHOTS FIRED ${f.shotsFired}`, cx, oy + 135, "yellow");
+  drawTextCentered(screen, `NUMBER OF HITS ${f.hits}`, cx, oy + 150, "yellow");
+  drawTextCentered(screen, `HIT-MISS RATIO ${hitMissRatio(f.shotsFired, f.hits)} %`, cx, oy + 165, "white");
 }

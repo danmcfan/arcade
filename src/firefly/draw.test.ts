@@ -23,7 +23,15 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { captiveColours } from "./art.ts";
 import { FireflySoftware, beamY, newFireflySoftware, playerY } from "./game.ts";
-import { badgeTickSpacing, beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
+import {
+  badgeTickSpacing,
+  beamWidth,
+  hitEffectTicks,
+  respawnTicks,
+  stageIntroTicks,
+  tallyBonusDelay,
+  tallyTicks,
+} from "./rules.ts";
 
 // The score dials draw each digit through an offscreen cell, so give it a canvas.
 beforeAll(() => {
@@ -215,7 +223,7 @@ describe("firefly draw", () => {
     f.lives = 0;
     f.respawn = 1;
     f.update(NO_INPUT);
-    expect(f.over).toBe(true);
+    expect(f.results).toBeGreaterThan(0);
     expect(f.respawn).toBe(0);
     expect(of(drawCalls(f), imageFirefly)).toEqual([]);
   });
@@ -287,5 +295,47 @@ describe("dual firefly", () => {
     f.enemies = [];
     f.captive = { owl: null, x: 50, y: 120, hostile: true };
     expect(of(drawCalls(f), imageCaptive).map((c) => [c.x, c.y])).toEqual([[50, 120]]);
+  });
+});
+
+const glyphCount = (f: FireflySoftware): number => of(drawCalls(f), imageFont).length;
+
+describe("firefly Challenging Stage and results", () => {
+  test("a Challenging Stage opens with CHALLENGING STAGE instead of STAGE n", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(3);
+    expect(glyphCount(f)).toBe("CHALLENGING STAGE".length);
+  });
+
+  test("the tally shows the hits on a clear field, then the bonus", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(3);
+    f.stageTick = stageIntroTicks + 1;
+    f.challenge = { hits: 12, tally: tallyTicks };
+    expect(of(drawCalls(f), imageMoth)).toEqual([]);
+    expect(glyphCount(f)).toBe("NUMBER OF HITS 12".length);
+    f.challenge.tally = tallyTicks - tallyBonusDelay;
+    expect(glyphCount(f)).toBe("NUMBER OF HITS 12".length + "BONUS 1200".length);
+  });
+
+  test("a perfect tally shows PERFECT! and the special bonus", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(3);
+    f.stageTick = stageIntroTicks + 1;
+    f.challenge = { hits: 40, tally: 1 };
+    expect(glyphCount(f)).toBe("PERFECT!NUMBER OF HITS 40SPECIAL BONUS 10000".length);
+  });
+
+  test("after GAME OVER the results show shots fired, hits and the hit-miss ratio, on a clear field", () => {
+    const f = new FireflySoftware();
+    f.stageTick = stageIntroTicks + 1;
+    f.lives = 0;
+    f.respawn = 10;
+    expect(of(drawCalls(f), imageMoth)).toEqual([]);
+    expect(glyphCount(f)).toBe("GAME OVER".length);
+    f.respawn = 0;
+    f.shotsFired = 30;
+    f.hits = 16;
+    expect(glyphCount(f)).toBe("-RESULTS-SHOTS FIRED 30NUMBER OF HITS 16HIT-MISS RATIO 53.3 %".length);
   });
 });
