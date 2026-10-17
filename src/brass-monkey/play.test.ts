@@ -329,6 +329,7 @@ describe("losing a life", () => {
     expect([run.phase, run.lives]).toEqual(["dying", 2]);
     expect(sounds).toContain("death");
     step(run, t.dyingTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.monkey.x, run.monkey.y, run.hazards]).toEqual(["play", 24, 248, []]);
   });
 
@@ -370,6 +371,7 @@ describe("losing a life", () => {
       step(run, t.bonusTicks);
       expect(run.phase).toBe("dying");
       step(run, t.dyingTicks);
+      if (run.phase === "howHigh") step(run, t.howHighTicks);
     }
     expect([run.phase, run.lives]).toEqual(["over", 0]);
     expect(ticketsFor(run.score)).toBe(123);
@@ -517,6 +519,7 @@ describe("score", () => {
     expect(run.score).toBe(4900);
     expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
     step(run, t.clearTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.floor, run.bonus]).toEqual(["play", 3, t.tuningFor(3, 0).bonusStart]);
     expect([run.monkey.x, run.monkey.y]).toEqual([rivetFloor.start.x, rivetFloor.start.y]);
   });
@@ -702,6 +705,7 @@ describe("the wrench", () => {
     run.monkey.left = false;
     run.hazards = [hazard("gear", run.monkey.x - 6, run.monkey.y, 1)];
     step(run, t.dyingTicks + 1);
+    step(run, t.howHighTicks);
     expect([run.phase, run.monkey.wrench, ...run.wrenches]).toEqual(["play", 0, false, false]);
   });
 });
@@ -713,6 +717,7 @@ describe("the escape and the next loop", () => {
     run.monkey.y = 56;
     step(run, 8, { right: true });
     step(run, t.clearTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.floor]).toEqual(["play", 3]);
   });
 
@@ -723,6 +728,7 @@ describe("the escape and the next loop", () => {
     step(run, 8, { right: true });
     expect(run.phase).toBe("clear");
     step(run, t.clearTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.floor]).toEqual(["play", 3]);
   });
 
@@ -743,6 +749,7 @@ describe("the escape and the next loop", () => {
     clear();
     expect(run.phase).toBe("escape");
     step(run, t.escapeTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 4]);
   });
 
@@ -771,6 +778,7 @@ describe("the escape and the next loop", () => {
     expect(run.phase).toBe("escape");
     expect(sounds.filter((s) => s !== "step")).toEqual(["bolt", "floor", "escape"]);
     step(run, t.escapeTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 1]);
     const easy = t.tuningFor(0, 0);
     expect(run.bonus).toBeGreaterThan(easy.bonusStart);
@@ -795,6 +803,7 @@ describe("the escape and the next loop", () => {
     step(run, t.bonusTicks);
     expect(run.phase).toBe("dying");
     step(run, t.dyingTicks);
+    step(run, t.howHighTicks);
     expect([run.phase, run.bonus]).toEqual(["play", 7000]);
   });
 
@@ -1147,13 +1156,70 @@ function intro(): { run: Run; sounds: RunSound[] } {
 }
 
 describe("the intro", () => {
-  test("a new run with the intro starts in it and plays after introTicks", () => {
-    const { run } = intro();
+  test("a new run with the intro starts in it, asks how high after introTicks, then plays", () => {
+    const { run, sounds } = intro();
     expect(run.phase).toBe("intro");
     step(run, t.introTicks - 1);
     expect(run.phase).toBe("intro");
     step(run, 1);
+    expect([run.phase, run.howHighStack()]).toEqual(["howHigh", 1]);
+    expect(sounds).toContain("howHigh");
+    step(run, t.howHighTicks - 1);
+    expect(run.phase).toBe("howHigh");
+    step(run, 1);
     expect(run.phase).toBe("play");
+  });
+});
+
+/** Clears the floor and plays out the clear, into the next floor's "How high" screen (or the escape). */
+function clearFloor(run: Run): void {
+  run.phase = "clear";
+  run.phaseTicks = 1;
+  run.update(NO_INPUT);
+}
+
+/** The run's phase, read afresh (past a narrowing assignment). */
+const phaseOf = (run: Run): string => run.phase;
+
+describe("how high can you get?", () => {
+  test("before every floor of a loop the phase is howHigh for howHighTicks, stacking the floor's position plus 1", () => {
+    const { run, sounds } = quiet({ loop: 4 });
+    const stacks: number[] = [];
+    for (let n = 1; n < floorsFor(4).length; n++) {
+      clearFloor(run);
+      expect(run.phase).toBe("howHigh");
+      stacks.push(run.howHighStack());
+      step(run, t.howHighTicks - 1);
+      expect(run.phase).toBe("howHigh");
+      step(run, 1);
+      expect(run.phase).toBe("play");
+    }
+    expect(stacks).toEqual([2, 3, 4, 5, 6]);
+    expect(sounds.filter((s) => s === "howHigh")).toHaveLength(5);
+  });
+
+  test("the next loop's first floor stacks one, and so does a floor restarted after a death", () => {
+    const { run } = quiet({ floor: 3 });
+    clearFloor(run);
+    expect(run.phase).toBe("escape");
+    step(run, t.escapeTicks);
+    expect([run.phase, run.howHighStack(), run.loop]).toEqual(["howHigh", 1, 1]);
+    step(run, t.howHighTicks);
+    run.phase = "dying";
+    run.phaseTicks = 1;
+    step(run, 1);
+    expect([phaseOf(run), run.howHighStack()]).toEqual(["howHigh", 1]);
+  });
+
+  test("input does nothing while it shows", () => {
+    const { run, sounds } = quiet({ floor: 2 });
+    run.phase = "dying";
+    run.phaseTicks = 1;
+    step(run, 1);
+    const start = run.currentFloor().start;
+    step(run, t.howHighTicks - 1, { right: true, space: true });
+    expect([run.monkey.x, run.monkey.y, run.bonus]).toEqual([start.x, start.y, run.tuning.bonusStart]);
+    expect(sounds).not.toContain("jump");
   });
 
   test("input does nothing during the intro", () => {

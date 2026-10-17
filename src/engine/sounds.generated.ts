@@ -43,6 +43,7 @@ import monkeySmashUrl from "../assets/sounds/monkey-smash.wav";
 import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
 import monkeyStompUrl from "../assets/sounds/monkey-stomp.wav";
 import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
+import monkeyHowHighUrl from "../assets/sounds/monkey-how-high.wav";
 import monkeyStepUrl from "../assets/sounds/monkey-step.wav";
 import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
 import monkeyGirderUrl from "../assets/sounds/monkey-girder.wav";
@@ -90,6 +91,7 @@ export type SoundName =
   | "monkeyDeath"
   | "monkeyStomp"
   | "monkeyFloor"
+  | "monkeyHowHigh"
   | "monkeyStep"
   | "monkeyEscape"
   | "monkeyGirder"
@@ -141,6 +143,7 @@ export function soundTable<S>(
     monkeyDeath: make("monkeyDeath", monkeyDeathUrl, false, 1),
     monkeyStomp: make("monkeyStomp", monkeyStompUrl, false, 1),
     monkeyFloor: make("monkeyFloor", monkeyFloorUrl, false, 1),
+    monkeyHowHigh: make("monkeyHowHigh", monkeyHowHighUrl, false, 1),
     monkeyStep: make("monkeyStep", monkeyStepUrl, false, 1),
     monkeyEscape: make("monkeyEscape", monkeyEscapeUrl, false, 1),
     monkeyGirder: make("monkeyGirder", monkeyGirderUrl, true, 0.35),
@@ -197,6 +200,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "monkeyDeath",
     "monkeyStomp",
     "monkeyFloor",
+    "monkeyHowHigh",
     "monkeyStep",
     "monkeyEscape",
   ],

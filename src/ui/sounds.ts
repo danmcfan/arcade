@@ -731,6 +731,23 @@ const brassMonkeyJingles = {
     ],
     eighth: 0.07,
   },
+  /** The "How high can you get?" screen: a climbing scale that stops short, a question left hanging. */
+  howHigh: {
+    notes: [
+      [60, 1],
+      [62, 1],
+      [64, 1],
+      [65, 1],
+      [67, 2],
+      [65, 1],
+      [67, 1],
+      [69, 2],
+      [71, 1],
+      [72, 1],
+      [74, 4],
+    ],
+    eighth: 0.1,
+  },
   /** A footstep on each frame of the walk cycle: a soft low tick. */
   step: {
     notes: [[40, 1]],

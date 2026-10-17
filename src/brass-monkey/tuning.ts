@@ -272,6 +272,8 @@ export const dyingTicks = 90;
 export const clearTicks = 120;
 /** Ticks of the escaped scene after the last floor: about 3 s. */
 export const escapeTicks = 180;
+/** Ticks of the "How high can you get?" screen before each floor: 2.5 s, its 2.2 s jingle and a beat. */
+export const howHighTicks = 150;
 /** Ticks a new lap shows its number over the first floor. */
 export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
