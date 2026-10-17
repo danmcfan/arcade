@@ -100,32 +100,38 @@ function modes(...seconds: readonly number[]): ModeConfig[] {
 const modesLevel2 = modes(7, 20, 7, 20, 5, 1033, 1 / framesPerSecond);
 const modesLevel5 = modes(5, 20, 5, 20, 5, 1037, 1 / framesPerSecond);
 
-/** Table A.1's fright time in seconds and flash count, levels 1 to `levelCap`. */
-const frights: readonly (readonly [number, number])[] = [
-  [6, 5],
-  [5, 5],
-  [4, 5],
-  [3, 5],
-  [2, 5],
-  [5, 5],
-  [2, 5],
-  [2, 5],
-  [1, 3],
-  [5, 5],
-  [2, 5],
-  [1, 3],
-  [1, 3],
-  [3, 5],
-  [1, 3],
-  [1, 3],
-  [0, 0],
-  [1, 3],
-  [0, 0],
-  [0, 0],
-  [0, 0],
+/** Table A.1's fright: seconds sleepy (0: a pot only turns the bees round) and flashes. */
+interface Fright {
+  readonly seconds: number;
+  readonly flashes: number;
+}
+
+/** Fright by level, 1 to `levelCap`. */
+const frights: readonly Fright[] = [
+  { seconds: 6, flashes: 5 },
+  { seconds: 5, flashes: 5 },
+  { seconds: 4, flashes: 5 },
+  { seconds: 3, flashes: 5 },
+  { seconds: 2, flashes: 5 },
+  { seconds: 5, flashes: 5 },
+  { seconds: 2, flashes: 5 },
+  { seconds: 2, flashes: 5 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 5, flashes: 5 },
+  { seconds: 2, flashes: 5 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 3, flashes: 5 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 0, flashes: 0 },
+  { seconds: 1, flashes: 3 },
+  { seconds: 0, flashes: 0 },
+  { seconds: 0, flashes: 0 },
+  { seconds: 0, flashes: 0 },
 ];
 
-/** Table A.1's Elroy 1 threshold by the first level of each row; Elroy 2 is half of it. */
+/** Table A.1's Elroy 1 threshold in drops left, by the first level of each row; Elroy 2 is half of it. */
 const elroyRows: readonly (readonly [number, number])[] = [
   [1, 20],
   [2, 30],
@@ -137,6 +143,27 @@ const elroyRows: readonly (readonly [number, number])[] = [
   [19, 120],
 ];
 
+/** Dossier, "Scatter, Chase, Repeat...", by the first level of each row. */
+const modeRows: readonly (readonly [number, readonly ModeConfig[]])[] = [
+  [1, modeSequence],
+  [2, modesLevel2],
+  [5, modesLevel5],
+];
+
+/** Dossier, "Home Sweet Home": Inky 0 and Clyde 50 on level 2, everyone 0 from level 3. */
+const dotRows: readonly (readonly [number, DotMinimums])[] = [
+  [1, goDotMinimums],
+  [2, { pink: 0, teal: 0, orange: 50 }],
+  [3, { pink: 0, teal: 0, orange: 0 }],
+];
+
+/** Seconds without an eaten drop before the preferred bee leaves the home. */
+const idleRows: readonly (readonly [number, number])[] = [
+  [1, 4],
+  [5, 3],
+];
+
+/** The value of the last row of `rows` (by first level) that `level` has reached. */
 function fromRow<T>(rows: readonly (readonly [number, T])[], level: number): T {
   let value = rows[0]?.[1];
   for (const [from, v] of rows) if (level >= from) value = v;
@@ -144,17 +171,11 @@ function fromRow<T>(rows: readonly (readonly [number, T])[], level: number): T {
   return value;
 }
 
-/** Dossier, "Home Sweet Home": Inky 0 and Clyde 50 on level 2, everyone 0 from level 3. */
-function dotMinimums(level: number): DotMinimums {
-  if (level === 1) return goDotMinimums;
-  if (level === 2) return { pink: 0, teal: 0, orange: 50 };
-  return { pink: 0, teal: 0, orange: 0 };
-}
-
 /** The values for `level` (1-based); levels past `levelCap` play as `levelCap`. */
 export function levelValues(level: number): LevelValues {
   const n = Math.min(Math.max(level, 1), levelCap);
-  const [sleepySeconds, flashes] = frights[n - 1] ?? [0, 0];
+  const fright = frights[n - 1];
+  if (fright === undefined) throw new Error(`sweetSam: no fright for level ${n}`);
   const v = fromRow(speedRows, n);
   const elroyDrops = fromRow(elroyRows, n);
   return {
@@ -163,11 +184,11 @@ export function levelValues(level: number): LevelValues {
     beeVelocity: px(v.bee),
     sleepyBeeVelocity: px(v.beeSleepy),
     tunnelVelocity: px(v.tunnel),
-    sleepyFrames: framesPerSecond * sleepySeconds,
-    flashes,
-    modeSequence: n === 1 ? modeSequence : n < 5 ? modesLevel2 : modesLevel5,
-    dotMinimums: dotMinimums(n),
-    idleReleaseTicks: framesPerSecond * (n < 5 ? 4 : 3),
+    sleepyFrames: framesPerSecond * fright.seconds,
+    flashes: fright.flashes,
+    modeSequence: fromRow(modeRows, n),
+    dotMinimums: fromRow(dotRows, n),
+    idleReleaseTicks: framesPerSecond * fromRow(idleRows, n),
     elroy: [
       { dropsLeft: elroyDrops, velocity: px(v.elroy1) },
       { dropsLeft: elroyDrops / 2, velocity: px(v.elroy2) },

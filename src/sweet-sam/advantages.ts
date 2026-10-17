@@ -11,10 +11,7 @@ export const startingLives = 3;
 /** Honey jar: extra lives a run starts with. */
 export const honeyJarExtraLives = 1;
 
-/**
- * Running shoes: the bear's normal speed is 12.5% faster on every level; on
- * level 1 that is 1.125 px a tick, its speed while bees are sleepy.
- */
+/** Running shoes: the bear's normal speed (`LevelValues.bearVelocity`) is 12.5% faster on every level. */
 export const runningShoesSpeedFactor = 1.125;
 
 /** Sleepy bees: each level's sleepy time is multiplied by this (9 s rather than 6 on level 1). */

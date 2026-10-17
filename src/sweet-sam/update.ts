@@ -204,8 +204,8 @@ export function moveEntity(e: Entity, cs: readonly Entity[], target?: Tile): voi
     updatePosition(e, cs);
     return;
   }
-  const step = stepSize(e.velocity);
   const n = subSteps(e.velocity);
+  const step = e.velocity / n;
   for (let k = 0; k < n; k++) {
     if (k > 0 && target !== undefined) updateDirection(e, cs, target);
     updatePosition(e, cs, step);
