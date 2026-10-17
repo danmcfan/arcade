@@ -200,7 +200,7 @@ export class Run {
   nextStage = 1;
   /** How many times the monkey has escaped: each loop is harder. */
   loop: number;
-  /** Ticks left showing the new lap's number over its first floor. */
+  /** Ticks left showing the new lap's number over its first floor; it holds through the How-high screen. */
   lapBanner = 0;
   lives: number;
   /** What the player's prizes change in this run (#40); `noAdvantages` without prizes. */
@@ -443,7 +443,7 @@ export class Run {
     this.ticks++;
     const jumpPressed = i.space && !this.prevSpace;
     this.prevSpace = i.space;
-    if (this.lapBanner > 0 && this.phase === "play") this.lapBanner--;
+    if (this.lapBanner > 0 && this.phase !== "howHigh") this.lapBanner--;
     for (const p of this.popups) p.ticks--;
     this.popups = this.popups.filter((p) => p.ticks > 0);
     switch (this.phase) {

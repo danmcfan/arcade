@@ -1155,6 +1155,32 @@ function intro(): { run: Run; sounds: RunSound[] } {
   return { run, sounds };
 }
 
+describe("the lap banner", () => {
+  test("holds through the How-high screen, then counts down while playing, dying and clearing", () => {
+    const { run } = quiet({ floor: 3 });
+    run.phase = "escape";
+    run.phaseTicks = 1;
+    step(run, 1);
+    expect([phaseOf(run), run.loop]).toEqual(["howHigh", 1]);
+    step(run, t.howHighTicks);
+    expect(run.lapBanner).toBe(t.lapBannerTicks);
+    step(run, 10);
+    run.phase = "dying";
+    run.phaseTicks = 20;
+    step(run, 20);
+    expect([phaseOf(run), run.lapBanner]).toEqual(["howHigh", t.lapBannerTicks - 30]);
+    step(run, t.howHighTicks);
+    expect(run.lapBanner).toBe(t.lapBannerTicks - 30);
+    run.phase = "clear";
+    run.phaseTicks = 40;
+    step(run, 39); // one tick short of the clear's end, still on this floor
+    expect(run.lapBanner).toBe(t.lapBannerTicks - 69);
+    run.phase = "play";
+    step(run, t.lapBannerTicks - 69);
+    expect(run.lapBanner).toBe(0);
+  });
+});
+
 describe("the intro", () => {
   test("a new run with the intro starts in it, asks how high after introTicks, then plays", () => {
     const { run, sounds } = intro();
