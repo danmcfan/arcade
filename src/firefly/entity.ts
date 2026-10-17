@@ -104,7 +104,17 @@ export function angle(heading: Vec): number {
   return a;
 }
 
+/** An enemy not shot down: no hit effect playing and hit points left. */
+function alive(e: Enemy): boolean {
+  return e.deadFrames === 0 && e.hp > 0;
+}
+
+/** A live enemy not yet settled in its slot: still to fly in, flying in, or in flight (Galaga holds a respawn for these). */
+export function unsettled(e: Enemy): boolean {
+  return alive(e) && e.state !== "formation";
+}
+
 /** A live enemy out of the formation on a dive, a beam or its way back to its slot. */
 export function inFlight(e: Enemy): boolean {
-  return e.deadFrames === 0 && e.hp > 0 && (e.state === "diving" || e.state === "beaming" || e.state === "joining");
+  return alive(e) && (e.state === "diving" || e.state === "beaming" || e.state === "joining");
 }
