@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  badgeTickSpacing,
+  badgesShown,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -14,6 +16,7 @@ import {
   formation,
   formationPos,
   nextExtraLife,
+  stageBadges,
   points,
   swayOffset,
   swayAmplitude,
@@ -266,5 +269,23 @@ describe("nextExtraLife", () => {
     expect([0, 19_990, 20_000, 69_999, 70_000, 139_999, 140_000, 210_000].map((s) => nextExtraLife(s))).toEqual([
       20_000, 20_000, 70_000, 70_000, 140_000, 140_000, 210_000, 280_000,
     ]);
+  });
+});
+
+describe("stage badges", () => {
+  test("the stage splits greedily into 50, 30, 20, 10, 5 and 1 badges", () => {
+    expect(stageBadges(1)).toEqual([1]);
+    expect(stageBadges(4)).toEqual([1, 1, 1, 1]);
+    expect(stageBadges(7)).toEqual([5, 1, 1]);
+    expect(stageBadges(27)).toEqual([20, 5, 1, 1]);
+    expect(stageBadges(86)).toEqual([50, 30, 5, 1]);
+  });
+
+  test("badges are added one at a time, `badgeTickSpacing` ticks apart, from the stage's first tick", () => {
+    expect(badgesShown(27, 0)).toBe(0);
+    expect(badgesShown(27, 1)).toBe(1);
+    expect(badgesShown(27, badgeTickSpacing)).toBe(1);
+    expect(badgesShown(27, badgeTickSpacing + 1)).toBe(2);
+    expect(badgesShown(27, 1000)).toBe(4);
   });
 });

@@ -77,6 +77,7 @@ for (const [name, size] of real) {
         "pause:rescue",
         "pause:stage",
         "pause:extraLife",
+        "pause:badgeTick",
         "pause:fireflyStart",
         "pause:monkeyWrench",
       ]);

@@ -22,7 +22,15 @@ import {
 import { frameAngle } from "../src/firefly/entity.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
 import { checkRows, colours } from "./pixel-art.ts";
-import { fireflyArtFiles, mirrorQuarter, rotate, rotationSheet, scale2x, skyColor } from "./gen-firefly-art.ts";
+import {
+  badgeRows,
+  fireflyArtFiles,
+  mirrorQuarter,
+  rotate,
+  rotationSheet,
+  scale2x,
+  skyColor,
+} from "./gen-firefly-art.ts";
 
 function size(rows: readonly string[]): [number, number] {
   return [rows[0]?.length ?? 0, rows.length];
@@ -63,6 +71,12 @@ describe("Firefly art source", () => {
     checkRows("shot", shotArt, { w: 4, h: 8 });
     for (const from of Object.keys(captiveColours)) expect(fireflyArt.join("")).toContain(from);
     for (const from of Object.keys(owlHurtColours)) expect(owlArt.join("")).toContain(from);
+  });
+
+  test("the 1 and 5 badges are 8×16 pennants, the 10 to 50 badges 16×16 chevrons", () => {
+    checkRows("badge 1", badgeRows(1), { w: 8, h: 16 });
+    checkRows("badge 5", badgeRows(5), { w: 8, h: 16 });
+    for (const v of [10, 20, 30, 50] as const) checkRows(`badge ${v}`, badgeRows(v), { w: 16, h: 16 });
   });
 
   test("the hit effect is 5 quarters of 16×16", () => {

@@ -20,6 +20,7 @@ import { drawFirefly } from "./draw.ts";
 import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
+  badgesShown,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -302,6 +303,7 @@ export class FireflySoftware implements FixedViewport {
 
     if (this.stageTick === 0) play(this.stage === 1 ? sounds.fireflyStart : sounds.stage);
     this.stageTick++;
+    if (badgesShown(this.stage, this.stageTick) > badgesShown(this.stage, this.stageTick - 1)) play(sounds.badgeTick);
     this.ticks++;
 
     // As in Galaga, the firefly is held until the start theme ends.

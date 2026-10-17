@@ -141,12 +141,21 @@ describe("a new run", () => {
 });
 
 describe("stage start", () => {
+  test("ticks once per stage badge as each is added", () => {
+    const f = new FireflySoftware();
+    f.stage = 27; // 20, 5, 1, 1
+    const rec = recordSounds();
+    run(f, stageIntroTicks);
+    rec.stop();
+    expect(rec.events.filter((e) => e === "play:badgeTick").length).toBe(4);
+  });
+
   test("a new run opens on the start theme, not the stage fanfare", () => {
     const f = new FireflySoftware();
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();
-    expect(rec.events).toEqual(["rewind:fireflyStart", "play:fireflyStart"]);
+    expect(rec.events).toEqual(["rewind:fireflyStart", "play:fireflyStart", "rewind:badgeTick", "play:badgeTick"]);
   });
 
   test("the start theme ends within the intro, and the firefly is held until it does", () => {
@@ -165,7 +174,7 @@ describe("stage start", () => {
     const rec = recordSounds();
     f.update(held({ left: true }));
     rec.stop();
-    expect(rec.events).toEqual(["rewind:stage", "play:stage"]);
+    expect(rec.events).toEqual(["rewind:stage", "play:stage", "rewind:badgeTick", "play:badgeTick"]);
     expect(f.player.x).toBeLessThan(112);
   });
 

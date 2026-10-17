@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
+  imageBadges,
   imageCaptive,
   imageCabinetFirefly,
   imageFirefly,
@@ -22,7 +23,7 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { captiveColours } from "./art.ts";
 import { FireflySoftware, beamY, newFireflySoftware, playerY } from "./game.ts";
-import { beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
+import { badgeTickSpacing, beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks } from "./rules.ts";
 
 // The score dials draw each digit through an offscreen cell, so give it a canvas.
 beforeAll(() => {
@@ -114,6 +115,21 @@ describe("firefly draw", () => {
       [8 + 16, 8 + 8 * 34 + 1],
       [8 + 32, 8 + 8 * 34 + 1],
     ]);
+  });
+
+  test("the stage's badges stand at the bottom right, largest first, each added in turn", () => {
+    const f = new FireflySoftware();
+    f.stage = 27; // 20, 5, 1, 1: 16 + 8 + 8 + 8 wide, ending 2 short of the right edge
+    f.stageTick = 1000;
+    expect(of(drawCalls(f), imageBadges).map((c) => [rect(c.sprite), c.x, c.y])).toEqual([
+      [[32, 0, 16, 16], 8 + 182, 8 + 272],
+      [[64, 0, 8, 16], 8 + 198, 8 + 272],
+      [[80, 0, 8, 16], 8 + 206, 8 + 272],
+      [[80, 0, 8, 16], 8 + 214, 8 + 272],
+    ]);
+    // Early in the stage only the first badges are in, already where they end up.
+    f.stageTick = badgeTickSpacing + 1;
+    expect(of(drawCalls(f), imageBadges).map((c) => c.x)).toEqual([8 + 182, 8 + 198]);
   });
 
   test("STAGE n is drawn in the pixel font only while the stage opens", () => {

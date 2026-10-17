@@ -110,6 +110,29 @@ export function nextExtraLife(score: number): number {
 
 /** Ticks the "STAGE n" text shows before the enemies fly in. */
 export const stageIntroTicks = 120;
+/** Galaga's stage badges, largest first: the stage shows as the fewest of them. */
+export const badgeValues = [50, 30, 20, 10, 5, 1] as const;
+export type BadgeValue = (typeof badgeValues)[number];
+
+/** The badges for `stage`, largest first: the stage split greedily into `badgeValues`. */
+export function stageBadges(stage: number): BadgeValue[] {
+  const out: BadgeValue[] = [];
+  let left = stage;
+  for (const v of badgeValues) {
+    for (; left >= v; left -= v) out.push(v);
+  }
+  return out;
+}
+
+/** Ticks between badges as they are added, each with a tick, while a stage opens. */
+export const badgeTickSpacing = 8;
+
+/** How many of `stage`'s badges show `stageTick` ticks into it: one more every `badgeTickSpacing`, from tick 1. */
+export function badgesShown(stage: number, stageTick: number): number {
+  if (stageTick <= 0) return 0;
+  return Math.min(stageBadges(stage).length, Math.floor((stageTick - 1) / badgeTickSpacing) + 1);
+}
+
 /** Where a wave flies in from (game.ts holds the curves). */
 export type EntryCurve = "topCentre" | "lowerLeft" | "lowerRight" | "topRight" | "topLeft";
 
