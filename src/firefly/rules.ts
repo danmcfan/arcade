@@ -287,6 +287,8 @@ export const enemyHalfSize: Readonly<Record<EnemyKind, number>> = { moth: 6, was
 export const hitEffectTicks = 75;
 /** Ticks from losing a life to the next firefly, or to game over after the last. */
 export const respawnTicks = 150;
+/** The most ticks READY holds on the last respawn tick waiting for divers to go home; past it the firefly returns anyway (#339). */
+export const respawnHoldTicks = 600;
 
 /** What `banner()` needs of the game. */
 export interface BannerState {

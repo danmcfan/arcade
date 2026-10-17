@@ -29,6 +29,7 @@ import {
   morphFromStage,
   points,
   respawnTicks,
+  respawnHoldTicks,
   playerBannerTicks,
   readyTicks,
   stageBannerTicks,
@@ -180,6 +181,23 @@ describe("respawn", () => {
     expect(waited).toBe(true);
     expect(sawBurstBanner).toBe(false);
     expect(inFlight(diver)).toBe(false);
+  });
+
+  test("an enemy that never gets home holds READY only for respawnHoldTicks", () => {
+    rng.seed(1);
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks + 1);
+    const stuck = defined(f.enemies[0]);
+    divingAt(stuck, 10, 10);
+    stuck.tStep = 0;
+    f.lives = startLives;
+    f.loseLife();
+    run(f, respawnTicks - 1 + respawnHoldTicks);
+    expect(inFlight(stuck)).toBe(true);
+    expect([f.respawn, fireflySnapshot(f.snapshot()).banner]).toEqual([1, "READY"]);
+    run(f, 1);
+    expect([f.respawn, fireflySnapshot(f.snapshot()).banner, inFlight(stuck)]).toEqual([0, null, true]);
+    expect(f.player).toEqual({ x: 112, y: playerY });
   });
 });
 
