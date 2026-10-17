@@ -33,8 +33,8 @@ export const emberDownChance = 0.5;
 /** ...and at a ladder up, this often. */
 export const emberUpChance = 0.25;
 
-/** Points for a hazard the monkey jumps over. */
-export const hazardPoints = 100;
+/** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
+export const jumpPoints = [100, 300, 800] as const;
 /** Points for a bolt. */
 export const boltPoints = 300;
 
