@@ -15,6 +15,7 @@ import {
   monkeyClimb,
   monkeyHead,
   monkeyJump,
+  monkeySmoke,
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
@@ -41,6 +42,7 @@ import {
   springFrames,
   gnomeFrames,
   monkeyFills,
+  monkeyDeathFrames,
   monkeyFrames,
 } from "./gen-brass-monkey-art.ts";
 
@@ -108,6 +110,20 @@ describe("generated frames", () => {
     expect(frames[5]).toEqual(flipX(frames[4] ?? []));
     // The outline is black, round every drawn pixel.
     expect(frames[0]?.[0]).toBe("......kkkk......");
+  });
+
+  test("the monkey dies spinning the standing frame a quarter turn at a time, then lies on its back under each puff of smoke", () => {
+    for (const puff of monkeySmoke) checkRows("smoke", puff, { w: 16, h: 8 });
+    const frames = monkeyDeathFrames();
+    expect(frames.length).toBe(6);
+    for (const rows of frames) checkRows("death", rows, { w: 16, h: 24 });
+    // Upright, it stands where it did: the standing frame under 8 blank rows.
+    expect<Rows | undefined>(frames[0]?.slice(8)).toEqual(monkeyFrames()[0]);
+    // Every frame stands on the frame's foot.
+    for (const rows of frames) expect(rows[23]).not.toBe(".".repeat(16));
+    // The two down frames are the same monkey, under different smoke.
+    expect(frames[4]?.slice(10)).toEqual(frames[5]?.slice(10));
+    expect(frames[4]).not.toEqual(frames[5]);
   });
 
   test("the gear's frames are its two turns, outlined", () => {

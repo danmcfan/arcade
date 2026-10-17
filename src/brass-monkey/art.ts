@@ -92,6 +92,34 @@ export const monkeyClimb: readonly string[] = [
   "................",
 ];
 
+/**
+ * Smoke over the downed monkey (#252): a robot's halo, a grey puff with a
+ * spark in it, rising from its head. It puffs between these two, each 16×8
+ * drawn over the 8 rows above the monkey lying on its back.
+ */
+export const monkeySmoke: readonly (readonly string[])[] = [
+  [
+    "................",
+    "........ll......",
+    ".......lwwl.....",
+    "......lwwml.y...",
+    ".......lmml.....",
+    "........ml......",
+    ".........m......",
+    "................",
+  ],
+  [
+    "................",
+    "......ll........",
+    ".y...lwwl.......",
+    ".....lwmwl......",
+    "......lml.......",
+    ".......lm.......",
+    "........m.......",
+    "................",
+  ],
+];
+
 /** A part drawn over a sprite with its top-left at (x, y). */
 export interface Part {
   x: number;

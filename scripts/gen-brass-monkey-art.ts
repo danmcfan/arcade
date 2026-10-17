@@ -4,7 +4,9 @@
 //
 // Each frame is built from the source's parts and gets a 1 px black outline.
 // monkey.png is one row of 16×16 frames: walk 1-3 (the head over each body,
-// 1 px lower on a step), jump, climb and climb mirrored. gnome.png is one row
+// 1 px lower on a step), jump, climb and climb mirrored. monkey-death.png
+// is one row of 16×24 frames: the standing frame's four quarter turns, then
+// it on its back under each puff of smoke. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
 // idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
 // and their mirrors), pan.png (12×12: the scrap tray, its scraps jolted in
@@ -40,6 +42,7 @@ import {
   monkeyClimb,
   monkeyHead,
   monkeyJump,
+  monkeySmoke,
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
@@ -90,6 +93,32 @@ export function monkeyFrames(): Rows[] {
   const climb = frames[4];
   if (climb === undefined) throw new Error("the monkey has no climbing frame");
   return [...frames, flipX(climb)];
+}
+
+/** `rows` with its blank bottom rows moved to the top, so it stands on the frame's foot. */
+function grounded(rows: Rows): string[] {
+  let n = rows.length;
+  while (n > 0 && /^\.*$/u.test(rows[n - 1] ?? "")) n--;
+  return [...rows.slice(n), ...rows.slice(0, n)];
+}
+
+/** `rows` turned `n` quarter turns clockwise. */
+function turned(rows: Rows, n: number): string[] {
+  let out = [...rows];
+  for (let k = 0; k < n; k++) out = quarterTurn(out);
+  return out;
+}
+
+/**
+ * The monkey losing a life, 16×24 with 8 rows above it for the smoke: the
+ * standing frame spinning a quarter turn clockwise each frame, on the floor,
+ * then lying on its back (three quarter turns) with each puff of smoke.
+ */
+export function monkeyDeathFrames(): Rows[] {
+  const stand = monkeyFrames()[0] ?? [];
+  const spin = [0, 1, 2, 3].map((n) => above(grounded(turned(stand, n)), null));
+  const down = above(grounded(turned(stand, 3)), null);
+  return [...spin, ...monkeySmoke.map((puff) => overlay(down, puff, 0, 3))];
 }
 
 const withArms = (arms: Part): string[] => overlay(gnomeBody, arms.rows, arms.x, arms.y);
@@ -241,6 +270,7 @@ export const brassMonkeyImagesDir = "src/assets/images/brass-monkey";
 /** Every generated Brass Monkey image: its file, its size and how to draw it. */
 export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "monkey.png"), 96, 16, () => sheet(monkeyFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "monkey-death.png"), 96, 24, () => sheet(monkeyDeathFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),

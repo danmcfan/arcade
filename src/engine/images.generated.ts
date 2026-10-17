@@ -30,6 +30,7 @@ import fireflyHitUrl from "../assets/images/firefly/hit.png";
 import fireflyBadgesUrl from "../assets/images/firefly/badges.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
+import brassMonkeyMonkeyDeathUrl from "../assets/images/brass-monkey/monkey-death.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import brassMonkeyGearUrl from "../assets/images/brass-monkey/gear.png";
 import brassMonkeyEmberUrl from "../assets/images/brass-monkey/ember.png";
@@ -91,6 +92,7 @@ export const fireflyImages = {
 
 export const brassMonkeyImages = {
   monkey: imageAsset(brassMonkeyMonkeyUrl, 96, 16),
+  monkeyDeath: imageAsset(brassMonkeyMonkeyDeathUrl, 96, 24),
   gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
   gear: imageAsset(brassMonkeyGearUrl, 24, 12),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),

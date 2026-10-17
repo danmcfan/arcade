@@ -18,6 +18,7 @@ import {
   imageGnome,
   imageLift,
   imageMonkey,
+  imageMonkeyDeath,
   imageSpring,
   imageWall,
   sounds,
@@ -43,7 +44,7 @@ import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial } from "../ui/rollingDials.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { escapeTicks } from "./tuning.ts";
+import { dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
@@ -145,8 +146,11 @@ export class BrassMonkeySoftware implements FixedViewport {
     });
     screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
     for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
-    // The monkey blinks while it loses a life.
-    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
+    // Losing a life, the monkey spins and falls (deathColumn).
+    if (run.phase === "dying") {
+      const m = run.monkey;
+      screen.draw(frame(imageMonkeyDeath, deathColumn(run.phaseTicks), 16, 24), left + m.x - 8, top + m.y - 24);
+    } else drawMonkey(screen, run.monkey, left, top);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -214,6 +218,24 @@ export function newBrassMonkeySoftware(
   advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages,
 ): BrassMonkeySoftware {
   return new BrassMonkeySoftware(highScore, advantages);
+}
+
+/** Ticks per quarter turn of the death spin, and the quarter turns in it: twice round. */
+const spinTicks = 6;
+const spinTurns = 8;
+/** Ticks per puff of the downed monkey's smoke. */
+const smokeTicks = 8;
+
+/**
+ * The death sheet's column `phaseTicks` before the life is lost: the spin,
+ * a quarter turn each column (0-3), then the monkey down on its back with
+ * its smoke puffing (4, 5).
+ */
+export function deathColumn(phaseTicks: number): number {
+  const elapsed = dyingTicks - phaseTicks;
+  const spin = spinTicks * spinTurns;
+  if (elapsed < spin) return Math.trunc(elapsed / spinTicks) % 4;
+  return 4 + (Math.trunc((elapsed - spin) / smokeTicks) % 2);
 }
 
 /** The monkey's sheet column: walk 0, 1, 0, 2; jump 3; climb 4 or 5. */

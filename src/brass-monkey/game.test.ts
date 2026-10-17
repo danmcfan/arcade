@@ -24,7 +24,7 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { BrassMonkeySoftware } from "./game.ts";
+import { BrassMonkeySoftware, deathColumn } from "./game.ts";
 import type { Hazard } from "./play.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
@@ -377,5 +377,20 @@ describe("in the arcade", () => {
     } finally {
       game.dispose();
     }
+  });
+});
+
+/** The death sheet's column `elapsed` ticks into losing a life. */
+const deathAt = (elapsed: number): number => deathColumn(t.dyingTicks - elapsed);
+
+describe("the monkey's death", () => {
+  test("it spins a quarter turn every 6 ticks, twice round, then lies down", () => {
+    expect([0, 5, 6, 12, 18, 24, 30, 36, 42, 47].map((n) => deathAt(n))).toEqual([0, 0, 1, 2, 3, 0, 1, 2, 3, 3]);
+    expect(deathAt(48)).toBeGreaterThanOrEqual(4);
+  });
+
+  test("down, its smoke puffs between two frames every 8 ticks until the life is lost", () => {
+    expect([48, 55, 56, 64, 72].map((n) => deathAt(n))).toEqual([4, 4, 5, 4, 5]);
+    expect(deathColumn(1)).toBeGreaterThanOrEqual(4);
   });
 });
