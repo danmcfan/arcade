@@ -45,8 +45,7 @@ export function ticketsFor(score: number): number {
 /**
  * How a minigame was started: at a cabinet for a token ("paid"), at a cabinet
  * with no tokens ("free", free play), or straight from `game.New(software)`
- * without the hub ("direct": the parity fixtures and
- * `?scene=game&software=`), which costs nothing and pays nothing.
+ * without the hub ("direct": `?scene=game&software=`), which costs nothing and pays nothing.
  */
 export type RunKind = RunKindSnapshot;
 

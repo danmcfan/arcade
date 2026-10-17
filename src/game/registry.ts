@@ -1,5 +1,5 @@
 // Scene factories (§5 1a). The test hook (`__arcade.load`), main.ts
-// (`?scene=`) and the parity harness all construct scenes through here; the
+// (`?scene=`) both construct scenes through here; the
 // hub's machines build minigames through src/game/minigames.ts.
 
 import { createGame } from "./index.ts";

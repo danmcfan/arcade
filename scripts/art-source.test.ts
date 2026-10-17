@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { isRecord } from "./pixel.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { artSources, asRowsValue, fromSheet, toSheet, writeRows } from "./art-source.ts";

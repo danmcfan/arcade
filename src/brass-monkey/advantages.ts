@@ -1,6 +1,6 @@
 // What the player's prizes do in Brass Monkey (#40). The hub hands over the
 // owned prizes when a run starts; with none, every value is the game's own
-// (./tuning.ts), so the parity fixtures (which own no prizes) are unchanged.
+// (./tuning.ts).
 
 import type { PrizeId } from "../arcade/prizes.ts";
 import { bonusTicks, jumpSpeed, startLives } from "./tuning.ts";

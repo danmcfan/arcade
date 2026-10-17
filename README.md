@@ -22,9 +22,9 @@ The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no frame
 Requires Bun 1.4.2.
 
 ```sh
-bun install          # dev dependencies only (TypeScript, Prettier, pngjs, pixelmatch)
+bun install          # dev dependencies only (TypeScript, Prettier, pngjs)
 bun run dev          # dev server with hot reload on http://localhost:3000 (ARCADE_PORT=3005 bun run dev for another port)
-bun test             # unit tests and the parity suite
+bun test             # unit tests
 bun run build        # production bundle in dist/
 bun run preview      # serve dist/
 bun run check        # typecheck + format check + test + build, as CI does (also run by the pre-push hook)
@@ -44,7 +44,7 @@ The title music and the menu blips are chiptune written as notes in `src/ui/soun
 
 ## Scenes
 
-The page opens the `title` scene. `?scene=game` skips the title and starts straight in the hub (as the parity fixtures do).
+The page opens the `title` scene. `?scene=game` skips the title and starts straight in the hub.
 
 ## Test hook
 
@@ -56,57 +56,19 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=game`)
 
 ## Layout
 
-| Path                                                                 | What                                                                                              |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/main.ts`                                                        | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop                          |
-| `src/engine/`                                                        | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook                           |
-| `src/game/`                                                          | Top-level loop (hub and active minigame), scene registry, snapshot types                          |
-| `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                                    |
-| `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                                |
-| `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                                   |
-| `test/fixtures/`                                                     | Recorded input scripts, per-tick traces and golden frames (see below)                             |
-| `test/parity/`                                                       | Replays every fixture scenario and compares it tick by tick                                       |
-| `scripts/`                                                           | Capture harness (`scripts/harness.ts`), frame capture and diff tools, UI art and sound generators |
-| `art/cabinet.ase`                                                    | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped)              |
-| `docs/`                                                              | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)                   |
+| Path                                                                 | What                                                                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/main.ts`                                                        | Browser entry: preload images, pick the scene, run the fixed 60 TPS loop             |
+| `src/engine/`                                                        | Canvas draw API, input, audio, assets, RNG, viewport scaling, test hook              |
+| `src/game/`                                                          | Top-level loop (hub and active minigame), scene registry, snapshot types             |
+| `src/title/`                                                         | Title scene: title menu, intro, pause menu, save (`SaveStore`)                       |
+| `src/ui/`                                                            | Pixel font and logo source, text and panel drawing                                   |
+| `src/arcade/`, `src/sweet-sam/`, `src/firefly/`, `src/brass-monkey/` | The hub and the three minigames                                                      |
+| `test/fixtures/`                                                     | RNG reference outputs and old-format saves for the unit tests                        |
+| `scripts/`                                                           | Capture harness (`scripts/harness.ts`), UI art and sound generators                  |
+| `art/cabinet.ase`                                                    | Aseprite source for `art/cabinet.png`, the base of every cabinet strip (not shipped) |
+| `docs/`                                                              | Port plan, port notes, ADRs (`docs/adr/`), agent workflow docs (`docs/agents/`)      |
 
-## Parity fixtures
+## Port history
 
-This is a port of an earlier Go version of the game. Before the Go code was removed, a harness recorded 16 scripted scenarios from it (38,930 ticks), now stored in `test/fixtures/`:
-
-- `inputs/*.json`: the input scripts.
-- `traces/*.jsonl.gz`: a state snapshot after every tick.
-- `frames/<scenario>/<tick>.png`: golden frames at logical resolution.
-- `rng.json`: reference outputs for the shared PRNG.
-
-`bun test` replays every script and must match every trace field on every tick. Behaviour differences found during the port, and the Go quirks kept on purpose, are listed in `docs/port-notes.md`.
-
-To compare frames, capture the TS frames, then diff them against the goldens:
-
-```sh
-bun run frames                       # starts a dev server, writes out/frames/ (needs agent-browser)
-bun run frames:report                # writes out/frame-report.md and out/diff/
-```
-
-**The fixtures cannot be regenerated from this tree.** The Go game and its capture harness (`tools/golden/`) were deleted with the rest of the Go code. Commit `34840f8` is the last commit that still has them. To regenerate the fixtures, run the harness from a checkout of that commit (details in the "Regenerating" section of `test/fixtures/README.md`):
-
-```sh
-git worktree add ../arcade-golden 34840f8 && cd ../arcade-golden
-# Go 1.26 with CGO_ENABLED=1 GOARCH=amd64 (Rosetta on Apple Silicon); the harness refuses any other GOARCH
-./tools/golden/capture.sh          # rng.json, traces, frames (one window per scenario), verify, coverage
-./tools/golden/capture.sh --gen    # same, but first rewrite inputs/*.json from tools/golden/gen.go
-```
-
-Or step by step, at that commit:
-
-```sh
-export CGO_ENABLED=1 GOARCH=amd64
-go run ./tools/golden rng                                  # test/fixtures/rng.json
-go run ./tools/golden gen                                  # test/fixtures/inputs/*.json
-go run ./tools/golden trace all                            # every trace (or list script paths)
-go run ./tools/golden frames test/fixtures/inputs/X.json   # one scenario per process (opens a window)
-go run ./tools/golden verify                               # every captureTicks PNG exists, right size
-go run ./tools/golden coverage                             # sweetSam / firefly coverage
-```
-
-Copy the regenerated `test/fixtures/` back onto the current branch. If you change gameplay on purpose, the affected traces have to be updated with it, and there is no longer a Go reference to capture them from.
+This is a port of an earlier Go version of the game. A parity suite once replayed 16 scenarios recorded from Go and checked every tick; it was retired once the games had been reworked on purpose (ADR 0011). Behaviour differences found during the port, and the Go quirks kept on purpose, are listed in `docs/port-notes.md`.

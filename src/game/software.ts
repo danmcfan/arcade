@@ -1,5 +1,5 @@
-// Port of internal/software, plus the `Scene` contract the loop, the test
-// hook and the parity harness drive (§3.4).
+// Port of internal/software, plus the `Scene` contract the loop and the test
+// hook drive (§3.4).
 
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";

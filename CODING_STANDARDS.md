@@ -8,7 +8,6 @@ Read at review time (`/code-review`, Standards axis). These rules are judgement 
 - **Headless.** Game modules do not touch `window`, `document`, `localStorage`, `Image` or `Audio` at import time or in `step()`/`update()`/`snapshot()`. Browser access goes through an injected dependency, the way the title scene gets its save through `SaveStore` (ADR 0003).
 - **Randomness goes through `src/engine/rng.ts`.** A `Math.random()` in game code breaks replays.
 - **New state is visible in `snapshot()`.** When a scene or minigame gains state that a check would assert on, its snapshot type in `src/game/snapshot.ts` includes it.
-- **Parity is changed deliberately.** A PR that changes behaviour covered by a parity fixture updates or retires that fixture and says why in the PR body. Watch for tolerances widened, scenarios skipped or assertions dropped just to get green (ADR 0004).
 
 ## Look, sound and feel
 

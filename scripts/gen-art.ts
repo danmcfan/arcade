@@ -13,7 +13,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
 import { PNG } from "pngjs";
 import { format, resolveConfig } from "prettier";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { brassMonkeyArtFiles } from "./gen-brass-monkey-art.ts";
 import { cabinetFiles } from "./gen-cabinets.ts";
 import { fireflyArtFiles } from "./gen-firefly-art.ts";

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { prizeArt } from "../src/ui/prizeArt.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { toPng, toRows } from "./pixel-art.ts";
 import { cabinetArt } from "../src/ui/hubArt.ts";
 import { down, up } from "../src/ui/playerArt.ts";
