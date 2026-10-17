@@ -121,26 +121,6 @@ describe("window.__arcade (§3.5)", () => {
     expect(current().inputs.map((i) => i.shiftP)).toEqual([true, false]);
   });
 
-  test("runScript expands the steps (shiftP on each step's first tick only), then draws once", () => {
-    const { hook, current, log } = setup();
-    hook.runScript({
-      name: "s",
-      scene: "game",
-      seed: 1,
-      steps: [
-        { ticks: 2, input: { shiftP: true } },
-        { ticks: 1, input: { space: true } },
-      ],
-      captureTicks: [],
-    });
-    expect(current().inputs.map((i) => [i.shiftP, i.space])).toEqual([
-      [true, false],
-      [false, false],
-      [false, true],
-    ]);
-    expect(log).toEqual(["draw"]);
-  });
-
   test("seed then load: the new scene is built after seeding, with its options", () => {
     const { hook, current } = setup();
     hook.seed(99);

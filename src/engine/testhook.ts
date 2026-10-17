@@ -9,7 +9,6 @@ import type { Runtime } from "./runtime.ts";
 import { expandSteps } from "../game/script.ts";
 import type { SceneName, SoftwareName } from "../game/software.ts";
 import type { SceneSnapshot } from "../game/snapshot.ts";
-import type { InputScript } from "../game/script.ts";
 
 export interface LoadOptions {
   /** `game` only: start as `game.New(<software>)`; omit for the hub. */
@@ -22,11 +21,6 @@ export interface ArcadeTestHook {
   resume(): void;
   /** Run `n` fixed ticks with that input (missing keys false), then one draw. */
   step(n: number, input?: Partial<Input>): void;
-  /**
-   * Run `expandSteps(script.steps)` on the current scene, then one draw.
-   * Does not reseed or reload: call `seed()` and `load()` first.
-   */
-  runScript(script: InputScript): void;
   /** Jump the running minigame to stage (or level) `stage`, then one draw; throws if the scene has none. */
   jump(stage: number): void;
   /** `rng.seed(n)`. */
@@ -78,12 +72,8 @@ export function createTestHook(host: TestHookHost): ArcadeTestHook {
       host.resume();
     },
     step(n, input) {
-      // Same expansion as a script step: `shiftP` only on the first tick.
+      // Same expansion as a scripted step: `shiftP` only on the first tick.
       for (const i of expandSteps([{ ticks: n, input: input ?? {} }])) runtime.step(i);
-      host.draw();
-    },
-    runScript(script) {
-      for (const i of expandSteps(script.steps)) runtime.step(i);
       host.draw();
     },
     jump(stage) {

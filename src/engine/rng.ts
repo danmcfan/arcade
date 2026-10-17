@@ -1,7 +1,5 @@
-// Shared seedable PRNG (§3.3): mulberry32. The Go harness replicates it in
-// `internal/rng` with uint32 arithmetic; `test/fixtures/rng.json` locks both
-// together. Every random call in the port goes through this module, in the
-// same order as Go's `math/rand` calls.
+// Shared seedable PRNG (§3.3): mulberry32. Every random call in the game goes
+// through this module, so a seed replays the same run.
 
 let a = 0;
 
