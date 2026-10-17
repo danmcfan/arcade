@@ -410,6 +410,8 @@ export interface BrassMonkeyPopupSnapshot {
 export interface BrassMonkeySnapshot {
   phase: "intro" | "howHigh" | "play" | "dying" | "clear" | "escape" | "over";
   phaseTicks: number;
+  /** The Gnomes the "How high can you get?" screen stacks before this floor: its position in the loop plus 1. */
+  howHighStack: number;
   /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor, 3 the rivet floor. */
   floor: number;
   /** Escapes so far: each loop is harder. */

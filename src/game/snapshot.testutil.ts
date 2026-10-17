@@ -28,6 +28,7 @@ export function brassMonkeySnapshot(s: SoftwareSnapshot | null | undefined): Bra
 export const fakeBrassMonkeySnapshot: BrassMonkeySnapshot = {
   phase: "play",
   phaseTicks: 0,
+  howHighStack: 1,
   floor: 0,
   loop: 0,
   lives: 3,

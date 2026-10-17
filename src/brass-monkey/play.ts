@@ -272,9 +272,18 @@ export class Run {
     }
   }
 
-  /** The Gnomes stacked on the "How high can you get?" screen: the floor's position in its loop plus 1. */
+  /**
+   * The Gnomes stacked on the "How high can you get?" screen: the floor's
+   * position in its loop plus 1, which is `nextStage` once the floor has started.
+   */
   howHighStack(): number {
     return this.nextStage;
+  }
+
+  /** The floor starts behind the "How high can you get?" screen, which holds before it is played. */
+  private enterFloor(): void {
+    this.startFloor();
+    this.howHigh();
   }
 
   /** The "How high can you get?" screen holds before the floor (already started) is played. */
@@ -422,10 +431,7 @@ export class Run {
       case "dying":
         if (--this.phaseTicks > 0) return;
         if (this.lives <= 0) this.phase = "over";
-        else {
-          this.startFloor();
-          this.howHigh();
-        }
+        else this.enterFloor();
         return;
       case "clear": {
         if (--this.phaseTicks > 0) return;
@@ -437,8 +443,7 @@ export class Run {
         } else {
           this.floor = floors.indexOf(next);
           this.nextStage++;
-          this.startFloor();
-          this.howHigh();
+          this.enterFloor();
         }
         return;
       }
