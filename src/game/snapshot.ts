@@ -381,6 +381,18 @@ export interface BrassMonkeyHazardSnapshot {
   footing: "ground" | "air" | "climb";
 }
 
+/** A collected bolt's points, shown where it was. */
+export interface BrassMonkeyPopupSnapshot {
+  /** Across, where the bolt was. */
+  x: number;
+  /** Down, where the bolt was. */
+  y: number;
+  /** The score shown. */
+  points: number;
+  /** Ticks left before it fades. */
+  ticks: number;
+}
+
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
 export interface BrassMonkeySnapshot {
   phase: "play" | "dying" | "clear" | "escape" | "over";
@@ -411,7 +423,7 @@ export interface BrassMonkeySnapshot {
   /** The smashes whose points are showing, where each hazard was. */
   smashes: BrassMonkeySmashSnapshot[];
   /** Points floating where bolts were just collected, with the ticks each has left. */
-  popups: { x: number; y: number; points: number; ticks: number }[];
+  popups: BrassMonkeyPopupSnapshot[];
   gearTimer: number;
   emberTimer: number;
 }
