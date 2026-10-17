@@ -51,9 +51,9 @@ Check art as text first: `bun run pixel rows` and `checkRows` catch size, letter
 
 Run `bun run pixel` alone for its commands.
 
-In the running game, the verify check shows the art (`docs/agents/visual-verification.md`). `pixel` is for the drawing loop before that.
+In the running game, the capture script shows the art (`docs/agents/visual-verification.md`). `pixel` is for the drawing loop before that.
 
 ## The bar
 
-- **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the verify check's screenshots, so the owner judges the change at a glance.
+- **As good as before.** Art that replaces art is at least as good as what it replaces. Attach the `pixel before` sheet to the PR beside the capture screenshots, so the owner judges the change at a glance.
 - **Specs name the starting art.** An issue that asks for art says which existing art to import and keep, and which choices the prototypes should offer. To bring a hand-made PNG under ADR 0006, the spec asks to import it with `pixel rows`, so its look stays the same.

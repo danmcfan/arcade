@@ -34,7 +34,7 @@ import type {
 } from "../src/game/snapshot.ts";
 import type { SceneName } from "../src/game/software.ts";
 import type { Input } from "../src/engine/input.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { browser, decodeDataUrl, isRecord, type Browser } from "./browser.ts";
 
 export interface Server {
@@ -217,7 +217,7 @@ export function isStringArray(x: unknown): x is string[] {
   return Array.isArray(x) && x.every((e) => typeof e === "string");
 }
 
-/** A `GameSnapshot` by its shape (checks the fields the verify checks rely on to tell scenes apart). */
+/** A `GameSnapshot` by its shape (checks the fields capture scripts rely on to tell scenes apart). */
 export function isGameSnapshot(x: unknown): x is GameSnapshot {
   return (
     isRecord(x) &&

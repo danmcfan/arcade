@@ -210,22 +210,14 @@ _Avoid_: pause menu (say which one), quit dialog
 One fixed 1/60 s step of game time. All game timing is counted in ticks.
 _Avoid_: frame (a frame is one draw)
 
-**Parity fixture**:
-A recorded scenario (input script, per-tick trace, golden frames) that the TypeScript game must reproduce exactly. Most were recorded from the original Go game; ones whose behaviour changed on purpose are re-recorded from the TypeScript game.
-_Avoid_: snapshot test, golden test
-
-**Golden frame**:
-A reference image of one tick of a parity fixture, at logical resolution.
-_Avoid_: screenshot, baseline
-
 **Logical resolution**:
 The game's own pixel grid (e.g. 192×176 for the hub) before it is scaled up to the screen.
 _Avoid_: canvas size, native size
 
 **Test hook**:
-The `window.__arcade` API that `?debug` installs, so a check can pause, step, seed and read back the game.
+The `window.__arcade` API that `?debug` installs, so a capture script can pause, step, seed and read back the game.
 _Avoid_: debug API, cheat mode
 
-**Verify check**:
-A browser script in `scripts/verify/` that drives the real page and produces the screenshots and video for a PR.
+**Capture script**:
+A throwaway browser script on `scripts/harness.ts` that drives the real page and produces the screenshots and video for a PR. It is never committed.
 _Avoid_: e2e test, smoke test

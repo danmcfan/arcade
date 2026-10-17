@@ -19,7 +19,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, normalize, relative, resolve } from "node:path";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { asRowsValue, writeRows } from "./art-source.ts";
 import { isRecord, parseSpec, previewPage } from "./pixel.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";

@@ -37,7 +37,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { PNG } from "pngjs";
 import { glyphHeight, glyphs } from "../src/ui/glyphs.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { asRowsValue, fromSheet, isRows, toSheet, writeRows, type SheetEntry } from "./art-source.ts";
 import { sceneFor, type Scene } from "./pixel-scenes.ts";
 import { blank, colours, letters, paint, plot, scale, snap, toPng, toRows, type Rows } from "./pixel-art.ts";

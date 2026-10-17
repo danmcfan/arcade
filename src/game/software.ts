@@ -1,5 +1,5 @@
-// Port of internal/software, plus the `Scene` contract the loop, the test
-// hook and the parity harness drive (§3.4).
+// Port of internal/software, plus the `Scene` contract the loop and the test
+// hook drive (§3.4).
 
 import type { Input } from "../engine/input.ts";
 import type { Sprite } from "../engine/image.ts";
@@ -20,7 +20,7 @@ export interface Software {
   score(): number;
   /** §4.3; the matching type in snapshot.ts (`SweetSamSnapshot`, …). */
   snapshot(): SoftwareSnapshot;
-  /** Optional, test hook only: start stage (or level) `stage` afresh, for verify checks. */
+  /** Optional, test hook only: start stage (or level) `stage` afresh, for capture scripts. */
   jumpTo?(stage: number): void;
 }
 

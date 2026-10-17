@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import { cabinetHeight, cabinetWidth } from "../src/ui/cabinet.ts";
-import { repoRoot } from "../test/parity/fixtures.ts";
+import { repoRoot } from "./repo-root.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
 
 export interface CabinetSource {
