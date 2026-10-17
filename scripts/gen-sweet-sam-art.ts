@@ -225,7 +225,7 @@ export function beeFrame(kind: SweetSamEnemyKind, beat: number, look: "awake" | 
   } else {
     const colours = look === "sleepy" ? sleepyLook : wakingLook;
     const [ex, ey] = beeEye;
-    out = recolour(rows, { y: colours.body, w: colours.wings });
+    out = recolour(rows, { y: colours.body, w: colours.wings, l: colours.veins });
     // Sleepy: the eye shut, a lid across the pupil. Waking: the eye wide, the pupil twice as tall.
     out =
       look === "sleepy"

@@ -370,11 +370,11 @@ export const beeEyes: readonly (readonly string[])[] = [
 /** The direction each frame of bee-eyes.png faces: `beeEyes` with the left look added second. */
 export const beeEyesOrder: readonly Direction[] = ["RIGHT", "LEFT", "UP", "DOWN"];
 
-/** A sleepy bee: grey, wings dull, eyes shut. */
-export const sleepyLook = { body: "m", wings: "l" } as const;
+/** A sleepy bee: bright silver, grey wings with white veins, eyes shut. */
+export const sleepyLook = { body: "l", wings: "m", veins: "w" } as const;
 
-/** A sleepy bee about to wake: pale, eyes wide open. Alternates with the sleepy look. */
-export const wakingLook = { body: "w", wings: "l" } as const;
+/** A sleepy bee about to wake: white, silver wings with grey veins, eyes wide open. Alternates with the sleepy look. */
+export const wakingLook = { body: "w", wings: "l", veins: "m" } as const;
 
 /** Honey drop and honey pot cells: 8×12, 4 frames, as in the Go game. */
 export const itemCellWidth = 8;
