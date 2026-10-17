@@ -3,6 +3,7 @@ import {
   conveyorFloor,
   elevatorFloor,
   floors,
+  floorsFor,
   girderFloor,
   girderTop,
   liftTops,
@@ -157,4 +158,23 @@ test("only the conveyor floor carries pans", () => {
 
 test("the floors are played girder floor, conveyor floor, elevator floor, then rivet floor, as Donkey Kong's 25m, 50m, 75m and 100m", () => {
   expect(floors).toEqual([girderFloor, conveyorFloor, elevatorFloor, rivetFloor]);
+});
+
+/** Each floor as Donkey Kong's board height, in metres. */
+const m = (loop: number): number[] => floorsFor(loop).map((f) => [25, 50, 75, 100][floors.indexOf(f)] ?? 0);
+
+describe("each loop's floor plan", () => {
+  test("follows Donkey Kong's board order: 25-100, 25-75-100, 25-50-75-100, 25-50-25-75-100, then 25-50-25-75-25-100", () => {
+    expect([0, 1, 2, 3, 4].map((l) => m(l).join("-"))).toEqual([
+      "25-100",
+      "25-75-100",
+      "25-50-75-100",
+      "25-50-25-75-100",
+      "25-50-25-75-25-100",
+    ]);
+  });
+
+  test("every loop from the fifth plays the fifth's plan", () => {
+    expect(floorsFor(10)).toEqual(floorsFor(4));
+  });
 });
