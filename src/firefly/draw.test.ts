@@ -175,6 +175,13 @@ describe("firefly draw", () => {
     expect(of(drawCalls(f), imageFont).length).toBe("READY".length);
   });
 
+  test("a stage cleared during the burst still shows STAGE n", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    f.respawn = respawnTicks - 1;
+    expect(of(drawCalls(f), imageFont).length).toBe("STAGE 2".length);
+  });
+
   test("an escort-kill bonus shows its points in the pixel font, centred where the Owl was shot", () => {
     const f = new FireflySoftware();
     f.stageTick = stageIntroTicks + 1;

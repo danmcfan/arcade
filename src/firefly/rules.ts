@@ -288,7 +288,7 @@ export const hitEffectTicks = 75;
 /** Ticks from losing a life to the next firefly, or to game over after the last. */
 export const respawnTicks = 150;
 
-/** What a `FireflyBanner` needs of the game. */
+/** What `banner()` needs of the game. */
 export interface BannerState {
   stage: number;
   stageTick: number;
@@ -300,7 +300,8 @@ export interface BannerState {
 /** Banner text in the middle of the field this tick, or null: STAGE n while a stage opens, PLAYER 1 / STAGE 1 / READY at the run start, READY before a respawn. */
 export function banner(b: BannerState): string | null {
   if (b.lives === 0) return null;
-  if (b.respawn > 0) return b.respawn <= readyTicks ? "READY" : null;
+  if (b.respawn > 0 && b.respawn <= readyTicks) return "READY";
+  // A stage cleared during the burst still opens on its STAGE n.
   if (b.stageTick > stageIntroTicks) return null;
   if (b.challenging) return "CHALLENGING STAGE";
   if (b.stage === 1) {
