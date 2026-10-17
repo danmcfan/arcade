@@ -1,5 +1,5 @@
 // The layout of Brass Monkey's floors: where the girders, conveyors, ladders,
-// exit door, Gnome, bolts and wrenches stand, in the floor's own pixels (224×256,
+// exit door, Gnome, furnace, bolts and wrenches stand, in the floor's own pixels (224×256,
 // top-left 0, 0). scripts/gen-brass-monkey-art.ts draws each floor from this
 // and the tiles in art.ts into girder-floor.png and conveyor-floor.png; play.ts
 // plays on them.
@@ -41,6 +41,8 @@ export interface Ladder {
  * the top-left of the Gnome's 32×32 frame, `start` the monkey's foot when the
  * floor starts, `bolts` the feet of the bolts to collect and `wrenches` the
  * feet of the wrenches to pick up (two a floor, as Donkey Kong's hammers).
+ * `furnace`, on a floor that has one, is the foot of the furnace's middle,
+ * 16 px wide: gears end in it and embers come out of it.
  */
 export interface Floor {
   width: number;
@@ -52,6 +54,7 @@ export interface Floor {
   start: Spot;
   bolts: readonly Spot[];
   wrenches: readonly Spot[];
+  furnace?: Spot;
 }
 
 /** The top of `g` at x. */
@@ -105,7 +108,9 @@ export const girderFloor: Floor = {
   ],
   door: { x: 104, y: 56 },
   gnome: { x: 24, y: 52 },
-  start: { x: 16, y: 248 },
+  // As Donkey Kong's oil drum: at the bottom left, the monkey starting just right of it.
+  furnace: { x: 8, y: 248 },
+  start: { x: 24, y: 248 },
   bolts: [
     { x: 64, y: 212 },
     { x: 150, y: 179 },

@@ -47,6 +47,7 @@ export const fakeBrassMonkeySnapshot: BrassMonkeySnapshot = {
   wrenches: [],
   smashes: [],
   popups: [],
+  furnaceLit: false,
   gearTimer: 0,
   emberTimer: 0,
 };
