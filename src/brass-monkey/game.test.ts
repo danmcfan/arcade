@@ -171,6 +171,7 @@ describe("BrassMonkeySoftware", () => {
         climbDir: 1,
         scorableIn: 0,
         hot: false,
+        wild: false,
       },
     ];
     g.update(NO_INPUT);
@@ -200,6 +201,7 @@ describe("BrassMonkeySoftware", () => {
         climbDir: 1,
         scorableIn: 0,
         hot: true,
+        wild: false,
       },
     ];
     expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({ furnaceLit: false, hazards: [{ hot: true }] });
@@ -287,6 +289,7 @@ describe("draw", () => {
         climbDir: 1,
         scorableIn: 0,
         hot: true,
+        wild: false,
       },
     ];
     const gear = record(g).calls.find((c) => c.sprite.asset === imageGear.asset);

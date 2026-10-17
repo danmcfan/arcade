@@ -381,6 +381,8 @@ export interface BrassMonkeyHazardSnapshot {
   footing: "ground" | "air" | "climb";
   /** A hot gear lights the furnace when it reaches it. */
   hot: boolean;
+  /** A wild gear drops through the girders towards the monkey. */
+  wild: boolean;
 }
 
 /** A collected bolt's points, shown where it was. */

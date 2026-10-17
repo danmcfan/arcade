@@ -81,6 +81,8 @@ export interface Hazard {
   scorableIn: number;
   /** A hot gear lights the furnace when it reaches it, and an ember comes out. */
   hot: boolean;
+  /** A wild gear ignores the girders and drops in diagonal hops towards the monkey (Donkey Kong's diagonal barrels). */
+  wild: boolean;
 }
 
 /** The total a jump pays for clearing `n` hazards. */
@@ -139,7 +141,19 @@ const ladderHead = (l: Ladder): number => l.top - 8;
 
 /** A `kind` hazard on the ground at (x, y), heading right. */
 function newHazard(kind: Hazard["kind"], x: number, y: number): Hazard {
-  return { kind, x, y, dir: 1, vy: 0, footing: "ground", ladder: null, climbDir: 1, scorableIn: 0, hot: false };
+  return {
+    kind,
+    x,
+    y,
+    dir: 1,
+    vy: 0,
+    footing: "ground",
+    ladder: null,
+    climbDir: 1,
+    scorableIn: 0,
+    hot: false,
+    wild: false,
+  };
 }
 
 function newMonkey(start: Spot): Monkey {
@@ -191,10 +205,12 @@ export class Run {
   popups: Popup[] = [];
   /** A hot gear has reached the floor's furnace since the floor (re)started. */
   furnaceLit = false;
-  /** The Gnome has sent a gear since the floor (re)started: the first is hot. */
+  /** The Gnome has sent a gear since the floor (re)started: the first is hot and never wild. */
   private sentGear = false;
   /** Ticks until the Gnome sends its next gear. */
   gearTimer = 0;
+  /** Ticks since the floor (re)started: the gears take ladders more often the longer the monkey takes. */
+  floorTicks = 0;
   /** Ticks until the Gnome throws its next ember; only counts down on a floor without a furnace. */
   emberTimer = 0;
   /** Ticks since the run started, for animations. */
@@ -261,6 +277,7 @@ export class Run {
     this.popups = [];
     this.bonus = this.tuning.bonusStart;
     this.bonusTimer = 0;
+    this.floorTicks = 0;
     this.gearTimer = this.tuning.firstGear;
     this.emberTimer = this.tuning.firstEmber;
     this.furnaceLit = false;
@@ -310,6 +327,7 @@ export class Run {
     this.smashes = this.smashes.filter((s) => s.ticks > 0);
     this.moveMonkey(i, jumpPressed && this.monkey.wrench === 0);
     if (this.phase !== "play") return;
+    this.floorTicks++;
     this.sendHazards();
     for (const h of this.hazards) this.moveHazard(h);
     const floor = this.currentFloor();
@@ -429,7 +447,8 @@ export class Run {
         h.footing === "climb" && l !== null
           ? ladderMeetsGirder(l, g)
           : h.footing === "ground" && groundUnder(floor, h.x, h.y, 2) === g;
-      if (on) h.scorableIn = this.monkey.jumps;
+      // A wild gear can be jumped from any girder it drops past.
+      if (on || h.wild) h.scorableIn = this.monkey.jumps;
     }
   }
 
@@ -459,8 +478,12 @@ export class Run {
   private sendHazards(): void {
     const { gnome, furnace } = this.currentFloor();
     if (--this.gearTimer <= 0) {
-      const hot = furnace !== undefined && (!this.sentGear || rng.float() < t.hotGearChance);
-      this.hazards.push({ ...newHazard("gear", gnome.x + 36, gnome.y + 32), hot });
+      // The first gear of each life is hot, never wild; a wild gear drops past the furnace.
+      const wild = this.sentGear && rng.float() < t.wildChanceFor(this.loop);
+      const hot = !wild && furnace !== undefined && (!this.sentGear || rng.float() < t.hotGearChance);
+      const gear = { ...newHazard("gear", gnome.x + 36, gnome.y + 32), hot, wild };
+      if (wild) gear.footing = "air";
+      this.hazards.push(gear);
       this.sentGear = true;
       this.gearTimer = this.tuning.gearEvery;
     }
@@ -505,6 +528,10 @@ export class Run {
   private rollGear(h: Hazard): void {
     const floor = this.currentFloor();
     const speed = this.tuning.gearSpeed;
+    if (h.wild) {
+      this.hopWild(h);
+      return;
+    }
     if (h.footing === "climb" && h.ladder !== null) {
       h.y += speed;
       if (h.y < ladderFoot(h.ladder)) return;
@@ -528,7 +555,8 @@ export class Run {
       const l = floor.ladders.find(
         (each) => whole(each) && crossed(x0, h.x, ladderMiddle(each)) && Math.abs(ladderHead(each) - h.y) <= 2,
       );
-      if (l !== undefined && rng.float() < t.gearLadderChance) {
+      const below = this.monkey.y > h.y + 2;
+      if (l !== undefined && rng.float() < t.gearLadderChanceFor(this.loop, this.floorTicks, below)) {
         h.footing = "climb";
         h.ladder = l;
         h.x = ladderMiddle(l);
@@ -547,8 +575,23 @@ export class Run {
   }
 
   /**
+   * A wild gear drops through the girders in hops, each starting slow and
+   * speeding up, drifting across towards the monkey, until it leaves the bottom.
+   */
+  private hopWild(h: Hazard): void {
+    h.vy = this.ticks % t.wildHopTicks === 0 ? t.wildHopSpeed : Math.min(h.vy + t.gravity, t.maxFallSpeed);
+    h.vy = Math.max(h.vy, t.wildHopSpeed);
+    h.y += h.vy;
+    const gap = this.monkey.x - h.x;
+    const drift = t.wildDrift * this.tuning.gearSpeed;
+    h.dir = gap < 0 ? -1 : 1;
+    h.x += Math.sign(gap) * Math.min(Math.abs(gap), drift);
+  }
+
+  /**
    * An ember walks its girder (carried by a conveyor), turning at the ends.
-   * At a ladder it may climb down, or less often up; at the other end it
+   * At a ladder it climbs towards the monkey more often than away; at the
+   * other end, and every so often on the way (more often on later loops), it
    * turns towards the monkey.
    */
   private moveEmber(h: Hazard): void {
@@ -563,6 +606,9 @@ export class Run {
         h.dir = this.monkey.x < h.x ? -1 : 1;
       }
       return;
+    }
+    if (this.floorTicks % t.emberTurnEveryFor(this.loop) === 0 && this.monkey.x !== h.x) {
+      h.dir = this.monkey.x < h.x ? -1 : 1;
     }
     const belt = groundUnder(floor, h.x, h.y, 2)?.belt ?? 0;
     const x0 = h.x;
@@ -580,9 +626,13 @@ export class Run {
       const canDown = Math.abs(ladderHead(l) - h.y) <= 2;
       const canUp = Math.abs(ladderFoot(l) - h.y) <= 2;
       if (!canDown && !canUp) continue;
+      const dy = this.monkey.y - h.y;
+      const level = Math.abs(dy) <= t.emberLevelY;
+      const downChance = level ? t.emberDownChance : dy > 0 ? t.emberTowardChance : t.emberAwayChance;
+      const upChance = level ? t.emberUpChance : dy < 0 ? t.emberTowardChance : t.emberAwayChance;
       const r = rng.float();
-      if (canDown && r < t.emberDownChance) h.climbDir = 1;
-      else if (canUp && r < t.emberUpChance) h.climbDir = -1;
+      if (canDown && r < downChance) h.climbDir = 1;
+      else if (canUp && r < upChance) h.climbDir = -1;
       else continue;
       h.footing = "climb";
       h.ladder = l;
