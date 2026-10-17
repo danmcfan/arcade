@@ -436,13 +436,59 @@ const fireflyEffects = {
     ],
     eighth: 0.02,
   },
-  /** A spark hits an enemy: a short crunch falling away. */
-  hit: {
+  /** A Moth shot down: a light, high crunch falling away. */
+  mothHit: {
+    notes: [
+      [76, 1],
+      [69, 1],
+      [64, 1],
+      [57, 2],
+    ],
+    eighth: 0.025,
+  },
+  /** A Wasp shot down: a lower, buzzier crunch. */
+  waspHit: {
     notes: [
       [64, 1],
+      [65, 1],
       [57, 1],
       [52, 1],
       [45, 2],
+    ],
+    eighth: 0.03,
+  },
+  /** An Owl's first wound: a sharp two-note squawk, and it lives on. */
+  owlHurt: {
+    notes: [
+      [84, 1],
+      [79, 1],
+      [84, 1],
+    ],
+    eighth: 0.035,
+  },
+  /** An Owl shot down: a long, heavy crash down to the bottom. */
+  owlKill: {
+    notes: [
+      [67, 1],
+      [60, 1],
+      [55, 1],
+      [48, 1],
+      [43, 1],
+      [36, 3],
+    ],
+    eighth: 0.04,
+  },
+  /** An enemy peels off to dive: a swoop up, then down. */
+  dive: {
+    notes: [
+      [72, 1],
+      [76, 1],
+      [79, 1],
+      [77, 1],
+      [74, 1],
+      [70, 1],
+      [67, 1],
+      [64, 1],
     ],
     eighth: 0.03,
   },
@@ -513,6 +559,33 @@ const fireflyEffects = {
   },
 } as const satisfies Record<string, Effect>;
 for (const [name, effect] of Object.entries(fireflyEffects)) defineSound(name, { effect }, { channel: "minigame" });
+
+/**
+ * A new run's opening theme: plays once in place of stage 1's fanfare and
+ * ends inside the STAGE 1 intro (2 s), while the firefly is held.
+ */
+export const fireflyStartTune: Tune = {
+  notes: [
+    [72, 1],
+    [79, 1],
+    [84, 1],
+    [79, 1],
+    [74, 1],
+    [81, 1],
+    [86, 1],
+    [81, 1],
+    [76, 1],
+    [83, 1],
+    [88, 1],
+    [83, 1],
+    [84, 2],
+    [91, 1],
+    [96, 3],
+  ],
+  eighth: 0.1,
+  wave: "square",
+};
+defineSound("fireflyStart", { tune: fireflyStartTune }, { channel: "minigame" });
 
 /** Seconds a tune lasts. */
 export function tuneSeconds(t: Tune): number {

@@ -236,6 +236,9 @@ function face(e: Enemy, px: number, py: number): void {
   }
 }
 
+/** The sound of a spark shooting each kind down. */
+const hitSound = { moth: sounds.mothHit, wasp: sounds.waspHit, owl: sounds.owlKill } as const;
+
 function play(s: Sound): void {
   s.rewind();
   s.play();
@@ -288,11 +291,13 @@ export class FireflySoftware implements FixedViewport {
   update(i: Input): void {
     if (this.over) return;
 
-    if (this.stageTick === 0) play(sounds.stage);
+    if (this.stageTick === 0) play(this.stage === 1 ? sounds.fireflyStart : sounds.stage);
     this.stageTick++;
     this.ticks++;
 
-    if (this.respawn === 0) this.movePlayer(i);
+    // As in Galaga, the firefly is held until the start theme ends.
+    const opening = this.stage === 1 && this.stageTick <= stageIntroTicks;
+    if (this.respawn === 0 && !opening) this.movePlayer(i);
     this.moveSparks();
     this.moveEnemies();
     this.moveCaptive();
@@ -503,6 +508,7 @@ export class FireflySoftware implements FixedViewport {
   private sendDiving(e: Enemy, path: Path, d: Difficulty, beamDive = false): void {
     e.state = "diving";
     e.outOfFormation = true;
+    play(sounds.dive);
     followPath(e, path, d.diveSpeed);
     e.beamTicks = beamDive ? beamTicks : 0;
     e.shotsLeft = beamDive ? 0 : d.shotsPerDive;
@@ -637,8 +643,11 @@ export class FireflySoftware implements FixedViewport {
       );
       if (e === undefined) return true;
       e.hp--;
-      if (e.hp === 0) this.shootDown(e);
-      play(sounds.hit);
+      if (e.hp > 0) play(sounds.owlHurt);
+      else {
+        this.shootDown(e);
+        play(hitSound[e.kind]);
+      }
       return false;
     });
   }

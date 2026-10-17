@@ -10,6 +10,7 @@ import { isFixedViewport } from "../game/software.ts";
 import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
 import { beamY, bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
+import { fireflyStartTune, tuneSeconds } from "../ui/sounds.ts";
 import {
   beamTicks,
   beamWidth,
@@ -139,12 +140,37 @@ describe("a new run", () => {
 });
 
 describe("stage start", () => {
-  test("plays the stage sound, then the enemies wait out the STAGE n text before flying in", () => {
+  test("a new run opens on the start theme, not the stage fanfare", () => {
     const f = new FireflySoftware();
     const rec = recordSounds();
     f.update(NO_INPUT);
     rec.stop();
+    expect(rec.events).toEqual(["rewind:fireflyStart", "play:fireflyStart"]);
+  });
+
+  test("the start theme ends within the intro, and the firefly is held until it does", () => {
+    expect(tuneSeconds(fireflyStartTune) * 60).toBeLessThanOrEqual(stageIntroTicks);
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks, { left: true, space: true });
+    expect(f.player.x).toBe(112);
+    expect(f.sparks).toEqual([]);
+    run(f, 1, { left: true });
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("later stages play the stage fanfare, and the firefly moves during their intro", () => {
+    const f = new FireflySoftware();
+    f.jumpTo(2);
+    const rec = recordSounds();
+    f.update(held({ left: true }));
+    rec.stop();
     expect(rec.events).toEqual(["rewind:stage", "play:stage"]);
+    expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("the enemies wait out the STAGE n text before flying in", () => {
+    const f = new FireflySoftware();
+    f.update(NO_INPUT);
     run(f, stageIntroTicks - 2);
     expect(f.enemies.every((e) => e.state === "waiting")).toBe(true);
     run(f, 2);
@@ -558,6 +584,7 @@ describe("morphs", () => {
 describe("sparks", () => {
   test("Space fires a spark that flies up, with never more than 2 on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     const rec = recordSounds();
     f.update(held({ space: true }));
     rec.stop();
@@ -573,6 +600,7 @@ describe("sparks", () => {
 
   test("the firefly moves left and right only, kept on the screen", () => {
     const f = new FireflySoftware();
+    run(f, stageIntroTicks);
     run(f, 10, { left: true });
     expect(f.player).toEqual({ x: 92, y: playerY });
     run(f, 10, { up: true });
@@ -648,7 +676,7 @@ describe("hits", () => {
       const rec = recordSounds();
       f.update(NO_INPUT);
       rec.stop();
-      expect(rec.events).toContain("play:hit");
+      expect(rec.events).toEqual([`rewind:${kind}Hit`, `play:${kind}Hit`]);
       expect([e.hp, e.deadFrames]).toEqual([0, hitEffectTicks - 1]);
       expect(f.sparks).toEqual([]);
     });
@@ -1026,5 +1054,33 @@ describe("dive shapes", () => {
     const last = track.at(-1);
     expect(Math.hypot((last?.x ?? 0) - start.x, (last?.y ?? 0) - start.y)).toBeLessThan(4);
     expect(back).toBe(true);
+  });
+});
+
+describe("hit sounds", () => {
+  test("an Owl's first spark plays owlHurt and its second plays owlKill", () => {
+    const { f, e } = withOnly("owl", { x: 100, y: 120 });
+    expect(e.hp).toBe(enemyHp.owl);
+    const rec = recordSounds();
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    expect(e.hp).toBe(1);
+    sparkAt(f, e.x, e.y);
+    f.update(NO_INPUT);
+    rec.stop();
+    expect(e.hp).toBe(0);
+    expect(rec.events).toEqual(["rewind:owlHurt", "play:owlHurt", "rewind:owlKill", "play:owlKill"]);
+  });
+});
+
+describe("dive sound", () => {
+  test("starting a dive plays the dive swoop once", () => {
+    const f = new FireflySoftware();
+    const e = f.enemies.find((en) => en.kind === "moth");
+    if (e === undefined) throw new Error("no moth");
+    const rec = recordSounds();
+    f.dive(e);
+    rec.stop();
+    expect(rec.events).toEqual(["rewind:dive", "play:dive"]);
   });
 });

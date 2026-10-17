@@ -379,6 +379,8 @@ export interface BrassMonkeyHazardSnapshot {
   y: number;
   dir: -1 | 1;
   footing: "ground" | "air" | "climb";
+  /** A hot gear lights the furnace when it reaches it. */
+  hot: boolean;
 }
 
 /** A collected bolt's points, shown where it was. */
@@ -424,6 +426,8 @@ export interface BrassMonkeySnapshot {
   smashes: BrassMonkeySmashSnapshot[];
   /** Points floating where bolts were just collected, with the ticks each has left. */
   popups: BrassMonkeyPopupSnapshot[];
+  /** A hot gear has reached the floor's furnace since the floor (re)started. */
+  furnaceLit: boolean;
   gearTimer: number;
   emberTimer: number;
 }

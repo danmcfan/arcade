@@ -35,6 +35,13 @@ export const emberDownChance = 0.5;
 /** ...and at a ladder up, this often. */
 export const emberUpChance = 0.25;
 
+/**
+ * Of the gears after the first of each life (always hot), this many are hot,
+ * as Donkey Kong's blue barrels: one that reaches the furnace lights it and
+ * sends out an ember.
+ */
+export const hotGearChance = 0.25;
+
 /** The score for one, two, then three or more hazards cleared in one jump, as in arcade Donkey Kong. */
 export const jumpPoints = [100, 300, 800] as const;
 /** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
@@ -86,7 +93,7 @@ export interface FloorTuning {
   /** Ticks between gears; the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
-  /** Ticks between embers; the first comes after `firstEmber`. */
+  /** Ticks between embers the Gnome throws, on a floor without a furnace; the first comes after `firstEmber`. */
   emberEvery: number;
   firstEmber: number;
   /** The most embers on the floor at once. */

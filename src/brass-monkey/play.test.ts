@@ -38,6 +38,7 @@ const hazard = (kind: Hazard["kind"], x: number, y: number, dir: -1 | 1 = 1): Ha
   ladder: null,
   climbDir: 1,
   scorableIn: 0,
+  hot: false,
 });
 
 /** A quiet run with the monkey standing on the girder floor's first wrench. */
@@ -58,13 +59,13 @@ beforeEach(() => {
 describe("the monkey", () => {
   test("starts at the bottom of the girder floor with 3 lives, no score and the full bonus", () => {
     const { run } = quiet();
-    expect([run.monkey.x, run.monkey.y, run.lives, run.score, run.bonus]).toEqual([16, 248, 3, 0, 5000]);
+    expect([run.monkey.x, run.monkey.y, run.lives, run.score, run.bonus]).toEqual([24, 248, 3, 0, 5000]);
   });
 
   test("runs 1 px a tick, following the slope", () => {
     const { run } = quiet();
     step(run, 10, { right: true });
-    expect([run.monkey.x, run.monkey.y, run.monkey.left, run.monkey.moving]).toEqual([26, 248, false, true]);
+    expect([run.monkey.x, run.monkey.y, run.monkey.left, run.monkey.moving]).toEqual([34, 248, false, true]);
     run.monkey.x = 111;
     step(run, 17, { right: true });
     expect([run.monkey.x, run.monkey.y]).toEqual([128, 246]);
@@ -81,7 +82,7 @@ describe("the monkey", () => {
     expect(run.monkey.footing).toBe("air");
     expect(run.monkey.airTop).toBe(248 - 15);
     step(run, 1, { space: true });
-    expect([run.monkey.footing, run.monkey.x, run.monkey.y]).toEqual(["ground", 47, 248]);
+    expect([run.monkey.footing, run.monkey.x, run.monkey.y]).toEqual(["ground", 55, 248]);
     // Space must be let go before the next jump.
     step(run, 1, { space: true });
     expect(run.monkey.footing).toBe("ground");
@@ -168,6 +169,70 @@ describe("hazards", () => {
   });
 });
 
+/** A gear rolling left on the bottom girder, 4 px short of the furnace. */
+const rolling = (hot: boolean): Hazard => ({ ...hazard("gear", 20, 248, -1), hot });
+
+describe("the furnace", () => {
+  test("no ember is ever thrown on the girder floor: the Gnome only sends gears", () => {
+    const { run } = quiet();
+    run.emberTimer = 1;
+    step(run, 600);
+    expect(run.hazards.filter((h) => h.kind === "ember")).toEqual([]);
+  });
+
+  test("no ember exists until a hot gear reaches the furnace; then exactly one appears there and the furnace is lit", () => {
+    const { run } = quiet();
+    run.monkey.x = 150;
+    run.monkey.y = 245;
+    const gear = rolling(true);
+    run.hazards = [gear];
+    expect(run.furnaceLit).toBe(false);
+    until(run, () => !run.hazards.includes(gear));
+    expect(run.hazards.map((h) => [h.kind, h.x, h.y])).toEqual([["ember", 8, 248]]);
+    expect(run.furnaceLit).toBe(true);
+  });
+
+  test("a plain gear reaching the furnace ends there and adds no ember", () => {
+    const { run } = quiet();
+    run.monkey.x = 150;
+    run.monkey.y = 245;
+    const gear = rolling(false);
+    run.hazards = [gear];
+    until(run, () => !run.hazards.includes(gear));
+    expect([run.hazards, run.furnaceLit]).toEqual([[], false]);
+  });
+
+  test("a hot gear adds no ember past maxEmbers", () => {
+    const { run } = quiet();
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    const embers = Array.from({ length: run.tuning.maxEmbers }, () => hazard("ember", 150, 121));
+    for (const e of embers) e.footing = "climb"; // parked, so they stay put
+    run.hazards = [...embers, rolling(true)];
+    step(run, 20);
+    expect(run.hazards.filter((h) => h.kind === "ember").length).toBe(run.tuning.maxEmbers);
+    expect(run.hazards.some((h) => h.kind === "gear")).toBe(false);
+  });
+
+  test("the first gear of each life is hot", () => {
+    const { run } = quiet();
+    run.gearTimer = 1;
+    step(run, 1);
+    expect(run.hazards[0]?.hot).toBe(true);
+    run.hazards[0] = rolling(false);
+    run.startFloor();
+    run.gearTimer = 1;
+    step(run, 1);
+    expect(run.hazards[0]?.hot).toBe(true);
+  });
+
+  test("the Gnome raises its arms only for gears on the girder floor", () => {
+    const { run } = quiet();
+    run.emberTimer = 1;
+    expect(run.gnomeThrowing()).toBe(false);
+  });
+});
+
 describe("losing a life", () => {
   test("to a hazard: a life goes, and after a pause the floor starts again", () => {
     const { run, sounds } = quiet();
@@ -177,7 +242,7 @@ describe("losing a life", () => {
     expect([run.phase, run.lives]).toEqual(["dying", 2]);
     expect(sounds).toContain("death");
     step(run, t.dyingTicks);
-    expect([run.phase, run.monkey.x, run.monkey.y, run.hazards]).toEqual(["play", 16, 248, []]);
+    expect([run.phase, run.monkey.x, run.monkey.y, run.hazards]).toEqual(["play", 24, 248, []]);
   });
 
   test("to a long fall", () => {
