@@ -26,7 +26,6 @@ import {
   IntermissionState,
   LevelClearState,
   levelClearFlashTicks,
-  levelBannerTicks,
   levelClearTicks,
   PauseState,
   PlayState,
@@ -79,8 +78,6 @@ export class SweetSamSoftware implements FixedViewport {
   lives = 0;
   /** The level being played, from 1 (#47). */
   level = 1;
-  /** START ticks left showing "LEVEL n" before READY; only after a level clear. */
-  levelBannerTicks = 0;
   /** Go `score` (renamed: `score()` is the Software method). */
   scoreValue = 0;
   /** What the player's prizes change in this run (#22); `noAdvantages` without prizes. */
@@ -157,13 +154,12 @@ export class SweetSamSoftware implements FixedViewport {
     update(this, i);
   }
 
-  /** Test hook: start `level` from its START banner, as a level clear would. */
+  /** Test hook: start `level` from READY!, as a level clear would. */
   jumpTo(level: number): void {
     this.level = level;
     this.items = newItems();
     this.flowersShown = 0;
     restartRound(this);
-    this.levelBannerTicks = levelBannerTicks;
     this.stateMachine.changeState(stateIDStart);
   }
 
@@ -283,7 +279,6 @@ export class SweetSamSoftware implements FixedViewport {
       pelletAnimTick: this.pelletAnimTick,
       dials: [...this.dials.score.reels.map(dial), ...this.dials.high.reels.map(dial)],
       level: this.level,
-      levelBannerTicks: this.levelBannerTicks,
       mazeFlash: this.mazeFlash(),
       flower: { ticks: this.flowerTicks, shown: this.flowersShown },
       flowerPopup: this.flowerPopup === null ? null : { ...this.flowerPopup },

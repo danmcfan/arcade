@@ -253,16 +253,12 @@ describe("SweetSamSoftware.draw", () => {
     expect(ops.at(-1)?.[6]).toBe(192 + 8);
   });
 
-  test("LEVEL n shows in place of READY, then READY", () => {
+  test("a later level starts with READY and no level text", () => {
     const s = new SweetSamSoftware(0);
     s.level = 2;
-    s.levelBannerTicks = 10;
-    let ops = render(s);
-    expect(ops.filter((o) => name(o) === "draw:ready.png")).toEqual([]);
-    expect(ops.filter((o) => name(o) === "draw:font.png").length).toBe(7); // "LEVEL 2" without the space
-    s.levelBannerTicks = 0;
-    ops = render(s);
+    const ops = render(s);
     expect(ops.filter((o) => name(o) === "draw:ready.png").length).toBe(6);
+    expect(ops.filter((o) => name(o) === "draw:font.png")).toEqual([]);
   });
 
   test("clearing a level: the maze flashes and the bees leave", () => {

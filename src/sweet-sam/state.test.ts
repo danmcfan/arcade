@@ -4,13 +4,13 @@ import { NO_INPUT, type Input } from "../engine/input.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import { SweetSamSoftware } from "./software.ts";
 import { dropEaten } from "./release.ts";
-import { levelBannerTicks, levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
+import { levelClearTicks, respawnBlinkHiddenForElapsed } from "./state.ts";
 import { levelValues } from "./levels.ts";
 import { sweetSamAdvantages } from "./advantages.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { flowerDrops, flowerPoints, flowerStayMax, flowerStayMin, flowerX, flowerY } from "./flower.ts";
 import { flowerPopupTicks } from "./bonusEat.ts";
-import { deathRoundDelayTicks } from "./update.ts";
+import { deathRoundDelayTicks, startTicks } from "./update.ts";
 import type { Entity } from "./entity.ts";
 
 let sounds: SoundEvent[] = [];
@@ -661,10 +661,10 @@ describe("clearing a level", () => {
     expect(flashes).toContain(false);
   });
 
-  test("then the next level: maze refilled, bear and bees home, LEVEL 2 before READY", () => {
+  test("then the next level: maze refilled, bear and bees home, straight to READY", () => {
     const s = cleared();
     step(s, levelClearTicks + 1);
-    let snap = s.snapshot();
+    const snap = s.snapshot();
     expect([snap.state, snap.level, snap.items, snap.score, snap.lives]).toEqual(["START", 2, 244, 1234, 3]);
     expect([snap.player.x, snap.player.y, snap.modeIndex, snap.modeTicks]).toEqual([112, 212, 0, 0]);
     expect(snap.enemies.map((e) => [e.kind, e.x, e.y, e.dotMin])).toEqual([
@@ -673,17 +673,14 @@ describe("clearing a level", () => {
       ["teal", 96, 140, levelValues(2).dotMinimums.teal],
       ["orange", 128, 140, levelValues(2).dotMinimums.orange],
     ]);
-    expect(snap.levelBannerTicks).toBe(levelBannerTicks);
-    step(s, levelBannerTicks);
-    snap = s.snapshot();
-    expect([snap.state, snap.levelBannerTicks, snap.startTicks]).toEqual(["START", 0, 120]);
+    expect(snap.startTicks).toBe(startTicks);
     step(s, 122);
     expect(s.snapshot().state).toBe("PLAY");
   });
 
   test("level 2's bees fly faster and its modes are level 2's", () => {
     const s = cleared();
-    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    step(s, levelClearTicks + 1 + 122);
     const snap = s.snapshot();
     expect(snap.state).toBe("PLAY");
     expect(snap.enemies[1]?.velocity).toBe(levelValues(2).beeVelocity);
@@ -692,7 +689,7 @@ describe("clearing a level", () => {
 
   test("each clear raises the level by 1", () => {
     const s = cleared();
-    step(s, levelClearTicks + 1 + levelBannerTicks + 121);
+    step(s, levelClearTicks + 1 + 121);
     s.items = s.items.map(() => null);
     step(s, 2 + levelClearTicks);
     expect([s.snapshot().state, s.snapshot().level]).toEqual(["INTERMISSION", 3]);
@@ -735,7 +732,7 @@ describe("intermissions (#160)", () => {
     step(s, 30);
     step(s, 1, { ...NO_INPUT, space: true });
     const snap = s.snapshot();
-    expect([snap.state, snap.level, snap.items, snap.levelBannerTicks]).toEqual(["START", 3, 244, levelBannerTicks]);
+    expect([snap.state, snap.level, snap.items, snap.startTicks]).toEqual(["START", 3, 244, startTicks]);
   });
 
   test("the scene plays the intermission music", () => {
@@ -751,7 +748,7 @@ describe("intermissions (#160)", () => {
 describe("game over pays out", () => {
   test("a run that clears level 1 and loses every life on level 2 ends with gameOver() and its score in tickets", () => {
     const s = cleared(); // score 1234
-    step(s, levelClearTicks + 1 + levelBannerTicks + 122);
+    step(s, levelClearTicks + 1 + 122);
     expect([s.snapshot().state, s.level]).toEqual(["PLAY", 2]);
     while (!s.gameOver()) {
       if (s.snapshot().state === "PLAY") onPlayer(s, enemy(s, 0));
@@ -961,7 +958,7 @@ describe("an eaten bee becomes eyes (#153)", () => {
 });
 
 describe("jumpTo (the test hook's level jump)", () => {
-  test("starts the given level from its START banner, maze refilled, at that level's speeds", () => {
+  test("starts the given level from READY!, maze refilled, at that level's speeds", () => {
     const s = playing();
     s.items[0] = null;
     s.jumpTo(5);
