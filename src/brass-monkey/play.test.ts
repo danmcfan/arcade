@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
+import { brassMonkeyAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 import { conveyorFloor, floors, girderTop } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
@@ -37,7 +38,19 @@ const hazard = (kind: Hazard["kind"], x: number, y: number, dir: -1 | 1 = 1): Ha
   ladder: null,
   climbDir: 1,
   scorableIn: 0,
+  hot: false,
 });
+
+/** A quiet run with the monkey standing on the girder floor's first wrench. */
+function holding(): { run: Run; sounds: RunSound[] } {
+  const q = quiet();
+  const [spot] = q.run.currentFloor().wrenches;
+  if (spot === undefined) throw new Error("the girder floor has no wrench");
+  q.run.monkey.x = spot.x;
+  q.run.monkey.y = spot.y;
+  step(q.run, 1);
+  return q;
+}
 
 beforeEach(() => {
   rng.seed(1);
@@ -46,13 +59,13 @@ beforeEach(() => {
 describe("the monkey", () => {
   test("starts at the bottom of the girder floor with 3 lives, no score and the full bonus", () => {
     const { run } = quiet();
-    expect([run.monkey.x, run.monkey.y, run.lives, run.score, run.bonus]).toEqual([16, 248, 3, 0, 5000]);
+    expect([run.monkey.x, run.monkey.y, run.lives, run.score, run.bonus]).toEqual([24, 248, 3, 0, 5000]);
   });
 
   test("runs 1 px a tick, following the slope", () => {
     const { run } = quiet();
     step(run, 10, { right: true });
-    expect([run.monkey.x, run.monkey.y, run.monkey.left, run.monkey.moving]).toEqual([26, 248, false, true]);
+    expect([run.monkey.x, run.monkey.y, run.monkey.left, run.monkey.moving]).toEqual([34, 248, false, true]);
     run.monkey.x = 111;
     step(run, 17, { right: true });
     expect([run.monkey.x, run.monkey.y]).toEqual([128, 246]);
@@ -69,7 +82,7 @@ describe("the monkey", () => {
     expect(run.monkey.footing).toBe("air");
     expect(run.monkey.airTop).toBe(248 - 15);
     step(run, 1, { space: true });
-    expect([run.monkey.footing, run.monkey.x, run.monkey.y]).toEqual(["ground", 47, 248]);
+    expect([run.monkey.footing, run.monkey.x, run.monkey.y]).toEqual(["ground", 55, 248]);
     // Space must be let go before the next jump.
     step(run, 1, { space: true });
     expect(run.monkey.footing).toBe("ground");
@@ -156,6 +169,70 @@ describe("hazards", () => {
   });
 });
 
+/** A gear rolling left on the bottom girder, 4 px short of the furnace. */
+const rolling = (hot: boolean): Hazard => ({ ...hazard("gear", 20, 248, -1), hot });
+
+describe("the furnace", () => {
+  test("no ember is ever thrown on the girder floor: the Gnome only sends gears", () => {
+    const { run } = quiet();
+    run.emberTimer = 1;
+    step(run, 600);
+    expect(run.hazards.filter((h) => h.kind === "ember")).toEqual([]);
+  });
+
+  test("no ember exists until a hot gear reaches the furnace; then exactly one appears there and the furnace is lit", () => {
+    const { run } = quiet();
+    run.monkey.x = 150;
+    run.monkey.y = 245;
+    const gear = rolling(true);
+    run.hazards = [gear];
+    expect(run.furnaceLit).toBe(false);
+    until(run, () => !run.hazards.includes(gear));
+    expect(run.hazards.map((h) => [h.kind, h.x, h.y])).toEqual([["ember", 8, 248]]);
+    expect(run.furnaceLit).toBe(true);
+  });
+
+  test("a plain gear reaching the furnace ends there and adds no ember", () => {
+    const { run } = quiet();
+    run.monkey.x = 150;
+    run.monkey.y = 245;
+    const gear = rolling(false);
+    run.hazards = [gear];
+    until(run, () => !run.hazards.includes(gear));
+    expect([run.hazards, run.furnaceLit]).toEqual([[], false]);
+  });
+
+  test("a hot gear adds no ember past maxEmbers", () => {
+    const { run } = quiet();
+    run.monkey.y = -100;
+    run.monkey.footing = "climb";
+    const embers = Array.from({ length: run.tuning.maxEmbers }, () => hazard("ember", 150, 121));
+    for (const e of embers) e.footing = "climb"; // parked, so they stay put
+    run.hazards = [...embers, rolling(true)];
+    step(run, 20);
+    expect(run.hazards.filter((h) => h.kind === "ember").length).toBe(run.tuning.maxEmbers);
+    expect(run.hazards.some((h) => h.kind === "gear")).toBe(false);
+  });
+
+  test("the first gear of each life is hot", () => {
+    const { run } = quiet();
+    run.gearTimer = 1;
+    step(run, 1);
+    expect(run.hazards[0]?.hot).toBe(true);
+    run.hazards[0] = rolling(false);
+    run.startFloor();
+    run.gearTimer = 1;
+    step(run, 1);
+    expect(run.hazards[0]?.hot).toBe(true);
+  });
+
+  test("the Gnome raises its arms only for gears on the girder floor", () => {
+    const { run } = quiet();
+    run.emberTimer = 1;
+    expect(run.gnomeThrowing()).toBe(false);
+  });
+});
+
 describe("losing a life", () => {
   test("to a hazard: a life goes, and after a pause the floor starts again", () => {
     const { run, sounds } = quiet();
@@ -165,7 +242,7 @@ describe("losing a life", () => {
     expect([run.phase, run.lives]).toEqual(["dying", 2]);
     expect(sounds).toContain("death");
     step(run, t.dyingTicks);
-    expect([run.phase, run.monkey.x, run.monkey.y, run.hazards]).toEqual(["play", 16, 248, []]);
+    expect([run.phase, run.monkey.x, run.monkey.y, run.hazards]).toEqual(["play", 24, 248, []]);
   });
 
   test("to a long fall", () => {
@@ -220,8 +297,38 @@ describe("score", () => {
     step(run, 1, { space: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
+  });
+
+  for (const [count, points] of [
+    [2, 300],
+    [3, 800],
+    [4, 800],
+  ] as const) {
+    test(`${count} hazards in one jump score ${points}`, () => {
+      const { run, sounds } = quiet();
+      run.monkey.x = 60;
+      run.hazards = Array.from({ length: count }, (_, n) => hazard("gear", 75 + n, 248, -1));
+      step(run, 1, { space: true });
+      step(run, 30);
+      expect(run.phase).toBe("play");
+      expect(run.score).toBe(points);
+      expect(sounds.filter((s) => s === "hazard")).toHaveLength(count);
+    });
+  }
+
+  test("the count of hazards jumped resets on landing", () => {
+    const { run } = quiet();
+    run.monkey.x = 60;
+    run.hazards = [hazard("gear", 76, 248, -1)];
+    step(run, 1, { space: true });
+    until(run, () => run.monkey.footing === "ground");
+    run.hazards = [hazard("gear", run.monkey.x + 16, 248, -1)];
+    step(run, 1, { space: true });
+    step(run, 30);
+    expect(run.phase).toBe("play");
+    expect(run.score).toBe(2 * t.jumpPoints[0]);
   });
 
   test("an ember jumped over on the monkey's girder scores", () => {
@@ -231,7 +338,7 @@ describe("score", () => {
     step(run, 1, { space: true, right: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
   });
 
@@ -267,7 +374,7 @@ describe("score", () => {
     step(run, 1, { space: true });
     step(run, 30);
     expect(run.phase).toBe("play");
-    expect(run.score).toBe(t.hazardPoints);
+    expect(run.score).toBe(t.jumpPoints[0]);
     expect(sounds).toEqual(["jump", "hazard"]);
   });
 
@@ -277,10 +384,40 @@ describe("score", () => {
     run.monkey.y = 211;
     step(run, 8, { right: true });
     expect(run.bolts[0]).toBe(true);
-    expect(run.score).toBe(t.boltPoints);
+    expect(run.score).toBe(300);
     expect(sounds).toEqual(["bolt"]);
     step(run, 8, { left: true });
-    expect(run.score).toBe(t.boltPoints);
+    expect(run.score).toBe(300);
+  });
+
+  test("a bolt scores 300 on loop 0, 500 on loop 1 and 800 from loop 2", () => {
+    expect([0, 1, 2, 3, 7].map((l) => t.boltPointsFor(l))).toEqual([300, 500, 800, 800, 800]);
+    const { run } = quiet({ loop: 1 });
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.score).toBe(500);
+  });
+
+  test("a bolt shows its points where it was picked up, briefly", () => {
+    const { run } = quiet();
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.popups.map(({ x, y, points }) => ({ x, y, points }))).toEqual([{ x: 64, y: 212, points: 300 }]);
+    step(run, t.popupTicks);
+    expect(run.popups).toEqual([]);
+  });
+
+  test("a collected bolt comes back when the floor restarts", () => {
+    const { run } = quiet();
+    run.monkey.x = 56;
+    run.monkey.y = 211;
+    step(run, 8, { right: true });
+    expect(run.bolts[0]).toBe(true);
+    run.startFloor();
+    expect(run.bolts[0]).toBe(false);
+    expect(run.popups).toEqual([]);
   });
 
   test("the bonus is added at the exit, and the girder floor leads to the conveyor floor", () => {
@@ -298,6 +435,114 @@ describe("score", () => {
   });
 });
 
+describe("the wrench", () => {
+  test("each floor has two wrenches, standing on a girder", () => {
+    for (const floor of floors) {
+      expect(floor.wrenches).toHaveLength(2);
+      for (const w of floor.wrenches)
+        expect(floor.girders.some((g) => w.x >= g.x0 && w.x < g.x1 && girderTop(g, w.x) === w.y)).toBe(true);
+    }
+  });
+
+  test("picking one up starts the timer and takes it off the floor until the floor restarts", () => {
+    const { run } = holding();
+    expect(run.monkey.wrench).toBe(t.wrenchTicks);
+    expect(run.wrenches).toEqual([true, false]);
+    run.startFloor();
+    expect([run.monkey.wrench, ...run.wrenches]).toEqual([0, false, false]);
+  });
+
+  test("while held, Space doesn't jump and up and down don't climb", () => {
+    const { run, sounds } = holding();
+    step(run, 1, { space: true });
+    expect([run.monkey.footing, sounds]).toEqual(["ground", []]);
+    const ladder = run.currentFloor().ladders.find((l) => l.x === 32 && l.bottom === 209);
+    run.monkey.x = (ladder?.x ?? 0) + 4;
+    run.monkey.y = 210;
+    step(run, 5, { up: true });
+    expect(run.monkey.footing).toBe("ground");
+    step(run, 5, { right: true });
+    expect(run.monkey.x).toBe(41);
+  });
+
+  test("runs out after the tuned number of ticks, then the monkey jumps again", () => {
+    const { run } = holding();
+    step(run, t.wrenchTicks - 1);
+    expect(run.monkey.wrench).toBe(1);
+    expect(run.wrenchFlashing()).toBe(true);
+    step(run, 1);
+    expect([run.monkey.wrench, run.wrenchFlashing()]).toEqual([0, false]);
+    step(run, 1, { space: true });
+    expect(run.monkey.footing).toBe("air");
+  });
+
+  test("flashes only in its last ticks", () => {
+    const { run } = holding();
+    run.monkey.wrench = t.wrenchFlashTicks + 1;
+    expect(run.wrenchFlashing()).toBe(false);
+    run.monkey.wrench = t.wrenchFlashTicks;
+    expect(run.wrenchFlashing()).toBe(true);
+  });
+
+  test("the raised swing also smashes a hazard over the monkey's head, the lowered swing does not", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.ticks = 0;
+    run.hazards = [hazard("gear", run.monkey.x + 4, run.monkey.y - 20, -1)];
+    step(run, 1);
+    expect([run.hazards.length, run.smashes.length]).toEqual([0, 1]);
+    const lowered = holding().run;
+    lowered.monkey.left = false;
+    lowered.ticks = 8;
+    lowered.hazards = [hazard("gear", lowered.monkey.x + 4, lowered.monkey.y - 20, 1)];
+    step(lowered, 1);
+    expect([lowered.hazards.length, lowered.smashes.length]).toEqual([1, 0]);
+  });
+
+  test("a gear or an ember it hits is smashed for 300, 500 or 800, seeded, and doesn't kill", () => {
+    const scores = new Set<number>();
+    for (const kind of ["gear", "ember"] as const) {
+      for (let s = 1; s <= 12; s++) {
+        rng.seed(s);
+        const { run, sounds } = holding();
+        run.monkey.left = false;
+        run.hazards = [hazard(kind, run.monkey.x + 10, run.monkey.y, -1)];
+        step(run, 1);
+        expect([run.phase, run.hazards.length, sounds]).toEqual(["play", 0, ["smash"]]);
+        expect(t.smashPoints.some((p) => p === run.score)).toBe(true);
+        expect(run.smashes).toMatchObject([{ points: run.score }]);
+        scores.add(run.score);
+      }
+    }
+    expect([...scores].toSorted((a, b) => a - b)).toEqual([...t.smashPoints]);
+    rng.seed(3);
+    const a = holding().run;
+    a.hazards = [hazard("gear", a.monkey.x + 10, a.monkey.y, -1)];
+    step(a, 1);
+    rng.seed(3);
+    const b = holding().run;
+    b.hazards = [hazard("gear", b.monkey.x + 10, b.monkey.y, -1)];
+    step(b, 1);
+    expect(a.score).toBe(b.score);
+  });
+
+  test("a hazard that reaches the monkey from behind still kills it", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.hazards = [hazard("gear", run.monkey.x - 6, run.monkey.y, 1)];
+    step(run, 1);
+    expect(run.phase).toBe("dying");
+  });
+
+  test("losing a life drops it", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.hazards = [hazard("gear", run.monkey.x - 6, run.monkey.y, 1)];
+    step(run, t.dyingTicks + 1);
+    expect([run.phase, run.monkey.wrench, ...run.wrenches]).toEqual(["play", 0, false, false]);
+  });
+});
+
 describe("the escape and the next loop", () => {
   test("after the conveyor floor the escaped scene plays, then the girder floor again, harder", () => {
     const { run, sounds } = quiet({ floor: 1 });
@@ -310,7 +555,7 @@ describe("the escape and the next loop", () => {
     step(run, t.escapeTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 1]);
     const easy = t.tuningFor(0, 0);
-    expect(run.bonus).toBeLessThan(easy.bonusStart);
+    expect(run.bonus).toBeGreaterThan(easy.bonusStart);
     expect(run.tuning.gearEvery).toBeLessThan(easy.gearEvery);
     expect(run.tuning.emberEvery).toBeLessThan(easy.emberEvery);
     expect(run.tuning.gearSpeed).toBeGreaterThan(easy.gearSpeed);
@@ -318,14 +563,29 @@ describe("the escape and the next loop", () => {
     expect(run.tuning.emberClimbSpeed).toBeGreaterThan(easy.emberClimbSpeed);
   });
 
-  test("the bonus never starts below its floor, nor hazards come too often", () => {
-    const hard = t.tuningFor(0, 20);
-    expect(hard.bonusStart).toBe(t.minBonusStart);
-    expect(hard.gearEvery).toBe(t.minSpawnEvery);
+  test("the bonus starts 1000 higher each loop, up to 8000, as in Donkey Kong", () => {
+    for (const floor of floors.keys()) {
+      expect([0, 1, 2, 3, 4].map((loop) => t.tuningFor(floor, loop).bonusStart)).toEqual([
+        5000, 6000, 7000, 8000, 8000,
+      ]);
+    }
+  });
+
+  test("a floor restarted after a death starts at the loop's bonus", () => {
+    const { run } = quiet({ loop: 2 });
+    run.bonus = t.bonusStep;
+    step(run, t.bonusTicks);
+    expect(run.phase).toBe("dying");
+    step(run, t.dyingTicks);
+    expect([run.phase, run.bonus]).toEqual(["play", 7000]);
+  });
+
+  test("hazards never come too often", () => {
+    expect(t.tuningFor(0, 20).gearEvery).toBe(t.minSpawnEvery);
   });
 
   test("by loop 10 every hazard speed has reached its cap", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       const hard = t.tuningFor(floor, 10);
       expect(hard.gearSpeed).toBe(t.maxGearSpeed);
       expect(hard.emberWalkSpeed).toBe(t.maxEmberWalkSpeed);
@@ -334,7 +594,7 @@ describe("the escape and the next loop", () => {
   });
 
   test("an ember is always slower than the monkey, walking and climbing", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       for (let loop = 0; loop <= 30; loop++) {
         const tuning = t.tuningFor(floor, loop);
         expect(tuning.emberWalkSpeed).toBeLessThan(t.walkSpeed);
@@ -412,5 +672,65 @@ describe("landing on a slope", () => {
     const y0 = run.monkey.y;
     until(run, () => run.monkey.footing !== "air", {}, 200);
     expect(run.monkey.y).toBeGreaterThan(y0 + 8);
+  });
+});
+
+/** A run on the girder floor's first bolt, `score` points in. */
+function onBolt(score: number, advantages?: BrassMonkeyAdvantages): { run: Run; sounds: RunSound[] } {
+  const sounds: RunSound[] = [];
+  const run = new Run({ onSound: (s): void => void sounds.push(s), ...(advantages && { advantages }) });
+  run.gearTimer = Infinity;
+  run.emberTimer = Infinity;
+  run.score = score;
+  run.monkey.x = 56;
+  run.monkey.y = 211;
+  return { run, sounds };
+}
+
+describe("extra life", () => {
+  test("crossing 7000 with a bolt adds one life and plays its sound", () => {
+    const { run, sounds } = onBolt(t.extraLifeAt - 100);
+    step(run, 8, { right: true });
+    expect([run.score, run.lives]).toEqual([t.extraLifeAt + 200, 4]);
+    expect(sounds).toEqual(["bolt", "extraLife"]);
+  });
+
+  test("crossing 7000 with a jump adds one life", () => {
+    const { run, sounds } = quiet();
+    run.score = t.extraLifeAt - 50;
+    run.monkey.x = 60;
+    run.hazards = [hazard("gear", 76, 248, -1)];
+    step(run, 1, { space: true });
+    step(run, 30);
+    expect(run.lives).toBe(4);
+    expect(sounds).toEqual(["jump", "hazard", "extraLife"]);
+  });
+
+  test("crossing 7000 with the floor bonus adds one life", () => {
+    const { run } = quiet();
+    run.score = t.extraLifeAt - 1;
+    run.monkey.x = 100;
+    run.monkey.y = 56;
+    until(run, () => run.phase === "clear", { right: true });
+    expect(run.lives).toBe(4);
+  });
+
+  test("only once: reaching 14000 adds none", () => {
+    const { run, sounds } = onBolt(t.extraLifeAt - 100);
+    step(run, 8, { right: true });
+    run.score = 2 * t.extraLifeAt - 100;
+    run.monkey.x = 56;
+    run.bolts[0] = false;
+    step(run, 8, { left: true });
+    step(run, 8, { right: true });
+    expect(run.score).toBeGreaterThanOrEqual(2 * t.extraLifeAt);
+    expect(run.lives).toBe(4);
+    expect(sounds.filter((s) => s === "extraLife")).toHaveLength(1);
+  });
+
+  test("stacks with the oil can's extra life", () => {
+    const { run } = onBolt(t.extraLifeAt - 100, brassMonkeyAdvantages(["oilCan"]));
+    step(run, 8, { right: true });
+    expect(run.lives).toBe(5);
   });
 });

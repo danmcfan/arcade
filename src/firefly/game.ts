@@ -3,6 +3,7 @@
 // dive at the firefly, dropping shots. Headless and on ticks (ADR 0002, ADR
 // 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
+import { scoreDialsAt } from "../ui/hudArt";
 import { noAdvantages, type FireflyAdvantages } from "./advantages.ts";
 import { sounds } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
@@ -14,7 +15,7 @@ import type { FixedViewport } from "../game/software.ts";
 import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
-import { ScoreDials } from "../ui/scoreDials.ts";
+import { ScoreDials } from "../ui/dials.ts";
 import { drawFirefly } from "./draw.ts";
 import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
@@ -50,9 +51,17 @@ import {
   firstShotDelay,
   formation,
   hitEffectTicks,
+  morphBonus,
+  morphTrioSize,
+  morphChance,
+  morphFromStage,
+  morphSpacing,
+  nextExtraLife,
   points,
   respawnTicks,
+  shotCutoffMargin,
   shotSpacing,
+  shotSpawnOffset,
   type Slot,
   shotSpeed,
   sparkCooldown,
@@ -97,6 +106,10 @@ const entryCurves: Readonly<Record<EntryCurve, { curve: Omit<BezierConfig, "p3">
 };
 
 const shift = (p: Vec, d: Vec): Vec => ({ x: p.x + d.x * entryPairOffset, y: p.y + d.y * entryPairOffset });
+/** The whole path slid `dx` sideways. */
+const shiftPath = (path: Path, dx: number): Path =>
+  path.map((c) => ({ p0: slide(c.p0, dx), p1: slide(c.p1, dx), p2: slide(c.p2, dx), p3: slide(c.p3, dx) }));
+const slide = (p: Vec, dx: number): Vec => ({ x: p.x + dx, y: p.y });
 const mirror = (p: Vec): Vec => ({ x: fieldWidth - p.x, y: p.y });
 /** Where the second of a pair flies: mirrored on a split wave, else `beside` the first. */
 const partner = (split: boolean, p: Vec, beside: Vec): Vec => (split ? mirror(p) : shift(p, beside));
@@ -188,6 +201,7 @@ function waveEnemy(slot: Slot, curve: Omit<BezierConfig, "p3">, wait: number): E
     escortOf: null,
     escortDx: 0,
     escortsKilled: 0,
+    trio: null,
   };
   followPath(e, [{ ...curve, p3: home }]);
   return e;
@@ -230,6 +244,9 @@ function face(e: Enemy, px: number, py: number): void {
   }
 }
 
+/** The sound of a spark shooting each kind down; a morph, split from a diving Moth, dies with the Moth's. */
+const hitSound = { moth: sounds.mothHit, wasp: sounds.waspHit, owl: sounds.owlKill, morph: sounds.mothHit } as const;
+
 function play(s: Sound): void {
   s.rewind();
   s.play();
@@ -245,20 +262,18 @@ export class FireflySoftware implements FixedViewport {
   /** What the player's prizes change in this run (./advantages.ts). */
   readonly advantages: Readonly<FireflyAdvantages>;
 
-  /** The hub high score this run is chasing; HI shows it until the score passes it. */
-  readonly highScore: number;
-
   constructor(highScore = 0, advantages: Readonly<FireflyAdvantages> = noAdvantages) {
-    this.highScore = highScore;
     this.advantages = advantages;
     this.lives = advantages.lives;
-    this.dials = new ScoreDials(highScore);
+    this.dials = new ScoreDials(highScore, scoreDialsAt);
   }
 
   stage = 1;
   stageTick = 0;
   lives: number;
   points = 0;
+  /** The score that gives the next extra life. */
+  nextLife = nextExtraLife(0);
   over = false;
   player: Vec = { ...playerStart };
   respawn = 0;
@@ -280,23 +295,26 @@ export class FireflySoftware implements FixedViewport {
   formationPhase: FormationPhase = "sway";
   /** `ticks` when the formation began to breathe. */
   breatheFrom = 0;
-  /** The score and high score on Sweet Sam's rolling dials (src/ui/scoreDials.ts). */
+  /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
   readonly dials: ScoreDials;
 
   update(i: Input): void {
     if (this.over) return;
 
-    if (this.stageTick === 0) play(sounds.stage);
+    if (this.stageTick === 0) play(this.stage === 1 ? sounds.fireflyStart : sounds.stage);
     this.stageTick++;
     if (badgesShown(this.stage, this.stageTick) > badgesShown(this.stage, this.stageTick - 1)) play(sounds.badgeTick);
     this.ticks++;
 
-    if (this.respawn === 0) this.movePlayer(i);
+    // As in Galaga, the firefly is held until the start theme ends.
+    const opening = this.stage === 1 && this.stageTick <= stageIntroTicks;
+    if (this.respawn === 0 && !opening) this.movePlayer(i);
     this.moveSparks();
     this.moveEnemies();
     this.moveCaptive();
     this.moveShots();
     this.hitEnemies();
+    this.awardExtraLives();
     if (this.respawn === 0) this.hitPlayer();
     this.endHitEffects();
     this.countDownBonuses();
@@ -305,7 +323,7 @@ export class FireflySoftware implements FixedViewport {
     // With no lives left the run ends on this stage, even if the field is clear.
     if (this.enemies.length === 0 && this.lives > 0) this.nextStage();
 
-    this.dials.tick(this.score(), this.highScore);
+    this.dials.tick(this.score());
   }
 
   /** The formation's x offset this tick: 0 once it breathes. */
@@ -361,12 +379,12 @@ export class FireflySoftware implements FixedViewport {
       const py = e.y;
       switch (e.state) {
         case "waiting":
-          if (--e.wait <= 0) e.state = "entering";
+          if (--e.wait <= 0) this.startEntry(e, d);
           break;
         case "entering":
         case "diving":
           this.stepPath(e);
-          if (e.state === "diving") this.dropShot(e);
+          this.dropShot(e);
           break;
         case "beaming":
           this.beam(e);
@@ -428,6 +446,12 @@ export class FireflySoftware implements FixedViewport {
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    e.shotsLeft = 0;
+    if (e.kind === "morph") {
+      // A morph flies off the bottom for good, unscored.
+      e.hp = 0;
+      return;
+    }
     if (e.beamTicks > 0) {
       e.state = "beaming";
       return;
@@ -438,6 +462,14 @@ export class FireflySoftware implements FixedViewport {
       e.x = this.slotPos(e.home).x;
       e.y = -offscreenMargin;
     }
+  }
+
+  /** `e` sets off on its entry curve; some fire at the firefly on the way in (Galaga's). */
+  private startEntry(e: Enemy, d: Difficulty): void {
+    e.state = "entering";
+    if (rng.float() >= d.entryShotChance) return;
+    e.shotsLeft = 1 + rng.intn(d.entryShots);
+    e.shotTimer = firstShotDelay;
   }
 
   /** An escort whose Owl is no longer diving flies back to its slot. */
@@ -473,8 +505,23 @@ export class FireflySoftware implements FixedViewport {
     const path: Path = beamDive
       ? [{ p0, p1, p2: { x: aim, y: beamY - 60 }, p3: { x: aim, y: beamY } }]
       : divePath(e.kind, p0, p1, aim, side);
+    // One trio at a time.
+    const morphing =
+      e.kind === "moth" &&
+      this.stage >= morphFromStage &&
+      !this.enemies.some((m) => m.kind === "morph") &&
+      rng.intn(morphChance) === 0;
+    if (morphing) {
+      this.morph(e, path, d);
+      return;
+    }
+    this.sendDiving(e, path, d, beamDive);
+  }
+
+  private sendDiving(e: Enemy, path: Path, d: Difficulty, beamDive = false): void {
     e.state = "diving";
     e.outOfFormation = true;
+    play(sounds.dive);
     followPath(e, path, d.diveSpeed);
     e.beamTicks = beamDive ? beamTicks : 0;
     e.shotsLeft = beamDive ? 0 : d.shotsPerDive;
@@ -580,15 +627,38 @@ export class FireflySoftware implements FixedViewport {
     c.y = ty;
   }
 
-  /** A diving enemy above the firefly drops its shots, aimed down at it. */
+  /** The Moth splits into a trio of morphs that fly its dive side by side. */
+  private morph(moth: Enemy, path: Path, d: Difficulty): void {
+    const trio = { kills: 0 };
+    this.enemies = this.enemies.filter((e) => e !== moth);
+    for (let i = 0; i < morphTrioSize; i++) {
+      const k = i - (morphTrioSize - 1) / 2;
+      const dx = k * morphSpacing;
+      const m: Enemy = {
+        ...moth,
+        kind: "morph",
+        hp: enemyHp.morph,
+        x: moth.x + dx,
+        trio,
+        escortOf: null,
+        escortDx: 0,
+        escortsKilled: 0,
+        beamTicks: 0,
+      };
+      this.sendDiving(m, shiftPath(path, dx), d);
+      this.enemies.push(m);
+    }
+  }
+
+  /** A diving or entering enemy above the firefly drops its shots, aimed down at it. */
   private dropShot(e: Enemy): void {
-    if (e.shotsLeft === 0 || e.state !== "diving") return;
+    if (e.shotsLeft === 0 || (e.state !== "diving" && e.state !== "entering")) return;
     if (e.shotTimer > 0) e.shotTimer--;
-    if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
+    if (e.shotTimer > 0 || e.y > playerY - shotCutoffMargin || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
     const maxDrift = difficulty(this.stage).shotDrift;
     const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
-    this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
+    this.shots.push({ x: e.x, y: e.y + shotSpawnOffset, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
   }
@@ -622,8 +692,11 @@ export class FireflySoftware implements FixedViewport {
       );
       if (e === undefined) return true;
       e.hp--;
-      if (e.hp === 0) this.shootDown(e);
-      play(sounds.hit);
+      if (e.hp > 0) play(sounds.owlHurt);
+      else {
+        this.shootDown(e);
+        play(hitSound[e.kind]);
+      }
       return false;
     });
   }
@@ -637,7 +710,7 @@ export class FireflySoftware implements FixedViewport {
   private shootCaptive(c: Captive): void {
     this.captive = null;
     this.points += (c.owl?.outOfFormation ?? true) ? captivePoints.diving : captivePoints.formation;
-    play(sounds.hit);
+    play(sounds.mothHit);
   }
 
   /**
@@ -665,6 +738,19 @@ export class FireflySoftware implements FixedViewport {
     const p = points(e.kind, e.outOfFormation, e.escortsKilled);
     this.points += p;
     if (e.escortsKilled > 0 && e.outOfFormation) this.bonuses.push({ points: p, x: e.x, y: e.y, ticks: bonusTicks });
+    if (e.trio !== null && ++e.trio.kills === morphTrioSize) {
+      this.points += morphBonus;
+      this.bonuses.push({ points: morphBonus, x: e.x, y: e.y, ticks: bonusTicks });
+    }
+  }
+
+  /** A life, with the extra-life jingle, for each threshold the score has reached. */
+  private awardExtraLives(): void {
+    while (this.points >= this.nextLife) {
+      this.lives++;
+      this.nextLife = nextExtraLife(this.nextLife);
+      play(sounds.extraLife);
+    }
   }
 
   /** The enemy bursts and is gone, scoring nothing. */
@@ -737,6 +823,11 @@ export class FireflySoftware implements FixedViewport {
     this.fireDelay = 0;
   }
 
+  scoreTo(score: number): void {
+    this.points = score;
+    this.nextLife = nextExtraLife(score - 1);
+  }
+
   jumpTo(stage: number): void {
     this.stage = stage - 1;
     this.nextStage();
@@ -779,6 +870,7 @@ export class FireflySoftware implements FixedViewport {
       stage: this.stage,
       stageTick: this.stageTick,
       lives: this.lives,
+      nextLife: this.nextLife,
       score: this.points,
       over: this.over,
       player: { x: this.player.x, y: this.player.y },

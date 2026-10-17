@@ -4,10 +4,14 @@ import {
   imageConveyorFloor,
   imageGirderFloor,
   imageFont,
+  imageFurnace,
+  imageGear,
   imageGnome,
   imageHud,
   imageMonkey,
   imageWall,
+  imageWrench,
+  imageWrenchSwing,
 } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
 import type { Sprite } from "../engine/image.ts";
@@ -26,6 +30,16 @@ import * as t from "./tuning.ts";
 import { bandRows, cell, charset, sheetColumns } from "../ui/glyphs.ts";
 
 const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
+
+/** A quiet run with the monkey on the floor's first wrench, after the tick that picks it up. */
+function holding(): BrassMonkeySoftware {
+  const g = quiet();
+  const [spot] = g.run.currentFloor().wrenches;
+  g.run.monkey.x = spot?.x ?? 0;
+  g.run.monkey.y = spot?.y ?? 0;
+  g.update(NO_INPUT);
+  return g;
+}
 
 /** A run with no hazards coming. */
 function quiet(highScore = 0): BrassMonkeySoftware {
@@ -132,6 +146,67 @@ describe("BrassMonkeySoftware", () => {
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
   });
 
+  test("plays the wrench music while the wrench is held, and stops it when it runs out", () => {
+    const events: SoundEvent[] = [];
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    const g = holding();
+    expect(events).toEqual(["rewind:monkeyWrench", "play:monkeyWrench"]);
+    for (let n = 0; n < t.wrenchTicks; n++) g.update(NO_INPUT);
+    expect(events.slice(2)).toEqual(["pause:monkeyWrench"]);
+  });
+
+  test("stops the wrench music when the monkey loses a life holding it", () => {
+    const events: SoundEvent[] = [];
+    const g = holding();
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: g.run.monkey.x - 6,
+        y: g.run.monkey.y,
+        dir: 1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: false,
+      },
+    ];
+    g.update(NO_INPUT);
+    expect(events).toContain("pause:monkeyWrench");
+  });
+
+  test("the snapshot holds the wrench's ticks, the wrenches picked up and the smashes showing", () => {
+    const g = holding();
+    expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({
+      wrench: t.wrenchTicks,
+      wrenches: [true, false],
+      smashes: [],
+    });
+  });
+
+  test("the snapshot holds whether the furnace is lit and which gears are hot", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: 1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+      },
+    ];
+    expect(brassMonkeySnapshot(g.snapshot())).toMatchObject({ furnaceLit: false, hazards: [{ hot: true }] });
+    g.run.furnaceLit = true;
+    expect(brassMonkeySnapshot(g.snapshot()).furnaceLit).toBe(true);
+  });
+
   test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {
     const g = quiet();
     g.update(held({ right: true }));
@@ -142,7 +217,7 @@ describe("BrassMonkeySoftware", () => {
       lives: 3,
       score: 0,
       bonus: 5000,
-      x: 17,
+      x: 25,
       y: 248,
       footing: "ground",
       moving: true,
@@ -178,13 +253,90 @@ describe("draw", () => {
     expect(gnome()).toBe(32);
   });
 
+  test("the girder floor's furnace stands at its bottom left, cold until a hot gear lights it, then flickering", () => {
+    const g = quiet();
+    const furnace = (): DrawCall | undefined => record(g).calls.find((c) => c.sprite.asset === imageFurnace.asset);
+    expect(furnace()).toMatchObject({ x: 8 + 0, y: 40 + 248 - 24, sprite: { sx: 0 } });
+    g.run.furnaceLit = true;
+    const lit = new Set<number>();
+    for (let n = 0; n < 16; n++) {
+      g.update(NO_INPUT);
+      lit.add(furnace()?.sprite.sx ?? -1);
+    }
+    expect([...lit].toSorted((a, b) => a - b)).toEqual([16, 32]);
+  });
+
+  test("the conveyor floor has no furnace", () => {
+    const g = quiet();
+    g.run.floor = 1;
+    g.run.startFloor();
+    expect(record(g).calls.some((c) => c.sprite.asset === imageFurnace.asset)).toBe(false);
+  });
+
+  test("a hot gear is drawn from the gear sheet's hot frames", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: -1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+      },
+    ];
+    const gear = record(g).calls.find((c) => c.sprite.asset === imageGear.asset);
+    expect([24, 36]).toContain(gear?.sprite.sx ?? -1);
+  });
+
   test("the monkey stands on its girder; jumping shows the jump frame", () => {
     const g = quiet();
     const monkey = (): DrawCall | undefined =>
       record(g).calls.find((c) => c.sprite.asset === imageMonkey.asset && c.sprite.h === 16 && c.y > 100);
-    expect(monkey()).toMatchObject({ x: 8 + 16 - 8, y: 40 + 248 - 16 });
+    expect(monkey()).toMatchObject({ x: 8 + 24 - 8, y: 40 + 248 - 16 });
     g.update(held({ space: true }));
     expect(monkey()?.sprite.sx).toBe(3 * 16);
+  });
+
+  test("a wrench stands on the floor until it is picked up, then the monkey swings it up and down", () => {
+    const g = quiet();
+    const [spot] = g.run.currentFloor().wrenches;
+    const at = (sprite: Sprite): DrawCall[] => record(g).calls.filter((c) => c.sprite.asset === sprite.asset);
+    expect(at(imageWrench).map((c) => [c.x, c.y])).toContainEqual([8 + (spot?.x ?? 0) - 4, 40 + (spot?.y ?? 0) - 14]);
+    g.run.monkey.x = spot?.x ?? 0;
+    g.run.monkey.y = spot?.y ?? 0;
+    g.update(NO_INPUT);
+    const swings = new Set<string>();
+    for (let n = 0; n < 16; n++) {
+      g.update(NO_INPUT);
+      swings.add(`${at(imageWrench).length}/${at(imageWrenchSwing).length}`);
+    }
+    expect([...swings].toSorted()).toEqual(["1/1", "2/0"]);
+  });
+
+  test("the wrench flashes in its last ticks", () => {
+    const g = holding();
+    g.run.monkey.wrench = t.wrenchFlashTicks;
+    const drawn = new Set<number>();
+    for (let n = 0; n < 16; n++) {
+      g.update(NO_INPUT);
+      drawn.add(
+        record(g).calls.filter((c) => c.sprite.asset === imageWrench.asset || c.sprite.asset === imageWrenchSwing.asset)
+          .length,
+      );
+    }
+    expect(drawn.has(1)).toBe(true);
+    expect(drawn.size).toBeGreaterThan(1);
+  });
+
+  test("a smash shows its points where the hazard was", () => {
+    const g = holding();
+    g.run.smashes = [{ x: 100, y: 200, points: 800, ticks: 10 }];
+    expect(words(g)).toContain("800");
   });
 
   test("the escaped scene draws daylight", () => {
@@ -301,5 +453,13 @@ describe("in the arcade", () => {
     } finally {
       game.dispose();
     }
+  });
+});
+
+describe("jumpTo", () => {
+  test("starts loop `stage` (counted from 1) on the girder floor, at that loop's bonus", () => {
+    const game = new BrassMonkeySoftware();
+    game.jumpTo(2);
+    expect([game.run.loop, game.run.floor, game.run.phase, game.run.bonus]).toEqual([1, 0, "play", 6000]);
   });
 });

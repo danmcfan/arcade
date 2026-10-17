@@ -6,6 +6,7 @@ import {
   fireflyArt,
   grassTile,
   hitQuarters,
+  morphArt,
   mothArt,
   owlArt,
   owlHurtColours,
@@ -41,8 +42,9 @@ describe("Firefly art source", () => {
     checkRows("spark", sparkArt, { w: 8, h: 8 });
   });
 
-  test("the Moth, Wasp and Owl are all 16×16", () => {
+  test("the Moth, morph, Wasp and Owl are all 16×16", () => {
     checkRows("moth", mothArt, { w: 16, h: 16 });
+    checkRows("morph", morphArt, { w: 16, h: 16 });
     checkRows("wasp", waspArt, { w: 16, h: 16 });
     checkRows("owl", owlArt, { w: 16, h: 16 });
   });
@@ -50,6 +52,7 @@ describe("Firefly art source", () => {
   test("enemies keep inside the circle their frame turns in, so no rotation clips them", () => {
     for (const [name, rows] of [
       ["moth", mothArt],
+      ["morph", morphArt],
       ["wasp", waspArt],
       ["owl", owlArt],
     ] as const) {

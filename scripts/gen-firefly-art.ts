@@ -4,7 +4,7 @@
 //
 // firefly.png, captive.png (the firefly in reds), spark.png and shot.png are
 // their rows as drawn. moth.png,
-// wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
+// morph.png, wasp.png, owl.png and owl-hurt.png (the Owl recoloured) are rotation
 // sheets: the up-facing source turned clockwise in 15° steps, one frame per heading (`rotationRows` × `rotationColumns`). Quarter
 // turns are exact; the other angles use RotSprite (scale the source up 8×
 // with Scale2x, rotate, sample back down), which keeps the outlines whole and
@@ -26,6 +26,7 @@ import {
   fireflyArt,
   grassTile,
   hitQuarters,
+  morphArt,
   mothArt,
   owlArt,
   owlHurtColours,
@@ -206,6 +207,7 @@ export const fireflyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(fireflyImagesDir, "captive.png"), 16, 16, () => toPng(recolour(fireflyArt, captiveColours))),
   imageOutput(join(fireflyImagesDir, "spark.png"), 8, 8, () => toPng(sparkArt)),
   imageOutput(join(fireflyImagesDir, "moth.png"), 96, 64, () => rotationSheet(mothArt)),
+  imageOutput(join(fireflyImagesDir, "morph.png"), 96, 64, () => rotationSheet(morphArt)),
   imageOutput(join(fireflyImagesDir, "wasp.png"), 96, 64, () => rotationSheet(waspArt)),
   imageOutput(join(fireflyImagesDir, "owl.png"), 96, 64, () => rotationSheet(owlArt)),
   imageOutput(join(fireflyImagesDir, "owl-hurt.png"), 96, 64, () => rotationSheet(recolour(owlArt, owlHurtColours))),

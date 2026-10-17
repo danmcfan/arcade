@@ -6,6 +6,9 @@ import {
   door,
   emberFlame,
   emberTips,
+  furnace,
+  furnaceFlames,
+  furnaceMouth,
   gear,
   gnomeArmsDown,
   gnomeArmsUp,
@@ -19,10 +22,11 @@ import {
   monkeyStand,
   monkeyStep,
   wallPanel,
+  wrench,
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, glint, outline, type Rows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, quarterTurn, type Rows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
@@ -30,12 +34,15 @@ import {
   doorFrame,
   emberFills,
   emberFrames,
+  furnaceFrames,
   gearFrames,
   girderFloorRows,
   conveyorFloorRows,
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
+  wrenchFrames,
+  wrenchSwingFrames,
 } from "./gen-brass-monkey-art.ts";
 
 describe("Brass Monkey art source", () => {
@@ -60,10 +67,11 @@ describe("Brass Monkey art source", () => {
     }
   });
 
-  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers) and a 10×14 bolt", () => {
+  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers), a 10×14 bolt and an 8×14 wrench", () => {
     for (const rows of gear) checkRows("gear", rows, { w: 12, h: 12 });
     checkRows("ember", emberFlame, { w: 12, h: 12 });
     checkRows("bolt", bolt, { w: 10, h: 14 });
+    checkRows("wrench", wrench, { w: 8, h: 14 });
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
   });
@@ -76,12 +84,33 @@ describe("Brass Monkey art source", () => {
     checkRows("wall panel", wallPanel, { w: 32, h: 32 });
   });
 
+  test("the furnace is 16×16 with a lit mouth over its 8×3 mouth and two 16×8 flickers of flame on top", () => {
+    checkRows("furnace", furnace, { w: 16, h: 16 });
+    checkRows("furnace mouth", furnaceMouth.rows, { w: 8, h: 3 });
+    expect(furnaceFlames.length).toBe(2);
+    for (const rows of furnaceFlames) checkRows("furnace flames", rows, { w: 16, h: 8 });
+  });
+
+  test("the furnace's sheet is 16×24 frames, outlined: cold, then lit with each flicker", () => {
+    const frames = furnaceFrames();
+    expect(frames.length).toBe(3);
+    for (const rows of frames) checkRows("furnace frame", rows, { w: 16, h: 24 });
+    expect(frames[0]?.slice(0, 8).every((row) => /^\.+$/u.test(row))).toBe(true);
+    expect(frames[1]).not.toEqual(frames[2]);
+  });
+
+  test("the hot gear is the gear's two turns glowing: no steel grey left", () => {
+    const frames = gearFrames();
+    expect(frames.length).toBe(4);
+    for (const rows of frames.slice(2)) expect(rows.join("")).not.toMatch(/[wlmd]/u);
+  });
+
   test("every bolt glint lands on the bolt", () => {
     for (const [x, y] of boltGlints) expect({ x, y, px: bolt[y]?.[x] }).not.toEqual({ x, y, px: empty });
   });
 
   test("every monkey and item fill leaves a blank border on all four sides, so its outline is whole", () => {
-    for (const rows of [...monkeyFills(), ...gear, ...emberFills(), bolt]) {
+    for (const rows of [...monkeyFills(), ...gear, ...emberFills(), bolt, wrench, furnace]) {
       expect(rows[0]).toMatch(/^\.+$/u);
       expect(rows.at(-1)).toMatch(/^\.+$/u);
       for (const row of rows) expect([row[0], row.at(-1)]).toEqual([empty, empty]);
@@ -90,6 +119,11 @@ describe("Brass Monkey art source", () => {
 });
 
 describe("generated frames", () => {
+  test("the wrench stands upright, outlined, and swings down the same wrench turned a quarter clockwise", () => {
+    expect(wrenchFrames()).toEqual([outline(wrench)]);
+    expect(wrenchSwingFrames()).toEqual([quarterTurn(outline(wrench))]);
+  });
+
   test("the monkey sheet is walk 1-3, jump, then climb and its mirror, each outlined", () => {
     const frames = monkeyFrames();
     expect(frames.length).toBe(6);
@@ -98,9 +132,9 @@ describe("generated frames", () => {
     expect(frames[0]?.[0]).toBe("......kkkk......");
   });
 
-  test("the gear's frames are its two turns, outlined", () => {
+  test("the gear's frames are its two turns, outlined, then the same hot", () => {
     const frames = gearFrames();
-    expect(frames).toEqual(gear.map((rows) => outline(rows)));
+    expect(frames.slice(0, 2)).toEqual(gear.map((rows) => outline(rows)));
   });
 
   test("the ember flickers, then sways: the flame with each tip, then both mirrored", () => {

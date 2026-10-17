@@ -4,6 +4,7 @@
 import type { Channel } from "../ui/sounds.ts";
 
 import titleUrl from "../assets/sounds/title.wav";
+import victoryUrl from "../assets/sounds/victory.wav";
 import moveUrl from "../assets/sounds/move.wav";
 import selectUrl from "../assets/sounds/select.wav";
 import ticketUrl from "../assets/sounds/ticket.wav";
@@ -22,22 +23,31 @@ import sweetFlowerUrl from "../assets/sounds/sweet-flower.wav";
 import sweetDeathUrl from "../assets/sounds/sweet-death.wav";
 import sweetClearUrl from "../assets/sounds/sweet-clear.wav";
 import sparkUrl from "../assets/sounds/spark.wav";
-import hitUrl from "../assets/sounds/hit.wav";
+import mothHitUrl from "../assets/sounds/moth-hit.wav";
+import waspHitUrl from "../assets/sounds/wasp-hit.wav";
+import owlHurtUrl from "../assets/sounds/owl-hurt.wav";
+import owlKillUrl from "../assets/sounds/owl-kill.wav";
+import diveUrl from "../assets/sounds/dive.wav";
 import lifeLostUrl from "../assets/sounds/life-lost.wav";
 import beamUrl from "../assets/sounds/beam.wav";
 import captureUrl from "../assets/sounds/capture.wav";
 import rescueUrl from "../assets/sounds/rescue.wav";
 import stageUrl from "../assets/sounds/stage.wav";
+import extraLifeUrl from "../assets/sounds/extra-life.wav";
 import badgeTickUrl from "../assets/sounds/badge-tick.wav";
+import fireflyStartUrl from "../assets/sounds/firefly-start.wav";
 import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
 import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
 import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
+import monkeySmashUrl from "../assets/sounds/monkey-smash.wav";
 import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
 import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
 import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
+import monkeyWrenchUrl from "../assets/sounds/monkey-wrench.wav";
 
 export type SoundName =
   | "title"
+  | "victory"
   | "move"
   | "select"
   | "ticket"
@@ -56,19 +66,27 @@ export type SoundName =
   | "sweetDeath"
   | "sweetClear"
   | "spark"
-  | "hit"
+  | "mothHit"
+  | "waspHit"
+  | "owlHurt"
+  | "owlKill"
+  | "dive"
   | "lifeLost"
   | "beam"
   | "capture"
   | "rescue"
   | "stage"
+  | "extraLife"
   | "badgeTick"
+  | "fireflyStart"
   | "monkeyJump"
   | "monkeyBolt"
   | "monkeyHazard"
+  | "monkeySmash"
   | "monkeyDeath"
   | "monkeyFloor"
-  | "monkeyEscape";
+  | "monkeyEscape"
+  | "monkeyWrench";
 
 /** Every sound, made by `make` from its name, WAV URL, whether it loops and its volume (0 to 1). */
 export function soundTable<S>(
@@ -76,6 +94,7 @@ export function soundTable<S>(
 ): Record<SoundName, S> {
   return {
     title: make("title", titleUrl, true, 1),
+    victory: make("victory", victoryUrl, false, 1),
     move: make("move", moveUrl, false, 1),
     select: make("select", selectUrl, false, 1),
     ticket: make("ticket", ticketUrl, false, 1),
@@ -94,19 +113,27 @@ export function soundTable<S>(
     sweetDeath: make("sweetDeath", sweetDeathUrl, false, 1),
     sweetClear: make("sweetClear", sweetClearUrl, false, 1),
     spark: make("spark", sparkUrl, false, 1),
-    hit: make("hit", hitUrl, false, 1),
+    mothHit: make("mothHit", mothHitUrl, false, 1),
+    waspHit: make("waspHit", waspHitUrl, false, 1),
+    owlHurt: make("owlHurt", owlHurtUrl, false, 1),
+    owlKill: make("owlKill", owlKillUrl, false, 1),
+    dive: make("dive", diveUrl, false, 1),
     lifeLost: make("lifeLost", lifeLostUrl, false, 1),
     beam: make("beam", beamUrl, false, 1),
     capture: make("capture", captureUrl, false, 1),
     rescue: make("rescue", rescueUrl, false, 1),
     stage: make("stage", stageUrl, false, 1),
+    extraLife: make("extraLife", extraLifeUrl, false, 1),
     badgeTick: make("badgeTick", badgeTickUrl, false, 1),
+    fireflyStart: make("fireflyStart", fireflyStartUrl, false, 1),
     monkeyJump: make("monkeyJump", monkeyJumpUrl, false, 1),
     monkeyBolt: make("monkeyBolt", monkeyBoltUrl, false, 1),
     monkeyHazard: make("monkeyHazard", monkeyHazardUrl, false, 1),
+    monkeySmash: make("monkeySmash", monkeySmashUrl, false, 1),
     monkeyDeath: make("monkeyDeath", monkeyDeathUrl, false, 1),
     monkeyFloor: make("monkeyFloor", monkeyFloorUrl, false, 1),
     monkeyEscape: make("monkeyEscape", monkeyEscapeUrl, false, 1),
+    monkeyWrench: make("monkeyWrench", monkeyWrenchUrl, true, 0.5),
   };
 }
 
@@ -122,16 +149,24 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "sweetDeath",
     "sweetClear",
     "spark",
-    "hit",
+    "mothHit",
+    "waspHit",
+    "owlHurt",
+    "owlKill",
+    "dive",
     "lifeLost",
     "beam",
     "capture",
     "rescue",
     "stage",
+    "extraLife",
     "badgeTick",
+    "fireflyStart",
+    "monkeyWrench",
   ],
   arcade: [
     "title",
+    "victory",
     "move",
     "select",
     "ticket",
@@ -144,6 +179,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "monkeyJump",
     "monkeyBolt",
     "monkeyHazard",
+    "monkeySmash",
     "monkeyDeath",
     "monkeyFloor",
     "monkeyEscape",

@@ -5,6 +5,7 @@ import {
   beeBeats,
   beeBodies,
   beeEye,
+  beeEyes,
   beeFlight,
   beeOrder,
   dazedFace,
@@ -76,6 +77,9 @@ describe("Sweet Sam art source", () => {
     });
     beeFlight.forEach((f, i) => {
       checkRows(`bee ${i}`, f, { w: 16, h: 16 });
+    });
+    beeEyes.forEach((f, i) => {
+      checkRows(`bee eyes ${i}`, f, { w: 16, h: 16 });
     });
     checkRows("dazed face", dazedFace, { w: 12, h: 2 });
   });
