@@ -183,6 +183,25 @@ describe("respawn", () => {
     expect(inFlight(diver)).toBe(false);
   });
 
+  test("a life lost while a stage flies in comes back only once every enemy has arrived", () => {
+    rng.seed(1);
+    const f = new FireflySoftware();
+    f.stage = 2;
+    run(f, stageIntroTicks + 1);
+    const arriving = (): boolean =>
+      f.enemies.some((e) => e.hp > 0 && (e.state === "waiting" || e.state === "entering"));
+    expect(arriving()).toBe(true);
+    f.loseLife();
+    let t = 0;
+    while (f.respawn > 0 && t++ < respawnTicks + respawnHoldTicks) {
+      f.update(NO_INPUT);
+      if (f.respawn > 0) continue;
+      expect(arriving()).toBe(false);
+    }
+    expect(t).toBeGreaterThan(respawnTicks);
+    expect(t).toBeLessThan(respawnTicks + respawnHoldTicks);
+  });
+
   test("an enemy that never gets home holds READY only for respawnHoldTicks", () => {
     rng.seed(1);
     const f = new FireflySoftware();

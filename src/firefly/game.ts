@@ -17,7 +17,7 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/dials.ts";
 import { drawFirefly } from "./draw.ts";
-import { inFlight, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
+import { unsettled, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
   badgesShown,
@@ -951,9 +951,11 @@ export class FireflySoftware implements FixedViewport {
 
   private countDownRespawn(): void {
     if (this.respawn === 0) return;
-    // As in Galaga, the new firefly waits until every diver is back in its slot.
+    // As in Galaga, the new firefly waits until every enemy flying in or diving is in its slot,
+    // except that a stage still on its STAGE n intro has the firefly back before it flies in.
     // Capped, so an enemy that never gets home cannot hold READY forever.
-    if (this.respawn === 1 && this.lives > 0 && this.enemies.some(inFlight) && this.respawnHeld < respawnHoldTicks) {
+    const settling = this.stageTick > stageIntroTicks && this.enemies.some(unsettled);
+    if (this.respawn === 1 && this.lives > 0 && settling && this.respawnHeld < respawnHoldTicks) {
       this.respawnHeld++;
       return;
     }
