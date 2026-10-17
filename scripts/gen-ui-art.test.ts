@@ -35,6 +35,7 @@ import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
+import { confettiFrames, confettiSize, winArt } from "../src/ui/winArt.ts";
 import {
   titleBar,
   letterSide,
@@ -68,6 +69,13 @@ describe("UI art source", () => {
     ]);
     checkRows("hud", hudSheetRows, { w: hudSheetWidth, h: 24 });
     expect(hudSheetRows[8]?.startsWith("wwwwww...")).toBe(true);
+  });
+
+  test("the arcade win's pieces and confetti frames are Sweetie 16 rows", () => {
+    for (const [piece, rows] of Object.entries(winArt)) checkRows(piece, rows);
+    confettiFrames.forEach((frame, i) => {
+      checkRows(`confetti frame ${i}`, frame, { w: confettiSize, h: confettiSize });
+    });
   });
 
   test("every icon is rows of one width, in Sweetie 16 letters and .", () => {

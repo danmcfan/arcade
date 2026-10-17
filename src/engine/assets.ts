@@ -32,6 +32,8 @@ export const imageTicker: Sprite = whole(images.ticker);
 /** The prize desk's employee (src/ui/employeeArt.ts). */
 export const imageEmployee: Sprite = whole(images.employee);
 export const imagePrizes: Sprite = whole(images.prizes);
+/** The arcade win's cake, trophy, balloons and confetti (src/ui/winArt.ts). */
+export const imageWin: Sprite = whole(images.win);
 /** The menu panel's nine-slice frame and the prize counter's card frames (src/ui/panelArt.ts). */
 export const imagePanel: Sprite = whole(images.panel);
 export const imageCards: Sprite = whole(images.cards);
