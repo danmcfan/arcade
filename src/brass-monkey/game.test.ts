@@ -163,16 +163,22 @@ describe("BrassMonkeySoftware", () => {
   });
 
   test("as a floor clears the Gnome climbs up out of sight, its y in the snapshot rising", () => {
+    // Loop 0's girder floor, cleared as a player does: walking into its door.
     const g = quiet();
-    g.run.floor = 0;
-    g.run.startFloor();
-    g.run.phase = "clear";
-    g.run.phaseTicks = t.clearTicks;
+    const { door } = g.run.currentFloor();
+    if (door === undefined) throw new Error("the first floor has no door");
+    expect([g.run.floor, g.run.finalClear()]).toEqual([0, false]);
+    g.run.monkey.x = door.x - 4;
+    g.run.monkey.y = door.y;
+    const snap = (): ReturnType<typeof brassMonkeySnapshot> => brassMonkeySnapshot(g.snapshot());
+    for (let n = 0; n < 16 && snap().phase === "play"; n++) g.update(held({ right: true }));
+    expect(snap().phase).toBe("clear");
     const ys: number[] = [];
-    for (let n = 0; n < t.clearTicks; n++) {
-      ys.push(brassMonkeySnapshot(g.snapshot()).gnomeY);
-      g.run.phaseTicks--;
+    while (snap().phase === "clear" && ys.length <= t.clearTicks) {
+      ys.push(snap().gnomeY);
+      g.update(NO_INPUT);
     }
+    expect(ys).toHaveLength(t.clearTicks);
     expect(ys.every((y, n) => n === 0 || y <= (ys[n - 1] ?? 0))).toBe(true);
     expect(ys.at(-1)).toBe(-32);
   });
