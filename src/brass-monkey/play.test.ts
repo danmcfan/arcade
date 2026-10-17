@@ -310,7 +310,7 @@ describe("the escape and the next loop", () => {
     step(run, t.escapeTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 1]);
     const easy = t.tuningFor(0, 0);
-    expect(run.bonus).toBeLessThan(easy.bonusStart);
+    expect(run.bonus).toBeGreaterThan(easy.bonusStart);
     expect(run.tuning.gearEvery).toBeLessThan(easy.gearEvery);
     expect(run.tuning.emberEvery).toBeLessThan(easy.emberEvery);
     expect(run.tuning.gearSpeed).toBeGreaterThan(easy.gearSpeed);
@@ -318,14 +318,29 @@ describe("the escape and the next loop", () => {
     expect(run.tuning.emberClimbSpeed).toBeGreaterThan(easy.emberClimbSpeed);
   });
 
-  test("the bonus never starts below its floor, nor hazards come too often", () => {
-    const hard = t.tuningFor(0, 20);
-    expect(hard.bonusStart).toBe(t.minBonusStart);
-    expect(hard.gearEvery).toBe(t.minSpawnEvery);
+  test("the bonus starts 1000 higher each loop, up to 8000, as in Donkey Kong", () => {
+    for (const floor of floors.keys()) {
+      expect([0, 1, 2, 3, 4].map((loop) => t.tuningFor(floor, loop).bonusStart)).toEqual([
+        5000, 6000, 7000, 8000, 8000,
+      ]);
+    }
+  });
+
+  test("a floor restarted after a death starts at the loop's bonus", () => {
+    const { run } = quiet({ loop: 2 });
+    run.bonus = t.bonusStep;
+    step(run, t.bonusTicks);
+    expect(run.phase).toBe("dying");
+    step(run, t.dyingTicks);
+    expect([run.phase, run.bonus]).toEqual(["play", 7000]);
+  });
+
+  test("hazards never come too often", () => {
+    expect(t.tuningFor(0, 20).gearEvery).toBe(t.minSpawnEvery);
   });
 
   test("by loop 10 every hazard speed has reached its cap", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       const hard = t.tuningFor(floor, 10);
       expect(hard.gearSpeed).toBe(t.maxGearSpeed);
       expect(hard.emberWalkSpeed).toBe(t.maxEmberWalkSpeed);
@@ -334,7 +349,7 @@ describe("the escape and the next loop", () => {
   });
 
   test("an ember is always slower than the monkey, walking and climbing", () => {
-    for (const floor of [0, 1]) {
+    for (const floor of floors.keys()) {
       for (let loop = 0; loop <= 30; loop++) {
         const tuning = t.tuningFor(floor, loop);
         expect(tuning.emberWalkSpeed).toBeLessThan(t.walkSpeed);
