@@ -24,18 +24,7 @@ import {
   scaredBeeEatPoints,
   spawnBonusEatIndicator,
 } from "./bonusEat.ts";
-import {
-  isSleepy,
-  newItems,
-  pointToTile,
-  tileEq,
-  tunnelLeftX,
-  tunnelRightX,
-  tunnelRowY,
-  velocityEnemyPower,
-  velocityEnemyTunnel,
-  velocityPlayerPower,
-} from "./entity.ts";
+import { inTunnel, isSleepy, newItems, pointToTile, tileEq, type Entity, type Tile } from "./entity.ts";
 import {
   applyInput,
   becomeEyes,
@@ -48,7 +37,7 @@ import {
   updateBlue,
   updateDirection,
   updateFrame,
-  updatePosition,
+  moveEntity,
   winner,
 } from "./update.ts";
 import { itemsEaten, updateFlower } from "./flower.ts";
@@ -225,23 +214,27 @@ export class PlayState implements State {
       return stateIDLevelClear;
     }
 
-    s.player.velocity = s.advantages.playerVelocity;
-    const { beeVelocity } = s.values();
-    const elroy = elroyStep(s.release, s.values(), s.items.filter((it) => it !== null).length);
+    const values = s.values();
+    const bearVelocity = values.bearVelocity * s.advantages.playerSpeedFactor;
+    s.player.velocity = bearVelocity;
+    const elroy = elroyStep(s.release, values, s.items.filter((it) => it !== null).length);
     for (const e of s.enemies) {
-      e.velocity = e.kind === "red" && !e.home && elroy !== null ? elroy.velocity : beeVelocity;
+      e.velocity = e.kind === "red" && !e.home && elroy !== null ? elroy.velocity : values.beeVelocity;
       if (isSleepy(e)) {
-        s.player.velocity = velocityPlayerPower;
-        e.velocity = velocityEnemyPower;
+        // Running shoes never slow the bear down.
+        s.player.velocity = Math.max(values.bearSleepyVelocity, bearVelocity);
+        e.velocity = values.sleepyBeeVelocity;
       }
 
-      if (e.y === tunnelRowY && (e.x < tunnelLeftX || e.x > tunnelRightX)) {
-        e.velocity = velocityEnemyTunnel;
+      if (inTunnel(e)) {
+        e.velocity = values.tunnelVelocity;
       }
     }
 
     applyInput(s, i);
 
+    // Each bee's target this tick, for the junctions it reaches between sub-steps.
+    const targets = new Map<Entity, Tile>();
     for (const e of s.enemies) {
       updateBlue(e);
       // Eyes steer themselves home (update.ts `moveEyes`) and cannot hurt or be eaten.
@@ -250,6 +243,7 @@ export class PlayState implements State {
       }
 
       const target = findTarget(e, s.enemies, s.player, s.modeCurrent, elroy !== null);
+      targets.set(e, target);
       updateDirection(e, s.corners, target);
 
       // A bee catches the bear in the same tile, so the two can swap tiles and pass through
@@ -303,7 +297,8 @@ export class PlayState implements State {
       if (e.eyes) {
         moveEyes(e, s.corners);
       } else {
-        updatePosition(e, s.corners);
+        // The bear has no target: it turns only on input (applyInput).
+        moveEntity(e, s.corners, targets.get(e));
       }
     }
 

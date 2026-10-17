@@ -52,15 +52,54 @@ describe("levelValues", () => {
     for (let level = 1; level <= levelCap; level++) expect(levelValues(level).modeSequence[0]?.ticks).toBe(420);
   });
 
-  test("stops changing at the cap", () => {
-    expect(levelValues(levelCap + 1)).toEqual(levelValues(levelCap));
-    expect(levelValues(99)).toEqual(levelValues(levelCap));
+  test("stops changing at the cap, but for the speeds, which change again on level 21", () => {
+    expect(levelValues(20)).toEqual(levelValues(levelCap));
+    expect(levelValues(99)).toEqual(levelValues(21));
+    expect({ ...levelValues(21), bearVelocity: 0, bearSleepyVelocity: 0 }).toEqual({
+      ...levelValues(levelCap),
+      bearVelocity: 0,
+      bearSleepyVelocity: 0,
+    });
   });
 
   test("sleepy time never drops below its minimum, which is above 0", () => {
     expect(sleepyFramesMinimum).toBeGreaterThan(0);
     for (let level = 1; level <= levelCap + 3; level++) {
       expect(levelValues(level).sleepyFrames).toBeGreaterThanOrEqual(sleepyFramesMinimum);
+    }
+  });
+});
+
+const pct = (p: number): number => (p / 100) * 1.25;
+
+describe("speeds (Dossier Table A.1, 100% = 1.25 px a tick)", () => {
+  const rows: [number[], number, number, number, number, number, number, number][] = [
+    // levels, bear, sleepy bear, bee, sleepy bee, tunnel, Elroy 1, Elroy 2
+    [[1], 80, 90, 75, 50, 40, 80, 85],
+    [[2, 3, 4], 90, 95, 85, 55, 45, 90, 95],
+    [[5, 12, 20], 100, 100, 95, 60, 50, 100, 105],
+    [[21, 22, 99], 90, 90, 95, 60, 50, 100, 105],
+  ];
+  test.each(rows)("levels %p", (levels, bear, bearSleepy, bee, beeSleepy, tunnel, elroy1, elroy2) => {
+    for (const level of levels) {
+      const v = levelValues(level);
+      expect([
+        v.bearVelocity,
+        v.bearSleepyVelocity,
+        v.beeVelocity,
+        v.sleepyBeeVelocity,
+        v.tunnelVelocity,
+        v.elroy[0].velocity,
+        v.elroy[1].velocity,
+      ]).toEqual([bear, bearSleepy, bee, beeSleepy, tunnel, elroy1, elroy2].map((p) => pct(p)));
+    }
+  });
+
+  test("red is faster at Elroy 2 than at Elroy 1 on every level", () => {
+    for (let level = 1; level <= 25; level++) {
+      const [first, second] = levelValues(level).elroy;
+      expect(second.velocity).toBeGreaterThan(first.velocity);
+      expect(first.velocity).toBeGreaterThan(levelValues(level).beeVelocity);
     }
   });
 });

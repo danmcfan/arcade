@@ -4,7 +4,6 @@
 // (./levels.ts).
 
 import { advantagesFrom, type PrizeSpec } from "../game/prize.ts";
-import { velocityPlayerNormal, velocityPlayerPower } from "./entity.ts";
 
 /** Lives a run starts with. */
 export const startingLives = 3;
@@ -13,11 +12,10 @@ export const startingLives = 3;
 export const honeyJarExtraLives = 1;
 
 /**
- * Running shoes: the bear's normal speed, per tick. It is the power-pellet
- * speed (12.5% faster), which the maze already handles: steps of 9/8 px
- * always land within 0.5 px of every corner, so turns work as before.
+ * Running shoes: the bear's normal speed is 12.5% faster on every level; on
+ * level 1 that is 1.125 px a tick, its speed while bees are sleepy.
  */
-export const runningShoesPlayerVelocity = velocityPlayerPower;
+export const runningShoesSpeedFactor = 1.125;
 
 /** Sleepy bees: each level's sleepy time is multiplied by this (15 s rather than 10 on level 1). */
 export const sleepyBeesFactor = 1.5;
@@ -25,8 +23,8 @@ export const sleepyBeesFactor = 1.5;
 /** The values a Sweet Sam run starts with. */
 export type SweetSamAdvantages = {
   lives: number;
-  /** The bear's speed while no bee is scared. */
-  playerVelocity: number;
+  /** Multiplies the level's bear speed while no bee is sleepy (`LevelValues.bearVelocity`). */
+  playerSpeedFactor: number;
   /** Multiplies the level's sleepy time (`LevelValues.sleepyFrames`). */
   sleepyFactor: number;
 };
@@ -34,7 +32,7 @@ export type SweetSamAdvantages = {
 /** No prizes: the original game. */
 export const noAdvantages: Readonly<SweetSamAdvantages> = {
   lives: startingLives,
-  playerVelocity: velocityPlayerNormal,
+  playerSpeedFactor: 1,
   sleepyFactor: 1,
 };
 
@@ -53,8 +51,8 @@ export const sweetSamPrizes = [
     name: "RUNNING SHOES",
     price: 50,
     effect: "SAM RUNS FASTER",
-    advantage: "playerVelocity",
-    give: (): number => runningShoesPlayerVelocity,
+    advantage: "playerSpeedFactor",
+    give: (): number => runningShoesSpeedFactor,
   },
   {
     id: "sleepyBees",

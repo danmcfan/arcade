@@ -843,10 +843,10 @@ describe("Cruise Elroy (#156)", () => {
     expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.9375, 0.9375]);
     dropsLeft(s, 20);
     step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.96875, 0.9375]);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
     dropsLeft(s, 10);
     step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1.0625, 0.9375]);
   });
 
   test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
@@ -870,7 +870,7 @@ describe("Cruise Elroy (#156)", () => {
     s.release.globalDots = 31;
     dropEaten(s.release, s.enemies);
     step(s);
-    expect(enemy(s, 0).velocity).toBe(1);
+    expect(enemy(s, 0).velocity).toBe(1.0625);
   });
 
   test("a red bee in the home or flying home ignores Elroy's speed", () => {
