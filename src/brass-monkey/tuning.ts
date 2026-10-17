@@ -230,5 +230,7 @@ export const introClimbTicks = 140;
 export const introStomps: readonly number[] = [165, 190, 215];
 /** How high each stomp's hop lifts the Gnome, in px. */
 export const introHop = 4;
+/** Ticks each stomp's hop lasts, up and back down. */
+export const introHopTicks = 8;
 /** Ticks a stomp shakes the floor. */
 export const introShakeTicks = 8;

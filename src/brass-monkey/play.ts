@@ -209,8 +209,8 @@ export class Run {
     if (this.phase !== "intro") return 0;
     const e = this.introElapsed();
     const next = t.introStomps.find((s) => s > e);
-    if (next === undefined || next - e > 8) return 0;
-    return Math.round(t.introHop * Math.sin(((next - e) / 8) * Math.PI));
+    if (next === undefined || next - e > t.introHopTicks) return 0;
+    return Math.round(t.introHop * Math.sin(((next - e) / t.introHopTicks) * Math.PI));
   }
 
   /** The floor shakes for a few ticks after each stomp lands. */
