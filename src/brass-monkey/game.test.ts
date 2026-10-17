@@ -174,6 +174,7 @@ describe("BrassMonkeySoftware", () => {
     const events: SoundEvent[] = [];
     unsubscribe.push(addSoundListener((e) => void events.push(e)));
     const g = quiet();
+    g.update(NO_INPUT);
     events.length = 0;
     g.update(held({ space: true }));
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);

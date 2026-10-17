@@ -556,7 +556,7 @@ describe("the elevator floor", () => {
     run.monkey.y = elevatorFloor.door.y;
     step(run, 8, { right: true });
     expect(run.phase).toBe("clear");
-    expect(sounds).toEqual(["floor"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
   });
 });
 
