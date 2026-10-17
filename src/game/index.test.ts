@@ -79,6 +79,8 @@ for (const [name, size] of real) {
         "pause:extraLife",
         "pause:badgeTick",
         "pause:fireflyStart",
+        "pause:monkeyGirder",
+        "pause:monkeyConveyor",
         "pause:monkeyWrench",
       ]);
       expect(scene.layout()).toEqual(size);

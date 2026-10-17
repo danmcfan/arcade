@@ -9,13 +9,21 @@ import {
   imageCabinetBrassMonkey,
   imageConveyor,
   imageConveyorFloor,
+  imageElevatorFloor,
   imageDoor,
   imageEmber,
   imageFurnace,
   imageGear,
+  imagePan,
+  imageGirder,
   imageGirderFloor,
   imageGnome,
+  imageLift,
   imageMonkey,
+  imageMonkeyDeath,
+  imageSpring,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
   imageWrench,
   imageWrenchSwing,
@@ -40,15 +48,15 @@ import { drawTextCentered } from "../ui/text.ts";
 import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial, ScoreDials } from "../ui/dials.ts";
-import { girderTop, type Floor } from "./floors.ts";
+import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { escapeTicks } from "./tuning.ts";
+import { clearTicks, dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
 const hudHeight = 32;
 
-const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor];
+const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor, imageRivetFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
@@ -64,6 +72,12 @@ const hud = {
   loopTop: 20,
 } as const;
 
+/** Each floor's music. */
+const floorMusic: ReadonlyMap<Floor, Sound> = new Map([
+  [girderFloor, sounds.monkeyGirder],
+  [conveyorFloor, sounds.monkeyConveyor],
+]);
+
 /** The sound for each of the run's sound cues. */
 const runSounds: Readonly<Record<RunSound, Sound>> = {
   jump: sounds.monkeyJump,
@@ -73,6 +87,8 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
+  stomp: sounds.monkeyStomp,
+  step: sounds.monkeyStep,
   extraLife: sounds.ticket,
 };
 
@@ -83,8 +99,8 @@ export class BrassMonkeySoftware implements FixedViewport {
   private readonly scoreDials: ScoreDials;
   private readonly bonusDial: Dial;
   private readonly loopDial = new Dial({ x: hud.rightDials, y: hud.loopTop }, 1, 1);
-  /** The wrench music is playing. */
-  private wrenchMusic = false;
+  /** The music playing (the wrench's while it is held, else the floor's), or none. */
+  private music: Sound | null = null;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.scoreDials = new ScoreDials(highScore, {
@@ -93,12 +109,14 @@ export class BrassMonkeySoftware implements FixedViewport {
     });
     this.run = new Run({
       advantages,
+      intro: true,
       onSound: (s): void => {
         runSounds[s].rewind();
         runSounds[s].play();
       },
     });
     this.bonusDial = new Dial({ x: hud.rightDials, y: hud.dialsTop }, this.run.bonus);
+    this.playMusic();
   }
 
   background(): Sprite {
@@ -110,12 +128,18 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.scoreDials.tick(this.run.score);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
-    const held = this.run.phase === "play" && this.run.monkey.wrench > 0;
-    if (held !== this.wrenchMusic) {
-      this.wrenchMusic = held;
-      if (held) sounds.monkeyWrench.blip();
-      else sounds.monkeyWrench.pause();
-    }
+    this.playMusic();
+  }
+
+  /** In play, the wrench music while the monkey holds it, else the floor's music; none otherwise. */
+  private playMusic(): void {
+    const run = this.run;
+    const floor = run.monkey.wrench > 0 ? sounds.monkeyWrench : (floorMusic.get(run.currentFloor()) ?? null);
+    const music = run.phase === "play" ? floor : null;
+    if (music === this.music) return;
+    this.music?.pause();
+    this.music = music;
+    music?.blip();
   }
 
   /** Start loop `stage` (as the player counts it, from 1) afresh on the first floor. */
@@ -138,7 +162,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   private drawScreen(screen: Surface): void {
     const left = cabinetInsetLeft;
-    const top = cabinetInsetTop + hudHeight;
+    let top = cabinetInsetTop + hudHeight;
     this.drawHud(screen, left, cabinetInsetTop);
     const run = this.run;
     if (run.phase === "escape") {
@@ -147,33 +171,48 @@ export class BrassMonkeySoftware implements FixedViewport {
       return;
     }
     const floor = run.currentFloor();
+    const intro = run.phase === "intro";
+    // A stomp shakes the floor: down a pixel every other tick.
+    if (run.introShaking() && run.ticks % 2 === 0) top++;
     screen.draw(this.background(), left, top);
+    if (intro) drawBentGirders(screen, floor, left, top, run.introTilt());
     drawConveyors(screen, floor, left, top, run.ticks);
+    for (const l of run.lifts()) screen.draw(imageLift, left + l.x0, top + l.y);
     floor.bolts.forEach((b, n) => {
       if (run.bolts[n] === true) return;
       const t = run.ticks % 120;
       const glint = t < 18 ? 1 + Math.trunc(t / 6) : 0;
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
+    floor.rivets?.forEach((r, n) => {
+      if (run.rivets[n] !== true) screen.draw(imageRivet, left + r.x - 4, top + r.y);
+    });
     floor.wrenches.forEach((w, n) => {
       if (run.wrenches[n] !== true) screen.draw(imageWrench, left + w.x - 4, top + w.y - 14);
     });
-    screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
+    const gnomeY = floor.gnome.y + (run.phase === "clear" ? gnomeFall(floor, clearTicks - run.phaseTicks) : 0);
+    screen.draw(
+      frame(imageGnome, gnomeColumn(run), 32, 32),
+      left + floor.gnome.x,
+      top + gnomeY + run.introGnomeRise() - run.introHop(),
+    );
     if (floor.furnace !== undefined) {
       // Lit, its flames flicker every 8 ticks.
       const col = run.furnaceLit ? 1 + (Math.trunc(run.ticks / 8) % 2) : 0;
       screen.draw(frame(imageFurnace, col, 16, 24), left + floor.furnace.x - 8, top + floor.furnace.y - 24);
     }
-    for (const h of run.hazards) drawHazard(screen, h, left, top, run.ticks);
-    // The monkey blinks while it loses a life.
-    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) {
+    for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
+    // The monkey comes on when the floor starts; losing a life, it spins and falls (deathColumn).
+    if (run.phase === "dying") {
+      const m = run.monkey;
+      screen.draw(frame(imageMonkeyDeath, deathColumn(run.phaseTicks), 16, 24), left + m.x - 8, top + m.y - 24);
+    } else if (!intro) {
       drawMonkey(screen, run.monkey, left, top);
       // In its last ticks the wrench flashes: drawn 4 ticks, hidden 4.
       if (run.monkey.wrench > 0 && (!run.wrenchFlashing() || Math.trunc(run.ticks / 4) % 2 === 0))
         drawWrench(screen, run.monkey, left, top, run.ticks);
     }
     for (const s of run.smashes) drawTextCentered(screen, `${s.points}`, left + s.x, top + s.y - 16);
-    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
     for (const p of run.popups) drawTextCentered(screen, String(p.points), left + p.x, top + p.y - 22);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
@@ -232,6 +271,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         wild: h.wild,
       })),
       bolts: [...run.bolts],
+      rivets: [...run.rivets],
       wrench: m.wrench,
       wrenches: [...run.wrenches],
       smashes: run.smashes.map(({ x, y, points }) => ({ x, y, points })),
@@ -239,8 +279,19 @@ export class BrassMonkeySoftware implements FixedViewport {
       furnaceLit: run.furnaceLit,
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
+      lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
     };
   }
+}
+
+/**
+ * How far the Gnome has fallen `t` ticks after the floor cleared: on the
+ * rivet floor it drops, gathering speed, to the bottom girder; elsewhere it stays.
+ */
+function gnomeFall(floor: Floor, t: number): number {
+  if (floor.rivets === undefined) return 0;
+  const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32 - floor.gnome.y;
+  return Math.min(bottom, Math.trunc((t * t) / 16));
 }
 
 /** The lap as the player counts it, from 1: `run.loop` counts escapes. */
@@ -253,6 +304,52 @@ export function newBrassMonkeySoftware(
   advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages,
 ): BrassMonkeySoftware {
   return new BrassMonkeySoftware(highScore, advantages);
+}
+
+/** Ticks per quarter turn of the death spin, and the quarter turns in it: twice round. */
+const spinTicks = 6;
+const spinTurns = 8;
+/** Ticks per puff of the downed monkey's smoke. */
+const smokeTicks = 8;
+
+/**
+ * The death sheet's column `phaseTicks` before the life is lost: the spin,
+ * a quarter turn each column (0-3), then the monkey down on its back with
+ * its smoke puffing (4, 5).
+ */
+export function deathColumn(phaseTicks: number): number {
+  const elapsed = dyingTicks - phaseTicks;
+  const spin = spinTicks * spinTurns;
+  if (elapsed < spin) return Math.trunc(elapsed / spinTicks) % 4;
+  return 4 + (Math.trunc((elapsed - spin) / smokeTicks) % 2);
+}
+
+/** The Gnome's sheet column: reaching as it climbs and as it hops to stomp, throwing with its arms up, else idle. */
+export function gnomeColumn(run: Run): number {
+  if (run.introGnomeRise() > 0) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
+  if (run.introHop() > 0) return 2;
+  return run.gnomeThrowing() ? 1 : 0;
+}
+
+/**
+ * The intro's girders, `tilt` of the way (0 to 1) from flat to their slopes:
+ * each sloped girder in the background is papered over with wall, then drawn
+ * again from its tiles, turning about its middle.
+ */
+function drawBentGirders(screen: Surface, floor: Floor, left: number, top: number, tilt: number): void {
+  if (tilt >= 1) return;
+  const wall = imageWall.w;
+  for (const g of floor.girders) {
+    if (g.drop === 0 || g.belt !== undefined) continue;
+    const middle = girderTop(g, (g.x0 + g.x1) / 2);
+    for (let x = g.x0; x < g.x1; x += 8) {
+      const y0 = girderTop(g, x);
+      for (let y = y0; y < y0 + 8; y++)
+        screen.draw(sub(imageWall, x % wall, y % wall, (x % wall) + 8, (y % wall) + 1), left + x, top + y);
+    }
+    for (let x = g.x0; x < g.x1; x += 8)
+      screen.draw(imageGirder, left + x, top + Math.round(middle + tilt * (girderTop(g, x) - middle)));
+  }
 }
 
 /** The monkey's sheet column: walk 0, 1, 0, 2; jump 3; climb 4 or 5. */
@@ -283,10 +380,23 @@ function drawWrench(screen: Surface, m: Monkey, left: number, top: number, ticks
   screen.draw(imageWrenchSwing, left + x, top + m.y - 12, m.left ? { flipX: true } : undefined);
 }
 
-function drawHazard(screen: Surface, h: Hazard, left: number, top: number, ticks: number): void {
-  // A hot gear turns in the gear sheet's last two frames.
-  const col = h.kind === "gear" ? (Math.trunc(Math.abs(h.x) / 4) % 2) + (h.hot ? 2 : 0) : Math.trunc(ticks / 8) % 4;
-  screen.draw(frame(h.kind === "gear" ? imageGear : imageEmber, col, 12, 12), left + h.x - 6, top + h.y - 12);
+function drawHazard(screen: Surface, h: Hazard, floor: Floor, left: number, top: number, ticks: number): void {
+  if (h.kind === "spring") {
+    // Squashed as it lands on the Gnome's girder, stretched in flight.
+    const { springs } = floor;
+    const landing = springs !== undefined && h.x < springs.dropX && h.y >= springs.y - 3;
+    screen.draw(frame(imageSpring, landing ? 1 : 0, 12, 12), left + h.x - 6, top + h.y - 12);
+    return;
+  }
+  // A pan's scraps jolt as it rides; a hot gear turns in the gear sheet's last two frames.
+  const turn = Math.trunc(Math.abs(h.x) / 4) % 2;
+  const [image, col] =
+    h.kind === "gear"
+      ? [imageGear, turn + (h.hot ? 2 : 0)]
+      : h.kind === "pan"
+        ? [imagePan, turn]
+        : [imageEmber, Math.trunc(ticks / 8) % 4];
+  screen.draw(frame(image, col, 12, 12), left + h.x - 6, top + h.y - 12);
 }
 
 /** Each conveyor's tiles, their slats moving the way the belt runs at its speed (1 px every 2 ticks). */

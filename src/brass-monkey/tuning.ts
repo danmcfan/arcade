@@ -27,6 +27,18 @@ export const maxFall = 20;
 export const ladderReach = 4;
 /** A conveyor carries what stands on it this many px a tick. */
 export const beltSpeed = 0.5;
+/** A lift's platforms move this many px a tick. */
+export const liftSpeed = 0.5;
+/** A spring moves right this many px a tick along the Gnome's girder... */
+export const springSpeed = 1;
+/** ...bouncing off it at this upward speed, in px a tick: with `gravity`, 16 px high. */
+export const springBounce = 2;
+/**
+ * The conveyors all reverse this often. Donkey Kong's 50m belts change
+ * direction, but no source gives a timer (StrategyWiki ties it to Kong's
+ * position), so 10 s is our call: long enough for a pan to ride a whole belt.
+ */
+export const beltReverseTicks = 600;
 
 /**
  * At the head of a ladder, a gear rolls down it this often on loop 0 as the
@@ -115,6 +127,10 @@ export function boltPointsFor(loop: number): number {
 
 /** Ticks a collected bolt's points float where it was. */
 export const popupTicks = 60;
+/** Points for pulling a rivet, as in Donkey Kong. */
+export const rivetPoints = 100;
+/** A pulled rivet leaves a hole this many px either side of its middle: the monkey falls in walking onto it. */
+export const holeHalf = 4;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;
@@ -149,7 +165,7 @@ export const smashShowTicks = 45;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {
-  /** Ticks between gears; the first comes after `firstGear`. */
+  /** Ticks between gears (pans, on a floor with pans; springs on the elevator floor); the first comes after `firstGear`. */
   gearEvery: number;
   firstGear: number;
   /** Ticks between embers the Gnome throws, on a floor without a furnace; the first comes after `firstEmber`. */
@@ -167,7 +183,7 @@ export interface FloorTuning {
   bonusStart: number;
 }
 
-/** The girder floor, then the conveyor floor. */
+/** The girder floor, the conveyor floor, the elevator floor, then the rivet floor (no gears: embers come in from the sides). */
 export const floorTunings: readonly FloorTuning[] = [
   {
     gearEvery: 150,
@@ -186,6 +202,28 @@ export const floorTunings: readonly FloorTuning[] = [
     emberEvery: 420,
     firstEmber: 180,
     maxEmbers: 3,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: 120,
+    firstGear: 90,
+    emberEvery: 600,
+    firstEmber: 300,
+    maxEmbers: 2,
+    gearSpeed: 1,
+    emberWalkSpeed: 0.5,
+    emberClimbSpeed: 0.5,
+    bonusStart: 5000,
+  },
+  {
+    gearEvery: Infinity,
+    firstGear: Infinity,
+    emberEvery: 300,
+    firstEmber: 120,
+    maxEmbers: 4,
     gearSpeed: 1,
     emberWalkSpeed: 0.5,
     emberClimbSpeed: 0.5,
@@ -238,3 +276,15 @@ export const escapeTicks = 180;
 export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
 export const throwTicks = 20;
+/** Ticks of the intro before the first floor of a run: about 4 s. */
+export const introTicks = 240;
+/** The intro's first ticks, the Gnome climbing up to its perch. */
+export const introClimbTicks = 140;
+/** The ticks into the intro when the Gnome lands a stomp; each bends the girders further. */
+export const introStomps: readonly number[] = [165, 190, 215];
+/** How high each stomp's hop lifts the Gnome, in px. */
+export const introHop = 4;
+/** Ticks each stomp's hop lasts, up and back down. */
+export const introHopTicks = 8;
+/** Ticks a stomp shakes the floor. */
+export const introShakeTicks = 8;

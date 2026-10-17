@@ -372,9 +372,9 @@ export interface BrassMonkeySmashSnapshot {
   points: number;
 }
 
-/** A gear or an ember (`Hazard` in src/brass-monkey/play.ts). */
+/** A gear, an ember, a pan or a spring (`Hazard` in src/brass-monkey/play.ts). */
 export interface BrassMonkeyHazardSnapshot {
-  kind: "gear" | "ember";
+  kind: "gear" | "ember" | "pan" | "spring";
   x: number;
   y: number;
   dir: -1 | 1;
@@ -399,9 +399,9 @@ export interface BrassMonkeyPopupSnapshot {
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
 export interface BrassMonkeySnapshot {
-  phase: "play" | "dying" | "clear" | "escape" | "over";
+  phase: "intro" | "play" | "dying" | "clear" | "escape" | "over";
   phaseTicks: number;
-  /** 0 the girder floor, 1 the conveyor floor. */
+  /** 0 the girder floor, 1 the conveyor floor, 2 the elevator floor, 3 the rivet floor. */
   floor: number;
   /** Escapes so far: each loop is harder. */
   loop: number;
@@ -420,6 +420,8 @@ export interface BrassMonkeySnapshot {
   hazards: BrassMonkeyHazardSnapshot[];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[];
+  /** Whether each of the rivet floor's rivets has been pulled; empty on the other floors. */
+  rivets: boolean[];
   /** Ticks left holding the wrench; 0 without it. */
   wrench: number;
   /** Whether each of the floor's wrenches has been picked up. */
@@ -432,6 +434,8 @@ export interface BrassMonkeySnapshot {
   furnaceLit: boolean;
   gearTimer: number;
   emberTimer: number;
+  /** The lift platforms on the elevator floor, each its left edge and top; empty on the other floors. */
+  lifts: { x: number; y: number }[];
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */

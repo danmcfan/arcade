@@ -32,10 +32,14 @@ import fireflyHitUrl from "../assets/images/firefly/hit.png";
 import fireflyBadgesUrl from "../assets/images/firefly/badges.png";
 import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
+import brassMonkeyMonkeyDeathUrl from "../assets/images/brass-monkey/monkey-death.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import brassMonkeyGearUrl from "../assets/images/brass-monkey/gear.png";
 import brassMonkeyFurnaceUrl from "../assets/images/brass-monkey/furnace.png";
 import brassMonkeyEmberUrl from "../assets/images/brass-monkey/ember.png";
+import brassMonkeyPanUrl from "../assets/images/brass-monkey/pan.png";
+import brassMonkeySpringUrl from "../assets/images/brass-monkey/spring.png";
+import brassMonkeyLiftUrl from "../assets/images/brass-monkey/lift.png";
 import brassMonkeyBoltUrl from "../assets/images/brass-monkey/bolt.png";
 import brassMonkeyWrenchUrl from "../assets/images/brass-monkey/wrench.png";
 import brassMonkeyWrenchSwingUrl from "../assets/images/brass-monkey/wrench-swing.png";
@@ -46,6 +50,9 @@ import brassMonkeyDoorUrl from "../assets/images/brass-monkey/door.png";
 import brassMonkeyWallUrl from "../assets/images/brass-monkey/wall.png";
 import brassMonkeyGirderFloorUrl from "../assets/images/brass-monkey/girder-floor.png";
 import brassMonkeyConveyorFloorUrl from "../assets/images/brass-monkey/conveyor-floor.png";
+import brassMonkeyElevatorFloorUrl from "../assets/images/brass-monkey/elevator-floor.png";
+import brassMonkeyRivetUrl from "../assets/images/brass-monkey/rivet.png";
+import brassMonkeyRivetFloorUrl from "../assets/images/brass-monkey/rivet-floor.png";
 import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
 import sweetSamBearUrl from "../assets/images/sweet-sam/bear.png";
 import sweetSamBeesUrl from "../assets/images/sweet-sam/bees.png";
@@ -95,10 +102,14 @@ export const fireflyImages = {
 
 export const brassMonkeyImages = {
   monkey: imageAsset(brassMonkeyMonkeyUrl, 96, 16),
-  gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
+  monkeyDeath: imageAsset(brassMonkeyMonkeyDeathUrl, 96, 24),
+  gnome: imageAsset(brassMonkeyGnomeUrl, 96, 32),
   gear: imageAsset(brassMonkeyGearUrl, 48, 12),
   furnace: imageAsset(brassMonkeyFurnaceUrl, 48, 24),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),
+  pan: imageAsset(brassMonkeyPanUrl, 24, 12),
+  spring: imageAsset(brassMonkeySpringUrl, 24, 12),
+  lift: imageAsset(brassMonkeyLiftUrl, 16, 8),
   bolt: imageAsset(brassMonkeyBoltUrl, 40, 14),
   wrench: imageAsset(brassMonkeyWrenchUrl, 8, 14),
   wrenchSwing: imageAsset(brassMonkeyWrenchSwingUrl, 14, 8),
@@ -109,6 +120,9 @@ export const brassMonkeyImages = {
   wall: imageAsset(brassMonkeyWallUrl, 32, 32),
   girderFloor: imageAsset(brassMonkeyGirderFloorUrl, 224, 256),
   conveyorFloor: imageAsset(brassMonkeyConveyorFloorUrl, 224, 256),
+  elevatorFloor: imageAsset(brassMonkeyElevatorFloorUrl, 224, 256),
+  rivet: imageAsset(brassMonkeyRivetUrl, 8, 8),
+  rivetFloor: imageAsset(brassMonkeyRivetFloorUrl, 224, 256),
 } as const;
 
 export const sweetSamImages = {

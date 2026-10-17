@@ -1,9 +1,23 @@
 import { describe, expect, test } from "bun:test";
-import { conveyorFloor, floors, girderFloor, girderTop, type Floor, type Ladder } from "./floors.ts";
+import {
+  conveyorFloor,
+  elevatorFloor,
+  floors,
+  girderFloor,
+  girderTop,
+  liftTops,
+  rivetFloor,
+  type Floor,
+  type Ladder,
+  type Shaft,
+} from "./floors.ts";
 
 /** The tops of `floor`'s girders under the 8 px column at x. */
 const topsAt = (floor: Floor, x: number): number[] =>
   floor.girders.filter((g) => x >= g.x0 && x < g.x1).map((g) => girderTop(g, x));
+/** Whether a platform in `shaft`, moving 0.5 px a tick, comes level with a girder at y. */
+const level = (shaft: Shaft, y: number): boolean =>
+  y >= shaft.top && y <= shaft.bottom && Number.isInteger((y - shaft.top) * 2);
 
 const name = (l: Ladder): string => `ladder at x ${l.x}, rows ${l.top}-${l.bottom}`;
 
@@ -48,9 +62,29 @@ describe("the conveyor floor", () => {
   });
 });
 
+describe("the rivet floor", () => {
+  test("has 8 rivet slots, two on each of its four upper girders, and no exit door", () => {
+    expect(rivetFloor.rivets?.length).toBe(8);
+    expect(new Set(rivetFloor.rivets?.map((r) => r.y))).toEqual(new Set([208, 168, 128, 88]));
+    expect(rivetFloor.door).toBeUndefined();
+  });
+
+  test("its girders are flat and every rivet slot stands on one", () => {
+    expect(rivetFloor.girders.every((g) => g.drop === 0 && g.belt === undefined)).toBe(true);
+    for (const r of rivetFloor.rivets ?? []) expect(topsAt(rivetFloor, r.x)).toContain(r.y);
+  });
+
+  test("no ladder meets a rivet slot", () => {
+    for (const r of rivetFloor.rivets ?? [])
+      for (const l of rivetFloor.ladders) expect(Math.abs(l.x + 4 - r.x)).toBeGreaterThan(8);
+  });
+});
+
 describe.each([
   ["girder floor", girderFloor],
   ["conveyor floor", conveyorFloor],
+  ["elevator floor", elevatorFloor],
+  ["rivet floor", rivetFloor],
 ] as const)("the %s", (_, floor) => {
   test("is 224×256", () => {
     expect([floor.width, floor.height]).toEqual([224, 256]);
@@ -71,8 +105,10 @@ describe.each([
 
   test("the exit door, the Gnome, the monkey's start and every bolt stand on a girder", () => {
     const { door, gnome, start } = floor;
-    expect(topsAt(floor, door.x)).toContain(door.y);
-    expect(topsAt(floor, door.x + 8)).toContain(door.y);
+    if (door !== undefined) {
+      expect(topsAt(floor, door.x)).toContain(door.y);
+      expect(topsAt(floor, door.x + 8)).toContain(door.y);
+    }
     expect(topsAt(floor, gnome.x + 16)).toContain(gnome.y + 32);
     expect(topsAt(floor, start.x)).toContain(start.y);
     for (const b of floor.bolts)
@@ -80,10 +116,45 @@ describe.each([
   });
 });
 
-test("only the girder floor has a furnace", () => {
-  expect(conveyorFloor.furnace).toBeUndefined();
+describe("the elevator floor", () => {
+  const [up, down] = elevatorFloor.lifts ?? [];
+
+  test("has an up shaft on the left and a down shaft on the right, between fixed girders", () => {
+    expect([up?.dir, down?.dir]).toEqual([-1, 1]);
+    expect((up?.x ?? 0) < (down?.x ?? 0)).toBe(true);
+  });
+
+  test("a platform passes level with each girder beside its shaft, so the monkey can step on and off", () => {
+    if (up === undefined || down === undefined) throw new Error("no lifts");
+    expect([248, 192].every((y) => level(up, y))).toBe(true);
+    expect([152, 232].every((y) => level(down, y))).toBe(true);
+  });
+
+  test("its platforms are spaced evenly and move with the travel, coming back at the far end", () => {
+    if (up === undefined || down === undefined) throw new Error("no lifts");
+    expect(liftTops(up, 0)).toEqual([254, 204, 154]);
+    expect(liftTops(up, 10)).toEqual([244, 194, 144]);
+    expect(liftTops(up, 60)).toEqual([194, 144, 244]);
+    expect(liftTops(down, 0)).toEqual([136, 196]);
+    expect(liftTops(down, 70)).toEqual([206, 146]);
+  });
+
+  test("its springs drop between the Gnome's girder and the ledge right of it", () => {
+    const drop = elevatorFloor.springs?.dropX ?? 0;
+    expect(topsAt(elevatorFloor, drop)).not.toContain(88);
+    expect(topsAt(elevatorFloor, drop - 16)).toContain(88);
+    expect(topsAt(elevatorFloor, drop + 8)).toContain(88);
+  });
 });
 
-test("the floors are played girder floor, then conveyor floor", () => {
-  expect(floors).toEqual([girderFloor, conveyorFloor]);
+test("only the girder floor has a furnace", () => {
+  expect([conveyorFloor, elevatorFloor, rivetFloor].map((f) => f.furnace)).toEqual([undefined, undefined, undefined]);
+});
+
+test("only the conveyor floor carries pans", () => {
+  expect([girderFloor.pans, conveyorFloor.pans, elevatorFloor.pans]).toEqual([undefined, true, undefined]);
+});
+
+test("the floors are played girder floor, conveyor floor, elevator floor, then rivet floor, as Donkey Kong's 25m, 50m, 75m and 100m", () => {
+  expect(floors).toEqual([girderFloor, conveyorFloor, elevatorFloor, rivetFloor]);
 });

@@ -454,6 +454,8 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:extraLife",
   "pause:badgeTick",
   "pause:fireflyStart",
+  "pause:monkeyGirder",
+  "pause:monkeyConveyor",
   "pause:monkeyWrench",
 ];
 
