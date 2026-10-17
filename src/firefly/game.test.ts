@@ -1173,6 +1173,13 @@ describe("results skip", () => {
     expect(f.gameOver()).toBe(true);
   });
 
+  test("fire held into the screen, released and pressed again skips it", () => {
+    const f = onResults(resultsSkipTicks, { space: true });
+    f.update(NO_INPUT);
+    f.update(held({ space: true }));
+    expect(f.gameOver()).toBe(true);
+  });
+
   test("with no input the screen runs its full resultsTicks", () => {
     const f = onResults(resultsTicks - 1);
     expect(f.gameOver()).toBe(false);

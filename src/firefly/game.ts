@@ -400,10 +400,8 @@ export class FireflySoftware implements FixedViewport {
     this.fireWasDown = i.space;
     if (this.results > 0) {
       const skip = firePressed && resultsTicks - this.results >= resultsSkipTicks;
-      if (--this.results === 0 || skip) {
-        this.results = 0;
-        this.over = true;
-      }
+      this.results = skip ? 0 : this.results - 1;
+      if (this.results === 0) this.over = true;
       return;
     }
     if (this.challenge !== null && this.challenge.tally > 0) {
