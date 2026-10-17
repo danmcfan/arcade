@@ -5,6 +5,7 @@ import {
   beamTicks,
   beamWidth,
   breathe,
+  captivePoints,
   breathePeriod,
   difficulty,
   entryWaves,
@@ -197,6 +198,12 @@ describe("points", () => {
     expect(points("owl", false)).toBeGreaterThan(points("wasp", false));
     expect(points("wasp", false)).toBeGreaterThan(points("moth", false));
     expect(points("owl", true)).toBeGreaterThan(points("wasp", true));
+  });
+});
+
+describe("captivePoints", () => {
+  test("a captive is worth 500 in formation and 1000 diving", () => {
+    expect(captivePoints).toEqual({ formation: 500, diving: 1000 });
   });
 });
 

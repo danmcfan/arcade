@@ -449,6 +449,7 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
+  "pause:rescue",
   "pause:stage",
   "pause:extraLife",
   "pause:fireflyStart",

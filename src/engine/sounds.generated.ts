@@ -31,6 +31,7 @@ import diveUrl from "../assets/sounds/dive.wav";
 import lifeLostUrl from "../assets/sounds/life-lost.wav";
 import beamUrl from "../assets/sounds/beam.wav";
 import captureUrl from "../assets/sounds/capture.wav";
+import rescueUrl from "../assets/sounds/rescue.wav";
 import stageUrl from "../assets/sounds/stage.wav";
 import extraLifeUrl from "../assets/sounds/extra-life.wav";
 import fireflyStartUrl from "../assets/sounds/firefly-start.wav";
@@ -72,6 +73,7 @@ export type SoundName =
   | "lifeLost"
   | "beam"
   | "capture"
+  | "rescue"
   | "stage"
   | "extraLife"
   | "fireflyStart"
@@ -117,6 +119,7 @@ export function soundTable<S>(
     lifeLost: make("lifeLost", lifeLostUrl, false, 1),
     beam: make("beam", beamUrl, false, 1),
     capture: make("capture", captureUrl, false, 1),
+    rescue: make("rescue", rescueUrl, false, 1),
     stage: make("stage", stageUrl, false, 1),
     extraLife: make("extraLife", extraLifeUrl, false, 1),
     fireflyStart: make("fireflyStart", fireflyStartUrl, false, 1),
@@ -151,6 +154,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "lifeLost",
     "beam",
     "capture",
+    "rescue",
     "stage",
     "extraLife",
     "fireflyStart",

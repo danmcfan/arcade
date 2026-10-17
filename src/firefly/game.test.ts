@@ -14,6 +14,7 @@ import { fireflyStartTune, tuneSeconds } from "../ui/sounds.ts";
 import {
   beamTicks,
   beamWidth,
+  captivePoints,
   difficulty,
   entryPairOffset,
   entryWaves,
@@ -987,11 +988,11 @@ describe("tractor beam", () => {
     expect(captive?.y).toBeGreaterThan(beamY);
     for (let t = 0; t < 400 && e.state !== "formation"; t++) f.update(NO_INPUT);
     expect(e.state).toBe("formation");
-    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16, hostile: false });
     divingAt(e, 60, 150);
     e.hp = 2;
     run(f, 5);
-    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16 });
+    expect(f.captive).toEqual({ owl: e, x: e.x, y: e.y - 16, hostile: false });
   });
 
   test("an Owl holding a captive does not beam again", () => {
@@ -1014,6 +1015,135 @@ describe("tractor beam", () => {
     expect(f.gameOver()).toBe(false);
     f.update(NO_INPUT);
     expect(f.gameOver()).toBe(true);
+  });
+});
+
+/** A software with only an Owl at (x, y) holding a captive above it, and the firefly back in play. */
+function holding(x: number, y: number): { f: FireflySoftware; e: Enemy } {
+  const r = withOnly("owl", { x, y });
+  r.f.captive = { owl: r.e, x, y: y - 16, hostile: false };
+  return r;
+}
+
+describe("rescue", () => {
+  test("shooting a diving Owl that holds a captive frees it: the firefly turns dual, with the rescue sound", () => {
+    const { f, e } = holding(60, 150);
+    divingAt(e, 60, 150);
+    sparkAt(f, 60, 150);
+    const rec = recordSounds();
+    f.update(NO_INPUT);
+    expect(f.dual).toBe(false);
+    expect(f.captive?.hostile).toBe(false);
+    expect(f.captive?.owl).toBeNull();
+    for (let i = 0; i < 200 && !f.dual; i++) f.update(NO_INPUT);
+    rec.stop();
+    expect(f.dual).toBe(true);
+    expect(f.captive).toBeNull();
+    expect(rec.events).toContain("play:rescue");
+  });
+
+  test("a captive that is docking cannot be shot", () => {
+    const { f } = holding(60, 60);
+    f.captive = { owl: null, x: 60, y: 40, hostile: false };
+    sparkAt(f, 60, 42);
+    f.update(NO_INPUT);
+    expect(f.captive).not.toBeNull();
+    expect(f.score()).toBe(0);
+  });
+
+  test("a rescue while the firefly is respawning or the game is over does not turn it dual", () => {
+    for (const state of ["respawn", "over"] as const) {
+      const { f, e } = holding(60, 150);
+      divingAt(e, 60, 150);
+      if (state === "respawn") f.respawn = 30;
+      else f.over = true;
+      f["shootDown"](e);
+      expect(f.captive).toBeNull();
+      expect(f.dual).toBe(false);
+    }
+  });
+
+  test("shooting the Owl in formation leaves the firefly single; the captive turns hostile and dives", () => {
+    const { f, e } = holding(60, 60);
+    e.hp = 1;
+    sparkAt(f, 60, 60);
+    f.update(NO_INPUT);
+    expect(f.dual).toBe(false);
+    expect(f.captive?.hostile).toBe(true);
+    const y = f.captive?.y ?? 0;
+    run(f, 5);
+    expect(f.captive?.y).toBeGreaterThan(y);
+    run(f, 400);
+    expect(f.captive).toBeNull();
+  });
+
+  test("a hostile captive touching the firefly costs a life", () => {
+    const { f } = holding(60, 60);
+    f.enemies = [];
+    f.captive = { owl: null, x: 112, y: playerY - 4, hostile: true };
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives - 1);
+  });
+
+  for (const t of [
+    { where: "in formation", diving: false, pts: captivePoints.formation },
+    { where: "diving", diving: true, pts: captivePoints.diving },
+  ]) {
+    test(`a spark that hits the captive ${t.where} destroys it for ${t.pts}, and the firefly stays single`, () => {
+      const { f, e } = holding(60, 100);
+      if (t.diving) divingAt(e, 60, 100);
+      e.hp = 2;
+      sparkAt(f, 60, 84);
+      f.update(NO_INPUT);
+      expect(f.captive).toBeNull();
+      expect(f.dual).toBe(false);
+      expect(e.hp).toBe(2);
+      expect(f.score()).toBe(t.pts);
+    });
+  }
+});
+
+describe("dual firefly", () => {
+  test("fires 2 sparks per press, 8px either side, with the cap doubled", () => {
+    const f = new FireflySoftware();
+    f.stageTick = stageIntroTicks + 1;
+    f.dual = true;
+    f.update(held({ space: true }));
+    expect(f.sparks.map((s) => s.x)).toEqual([104, 120]);
+    let most = 0;
+    for (let t = 0; t < 200; t++) {
+      f.update(held({ space: true }));
+      most = Math.max(most, f.sparks.length);
+    }
+    expect(most).toBe(2 * maxSparks);
+  });
+
+  test("a shot 8px to the side hits the dual but misses the single", () => {
+    const single = new FireflySoftware();
+    single.enemies = [];
+    single.shots = [{ x: 120, y: playerY, dx: 0, dy: 0 }];
+    single.update(NO_INPUT);
+    expect(single.lives).toBe(startLives);
+
+    const dual = new FireflySoftware();
+    dual.enemies = [];
+    dual.dual = true;
+    dual.shots = [{ x: 120, y: playerY, dx: 0, dy: 0 }];
+    dual.update(NO_INPUT);
+    expect(dual.dual).toBe(false);
+    expect(dual.lives).toBe(startLives);
+    expect(dual.respawn).toBe(0);
+    expect(dual.shots).toEqual([]);
+    // The left half lives on, where it was.
+    expect(dual.player.x).toBe(104);
+  });
+
+  test("a dual firefly is not beamed", () => {
+    const { f, e } = withOnly("owl", { x: 30, y: 40 });
+    f.dual = true;
+    beamingAt(e, 112);
+    run(f, 5);
+    expect([f.captured, f.lives, f.dual]).toEqual([false, startLives, true]);
   });
 });
 

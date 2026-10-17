@@ -220,7 +220,7 @@ describe("firefly tractor beam", () => {
     const { f, e } = onlyEnemy("owl", 100, 60);
     f.respawn = respawnTicks;
     f.captured = true;
-    f.captive = { owl: e, x: 100, y: 44 };
+    f.captive = { owl: e, x: 100, y: 44, hostile: false };
     const calls = drawCalls(f);
     expect(of(calls, imageHit)).toEqual([]);
     expect(of(calls, imageCaptive).map((c) => [c.x, c.y])).toEqual([[100 + 8 - 8, 44 + 8 - 8]]);
@@ -252,5 +252,24 @@ describe("firefly tractor beam", () => {
     const rects: number[][] = [];
     f.draw(stubSurface({ draw: () => {}, fillRect: (x, y, w, h) => void rects.push([x, y, w, h]) }), 0);
     expect(rects).toEqual([]);
+  });
+});
+
+describe("dual firefly", () => {
+  test("draws two fireflies, 8px either side of the player's x", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.dual = true;
+    const xs = of(drawCalls(f), imageFirefly)
+      .filter((c) => c.y === playerY)
+      .map((c) => c.x);
+    expect(xs).toEqual([f.player.x - 8, f.player.x + 8]);
+  });
+
+  test("a hostile captive, without its Owl, is still drawn red", () => {
+    const f = new FireflySoftware();
+    f.enemies = [];
+    f.captive = { owl: null, x: 50, y: 120, hostile: true };
+    expect(of(drawCalls(f), imageCaptive).map((c) => [c.x, c.y])).toEqual([[50, 120]]);
   });
 });
