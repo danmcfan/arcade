@@ -38,7 +38,7 @@ import { sweetie } from "../ui/sweetie16.ts";
 import { drawTextCentered } from "../ui/text.ts";
 import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
-import { Dial } from "../ui/rollingDials.ts";
+import { Dial, ScoreDials } from "../ui/dials.ts";
 import { girderTop, type Floor } from "./floors.ts";
 import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
 import { escapeTicks } from "./tuning.ts";
@@ -78,17 +78,17 @@ export class BrassMonkeySoftware implements FixedViewport {
   readonly name = "brassMonkey" as const;
 
   readonly run: Run;
-  private highScore: number;
-  private readonly scoreDial = new Dial();
-  private readonly highScoreDial: Dial;
+  private readonly scoreDials: ScoreDials;
   private readonly bonusDial: Dial;
-  private readonly loopDial = new Dial(1, 1);
+  private readonly loopDial = new Dial({ x: hud.rightDials, y: hud.loopTop }, 1, 1);
   /** The wrench music is playing. */
   private wrenchMusic = false;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
-    this.highScore = highScore;
-    this.highScoreDial = new Dial(highScore);
+    this.scoreDials = new ScoreDials(highScore, {
+      score: { x: hud.score, y: hud.dialsTop },
+      high: { x: hud.highScore, y: hud.dialsTop },
+    });
     this.run = new Run({
       advantages,
       onSound: (s): void => {
@@ -96,7 +96,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         runSounds[s].play();
       },
     });
-    this.bonusDial = new Dial(this.run.bonus);
+    this.bonusDial = new Dial({ x: hud.rightDials, y: hud.dialsTop }, this.run.bonus);
   }
 
   background(): Sprite {
@@ -105,9 +105,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   update(i: Input): void {
     this.run.update(i);
-    this.highScore = Math.max(this.highScore, this.run.score);
-    this.scoreDial.update(this.run.score);
-    this.highScoreDial.update(this.highScore);
+    this.scoreDials.tick(this.run.score);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
     const held = this.run.phase === "play" && this.run.monkey.wrench > 0;
@@ -175,14 +173,13 @@ export class BrassMonkeySoftware implements FixedViewport {
     const { run } = this;
     screen.draw(hudLabelSprite("scores"), left + scoreLabelsX, top);
     screen.draw(hudLabelSprite("bonus"), left + hud.right, top);
-    this.scoreDial.draw(screen, left + hud.score, top + hud.dialsTop);
-    this.highScoreDial.draw(screen, left + hud.highScore, top + hud.dialsTop);
-    this.bonusDial.draw(screen, left + hud.rightDials, top + hud.dialsTop);
+    this.scoreDials.draw(screen, left, top);
+    this.bonusDial.draw(screen, left, top);
     // Spare lives: the one in play is not counted.
     for (let n = 0; n < run.lives - 1; n++)
       screen.draw(frame(imageMonkey, 0, 16, 16), left + 8 * (2 + n * 2), top + hud.livesTop);
     screen.draw(hudLabelSprite("loop"), left + hud.right, top + hud.loopTop);
-    this.loopDial.draw(screen, left + hud.rightDials, top + hud.loopTop);
+    this.loopDial.draw(screen, left, top);
   }
 
   gameOver(): boolean {
@@ -203,7 +200,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       loop: run.loop,
       lives: run.lives,
       score: run.score,
-      highScore: this.highScore,
+      highScore: this.scoreDials.highScore,
       bonus: run.bonus,
       x: m.x,
       y: m.y,

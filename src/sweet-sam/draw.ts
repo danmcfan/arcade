@@ -56,7 +56,7 @@ function drawScreen(s: SweetSamSoftware, screen: Surface): void {
     return;
   }
   drawBackground(s, screen, bufX, bufY);
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
+  s.dials.draw(screen, bufX, bufY);
   drawLives(s, screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   drawReady(s, screen, bufX, bufY);
@@ -78,7 +78,7 @@ function drawIntermission(s: SweetSamSoftware, screen: Surface, bufX: number, bu
   const poses = s.intermissionPoses();
   if (poses === null) return;
   screen.fillRect(bufX, bufY, mazeWidth, mazeHeight, "black");
-  s.dials.draw(screen, bufX, bufY, s.scoreValue, s.highScore);
+  s.dials.draw(screen, bufX, bufY);
   drawLevel(s, screen, bufX, bufY);
   screen.clipped(bufX, bufY, mazeWidth, mazeHeight, () => {
     for (const pose of poses) {
