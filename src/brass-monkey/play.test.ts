@@ -37,6 +37,7 @@ const hazard = (kind: Hazard["kind"], x: number, y: number, dir: -1 | 1 = 1): Ha
   ladder: null,
   climbDir: 1,
   scorableIn: 0,
+  wild: false,
 });
 
 beforeEach(() => {
@@ -412,5 +413,137 @@ describe("landing on a slope", () => {
     const y0 = run.monkey.y;
     until(run, () => run.monkey.footing !== "air", {}, 200);
     expect(run.monkey.y).toBeGreaterThan(y0 + 8);
+  });
+});
+
+/** Of `n` seeded trials, how many end with `took` true after `ticks` ticks of the run `setup` builds. */
+function tally(n: number, ticks: number, setup: () => { run: Run; took: () => boolean }): number {
+  let count = 0;
+  for (let s = 1; s <= n; s++) {
+    rng.seed(s);
+    const { run, took } = setup();
+    step(run, ticks);
+    if (took()) count++;
+  }
+  return count;
+}
+
+/** A gear rolling right on the top girder towards the ladder at x 184, the monkey at height `monkeyY`. */
+function gearAtLadder(monkeyY: number, loop = 0): { run: Run; took: () => boolean } {
+  const { run } = quiet({ loop });
+  run.monkey.y = monkeyY;
+  run.monkey.footing = "climb"; // held still at that height
+  const gear = hazard("gear", 180, 87);
+  run.hazards = [gear];
+  return { run, took: () => gear.footing === "climb" || gear.y > 100 };
+}
+
+/** `gearAtLadder` with the monkey below, a minute into the floor. */
+function lateOnFloor(): { run: Run; took: () => boolean } {
+  const g = gearAtLadder(248);
+  g.run.floorTicks = 60 * 60;
+  return g;
+}
+
+/** An ember walking right towards the ladder at x 184, at its head (`down`) or its foot. */
+function emberAtLadder(down: boolean): { run: Run; took: () => boolean } {
+  const { run } = quiet();
+  run.monkey.y = 20;
+  run.monkey.footing = "climb";
+  const ember = hazard("ember", 184, down ? 87 : 111);
+  run.hazards = [ember];
+  return { run, took: () => ember.footing === "climb" };
+}
+
+describe("hazards steer towards the monkey", () => {
+  test("a gear takes a ladder more often with the monkey below it than above it", () => {
+    const below = tally(200, 10, () => gearAtLadder(248));
+    const above = tally(200, 10, () => gearAtLadder(20));
+    expect(below).toBeGreaterThan(above);
+  });
+
+  test("loop 2 sends gears down ladders more often than loop 0", () => {
+    expect(tally(200, 10, () => gearAtLadder(248, 2))).toBeGreaterThan(tally(200, 10, () => gearAtLadder(248, 0)));
+  });
+
+  test("the chance of a gear taking a ladder rises with the time spent on the floor", () => {
+    expect(tally(200, 10, lateOnFloor)).toBeGreaterThan(tally(200, 10, () => gearAtLadder(248)));
+  });
+
+  test("with the monkey above, an ember at a ladder foot climbs up more often than one at a ladder head climbs down", () => {
+    expect(tally(200, 10, () => emberAtLadder(false))).toBeGreaterThan(tally(200, 10, () => emberAtLadder(true)));
+  });
+
+  test("an ember on the monkey's girder, walking away, turns and closes the gap", () => {
+    const { run } = quiet();
+    run.monkey.x = 40;
+    const ember = hazard("ember", 120, 248, 1);
+    run.hazards = [ember];
+    step(run, 300);
+    expect(Math.abs(ember.x - run.monkey.x)).toBeLessThan(80);
+  });
+
+  test("embers turn towards the monkey more often on later loops", () => {
+    expect(t.emberTurnEveryFor(2)).toBeLessThan(t.emberTurnEveryFor(0));
+  });
+
+  test("the speed caps hold", () => {
+    const late = t.tuningFor(0, 20);
+    expect(late.gearSpeed).toBe(t.maxGearSpeed);
+    expect(late.emberWalkSpeed).toBe(t.maxEmberWalkSpeed);
+  });
+});
+
+/** The gears the Gnome sends on loop `loop` over `ticks` ticks. */
+function sent(loop: number, ticks: number): Hazard[] {
+  const { run } = quiet({ loop });
+  run.monkey.footing = "climb"; // held out of the way
+  run.monkey.y = 0;
+  run.gearTimer = 1;
+  const seen: Hazard[] = [];
+  for (let n = 0; n < ticks; n++) {
+    step(run, 1);
+    for (const h of run.hazards) if (!seen.includes(h)) seen.push(h);
+  }
+  return seen;
+}
+
+describe("wild gears", () => {
+  test("never appear on loop 0", () => {
+    expect(sent(0, 3000).some((h) => h.wild)).toBe(false);
+  });
+
+  test("appear on a later loop", () => {
+    expect(sent(2, 3000).some((h) => h.wild)).toBe(true);
+  });
+
+  test("only fall, through the girders, drifting towards the monkey, until they leave the bottom", () => {
+    const { run } = quiet({ loop: 2 });
+    run.monkey.footing = "climb";
+    run.monkey.x = 180;
+    run.monkey.y = 0;
+    const gear: Hazard = { ...hazard("gear", 61, 84), wild: true, footing: "air" };
+    run.hazards = [gear];
+    let y = gear.y;
+    let x = gear.x;
+    while (run.hazards.includes(gear)) {
+      step(run, 1);
+      expect(gear.y).toBeGreaterThanOrEqual(y);
+      expect(gear.footing).toBe("air");
+      expect(Math.abs(gear.x - 180)).toBeLessThanOrEqual(Math.abs(x - 180));
+      y = gear.y;
+      x = gear.x;
+    }
+    expect(y).toBeGreaterThan(run.currentFloor().height);
+  });
+
+  test("score when jumped", () => {
+    const { run, sounds } = quiet({ loop: 2 });
+    // Falling through the girder just under the monkey's feet.
+    const gear: Hazard = { ...hazard("gear", run.monkey.x, run.monkey.y + 12), wild: true, footing: "air" };
+    run.hazards = [gear];
+    step(run, 1, { space: true });
+    expect(sounds).toContain("hazard");
+    expect(run.score).toBe(100);
   });
 });

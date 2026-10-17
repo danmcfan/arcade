@@ -190,7 +190,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       frame: m.frame,
       left: m.left,
       moving: m.moving,
-      hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing })),
+      hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing, wild: h.wild })),
       bolts: [...run.bolts],
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,

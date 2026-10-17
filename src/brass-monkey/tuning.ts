@@ -26,12 +26,71 @@ export const ladderReach = 4;
 /** A conveyor carries what stands on it this many px a tick. */
 export const beltSpeed = 0.5;
 
-/** At the head of a ladder, a gear rolls down it this often. */
+/**
+ * At the head of a ladder, a gear rolls down it this often on loop 0 as the
+ * floor starts. As in Donkey Kong, where Kong steers barrels down ladders more
+ * as the difficulty rises, the chance grows with the loop and the time on the floor...
+ */
 export const gearLadderChance = 0.25;
-/** At a ladder down, an ember takes it this often... */
+/** ...by this much each loop... */
+export const gearLadderLoopRise = 0.1;
+/** ...and this much every `gearLadderRiseTicks` on the floor... */
+export const gearLadderTimeRise = 0.05;
+export const gearLadderRiseTicks = 600;
+/** ...up to this. */
+export const maxGearLadderChance = 0.75;
+/** With the monkey below the ladder the chance is multiplied by this; with it level or above, by `gearAwayFactor`. */
+export const gearTowardFactor = 1.5;
+export const gearAwayFactor = 0.5;
+
+/** The gear's ladder chance on loop `loop`, `floorTicks` into the floor, the monkey below the ladder or not. */
+export function gearLadderChanceFor(loop: number, floorTicks: number, monkeyBelow: boolean): number {
+  const rise = gearLadderLoopRise * loop + gearLadderTimeRise * Math.floor(floorTicks / gearLadderRiseTicks);
+  const base = Math.min(maxGearLadderChance, gearLadderChance + rise);
+  return monkeyBelow ? Math.min(maxGearLadderChance, base * gearTowardFactor) : base * gearAwayFactor;
+}
+
+/** At a ladder towards the monkey (up when it is higher, down when lower), an ember takes it this often... */
+export const emberTowardChance = 0.6;
+/** ...and at a ladder away from it, this often. */
+export const emberAwayChance = 0.15;
+/** With the monkey level (this close up and down), at a ladder down an ember takes it this often... */
+export const emberLevelY = 8;
 export const emberDownChance = 0.5;
 /** ...and at a ladder up, this often. */
 export const emberUpChance = 0.25;
+
+/** An ember on a girder turns to face the monkey every this many ticks on loop 0... */
+export const emberTurnEvery = 120;
+/** ...this many fewer each loop... */
+export const emberTurnLoopStep = 20;
+/** ...but no more often than this. */
+export const minEmberTurnEvery = 40;
+
+/** Ticks between an ember's turns towards the monkey on loop `loop`. */
+export function emberTurnEveryFor(loop: number): number {
+  return Math.max(minEmberTurnEvery, emberTurnEvery - emberTurnLoopStep * loop);
+}
+
+/**
+ * Wild gears, as Donkey Kong's diagonal barrels: from loop `wildFromLoop` on,
+ * a gear is wild this often per loop past the first, up to `maxWildChance`. A
+ * wild gear ignores the girders and drops in hops towards the monkey.
+ */
+export const wildFromLoop = 1;
+export const wildChancePerLoop = 0.15;
+export const maxWildChance = 0.5;
+
+/** The chance a gear the Gnome sends on loop `loop` is wild. */
+export function wildChanceFor(loop: number): number {
+  return loop < wildFromLoop ? 0 : Math.min(maxWildChance, wildChancePerLoop * loop);
+}
+
+/** A wild gear's hop lasts this many ticks, starting down at `wildHopSpeed` px a tick and speeding up with `gravity`. */
+export const wildHopTicks = 20;
+export const wildHopSpeed = 0.25;
+/** Across, it moves this fraction of the gear speed towards the monkey. */
+export const wildDrift = 0.75;
 
 /** Points for a hazard the monkey jumps over. */
 export const hazardPoints = 100;

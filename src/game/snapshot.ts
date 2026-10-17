@@ -372,6 +372,8 @@ export interface BrassMonkeyHazardSnapshot {
   y: number;
   dir: -1 | 1;
   footing: "ground" | "air" | "climb";
+  /** A wild gear drops through the girders towards the monkey. */
+  wild: boolean;
 }
 
 /** Brass Monkey's run (`Run` in src/brass-monkey/play.ts); x is the monkey's middle and y the row its foot stands on. */
