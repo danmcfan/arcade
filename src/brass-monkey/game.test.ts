@@ -591,32 +591,38 @@ describe("the HUD, in Sweet Sam's style", () => {
 });
 
 /**
- * The heights shown before each floor of loop `loop` after its first,
- * clearing floor after floor. Arcade Donkey Kong stacks one Kong per board
- * climbed in the level, 25 m each whatever the board: 25M 50M before level
- * 1's rivets, up to 150M on level 5's six boards (#340).
+ * The heights on each "How high can you get?" screen through one loop: the
+ * first floor's (shown again as a life is lost), then each floor's after a
+ * clear. Arcade Donkey Kong stacks one Kong per board climbed in the level,
+ * 25 m each whatever the board: 25M, then 25M 50M before level 1's rivets,
+ * up to 150M on level 5's six boards.
  */
 function heightsThrough(loop: number): string[][] {
   const g = quiet();
   g.run.loop = loop;
   const shown: string[][] = [];
-  for (;;) {
-    g.run.phase = "clear";
+  const end = (phase: "dying" | "clear"): void => {
+    g.run.phase = phase;
     g.run.phaseTicks = 1;
     g.update(NO_INPUT);
-    if (brassMonkeySnapshot(g.snapshot()).phase !== "howHigh") return shown;
-    shown.push(words(g).filter((w) => w.endsWith("M")));
+  };
+  end("dying");
+  while (brassMonkeySnapshot(g.snapshot()).phase === "howHigh") {
+    shown.push(words(g).filter((w) => /^\d+M$/u.test(w)));
     for (let n = 0; n < t.howHighTicks; n++) g.update(NO_INPUT);
+    end("clear");
   }
+  return shown;
 }
 
 describe("how high can you get?", () => {
   test("the first loop's rivet floor shows 25M and 50M, as Donkey Kong's level 1", () => {
-    expect(heightsThrough(0)).toEqual([["25M", "50M"]]);
+    expect(heightsThrough(0)).toEqual([["25M"], ["25M", "50M"]]);
   });
 
   test("the fifth loop climbs a board at a time to 150M, as Donkey Kong's level 5", () => {
     expect(heightsThrough(4)).toEqual([
+      ["25M"],
       ["25M", "50M"],
       ["25M", "50M", "75M"],
       ["25M", "50M", "75M", "100M"],
