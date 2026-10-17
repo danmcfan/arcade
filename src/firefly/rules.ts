@@ -434,6 +434,8 @@ export const tallyTicks = 240;
 export const tallyBonusDelay = 60;
 /** Ticks the -RESULTS- screen shows after GAME OVER, before the run ends. */
 export const resultsTicks = 300;
+/** Ticks the -RESULTS- screen shows before a fresh press of fire may skip the rest of it (#347). */
+export const resultsSkipTicks = 60;
 
 /** Galaga's hit-miss ratio: hits as a percentage of shots fired, to 1 decimal ("0.0" with no shots). */
 export function hitMissRatio(shotsFired: number, hits: number): string {

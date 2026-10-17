@@ -34,6 +34,7 @@ import {
   readyTicks,
   stageBannerTicks,
   resultsTicks,
+  resultsSkipTicks,
   challengeWaveSize,
   challengeWaves,
   perfectBonus,
@@ -1134,6 +1135,53 @@ describe("tractor beam", () => {
     f.update(NO_INPUT);
     expect(f.lives).toBe(0);
     run(f, respawnTicks - 1 + resultsTicks - 1);
+    expect(f.gameOver()).toBe(false);
+    f.update(NO_INPUT);
+    expect(f.gameOver()).toBe(true);
+  });
+});
+
+/** A run on its -RESULTS- screen, `shown` ticks in. */
+function onResults(shown: number, i: Partial<Input> = {}): FireflySoftware {
+  const f = new FireflySoftware();
+  f.lives = 1;
+  f.loseLife();
+  run(f, respawnTicks, i);
+  expect(f.results).toBe(resultsTicks);
+  run(f, shown, i);
+  return f;
+}
+
+describe("results skip", () => {
+  test("fire pressed once the minimum has shown ends the run on that tick", () => {
+    const f = onResults(resultsSkipTicks);
+    f.update(held({ space: true }));
+    expect(f.gameOver()).toBe(true);
+  });
+
+  test("fire pressed before the minimum does not skip", () => {
+    const f = onResults(resultsSkipTicks - 1);
+    f.update(held({ space: true }));
+    expect(f.gameOver()).toBe(false);
+  });
+
+  test("fire held on from play into the screen does not skip it", () => {
+    const f = onResults(resultsSkipTicks, { space: true });
+    run(f, resultsTicks - resultsSkipTicks - 1, { space: true });
+    expect(f.gameOver()).toBe(false);
+    f.update(held({ space: true }));
+    expect(f.gameOver()).toBe(true);
+  });
+
+  test("fire held into the screen, released and pressed again skips it", () => {
+    const f = onResults(resultsSkipTicks, { space: true });
+    f.update(NO_INPUT);
+    f.update(held({ space: true }));
+    expect(f.gameOver()).toBe(true);
+  });
+
+  test("with no input the screen runs its full resultsTicks", () => {
+    const f = onResults(resultsTicks - 1);
     expect(f.gameOver()).toBe(false);
     f.update(NO_INPUT);
     expect(f.gameOver()).toBe(true);
