@@ -520,7 +520,7 @@ describe("hits", () => {
       const rec = recordSounds();
       f.update(NO_INPUT);
       rec.stop();
-      expect(rec.events).toContain(`play:${kind}Hit`);
+      expect(rec.events).toEqual([`rewind:${kind}Hit`, `play:${kind}Hit`]);
       expect([e.hp, e.deadFrames]).toEqual([0, hitEffectTicks - 1]);
       expect(f.sparks).toEqual([]);
     });
@@ -902,21 +902,6 @@ describe("dive shapes", () => {
 });
 
 describe("hit sounds", () => {
-  for (const [kind, sound] of [
-    ["moth", "mothHit"],
-    ["wasp", "waspHit"],
-  ] as const) {
-    test(`killing a ${kind} plays ${sound}`, () => {
-      const { f, e } = withOnly(kind, { x: 100, y: 120 });
-      sparkAt(f, e.x, e.y);
-      const rec = recordSounds();
-      f.update(NO_INPUT);
-      rec.stop();
-      expect(e.hp).toBe(0);
-      expect(rec.events).toEqual([`rewind:${sound}`, `play:${sound}`]);
-    });
-  }
-
   test("an Owl's first spark plays owlHurt and its second plays owlKill", () => {
     const { f, e } = withOnly("owl", { x: 100, y: 120 });
     expect(e.hp).toBe(enemyHp.owl);
