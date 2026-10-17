@@ -270,6 +270,10 @@ export function tuningFor(floor: number, loop: number): FloorTuning {
 export const dyingTicks = 90;
 /** Ticks the finished floor holds before the next one starts. */
 export const clearTicks = 120;
+/** Ticks a cleared floor's Gnome stands before it scrambles up out of sight. */
+export const gnomeClimbBeat = 20;
+/** How fast the Gnome climbs away from a cleared floor, in px a tick: out of sight before the clear ends. */
+export const gnomeClimbSpeed = 1.5;
 /** Ticks of the escaped scene after the last floor: about 3 s. */
 export const escapeTicks = 180;
 /** Ticks of the "How high can you get?" screen before each floor: 2.5 s, its 2.2 s jingle and a beat. */

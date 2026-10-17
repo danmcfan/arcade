@@ -53,4 +53,5 @@ export const fakeBrassMonkeySnapshot: BrassMonkeySnapshot = {
   gearTimer: 0,
   emberTimer: 0,
   lifts: [],
+  gnomeY: 0,
 };

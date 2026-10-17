@@ -51,7 +51,7 @@ import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial, ScoreDials } from "../ui/dials.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { facing, Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { clearTicks, dyingTicks, escapeTicks } from "./tuning.ts";
+import { dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
@@ -162,10 +162,15 @@ export class BrassMonkeySoftware implements FixedViewport {
     });
   }
 
+  /** The floor, then the HUD over its top edge: the Gnome climbing away from a clear goes up behind it. */
   private drawScreen(screen: Surface): void {
+    this.drawPlayfield(screen);
+    this.drawHud(screen, cabinetInsetLeft, cabinetInsetTop);
+  }
+
+  private drawPlayfield(screen: Surface): void {
     const left = cabinetInsetLeft;
     let top = cabinetInsetTop + hudHeight;
-    this.drawHud(screen, left, cabinetInsetTop);
     const run = this.run;
     if (run.phase === "escape") {
       drawEscape(screen, left, top, escapeTicks - run.phaseTicks);
@@ -196,11 +201,13 @@ export class BrassMonkeySoftware implements FixedViewport {
     floor.wrenches.forEach((w, n) => {
       if (run.wrenches[n] !== true) screen.draw(imageWrench, left + w.x - 4, top + w.y - 14);
     });
-    const gnomeY = floor.gnome.y + (run.phase === "clear" ? gnomeFall(floor, clearTicks - run.phaseTicks) : 0);
+    // Falling at the loop's end, the Gnome tumbles: flipped every 6 ticks.
+    const tumbling = run.finalClear() && Math.trunc(run.ticks / 6) % 2 === 0;
     screen.draw(
       frame(imageGnome, gnomeColumn(run), 32, 32),
       left + floor.gnome.x,
-      top + gnomeY + run.introGnomeRise() - run.introHop(),
+      top + run.gnomeY(),
+      tumbling ? { flipX: true } : undefined,
     );
     if (floor.furnace !== undefined) {
       // Lit, its flames flicker every 8 ticks.
@@ -287,6 +294,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       emberTimer: run.emberTimer,
       howHighStack: run.howHighStack(),
       lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
+      gnomeY: run.gnomeY(),
     };
   }
 }
@@ -314,16 +322,6 @@ function drawHowHigh(screen: Surface, left: number, top: number, stack: number):
     drawTextCentered(screen, `${(n + 1) * metresPerFloor}M`, left + x + 56, top + y + 12, "yellow");
   }
   drawTextCentered(screen, "HOW HIGH CAN YOU GET?", left + w / 2, top + ground + 16);
-}
-
-/**
- * How far the Gnome has fallen `t` ticks after the floor cleared: on the
- * rivet floor it drops, gathering speed, to the bottom girder; elsewhere it stays.
- */
-function gnomeFall(floor: Floor, t: number): number {
-  if (floor.rivets === undefined) return 0;
-  const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32 - floor.gnome.y;
-  return Math.min(bottom, Math.trunc((t * t) / 16));
 }
 
 /** The lap as the player counts it, from 1: `run.loop` counts escapes. */
@@ -356,9 +354,10 @@ export function deathColumn(phaseTicks: number): number {
   return 4 + (Math.trunc((elapsed - spin) / smokeTicks) % 2);
 }
 
-/** The Gnome's sheet column: reaching as it climbs and as it hops to stomp, throwing with its arms up, else idle. */
+/** The Gnome's sheet column: reaching as it climbs (in the intro and away from a clear) and as it hops to stomp, arms up as it throws and as it falls at the loop's end, else idle. */
 export function gnomeColumn(run: Run): number {
-  if (run.introGnomeRise() > 0) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
+  if (run.finalClear()) return 1;
+  if (run.introGnomeRise() > 0 || run.gnomeClimbing()) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
   if (run.introHop() > 0) return 2;
   return run.gnomeThrowing() ? 1 : 0;
 }
