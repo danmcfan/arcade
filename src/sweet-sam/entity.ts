@@ -37,6 +37,11 @@ export const tunnelLeftX = 36;
 /** `tileSize*(tileWidth-4.5)` (state.go:176). */
 export const tunnelRightX = 188;
 
+/** Whether `e` is in the side tunnel, where bees slow down. */
+export function inTunnel(e: { x: number; y: number }): boolean {
+  return e.y === tunnelRowY && (e.x < tunnelLeftX || e.x > tunnelRightX);
+}
+
 export interface Tile {
   x: number;
   y: number;

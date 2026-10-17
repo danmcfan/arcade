@@ -138,17 +138,17 @@ export const dirSteps: Record<Direction | "", [number, number]> = {
   "": [0, 0],
 };
 
-/** Moves `e` toward the centre line of the junction it is cornering round. */
-function closeCorner(e: Entity): void {
+/** Moves `e` toward the centre line of the junction it is cornering round, by up to `step`. */
+function closeCorner(e: Entity, step: number): void {
   const c = e.cornering;
   if (c === null) {
     return;
   }
   if (dirAxis(e.direction) === "VERTICAL") {
-    e.x += Math.max(-e.velocity, Math.min(e.velocity, c.x - e.x));
+    e.x += Math.max(-step, Math.min(step, c.x - e.x));
     if (e.x === c.x) e.cornering = null;
   } else {
-    e.y += Math.max(-e.velocity, Math.min(e.velocity, c.y - e.y));
+    e.y += Math.max(-step, Math.min(step, c.y - e.y));
     if (e.y === c.y) e.cornering = null;
   }
 }
@@ -162,13 +162,17 @@ export function updateFrame(e: Entity): void {
   }
 }
 
-export function updateBlue(e: Entity): void {
+/** Ticks a flashing bee stays white, then blue: one flash is twice this. */
+export const flashToggleTicks = 10;
+
+/** Counts down a sleepy bee's ticks; in its last ones it flashes white `flashes` times. */
+export function updateBlue(e: Entity, flashes: number): void {
   if (e.blueFrames > 0) {
     e.blueFrames--;
-    if (e.blueFrames <= framesPerSecond * 2) {
+    if (e.blueFrames < flashes * 2 * flashToggleTicks) {
       if (e.flashFrames === 0) {
         e.flash = !e.flash;
-        e.flashFrames = 5;
+        e.flashFrames = flashToggleTicks - 1;
       } else {
         e.flashFrames--;
       }
@@ -179,7 +183,37 @@ export function updateBlue(e: Entity): void {
   }
 }
 
-export function updatePosition(e: Entity, cs: readonly Entity[]): void {
+/** The sub-step a speed of `v` px/tick moves in: at most 1 px, so no step skips a corner. */
+export function stepSize(v: number): number {
+  return v / subSteps(v);
+}
+
+/** How many sub-steps a tick at `v` px/tick takes. */
+export function subSteps(v: number): number {
+  return Math.max(1, Math.ceil(v));
+}
+
+/**
+ * One tick's move at `e.velocity`, in equal sub-steps of at most 1 px (as the
+ * eyes move). With a `target`, a bee re-steers toward it before each sub-step
+ * after the first, so it can turn at a junction it reaches mid-tick.
+ */
+export function moveEntity(e: Entity, cs: readonly Entity[], target?: Tile): void {
+  // In the home a bee keeps its own slow pace (`updatePosition`), whatever its speed.
+  if (e.home) {
+    updatePosition(e, cs);
+    return;
+  }
+  const n = subSteps(e.velocity);
+  const step = e.velocity / n;
+  for (let k = 0; k < n; k++) {
+    if (k > 0 && target !== undefined) updateDirection(e, cs, target);
+    updatePosition(e, cs, step);
+  }
+}
+
+/** Moves `e` by `step` px (its velocity by default), stopping at walls. */
+export function updatePosition(e: Entity, cs: readonly Entity[], step = e.velocity): void {
   if (waitingInHome(e)) {
     bob(e);
     return;
@@ -217,21 +251,21 @@ export function updatePosition(e: Entity, cs: readonly Entity[]): void {
     validDirections = corner.directions;
   }
 
-  closeCorner(e);
+  closeCorner(e, step);
 
   if (validDirections.includes(e.direction)) {
     switch (e.direction) {
       case "UP":
-        e.y -= e.velocity;
+        e.y -= step;
         break;
       case "DOWN":
-        e.y += e.velocity;
+        e.y += step;
         break;
       case "LEFT":
-        e.x -= e.velocity;
+        e.x -= step;
         break;
       case "RIGHT":
-        e.x += e.velocity;
+        e.x += step;
         break;
       case "":
         break;

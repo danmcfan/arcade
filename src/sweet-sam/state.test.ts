@@ -280,10 +280,23 @@ describe("eating", () => {
       "play:sweetSmoke",
     ]);
     expect([s.camera.shakeTicksRemaining, s.camera.shakeIntensity]).toEqual([6, 4]);
-    expect(enemy(s, 0).blueFrames).toBe(600);
+    expect(enemy(s, 0).blueFrames).toBe(360);
     expect(enemy(s, 0).reverseDirection).toBe(true);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
-    expect(s.enemies.every((e) => e.blueFrames === 600)).toBe(true);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
+    expect(s.enemies.every((e) => e.blueFrames === 360)).toBe(true);
+  });
+
+  test.each([17, 19, 21])("on level %p a honey pot scores 50 and turns the bees round, but none sleeps", (level) => {
+    const s = playing();
+    s.level = level;
+    const power = s.items.find((i) => i?.powerPellet === true);
+    if (!power) throw new Error("power");
+    power.x = s.player.x - 1;
+    power.y = 212;
+    step(s);
+    expect(s.scoreValue).toBe(50);
+    expect(enemy(s, 0).reverseDirection).toBe(true);
+    expect(s.enemies.some((e) => e.blueFrames > 0)).toBe(false);
   });
 
   test("a bee that leaves the home still sleepy can be eaten for points", () => {
@@ -294,7 +307,7 @@ describe("eating", () => {
     power.x = s.player.x - 1;
     power.y = 212;
     step(s);
-    expect([pink.home, pink.blueFrames]).toEqual([true, 600]);
+    expect([pink.home, pink.blueFrames]).toEqual([true, 360]);
     let n = 0;
     while (pink.home && n++ < 300) step(s);
     expect([pink.home, pink.blueFrames > 0]).toEqual([false, true]);
@@ -843,10 +856,10 @@ describe("Cruise Elroy (#156)", () => {
     expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.9375, 0.9375]);
     dropsLeft(s, 20);
     step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([0.96875, 0.9375]);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
     dropsLeft(s, 10);
     step(s);
-    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1, 0.9375]);
+    expect([enemy(s, 0).velocity, enemy(s, 1).velocity]).toEqual([1.0625, 0.9375]);
   });
 
   test("a sleepy red bee flies at the sleepy speed, not Elroy's", () => {
@@ -870,7 +883,7 @@ describe("Cruise Elroy (#156)", () => {
     s.release.globalDots = 31;
     dropEaten(s.release, s.enemies);
     step(s);
-    expect(enemy(s, 0).velocity).toBe(1);
+    expect(enemy(s, 0).velocity).toBe(1.0625);
   });
 
   test("a red bee in the home or flying home ignores Elroy's speed", () => {
@@ -944,5 +957,17 @@ describe("an eaten bee becomes eyes (#153)", () => {
     const red = enemy(s, 0);
     expect([red.eyes, red.blueFrames, red.reverseDirection]).toEqual([true, 0, false]);
     expect(enemy(s, 1).blueFrames).toBeGreaterThan(0);
+  });
+});
+
+describe("jumpTo (the test hook's level jump)", () => {
+  test("starts the given level from its START banner, maze refilled, at that level's speeds", () => {
+    const s = playing();
+    s.items[0] = null;
+    s.jumpTo(5);
+    expect([s.level, s.snapshot().state, s.items.every((i) => i !== null)]).toEqual([5, "START", true]);
+    for (let n = 0; n < 400 && s.snapshot().state !== "PLAY"; n++) step(s);
+    step(s);
+    expect([s.player.velocity, s.enemies[0]?.velocity]).toEqual([1.25, levelValues(5).beeVelocity]);
   });
 });
