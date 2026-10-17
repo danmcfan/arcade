@@ -11,6 +11,8 @@ import {
   imageGnome,
   imageHud,
   imageMonkey,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
 } from "../engine/assets.ts";
 import { addSoundListener, type SoundEvent } from "../engine/audio.ts";
@@ -130,6 +132,37 @@ describe("BrassMonkeySoftware", () => {
     expect(g.background()).toBe(imageConveyorFloor);
     g.run.floor = 2;
     expect(g.background()).toBe(imageElevatorFloor);
+    g.run.floor = 3;
+    expect(g.background()).toBe(imageRivetFloor);
+  });
+
+  test("the rivet floor draws each rivet in its slot until it is pulled", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const rivets = (): DrawCall[] => record(g).calls.filter((c) => c.sprite.asset === imageRivet.asset);
+    expect(rivets().length).toBe(8);
+    expect(rivets()[0]).toMatchObject({ x: 8 + 48, y: 40 + 208 });
+    g.run.rivets[0] = true;
+    expect(rivets().length).toBe(7);
+    expect(brassMonkeySnapshot(g.snapshot()).rivets.filter(Boolean).length).toBe(1);
+  });
+
+  test("when the rivet floor clears, the Gnome falls to the bottom girder", () => {
+    const g = quiet();
+    g.run.floor = 3;
+    g.run.startFloor();
+    const gnomeY = (): number => record(g).calls.find((c) => c.sprite.asset === imageGnome.asset)?.y ?? -1;
+    expect(gnomeY()).toBe(40 + 56);
+    g.run.phase = "clear";
+    g.run.phaseTicks = t.clearTicks;
+    const ys = [gnomeY()];
+    for (let n = 0; n < t.clearTicks - 1; n++) {
+      g.run.phaseTicks--;
+      ys.push(gnomeY());
+    }
+    expect(ys.every((y, n) => n === 0 || y >= (ys[n - 1] ?? 0))).toBe(true);
+    expect(ys.at(-1)).toBe(40 + 248 - 32);
   });
 
   test("on the elevator floor the snapshot holds each lift platform's left edge and top", () => {

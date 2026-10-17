@@ -46,6 +46,8 @@ import brassMonkeyWallUrl from "../assets/images/brass-monkey/wall.png";
 import brassMonkeyGirderFloorUrl from "../assets/images/brass-monkey/girder-floor.png";
 import brassMonkeyConveyorFloorUrl from "../assets/images/brass-monkey/conveyor-floor.png";
 import brassMonkeyElevatorFloorUrl from "../assets/images/brass-monkey/elevator-floor.png";
+import brassMonkeyRivetUrl from "../assets/images/brass-monkey/rivet.png";
+import brassMonkeyRivetFloorUrl from "../assets/images/brass-monkey/rivet-floor.png";
 import sweetSamMazeUrl from "../assets/images/sweet-sam/maze.png";
 import sweetSamBearUrl from "../assets/images/sweet-sam/bear.png";
 import sweetSamBeesUrl from "../assets/images/sweet-sam/bees.png";
@@ -108,6 +110,8 @@ export const brassMonkeyImages = {
   girderFloor: imageAsset(brassMonkeyGirderFloorUrl, 224, 256),
   conveyorFloor: imageAsset(brassMonkeyConveyorFloorUrl, 224, 256),
   elevatorFloor: imageAsset(brassMonkeyElevatorFloorUrl, 224, 256),
+  rivet: imageAsset(brassMonkeyRivetUrl, 8, 8),
+  rivetFloor: imageAsset(brassMonkeyRivetFloorUrl, 224, 256),
 } as const;
 
 export const sweetSamImages = {

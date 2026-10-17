@@ -6,6 +6,7 @@ import {
   girderFloor,
   girderTop,
   liftTops,
+  rivetFloor,
   type Floor,
   type Ladder,
   type Shaft,
@@ -55,10 +56,29 @@ describe("the conveyor floor", () => {
   });
 });
 
+describe("the rivet floor", () => {
+  test("has 8 rivet slots, two on each of its four upper girders, and no exit door", () => {
+    expect(rivetFloor.rivets?.length).toBe(8);
+    expect(new Set(rivetFloor.rivets?.map((r) => r.y))).toEqual(new Set([208, 168, 128, 88]));
+    expect(rivetFloor.door).toBeUndefined();
+  });
+
+  test("its girders are flat and every rivet slot stands on one", () => {
+    expect(rivetFloor.girders.every((g) => g.drop === 0 && g.belt === undefined)).toBe(true);
+    for (const r of rivetFloor.rivets ?? []) expect(topsAt(rivetFloor, r.x)).toContain(r.y);
+  });
+
+  test("no ladder meets a rivet slot", () => {
+    for (const r of rivetFloor.rivets ?? [])
+      for (const l of rivetFloor.ladders) expect(Math.abs(l.x + 4 - r.x)).toBeGreaterThan(8);
+  });
+});
+
 describe.each([
   ["girder floor", girderFloor],
   ["conveyor floor", conveyorFloor],
   ["elevator floor", elevatorFloor],
+  ["rivet floor", rivetFloor],
 ] as const)("the %s", (_, floor) => {
   test("is 224×256", () => {
     expect([floor.width, floor.height]).toEqual([224, 256]);
@@ -79,8 +99,10 @@ describe.each([
 
   test("the exit door, the Gnome, the monkey's start and every bolt stand on a girder", () => {
     const { door, gnome, start } = floor;
-    expect(topsAt(floor, door.x)).toContain(door.y);
-    expect(topsAt(floor, door.x + 8)).toContain(door.y);
+    if (door !== undefined) {
+      expect(topsAt(floor, door.x)).toContain(door.y);
+      expect(topsAt(floor, door.x + 8)).toContain(door.y);
+    }
     expect(topsAt(floor, gnome.x + 16)).toContain(gnome.y + 32);
     expect(topsAt(floor, start.x)).toContain(start.y);
     for (const b of floor.bolts)
@@ -123,6 +145,6 @@ test("only the conveyor floor carries pans", () => {
   expect([girderFloor.pans, conveyorFloor.pans, elevatorFloor.pans]).toEqual([undefined, true, undefined]);
 });
 
-test("the floors are played girder floor, conveyor floor, then elevator floor, as Donkey Kong's 25m, 50m and 75m", () => {
-  expect(floors).toEqual([girderFloor, conveyorFloor, elevatorFloor]);
+test("the floors are played girder floor, conveyor floor, elevator floor, then rivet floor, as Donkey Kong's 25m, 50m, 75m and 100m", () => {
+  expect(floors).toEqual([girderFloor, conveyorFloor, elevatorFloor, rivetFloor]);
 });

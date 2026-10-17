@@ -4,6 +4,7 @@ import {
   boltGlints,
   conveyorSlats,
   door,
+  rivet,
   emberFlame,
   emberTips,
   gear,
@@ -33,6 +34,7 @@ import {
   brassMonkeyArtFiles,
   conveyorFrames,
   doorFrame,
+  rivetFloorRows,
   emberFills,
   emberFrames,
   gearFrames,
@@ -80,6 +82,7 @@ describe("Brass Monkey art source", () => {
       expect(s.x + (s.rows[0]?.length ?? 0)).toBeLessThanOrEqual(12);
       expect(s.y + s.rows.length).toBeLessThanOrEqual(7);
     }
+    checkRows("rivet", rivet, { w: 8, h: 8 });
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
   });
@@ -170,12 +173,20 @@ describe("generated frames", () => {
     // The wall panel shows where nothing stands, e.g. the top-left corner.
     expect(rows.slice(0, 4).map((r) => r.slice(0, 4))).toEqual(wallPanel.slice(0, 4).map((r) => r.slice(0, 4)));
     // Every drawn pixel of the door is on the floor, standing on the top platform.
-    const { x, y } = girderFloor.door;
+    const exit = girderFloor.door;
+    if (exit === undefined) throw new Error("the girder floor has a door");
+    const { x, y } = exit;
     doorFrame().forEach((row, dy) => {
       for (let dx = 0; dx < row.length; dx++) {
         if (row[dx] !== empty) expect(rows[y - 24 + dy]?.[x + dx]).toBe(row[dx]);
       }
     });
+  });
+
+  test("the rivet floor leaves each rivet slot open in its girder, showing the wall", () => {
+    const rows = rivetFloorRows();
+    checkRows("rivet floor", rows, { w: 224, h: 256 });
+    expect(rows[208]?.slice(40, 64)).toBe(`oooooooo${wallPanel[208 % 32]?.slice(16, 24) ?? ""}oooooooo`);
   });
 
   test("the monkey's path is a flat girder: x 0-111 at y 248, as in the old workshop", () => {

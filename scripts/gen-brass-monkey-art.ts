@@ -47,6 +47,7 @@ import {
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
+  rivet,
   type Part,
   spring,
   wallPanel,
@@ -57,6 +58,7 @@ import {
   girderFloor,
   girderTop,
   liftWidth,
+  rivetFloor,
   type Floor,
 } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -220,7 +222,11 @@ function beltTile(x: number, x0: number, x1: number): Rows {
   return frames[at] ?? [];
 }
 
-/** `floor` drawn from the tiles: the wall, then the ladders, the lift shafts, the girders (a conveyor's in its first frame) and the exit door. */
+/**
+ * `floor` drawn from the tiles: the wall, then the ladders, the lift shafts,
+ * the girders (a conveyor's in its first frame, a rivet slot left open: the
+ * game draws the rivet there until it is pulled) and the exit door.
+ */
 function floorRows(floor: Floor): Rows {
   const tile = wallPanel.length;
   let rows: Rows = Array.from({ length: floor.height }, (_, y) =>
@@ -239,10 +245,12 @@ function floorRows(floor: Floor): Rows {
   }
   const step = girder[0]?.length ?? 0;
   for (const g of floor.girders) {
-    for (let x = g.x0; x < g.x1; x += step)
+    for (let x = g.x0; x < g.x1; x += step) {
+      if (floor.rivets?.some((r) => r.y === girderTop(g, x) && r.x - 4 === x) === true) continue;
       rows = overlay(rows, g.belt === undefined ? girder : beltTile(x, g.x0, g.x1), x, girderTop(g, x));
+    }
   }
-  return overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
+  return floor.door === undefined ? rows : overlay(rows, doorFrame(), floor.door.x, floor.door.y - door.length);
 }
 
 /** The girder floor. */
@@ -258,6 +266,16 @@ export function conveyorFloorRows(): Rows {
 /** The elevator floor, its lift shafts empty: the game draws the platforms. */
 export function elevatorFloorRows(): Rows {
   return floorRows(elevatorFloor);
+}
+
+/** The rivet floor, its rivet slots open. */
+export function rivetFloorRows(): Rows {
+  return floorRows(rivetFloor);
+}
+
+/** The rivet, outlined. */
+export function rivetFrame(): Rows {
+  return outline(rivet);
 }
 
 /** `frames` side by side; they must all be one size. */
@@ -293,4 +311,6 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "girder-floor.png"), 224, 256, () => sheet([girderFloorRows()])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor-floor.png"), 224, 256, () => sheet([conveyorFloorRows()])),
   imageOutput(join(brassMonkeyImagesDir, "elevator-floor.png"), 224, 256, () => sheet([elevatorFloorRows()])),
+  imageOutput(join(brassMonkeyImagesDir, "rivet.png"), 8, 8, () => sheet([rivetFrame()])),
+  imageOutput(join(brassMonkeyImagesDir, "rivet-floor.png"), 224, 256, () => sheet([rivetFloorRows()])),
 ];
