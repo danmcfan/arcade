@@ -16,4 +16,4 @@ The pre-commit hook formats and lint-fixes the staged files, so most issues are 
 
 There are no escape hatches: a finding is fixed in the code. Replace a cast with a type guard, a `!` with a check that throws. If a rule is wrong for this repo, tell the owner; the owner changes the config.
 
-The gate's own files (`tsconfig.json`, `.oxlintrc.json`, Prettier and knip config, `package.json`, `scripts/lint-guards.ts`, `.githooks/`, `.github/`, `CODING_STANDARDS.md` and this page) are listed in `.github/CODEOWNERS`, so changing them needs the owner's review.
+The gate's own files (`tsconfig.json`, `.oxlintrc.json`, Prettier and knip config, `package.json`, `scripts/lint-guards.ts`, `.githooks/`, `.github/`, `CODING_STANDARDS.md` and this page) are listed in `.github/CODEOWNERS`; with no PRs to review, change them only when the owner asks for it.

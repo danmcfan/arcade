@@ -1,6 +1,6 @@
-# The rules that keep bad code out are themselves reviewed by the owner.
-# With branch protection's "Require review from Code Owners", no PR (from a
-# person or an agent) can loosen them without that review.
+# The rules that keep bad code out belong to the owner. Agents push straight
+# to main with no PR, so this file no longer gates anything: it lists the files
+# an agent changes only when the owner asks (docs/agents/quality-gate.md).
 /tsconfig.json             @danmcfan
 /.oxlintrc.json            @danmcfan
 /.prettierrc.json          @danmcfan

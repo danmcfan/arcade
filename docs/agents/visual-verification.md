@@ -2,7 +2,7 @@
 
 Every user-visible change (art, UI, menus, gameplay feel, sound) ships with **screenshots and video** of it in the running game, published for the owner (`docs/agents/delivery.md`). Unit tests prove the behaviour; the media shows the owner what a player sees, and it is the evidence the owner judges.
 
-Capture it with a **throwaway capture script**: written for this change, run, published, never committed. Put it in `out/capture/<name>.ts` (git, tsc, lint and format all ignore `out/`) and run it with `bun out/capture/<name>.ts`. It starts its own dev server on a free port (or reuses the one at `ARCADE_PORT`) and writes to `out/verify/<name>/` (the harness keeps its `verify()` name and that folder, which the Sandcastle pipeline collects as evidence).
+Capture it with a **throwaway capture script**: written for this change, run, published, never committed. Put it in `out/capture/<name>.ts` (git, tsc, lint and format all ignore `out/`) and run it with `bun out/capture/<name>.ts`. It starts its own dev server on a free port (or reuses the one at `ARCADE_PORT`) and writes to `out/verify/<name>/` (the harness keeps its historical `verify()` name and that folder).
 
 ## Write one
 

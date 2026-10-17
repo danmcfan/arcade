@@ -6,7 +6,7 @@ The page opens on a title screen: **Continue** brings back the hub high score an
 
 **Play it in the browser:** https://arcade.dannyobrien.dev/
 
-The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no framework and there are no runtime dependencies. [Bun](https://bun.sh/) builds, serves and tests it. Pushes to `main` deploy `dist/` to GitHub Pages (`.github/workflows/static.yml`).
+The game is TypeScript drawing to a `<canvas>` with Canvas 2D. There is no framework and there are no runtime dependencies. [Bun](https://bun.sh/) builds, serves and tests it. Every push to `main` runs `bun run check`, then builds and deploys `dist/` to GitHub Pages (`.github/workflows/deploy.yml`).
 
 ## Controls
 
@@ -52,7 +52,7 @@ With `?debug` in the URL (for example `http://localhost:3000/?debug&scene=game`)
 
 ## Screenshots and video
 
-`scripts/harness.ts` drives the real page with agent-browser, through the test hook and real keyboard events, and writes screenshots, frames and an mp4 to `out/verify/<name>/`. PRs use it from throwaway capture scripts; `docs/agents/visual-verification.md` explains how.
+`scripts/harness.ts` drives the real page with agent-browser, through the test hook and real keyboard events, and writes screenshots, frames and an mp4 to `out/verify/<name>/`. Agents use it from throwaway capture scripts for the evidence they show the owner; `docs/agents/visual-verification.md` explains how.
 
 ## Layout
 

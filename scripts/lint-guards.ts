@@ -1,6 +1,6 @@
 // Rules the linters cannot enforce themselves: no inline escape hatches.
 // Oxlint has no `noInlineConfig`, so a disable comment would silence any rule.
-// Fix the code instead, or change `.oxlintrc.json` in a reviewed PR.
+// Fix the code instead, or change `.oxlintrc.json` with the owner's say-so.
 
 import { readFileSync } from "node:fs";
 

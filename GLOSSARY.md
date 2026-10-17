@@ -235,5 +235,5 @@ The `window.__arcade` API that `?debug` installs, so a capture script can pause,
 _Avoid_: debug API, cheat mode
 
 **Capture script**:
-A throwaway browser script on `scripts/harness.ts` that drives the real page and produces the screenshots and video for a PR. It is never committed.
+A throwaway browser script on `scripts/harness.ts` that drives the real page and produces the screenshots and video shown to the owner as evidence. It is never committed.
 _Avoid_: e2e test, smoke test

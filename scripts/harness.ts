@@ -1,7 +1,7 @@
 // Visual verification harness: everything a browser check needs, in one
 // place. It starts its own dev server on a free port (or reuses the one at
 // ARCADE_PORT), drives the page with agent-browser, and writes screenshots,
-// logical frames and videos under out/verify/<name>/ for the PR.
+// logical frames and videos under out/verify/<name>/ for the evidence.
 //
 //   import { verify } from "./harness.ts";
 //   await verify("pause-menu", async (v) => {
@@ -376,7 +376,7 @@ function makeVerify(name: string, url: string): Verify & { cleanups: (() => void
     } finally {
       page.run("record", "stop");
     }
-    // GitHub renders mp4 inline in PRs; webm is kept for local viewing.
+    // mp4 plays inline in Artifact pages and on GitHub; webm is kept for local viewing.
     const mp4 = file(n, "mp4");
     const ff = Bun.spawnSync([
       "ffmpeg",
