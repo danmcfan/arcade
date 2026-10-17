@@ -112,6 +112,10 @@ _Avoid_: spark (a spark is the firefly's light), fireball
 An item the monkey collects in Brass Monkey for points.
 _Avoid_: coin, pickup
 
+**Wrench**:
+An item the monkey picks up in Brass Monkey. For a few seconds the monkey swings it, smashing any hazard it hits for points, and can't jump or climb.
+_Avoid_: hammer, power-up
+
 ## Economy
 
 **Wallet**:
