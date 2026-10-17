@@ -37,6 +37,8 @@ export const emberUpChance = 0.25;
 export const jumpPoints = [100, 300, 800] as const;
 /** Points for a bolt. */
 export const boltPoints = 300;
+/** A hazard smashed by the wrench scores one of these, picked at random (Donkey Kong's hammer). */
+export const smashPoints = [300, 500, 800] as const;
 
 /** The monkey's hitbox and a hazard's touch the hazard when their centres are this close across... */
 export const touchX = 9;
@@ -48,6 +50,26 @@ export const jumpOverX = 6;
 export const jumpOverHeight = 32;
 /** The monkey picks up a bolt this close across and up and down. */
 export const boltReach = 10;
+/** ...and a wrench this close. */
+export const wrenchReach = 8;
+/**
+ * Ticks the wrench lasts: 10 s, the hammer time commonly quoted for Donkey
+ * Kong (MarioWiki gives none). Jumping and climbing do nothing until it ends.
+ */
+export const wrenchTicks = 600;
+/** The wrench flashes for its last 2 s. */
+export const wrenchFlashTicks = 120;
+/**
+ * The swing smashes a hazard whose centre is up to this far in front of the
+ * monkey's middle, as close up and down as a touch (`touchY`)...
+ */
+export const smashReach = 18;
+/** ...or this far behind it; any further behind, the hazard touches the monkey as it would without the wrench. */
+export const smashBehind = 2;
+/** On the raised frames the swing also smashes this far above the monkey's middle, drawn over its head. */
+export const smashRaisedY = 20;
+/** Ticks a smash's points show where the hazard was. */
+export const smashShowTicks = 45;
 
 /** How each floor is played on the first loop. */
 export interface FloorTuning {

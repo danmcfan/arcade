@@ -31,9 +31,11 @@ import extraLifeUrl from "../assets/sounds/extra-life.wav";
 import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
 import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
 import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
+import monkeySmashUrl from "../assets/sounds/monkey-smash.wav";
 import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
 import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
 import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
+import monkeyWrenchUrl from "../assets/sounds/monkey-wrench.wav";
 
 export type SoundName =
   | "title"
@@ -64,9 +66,11 @@ export type SoundName =
   | "monkeyJump"
   | "monkeyBolt"
   | "monkeyHazard"
+  | "monkeySmash"
   | "monkeyDeath"
   | "monkeyFloor"
-  | "monkeyEscape";
+  | "monkeyEscape"
+  | "monkeyWrench";
 
 /** Every sound, made by `make` from its name, WAV URL, whether it loops and its volume (0 to 1). */
 export function soundTable<S>(
@@ -101,9 +105,11 @@ export function soundTable<S>(
     monkeyJump: make("monkeyJump", monkeyJumpUrl, false, 1),
     monkeyBolt: make("monkeyBolt", monkeyBoltUrl, false, 1),
     monkeyHazard: make("monkeyHazard", monkeyHazardUrl, false, 1),
+    monkeySmash: make("monkeySmash", monkeySmashUrl, false, 1),
     monkeyDeath: make("monkeyDeath", monkeyDeathUrl, false, 1),
     monkeyFloor: make("monkeyFloor", monkeyFloorUrl, false, 1),
     monkeyEscape: make("monkeyEscape", monkeyEscapeUrl, false, 1),
+    monkeyWrench: make("monkeyWrench", monkeyWrenchUrl, true, 0.5),
   };
 }
 
@@ -125,6 +131,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "capture",
     "stage",
     "extraLife",
+    "monkeyWrench",
   ],
   arcade: [
     "title",
@@ -140,6 +147,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "monkeyJump",
     "monkeyBolt",
     "monkeyHazard",
+    "monkeySmash",
     "monkeyDeath",
     "monkeyFloor",
     "monkeyEscape",

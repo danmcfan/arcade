@@ -39,6 +39,17 @@ const hazard = (kind: Hazard["kind"], x: number, y: number, dir: -1 | 1 = 1): Ha
   scorableIn: 0,
 });
 
+/** A quiet run with the monkey standing on the girder floor's first wrench. */
+function holding(): { run: Run; sounds: RunSound[] } {
+  const q = quiet();
+  const [spot] = q.run.currentFloor().wrenches;
+  if (spot === undefined) throw new Error("the girder floor has no wrench");
+  q.run.monkey.x = spot.x;
+  q.run.monkey.y = spot.y;
+  step(q.run, 1);
+  return q;
+}
+
 beforeEach(() => {
   rng.seed(1);
 });
@@ -325,6 +336,114 @@ describe("score", () => {
     step(run, t.clearTicks);
     expect([run.phase, run.floor, run.bonus]).toEqual(["play", 1, 5000]);
     expect([run.monkey.x, run.monkey.y]).toEqual([conveyorFloor.start.x, conveyorFloor.start.y]);
+  });
+});
+
+describe("the wrench", () => {
+  test("each floor has two wrenches, standing on a girder", () => {
+    for (const floor of floors) {
+      expect(floor.wrenches).toHaveLength(2);
+      for (const w of floor.wrenches)
+        expect(floor.girders.some((g) => w.x >= g.x0 && w.x < g.x1 && girderTop(g, w.x) === w.y)).toBe(true);
+    }
+  });
+
+  test("picking one up starts the timer and takes it off the floor until the floor restarts", () => {
+    const { run } = holding();
+    expect(run.monkey.wrench).toBe(t.wrenchTicks);
+    expect(run.wrenches).toEqual([true, false]);
+    run.startFloor();
+    expect([run.monkey.wrench, ...run.wrenches]).toEqual([0, false, false]);
+  });
+
+  test("while held, Space doesn't jump and up and down don't climb", () => {
+    const { run, sounds } = holding();
+    step(run, 1, { space: true });
+    expect([run.monkey.footing, sounds]).toEqual(["ground", []]);
+    const ladder = run.currentFloor().ladders.find((l) => l.x === 32 && l.bottom === 209);
+    run.monkey.x = (ladder?.x ?? 0) + 4;
+    run.monkey.y = 210;
+    step(run, 5, { up: true });
+    expect(run.monkey.footing).toBe("ground");
+    step(run, 5, { right: true });
+    expect(run.monkey.x).toBe(41);
+  });
+
+  test("runs out after the tuned number of ticks, then the monkey jumps again", () => {
+    const { run } = holding();
+    step(run, t.wrenchTicks - 1);
+    expect(run.monkey.wrench).toBe(1);
+    expect(run.wrenchFlashing()).toBe(true);
+    step(run, 1);
+    expect([run.monkey.wrench, run.wrenchFlashing()]).toEqual([0, false]);
+    step(run, 1, { space: true });
+    expect(run.monkey.footing).toBe("air");
+  });
+
+  test("flashes only in its last ticks", () => {
+    const { run } = holding();
+    run.monkey.wrench = t.wrenchFlashTicks + 1;
+    expect(run.wrenchFlashing()).toBe(false);
+    run.monkey.wrench = t.wrenchFlashTicks;
+    expect(run.wrenchFlashing()).toBe(true);
+  });
+
+  test("the raised swing also smashes a hazard over the monkey's head, the lowered swing does not", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.ticks = 0;
+    run.hazards = [hazard("gear", run.monkey.x + 4, run.monkey.y - 20, -1)];
+    step(run, 1);
+    expect([run.hazards.length, run.smashes.length]).toEqual([0, 1]);
+    const lowered = holding().run;
+    lowered.monkey.left = false;
+    lowered.ticks = 8;
+    lowered.hazards = [hazard("gear", lowered.monkey.x + 4, lowered.monkey.y - 20, 1)];
+    step(lowered, 1);
+    expect([lowered.hazards.length, lowered.smashes.length]).toEqual([1, 0]);
+  });
+
+  test("a gear or an ember it hits is smashed for 300, 500 or 800, seeded, and doesn't kill", () => {
+    const scores = new Set<number>();
+    for (const kind of ["gear", "ember"] as const) {
+      for (let s = 1; s <= 12; s++) {
+        rng.seed(s);
+        const { run, sounds } = holding();
+        run.monkey.left = false;
+        run.hazards = [hazard(kind, run.monkey.x + 10, run.monkey.y, -1)];
+        step(run, 1);
+        expect([run.phase, run.hazards.length, sounds]).toEqual(["play", 0, ["smash"]]);
+        expect(t.smashPoints.some((p) => p === run.score)).toBe(true);
+        expect(run.smashes).toMatchObject([{ points: run.score }]);
+        scores.add(run.score);
+      }
+    }
+    expect([...scores].toSorted((a, b) => a - b)).toEqual([...t.smashPoints]);
+    rng.seed(3);
+    const a = holding().run;
+    a.hazards = [hazard("gear", a.monkey.x + 10, a.monkey.y, -1)];
+    step(a, 1);
+    rng.seed(3);
+    const b = holding().run;
+    b.hazards = [hazard("gear", b.monkey.x + 10, b.monkey.y, -1)];
+    step(b, 1);
+    expect(a.score).toBe(b.score);
+  });
+
+  test("a hazard that reaches the monkey from behind still kills it", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.hazards = [hazard("gear", run.monkey.x - 6, run.monkey.y, 1)];
+    step(run, 1);
+    expect(run.phase).toBe("dying");
+  });
+
+  test("losing a life drops it", () => {
+    const { run } = holding();
+    run.monkey.left = false;
+    run.hazards = [hazard("gear", run.monkey.x - 6, run.monkey.y, 1)];
+    step(run, t.dyingTicks + 1);
+    expect([run.phase, run.monkey.wrench, ...run.wrenches]).toEqual(["play", 0, false, false]);
   });
 });
 

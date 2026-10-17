@@ -1,6 +1,6 @@
 // Brass Monkey's game logic, headless and on ticks (ADR 0002, ADR 0003): the
 // monkey runs, jumps and climbs up each floor past the gears and embers the
-// Gnome sends, collecting bolts, to the exit door; then the next floor, the
+// Gnome sends, collecting bolts and swinging wrenches, to the exit door; then the next floor, the
 // escaped scene, and the floors again, harder. Every random choice goes
 // through the seeded RNG. Positions are in floor pixels; an entity's `x` is
 // its middle and its `y` the row its foot stands on. game.ts draws it.
@@ -18,7 +18,7 @@ export type Phase = "play" | "dying" | "clear" | "escape" | "over";
 export type Footing = "ground" | "air" | "climb";
 
 /** The sounds the run makes; game.ts plays them. */
-export type RunSound = "jump" | "bolt" | "hazard" | "death" | "floor" | "escape";
+export type RunSound = "jump" | "bolt" | "hazard" | "smash" | "death" | "floor" | "escape";
 
 export interface Monkey {
   x: number;
@@ -38,8 +38,24 @@ export interface Monkey {
   ladder: Ladder | null;
   /** Counts jumps, so each hazard scores once per jump. */
   jumps: number;
+  /** Ticks left holding a wrench; 0 without one. */
+  wrench: number;
   /** The hazards cleared in the jump under way: the more at once, the more each pays. */
   cleared: number;
+}
+
+/** Which way the monkey faces: -1 left, 1 right. */
+export function facing(m: Monkey): number {
+  return m.left ? -1 : 1;
+}
+
+/** A hazard the wrench smashed: its points show where it was for a while. */
+export interface Smash {
+  x: number;
+  y: number;
+  points: number;
+  /** Ticks left showing. */
+  ticks: number;
 }
 
 export interface Hazard {
@@ -123,6 +139,7 @@ function newMonkey(start: Spot): Monkey {
     airTop: start.y,
     ladder: null,
     jumps: 0,
+    wrench: 0,
     cleared: 0,
   };
 }
@@ -148,6 +165,10 @@ export class Run {
   hazards: Hazard[] = [];
   /** Whether each of the floor's bolts has been collected. */
   bolts: boolean[] = [];
+  /** Whether each of the floor's wrenches has been picked up. */
+  wrenches: boolean[] = [];
+  /** The smashes whose points are showing. */
+  smashes: Smash[] = [];
   /** Ticks until the Gnome sends its next gear and ember. */
   gearTimer = 0;
   emberTimer = 0;
@@ -188,6 +209,12 @@ export class Run {
     return Math.min(this.gearTimer, ember) <= t.throwTicks;
   }
 
+  /** The wrench is in its last ticks: it flashes. */
+  wrenchFlashing(): boolean {
+    const w = this.monkey.wrench;
+    return w > 0 && w <= t.wrenchFlashTicks;
+  }
+
   /** Loop `loop` (from 0) starts afresh on the first floor. */
   startLoop(loop: number): void {
     this.loop = loop;
@@ -195,7 +222,7 @@ export class Run {
     this.startFloor();
   }
 
-  /** The floor starts again: the monkey at the bottom, no hazards, every bolt back, the full bonus. */
+  /** The floor starts again: the monkey at the bottom, no hazards, every bolt and wrench back, the full bonus. */
   startFloor(): void {
     const floor = this.currentFloor();
     this.tuning = t.tuningFor(this.floor, this.loop);
@@ -204,6 +231,8 @@ export class Run {
     this.monkey = newMonkey(floor.start);
     this.hazards = [];
     this.bolts = floor.bolts.map(() => false);
+    this.wrenches = floor.wrenches.map(() => false);
+    this.smashes = [];
     this.bonus = this.tuning.bonusStart;
     this.bonusTimer = 0;
     this.gearTimer = this.tuning.firstGear;
@@ -246,7 +275,10 @@ export class Run {
   }
 
   private play(i: Input, jumpPressed: boolean): void {
-    this.moveMonkey(i, jumpPressed);
+    if (this.monkey.wrench > 0) this.monkey.wrench--;
+    for (const s of this.smashes) s.ticks--;
+    this.smashes = this.smashes.filter((s) => s.ticks > 0);
+    this.moveMonkey(i, jumpPressed && this.monkey.wrench === 0);
     if (this.phase !== "play") return;
     this.sendHazards();
     for (const h of this.hazards) this.moveHazard(h);
@@ -277,7 +309,9 @@ export class Run {
     const dir = i.left === i.right ? 0 : i.left ? -1 : 1;
     switch (m.footing) {
       case "ground": {
-        const near = (l: Ladder): boolean => whole(l) && Math.abs(m.x - ladderMiddle(l)) <= t.ladderReach;
+        // Holding a wrench, the monkey can only walk.
+        const free = m.wrench === 0;
+        const near = (l: Ladder): boolean => free && whole(l) && Math.abs(m.x - ladderMiddle(l)) <= t.ladderReach;
         const up = i.up ? floor.ladders.find((l) => near(l) && Math.abs(ladderFoot(l) - m.y) <= 2) : undefined;
         const down = i.down ? floor.ladders.find((l) => near(l) && Math.abs(ladderHead(l) - m.y) <= 2) : undefined;
         if (jumpPressed) {
@@ -510,13 +544,43 @@ export class Run {
     }
   }
 
-  /** The monkey meets the hazards, the bolts and the exit door. */
+  /** Whether `h` is as high as the monkey, to a touch. */
+  private sameHeight(h: Hazard): boolean {
+    return Math.abs(h.y - 6 - (this.monkey.y - 8)) < t.touchY;
+  }
+
+  /** Whether the wrench's swing reaches `h`: in front of the monkey, or just behind its middle; on the raised frames also over its head. */
+  private swingReaches(h: Hazard): boolean {
+    const m = this.monkey;
+    if (m.wrench <= 0) return false;
+    const front = (h.x - m.x) * facing(m);
+    if (front <= -t.smashBehind || front >= t.smashReach) return false;
+    if (this.sameHeight(h)) return true;
+    const raised = Math.trunc(this.ticks / 8) % 2 === 0;
+    return raised && Math.abs(h.y - 6 - (m.y - t.smashRaisedY)) < t.touchY;
+  }
+
+  /** The wrench smashes the hazards its swing reaches, for points. */
+  private smashHazards(): void {
+    const smashed = this.hazards.filter((h) => this.swingReaches(h));
+    for (const h of smashed) {
+      const pick = rng.intn(t.smashPoints.length);
+      const points = t.smashPoints.reduce((chosen, p, n) => (n === pick ? p : chosen), 0);
+      this.score += points;
+      this.smashes.push({ x: h.x, y: h.y, points, ticks: t.smashShowTicks });
+      this.onSound("smash");
+    }
+    this.hazards = this.hazards.filter((h) => !smashed.includes(h));
+  }
+
+  /** The monkey meets the hazards, the bolts, the wrenches and the exit door. */
   private meet(): void {
     const m = this.monkey;
     const floor = this.currentFloor();
+    this.smashHazards();
     for (const h of this.hazards) {
       const dx = Math.abs(h.x - m.x);
-      if (dx < t.touchX && Math.abs(h.y - 6 - (m.y - 8)) < t.touchY) {
+      if (dx < t.touchX && this.sameHeight(h)) {
         this.die();
         return;
       }
@@ -539,6 +603,12 @@ export class Run {
       this.bolts[n] = true;
       this.score += t.boltPoints;
       this.onSound("bolt");
+    });
+    floor.wrenches.forEach((w, n) => {
+      if (this.wrenches[n] === true || m.footing === "climb" || m.wrench > 0) return;
+      if (Math.abs(w.x - m.x) >= t.wrenchReach || Math.abs(w.y - m.y) >= t.wrenchReach) return;
+      this.wrenches[n] = true;
+      m.wrench = t.wrenchTicks;
     });
     const { door } = floor;
     if (m.footing === "ground" && Math.abs(m.y - door.y) <= 1 && m.x >= door.x + 2 && m.x <= door.x + 14) {

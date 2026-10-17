@@ -8,7 +8,8 @@
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
 // idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
 // and their mirrors) and bolt.png (10×14: at rest, then a glint running over
-// its head) are one row of frames each. The floor tiles are girder.png (8×8),
+// its head) are one row of frames each; wrench.png (8×14) is the wrench
+// upright and wrench-swing.png (14×8) the same turned a quarter clockwise. The floor tiles are girder.png (8×8),
 // ladder.png (8×4, its rows by height), conveyor.png (8×8: the left end,
 // middle and right end, 4 frames each), door.png (16×24, outlined but for its
 // foot) and wall.png (32×32), none outlined but the door. girder-floor.png
@@ -40,11 +41,24 @@ import {
   monkeyStep,
   type Part,
   wallPanel,
+  wrench,
 } from "../src/brass-monkey/art.ts";
 import { conveyorFloor, girderFloor, girderTop, type Floor } from "../src/brass-monkey/floors.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { imageOutput, type ImageOutput } from "./image-outputs.ts";
-import { blank, checkRows, empty, flipX, glint, mirrorX, outline, overlay, paint, type Rows } from "./pixel-art.ts";
+import {
+  blank,
+  checkRows,
+  empty,
+  flipX,
+  glint,
+  mirrorX,
+  outline,
+  overlay,
+  paint,
+  quarterTurn,
+  type Rows,
+} from "./pixel-art.ts";
 
 const blankRow = empty.repeat(16);
 
@@ -94,6 +108,16 @@ export function emberFrames(): Rows[] {
 export function boltFrames(): Rows[] {
   const rest = outline(bolt);
   return [rest, ...boltGlints.map(([x, y]) => glint(rest, x, y))];
+}
+
+/** The wrench, outlined: upright, as it stands on the floor and as the monkey raises it. */
+export function wrenchFrames(): Rows[] {
+  return [outline(wrench)];
+}
+
+/** The wrench swung down, its jaws to the right: the upright frame turned a quarter clockwise. */
+export function wrenchSwingFrames(): Rows[] {
+  return wrenchFrames().map((rows) => quarterTurn(rows));
 }
 
 /** `row` (one period) laid along `w` px, moved `shift` px right. */
@@ -189,6 +213,8 @@ export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
   imageOutput(join(brassMonkeyImagesDir, "bolt.png"), 40, 14, () => sheet(boltFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "wrench.png"), 8, 14, () => sheet(wrenchFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "wrench-swing.png"), 14, 8, () => sheet(wrenchSwingFrames())),
   imageOutput(join(brassMonkeyImagesDir, "girder.png"), 8, 8, () => sheet([girder])),
   imageOutput(join(brassMonkeyImagesDir, "ladder.png"), 8, 4, () => sheet([ladder])),
   imageOutput(join(brassMonkeyImagesDir, "conveyor.png"), 96, 8, () => sheet(conveyorFrames())),

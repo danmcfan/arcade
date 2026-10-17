@@ -19,10 +19,11 @@ import {
   monkeyStand,
   monkeyStep,
   wallPanel,
+  wrench,
 } from "../src/brass-monkey/art.ts";
 import { girderFloor } from "../src/brass-monkey/floors.ts";
 import { sweetie16 } from "../src/ui/sweetie16.ts";
-import { checkRows, colours, empty, flipX, glint, outline, type Rows } from "./pixel-art.ts";
+import { checkRows, colours, empty, flipX, glint, outline, quarterTurn, type Rows } from "./pixel-art.ts";
 import {
   boltFrames,
   brassMonkeyArtFiles,
@@ -36,6 +37,8 @@ import {
   gnomeFrames,
   monkeyFills,
   monkeyFrames,
+  wrenchFrames,
+  wrenchSwingFrames,
 } from "./gen-brass-monkey-art.ts";
 
 describe("Brass Monkey art source", () => {
@@ -60,10 +63,11 @@ describe("Brass Monkey art source", () => {
     }
   });
 
-  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers) and a 10×14 bolt", () => {
+  test("the items are a 12×12 gear (two turns), a 12×12 ember (two flickers), a 10×14 bolt and an 8×14 wrench", () => {
     for (const rows of gear) checkRows("gear", rows, { w: 12, h: 12 });
     checkRows("ember", emberFlame, { w: 12, h: 12 });
     checkRows("bolt", bolt, { w: 10, h: 14 });
+    checkRows("wrench", wrench, { w: 8, h: 14 });
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
   });
@@ -81,7 +85,7 @@ describe("Brass Monkey art source", () => {
   });
 
   test("every monkey and item fill leaves a blank border on all four sides, so its outline is whole", () => {
-    for (const rows of [...monkeyFills(), ...gear, ...emberFills(), bolt]) {
+    for (const rows of [...monkeyFills(), ...gear, ...emberFills(), bolt, wrench]) {
       expect(rows[0]).toMatch(/^\.+$/u);
       expect(rows.at(-1)).toMatch(/^\.+$/u);
       for (const row of rows) expect([row[0], row.at(-1)]).toEqual([empty, empty]);
@@ -90,6 +94,11 @@ describe("Brass Monkey art source", () => {
 });
 
 describe("generated frames", () => {
+  test("the wrench stands upright, outlined, and swings down the same wrench turned a quarter clockwise", () => {
+    expect(wrenchFrames()).toEqual([outline(wrench)]);
+    expect(wrenchSwingFrames()).toEqual([quarterTurn(outline(wrench))]);
+  });
+
   test("the monkey sheet is walk 1-3, jump, then climb and its mirror, each outlined", () => {
     const frames = monkeyFrames();
     expect(frames.length).toBe(6);

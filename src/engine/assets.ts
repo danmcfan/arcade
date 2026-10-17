@@ -86,6 +86,10 @@ export const imageGear: Sprite = whole(brassMonkeyImages.gear);
 export const imageEmber: Sprite = whole(brassMonkeyImages.ember);
 /** At rest, then three glint frames, each 10×14. */
 export const imageBolt: Sprite = whole(brassMonkeyImages.bolt);
+/** The wrench upright, 8×14: on the floor, and raised over the monkey's head. */
+export const imageWrench: Sprite = whole(brassMonkeyImages.wrench);
+/** The wrench swung down in front of the monkey, 14×8, its jaws to the right. */
+export const imageWrenchSwing: Sprite = whole(brassMonkeyImages.wrenchSwing);
 /** The left end, middle and right end, 4 frames each, 8×8. */
 export const imageConveyor: Sprite = whole(brassMonkeyImages.conveyor);
 export const imageDoor: Sprite = whole(brassMonkeyImages.door);
