@@ -173,7 +173,7 @@ describe("respawn", () => {
     while (f.respawn > 0) {
       const s = fireflySnapshot(f.snapshot());
       if (f.respawn > readyTicks && s.banner !== null) sawBurstBanner = true;
-      if (s.banner === "READY") sawReady = true;
+      if (s.banner?.kind === "ready") sawReady = true;
       if (f.respawn === 1 && inFlight(diver)) waited = true;
       f.update(NO_INPUT);
       expect(others.every((e) => e.state === "formation")).toBe(true);
@@ -226,7 +226,7 @@ describe("respawn", () => {
     f.loseLife();
     run(f, respawnTicks - 1 + respawnHoldTicks);
     expect(inFlight(stuck)).toBe(true);
-    expect([f.respawn, fireflySnapshot(f.snapshot()).banner]).toEqual([1, "READY"]);
+    expect([f.respawn, fireflySnapshot(f.snapshot()).banner]).toEqual([1, { kind: "ready" }]);
     run(f, 1);
     expect([f.respawn, fireflySnapshot(f.snapshot()).banner, inFlight(stuck)]).toEqual([0, null, true]);
     expect(f.player).toEqual({ x: 112, y: playerY });
@@ -264,13 +264,13 @@ describe("stage start", () => {
   test("tick 1 of a run shows PLAYER 1, and the firefly cannot fire until READY has gone", () => {
     const f = new FireflySoftware();
     f.update(NO_INPUT);
-    expect(fireflySnapshot(f.snapshot()).banner).toBe("PLAYER 1");
+    expect(fireflySnapshot(f.snapshot()).banner).toEqual({ kind: "player" });
     run(f, playerBannerTicks);
-    expect(fireflySnapshot(f.snapshot()).banner).toBe("STAGE 1");
+    expect(fireflySnapshot(f.snapshot()).banner).toEqual({ kind: "stage", stage: 1 });
     run(f, stageBannerTicks);
-    expect(fireflySnapshot(f.snapshot()).banner).toBe("READY");
+    expect(fireflySnapshot(f.snapshot()).banner).toEqual({ kind: "ready" });
     run(f, stageIntroTicks - 1 - playerBannerTicks - stageBannerTicks, { space: true });
-    expect(fireflySnapshot(f.snapshot()).banner).toBe("READY");
+    expect(fireflySnapshot(f.snapshot()).banner).toEqual({ kind: "ready" });
     expect(f.sparks).toEqual([]);
     run(f, 1, { space: true });
     expect(fireflySnapshot(f.snapshot()).banner).toBeNull();

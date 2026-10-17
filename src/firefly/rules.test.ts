@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   badgeTickSpacing,
+  bannerText,
   badgesShown,
   beamDiveChance,
   beamHeight,
@@ -324,5 +325,14 @@ describe("hitMissRatio", () => {
     expect(hitMissRatio(100, 53)).toBe("53.0");
     expect(hitMissRatio(3, 1)).toBe("33.3");
     expect(hitMissRatio(4, 4)).toBe("100.0");
+  });
+});
+
+describe("bannerText", () => {
+  test("each kind shows its words, STAGE n with its number", () => {
+    expect(bannerText({ kind: "player" })).toBe("PLAYER 1");
+    expect(bannerText({ kind: "stage", stage: 12 })).toBe("STAGE 12");
+    expect(bannerText({ kind: "challenging" })).toBe("CHALLENGING STAGE");
+    expect(bannerText({ kind: "ready" })).toBe("READY");
   });
 });

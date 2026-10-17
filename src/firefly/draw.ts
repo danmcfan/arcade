@@ -22,7 +22,7 @@ import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawScoreLabels, type ScoreDials } from "../ui/dials.ts";
-import { drawTextCentered } from "../ui/text.ts";
+import { drawTextCentered, type Ink } from "../ui/text.ts";
 import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import {
   badgesShown,
@@ -43,6 +43,8 @@ import {
   respawnTicks,
   stageBadges,
   type EnemyKind,
+  bannerText,
+  type Banner,
 } from "./rules.ts";
 
 const ox = cabinetInsetLeft;
@@ -155,8 +157,8 @@ export interface FireflyView {
   shotsFired: number;
   hits: number;
   score(): number;
-  /** PLAYER 1, STAGE n, READY or CHALLENGING STAGE while one shows. */
-  banner(): string | null;
+  /** The banner showing (its kind: PLAYER 1, STAGE n, READY or CHALLENGING STAGE), or null. */
+  banner(): Banner | null;
 }
 
 export function drawFirefly(screen: Surface, f: FireflyView): void {
@@ -195,10 +197,18 @@ function drawField(screen: Surface, f: FireflyView): void {
   } else if (f.challenge !== null && f.challenge.tally > 0) {
     drawTally(screen, f.challenge.hits, tallyTicks - f.challenge.tally);
   } else {
-    const text = f.banner();
-    if (text !== null) drawTextCentered(screen, text, cx, oy + 150, text === "PLAYER 1" ? "blue" : "yellow");
+    const b = f.banner();
+    if (b !== null) drawTextCentered(screen, bannerText(b), cx, oy + 150, bannerInk[b.kind]);
   }
 }
+
+/** Galaga's banner colours: PLAYER 1 in blue, the rest in yellow. */
+const bannerInk: Readonly<Record<Banner["kind"], Ink>> = {
+  player: "blue",
+  stage: "yellow",
+  challenging: "yellow",
+  ready: "yellow",
+};
 
 /** Enemies (or their hit effects), beams, the captive, shots, sparks and bonus points. */
 function drawPlay(screen: Surface, f: FireflyView): void {

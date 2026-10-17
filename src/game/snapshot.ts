@@ -285,6 +285,10 @@ export interface SweetSamSnapshot {
 /** Firefly enemy kinds (`EnemyKind` in src/firefly/rules.ts). */
 export type FireflyEnemyKind = "moth" | "wasp" | "owl" | "morph";
 
+/** A Firefly banner in mid-field (`Banner` in src/firefly/rules.ts). */
+export type FireflyBanner =
+  { kind: "player" } | { kind: "stage"; stage: number } | { kind: "challenging" } | { kind: "ready" };
+
 /**
  * Where an enemy is in its life: waiting to fly in, on its entry curve,
  * flying straight to its slot, in the formation, diving at the firefly, or
@@ -367,8 +371,8 @@ export interface FireflySnapshot {
   challenge?: { hits: number; tally: number };
   /** Ticks left of the -RESULTS- screen after GAME OVER; 0 otherwise. */
   results: number;
-  /** Banner text in mid-field: "PLAYER 1", "STAGE n", "CHALLENGING STAGE", "READY", or null. */
-  banner: string | null;
+  /** The banner in mid-field (src/firefly/rules.ts), or null. */
+  banner: FireflyBanner | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -73,6 +73,7 @@ import {
   respawnTicks,
   respawnHoldTicks,
   banner,
+  type Banner,
   shotCutoffMargin,
   shotSpacing,
   shotSpawnOffset,
@@ -1026,8 +1027,8 @@ export class FireflySoftware implements FixedViewport {
     return imageFireflyBackground;
   }
 
-  /** The banner text drawn this tick, or null (`banner` in ./rules.ts). */
-  banner(): string | null {
+  /** The banner drawn this tick, or null (`banner` in ./rules.ts). */
+  banner(): Banner | null {
     const { stage, stageTick, respawn, lives } = this;
     return banner({ stage, stageTick, respawn, lives, challenging: this.challenge !== null });
   }
