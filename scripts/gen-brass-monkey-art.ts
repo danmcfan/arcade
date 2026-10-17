@@ -8,7 +8,7 @@
 // is one row of 16×24 frames: the standing frame's four quarter turns, then
 // it on its back under each puff of smoke. gnome.png is one row
 // of 32×32 frames, the body with each arm part, mirrored from its left half:
-// idle, throw. gear.png (12×12: two turns), ember.png (12×12: two flickers
+// idle, throw, reach. gear.png (12×12: two turns), ember.png (12×12: two flickers
 // and their mirrors), pan.png (12×12: the scrap tray, its scraps jolted in
 // the second) and bolt.png (10×14: at rest, then a glint running over its
 // head) are one row of frames each. The floor tiles are girder.png (8×8),
@@ -36,6 +36,7 @@ import {
   panTray,
   girder,
   gnomeArmsDown,
+  gnomeArmsReach,
   gnomeArmsUp,
   gnomeBody,
   ladder,
@@ -129,9 +130,9 @@ export function monkeyDeathFrames(): Rows[] {
 
 const withArms = (arms: Part): string[] => overlay(gnomeBody, arms.rows, arms.x, arms.y);
 
-/** The Gnome's sheet frames, mirrored and outlined: idle, throw. */
+/** The Gnome's sheet frames, mirrored and outlined: idle, throw, reach (climbing and stomping). */
 export function gnomeFrames(): Rows[] {
-  return [gnomeArmsDown, gnomeArmsUp].map((arms) => outline(mirrorX(withArms(arms))));
+  return [gnomeArmsDown, gnomeArmsUp, gnomeArmsReach].map((arms) => outline(mirrorX(withArms(arms))));
 }
 
 /** The gear's sheet frames, outlined: its two turns. */
@@ -277,7 +278,7 @@ export const brassMonkeyImagesDir = "src/assets/images/brass-monkey";
 export const brassMonkeyArtFiles: readonly ImageOutput[] = [
   imageOutput(join(brassMonkeyImagesDir, "monkey.png"), 96, 16, () => sheet(monkeyFrames())),
   imageOutput(join(brassMonkeyImagesDir, "monkey-death.png"), 96, 24, () => sheet(monkeyDeathFrames())),
-  imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 64, 32, () => sheet(gnomeFrames())),
+  imageOutput(join(brassMonkeyImagesDir, "gnome.png"), 96, 32, () => sheet(gnomeFrames())),
   imageOutput(join(brassMonkeyImagesDir, "gear.png"), 24, 12, () => sheet(gearFrames())),
   imageOutput(join(brassMonkeyImagesDir, "ember.png"), 48, 12, () => sheet(emberFrames())),
   imageOutput(join(brassMonkeyImagesDir, "pan.png"), 24, 12, () => sheet(panFrames())),

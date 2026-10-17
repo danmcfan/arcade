@@ -11,14 +11,14 @@ import { floors, girderTop, liftTops, liftWidth, type Floor, type Girder, type L
 import * as t from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
-/** What the run is doing: playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
-export type Phase = "play" | "dying" | "clear" | "escape" | "over";
+/** What the run is doing: the Gnome's intro before the first floor, playing a floor, the monkey losing a life, a floor finished, the escaped scene, or over. */
+export type Phase = "intro" | "play" | "dying" | "clear" | "escape" | "over";
 
 /** On a girder, in the air (jumping or falling), or on a ladder. */
 export type Footing = "ground" | "air" | "climb";
 
 /** The sounds the run makes; game.ts plays them. */
-export type RunSound = "jump" | "bolt" | "hazard" | "death" | "floor" | "escape";
+export type RunSound = "jump" | "bolt" | "hazard" | "death" | "floor" | "escape" | "stomp";
 
 export interface Monkey {
   x: number;
@@ -124,7 +124,7 @@ function newMonkey(start: Spot): Monkey {
 /** One run of Brass Monkey, from 3 lives (more with the oil can) to game over. */
 export class Run {
   phase: Phase = "play";
-  /** Ticks left in `dying`, `clear` or `escape`. */
+  /** Ticks left in `intro`, `dying`, `clear` or `escape`. */
   phaseTicks = 0;
   /** Index into `floors`. */
   floor: number;
@@ -167,6 +167,8 @@ export class Run {
       loop?: number;
       onSound?: (s: RunSound) => void;
       advantages?: Readonly<BrassMonkeyAdvantages>;
+      /** Start with the Gnome's intro (#253) before the first floor. */
+      intro?: boolean;
     } = {},
   ) {
     this.advantages = opts.advantages ?? noAdvantages;
@@ -177,6 +179,45 @@ export class Run {
     this.tuning = t.tuningFor(this.floor, this.loop);
     this.monkey = newMonkey(this.currentFloor().start);
     this.startFloor();
+    if (opts.intro === true) {
+      this.phase = "intro";
+      this.phaseTicks = t.introTicks;
+    }
+  }
+
+  /** Ticks since the intro started. */
+  private introElapsed(): number {
+    return t.introTicks - this.phaseTicks;
+  }
+
+  /** How far below its perch the climbing Gnome is, in px: 0 once it is up (or out of the intro). */
+  introGnomeRise(): number {
+    if (this.phase !== "intro") return 0;
+    const left = 1 - Math.min(1, this.introElapsed() / t.introClimbTicks);
+    return Math.round(left * (this.currentFloor().height - this.currentFloor().gnome.y));
+  }
+
+  /** How far the girders have been bent into their slopes, 0 flat to 1; 1 out of the intro. */
+  introTilt(): number {
+    if (this.phase !== "intro") return 1;
+    const e = this.introElapsed();
+    return t.introStomps.filter((s) => s <= e).length / t.introStomps.length;
+  }
+
+  /** How high the stomping Gnome is off its perch, in px: it hops up before each stomp lands. */
+  introHop(): number {
+    if (this.phase !== "intro") return 0;
+    const e = this.introElapsed();
+    const next = t.introStomps.find((s) => s > e);
+    if (next === undefined || next - e > 8) return 0;
+    return Math.round(t.introHop * Math.sin(((next - e) / 8) * Math.PI));
+  }
+
+  /** The floor shakes for a few ticks after each stomp lands. */
+  introShaking(): boolean {
+    if (this.phase !== "intro") return false;
+    const e = this.introElapsed();
+    return t.introStomps.some((s) => e >= s && e < s + t.introShakeTicks);
   }
 
   currentFloor(): Floor {
@@ -231,6 +272,11 @@ export class Run {
     this.prevSpace = i.space;
     if (this.lapBanner > 0) this.lapBanner--;
     switch (this.phase) {
+      case "intro":
+        // The input does nothing until the floor starts.
+        if (--this.phaseTicks <= 0) this.phase = "play";
+        else if (t.introStomps.includes(this.introElapsed())) this.onSound("stomp");
+        return;
       case "play":
         this.play(i, jumpPressed);
         return;

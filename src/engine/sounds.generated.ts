@@ -33,6 +33,7 @@ import monkeyJumpUrl from "../assets/sounds/monkey-jump.wav";
 import monkeyBoltUrl from "../assets/sounds/monkey-bolt.wav";
 import monkeyHazardUrl from "../assets/sounds/monkey-hazard.wav";
 import monkeyDeathUrl from "../assets/sounds/monkey-death.wav";
+import monkeyStompUrl from "../assets/sounds/monkey-stomp.wav";
 import monkeyFloorUrl from "../assets/sounds/monkey-floor.wav";
 import monkeyEscapeUrl from "../assets/sounds/monkey-escape.wav";
 
@@ -67,6 +68,7 @@ export type SoundName =
   | "monkeyBolt"
   | "monkeyHazard"
   | "monkeyDeath"
+  | "monkeyStomp"
   | "monkeyFloor"
   | "monkeyEscape";
 
@@ -105,6 +107,7 @@ export function soundTable<S>(
     monkeyBolt: make("monkeyBolt", monkeyBoltUrl, false, 1),
     monkeyHazard: make("monkeyHazard", monkeyHazardUrl, false, 1),
     monkeyDeath: make("monkeyDeath", monkeyDeathUrl, false, 1),
+    monkeyStomp: make("monkeyStomp", monkeyStompUrl, false, 1),
     monkeyFloor: make("monkeyFloor", monkeyFloorUrl, false, 1),
     monkeyEscape: make("monkeyEscape", monkeyEscapeUrl, false, 1),
   };
@@ -145,6 +148,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
     "monkeyBolt",
     "monkeyHazard",
     "monkeyDeath",
+    "monkeyStomp",
     "monkeyFloor",
     "monkeyEscape",
   ],

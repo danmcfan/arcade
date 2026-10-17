@@ -729,3 +729,46 @@ describe("wild gears", () => {
     expect(run.score).toBe(100);
   });
 });
+
+/** A run that starts with the intro, recording its sounds. */
+function intro(): { run: Run; sounds: RunSound[] } {
+  const sounds: RunSound[] = [];
+  const run = new Run({ intro: true, onSound: (s): void => void sounds.push(s) });
+  return { run, sounds };
+}
+
+describe("the intro", () => {
+  test("a new run with the intro starts in it and plays after introTicks", () => {
+    const { run } = intro();
+    expect(run.phase).toBe("intro");
+    step(run, t.introTicks - 1);
+    expect(run.phase).toBe("intro");
+    step(run, 1);
+    expect(run.phase).toBe("play");
+  });
+
+  test("input does nothing during the intro", () => {
+    const { run, sounds } = intro();
+    const start = run.currentFloor().start;
+    step(run, t.introTicks, { right: true, up: true, space: true });
+    expect([run.monkey.x, run.monkey.y, run.monkey.jumps, run.hazards.length]).toEqual([start.x, start.y, 0, 0]);
+    expect(sounds).not.toContain("jump");
+    expect(run.bonus).toBe(run.tuning.bonusStart);
+  });
+
+  test("the Gnome climbs to its perch, then stomps the girders into slopes with a stomp sound each time", () => {
+    const { run, sounds } = intro();
+    expect(run.introGnomeRise()).toBeGreaterThan(0);
+    expect(run.introTilt()).toBe(0);
+    step(run, t.introClimbTicks);
+    expect(run.introGnomeRise()).toBe(0);
+    expect(sounds).toEqual([]);
+    step(run, t.introTicks - t.introClimbTicks - 1);
+    expect(sounds).toEqual(t.introStomps.map(() => "stomp"));
+    expect(run.introTilt()).toBe(1);
+  });
+
+  test("a run without the intro starts straight into play", () => {
+    expect(new Run().phase).toBe("play");
+  });
+});

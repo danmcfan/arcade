@@ -24,7 +24,7 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
 import { brassMonkeySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { BrassMonkeySoftware, deathColumn } from "./game.ts";
+import { BrassMonkeySoftware, deathColumn, gnomeColumn } from "./game.ts";
 import type { Hazard } from "./play.ts";
 import { minigame } from "../game/minigames.ts";
 import * as t from "./tuning.ts";
@@ -35,6 +35,7 @@ const held = (i: Partial<Input>): Input => ({ ...NO_INPUT, ...i });
 /** A run with no hazards coming. */
 function quiet(highScore = 0): BrassMonkeySoftware {
   const g = new BrassMonkeySoftware(highScore);
+  g.run.startFloor(); // past the intro
   g.run.gearTimer = Infinity;
   g.run.emberTimer = Infinity;
   return g;
@@ -143,6 +144,30 @@ describe("BrassMonkeySoftware", () => {
       { x: 152, y: 136.5 },
       { x: 152, y: 196.5 },
     ]);
+  });
+
+  test("a new run starts with the Gnome's intro, stomping with a sound, then plays", () => {
+    const events: SoundEvent[] = [];
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    const g = new BrassMonkeySoftware();
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("intro");
+    for (let n = 0; n < t.introTicks; n++) g.update(held({ space: true }));
+    expect(events.filter((e) => e === "play:monkeyStomp")).toHaveLength(t.introStomps.length);
+    expect(brassMonkeySnapshot(g.snapshot()).phase).toBe("play");
+  });
+
+  test("the Gnome reaches up as it climbs and as it hops to stomp, then stands idle", () => {
+    const g = new BrassMonkeySoftware();
+    g.run.gearTimer = Infinity;
+    g.run.emberTimer = Infinity;
+    const seen = new Set<number>();
+    while (g.run.phase === "intro") {
+      if (g.run.introGnomeRise() > 0 || g.run.introHop() > 0) seen.add(gnomeColumn(g.run));
+      else expect(gnomeColumn(g.run)).toBe(0);
+      g.update(NO_INPUT);
+    }
+    expect(seen).toEqual(new Set([0, 2]));
+    expect(gnomeColumn(g.run)).toBe(0);
   });
 
   test("plays the run's sounds", () => {

@@ -14,6 +14,7 @@ import {
   imageEmber,
   imageGear,
   imagePan,
+  imageGirder,
   imageGirderFloor,
   imageGnome,
   imageLift,
@@ -74,6 +75,7 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
+  stomp: sounds.monkeyStomp,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
@@ -91,6 +93,7 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.highScoreDial = new Dial(highScore);
     this.run = new Run({
       advantages,
+      intro: true,
       onSound: (s): void => {
         runSounds[s].rewind();
         runSounds[s].play();
@@ -126,7 +129,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   private drawScreen(screen: Surface): void {
     const left = cabinetInsetLeft;
-    const top = cabinetInsetTop + hudHeight;
+    let top = cabinetInsetTop + hudHeight;
     this.drawHud(screen, left, cabinetInsetTop);
     const run = this.run;
     if (run.phase === "escape") {
@@ -135,7 +138,11 @@ export class BrassMonkeySoftware implements FixedViewport {
       return;
     }
     const floor = run.currentFloor();
+    const intro = run.phase === "intro";
+    // A stomp shakes the floor: down a pixel every other tick.
+    if (run.introShaking() && run.ticks % 2 === 0) top++;
     screen.draw(this.background(), left, top);
+    if (intro) drawBentGirders(screen, floor, left, top, run.introTilt());
     drawConveyors(screen, floor, left, top, run.ticks);
     for (const l of run.lifts()) screen.draw(imageLift, left + l.x0, top + l.y);
     floor.bolts.forEach((b, n) => {
@@ -144,13 +151,17 @@ export class BrassMonkeySoftware implements FixedViewport {
       const glint = t < 18 ? 1 + Math.trunc(t / 6) : 0;
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
-    screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
+    screen.draw(
+      frame(imageGnome, gnomeColumn(run), 32, 32),
+      left + floor.gnome.x,
+      top + floor.gnome.y + run.introGnomeRise() - run.introHop(),
+    );
     for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
-    // Losing a life, the monkey spins and falls (deathColumn).
+    // The monkey comes on when the floor starts; losing a life, it spins and falls (deathColumn).
     if (run.phase === "dying") {
       const m = run.monkey;
       screen.draw(frame(imageMonkeyDeath, deathColumn(run.phaseTicks), 16, 24), left + m.x - 8, top + m.y - 24);
-    } else drawMonkey(screen, run.monkey, left, top);
+    } else if (!intro) drawMonkey(screen, run.monkey, left, top);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -236,6 +247,34 @@ export function deathColumn(phaseTicks: number): number {
   const spin = spinTicks * spinTurns;
   if (elapsed < spin) return Math.trunc(elapsed / spinTicks) % 4;
   return 4 + (Math.trunc((elapsed - spin) / smokeTicks) % 2);
+}
+
+/** The Gnome's sheet column: reaching as it climbs and as it hops to stomp, throwing with its arms up, else idle. */
+export function gnomeColumn(run: Run): number {
+  if (run.introGnomeRise() > 0) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
+  if (run.introHop() > 0) return 2;
+  return run.gnomeThrowing() ? 1 : 0;
+}
+
+/**
+ * The intro's girders, `tilt` of the way (0 to 1) from flat to their slopes:
+ * each sloped girder in the background is papered over with wall, then drawn
+ * again from its tiles, turning about its middle.
+ */
+function drawBentGirders(screen: Surface, floor: Floor, left: number, top: number, tilt: number): void {
+  if (tilt >= 1) return;
+  const wall = imageWall.w;
+  for (const g of floor.girders) {
+    if (g.drop === 0 || g.belt !== undefined) continue;
+    const middle = girderTop(g, (g.x0 + g.x1) / 2);
+    for (let x = g.x0; x < g.x1; x += 8) {
+      const y0 = girderTop(g, x);
+      for (let y = y0; y < y0 + 8; y++)
+        screen.draw(sub(imageWall, x % wall, y % wall, (x % wall) + 8, (y % wall) + 1), left + x, top + y);
+    }
+    for (let x = g.x0; x < g.x1; x += 8)
+      screen.draw(imageGirder, left + x, top + Math.round(middle + tilt * (girderTop(g, x) - middle)));
+  }
 }
 
 /** The monkey's sheet column: walk 0, 1, 0, 2; jump 3; climb 4 or 5. */

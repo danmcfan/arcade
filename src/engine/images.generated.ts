@@ -93,7 +93,7 @@ export const fireflyImages = {
 export const brassMonkeyImages = {
   monkey: imageAsset(brassMonkeyMonkeyUrl, 96, 16),
   monkeyDeath: imageAsset(brassMonkeyMonkeyDeathUrl, 96, 24),
-  gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
+  gnome: imageAsset(brassMonkeyGnomeUrl, 96, 32),
   gear: imageAsset(brassMonkeyGearUrl, 24, 12),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),
   pan: imageAsset(brassMonkeyPanUrl, 24, 12),

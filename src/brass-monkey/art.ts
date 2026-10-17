@@ -202,6 +202,39 @@ export const gnomeArmsUp: Part = {
 };
 
 /**
+ * Climbing and stomping in the intro (#253): the throw's arms, reaching up
+ * with empty hands, the gear left out.
+ */
+export const gnomeArmsReach: Part = {
+  x: 2,
+  y: 2,
+  rows: [
+    "..............",
+    "..............",
+    "..............",
+    ".......oo.....",
+    "......noo.....",
+    ".....nn.......",
+    "....nn........",
+    "...nn.........",
+    "..nn..........",
+    ".nn...........",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    ".nn...........",
+    ".nn...........",
+    "..nn..........",
+    "..nn..........",
+    "...nn.........",
+    "...nn.........",
+  ],
+};
+
+/**
  * The gear: a hazard the Gnome throws, rolling down the girders. A small steel
  * gear, 12×12, with eight teeth and a square hub, lit from the top left like
  * the gear the Gnome holds in its throw. Two frames, the second turned half a

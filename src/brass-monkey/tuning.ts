@@ -222,3 +222,13 @@ export const escapeTicks = 180;
 export const lapBannerTicks = 120;
 /** The Gnome raises its arms this many ticks before a hazard leaves its hands. */
 export const throwTicks = 20;
+/** Ticks of the intro before the first floor of a run: about 4 s. */
+export const introTicks = 240;
+/** The intro's first ticks, the Gnome climbing up to its perch. */
+export const introClimbTicks = 140;
+/** The ticks into the intro when the Gnome lands a stomp; each bends the girders further. */
+export const introStomps: readonly number[] = [165, 190, 215];
+/** How high each stomp's hop lifts the Gnome, in px. */
+export const introHop = 4;
+/** Ticks a stomp shakes the floor. */
+export const introShakeTicks = 8;

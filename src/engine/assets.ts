@@ -78,8 +78,10 @@ export const imageBadges: Sprite = whole(fireflyImages.badges);
 export const imageMonkey: Sprite = whole(brassMonkeyImages.monkey);
 /** The monkey losing a life, each 16×24: the spin's four quarter turns, then down with two puffs of smoke. */
 export const imageMonkeyDeath: Sprite = whole(brassMonkeyImages.monkeyDeath);
-/** The Gnome's sheet: idle, throw, each 32×32. */
+/** The Gnome's sheet: idle, throw, reach (climbing and stomping in the intro), each 32×32. */
 export const imageGnome: Sprite = whole(brassMonkeyImages.gnome);
+/** One girder tile, 8×8: the intro bends the girders by drawing them itself. */
+export const imageGirder: Sprite = whole(brassMonkeyImages.girder);
 export const imageGirderFloor: Sprite = whole(brassMonkeyImages.girderFloor);
 export const imageConveyorFloor: Sprite = whole(brassMonkeyImages.conveyorFloor);
 export const imageElevatorFloor: Sprite = whole(brassMonkeyImages.elevatorFloor);

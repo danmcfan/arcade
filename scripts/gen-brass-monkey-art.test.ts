@@ -8,6 +8,7 @@ import {
   emberTips,
   gear,
   gnomeArmsDown,
+  gnomeArmsReach,
   gnomeArmsUp,
   girder,
   gnomeBody,
@@ -61,6 +62,7 @@ describe("Brass Monkey art source", () => {
     for (const [name, arms] of [
       ["arms down", gnomeArmsDown],
       ["arms up", gnomeArmsUp],
+      ["arms reaching", gnomeArmsReach],
     ] as const) {
       checkRows(name, arms.rows);
       expect(arms.x + (arms.rows[0]?.length ?? 0)).toBeLessThanOrEqual(16);
@@ -229,9 +231,10 @@ describe("generated frames", () => {
     }
   });
 
-  test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {
-    const [idle, thrown] = gnomeFrames();
-    for (const rows of [idle, thrown]) {
+  test("the Gnome's frames are mirrored to 32 wide, idle, throw, then reach", () => {
+    const frames = gnomeFrames();
+    expect(frames).toHaveLength(3);
+    for (const rows of frames) {
       checkRows("gnome", rows ?? [], { w: 32, h: 32 });
       expect(rows).toEqual(flipX(rows ?? []));
     }

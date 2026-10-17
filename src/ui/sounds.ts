@@ -571,6 +571,15 @@ const brassMonkeyJingles = {
     ],
     eighth: 0.06,
   },
+  /** The Gnome stomping the girders in the intro: a low clang over a thud. */
+  stomp: {
+    notes: [
+      [40, 1],
+      [33, 1],
+      [28, 3],
+    ],
+    eighth: 0.05,
+  },
   /** A floor finished: a rising major arpeggio. */
   floor: {
     notes: [
