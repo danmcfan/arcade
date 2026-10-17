@@ -438,6 +438,9 @@ describe("the rivet floor", () => {
 
   test("sends no gears, only embers from the sides, up to the floor's most", () => {
     const run = new Run({ floor: 3 });
+    // Out of the embers' reach, so it never dies.
+    run.monkey.footing = "climb";
+    run.monkey.y = -100;
     let most = 0;
     for (let n = 0; n < 3000; n++) {
       run.update(NO_INPUT);
