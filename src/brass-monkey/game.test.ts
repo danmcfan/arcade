@@ -162,10 +162,25 @@ describe("BrassMonkeySoftware", () => {
     expect(brassMonkeySnapshot(g.snapshot()).rivets.filter(Boolean).length).toBe(1);
   });
 
-  test("when the rivet floor clears, the Gnome falls to the bottom girder", () => {
+  test("as a floor clears the Gnome climbs up out of sight, its y in the snapshot rising", () => {
     const g = quiet();
-    g.run.floor = 3;
+    g.run.floor = 0;
     g.run.startFloor();
+    g.run.phase = "clear";
+    g.run.phaseTicks = t.clearTicks;
+    const ys: number[] = [];
+    for (let n = 0; n < t.clearTicks; n++) {
+      ys.push(brassMonkeySnapshot(g.snapshot()).gnomeY);
+      g.run.phaseTicks--;
+    }
+    expect(ys.every((y, n) => n === 0 || y <= (ys[n - 1] ?? 0))).toBe(true);
+    expect(ys.at(-1)).toBe(-32);
+  });
+
+  test("when the loop's last floor clears, the Gnome falls to the bottom girder before the escape", () => {
+    const g = quiet();
+    // Stage 1 is loop 0's last floor, the rivet floor.
+    g.run.jumpTo(1);
     const gnomeY = (): number => record(g).calls.find((c) => c.sprite.asset === imageGnome.asset)?.y ?? -1;
     expect(gnomeY()).toBe(40 + 56);
     g.run.phase = "clear";

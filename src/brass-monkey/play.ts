@@ -305,6 +305,29 @@ export class Run {
     return Math.round(left * (this.currentFloor().height - this.currentFloor().gnome.y));
   }
 
+  /** Whether the floor being cleared is its loop's last: the Gnome falls, and the escape follows. */
+  finalClear(): boolean {
+    return this.phase === "clear" && floorsFor(this.loop)[this.nextStage] === undefined;
+  }
+
+  /**
+   * Where the Gnome's top stands, in px from the floor's top. On a clear it
+   * scrambles up out of sight after a beat, or on the loop's last floor it
+   * tumbles, gathering speed, to the bottom girder.
+   */
+  gnomeY(): number {
+    const floor = this.currentFloor();
+    const perch = floor.gnome.y + this.introGnomeRise() - this.introHop();
+    if (this.phase !== "clear") return perch;
+    const elapsed = t.clearTicks - this.phaseTicks;
+    if (this.finalClear()) {
+      const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32;
+      return Math.min(bottom, perch + Math.trunc((elapsed * elapsed) / 16));
+    }
+    const climbed = Math.max(0, elapsed - t.gnomeClimbBeat) * t.gnomeClimbSpeed;
+    return Math.max(-32, perch - climbed);
+  }
+
   /** How far the girders have been bent into their slopes, 0 flat to 1; 1 out of the intro. */
   introTilt(): number {
     if (this.phase !== "intro") return 1;

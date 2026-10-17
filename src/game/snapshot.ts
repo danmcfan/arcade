@@ -447,6 +447,8 @@ export interface BrassMonkeySnapshot {
   emberTimer: number;
   /** The lift platforms on the elevator floor, each its left edge and top; empty on the other floors. */
   lifts: { x: number; y: number }[];
+  /** The Gnome's top, in px from the floor's top: it climbs away as a floor clears, and falls at the loop's end. */
+  gnomeY: number;
 }
 
 /** What `Software.snapshot()` returns; `GameSnapshot.software` says which. */
