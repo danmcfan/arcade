@@ -38,6 +38,8 @@ export interface Monkey {
   ladder: Ladder | null;
   /** Counts jumps, so each hazard scores once per jump. */
   jumps: number;
+  /** The hazards cleared in the jump under way: the more at once, the more each pays. */
+  cleared: number;
 }
 
 export interface Hazard {
@@ -52,6 +54,11 @@ export interface Hazard {
   climbDir: -1 | 1;
   /** The monkey's jump this hazard can score in: one that took off from its girder; 0 once scored. */
   scorableIn: number;
+}
+
+/** The total a jump pays for clearing `n` hazards. */
+function jumpTotal(n: number): number {
+  return n === 0 ? 0 : (t.jumpPoints[Math.min(n, t.jumpPoints.length) - 1] ?? 0);
 }
 
 /** Whether an end of ladder `l` touches girder `g`. */
@@ -116,6 +123,7 @@ function newMonkey(start: Spot): Monkey {
     airTop: start.y,
     ladder: null,
     jumps: 0,
+    cleared: 0,
   };
 }
 
@@ -180,6 +188,13 @@ export class Run {
     return Math.min(this.gearTimer, ember) <= t.throwTicks;
   }
 
+  /** Loop `loop` (from 0) starts afresh on the first floor. */
+  startLoop(loop: number): void {
+    this.loop = loop;
+    this.floor = 0;
+    this.startFloor();
+  }
+
   /** The floor starts again: the monkey at the bottom, no hazards, every bolt back, the full bonus. */
   startFloor(): void {
     const floor = this.currentFloor();
@@ -222,9 +237,7 @@ export class Run {
         return;
       case "escape":
         if (--this.phaseTicks > 0) return;
-        this.loop++;
-        this.floor = 0;
-        this.startFloor();
+        this.startLoop(this.loop + 1);
         this.lapBanner = t.lapBannerTicks;
         break;
       case "over":
@@ -273,6 +286,7 @@ export class Run {
           m.vx = dir * t.walkSpeed;
           m.airTop = m.y;
           m.jumps++;
+          m.cleared = 0;
           m.moving = false;
           this.markJumpable(groundUnder(floor, m.x, m.y, 2));
           this.onSound("jump");
@@ -312,6 +326,7 @@ export class Run {
         if (g !== undefined) {
           m.y = girderTop(g, m.x);
           m.footing = "ground";
+          m.cleared = 0;
           m.vx = 0;
           m.vy = 0;
           if (m.y - m.airTop > t.maxFall) this.die();
@@ -514,7 +529,8 @@ export class Run {
         below <= t.jumpOverHeight
       ) {
         h.scorableIn = 0;
-        this.score += t.hazardPoints;
+        m.cleared++;
+        this.score += jumpTotal(m.cleared) - jumpTotal(m.cleared - 1);
         this.onSound("hazard");
       }
     }

@@ -331,6 +331,8 @@ export interface FireflySnapshot {
   stageTick: number;
   /** Lives left, the firefly in play included. */
   lives: number;
+  /** The score that pays the next extra life. */
+  nextLife: number;
   score: number;
   /** The run is over: `gameOver()`. */
   over: boolean;

@@ -47,9 +47,12 @@ import {
   morphChance,
   morphFromStage,
   morphSpacing,
+  nextExtraLife,
   points,
   respawnTicks,
+  shotCutoffMargin,
   shotSpacing,
+  shotSpawnOffset,
   type Slot,
   shotSpeed,
   sparkCooldown,
@@ -261,6 +264,8 @@ export class FireflySoftware implements FixedViewport {
   stageTick = 0;
   lives: number;
   points = 0;
+  /** The score that gives the next extra life. */
+  nextLife = nextExtraLife(0);
   over = false;
   player: Vec = { ...playerStart };
   respawn = 0;
@@ -296,6 +301,7 @@ export class FireflySoftware implements FixedViewport {
     this.moveCaptive();
     this.moveShots();
     this.hitEnemies();
+    this.awardExtraLives();
     if (this.respawn === 0) this.hitPlayer();
     this.endHitEffects();
     this.countDownBonuses();
@@ -358,12 +364,12 @@ export class FireflySoftware implements FixedViewport {
       const py = e.y;
       switch (e.state) {
         case "waiting":
-          if (--e.wait <= 0) e.state = "entering";
+          if (--e.wait <= 0) this.startEntry(e, d);
           break;
         case "entering":
         case "diving":
           this.stepPath(e);
-          if (e.state === "diving") this.dropShot(e);
+          this.dropShot(e);
           break;
         case "beaming":
           this.beam(e);
@@ -425,6 +431,7 @@ export class FireflySoftware implements FixedViewport {
     e.y = p.y;
     if (e.t < 1) return;
     e.path = null;
+    e.shotsLeft = 0;
     if (e.kind === "morph") {
       // A morph flies off the bottom for good, unscored.
       e.hp = 0;
@@ -440,6 +447,14 @@ export class FireflySoftware implements FixedViewport {
       e.x = this.slotPos(e.home).x;
       e.y = -offscreenMargin;
     }
+  }
+
+  /** `e` sets off on its entry curve; some fire at the firefly on the way in (Galaga's). */
+  private startEntry(e: Enemy, d: Difficulty): void {
+    e.state = "entering";
+    if (rng.float() >= d.entryShotChance) return;
+    e.shotsLeft = 1 + rng.intn(d.entryShots);
+    e.shotTimer = firstShotDelay;
   }
 
   /** An escort whose Owl is no longer diving flies back to its slot. */
@@ -593,15 +608,15 @@ export class FireflySoftware implements FixedViewport {
     }
   }
 
-  /** A diving enemy above the firefly drops its shots, aimed down at it. */
+  /** A diving or entering enemy above the firefly drops its shots, aimed down at it. */
   private dropShot(e: Enemy): void {
-    if (e.shotsLeft === 0 || e.state !== "diving") return;
+    if (e.shotsLeft === 0 || (e.state !== "diving" && e.state !== "entering")) return;
     if (e.shotTimer > 0) e.shotTimer--;
-    if (e.shotTimer > 0 || e.y > playerY - 48 || this.respawn > 0) return;
+    if (e.shotTimer > 0 || e.y > playerY - shotCutoffMargin || this.respawn > 0) return;
     const ticksToPlayer = (playerY - e.y) / shotSpeed;
     const maxDrift = difficulty(this.stage).shotDrift;
     const drift = Math.max(-maxDrift, Math.min(maxDrift, (this.player.x - e.x) / ticksToPlayer));
-    this.shots.push({ x: e.x, y: e.y + 8, dx: drift, dy: shotSpeed });
+    this.shots.push({ x: e.x, y: e.y + shotSpawnOffset, dx: drift, dy: shotSpeed });
     e.shotsLeft--;
     e.shotTimer = shotSpacing;
   }
@@ -641,6 +656,15 @@ export class FireflySoftware implements FixedViewport {
     if (e.trio !== null && ++e.trio.kills === morphTrioSize) {
       this.points += morphBonus;
       this.bonuses.push({ points: morphBonus, x: e.x, y: e.y, ticks: bonusTicks });
+    }
+  }
+
+  /** A life, with the extra-life jingle, for each threshold the score has reached. */
+  private awardExtraLives(): void {
+    while (this.points >= this.nextLife) {
+      this.lives++;
+      this.nextLife = nextExtraLife(this.nextLife);
+      play(sounds.extraLife);
     }
   }
 
@@ -700,6 +724,11 @@ export class FireflySoftware implements FixedViewport {
     this.fireDelay = 0;
   }
 
+  scoreTo(score: number): void {
+    this.points = score;
+    this.nextLife = nextExtraLife(score - 1);
+  }
+
   jumpTo(stage: number): void {
     this.stage = stage - 1;
     this.nextStage();
@@ -742,6 +771,7 @@ export class FireflySoftware implements FixedViewport {
       stage: this.stage,
       stageTick: this.stageTick,
       lives: this.lives,
+      nextLife: this.nextLife,
       score: this.points,
       over: this.over,
       player: { x: this.player.x, y: this.player.y },

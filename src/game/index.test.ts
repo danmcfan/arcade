@@ -71,6 +71,7 @@ for (const [name, size] of real) {
         "pause:beam",
         "pause:capture",
         "pause:stage",
+        "pause:extraLife",
       ]);
       expect(scene.layout()).toEqual(size);
       for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }])

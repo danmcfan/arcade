@@ -94,8 +94,19 @@ export function formationPos(slot: { x: number; y: number }, state: FormationSta
   return { x: breatheCentre.x + out(slot.x - breatheCentre.x), y: breatheCentre.y + out(slot.y - breatheCentre.y) };
 }
 
-/** Lives at the start of a run. No extra lives come from score. */
+/** Lives at the start of a run. */
 export const startLives = 3;
+
+/** Galaga's default bonus fighters: a life at `first` and `second` points, then every `every` after (#230). */
+export const extraLifeThresholds = { first: 20_000, second: 70_000, every: 70_000 } as const;
+
+/** The score of the next extra life after `score`: 20,000, 70,000, 140,000, 210,000 and so on. */
+export function nextExtraLife(score: number): number {
+  const { first, second, every } = extraLifeThresholds;
+  if (score < first) return first;
+  if (score < second) return second;
+  return second + (Math.floor((score - second) / every) + 1) * every;
+}
 
 /** Ticks the "STAGE n" text shows before the enemies fly in. */
 export const stageIntroTicks = 120;
@@ -180,6 +191,10 @@ export const sparkCooldown = 8;
 /** Ticks after a dive starts before its first shot, and between its shots. */
 export const firstShotDelay = 18;
 export const shotSpacing = 14;
+/** An enemy stops shooting once it is within this many pixels of the firefly's row. */
+export const shotCutoffMargin = 48;
+/** How far below an enemy's centre its shot appears. */
+export const shotSpawnOffset = 8;
 
 /** How likely each kind is to be picked for a dive, relative to the others. Wasps dive most. */
 export const diveWeight: Readonly<Record<EnemyKind, number>> = { moth: 2, wasp: 5, owl: 2, morph: 0 };
@@ -231,6 +246,10 @@ export interface Difficulty {
   diversPerDive: number;
   /** Shots each diving enemy drops. */
   shotsPerDive: number;
+  /** The chance an enemy flying in at the stage start fires at the firefly. */
+  entryShotChance: number;
+  /** The most shots such an enemy fires on its way in (1 up to this many). */
+  entryShots: number;
   /** Speed of a diving enemy, in px per tick. Entering and joining the formation stay at `enemySpeed`. */
   diveSpeed: number;
   /** The most a shot drifts sideways per tick, aiming at the firefly. */
@@ -244,6 +263,11 @@ const firstDiversPerDive = 1;
 const maxDiversPerDive = 4;
 const firstShotsPerDive = 1;
 const maxShotsPerDive = 4;
+const firstEntryShotChance = 0.08;
+const entryShotChanceStep = 0.04;
+const maxEntryShotChance = 0.25;
+const firstEntryShots = 1;
+const maxEntryShots = 2;
 /** Dive speed and shot drift grow by these fractions each stage after `lastFlatStage`, up to `lastHarderStage`. */
 const lastFlatStage = 5;
 const lastHarderStage = 10;
@@ -262,6 +286,8 @@ export function difficulty(stage: number): Difficulty {
     diveInterval: Math.max(minDiveInterval, firstDiveInterval - n * diveIntervalStep),
     diversPerDive: Math.min(maxDiversPerDive, firstDiversPerDive + n),
     shotsPerDive: Math.min(maxShotsPerDive, firstShotsPerDive + n),
+    entryShotChance: Math.min(maxEntryShotChance, firstEntryShotChance + n * entryShotChanceStep),
+    entryShots: Math.min(maxEntryShots, firstEntryShots + n),
     diveSpeed: enemySpeed * (1 + diveSpeedGrowth * late),
     shotDrift: shotMaxDrift * (1 + shotDriftGrowth * late),
   };

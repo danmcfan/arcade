@@ -52,6 +52,7 @@ import sweetSamScoreLabelsUrl from "../assets/images/sweet-sam/score-labels.png"
 import sweetSamPointsUrl from "../assets/images/sweet-sam/points.png";
 import sweetSamMazeFlashUrl from "../assets/images/sweet-sam/maze-flash.png";
 import sweetSamFlowerUrl from "../assets/images/sweet-sam/flower.png";
+import sweetSamBeeEyesUrl from "../assets/images/sweet-sam/bee-eyes.png";
 
 export const images = {
   font: imageAsset(fontUrl, 128, 224),
@@ -112,4 +113,5 @@ export const sweetSamImages = {
   points: imageAsset(sweetSamPointsUrl, 64, 16),
   mazeFlash: imageAsset(sweetSamMazeFlashUrl, 224, 288),
   flower: imageAsset(sweetSamFlowerUrl, 128, 16),
+  beeEyes: imageAsset(sweetSamBeeEyesUrl, 64, 16),
 } as const;

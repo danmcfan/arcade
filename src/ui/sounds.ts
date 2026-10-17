@@ -498,6 +498,19 @@ const fireflyEffects = {
     ],
     eighth: 0.09,
   },
+  /** A spare firefly earned: a bright rising arpeggio that lands high and holds. */
+  extraLife: {
+    notes: [
+      [76, 1],
+      [80, 1],
+      [83, 1],
+      [88, 1],
+      [83, 1],
+      [88, 1],
+      [95, 3],
+    ],
+    eighth: 0.06,
+  },
 } as const satisfies Record<string, Effect>;
 for (const [name, effect] of Object.entries(fireflyEffects)) defineSound(name, { effect }, { channel: "minigame" });
 

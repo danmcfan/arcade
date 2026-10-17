@@ -26,6 +26,8 @@ import {
   morphFromStage,
   points,
   respawnTicks,
+  shotCutoffMargin,
+  shotSpawnOffset,
   sparkSpeed,
   stageIntroTicks,
   startLives,
@@ -160,6 +162,62 @@ describe("stage start", () => {
   });
 });
 
+/** A shot as it left its enemy: where it is, the firefly's x and the respawn count then. */
+interface FiredShot {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  px: number;
+  respawn: number;
+}
+
+/** Runs stage `stage`'s fly-in to the end, holding still; returns each new shot as fired, with the firefly's x then. */
+function flyIn(seed: number, stage = 1, onTick?: (f: FireflySoftware) => void): FiredShot[] {
+  rng.seed(seed);
+  const f = new FireflySoftware();
+  if (stage > 1) f.jumpTo(stage);
+  const seen = new Set<object>();
+  const fired: FiredShot[] = [];
+  let t = 0;
+  while (f.formationPhase !== "breathe" && t++ < 3000) {
+    onTick?.(f);
+    const respawn = f.respawn;
+    f.update(NO_INPUT);
+    for (const s of f.shots) {
+      if (seen.has(s)) continue;
+      seen.add(s);
+      fired.push({ ...s, px: f.player.x, respawn });
+    }
+  }
+  expect(f.enemies.some((e) => e.state === "diving")).toBe(false);
+  return fired;
+}
+
+describe("entry shots", () => {
+  test("with a fixed seed, an entering enemy fires down at the firefly from above the cut-off", () => {
+    const fired = flyIn(3, 3);
+    expect(fired.length).toBeGreaterThan(0);
+    for (const s of fired) {
+      expect(s.dy).toBeGreaterThan(0);
+      expect(s.y - shotSpawnOffset - s.dy).toBeLessThanOrEqual(playerY - shotCutoffMargin);
+      expect(Math.sign(s.dx)).toBe(Math.sign(s.px - (s.x - s.dx)));
+      expect(Math.abs(s.dx)).toBeLessThanOrEqual(difficulty(3).shotDrift);
+    }
+  });
+
+  test("stage 1's fly-in fires on some seeds", () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].some((seed) => flyIn(seed).length > 0)).toBe(true);
+  });
+
+  test("no entry shot is fired while the firefly respawns", () => {
+    const fired = flyIn(3, 3, (f) => {
+      f.respawn = respawnTicks;
+    });
+    expect(fired.filter((s) => s.respawn > 0)).toEqual([]);
+  });
+});
+
 describe("breathing", () => {
   test("once every enemy is in formation, the edges move in and out about a fixed centre", () => {
     rng.seed(1);
@@ -263,6 +321,28 @@ describe("dives", () => {
 
   test("on later stages a diver flies its dive faster", () => {
     expect(diveStep(10) / diveStep(5)).toBeCloseTo(difficulty(10).diveSpeed / difficulty(5).diveSpeed);
+  });
+
+  test("a dive still fires its full shotsPerDive after entry shots were added", () => {
+    const f = settled();
+    f.stage = 5;
+    f.diveTimer = 1_000_000;
+    const e = f.enemies[0];
+    if (e === undefined) throw new Error("no enemy");
+    divingAt(e, 20, 20);
+    e.shotsLeft = difficulty(5).shotsPerDive;
+    e.shotTimer = 1;
+    let fired = 0;
+    const seen = new Set<object>();
+    for (let i = 0; i < 400; i++) {
+      f.update(NO_INPUT);
+      for (const s of f.shots) {
+        if (seen.has(s)) continue;
+        seen.add(s);
+        fired++;
+      }
+    }
+    expect(fired).toBe(difficulty(5).shotsPerDive);
   });
 
   test("on later stages a shot drifts further sideways at the firefly", () => {
@@ -499,6 +579,64 @@ describe("sparks", () => {
     expect(f.player).toEqual({ x: 92, y: playerY });
     run(f, 200, { right: true });
     expect(f.player.x).toBe(216);
+  });
+});
+
+/** Kills a lone moth in formation with the score at `score` beforehand; returns lives gained and sounds. */
+function killAt(f: FireflySoftware, score: number): { gained: number; sounds: SoundEvent[] } {
+  const e = f.enemies[0];
+  if (e === undefined) throw new Error("no enemy");
+  e.hp = 1;
+  e.deadFrames = 0;
+  e.outOfFormation = false;
+  sparkAt(f, e.x, e.y);
+  f.points = score;
+  const before = f.lives;
+  const rec = recordSounds();
+  f.update(NO_INPUT);
+  rec.stop();
+  return { gained: f.lives - before, sounds: rec.events };
+}
+
+describe("extra lives", () => {
+  test("scoreTo sets the score, and the next tick pays any extra life it reaches", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.scoreTo(20_000);
+    expect([f.score(), f.lives]).toEqual([20_000, startLives]);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 1);
+    f.scoreTo(19_990);
+    f.scoreTo(20_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+  });
+
+  const moth = points("moth", false);
+
+  test("crossing 20,000, 70,000 and 140,000 each adds one life with the extra-life jingle", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    for (const t of [20_000, 70_000, 140_000]) {
+      const below = killAt(f, t - moth - 10);
+      expect(below.gained).toBe(0);
+      expect(below.sounds).not.toContain("play:extraLife");
+      const across = killAt(f, t - 10);
+      expect(across.gained).toBe(1);
+      expect(across.sounds).toContain("play:extraLife");
+      expect(killAt(f, t + 10).gained).toBe(0);
+    }
+  });
+
+  test("one jump across two thresholds pays two lives, once", () => {
+    const { f } = withOnly("moth", { x: 100, y: 100 });
+    f.points = 19_990;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives);
+    f.points = 75_000;
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
+    expect(f.snapshot().nextLife).toBe(140_000);
+    f.update(NO_INPUT);
+    expect(f.lives).toBe(startLives + 2);
   });
 });
 

@@ -14,7 +14,8 @@
 // 9, 8×8 each, and score-labels.png the maze's "1UP" and "HIGH SCORE" alone, for
 // Firefly's HUD. points.png is 200, 400, 800 and 1600, one 16×16 popup frame each.
 // maze-flash.png is the maze with its wax in the level-clear flash colours,
-// and flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68).
+// flower.png the bonus flowers, one 16×16 frame per flower kind (#47, #68),
+// and bee-eyes.png an eaten bee's eyes, one 16×16 frame per direction (#196).
 // gen-art.test.ts fails when the committed PNGs drift.
 
 import { join } from "node:path";
@@ -25,6 +26,8 @@ import {
   beeBeats,
   beeBodies,
   beeEye,
+  beeEyes,
+  beeEyesOrder,
   beeFlight,
   beeOrder,
   corridorMargin,
@@ -222,7 +225,7 @@ export function beeFrame(kind: SweetSamEnemyKind, beat: number, look: "awake" | 
   } else {
     const colours = look === "sleepy" ? sleepyLook : wakingLook;
     const [ex, ey] = beeEye;
-    out = recolour(rows, { y: colours.body, w: colours.wings });
+    out = recolour(rows, { y: colours.body, w: colours.wings, l: colours.veins });
     // Sleepy: the eye shut, a lid across the pupil. Waking: the eye wide, the pupil twice as tall.
     out =
       look === "sleepy"
@@ -278,6 +281,12 @@ export function renderPoints(): PNG {
 export const sweetSamImagesDir = "src/assets/images/sweet-sam";
 
 /** Every generated Sweet Sam image: its file, its size and how to draw it. */
+/** bee-eyes.png's frames in `beeEyesOrder`: `beeEyes` with the left look, its right look mirrored, second. */
+function beeEyesFrames(): Rows[] {
+  const [right = [], ...upDown] = beeEyes;
+  return [right, flipX(right), ...upDown];
+}
+
 export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "maze.png"), 224, 288, renderMaze),
   imageOutput(join(sweetSamImagesDir, "bear.png"), 64, 80, () => sheet(bearFrames())),
@@ -290,4 +299,5 @@ export const sweetSamArtFiles: readonly ImageOutput[] = [
   imageOutput(join(sweetSamImagesDir, "points.png"), 64, 16, renderPoints),
   imageOutput(join(sweetSamImagesDir, "maze-flash.png"), 224, 288, renderMazeFlash),
   imageOutput(join(sweetSamImagesDir, "flower.png"), 16 * flowers.length, 16, () => sheet([flowers])),
+  imageOutput(join(sweetSamImagesDir, "bee-eyes.png"), 16 * beeEyesOrder.length, 16, () => sheet([beeEyesFrames()])),
 ];
