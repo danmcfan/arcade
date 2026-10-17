@@ -223,7 +223,7 @@ The game's own pixel grid (e.g. 192×176 for the hub) before it is scaled up to 
 _Avoid_: canvas size, native size
 
 **Test hook**:
-The `window.__arcade` API that `?debug` installs, so a check can pause, step, seed and read back the game.
+The `window.__arcade` API that `?debug` installs, so a capture script can pause, step, seed and read back the game.
 _Avoid_: debug API, cheat mode
 
 **Capture script**:
