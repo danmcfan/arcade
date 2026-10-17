@@ -17,7 +17,7 @@ import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/dials.ts";
 import { drawFirefly } from "./draw.ts";
-import type { Bonus, Captive, Enemy, Shot, Spark, Vec } from "./entity.ts";
+import { inFlight, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
   badgesShown,
@@ -70,6 +70,7 @@ import {
   nextExtraLife,
   points,
   respawnTicks,
+  banner,
   shotCutoffMargin,
   shotSpacing,
   shotSpawnOffset,
@@ -947,6 +948,8 @@ export class FireflySoftware implements FixedViewport {
 
   private countDownRespawn(): void {
     if (this.respawn === 0) return;
+    // As in Galaga, the new firefly waits until every diver is back in its slot.
+    if (this.respawn === 1 && this.lives > 0 && this.enemies.some(inFlight)) return;
     if (--this.respawn > 0) return;
     if (this.lives === 0) {
       this.results = resultsTicks;
@@ -1003,6 +1006,12 @@ export class FireflySoftware implements FixedViewport {
     return imageFireflyBackground;
   }
 
+  /** The banner text drawn this tick, or null (`banner` in ./rules.ts). */
+  banner(): string | null {
+    const { stage, stageTick, respawn, lives } = this;
+    return banner({ stage, stageTick, respawn, lives, challenging: this.challenge !== null });
+  }
+
   snapshot(): FireflySnapshot {
     return {
       stage: this.stage,
@@ -1051,6 +1060,7 @@ export class FireflySoftware implements FixedViewport {
       hits: this.hits,
       ...(this.challenge === null ? {} : { challenge: { ...this.challenge } }),
       results: this.results,
+      banner: this.banner(),
     };
   }
 }

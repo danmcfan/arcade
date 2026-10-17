@@ -8,7 +8,7 @@ import { noHighScores, ticketsFor } from "../arcade/wallet.ts";
 import { defined } from "../engine/defined.testutil.ts";
 import { fireflySnapshot } from "../game/snapshot.testutil.ts";
 import { isFixedViewport } from "../game/software.ts";
-import { angle, frameAngle, radToDeg, type Enemy, type Vec } from "./entity.ts";
+import { angle, frameAngle, inFlight, radToDeg, type Enemy, type Vec } from "./entity.ts";
 import { beamY, bonusTicks, FireflySoftware, playerY } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
 import { fireflyStartTune, tuneSeconds } from "../ui/sounds.ts";
@@ -29,6 +29,9 @@ import {
   morphFromStage,
   points,
   respawnTicks,
+  playerBannerTicks,
+  readyTicks,
+  stageBannerTicks,
   resultsTicks,
   challengeWaveSize,
   challengeWaves,
@@ -147,6 +150,39 @@ describe("a new run", () => {
   });
 });
 
+describe("respawn", () => {
+  test("no dive starts during a respawn, a diver goes home first, and READY shows in the last window", () => {
+    rng.seed(1);
+    const f = new FireflySoftware();
+    run(f, stageIntroTicks + 1);
+    let t = 0;
+    while (f.formationPhase !== "breathe" && t++ < 5000) f.update(NO_INPUT);
+    const diver = defined(f.enemies.find((e) => e.state === "formation"));
+    // Far below its slot on the way home: still out when the burst ends.
+    diver.state = "joining";
+    diver.y = diver.home.y + 600;
+    f.lives = startLives;
+    f.respawn = 0;
+    f.loseLife();
+    const others = f.enemies.filter((e) => e !== diver);
+    let sawReady = false;
+    let sawBurstBanner = false;
+    let waited = false;
+    while (f.respawn > 0) {
+      const s = fireflySnapshot(f.snapshot());
+      if (f.respawn > readyTicks && s.banner !== null) sawBurstBanner = true;
+      if (s.banner === "READY") sawReady = true;
+      if (f.respawn === 1 && inFlight(diver)) waited = true;
+      f.update(NO_INPUT);
+      expect(others.every((e) => e.state === "formation")).toBe(true);
+    }
+    expect(sawReady).toBe(true);
+    expect(waited).toBe(true);
+    expect(sawBurstBanner).toBe(false);
+    expect(inFlight(diver)).toBe(false);
+  });
+});
+
 describe("stage start", () => {
   test("ticks once per stage badge as each is added", () => {
     const f = new FireflySoftware();
@@ -173,6 +209,22 @@ describe("stage start", () => {
     expect(f.sparks).toEqual([]);
     run(f, 1, { left: true });
     expect(f.player.x).toBeLessThan(112);
+  });
+
+  test("tick 1 of a run shows PLAYER 1, and the firefly cannot fire until READY has gone", () => {
+    const f = new FireflySoftware();
+    f.update(NO_INPUT);
+    expect(fireflySnapshot(f.snapshot()).banner).toBe("PLAYER 1");
+    run(f, playerBannerTicks);
+    expect(fireflySnapshot(f.snapshot()).banner).toBe("STAGE 1");
+    run(f, stageBannerTicks);
+    expect(fireflySnapshot(f.snapshot()).banner).toBe("READY");
+    run(f, stageIntroTicks - 1 - playerBannerTicks - stageBannerTicks, { space: true });
+    expect(fireflySnapshot(f.snapshot()).banner).toBe("READY");
+    expect(f.sparks).toEqual([]);
+    run(f, 1, { space: true });
+    expect(fireflySnapshot(f.snapshot()).banner).toBeNull();
+    expect(f.sparks.length).toBe(1);
   });
 
   test("later stages play the stage fanfare, and the firefly moves during their intro", () => {
@@ -759,6 +811,8 @@ describe("lives", () => {
 
   test("shots still falling when the firefly comes back are cleared, so it is not hit at once", () => {
     const { f } = withOnly("moth", { x: 30, y: 40 });
+    f.lives = startLives;
+    f.respawn = 0;
     f.loseLife();
     run(f, respawnTicks - 1);
     f.shots.push({ x: 112, y: playerY - 6, dx: 0, dy: 3 });

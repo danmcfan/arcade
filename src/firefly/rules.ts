@@ -110,6 +110,14 @@ export function nextExtraLife(score: number): number {
 
 /** Ticks the "STAGE n" text shows before the enemies fly in. */
 export const stageIntroTicks = 120;
+/**
+ * Ticks each run-start banner shows, inside stage 1's `stageIntroTicks`:
+ * PLAYER 1, then STAGE 1, then READY until the firefly is let go (Galaga's).
+ */
+export const playerBannerTicks = 40;
+export const stageBannerTicks = 40;
+/** The last ticks of a respawn, after the burst, that READY shows before the firefly returns. */
+export const readyTicks = 60;
 /** Galaga's stage badges, largest first: the stage shows as the fewest of them. */
 export const badgeValues = [50, 30, 20, 10, 5, 1] as const;
 export type BadgeValue = (typeof badgeValues)[number];
@@ -279,6 +287,28 @@ export const enemyHalfSize: Readonly<Record<EnemyKind, number>> = { moth: 6, was
 export const hitEffectTicks = 75;
 /** Ticks from losing a life to the next firefly, or to game over after the last. */
 export const respawnTicks = 150;
+
+/** What a `FireflyBanner` needs of the game. */
+export interface BannerState {
+  stage: number;
+  stageTick: number;
+  respawn: number;
+  lives: number;
+  challenging: boolean;
+}
+
+/** Banner text in the middle of the field this tick, or null: STAGE n while a stage opens, PLAYER 1 / STAGE 1 / READY at the run start, READY before a respawn. */
+export function banner(b: BannerState): string | null {
+  if (b.lives === 0) return null;
+  if (b.respawn > 0) return b.respawn <= readyTicks ? "READY" : null;
+  if (b.stageTick > stageIntroTicks) return null;
+  if (b.challenging) return "CHALLENGING STAGE";
+  if (b.stage === 1) {
+    if (b.stageTick <= playerBannerTicks) return "PLAYER 1";
+    if (b.stageTick > playerBannerTicks + stageBannerTicks) return "READY";
+  }
+  return `STAGE ${b.stage}`;
+}
 
 /** What each stage asks of the player. */
 export interface Difficulty {

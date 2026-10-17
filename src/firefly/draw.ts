@@ -42,7 +42,6 @@ import {
   type ChallengeState,
   respawnTicks,
   stageBadges,
-  stageIntroTicks,
   type EnemyKind,
 } from "./rules.ts";
 
@@ -156,6 +155,8 @@ export interface FireflyView {
   shotsFired: number;
   hits: number;
   score(): number;
+  /** PLAYER 1, STAGE n, READY or CHALLENGING STAGE while one shows. */
+  banner(): string | null;
 }
 
 export function drawFirefly(screen: Surface, f: FireflyView): void {
@@ -193,9 +194,9 @@ function drawField(screen: Surface, f: FireflyView): void {
     else drawResults(screen, f);
   } else if (f.challenge !== null && f.challenge.tally > 0) {
     drawTally(screen, f.challenge.hits, tallyTicks - f.challenge.tally);
-  } else if (f.stageTick <= stageIntroTicks) {
-    const banner = f.challenge === null ? `STAGE ${f.stage}` : "CHALLENGING STAGE";
-    drawTextCentered(screen, banner, cx, oy + 150, "yellow");
+  } else {
+    const text = f.banner();
+    if (text !== null) drawTextCentered(screen, text, cx, oy + 150, text === "PLAYER 1" ? "blue" : "yellow");
   }
 }
 
