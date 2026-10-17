@@ -544,7 +544,7 @@ export class Run {
     if (this.embers() >= this.tuning.maxEmbers) {
       this.emberTimer = Math.max(this.emberTimer, t.throwTicks + 1);
     } else if (--this.emberTimer <= 0) {
-      this.hazards.push(this.currentFloor().rivets !== undefined ? this.sideEmber(at) : at("ember"));
+      this.hazards.push(this.currentFloor().rivets === undefined ? at("ember") : this.sideEmber(at));
       this.emberTimer = this.tuning.emberEvery;
     }
   }
