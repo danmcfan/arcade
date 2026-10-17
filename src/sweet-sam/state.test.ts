@@ -959,3 +959,15 @@ describe("an eaten bee becomes eyes (#153)", () => {
     expect(enemy(s, 1).blueFrames).toBeGreaterThan(0);
   });
 });
+
+describe("jumpTo (the test hook's level jump)", () => {
+  test("starts the given level from its START banner, maze refilled, at that level's speeds", () => {
+    const s = playing();
+    s.items[0] = null;
+    s.jumpTo(5);
+    expect([s.level, s.snapshot().state, s.items.every((i) => i !== null)]).toEqual([5, "START", true]);
+    for (let n = 0; n < 400 && s.snapshot().state !== "PLAY"; n++) step(s);
+    step(s);
+    expect([s.player.velocity, s.enemies[0]?.velocity]).toEqual([1.25, levelValues(5).beeVelocity]);
+  });
+});
