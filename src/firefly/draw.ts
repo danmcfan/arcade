@@ -25,8 +25,8 @@ import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, typ
 import {
   beamHeight,
   beamWidth,
-  dualOffset,
   fieldWidth,
+  halves,
   hitEffectTicks,
   respawnTicks,
   stageIntroTicks,
@@ -143,8 +143,7 @@ function drawField(screen: Surface, f: FireflyView): void {
     if (!f.captured) drawHit(screen, Math.max(0, hitEffectTicks - (respawnTicks - f.respawn)), f.player.x, f.player.y);
   } else if (!f.over) {
     // Once the last life is gone the firefly stays gone, under GAME OVER and the payout.
-    const xs = f.dual ? [f.player.x - dualOffset, f.player.x + dualOffset] : [f.player.x];
-    for (const x of xs) screen.draw(imageFirefly, ox + x - 8, oy + f.player.y - 8);
+    for (const x of halves(f.player.x, f.dual)) screen.draw(imageFirefly, ox + x - 8, oy + f.player.y - 8);
   }
 
   // Sweet Sam's HUD: the high score follows the score once the score passes it.

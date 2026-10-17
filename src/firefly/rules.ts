@@ -174,13 +174,26 @@ export const shotMaxDrift = 1;
 
 /** Sparks on the screen at once, and the fewest ticks between two. */
 export const maxSparks = 2;
+export const sparkCooldown = 8;
 
-/** Points for shooting down the captured firefly: in formation or while its Owl dives (Galaga's 500/1000). */
 /** A dual firefly's two halves sit this far either side of the firefly's x. */
 export const dualOffset = 8;
 
+/** The x of each firefly in play: one, or a dual's two halves. */
+export function halves(x: number, dual: boolean): number[] {
+  return dual ? [x - dualOffset, x + dualOffset] : [x];
+}
+
+/** Points for shooting down the captured firefly: in formation or while its Owl dives (Galaga's 500/1000). */
 export const captivePoints = { formation: 500, diving: 1000 } as const;
-export const sparkCooldown = 8;
+
+/** Px per tick a hostile captive dives, and steers toward the firefly. */
+export const hostileSpeed = 2;
+export const hostileSteer = 1;
+/** Px per tick a rescued captive flies down to dock beside the firefly. */
+export const dockSpeed = 3;
+/** How near a hostile captive must come to a firefly half to ram it. */
+export const captiveHalfSize = 12;
 
 /** Ticks after a dive starts before its first shot, and between its shots. */
 export const firstShotDelay = 18;

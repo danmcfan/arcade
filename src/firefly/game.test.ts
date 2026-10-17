@@ -790,10 +790,35 @@ describe("rescue", () => {
     sparkAt(f, 60, 150);
     const rec = recordSounds();
     f.update(NO_INPUT);
+    expect(f.dual).toBe(false);
+    expect(f.captive?.hostile).toBe(false);
+    expect(f.captive?.owl).toBeNull();
+    for (let i = 0; i < 200 && !f.dual; i++) f.update(NO_INPUT);
     rec.stop();
     expect(f.dual).toBe(true);
     expect(f.captive).toBeNull();
     expect(rec.events).toContain("play:rescue");
+  });
+
+  test("a captive that is docking cannot be shot", () => {
+    const { f } = holding(60, 60);
+    f.captive = { owl: null, x: 60, y: 40, hostile: false };
+    sparkAt(f, 60, 42);
+    f.update(NO_INPUT);
+    expect(f.captive).not.toBeNull();
+    expect(f.score()).toBe(0);
+  });
+
+  test("a rescue while the firefly is respawning or the game is over does not turn it dual", () => {
+    for (const state of ["respawn", "over"] as const) {
+      const { f, e } = holding(60, 150);
+      divingAt(e, 60, 150);
+      if (state === "respawn") f.respawn = 30;
+      else f.over = true;
+      f["shootDown"](e);
+      expect(f.captive).toBeNull();
+      expect(f.dual).toBe(false);
+    }
   });
 
   test("shooting the Owl in formation leaves the firefly single; the captive turns hostile and dives", () => {

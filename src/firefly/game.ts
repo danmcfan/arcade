@@ -23,12 +23,17 @@ import {
   beamHeight,
   beamTicks,
   beamWidth,
+  captiveHalfSize,
   captiveOffset,
   captivePoints,
   captivePullSpeed,
   diveWeight,
   difficulty,
+  dockSpeed,
   dualOffset,
+  halves,
+  hostileSpeed,
+  hostileSteer,
   type Difficulty,
   type EnemyKind,
   enemyHalfSize,
@@ -61,9 +66,6 @@ import {
 /** The firefly's row and where it starts, centred. */
 export const playerY = 264;
 const playerHalfWidth = 8;
-/** Px per tick a hostile captive dives, and steers toward the firefly. */
-const hostileSpeed = 2;
-const hostileSteer = 1;
 const playerStart: Vec = { x: fieldWidth / 2, y: playerY };
 /** Where an Owl hovers to beam, in the bottom third. */
 export const beamY = playerY - beamHeight;
@@ -337,7 +339,7 @@ export class FireflySoftware implements FixedViewport {
 
     const cap = this.advantages.maxSparks * (this.dual ? 2 : 1);
     if (i.space && this.fireDelay === 0 && this.sparks.length < cap) {
-      for (const x of this.halves()) this.sparks.push({ x, y: this.player.y - 10 });
+      for (const x of halves(this.player.x, this.dual)) this.sparks.push({ x, y: this.player.y - 10 });
       this.fireDelay = sparkCooldown;
       play(sounds.spark);
     }
@@ -545,6 +547,17 @@ export class FireflySoftware implements FixedViewport {
     const c = this.captive;
     if (c === null) return;
     const owl = c.owl;
+    if (owl === null && !c.hostile) {
+      const tx = this.player.x + dualOffset;
+      c.x += Math.sign(tx - c.x) * Math.min(dockSpeed, Math.abs(tx - c.x));
+      c.y += Math.sign(playerY - c.y) * Math.min(dockSpeed, Math.abs(playerY - c.y));
+      if (c.x === tx && c.y === playerY) {
+        this.captive = null;
+        this.dual = true;
+        play(sounds.rescue);
+      }
+      return;
+    }
     if (owl === null) {
       c.y += hostileSpeed;
       c.x += Math.sign(this.player.x - c.x) * Math.min(hostileSteer, Math.abs(this.player.x - c.x));
@@ -589,7 +602,12 @@ export class FireflySoftware implements FixedViewport {
   private hitEnemies(): void {
     this.sparks = this.sparks.filter((s) => {
       const c = this.captive;
-      if (c !== null && Math.abs(s.x - c.x) < playerHalfWidth && Math.abs(s.y - c.y) < playerHalfWidth) {
+      if (
+        c !== null &&
+        !this.docking(c) &&
+        Math.abs(s.x - c.x) < captiveHalfSize &&
+        Math.abs(s.y - c.y) < captiveHalfSize
+      ) {
         this.shootCaptive(c);
         return false;
       }
@@ -606,6 +624,11 @@ export class FireflySoftware implements FixedViewport {
       play(sounds.hit);
       return false;
     });
+  }
+
+  /** A rescued captive on its way down to dock beside the firefly. */
+  private docking(c: Captive): boolean {
+    return c.owl === null && !c.hostile;
   }
 
   /** The captive is shot down for good, scoring more while its Owl is out of formation (or it is hostile). */
@@ -625,9 +648,12 @@ export class FireflySoftware implements FixedViewport {
     const c = this.captive;
     if (c?.owl === e) {
       if (e.outOfFormation) {
-        this.captive = null;
-        this.dual = true;
-        play(sounds.rescue);
+        // Alive and in play, it flies down to dock; otherwise it is lost.
+        if (this.respawn === 0 && !this.over) {
+          c.owl = null;
+        } else {
+          this.captive = null;
+        }
       } else {
         c.owl = null;
         c.hostile = true;
@@ -652,16 +678,10 @@ export class FireflySoftware implements FixedViewport {
     this.bonuses = this.bonuses.filter((b) => b.ticks > 0);
   }
 
-  /** The x of each firefly in play: one, or a dual's two halves. */
-  private halves(): number[] {
-    const x = this.player.x;
-    return this.dual ? [x - dualOffset, x + dualOffset] : [x];
-  }
-
   /** Each half is hit on its own: losing one half of a dual leaves the other, with no life lost. */
   private hitPlayer(): void {
     const y = this.player.y;
-    for (const x of this.halves()) {
+    for (const x of halves(this.player.x, this.dual)) {
       const body = this.enemies.find(
         (e) =>
           e.deadFrames === 0 &&
@@ -670,7 +690,8 @@ export class FireflySoftware implements FixedViewport {
           Math.abs(e.y - y) < enemyHalfSize[e.kind] + 6,
       );
       const c = this.captive;
-      const rammed = c !== null && c.hostile && Math.abs(c.x - x) < 12 && Math.abs(c.y - y) < 12;
+      const rammed =
+        c !== null && c.hostile && Math.abs(c.x - x) < captiveHalfSize && Math.abs(c.y - y) < captiveHalfSize;
       const shot = this.shots.find((s) => Math.abs(s.x - x) < 5 && Math.abs(s.y - y) < 7);
       if (body === undefined && !rammed && shot === undefined) continue;
       // A rammed enemy dies with the firefly but scores nothing.
