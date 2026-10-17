@@ -191,7 +191,9 @@
       let shown = -1;
       function play(now) {
         const { timeline } = options[picked];
-        const index = timeline[Math.floor(((now - start) * 60) / 1000) % timeline.length];
+        // A frame's timestamp can be earlier than `start`; a negative tick would index nothing.
+        const tick = Math.max(0, Math.floor(((now - start) * 60) / 1000));
+        const index = timeline[tick % timeline.length];
         const img = decoded[picked][index];
         if (index !== shown && img.complete) {
           screen.width = img.naturalWidth;

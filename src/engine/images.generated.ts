@@ -11,6 +11,7 @@ import panelUrl from "../assets/images/panel.png";
 import cardsUrl from "../assets/images/cards.png";
 import employeeUrl from "../assets/images/employee.png";
 import prizesUrl from "../assets/images/prizes.png";
+import winUrl from "../assets/images/win.png";
 import arcadeUrl from "../assets/images/arcade.png";
 import screensUrl from "../assets/images/screens.png";
 import playerUrl from "../assets/images/player.png";
@@ -66,6 +67,7 @@ export const images = {
   cards: imageAsset(cardsUrl, 43, 10),
   employee: imageAsset(employeeUrl, 16, 24),
   prizes: imageAsset(prizesUrl, 80, 16),
+  win: imageAsset(winUrl, 52, 35),
   arcade: imageAsset(arcadeUrl, 160, 144),
   screens: imageAsset(screensUrl, 392, 108),
   player: imageAsset(playerUrl, 64, 96),

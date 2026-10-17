@@ -4,6 +4,7 @@
 import type { Channel } from "../ui/sounds.ts";
 
 import titleUrl from "../assets/sounds/title.wav";
+import victoryUrl from "../assets/sounds/victory.wav";
 import moveUrl from "../assets/sounds/move.wav";
 import selectUrl from "../assets/sounds/select.wav";
 import ticketUrl from "../assets/sounds/ticket.wav";
@@ -44,6 +45,7 @@ import monkeyWrenchUrl from "../assets/sounds/monkey-wrench.wav";
 
 export type SoundName =
   | "title"
+  | "victory"
   | "move"
   | "select"
   | "ticket"
@@ -88,6 +90,7 @@ export function soundTable<S>(
 ): Record<SoundName, S> {
   return {
     title: make("title", titleUrl, true, 1),
+    victory: make("victory", victoryUrl, false, 1),
     move: make("move", moveUrl, false, 1),
     select: make("select", selectUrl, false, 1),
     ticket: make("ticket", ticketUrl, false, 1),
@@ -155,6 +158,7 @@ export const channels: Readonly<Record<Channel, readonly SoundName[]>> = {
   ],
   arcade: [
     "title",
+    "victory",
     "move",
     "select",
     "ticket",

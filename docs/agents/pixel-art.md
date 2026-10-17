@@ -28,6 +28,7 @@ Art source is rows of Sweetie 16 letters, `.` blank. Every source uses the one l
 | Title logo                                            | `src/ui/titleArt.ts` (layers; animated by `src/title/logo.ts`)                               | `scripts/gen-ui-art.ts`           |
 | Hub room, cabinets, desk, player                      | `src/ui/hubArt.ts`, `deskArt.ts`, `employeeArt.ts`, `playerArt.ts`                           | `scripts/gen-ui-art.ts`           |
 | Scoreboard, menu icons, prizes, panel and card frames | `src/ui/tickerArt.ts`, `icons.ts`, `prizeArt.ts`, `panelArt.ts`                              | `scripts/gen-ui-art.ts`           |
+| Arcade win: cake, trophy, balloons, confetti          | `src/ui/winArt.ts`                                                                           | `scripts/gen-ui-art.ts`           |
 | Firefly sprites and sky                               | `src/firefly/art.ts`                                                                         | `scripts/gen-firefly-art.ts`      |
 | Brass Monkey characters, items                        | `src/brass-monkey/art.ts`                                                                    | `scripts/gen-brass-monkey-art.ts` |
 | Sweet Sam maze, sprites, text                         | `src/sweet-sam/art.ts` (the maze as a tile map; the text in the Go game's lettering)         | `scripts/gen-sweet-sam-art.ts`    |

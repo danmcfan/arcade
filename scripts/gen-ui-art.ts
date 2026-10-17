@@ -1,6 +1,6 @@
 // Build the UI pixel art from its ASCII source in src/ui/glyphs.ts:
 //
-//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, arcade.png, screens.png, player.png, hud.png and the retitled title cards
+//   bun run art      # writes src/assets/images/font.png, title-logo.png, icons.png, ticker.png, panel.png, cards.png, employee.png, prizes.png, win.png, arcade.png, screens.png, player.png, hud.png and the retitled title cards
 //
 // font.png is one band of glyphs per ink colour (`inkOrder`), each band
 // `bandRows` rows of `sheetColumns` cells. icons.png is the menu icons from
@@ -8,7 +8,8 @@
 // src/ui/tickerArt.ts, panel.png and cards.png the menu panel and prize
 // counter card frames from src/ui/panelArt.ts, employee.png the prize desk's employee from
 // src/ui/employeeArt.ts, prizes.png the hub's prize decorations from
-// src/ui/prizeArt.ts. arcade.png is the hub room with its cabinets, scoreboard
+// src/ui/prizeArt.ts, win.png the arcade win's cake, trophy, balloons and
+// confetti from src/ui/winArt.ts. arcade.png is the hub room with its cabinets, scoreboard
 // and prize desk (src/ui/hubArt.ts), screens.png the cabinets' screens
 // switching on and off, and player.png the player's sprite sheet
 // (src/ui/playerArt.ts), hud.png the HUDs' thick labels (src/ui/hudArt.ts). Each of `titleCards` is its title card (the source of
@@ -46,6 +47,16 @@ import {
   prizeSheetWidth,
 } from "../src/ui/prizeArt.ts";
 import { hudSheetRows, hudSheetWidth } from "../src/ui/hudArt.ts";
+import {
+  confettiFrames,
+  confettiLetters,
+  confettiSheetY,
+  confettiSize,
+  winArt,
+  winRects,
+  winSheetHeight,
+  winSheetWidth,
+} from "../src/ui/winArt.ts";
 import { iconRects, icons, iconSheetHeight, iconSheetWidth } from "../src/ui/icons.ts";
 import { cardArt, cardRects, cardSheetHeight, cardSheetWidth, panelFrame } from "../src/ui/panelArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
@@ -126,6 +137,21 @@ export function renderPrizes(): PNG {
   return png;
 }
 
+/** The arcade win's pieces in a row, and under them a row of confetti frames per colour. */
+export function renderWin(): PNG {
+  const png = blank(winSheetWidth, winSheetHeight);
+  for (const [piece, rows] of Object.entries(winArt)) {
+    if (!own(winRects, piece)) throw new Error(`win piece ${piece} has no sheet rect`);
+    paint(png, rows, sweetie, winRects[piece].x, 0);
+  }
+  confettiLetters.forEach((letter, row) => {
+    confettiFrames.forEach((frame, f) => {
+      paint(png, recolour(frame, { w: letter }), sweetie, f * confettiSize, confettiSheetY + row * confettiSize);
+    });
+  });
+  return png;
+}
+
 export function renderTicker(): PNG {
   return toPng(tickerSheetRows());
 }
@@ -196,6 +222,7 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "cards.png"), cardSheetWidth, cardSheetHeight, renderCards),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
   imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
+  imageOutput(join(imagesDir, "win.png"), winSheetWidth, winSheetHeight, renderWin),
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),
   imageOutput(join(imagesDir, "screens.png"), 392, 108, renderScreens),
   imageOutput(join(imagesDir, "player.png"), 64, 96, renderPlayer),

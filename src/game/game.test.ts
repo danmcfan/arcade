@@ -636,6 +636,26 @@ describe("the arcade win", () => {
     expect(game.progress().arcadeWon).toBe(true);
   });
 
+  test("the win plays the victory jingle, with the hub song quiet until the banner closes", () => {
+    const { game } = endRun(beatSweetSam, 5, twoBeaten);
+    const atWin = soundsDuring(() => {
+      closePayout(game);
+    });
+    expect(atWin.filter((e) => e.endsWith(":victory"))).toEqual(["rewind:victory", "play:victory"]);
+    expect(atWin.filter((e) => e.endsWith(":hub"))).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        run(game, 300);
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual([]);
+    expect(
+      soundsDuring(() => {
+        game.step(input({ space: true }));
+        game.step(input());
+      }).filter((e) => e.endsWith(":hub")),
+    ).toEqual(["play:hub"]);
+  });
+
   test("a run that leaves a machine unbeaten does not", () => {
     const { game } = endRun(houseHighScores.sweetSam, 5, twoBeaten);
     closePayout(game);
