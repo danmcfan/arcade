@@ -18,7 +18,7 @@ export type Phase = "intro" | "play" | "dying" | "clear" | "escape" | "over";
 export type Footing = "ground" | "air" | "climb";
 
 /** The sounds the run makes; game.ts plays them. */
-export type RunSound = "jump" | "bolt" | "hazard" | "death" | "floor" | "escape" | "stomp";
+export type RunSound = "jump" | "bolt" | "hazard" | "death" | "floor" | "escape" | "stomp" | "step";
 
 export interface Monkey {
   x: number;
@@ -408,8 +408,10 @@ export class Run {
           } else {
             m.left = dir < 0;
             m.moving = true;
+            const cell = Math.trunc(m.frame);
             m.frame += 0.2;
             if (m.frame >= 4) m.frame = 0;
+            if (Math.trunc(m.frame) !== cell) this.onSound("step");
           }
           m.x = this.clampX(m.x + dir * t.walkSpeed + belt * t.beltSpeed);
           this.settle();

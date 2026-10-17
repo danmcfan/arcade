@@ -174,8 +174,35 @@ describe("BrassMonkeySoftware", () => {
     const events: SoundEvent[] = [];
     unsubscribe.push(addSoundListener((e) => void events.push(e)));
     const g = quiet();
+    events.length = 0;
     g.update(held({ space: true }));
     expect(events).toEqual(["rewind:monkeyJump", "play:monkeyJump"]);
+  });
+
+  test("the floor's music starts with play and stops when the monkey dies, the floor clears or the run is over", () => {
+    for (const phase of ["dying", "clear", "over"] as const) {
+      const events: SoundEvent[] = [];
+      const off = addSoundListener((e) => void events.push(e));
+      const g = quiet();
+      g.update(NO_INPUT);
+      expect(events.slice(-2)).toEqual(["rewind:monkeyGirder", "play:monkeyGirder"]);
+      events.length = 0;
+      g.run.phase = phase;
+      g.run.phaseTicks = 100;
+      g.update(NO_INPUT);
+      expect(events).toEqual(["pause:monkeyGirder"]);
+      off();
+    }
+  });
+
+  test("each floor has its own music", () => {
+    const events: SoundEvent[] = [];
+    const g = quiet();
+    g.update(NO_INPUT);
+    unsubscribe.push(addSoundListener((e) => void events.push(e)));
+    g.run.floor = 1;
+    g.update(NO_INPUT);
+    expect(events.slice(0, 3)).toEqual(["pause:monkeyGirder", "rewind:monkeyConveyor", "play:monkeyConveyor"]);
   });
 
   test("the snapshot holds the monkey, the floor, lives, score and bonus", () => {

@@ -67,6 +67,9 @@ const hud = {
   loopTop: 20,
 } as const;
 
+/** Each floor's music, in the order of `floors`. */
+const floorMusic: readonly Sound[] = [sounds.monkeyGirder, sounds.monkeyConveyor];
+
 /** The sound for each of the run's sound cues. */
 const runSounds: Readonly<Record<RunSound, Sound>> = {
   jump: sounds.monkeyJump,
@@ -76,6 +79,7 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
   stomp: sounds.monkeyStomp,
+  step: sounds.monkeyStep,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
@@ -87,6 +91,8 @@ export class BrassMonkeySoftware implements FixedViewport {
   private readonly highScoreDial: Dial;
   private readonly bonusDial: Dial;
   private readonly loopDial = new Dial(1, 1);
+  /** The floor's music playing, or none. */
+  private music: Sound | null = null;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
@@ -100,6 +106,7 @@ export class BrassMonkeySoftware implements FixedViewport {
       },
     });
     this.bonusDial = new Dial(this.run.bonus);
+    this.playMusic();
   }
 
   background(): Sprite {
@@ -113,6 +120,17 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.highScoreDial.update(this.highScore);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
+    this.playMusic();
+  }
+
+  /** In play, the floor's music; none otherwise. */
+  private playMusic(): void {
+    const { phase, floor } = this.run;
+    const music = phase === "play" ? (floorMusic[floor] ?? null) : null;
+    if (music === this.music) return;
+    this.music?.pause();
+    this.music = music;
+    music?.blip();
   }
 
   fixedViewportSize(): [number, number] {

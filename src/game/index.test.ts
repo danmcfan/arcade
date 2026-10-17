@@ -73,6 +73,8 @@ for (const [name, size] of real) {
         "pause:rescue",
         "pause:stage",
         "pause:badgeTick",
+        "pause:monkeyGirder",
+        "pause:monkeyConveyor",
       ]);
       expect(scene.layout()).toEqual(size);
       for (const keys of [{ down: true }, {}, { down: true }, {}, { space: true }])

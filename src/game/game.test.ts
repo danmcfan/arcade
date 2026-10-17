@@ -428,6 +428,8 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:rescue",
   "pause:stage",
   "pause:badgeTick",
+  "pause:monkeyGirder",
+  "pause:monkeyConveyor",
 ];
 
 // The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.

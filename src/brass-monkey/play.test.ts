@@ -106,6 +106,24 @@ describe("the monkey", () => {
   });
 });
 
+describe("footsteps", () => {
+  test("a step sounds on each frame of the walk cycle", () => {
+    const { run, sounds } = quiet();
+    step(run, 20, { right: true });
+    expect(sounds).toEqual(["step", "step", "step", "step"]);
+  });
+
+  test("no step sounds standing or in the air", () => {
+    const { run, sounds } = quiet();
+    step(run, 20);
+    run.update(held({ space: true }));
+    sounds.length = 0;
+    step(run, 10, { right: true });
+    expect(run.monkey.footing).toBe("air");
+    expect(sounds).not.toContain("step");
+  });
+});
+
 describe("hazards", () => {
   test("the Gnome sends a gear that rolls along its girder, drops off the end and rolls on downhill", () => {
     const { run } = quiet();
@@ -347,7 +365,7 @@ describe("score", () => {
     step(run, 8, { right: true });
     expect(run.bolts[0]).toBe(true);
     expect(run.score).toBe(t.boltPoints);
-    expect(sounds).toEqual(["bolt"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["bolt"]);
     step(run, 8, { left: true });
     expect(run.score).toBe(t.boltPoints);
   });
@@ -360,7 +378,7 @@ describe("score", () => {
     step(run, 8, { right: true });
     expect(run.phase).toBe("clear");
     expect(run.score).toBe(4900);
-    expect(sounds).toEqual(["floor"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
     step(run, t.clearTicks);
     expect([run.phase, run.floor, run.bonus]).toEqual(["play", 1, 5000]);
     expect([run.monkey.x, run.monkey.y]).toEqual([conveyorFloor.start.x, conveyorFloor.start.y]);
@@ -375,7 +393,7 @@ describe("the escape and the next loop", () => {
     step(run, 8, { right: true });
     step(run, t.clearTicks);
     expect(run.phase).toBe("escape");
-    expect(sounds).toEqual(["floor", "escape"]);
+    expect(sounds.filter((s) => s !== "step")).toEqual(["floor", "escape"]);
     step(run, t.escapeTicks);
     expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 1]);
     const easy = t.tuningFor(0, 0);
