@@ -196,8 +196,8 @@ describe("respawn", () => {
     expect(inFlight(stuck)).toBe(true);
     expect([f.respawn, fireflySnapshot(f.snapshot()).banner]).toEqual([1, "READY"]);
     run(f, 1);
-    expect(f.respawn).toBe(0);
-    expect(f.respawnHeld).toBe(0);
+    expect([f.respawn, fireflySnapshot(f.snapshot()).banner, inFlight(stuck)]).toEqual([0, null, true]);
+    expect(f.player).toEqual({ x: 112, y: playerY });
   });
 });
 

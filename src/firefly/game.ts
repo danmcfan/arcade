@@ -362,7 +362,7 @@ export class FireflySoftware implements FixedViewport {
   player: Vec = { ...playerStart };
   respawn = 0;
   /** Ticks the respawn has held on its last tick for enemies still in flight. */
-  respawnHeld = 0;
+  private respawnHeld = 0;
   fireDelay = 0;
   sparks: Spark[] = [];
   enemies: Enemy[] = newStageEnemies();
