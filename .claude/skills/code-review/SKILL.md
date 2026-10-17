@@ -8,13 +8,13 @@ Two-axis **adversarial review** of the diff between `HEAD` and a fixed point the
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings and fixes them. If the user asks for a review only ("report only", "don't fix"), stop after step 5.
+Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings and fixes them. If the user asks for a review only ("report only", "don't fix"), stop after step 6.
 
 The repo's agent docs (`AGENTS.md`, `CLAUDE.md`, and what they point to) say how to reach the issue tracker, which checks to run, and what needs human sign-off. Read them before starting.
 
 ## Adversarial stance
 
-Both sub-agents, and you in step 6, work as adversarial reviewers. Assume the change is wrong until the diff proves otherwise. Be skeptical, hunt for flaws, and challenge assumptions: the author's, the spec's, and the tests'. For each hunk ask "what input breaks this?" and "what does this claim that nothing verifies?" Quote the hunk behind every finding; a finding without evidence is dropped. State findings plainly, without praise or softening.
+The review sub-agents, and you in step 7, work as adversarial reviewers. Assume the change is wrong until the diff proves otherwise. Be skeptical, hunt for flaws, and challenge assumptions: the author's, the spec's, and the tests'. For each hunk ask "what input breaks this?" and "what does this claim that nothing verifies?" Quote the hunk behind every finding; a finding without evidence is dropped. State findings plainly, without praise or softening.
 
 ## Process
 
@@ -79,13 +79,21 @@ If the spec is missing, skip the Spec sub-agent and note this in the final repor
 
 ### 5. Aggregate
 
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
+Lay out the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_). Present them after step 6, so each finding carries its verdict.
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
-### 6. Fix
+### 6. Verify
 
-Take every finding from both axes and settle it with your own judgement, one of:
+A reviewer that hunts for flaws also produces false positives. Before anything gets fixed, put each axis's findings through a fresh **verifier** sub-agent that saw none of the review: one per axis, in parallel. Skip an axis with no findings.
+
+Each verifier prompt should include the diff command, that axis's findings verbatim, and the sources the reviewer had (standards files and smell baseline, or the spec). The brief: "Try to refute each finding. Read the code around the hunk, not just the hunk; look for the caller, test, guard, or rule that makes it a non-issue. Give each finding a verdict: **Confirmed**, **Refuted**, or **Unsure**, with one line of evidence (a quote or a `file:line`). Under 300 words."
+
+Then present the step 5 report, once, with each verdict beside its finding.
+
+### 7. Fix
+
+Take every finding from both axes and settle it with your own judgement, using the verifier's verdict as evidence, not as the decision: a **Refuted** finding is usually **Skipped** with the verifier's reason, and an **Unsure** one gets your own look before you choose. Each finding ends as one of:
 
 - **Fixed**: the finding holds and the fix is clear and inside the change's scope. Apply it.
 - **Skipped**: on a second, adversarial look the finding is wrong, or the smell is a judgement call you reject. Give the reason in one line.
