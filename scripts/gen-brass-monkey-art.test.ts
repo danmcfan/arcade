@@ -173,7 +173,9 @@ describe("generated frames", () => {
     // The wall panel shows where nothing stands, e.g. the top-left corner.
     expect(rows.slice(0, 4).map((r) => r.slice(0, 4))).toEqual(wallPanel.slice(0, 4).map((r) => r.slice(0, 4)));
     // Every drawn pixel of the door is on the floor, standing on the top platform.
-    const { x, y } = girderFloor.door ?? { x: 0, y: 0 };
+    const exit = girderFloor.door;
+    if (exit === undefined) throw new Error("the girder floor has a door");
+    const { x, y } = exit;
     doorFrame().forEach((row, dy) => {
       for (let dx = 0; dx < row.length; dx++) {
         if (row[dx] !== empty) expect(rows[y - 24 + dy]?.[x + dx]).toBe(row[dx]);

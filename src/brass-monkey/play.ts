@@ -552,11 +552,11 @@ export class Run {
   /** An ember coming in at the left or right edge of a girder picked at random, heading in. */
   private sideEmber(at: (kind: Hazard["kind"]) => Hazard): Hazard {
     const { girders, width } = this.currentFloor();
-    const g = girders[rng.intn(girders.length)] ?? girders[0];
+    const g = girders[rng.intn(girders.length)];
     if (g === undefined) throw new Error("the floor has no girders");
     const left = rng.float() < 0.5;
-    const x = left ? g.x0 + 8 : g.x1 - 8;
-    return { ...at("ember"), x: Math.max(8, Math.min(width - 8, x)), y: girderTop(g, x), dir: left ? 1 : -1 };
+    const x = Math.max(8, Math.min(width - 8, left ? g.x0 + 8 : g.x1 - 8));
+    return { ...at("ember"), x, y: girderTop(g, x), dir: left ? 1 : -1 };
   }
 
   private moveHazard(h: Hazard): void {
