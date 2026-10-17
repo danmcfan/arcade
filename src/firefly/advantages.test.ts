@@ -12,7 +12,7 @@ import {
 } from "./advantages.ts";
 import { FireflySoftware } from "./game.ts";
 import { minigame } from "../game/minigames.ts";
-import { maxSparks, playerSpeed, startLives } from "./rules.ts";
+import { maxSparks, playerSpeed, stageIntroTicks, startLives } from "./rules.ts";
 
 let unsubscribe = (): void => {};
 beforeEach(() => {
@@ -26,6 +26,8 @@ afterEach(() => {
 function run(prizes: readonly PrizeId[]): FireflySoftware {
   const f = minigame("firefly").create({ highScore: 0, prizes });
   if (!(f instanceof FireflySoftware)) throw new Error("Firefly's create did not return a FireflySoftware");
+  // The firefly is held through the start theme.
+  for (let k = 0; k < stageIntroTicks; k++) f.update(NO_INPUT);
   return f;
 }
 

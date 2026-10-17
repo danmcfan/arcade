@@ -441,13 +441,18 @@ const minigameSoundPauses: SoundEvent[] = [
   "pause:sweetDeath",
   "pause:sweetClear",
   "pause:spark",
-  "pause:hit",
+  "pause:mothHit",
+  "pause:waspHit",
+  "pause:owlHurt",
+  "pause:owlKill",
+  "pause:dive",
   "pause:lifeLost",
   "pause:beam",
   "pause:capture",
   "pause:stage",
   "pause:extraLife",
   "pause:monkeyWrench",
+  "pause:fireflyStart",
 ];
 
 // The pause menu and payout themselves are tested on MinigameRun (minigameRun.test.ts); these cover the Game around them.
