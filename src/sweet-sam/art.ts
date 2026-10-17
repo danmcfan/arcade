@@ -35,7 +35,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "..pprrrrrrrrpp..",
       "...rrrrrrrrrr...",
       "..rrrrwrrwrrrr..",
-      "..rrrrwkkwrrrr..",
+      "..rrrrwppwrrrr..",
       "..rrrrrrrrrrrr..",
       "...rrrrrrrrrr...",
       "....pppppppp....",
@@ -54,7 +54,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "..pprrrrrrrrpp..",
       "...rrrrrrrrrr...",
       "..rrrrwrrwrrrr..",
-      "..rrrrwkkwrrrr..",
+      "..rrrrwppwrrrr..",
       "..rrrrrrrrrrrr..",
       "..rprrrrrrrrr...",
       ".rrppppppppp....",
@@ -111,7 +111,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -130,7 +130,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -148,7 +148,7 @@ export const bearWalk: Readonly<Record<"down" | "up" | "left", readonly (readonl
       "....rrrrrppp....",
       "....rrrrrrrr....",
       "....rrwrrrrrr...",
-      "...rrrwrrrrrr...",
+      "...prrwrrrrrr...",
       "...rrrrrrrrrr...",
       "....rrrrrrrr....",
       ".....pppppp.....",
@@ -183,7 +183,7 @@ export const bearDeath: readonly (readonly string[])[] = [
     "..ppp......ppp..",
     "..poprrrrrrpop..",
     "..pprrrrrrrrpp..",
-    "..rrwwrkkrwwrr..",
+    "..rrwwrpprwwrr..",
     "..rrrrrrrrrrrr..",
     "....pppppppp....",
     "..rprroooorrpr..",
@@ -206,7 +206,7 @@ export const bearDeath: readonly (readonly string[])[] = [
     "...ppp....ppp...",
     "..poprrrrrrpop..",
     ".pprrrrrrrrrrpp.",
-    "rrrwwrrkkrrwwrrr",
+    "rrrwwrrpprrwwrrr",
     "rrroooooooooorrr",
     ".pppppppppppppp.",
     "................",
@@ -225,10 +225,10 @@ export const bearDeath: readonly (readonly string[])[] = [
     "........y.......",
     "................",
     "................",
-    "................",
-    "................",
     "..rrroooooorrr..",
     "...pppppppppp...",
+    "................",
+    "................",
   ],
 ];
 
@@ -387,13 +387,13 @@ export const itemBob: readonly number[] = [0, 1, 2, 1];
 export const honeyDropArt: readonly string[] = ["yy", "yy"];
 /** Its top row in the cell before bobbing, and its shadow. */
 export const honeyDropTop = 5;
-export const honeyDropShadow: readonly string[] = ["dd"];
+export const honeyDropShadow: readonly string[] = ["mm"];
 export const honeyDropShadowTop = 8;
 
 /** A honey pot, 6×7: a jar of honey with a red lid and a glint, a drop of honey in the air above it. */
-export const honeyPotArt: readonly string[] = [".y....", "......", ".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."];
+export const honeyPotArt: readonly string[] = [".y....", "..y...", ".rrrr.", "oyyyyo", "oywyyo", "oyyyyo", ".oooo."];
 export const honeyPotTop = 2;
-export const honeyPotShadow: readonly string[] = ["dddd"];
+export const honeyPotShadow: readonly string[] = ["mmmm"];
 export const honeyPotShadowTop = 10;
 
 /** The maze image, the size of the playfield. */
