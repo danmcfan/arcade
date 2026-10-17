@@ -23,8 +23,15 @@ import { expectDrawnOnScreen, screenPaints } from "../ui/cabinet.testutil.ts";
 import type { Enemy } from "./entity.ts";
 import { captiveColours } from "./art.ts";
 import { FireflySoftware, beamY, newFireflySoftware, playerY } from "./game.ts";
-import { tallyBonusDelay } from "./draw.ts";
-import { badgeTickSpacing, beamWidth, hitEffectTicks, respawnTicks, stageIntroTicks, tallyTicks } from "./rules.ts";
+import {
+  badgeTickSpacing,
+  beamWidth,
+  hitEffectTicks,
+  respawnTicks,
+  stageIntroTicks,
+  tallyBonusDelay,
+  tallyTicks,
+} from "./rules.ts";
 
 // The score dials draw each digit through an offscreen cell, so give it a canvas.
 beforeAll(() => {
@@ -316,7 +323,7 @@ describe("firefly Challenging Stage and results", () => {
     f.jumpTo(3);
     f.stageTick = stageIntroTicks + 1;
     f.challenge = { hits: 40, tally: 1 };
-    expect(glyphCount(f)).toBe("PERFECT!NUMBER OF HITS 40SPECIAL BONUS 10000 PTS".length);
+    expect(glyphCount(f)).toBe("PERFECT!NUMBER OF HITS 40SPECIAL BONUS 10000".length);
   });
 
   test("after GAME OVER the results show shots fired, hits and the hit-miss ratio, on a clear field", () => {

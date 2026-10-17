@@ -22,7 +22,6 @@ import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type Patt
 import {
   badgesShown,
   challengeIndex,
-  challengeHitPoints,
   challengeSpacing,
   challengeWaveGap,
   challengeWaveSize,
@@ -32,6 +31,7 @@ import {
   tallyBonus,
   tallyTicks,
   waveBonus,
+  type ChallengeState,
   beamDiveChance,
   beamHeight,
   beamTicks,
@@ -281,6 +281,8 @@ export function newChallengeEnemies(stage: number): Enemy[] {
         stageIntroTicks + w * challengeWaveGap + Math.floor(i / 2) * challengeSpacing,
       );
       e.wave = wave;
+      // An Owl on a Challenging Stage dies in one hit.
+      e.hp = 1;
       followPath(e, p, enemySpeed * challengeSpeedFactor);
       return e;
     });
@@ -379,7 +381,7 @@ export class FireflySoftware implements FixedViewport {
   shotsFired = 0;
   hits = 0;
   /** On a Challenging Stage: its hits, and ticks left of the tally once the last wave has gone (0 while it flies). */
-  challenge: { hits: number; tally: number } | null = null;
+  challenge: ChallengeState | null = null;
   /** Ticks left of the -RESULTS- screen after GAME OVER; the run ends when it reaches 0. */
   results = 0;
   /** The score and the hub high score this run is chasing, where Sweet Sam has them (src/ui/dials.ts). */
@@ -855,9 +857,9 @@ export class FireflySoftware implements FixedViewport {
     }
   }
 
-  /** A Challenging Stage hit scores 100, and the last of a wave scores its wave bonus. */
-  private shootChallenger(e: Enemy, wave: { kills: number }): void {
-    this.points += challengeHitPoints;
+  /** A Challenging Stage hit scores as a diving kill, and the last of a wave scores its wave bonus. */
+  private shootChallenger(e: Enemy, wave: NonNullable<Enemy["wave"]>): void {
+    this.points += points(e.kind, true);
     if (this.challenge !== null) this.challenge.hits++;
     if (++wave.kills < challengeWaveSize) return;
     const bonus = waveBonus(this.stage);
@@ -866,7 +868,7 @@ export class FireflySoftware implements FixedViewport {
   }
 
   /** The last wave has gone: the tally shows the hits and pays their bonus, on a clear field. */
-  private startTally(c: { hits: number; tally: number }): void {
+  private startTally(c: ChallengeState): void {
     c.tally = tallyTicks;
     this.points += tallyBonus(c.hits);
     this.sparks = [];
@@ -1048,6 +1050,7 @@ export class FireflySoftware implements FixedViewport {
       shotsFired: this.shotsFired,
       hits: this.hits,
       ...(this.challenge === null ? {} : { challenge: { ...this.challenge } }),
+      results: this.results,
     };
   }
 }

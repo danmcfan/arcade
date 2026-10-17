@@ -356,6 +356,12 @@ export function points(kind: EnemyKind, diving: boolean, escortsKilled = 0): num
 }
 
 /** Every fourth stage from stage 3 (3, 7, 11, ...) is a Challenging Stage: Galaga's bonus round. */
+/** A Challenging Stage's enemies shot down, and ticks left of its tally once the last wave has gone (0 while it flies). */
+export interface ChallengeState {
+  hits: number;
+  tally: number;
+}
+
 export function isChallengingStage(stage: number): boolean {
   return stage % 4 === 3;
 }
@@ -371,8 +377,8 @@ export const challengeWaveSize = 8;
 /** Ticks between two waves of a Challenging Stage setting off, and between two enemies of a wave. */
 export const challengeWaveGap = 160;
 export const challengeSpacing = 8;
-/** Points for each enemy shot down on a Challenging Stage, whatever its kind. */
-export const challengeHitPoints = 100;
+/** Points per hit in the tally after a Challenging Stage. */
+const tallyHitPoints = 100;
 /** The bonus for a perfect Challenging Stage: every one of its 40 enemies. */
 export const perfectBonus = 10_000;
 export const challengeTotal = challengeWaves * challengeWaveSize;
@@ -386,11 +392,13 @@ export function waveBonus(stage: number): number {
 
 /** The tally's bonus for `hits` enemies shot down: 100 each, or the perfect bonus for all 40. */
 export function tallyBonus(hits: number): number {
-  return hits === challengeTotal ? perfectBonus : hits * challengeHitPoints;
+  return hits === challengeTotal ? perfectBonus : hits * tallyHitPoints;
 }
 
 /** Ticks the "NUMBER OF HITS" tally shows after a Challenging Stage, before the next stage. */
 export const tallyTicks = 240;
+/** Ticks into the tally before its bonus line shows. */
+export const tallyBonusDelay = 60;
 /** Ticks the -RESULTS- screen shows after GAME OVER, before the run ends. */
 export const resultsTicks = 300;
 

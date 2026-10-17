@@ -30,7 +30,6 @@ import {
   points,
   respawnTicks,
   resultsTicks,
-  challengeHitPoints,
   challengeWaveSize,
   challengeWaves,
   perfectBonus,
@@ -1276,9 +1275,12 @@ describe("Challenging Stage", () => {
     expect(f.lives).toBe(startLives);
   });
 
-  test("a hit scores 100 whatever the kind, and the last of a wave its wave bonus", () => {
+  test("a hit scores as a diving kill, an Owl dies in one hit, and the last of a wave scores its wave bonus", () => {
     const f = challenge();
     const wave = f.enemies.filter((e) => e.row === 0);
+    const owls = f.enemies.filter((e) => e.kind === "owl");
+    expect(owls.length).toBeGreaterThan(0);
+    expect(owls.every((e) => e.hp === 1)).toBe(true);
     f.enemies = wave;
     wave.forEach((e, i) => {
       divingAt(e, 20 + i * 24, 100);
@@ -1291,7 +1293,8 @@ describe("Challenging Stage", () => {
       f.update(NO_INPUT);
       expect(f.challenge?.hits).toBe(i + 1);
     }
-    expect(f.score()).toBe(challengeWaveSize * challengeHitPoints + waveBonus(3));
+    const kills = wave.reduce((t, e) => t + points(e.kind, true), 0);
+    expect(f.score()).toBe(kills + waveBonus(3));
     expect(f.bonuses.map((b) => b.points)).toEqual([waveBonus(3)]);
   });
 

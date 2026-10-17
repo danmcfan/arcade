@@ -37,7 +37,9 @@ import {
   hitMissRatio,
   perfectBonus,
   tallyBonus,
+  tallyBonusDelay,
   tallyTicks,
+  type ChallengeState,
   respawnTicks,
   stageBadges,
   stageIntroTicks,
@@ -149,7 +151,7 @@ export interface FireflyView {
   dual: boolean;
   dials: ScoreDials;
   /** On a Challenging Stage: its hits, and ticks left of the tally (0 while it flies). */
-  challenge: { readonly hits: number; readonly tally: number } | null;
+  challenge: Readonly<ChallengeState> | null;
   /** Sparks fired and sparks that hit, for the -RESULTS- screen. */
   shotsFired: number;
   hits: number;
@@ -208,9 +210,6 @@ function drawPlay(screen: Surface, f: FireflyView): void {
   for (const b of f.bonuses) drawTextCentered(screen, `${b.points}`, ox + b.x, oy + b.y - 4, "blue");
 }
 
-/** Ticks into the tally before its bonus line shows. */
-export const tallyBonusDelay = 60;
-
 /** After a Challenging Stage: "NUMBER OF HITS n", then the bonus, or "PERFECT!" and the special bonus. */
 function drawTally(screen: Surface, hits: number, tick: number): void {
   const cx = ox + fieldWidth / 2;
@@ -218,7 +217,7 @@ function drawTally(screen: Surface, hits: number, tick: number): void {
   if (perfect) drawTextCentered(screen, "PERFECT!", cx, oy + 120, "red");
   drawTextCentered(screen, `NUMBER OF HITS ${hits}`, cx, oy + 140, "blue");
   if (tick < tallyBonusDelay) return;
-  const bonus = perfect ? `SPECIAL BONUS ${perfectBonus} PTS` : `BONUS ${tallyBonus(hits)}`;
+  const bonus = perfect ? `SPECIAL BONUS ${perfectBonus}` : `BONUS ${tallyBonus(hits)}`;
   drawTextCentered(screen, bonus, cx, oy + 160, "yellow");
 }
 

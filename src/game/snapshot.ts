@@ -365,6 +365,8 @@ export interface FireflySnapshot {
   hits: number;
   /** On a Challenging Stage: enemies shot down, and ticks left of the "NUMBER OF HITS" tally (0 while it flies). */
   challenge?: { hits: number; tally: number };
+  /** Ticks left of the -RESULTS- screen after GAME OVER; 0 otherwise. */
+  results: number;
 }
 
 // ---------------------------------------------------------------------------
