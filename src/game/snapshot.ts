@@ -232,7 +232,7 @@ export interface SweetSamSnapshot {
   score: number;
   /** `SweetSamSoftware.lives`. */
   lives: number;
-  /** `SweetSamSoftware.highScore`. */
+  /** `SweetSamSoftware.dials.highScore`. */
   highScore: number;
   /** `SweetSamSoftware.modeIndex`. */
   modeIndex: number;
