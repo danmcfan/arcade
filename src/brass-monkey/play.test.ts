@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { NO_INPUT, type Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
 import { ticketsFor } from "../arcade/wallet.ts";
-import { conveyorFloor, elevatorFloor, floors, girderTop, type Shaft } from "./floors.ts";
+import { conveyorFloor, elevatorFloor, floors, floorsFor, girderTop, rivetFloor, type Shaft } from "./floors.ts";
 import { Run, type Hazard, type RunSound } from "./play.ts";
 import * as t from "./tuning.ts";
 
@@ -370,7 +370,7 @@ describe("score", () => {
     expect(run.score).toBe(t.boltPoints);
   });
 
-  test("the bonus is added at the exit, and the girder floor leads to the conveyor floor", () => {
+  test("the bonus is added at the exit, and on loop 0 the girder floor leads to the rivet floor", () => {
     const { run, sounds } = quiet();
     run.monkey.x = 100;
     run.monkey.y = 56;
@@ -380,8 +380,8 @@ describe("score", () => {
     expect(run.score).toBe(4900);
     expect(sounds.filter((s) => s !== "step")).toEqual(["floor"]);
     step(run, t.clearTicks);
-    expect([run.phase, run.floor, run.bonus]).toEqual(["play", 1, 5000]);
-    expect([run.monkey.x, run.monkey.y]).toEqual([conveyorFloor.start.x, conveyorFloor.start.y]);
+    expect([run.phase, run.floor, run.bonus]).toEqual(["play", 3, t.tuningFor(3, 0).bonusStart]);
+    expect([run.monkey.x, run.monkey.y]).toEqual([rivetFloor.start.x, rivetFloor.start.y]);
   });
 });
 
@@ -468,6 +468,36 @@ describe("the escape and the next loop", () => {
     step(run, 8, { right: true });
     step(run, t.clearTicks);
     expect([run.phase, run.floor]).toEqual(["play", 3]);
+  });
+
+  test("loop 0 plays the girder floor, then the rivet floor, then escapes", () => {
+    const { run } = quiet();
+    run.monkey.x = 104;
+    run.monkey.y = 56;
+    step(run, 8, { right: true });
+    expect(run.phase).toBe("clear");
+    step(run, t.clearTicks);
+    expect([run.phase, run.floor]).toEqual(["play", 3]);
+  });
+
+  test("a run steps through its loop's floor plan, then loops to the next plan", () => {
+    const { run } = quiet({ loop: 3 });
+    /** Clears the floor and plays out the clear. */
+    const clear = (): void => {
+      run.phase = "clear";
+      run.phaseTicks = 1;
+      run.update(NO_INPUT);
+    };
+    const seen: number[] = [run.floor];
+    for (let n = 0; n < 4; n++) {
+      clear();
+      seen.push(run.floor);
+    }
+    expect(seen).toEqual(floorsFor(3).map((f) => floors.indexOf(f)));
+    clear();
+    expect(run.phase).toBe("escape");
+    step(run, t.escapeTicks);
+    expect([run.phase, run.floor, run.loop]).toEqual(["play", 0, 4]);
   });
 
   test("after the rivet floor the escaped scene plays, then the girder floor again, harder", () => {

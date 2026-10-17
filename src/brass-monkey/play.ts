@@ -7,7 +7,17 @@
 
 import type { Input } from "../engine/input.ts";
 import * as rng from "../engine/rng.ts";
-import { floors, girderTop, liftTops, liftWidth, type Floor, type Girder, type Ladder, type Spot } from "./floors.ts";
+import {
+  floors,
+  floorsFor,
+  girderTop,
+  liftTops,
+  liftWidth,
+  type Floor,
+  type Girder,
+  type Ladder,
+  type Spot,
+} from "./floors.ts";
 import * as t from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
@@ -128,6 +138,8 @@ export class Run {
   phaseTicks = 0;
   /** Index into `floors`. */
   floor: number;
+  /** The position in `floorsFor(loop)` of the floor after this one. */
+  nextStage = 1;
   /** How many times the monkey has escaped: each loop is harder. */
   loop: number;
   /** Ticks left showing the new lap's number over its first floor. */
@@ -179,6 +191,11 @@ export class Run {
     this.lives = this.advantages.lives;
     this.floor = opts.floor ?? 0;
     this.loop = opts.loop ?? 0;
+    // A floor off this loop's plan stands in for the next plan floor past it in `floors`.
+    const plan = floorsFor(this.loop).map((f) => floors.indexOf(f));
+    const at = plan.indexOf(this.floor);
+    const past = plan.findIndex((f) => f > this.floor);
+    this.nextStage = at >= 0 ? at + 1 : past >= 0 ? past : plan.length;
     this.onSound = opts.onSound ?? ((): void => {});
     this.tuning = t.tuningFor(this.floor, this.loop);
     this.monkey = newMonkey(this.currentFloor().start);
@@ -292,21 +309,26 @@ export class Run {
         if (this.lives <= 0) this.phase = "over";
         else this.startFloor();
         return;
-      case "clear":
+      case "clear": {
         if (--this.phaseTicks > 0) return;
-        if (this.floor + 1 < floors.length) {
-          this.floor++;
-          this.startFloor();
-        } else {
+        const next = floorsFor(this.loop)[this.nextStage];
+        if (next === undefined) {
           this.phase = "escape";
           this.phaseTicks = t.escapeTicks;
           this.onSound("escape");
+        } else {
+          this.floor = floors.indexOf(next);
+          this.nextStage++;
+          this.startFloor();
         }
         return;
+      }
       case "escape":
         if (--this.phaseTicks > 0) return;
         this.loop++;
+        // Every plan starts on the girder floor.
         this.floor = 0;
+        this.nextStage = 1;
         this.startFloor();
         this.lapBanner = t.lapBannerTicks;
         break;
