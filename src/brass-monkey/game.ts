@@ -14,11 +14,15 @@ import {
   imageEmber,
   imageGear,
   imagePan,
+  imageGirder,
   imageGirderFloor,
   imageGnome,
   imageLift,
   imageMonkey,
+  imageMonkeyDeath,
   imageSpring,
+  imageRivet,
+  imageRivetFloor,
   imageWall,
   sounds,
 } from "../engine/assets.ts";
@@ -41,15 +45,15 @@ import { drawTextCentered } from "../ui/text.ts";
 import { scoreLabelsX } from "../ui/hudArt.ts";
 import { hudLabelSprite } from "../ui/hudLabels.ts";
 import { Dial } from "../ui/rollingDials.ts";
-import { girderTop, type Floor } from "./floors.ts";
+import { conveyorFloor, girderFloor, girderTop, type Floor } from "./floors.ts";
 import { Run, type Hazard, type Monkey, type RunSound } from "./play.ts";
-import { escapeTicks } from "./tuning.ts";
+import { clearTicks, dyingTicks, escapeTicks } from "./tuning.ts";
 import { noAdvantages, type BrassMonkeyAdvantages } from "./advantages.ts";
 
 /** The band at the top of the screen holding the score, high score and bonus. */
 const hudHeight = 32;
 
-const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor];
+const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, imageElevatorFloor, imageRivetFloor];
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
@@ -65,6 +69,12 @@ const hud = {
   loopTop: 20,
 } as const;
 
+/** Each floor's music. */
+const floorMusic: ReadonlyMap<Floor, Sound> = new Map([
+  [girderFloor, sounds.monkeyGirder],
+  [conveyorFloor, sounds.monkeyConveyor],
+]);
+
 /** The sound for each of the run's sound cues. */
 const runSounds: Readonly<Record<RunSound, Sound>> = {
   jump: sounds.monkeyJump,
@@ -73,6 +83,8 @@ const runSounds: Readonly<Record<RunSound, Sound>> = {
   death: sounds.monkeyDeath,
   floor: sounds.monkeyFloor,
   escape: sounds.monkeyEscape,
+  stomp: sounds.monkeyStomp,
+  step: sounds.monkeyStep,
 };
 
 export class BrassMonkeySoftware implements FixedViewport {
@@ -84,18 +96,22 @@ export class BrassMonkeySoftware implements FixedViewport {
   private readonly highScoreDial: Dial;
   private readonly bonusDial: Dial;
   private readonly loopDial = new Dial(1, 1);
+  /** The floor's music playing, or none. */
+  private music: Sound | null = null;
 
   constructor(highScore = 0, advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages) {
     this.highScore = highScore;
     this.highScoreDial = new Dial(highScore);
     this.run = new Run({
       advantages,
+      intro: true,
       onSound: (s): void => {
         runSounds[s].rewind();
         runSounds[s].play();
       },
     });
     this.bonusDial = new Dial(this.run.bonus);
+    this.playMusic();
   }
 
   background(): Sprite {
@@ -109,6 +125,16 @@ export class BrassMonkeySoftware implements FixedViewport {
     this.highScoreDial.update(this.highScore);
     this.bonusDial.update(this.run.bonus);
     this.loopDial.update(this.run.loop + 1);
+    this.playMusic();
+  }
+
+  /** In play, the floor's music; none otherwise. */
+  private playMusic(): void {
+    const music = this.run.phase === "play" ? (floorMusic.get(this.run.currentFloor()) ?? null) : null;
+    if (music === this.music) return;
+    this.music?.pause();
+    this.music = music;
+    music?.blip();
   }
 
   fixedViewportSize(): [number, number] {
@@ -125,7 +151,7 @@ export class BrassMonkeySoftware implements FixedViewport {
 
   private drawScreen(screen: Surface): void {
     const left = cabinetInsetLeft;
-    const top = cabinetInsetTop + hudHeight;
+    let top = cabinetInsetTop + hudHeight;
     this.drawHud(screen, left, cabinetInsetTop);
     const run = this.run;
     if (run.phase === "escape") {
@@ -134,7 +160,11 @@ export class BrassMonkeySoftware implements FixedViewport {
       return;
     }
     const floor = run.currentFloor();
+    const intro = run.phase === "intro";
+    // A stomp shakes the floor: down a pixel every other tick.
+    if (run.introShaking() && run.ticks % 2 === 0) top++;
     screen.draw(this.background(), left, top);
+    if (intro) drawBentGirders(screen, floor, left, top, run.introTilt());
     drawConveyors(screen, floor, left, top, run.ticks);
     for (const l of run.lifts()) screen.draw(imageLift, left + l.x0, top + l.y);
     floor.bolts.forEach((b, n) => {
@@ -143,10 +173,21 @@ export class BrassMonkeySoftware implements FixedViewport {
       const glint = t < 18 ? 1 + Math.trunc(t / 6) : 0;
       screen.draw(frame(imageBolt, glint, 10, 14), left + b.x - 5, top + b.y - 14);
     });
-    screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
+    floor.rivets?.forEach((r, n) => {
+      if (run.rivets[n] !== true) screen.draw(imageRivet, left + r.x - 4, top + r.y);
+    });
+    const gnomeY = floor.gnome.y + (run.phase === "clear" ? gnomeFall(floor, clearTicks - run.phaseTicks) : 0);
+    screen.draw(
+      frame(imageGnome, gnomeColumn(run), 32, 32),
+      left + floor.gnome.x,
+      top + gnomeY + run.introGnomeRise() - run.introHop(),
+    );
     for (const h of run.hazards) drawHazard(screen, h, floor, left, top, run.ticks);
-    // The monkey blinks while it loses a life.
-    if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) drawMonkey(screen, run.monkey, left, top);
+    // The monkey comes on when the floor starts; losing a life, it spins and falls (deathColumn).
+    if (run.phase === "dying") {
+      const m = run.monkey;
+      screen.draw(frame(imageMonkeyDeath, deathColumn(run.phaseTicks), 16, 24), left + m.x - 8, top + m.y - 24);
+    } else if (!intro) drawMonkey(screen, run.monkey, left, top);
     if (run.lapBanner > 0 && run.phase === "play")
       drawTextCentered(screen, lapLabel(run.loop), left + cabinetPlayfieldWidth / 2, top + 20);
     if (run.phase === "clear") drawTextCentered(screen, "FLOOR CLEAR!", left + cabinetPlayfieldWidth / 2, top + 20);
@@ -197,11 +238,22 @@ export class BrassMonkeySoftware implements FixedViewport {
       moving: m.moving,
       hazards: run.hazards.map((h) => ({ kind: h.kind, x: h.x, y: h.y, dir: h.dir, footing: h.footing, wild: h.wild })),
       bolts: [...run.bolts],
+      rivets: [...run.rivets],
       gearTimer: run.gearTimer,
       emberTimer: run.emberTimer,
       lifts: run.lifts().map((l) => ({ x: l.x0, y: l.y })),
     };
   }
+}
+
+/**
+ * How far the Gnome has fallen `t` ticks after the floor cleared: on the
+ * rivet floor it drops, gathering speed, to the bottom girder; elsewhere it stays.
+ */
+function gnomeFall(floor: Floor, t: number): number {
+  if (floor.rivets === undefined) return 0;
+  const bottom = Math.max(...floor.girders.map((g) => g.y)) - 32 - floor.gnome.y;
+  return Math.min(bottom, Math.trunc((t * t) / 16));
 }
 
 /** The lap as the player counts it, from 1: `run.loop` counts escapes. */
@@ -214,6 +266,52 @@ export function newBrassMonkeySoftware(
   advantages: Readonly<BrassMonkeyAdvantages> = noAdvantages,
 ): BrassMonkeySoftware {
   return new BrassMonkeySoftware(highScore, advantages);
+}
+
+/** Ticks per quarter turn of the death spin, and the quarter turns in it: twice round. */
+const spinTicks = 6;
+const spinTurns = 8;
+/** Ticks per puff of the downed monkey's smoke. */
+const smokeTicks = 8;
+
+/**
+ * The death sheet's column `phaseTicks` before the life is lost: the spin,
+ * a quarter turn each column (0-3), then the monkey down on its back with
+ * its smoke puffing (4, 5).
+ */
+export function deathColumn(phaseTicks: number): number {
+  const elapsed = dyingTicks - phaseTicks;
+  const spin = spinTicks * spinTurns;
+  if (elapsed < spin) return Math.trunc(elapsed / spinTicks) % 4;
+  return 4 + (Math.trunc((elapsed - spin) / smokeTicks) % 2);
+}
+
+/** The Gnome's sheet column: reaching as it climbs and as it hops to stomp, throwing with its arms up, else idle. */
+export function gnomeColumn(run: Run): number {
+  if (run.introGnomeRise() > 0) return Math.trunc(run.ticks / 10) % 2 === 0 ? 2 : 0;
+  if (run.introHop() > 0) return 2;
+  return run.gnomeThrowing() ? 1 : 0;
+}
+
+/**
+ * The intro's girders, `tilt` of the way (0 to 1) from flat to their slopes:
+ * each sloped girder in the background is papered over with wall, then drawn
+ * again from its tiles, turning about its middle.
+ */
+function drawBentGirders(screen: Surface, floor: Floor, left: number, top: number, tilt: number): void {
+  if (tilt >= 1) return;
+  const wall = imageWall.w;
+  for (const g of floor.girders) {
+    if (g.drop === 0 || g.belt !== undefined) continue;
+    const middle = girderTop(g, (g.x0 + g.x1) / 2);
+    for (let x = g.x0; x < g.x1; x += 8) {
+      const y0 = girderTop(g, x);
+      for (let y = y0; y < y0 + 8; y++)
+        screen.draw(sub(imageWall, x % wall, y % wall, (x % wall) + 8, (y % wall) + 1), left + x, top + y);
+    }
+    for (let x = g.x0; x < g.x1; x += 8)
+      screen.draw(imageGirder, left + x, top + Math.round(middle + tilt * (girderTop(g, x) - middle)));
+  }
 }
 
 /** The monkey's sheet column: walk 0, 1, 0, 2; jump 3; climb 4 or 5. */

@@ -4,10 +4,12 @@ import {
   boltGlints,
   conveyorSlats,
   door,
+  rivet,
   emberFlame,
   emberTips,
   gear,
   gnomeArmsDown,
+  gnomeArmsReach,
   gnomeArmsUp,
   girder,
   gnomeBody,
@@ -15,6 +17,7 @@ import {
   monkeyClimb,
   monkeyHead,
   monkeyJump,
+  monkeySmoke,
   monkeyOtherStep,
   monkeyStand,
   monkeyStep,
@@ -31,6 +34,7 @@ import {
   brassMonkeyArtFiles,
   conveyorFrames,
   doorFrame,
+  rivetFloorRows,
   emberFills,
   emberFrames,
   gearFrames,
@@ -41,6 +45,7 @@ import {
   springFrames,
   gnomeFrames,
   monkeyFills,
+  monkeyDeathFrames,
   monkeyFrames,
 } from "./gen-brass-monkey-art.ts";
 
@@ -59,6 +64,7 @@ describe("Brass Monkey art source", () => {
     for (const [name, arms] of [
       ["arms down", gnomeArmsDown],
       ["arms up", gnomeArmsUp],
+      ["arms reaching", gnomeArmsReach],
     ] as const) {
       checkRows(name, arms.rows);
       expect(arms.x + (arms.rows[0]?.length ?? 0)).toBeLessThanOrEqual(16);
@@ -76,6 +82,7 @@ describe("Brass Monkey art source", () => {
       expect(s.x + (s.rows[0]?.length ?? 0)).toBeLessThanOrEqual(12);
       expect(s.y + s.rows.length).toBeLessThanOrEqual(7);
     }
+    checkRows("rivet", rivet, { w: 8, h: 8 });
     expect([gear.length, emberTips.length]).toEqual([2, 2]);
     for (const tip of emberTips) checkRows("ember tip", tip.rows, { w: 1, h: 1 });
   });
@@ -108,6 +115,20 @@ describe("generated frames", () => {
     expect(frames[5]).toEqual(flipX(frames[4] ?? []));
     // The outline is black, round every drawn pixel.
     expect(frames[0]?.[0]).toBe("......kkkk......");
+  });
+
+  test("the monkey dies spinning the standing frame a quarter turn at a time, then lies on its back under each puff of smoke", () => {
+    for (const puff of monkeySmoke) checkRows("smoke", puff, { w: 16, h: 8 });
+    const frames = monkeyDeathFrames();
+    expect(frames.length).toBe(6);
+    for (const rows of frames) checkRows("death", rows, { w: 16, h: 24 });
+    // Upright, it stands where it did: the standing frame under 8 blank rows.
+    expect<Rows | undefined>(frames[0]?.slice(8)).toEqual(monkeyFrames()[0]);
+    // Every frame stands on the frame's foot.
+    for (const rows of frames) expect(rows[23]).not.toBe(".".repeat(16));
+    // The two down frames are the same monkey, under different smoke.
+    expect(frames[4]?.slice(10)).toEqual(frames[5]?.slice(10));
+    expect(frames[4]).not.toEqual(frames[5]);
   });
 
   test("the gear's frames are its two turns, outlined", () => {
@@ -152,12 +173,20 @@ describe("generated frames", () => {
     // The wall panel shows where nothing stands, e.g. the top-left corner.
     expect(rows.slice(0, 4).map((r) => r.slice(0, 4))).toEqual(wallPanel.slice(0, 4).map((r) => r.slice(0, 4)));
     // Every drawn pixel of the door is on the floor, standing on the top platform.
-    const { x, y } = girderFloor.door;
+    const exit = girderFloor.door;
+    if (exit === undefined) throw new Error("the girder floor has a door");
+    const { x, y } = exit;
     doorFrame().forEach((row, dy) => {
       for (let dx = 0; dx < row.length; dx++) {
         if (row[dx] !== empty) expect(rows[y - 24 + dy]?.[x + dx]).toBe(row[dx]);
       }
     });
+  });
+
+  test("the rivet floor leaves each rivet slot open in its girder, showing the wall", () => {
+    const rows = rivetFloorRows();
+    checkRows("rivet floor", rows, { w: 224, h: 256 });
+    expect(rows[208]?.slice(40, 64)).toBe(`oooooooo${wallPanel[208 % 32]?.slice(16, 24) ?? ""}oooooooo`);
   });
 
   test("the monkey's path is a flat girder: x 0-111 at y 248, as in the old workshop", () => {
@@ -213,9 +242,10 @@ describe("generated frames", () => {
     }
   });
 
-  test("the Gnome's frames are mirrored to 32 wide, idle then throw", () => {
-    const [idle, thrown] = gnomeFrames();
-    for (const rows of [idle, thrown]) {
+  test("the Gnome's frames are mirrored to 32 wide, idle, throw, then reach", () => {
+    const frames = gnomeFrames();
+    expect(frames).toHaveLength(3);
+    for (const rows of frames) {
       checkRows("gnome", rows ?? [], { w: 32, h: 32 });
       expect(rows).toEqual(flipX(rows ?? []));
     }

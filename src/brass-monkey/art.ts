@@ -92,6 +92,34 @@ export const monkeyClimb: readonly string[] = [
   "................",
 ];
 
+/**
+ * Smoke over the downed monkey (#252): a robot's halo, a grey puff with a
+ * spark in it, rising from its head. It puffs between these two, each 16×8
+ * drawn over the 8 rows above the monkey lying on its back.
+ */
+export const monkeySmoke: readonly (readonly string[])[] = [
+  [
+    "................",
+    "........ll......",
+    ".......lwwl.....",
+    "......lwwml.y...",
+    ".......lmml.....",
+    "........ml......",
+    ".........m......",
+    "................",
+  ],
+  [
+    "................",
+    "......ll........",
+    ".y...lwwl.......",
+    ".....lwmwl......",
+    "......lml.......",
+    ".......lm.......",
+    "........m.......",
+    "................",
+  ],
+];
+
 /** A part drawn over a sprite with its top-left at (x, y). */
 export interface Part {
   x: number;
@@ -156,6 +184,39 @@ export const gnomeArmsUp: Part = {
     ".....nn...llmm",
     "....nn.....lll",
     "...nn.......l.",
+    "..nn..........",
+    ".nn...........",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    "nn............",
+    ".nn...........",
+    ".nn...........",
+    "..nn..........",
+    "..nn..........",
+    "...nn.........",
+    "...nn.........",
+  ],
+};
+
+/**
+ * Climbing and stomping in the intro (#253): the throw's arms, reaching up
+ * with empty hands, the gear left out.
+ */
+export const gnomeArmsReach: Part = {
+  x: 2,
+  y: 2,
+  rows: [
+    "..............",
+    "..............",
+    "..............",
+    ".......oo.....",
+    "......noo.....",
+    ".....nn.......",
+    "....nn........",
+    "...nn.........",
     "..nn..........",
     ".nn...........",
     "nn............",
@@ -343,6 +404,23 @@ export const spring: readonly (readonly string[])[] = [
     "..rrrrrrrp..",
     "............",
   ],
+];
+
+/**
+ * A rivet (#250), tweaked from the bolt: its brass, lit on the left and
+ * shaded on the right, as a stubby plug 8×8 that fills a slot in the rivet
+ * floor's girders, a cap above and below the girder's web; the last row is
+ * blank as the girder's.
+ */
+export const rivet: readonly string[] = [
+  ".wyyyyo.",
+  ".wyyyyo.",
+  "..wyyo..",
+  "..wyyo..",
+  "..wyyo..",
+  ".wyyyyo.",
+  ".oooooor",
+  "........",
 ];
 
 /**
