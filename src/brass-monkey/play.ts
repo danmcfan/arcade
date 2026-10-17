@@ -312,7 +312,7 @@ export class Run {
           m.moving = false;
           m.frame = 0;
         } else {
-          const belt = this.belt(groundUnder(floor, m.x, m.y, 2));
+          const belt = this.beltOr(groundUnder(floor, m.x, m.y, 2)) ?? 0;
           if (dir === 0) {
             m.moving = false;
             m.frame = 0;
@@ -394,11 +394,7 @@ export class Run {
     m.airTop = m.y;
   }
 
-  /** The way girder `g`'s conveyor runs now, or 0 off a conveyor. */
-  private belt(g: Girder | undefined): number {
-    return this.beltOr(g) ?? 0;
-  }
-
+  /** The way girder `g`'s conveyor runs now, or undefined off a conveyor. */
   private beltOr(g: Girder | undefined): -1 | 1 | undefined {
     return g?.belt === undefined ? undefined : g.belt === this.beltDir ? 1 : -1;
   }
@@ -554,7 +550,7 @@ export class Run {
     if (this.floorTicks % t.emberTurnEveryFor(this.loop) === 0 && this.monkey.x !== h.x) {
       h.dir = this.monkey.x < h.x ? -1 : 1;
     }
-    const belt = this.belt(groundUnder(floor, h.x, h.y, 2));
+    const belt = this.beltOr(groundUnder(floor, h.x, h.y, 2)) ?? 0;
     const x0 = h.x;
     const x = x0 + h.dir * this.tuning.emberWalkSpeed + belt * t.beltSpeed;
     const g = groundUnder(floor, x, h.y, 2);
