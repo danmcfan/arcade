@@ -1161,19 +1161,23 @@ describe("the lap banner", () => {
     run.phase = "escape";
     run.phaseTicks = 1;
     step(run, 1);
+    expect([phaseOf(run), run.loop]).toEqual(["howHigh", 1]);
     step(run, t.howHighTicks);
     expect(run.lapBanner).toBe(t.lapBannerTicks);
     step(run, 10);
     run.phase = "dying";
     run.phaseTicks = 20;
     step(run, 20);
-    expect(run.lapBanner).toBe(t.lapBannerTicks - 30);
+    expect([phaseOf(run), run.lapBanner]).toEqual(["howHigh", t.lapBannerTicks - 30]);
     step(run, t.howHighTicks);
     expect(run.lapBanner).toBe(t.lapBannerTicks - 30);
     run.phase = "clear";
     run.phaseTicks = 40;
-    step(run, 39);
+    step(run, 39); // one tick short of the clear's end, still on this floor
     expect(run.lapBanner).toBe(t.lapBannerTicks - 69);
+    run.phase = "play";
+    step(run, t.lapBannerTicks - 69);
+    expect(run.lapBanner).toBe(0);
   });
 });
 
