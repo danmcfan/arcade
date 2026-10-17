@@ -70,6 +70,7 @@ import {
   outline,
   overlay,
   paint,
+  quarterTurn,
   recolour,
   type Rows,
 } from "./pixel-art.ts";
@@ -107,6 +108,11 @@ function turned(rows: Rows, n: number): string[] {
   let out = [...rows];
   for (let k = 0; k < n; k++) out = quarterTurn(out);
   return out;
+}
+
+/** `rows` with `flames` (or 8 blank rows) on top. */
+function above(rows: Rows, flames: Rows | null): string[] {
+  return [...(flames ?? Array.from({ length: 8 }, () => empty.repeat(16))), ...rows];
 }
 
 /**
