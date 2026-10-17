@@ -1,28 +1,31 @@
 // Every minigame, described once (#51): its names, where its cabinet stands
 // in the hub, its title card, its cabinet strip, its controls panel and how
 // to start a run (the sounds the minigame pause menu silences are its Channel,
-// declared with each sound in src/ui/sounds.ts). The hub's
-// machines, the scoreboard, the pause menu and the verify cabinet walks all
-// read this list; adding a minigame means a new entry here plus its own
-// module. The snapshot names (`SoftwareName`, `ArcadeTitle`) stay hand-written
+// declared with each sound in src/ui/sounds.ts). The hub's machines, the
+// scoreboard, the pause menu and the verify cabinet walks all read this list,
+// and so does the prize catalogue (#272); adding a minigame means a new entry
+// here plus its own module. The snapshot names (`SoftwareName`, `ArcadeTitle`) stay hand-written
 // in the contract (ADR 0004); `descriptors` fails to compile when a
 // `SoftwareName` has no entry.
 
 import type { Rect } from "../arcade/collision.ts";
 import { tileSize } from "../arcade/collision.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
 import { imageCabinet, imageCabinetBrassMonkey, imageCabinetFirefly } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
-import { brassMonkeyAdvantages } from "../brass-monkey/advantages.ts";
+import { brassMonkeyAdvantages, brassMonkeyPrizes } from "../brass-monkey/advantages.ts";
 import { newBrassMonkeySoftware } from "../brass-monkey/game.ts";
-import { fireflyAdvantages } from "../firefly/advantages.ts";
+import { fireflyAdvantages, fireflyPrizes } from "../firefly/advantages.ts";
 import { newFireflySoftware } from "../firefly/game.ts";
-import { sweetSamAdvantages } from "../sweet-sam/advantages.ts";
+import { sweetSamAdvantages, sweetSamPrizes } from "../sweet-sam/advantages.ts";
 import { SweetSamSoftware } from "../sweet-sam/software.ts";
 import { standardControls, type ControlRow } from "../ui/menu.ts";
 import type { TickerInk } from "../ui/tickerArt.ts";
 import type { ArcadeTitle } from "./snapshot.ts";
+import type { PrizeSpec } from "./prize.ts";
 import type { Software, SoftwareName } from "./software.ts";
+
+/** Every prize's id, as its minigame declares it; save files store these. */
+export type PrizeId = (typeof sweetSamPrizes | typeof fireflyPrizes | typeof brassMonkeyPrizes)[number]["id"];
 
 /** What a run starts from: the high score its HI shows and the prizes the player owns. */
 export interface MinigameStart {
@@ -48,6 +51,13 @@ export interface Minigame {
   readonly cabinetStrip: Sprite;
   /** Its controls panel in the minigame pause menu. */
   readonly controls: readonly ControlRow[];
+  /**
+   * Its prizes, in the order the prize counter lists them (#272). The
+   * `satisfies` in its advantages.ts checks each prize's `advantage` key.
+   */
+  readonly prizes: readonly (PrizeSpec<Record<string, number>> & { readonly id: PrizeId })[];
+  /** The values a run starts with when the player owns `owned`; other minigames' prizes do nothing. */
+  advantages(owned: readonly PrizeId[]): Readonly<Record<string, number>>;
   /** A new run; a `FixedViewport` (its cabinet outline, drawn with `buffer` 0). */
   create(start: MinigameStart): Software;
 }
@@ -68,6 +78,8 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(9),
     cabinetStrip: imageCabinet,
     controls: standardControls,
+    prizes: sweetSamPrizes,
+    advantages: sweetSamAdvantages,
     // Go's Sweet Sam constructor; it enters START, which plays "rewind:start" then "play:start".
     create: ({ highScore, prizes }) => new SweetSamSoftware(highScore, sweetSamAdvantages(prizes)),
   },
@@ -78,6 +90,8 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(14),
     cabinetStrip: imageCabinetFirefly,
     controls: standardControls,
+    prizes: fireflyPrizes,
+    advantages: fireflyAdvantages,
     create: ({ highScore, prizes }) => newFireflySoftware(highScore, fireflyAdvantages(prizes)),
   },
   brassMonkey: {
@@ -87,6 +101,8 @@ const descriptors: { readonly [N in SoftwareName]: Minigame & { readonly name: N
     hubRect: cabinetAt(4),
     cabinetStrip: imageCabinetBrassMonkey,
     controls: standardControls,
+    prizes: brassMonkeyPrizes,
+    advantages: brassMonkeyAdvantages,
     create: ({ highScore, prizes }) => newBrassMonkeySoftware(highScore, brassMonkeyAdvantages(prizes)),
   },
 };

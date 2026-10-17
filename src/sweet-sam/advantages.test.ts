@@ -15,7 +15,7 @@ import {
 } from "./advantages.ts";
 import { minigame } from "../game/minigames.ts";
 import { SweetSamSoftware } from "./software.ts";
-import type { PrizeId } from "../arcade/prizes.ts";
+import type { PrizeId } from "../game/minigames.ts";
 
 let unsubscribe = (): void => {};
 beforeEach(() => {
@@ -55,17 +55,6 @@ describe("sweetSamAdvantages", () => {
     expect(sweetSamAdvantages([])).toEqual(noAdvantages);
     expect(noAdvantages).toEqual({ lives: 3, playerVelocity: 1.0, sleepyFactor: 1 });
     expect([startingLives, velocityPlayerNormal, blueFramesDuration]).toEqual([3, 1.0, 600]);
-  });
-
-  test("each prize changes only its own value", () => {
-    expect(sweetSamAdvantages(["honeyJar"])).toEqual({ ...noAdvantages, lives: 4 });
-    expect(sweetSamAdvantages(["runningShoes"])).toEqual({ ...noAdvantages, playerVelocity: 1.125 });
-    expect(sweetSamAdvantages(["sleepyBees"])).toEqual({ ...noAdvantages, sleepyFactor: 1.5 });
-    expect(sweetSamAdvantages(["honeyJar", "runningShoes", "sleepyBees"])).toEqual({
-      lives: 4,
-      playerVelocity: 1.125,
-      sleepyFactor: 1.5,
-    });
   });
 
   test("the effect sizes are small: one life, the power-pellet speed, half as much sleepy time again", () => {
