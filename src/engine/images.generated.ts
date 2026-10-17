@@ -31,6 +31,7 @@ import fireflyBackgroundUrl from "../assets/images/firefly/background.png";
 import brassMonkeyMonkeyUrl from "../assets/images/brass-monkey/monkey.png";
 import brassMonkeyGnomeUrl from "../assets/images/brass-monkey/gnome.png";
 import brassMonkeyGearUrl from "../assets/images/brass-monkey/gear.png";
+import brassMonkeyFurnaceUrl from "../assets/images/brass-monkey/furnace.png";
 import brassMonkeyEmberUrl from "../assets/images/brass-monkey/ember.png";
 import brassMonkeyBoltUrl from "../assets/images/brass-monkey/bolt.png";
 import brassMonkeyWrenchUrl from "../assets/images/brass-monkey/wrench.png";
@@ -88,7 +89,8 @@ export const fireflyImages = {
 export const brassMonkeyImages = {
   monkey: imageAsset(brassMonkeyMonkeyUrl, 96, 16),
   gnome: imageAsset(brassMonkeyGnomeUrl, 64, 32),
-  gear: imageAsset(brassMonkeyGearUrl, 24, 12),
+  gear: imageAsset(brassMonkeyGearUrl, 48, 12),
+  furnace: imageAsset(brassMonkeyFurnaceUrl, 48, 24),
   ember: imageAsset(brassMonkeyEmberUrl, 48, 12),
   bolt: imageAsset(brassMonkeyBoltUrl, 40, 14),
   wrench: imageAsset(brassMonkeyWrenchUrl, 8, 14),

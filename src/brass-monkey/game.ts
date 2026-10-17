@@ -11,6 +11,7 @@ import {
   imageConveyorFloor,
   imageDoor,
   imageEmber,
+  imageFurnace,
   imageGear,
   imageGirderFloor,
   imageGnome,
@@ -151,6 +152,11 @@ export class BrassMonkeySoftware implements FixedViewport {
       if (run.wrenches[n] !== true) screen.draw(imageWrench, left + w.x - 4, top + w.y - 14);
     });
     screen.draw(frame(imageGnome, run.gnomeThrowing() ? 1 : 0, 32, 32), left + floor.gnome.x, top + floor.gnome.y);
+    if (floor.furnace !== undefined) {
+      // Lit, its flames flicker every 8 ticks.
+      const col = run.furnaceLit ? 1 + (Math.trunc(run.ticks / 8) % 2) : 0;
+      screen.draw(frame(imageFurnace, col, 16, 24), left + floor.furnace.x - 8, top + floor.furnace.y - 24);
+    }
     for (const h of run.hazards) drawHazard(screen, h, left, top, run.ticks);
     // The monkey blinks while it loses a life.
     if (run.phase !== "dying" || Math.trunc(run.phaseTicks / 6) % 2 === 0) {
@@ -262,7 +268,8 @@ function drawWrench(screen: Surface, m: Monkey, left: number, top: number, ticks
 }
 
 function drawHazard(screen: Surface, h: Hazard, left: number, top: number, ticks: number): void {
-  const col = h.kind === "gear" ? Math.trunc(Math.abs(h.x) / 4) % 2 : Math.trunc(ticks / 8) % 4;
+  // A hot gear turns in the gear sheet's last two frames.
+  const col = h.kind === "gear" ? (Math.trunc(Math.abs(h.x) / 4) % 2) + (h.hot ? 2 : 0) : Math.trunc(ticks / 8) % 4;
   screen.draw(frame(h.kind === "gear" ? imageGear : imageEmber, col, 12, 12), left + h.x - 6, top + h.y - 12);
 }
 

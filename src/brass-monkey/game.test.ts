@@ -4,6 +4,8 @@ import {
   imageConveyorFloor,
   imageGirderFloor,
   imageFont,
+  imageFurnace,
+  imageGear,
   imageGnome,
   imageHud,
   imageMonkey,
@@ -168,6 +170,7 @@ describe("BrassMonkeySoftware", () => {
         ladder: null,
         climbDir: 1,
         scorableIn: 0,
+        hot: false,
       },
     ];
     g.update(NO_INPUT);
@@ -227,6 +230,46 @@ describe("draw", () => {
     expect(gnome()).toBe(0);
     g.run.gearTimer = t.throwTicks;
     expect(gnome()).toBe(32);
+  });
+
+  test("the girder floor's furnace stands at its bottom left, cold until a hot gear lights it, then flickering", () => {
+    const g = quiet();
+    const furnace = (): DrawCall | undefined => record(g).calls.find((c) => c.sprite.asset === imageFurnace.asset);
+    expect(furnace()).toMatchObject({ x: 8 + 0, y: 40 + 248 - 24, sprite: { sx: 0 } });
+    g.run.furnaceLit = true;
+    const lit = new Set<number>();
+    for (let n = 0; n < 16; n++) {
+      g.update(NO_INPUT);
+      lit.add(furnace()?.sprite.sx ?? -1);
+    }
+    expect([...lit].toSorted((a, b) => a - b)).toEqual([16, 32]);
+  });
+
+  test("the conveyor floor has no furnace", () => {
+    const g = quiet();
+    g.run.floor = 1;
+    g.run.startFloor();
+    expect(record(g).calls.some((c) => c.sprite.asset === imageFurnace.asset)).toBe(false);
+  });
+
+  test("a hot gear is drawn from the gear sheet's hot frames", () => {
+    const g = quiet();
+    g.run.hazards = [
+      {
+        kind: "gear",
+        x: 100,
+        y: 248,
+        dir: -1,
+        vy: 0,
+        footing: "ground",
+        ladder: null,
+        climbDir: 1,
+        scorableIn: 0,
+        hot: true,
+      },
+    ];
+    const gear = record(g).calls.find((c) => c.sprite.asset === imageGear.asset);
+    expect([24, 36]).toContain(gear?.sprite.sx ?? -1);
   });
 
   test("the monkey stands on its girder; jumping shows the jump frame", () => {
