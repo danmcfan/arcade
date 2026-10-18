@@ -9,6 +9,8 @@
 import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
 import { employeeSpot } from "../src/arcade/desk.ts";
+import { changeMachineRect } from "../src/arcade/changeMachine.ts";
+import { changeMachine, changeMachineHeight } from "../src/ui/changeMachineArt.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
@@ -59,6 +61,23 @@ function withPlayer(room: PNG, tick: number): PNG {
   return room;
 }
 
+/**
+ * The change machine on its spot, as src/arcade/changeMachine.ts draws it. A
+ * variants file may swap its rows for frames (a list of row lists); those
+ * cycle every half second so an animated option shows in the room.
+ */
+function paintChangeMachine(room: PNG, tick: number): void {
+  const art: readonly unknown[] = changeMachine;
+  const frames = art.every((r) => typeof r === "string") ? [changeMachine] : art.filter((f) => isRowList(f));
+  const rows = frames[Math.trunc(tick / 30) % frames.length] ?? changeMachine;
+  const { x, y, h } = changeMachineRect;
+  paint(room, rows, sweetie, x, y + h - changeMachineHeight);
+}
+
+function isRowList(v: unknown): v is Rows {
+  return Array.isArray(v) && v.every((r) => typeof r === "string");
+}
+
 /** Ticks the hub spends in each part of its loop: dark, switched on, then dark again after switching off. */
 const hubLoop = { off: 40, on: 80, after: 40 } as const;
 
@@ -88,6 +107,7 @@ function hubFrames(decorate: (room: PNG) => void = () => {}): PNG[] {
         .map((r) => r.slice(column * powerFrameWidth, (column + 1) * powerFrameWidth));
       paint(png, cell, sweetie, cabinet.rect.x - powerCabinetX, cabinet.rect.y);
     }
+    paintChangeMachine(png, tick);
     decorate(png);
     frames.push(withPlayer(png, tick));
   }
