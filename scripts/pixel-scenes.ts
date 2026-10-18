@@ -64,12 +64,12 @@ function withPlayer(room: PNG, tick: number): PNG {
 /**
  * The change machine on its spot, as src/arcade/changeMachine.ts draws it. A
  * variants file may swap its rows for frames (a list of row lists); those
- * cycle every half second so an animated option shows in the room.
+ * cycle every 8 ticks so an animated option shows in the room.
  */
 function paintChangeMachine(room: PNG, tick: number): void {
   const art: readonly unknown[] = changeMachine;
   const frames = art.every((r) => typeof r === "string") ? [changeMachine] : art.filter((f) => isRowList(f));
-  const rows = frames[Math.trunc(tick / 30) % frames.length] ?? changeMachine;
+  const rows = frames[Math.trunc(tick / 8) % frames.length] ?? changeMachine;
   const { x, y, h } = changeMachineRect;
   paint(room, rows, sweetie, x, y + h - changeMachineHeight);
 }
