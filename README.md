@@ -4,7 +4,7 @@
 
 Pixel art games within a game. Walk around an arcade, step up to a cabinet, and play the minigame inside.
 
-<p align="center"><img src="docs/media/hub.gif" alt="Walking around the arcade hub" width="480"></p>
+<p align="center"><img src="docs/media/hub.gif" alt="Touring the arcade hub: each cabinet, the change machine, back to the prize counter" width="480"></p>
 
 | Sweet Sam                                                                                                                                 | Firefly                                                                                                           | Brass Monkey                                                                                                                                |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
