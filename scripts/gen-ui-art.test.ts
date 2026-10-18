@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { glyphHeight, glyphs, inks, titleLetters } from "../src/ui/glyphs.ts";
-import { changeMachine, changeMachineHeight, changeMachineWidth } from "../src/ui/changeMachineArt.ts";
+import {
+  changeMachine,
+  changeMachineHeight,
+  changeMachineSign,
+  changeMachineSweeps,
+  changeMachineWidth,
+} from "../src/ui/changeMachineArt.ts";
 import { employeeHalf, employeeHeight, employeeWidth } from "../src/ui/employeeArt.ts";
 import { deskRows } from "../src/ui/deskArt.ts";
 import { deskRect } from "../src/arcade/desk.ts";
@@ -34,7 +40,14 @@ import { images } from "../src/engine/assets.ts";
 import { prizeArt } from "../src/ui/prizeArt.ts";
 import { sweetie } from "../src/ui/sweetie16.ts";
 import { prizes } from "../src/arcade/prizes.ts";
-import { employeeRows, hubPowerRows, hubRoomRows } from "./gen-ui-art.ts";
+import {
+  changeMachineFrame,
+  changeMachineFrames,
+  changeMachineSheetRows,
+  employeeRows,
+  hubPowerRows,
+  hubRoomRows,
+} from "./gen-ui-art.ts";
 import { checkRows } from "./pixel-art.ts";
 import { confettiFrames, confettiSize, winArt } from "../src/ui/winArt.ts";
 import {
@@ -99,12 +112,32 @@ describe("UI art source", () => {
     expect([sheet[0]?.length, sheet.length]).toEqual([images.ticker.width, images.ticker.height]);
   });
 
-  test("the change machine is one 16x32 frame, in Sweetie 16 letters and .", () => {
+  test("the change machine is a 16x32 frame at rest, and its twinkle a sheet of one frame per sweep", () => {
     checkRows("change machine", changeMachine, { w: changeMachineWidth, h: changeMachineHeight });
-    expect([changeMachineWidth, changeMachineHeight]).toEqual([
-      images.changeMachine.width,
-      images.changeMachine.height,
-    ]);
+    const frames = changeMachineFrames();
+    frames.forEach((f, i) => {
+      checkRows(`change machine frame ${i}`, f, { w: changeMachineWidth, h: changeMachineHeight });
+    });
+    const sheet = changeMachineSheetRows();
+    checkRows("change machine sheet", sheet, {
+      w: changeMachineWidth * changeMachineSweeps.length,
+      h: changeMachineHeight,
+    });
+    expect([sheet[0]?.length, sheet.length]).toEqual([images.changeMachine.width, images.changeMachine.height]);
+  });
+
+  test("a twinkle frame lights only the sign's green, lime, along its two diagonals", () => {
+    expect(changeMachineFrame(changeMachine, null)).toEqual([...changeMachine]);
+    const lit = changeMachineFrame(changeMachine, 22);
+    lit.forEach((row, y) => {
+      row.split("").forEach((c, x) => {
+        const was = changeMachine[y]?.[x];
+        if (c === was) return;
+        expect([was, c, x + y === 22 || x + y === 23]).toEqual(["G", "g", true]);
+        expect(y >= changeMachineSign.y && y < changeMachineSign.y + changeMachineSign.h).toBe(true);
+      });
+    });
+    expect(lit).not.toEqual([...changeMachine]);
   });
 
   test("the employee is one frame in the player's 16x24 box, in Sweetie 16 letters and .", () => {

@@ -52,7 +52,7 @@ export function draw(
   // The machine rises above its spot: the player walks behind its top, and in front of it below.
   const player = s.player;
   const playerInFront = inFrontOfChangeMachine(player.y + player.height / 2);
-  if (playerInFront) drawChangeMachine(screen, buffer);
+  if (playerInFront) drawChangeMachine(screen, buffer, tick);
   // The desk is in the room image; the employee stands in it, out of the player's reach.
   drawEmployee(screen, buffer);
   // Decorations are not solid: the player walks in front of them.
@@ -70,7 +70,7 @@ export function draw(
     player.height,
   );
   drawImage(screen, playerImageFrame, player.x + buffer - player.width / 2, player.y + buffer - player.height / 2);
-  if (!playerInFront) drawChangeMachine(screen, buffer);
+  if (!playerInFront) drawChangeMachine(screen, buffer, tick);
   // The arcade win's cake, trophy and balloons stand on the desk for good, in
   // front of the player, who can only ever stand behind the desk.
   if (s.wallet.arcadeWon) drawWinPieces(screen, buffer);

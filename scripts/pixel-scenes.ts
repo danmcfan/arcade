@@ -10,11 +10,11 @@ import type { PNG } from "pngjs";
 import type { Direction } from "../src/engine/input.ts";
 import { employeeSpot } from "../src/arcade/desk.ts";
 import { changeMachineRect } from "../src/arcade/changeMachine.ts";
-import { changeMachine, changeMachineHeight } from "../src/ui/changeMachineArt.ts";
+import { changeMachine, changeMachineFrameTicks, changeMachineHeight } from "../src/ui/changeMachineArt.ts";
 import { prizes } from "../src/arcade/prizes.ts";
 import { newScreen, screenFrame, updateScreen } from "../src/arcade/screen.ts";
 import { powerCabinetX, powerFrameHeight, powerFrameWidth, powerSheetRows } from "../src/ui/hubArt.ts";
-import { employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
+import { changeMachineFrames, employeeRows, hubCabinets, hubRoomRows } from "./gen-ui-art.ts";
 import { blank, flipX, mirrorX, paint, plot, recolour, toPng, type Rows } from "./pixel-art.ts";
 import { playerFrames, playerFramesFor } from "../src/ui/playerArt.ts";
 import { beeEyes, flowers } from "../src/sweet-sam/art.ts";
@@ -62,14 +62,14 @@ function withPlayer(room: PNG, tick: number): PNG {
 }
 
 /**
- * The change machine on its spot, as src/arcade/changeMachine.ts draws it. A
- * variants file may swap its rows for frames (a list of row lists); those
- * cycle every 8 ticks so an animated option shows in the room.
+ * The change machine on its spot on `tick`'s twinkle frame, as
+ * src/arcade/changeMachine.ts draws it. A variants file may swap its rows for
+ * frames (a list of row lists); those play at the same pace instead.
  */
 function paintChangeMachine(room: PNG, tick: number): void {
   const art: readonly unknown[] = changeMachine;
-  const frames = art.every((r) => typeof r === "string") ? [changeMachine] : art.filter((f) => isRowList(f));
-  const rows = frames[Math.trunc(tick / 8) % frames.length] ?? changeMachine;
+  const frames = art.every((r) => typeof r === "string") ? changeMachineFrames() : art.filter((f) => isRowList(f));
+  const rows = frames[Math.trunc(tick / changeMachineFrameTicks) % frames.length] ?? changeMachine;
   const { x, y, h } = changeMachineRect;
   paint(room, rows, sweetie, x, y + h - changeMachineHeight);
 }

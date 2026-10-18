@@ -4,23 +4,38 @@
 // says what it does (src/arcade/ticker.ts) and the Wallet owns the deal
 // (`exchange`). Its position and its look live here only: the owner's 16x32
 // sprite (#198, src/ui/changeMachineArt.ts), square against the right wall on
-// the 16 px grid, its bottom 16 rows on the solid spot and the rest rising
+// the 16 px grid, its dollar sign twinkling on a loop, its bottom 16 rows on the solid spot and the rest rising
 // above it, so the player can walk behind its top.
 
 import { sounds } from "../engine/assets.ts";
 import type { Surface } from "../engine/surface.ts";
 import { imageChangeMachine } from "../engine/assets.ts";
-import { changeMachineHeight } from "../ui/changeMachineArt.ts";
+import {
+  changeMachineFrameTicks,
+  changeMachineHeight,
+  changeMachineSweeps,
+  changeMachineWidth,
+} from "../ui/changeMachineArt.ts";
 import type { Rect } from "./collision.ts";
 import type { State } from "./state.ts";
 
 /** The machine in the hub image: solid, and faced from the left to use it. */
 export const changeMachineRect: Readonly<Rect> = { x: 144, y: 88, w: 16, h: 16 };
 
-/** Draw the machine standing on its spot, the hub image at (`buffer`, `buffer`). */
-export function drawChangeMachine(screen: Surface, buffer: number): void {
+/** The twinkle frame the machine shows on `tick`: each frame for `changeMachineFrameTicks`, looping. */
+export function changeMachineFrame(tick: number): number {
+  return Math.trunc(Math.max(0, tick) / changeMachineFrameTicks) % changeMachineSweeps.length;
+}
+
+/** Draw the machine standing on its spot on `tick`'s twinkle frame, the hub image at (`buffer`, `buffer`). */
+export function drawChangeMachine(screen: Surface, buffer: number, tick: number): void {
   const { x, y, h } = changeMachineRect;
-  screen.draw(imageChangeMachine, x + buffer, y + h - changeMachineHeight + buffer);
+  const frame = {
+    ...imageChangeMachine,
+    sx: imageChangeMachine.sx + changeMachineFrame(tick) * changeMachineWidth,
+    w: changeMachineWidth,
+  };
+  screen.draw(frame, x + buffer, y + h - changeMachineHeight + buffer);
 }
 
 /** Whether a player whose feet are at `feetY` stands in front of the machine, so is drawn over it. */

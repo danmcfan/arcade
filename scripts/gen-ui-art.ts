@@ -35,7 +35,13 @@ import {
   titleRows,
 } from "../src/ui/glyphs.ts";
 import { newMachines } from "../src/arcade/machine.ts";
-import { changeMachine, changeMachineHeight, changeMachineWidth } from "../src/ui/changeMachineArt.ts";
+import {
+  changeMachine,
+  changeMachineHeight,
+  changeMachineSign,
+  changeMachineSweeps,
+  changeMachineWidth,
+} from "../src/ui/changeMachineArt.ts";
 import { employeeHalf } from "../src/ui/employeeArt.ts";
 import { powerSheetRows, roomRows, type CabinetPlace } from "../src/ui/hubArt.ts";
 import { playerSheetRows } from "../src/ui/playerArt.ts";
@@ -167,8 +173,34 @@ export function renderEmployee(): PNG {
   return toPng(employeeRows());
 }
 
+/** One frame of the change machine's twinkle: `rest` with the sign's green lit lime along the diagonals `sweep` and `sweep + 1`. */
+export function changeMachineFrame(rest: readonly string[], sweep: number | null): string[] {
+  const { x: left, y: top, w, h } = changeMachineSign;
+  return rest.map((row, y) =>
+    row
+      .split("")
+      .map((c, x) => {
+        const inSign = x >= left && x < left + w && y >= top && y < top + h;
+        const lit = sweep !== null && (x + y === sweep || x + y === sweep + 1);
+        return inSign && lit && c === "G" ? "g" : c;
+      })
+      .join(""),
+  );
+}
+
+/** Every frame of the change machine's twinkle, in order. */
+export function changeMachineFrames(rest: readonly string[] = changeMachine): string[][] {
+  return changeMachineSweeps.map((sweep) => changeMachineFrame(rest, sweep));
+}
+
+/** The twinkle's frames left to right, one 16x32 cell each. */
+export function changeMachineSheetRows(): string[] {
+  const frames = changeMachineFrames();
+  return Array.from({ length: changeMachineHeight }, (_, y) => frames.map((f) => f[y] ?? "").join(""));
+}
+
 export function renderChangeMachine(): PNG {
-  return toPng(changeMachine);
+  return toPng(changeMachineSheetRows());
 }
 
 /** Where the hub's machines stand, in their order. */
@@ -227,7 +259,12 @@ export const uiArtFiles: readonly ImageOutput[] = [
   imageOutput(join(imagesDir, "panel.png"), panelFrame[0]?.length ?? 0, panelFrame.length, renderPanel),
   imageOutput(join(imagesDir, "cards.png"), cardSheetWidth, cardSheetHeight, renderCards),
   imageOutput(join(imagesDir, "employee.png"), 16, 24, renderEmployee),
-  imageOutput(join(imagesDir, "change-machine.png"), changeMachineWidth, changeMachineHeight, renderChangeMachine),
+  imageOutput(
+    join(imagesDir, "change-machine.png"),
+    changeMachineWidth * changeMachineSweeps.length,
+    changeMachineHeight,
+    renderChangeMachine,
+  ),
   imageOutput(join(imagesDir, "prizes.png"), prizeSheetWidth, prizeSheetHeight, renderPrizes),
   imageOutput(join(imagesDir, "win.png"), winSheetWidth, winSheetHeight, renderWin),
   imageOutput(join(imagesDir, "arcade.png"), 160, 144, renderRoom),
