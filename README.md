@@ -6,10 +6,10 @@ Pixel art games within a game. Walk around an arcade, step up to a cabinet, and 
 
 <p align="center"><img src="docs/media/hub.gif" alt="Walking around the arcade hub" width="480"></p>
 
-| Sweet Sam                                                                        | Firefly                                                                   | Brass Monkey                                                              |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <img src="docs/media/sweet-sam.png" alt="Sweet Sam" width="240">                 | <img src="docs/media/firefly.png" alt="Firefly" width="240">              | <img src="docs/media/brass-monkey.png" alt="Brass Monkey" width="240">    |
-| A Pac-Man-like maze: a bear eats its way past bees, true to the arcade original. | A Galaga-like shooter: a firefly takes on swooping moths, wasps and owls. | A Donkey Kong-like climb: a brass robot monkey escapes a gnome's factory. |
+| Sweet Sam                                                                                                                                 | Firefly                                                                                                           | Brass Monkey                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="docs/media/sweet-sam.gif" alt="Sweet Sam: the bear eats honey drops, then a honey pot, and chases the scared bees" width="240"> | <img src="docs/media/firefly.gif" alt="Firefly: the firefly clears stage 1, dodging dives and shots" width="240"> | <img src="docs/media/brass-monkey.gif" alt="Brass Monkey: the monkey climbs the girder floor, jumping gears, to the exit door" width="240"> |
+| A Pac-Man-like maze: a bear eats its way past bees, true to the arcade original.                                                          | A Galaga-like shooter: a firefly takes on swooping moths, wasps and owls.                                         | A Donkey Kong-like climb: a brass robot monkey escapes a gnome's factory.                                                                   |
 
 Win tickets in the minigames and spend them at the prize counter. Your hub progress and high scores are saved in the browser.
 
@@ -27,7 +27,7 @@ It needs a keyboard; phones and tablets get a notice instead.
 
 - **TypeScript on a plain `<canvas>`.** No game engine, no framework and no runtime dependencies: just a fixed 60-ticks-per-second loop over Canvas 2D.
 - **Art and music written as code.** Every sprite, the hub room, the pixel font and the title logo are rows of palette letters or ASCII in the source, in the [Sweetie 16](https://lospec.com/palette-list/sweetie-16) palette by GrafxKid. The title music and menu sounds are chiptune written as notes. Generator scripts turn them into PNGs and WAVs, and a test fails if the committed files drift from their source.
-- **Deterministic and testable.** Seeded RNG and fixed ticks mean a game plays out the same way every time. With `?debug` in the URL, a test hook can step frames, script input and read state, which drives the browser checks and the screenshots on this page.
+- **Deterministic and testable.** Seeded RNG and fixed ticks mean a game plays out the same way every time. With `?debug` in the URL, a test hook can step frames, script input and read state, which drives the browser checks and the GIFs on this page: each is a played run stepped one tick at a time, every frame captured.
 - **[Bun](https://bun.sh/)** builds, serves and tests it. Every push to `main` runs the full check (strict `tsc`, Oxlint, Prettier, knip, tests, build) and then deploys to GitHub Pages.
 - **A port.** It started as a Go game and was ported to TypeScript. `docs/port-notes.md` records the differences.
 
