@@ -3,7 +3,6 @@
 // dive at the firefly, dropping shots. Headless and on ticks (ADR 0002, ADR
 // 0003); every random choice goes through src/engine/rng.ts. draw.ts draws it.
 
-import { scoreDialsAt } from "../ui/hudArt";
 import { noAdvantages, type FireflyAdvantages } from "./advantages.ts";
 import { sounds } from "../engine/assets.ts";
 import type { Sound } from "../engine/audio.ts";
@@ -16,7 +15,7 @@ import { cabinetHeight, cabinetWidth } from "../ui/cabinet.ts";
 import { imageFireflyBackground } from "../engine/assets.ts";
 import type { Sprite } from "../engine/image.ts";
 import { ScoreDials } from "../ui/dials.ts";
-import { drawFirefly } from "./draw.ts";
+import { drawFirefly, fireflyDialsAt } from "./draw.ts";
 import { unsettled, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import { newPathPatternFunc, pathLength, type BezierConfig, type Path, type PatternFunc } from "./pattern.ts";
 import {
@@ -354,7 +353,7 @@ export class FireflySoftware implements FixedViewport {
     this.advantages = advantages;
     this.lives = advantages.lives;
     this.firecrackers = advantages.firecrackers;
-    this.dials = new ScoreDials(highScore, scoreDialsAt);
+    this.dials = new ScoreDials(highScore, fireflyDialsAt);
   }
 
   stage = 1;

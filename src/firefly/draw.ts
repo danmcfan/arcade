@@ -22,6 +22,7 @@ import type { Surface } from "../engine/surface.ts";
 import { cabinetInsetLeft, cabinetInsetTop, drawOnScreen } from "../ui/cabinet.ts";
 import { sweetie } from "../ui/sweetie16.ts";
 import { drawScoreLabels, type ScoreDials } from "../ui/dials.ts";
+import { scoreDialsAt } from "../ui/hudArt.ts";
 import { drawTextCentered, type Ink } from "../ui/text.ts";
 import { angle, frameAngle, type Bonus, type Captive, type Enemy, type Shot, type Spark, type Vec } from "./entity.ts";
 import {
@@ -108,9 +109,16 @@ function drawBeam(screen: Surface, e: Enemy): void {
   }
 }
 
-/** Spare lives: fireflies along the bottom left, where Sweet Sam shows its spare bears, under the firefly in play. */
+/**
+ * Galaga's score dials: the score's six reels end at column 5, under "1UP"
+ * (Galaga's 7670 ends at x 47), a tile left of Sweet Sam's; the high score's
+ * end at column 16 under HIGH SCORE, as Sweet Sam's do.
+ */
+export const fireflyDialsAt = { score: { x: 0, y: 8 }, high: scoreDialsAt.high } as const;
+
+/** Spare lives: Galaga's reserve ships, packed 16 apart from the bottom left corner (rows 34-35). */
 function drawLives(screen: Surface, spare: number): void {
-  for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + 8 * (2 + i * 2), oy + 8 * 34 + 1);
+  for (let i = 0; i < spare; i++) screen.draw(imageFirefly, ox + 16 * i, oy + 8 * 34 - 1);
 }
 
 /** Badge slots in imageBadges are 16 wide; the 1 and 5 pennants fill half of theirs. */

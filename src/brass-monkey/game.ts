@@ -1,8 +1,8 @@
 // Brass Monkey's Software (#39): the run in play.ts, played inside its
 // cabinet and drawn to fill the cabinet's screen: the HUD in a 32 px band of
 // wall at the top, then the floor. The HUD is Sweet Sam's (#212): its labels,
-// its rolling dials on its rows, and spare lives in its spacing, under the
-// scores, since Sweet Sam's place for them is where the monkey walks.
+// its rolling dials on its rows, laid out after Donkey Kong's: spare lives
+// under the score, LOOP and BONUS at the right.
 
 import {
   imageBolt,
@@ -62,16 +62,28 @@ const backgrounds: readonly Sprite[] = [imageGirderFloor, imageConveyorFloor, im
 
 const frame = (sheet: Sprite, col: number, w: number, h: number): Sprite => sub(sheet, col * w, 0, (col + 1) * w, h);
 
-/** Where the HUD's readouts stand in the band, as Sweet Sam's: labels on row 0, dials on row 1 (8 px rows). */
+/**
+ * Where the HUD's readouts stand in the band, after Donkey Kong's (8 px tiles):
+ * labels on row 0 and score dials on row 1 as Sweet Sam's, spare lives under
+ * the score from column 1, the level (LOOP) on row 1 at the right where Donkey
+ * Kong's L=01 starts (column 21), and BONUS under it on rows 2-3 in the BONUS
+ * box's columns 21-26. Donkey Kong's L= and box sit a row lower, but the band is 4 rows.
+ */
 const hud = {
   score: 8,
   highScore: 8 * 11,
-  /** BONUS and LOOP, at the right; their dials' six-reel fields start a tile left of them. */
-  right: 8 * 21,
-  rightDials: 8 * 20,
   dialsTop: 8,
+  livesLeft: 8,
   livesTop: 16,
-  loopTop: 20,
+  /** LOOP's label; its dial's six-reel field starts a tile left, so the digit follows the word. */
+  loop: 8 * 21,
+  loopDials: 8 * 20,
+  loopTop: 8,
+  /** BONUS's label, centred over its six-reel dial in columns 21-26. */
+  bonus: 8 * 21 + 4,
+  bonusDials: 8 * 21,
+  bonusTop: 16,
+  bonusDialsTop: 24,
 } as const;
 
 /** Each floor's music. */
@@ -101,7 +113,7 @@ export class BrassMonkeySoftware implements FixedViewport {
   readonly run: Run;
   private readonly scoreDials: ScoreDials;
   private readonly bonusDial: Dial;
-  private readonly loopDial = new Dial({ x: hud.rightDials, y: hud.loopTop }, 1, 1);
+  private readonly loopDial = new Dial({ x: hud.loopDials, y: hud.loopTop }, 1, 1);
   /** The music playing (the wrench's while it is held, else the floor's), or none. */
   private music: Sound | null = null;
 
@@ -118,7 +130,7 @@ export class BrassMonkeySoftware implements FixedViewport {
         runSounds[s].play();
       },
     });
-    this.bonusDial = new Dial({ x: hud.rightDials, y: hud.dialsTop }, this.run.bonus);
+    this.bonusDial = new Dial({ x: hud.bonusDials, y: hud.bonusDialsTop }, this.run.bonus);
     this.playMusic();
   }
 
@@ -239,13 +251,13 @@ export class BrassMonkeySoftware implements FixedViewport {
     for (let x = 0; x < cabinetPlayfieldWidth; x += 32) screen.draw(imageWall, left + x, top);
     const { run } = this;
     screen.draw(hudLabelSprite("scores"), left + scoreLabelsX, top);
-    screen.draw(hudLabelSprite("bonus"), left + hud.right, top);
+    screen.draw(hudLabelSprite("bonus"), left + hud.bonus, top + hud.bonusTop);
     this.scoreDials.draw(screen, left, top);
     this.bonusDial.draw(screen, left, top);
     // Spare lives: the one in play is not counted.
     for (let n = 0; n < run.lives - 1; n++)
-      screen.draw(frame(imageMonkey, 0, 16, 16), left + 8 * (2 + n * 2), top + hud.livesTop);
-    screen.draw(hudLabelSprite("loop"), left + hud.right, top + hud.loopTop);
+      screen.draw(frame(imageMonkey, 0, 16, 16), left + hud.livesLeft + 16 * n, top + hud.livesTop);
+    screen.draw(hudLabelSprite("loop"), left + hud.loop, top + hud.loopTop);
     this.loopDial.draw(screen, left, top);
   }
 

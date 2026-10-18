@@ -545,17 +545,17 @@ const label = (g: BrassMonkeySoftware, band: number): number[][] =>
     .calls.filter((c) => c.sprite.asset === imageHud.asset && c.sprite.sy === band * 8)
     .map((c) => [c.x, c.y, c.sprite.w]);
 
-describe("the HUD, in Sweet Sam's style", () => {
-  test("1UP and HIGH SCORE stand where Sweet Sam's maze has them, BONUS at the right", () => {
+describe("the HUD, in Sweet Sam's letters on Donkey Kong's grid", () => {
+  test("1UP and HIGH SCORE stand where Sweet Sam's maze has them, BONUS at the right on row 2", () => {
     const g = quiet();
     expect(label(g, 0)).toEqual([[8 + 26, 8, 126]]);
-    expect(label(g, 1)).toEqual([[8 + 168, 8, 40]]);
+    expect(label(g, 1)).toEqual([[8 + 172, 8 + 16, 40]]);
   });
 
-  test("score, high score and bonus are dials on Sweet Sam's second row: 00, 00 and 5000", () => {
+  test("score and high score are dials on row 1 (00 and 00), the bonus's 5000 under BONUS in columns 21-26", () => {
     const { dials } = record(quiet());
-    const row = dials.filter(([, y]) => y === 16).map(([x]) => x);
-    expect(row).toEqual([48, 56, 128, 136, 184, 192, 200, 208]);
+    expect(dials.filter(([x, y]) => y === 16 && x < 160).map(([x]) => x)).toEqual([48, 56, 128, 136]);
+    expect(dials.filter(([, y]) => y === 32).map(([x]) => x)).toEqual([192, 200, 208, 216]);
   });
 
   test("the high score's dial shows the hub's high score from the start", () => {
@@ -571,24 +571,24 @@ describe("the HUD, in Sweet Sam's style", () => {
     expect(dials.filter(([x, y]) => y === 16 && x < 64).map(([x]) => x)).toEqual([40, 48, 56]);
   });
 
-  test("spare lives are monkey icons in Sweet Sam's spacing, under the score", () => {
+  test("spare lives are monkey icons under the score from column 1, as Donkey Kong's", () => {
     const g = quiet();
     const lives = (): number[][] =>
       record(g)
         .calls.filter((c) => c.sprite.asset === imageMonkey.asset && c.y === 8 + 16)
         .map((c) => [c.x, c.sprite.sx]);
     expect(lives()).toEqual([
-      [24, 0],
-      [40, 0],
+      [16, 0],
+      [32, 0],
     ]);
     g.run.lives = 1;
     expect(lives()).toEqual([]);
   });
 
-  test("LOOP and its number sit at the right of the band, under the bonus", () => {
+  test("LOOP and its number sit on row 1 at the right, from column 21 like Donkey Kong's L=01", () => {
     const g = quiet();
-    expect(label(g, 2)).toEqual([[8 + 168, 8 + 20, 32]]);
-    expect(record(g).dials.filter(([, y]) => y === 28)).toEqual([[208, 28]]);
+    expect(label(g, 2)).toEqual([[8 + 168, 8 + 8, 32]]);
+    expect(record(g).dials.filter(([x, y]) => y === 16 && x >= 160)).toEqual([[208, 16]]);
   });
 
   test("the HUD is drawn in the band, not as text", () => {

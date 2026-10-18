@@ -108,23 +108,23 @@ describe("firefly draw", () => {
     expect(of(calls, imageMoth)).toEqual([]);
   });
 
-  test("the HUD sits where Sweet Sam's does: 1UP / HIGH SCORE labels, score dials, spare lives along the bottom", () => {
+  test("the HUD sits where Galaga's does: 1UP / HIGH SCORE labels, score dials, reserve ships from the bottom left corner", () => {
     const f = new FireflySoftware();
     const calls = drawCalls(f);
     // The labels' left edge at x 26 of the screen's top row.
     expect(of(calls, imageScoreLabels).map((c) => [c.x, c.y])).toEqual([[8 + 26, 8]]);
-    // A zero score and high score show their last two digits, on tile row 1 from tile columns 1 and 11.
+    // A zero score and high score show their last two digits, on tile row 1, ending at tile columns 5 and 16.
     expect(dialCells(f)).toEqual([
+      [8 + 8 * 4, 8 + 8],
       [8 + 8 * 5, 8 + 8],
-      [8 + 8 * 6, 8 + 8],
       [8 + 8 * 15, 8 + 8],
       [8 + 8 * 16, 8 + 8],
     ]);
-    // 2 spare fireflies at Sweet Sam's spare-lives spots, plus the one in play.
+    // 2 spare fireflies packed from the left edge on rows 34-35, plus the one in play.
     expect(of(calls, imageFirefly).map((c) => [c.x, c.y])).toEqual([
       [112 + 8 - 8, 264 + 8 - 8],
-      [8 + 16, 8 + 8 * 34 + 1],
-      [8 + 32, 8 + 8 * 34 + 1],
+      [8, 8 + 8 * 34 - 1],
+      [8 + 16, 8 + 8 * 34 - 1],
     ]);
   });
 
